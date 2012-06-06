@@ -61,7 +61,8 @@ module growth_balive
       real                          :: daily_C_gain
       real                          :: carbon_balance
       real                          :: carbon_balance_pot
-      real                          :: carbon_balance_max
+      real                          :: carbon_balance_lightmax
+      real                          :: carbon_balance_moistmax
       real                          :: balive_in
       real                          :: nitrogen_supply
       real                          :: dndt
@@ -105,24 +106,31 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call plant_maintenance(cpatch,ico,cpatch%broot(ico),cpatch%bleaf(ico)    &
                                         ,tfact,daily_C_gain,csite%avg_daily_temp(ipa))
-                  
+
+
                   !----- Subtract maintenance costs from pools. ---------------------------!
-                  cpatch%balive(ico)    = cpatch%balive(ico)                               &
-                                        - cpatch%leaf_maintenance(ico)                     &
-                                        - cpatch%root_maintenance(ico)
-                  cpatch%bleaf(ico)     = cpatch%bleaf(ico)                                &
-                                        - cpatch%leaf_maintenance(ico)       
-                  cpatch%broot(ico)     = cpatch%broot(ico)                                &
-                                        - cpatch%root_maintenance(ico)
-                  cpatch%cb(13,ico)     = cpatch%cb(13,ico)                                &
-                                        - cpatch%leaf_maintenance(ico)                     &
-                                        - cpatch%root_maintenance(ico)
-                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)                            &
-                                        - cpatch%leaf_maintenance(ico)                     &
-                                        - cpatch%root_maintenance(ico)
+                  cpatch%balive           (ico) = cpatch%balive                   (ico)    &
+                                                - cpatch%leaf_maintenance         (ico)    &
+                                                - cpatch%root_maintenance         (ico)
+                  cpatch%bleaf            (ico) = cpatch%bleaf                    (ico)    &
+                                                - cpatch%leaf_maintenance         (ico)
+                  cpatch%broot            (ico) = cpatch%broot                    (ico)    &
+                                                - cpatch%root_maintenance         (ico)
+                  cpatch%cb            (13,ico) = cpatch%cb                    (13,ico)    &
+                                                - cpatch%leaf_maintenance         (ico)    &
+                                                - cpatch%root_maintenance         (ico)
+                  cpatch%cb_lightmax   (13,ico) = cpatch%cb_lightmax           (13,ico)    &
+                                                - cpatch%leaf_maintenance         (ico)    &
+                                                - cpatch%root_maintenance         (ico)
+                  cpatch%cb_moistmax   (13,ico) = cpatch%cb_moistmax           (13,ico)    &
+                                                - cpatch%leaf_maintenance         (ico)    &
+                                                - cpatch%root_maintenance         (ico)
+                  !------------------------------------------------------------------------!
+
+
 
                   !------------------------------------------------------------------------!
-                  !    Storage respriation/turnover_rate.                                  !
+                  !    Storage respiration/turnover_rate.                                  !
                   !    Calculate in same way as leaf and root turnover in kgC/plant/year.  !
                   !------------------------------------------------------------------------!
 
@@ -154,7 +162,8 @@ module growth_balive
                   !      Calculate actual, potential and maximum carbon balances.          !
                   !------------------------------------------------------------------------!
                   call plant_carbon_balances(cpatch,ipa,ico,daily_C_gain,carbon_balance    &
-                                            ,carbon_balance_pot,carbon_balance_max)
+                                            ,carbon_balance_pot,carbon_balance_lightmax    &
+                                            ,carbon_balance_moistmax)
                   !------------------------------------------------------------------------!
 
 
@@ -344,7 +353,8 @@ module growth_balive
       real                          :: daily_C_gain
       real                          :: carbon_balance
       real                          :: carbon_balance_pot
-      real                          :: carbon_balance_max
+      real                          :: carbon_balance_lightmax
+      real                          :: carbon_balance_moistmax
       real                          :: balive_in
       real                          :: nitrogen_supply
       real                          :: old_leaf_hcap
@@ -392,9 +402,12 @@ module growth_balive
                   !    For the no vegetation dynamics case, we update the carbon balance   !
                   ! but we do NOT update the living tissues.                               !
                   !------------------------------------------------------------------------!
-                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)                            &
-                                        - cpatch%leaf_maintenance(ico)                     &
-                                        - cpatch%root_maintenance(ico)
+                  cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax         (13,ico)         &
+                                             - cpatch%leaf_maintenance       (ico)         &
+                                             - cpatch%root_maintenance       (ico)
+                  cpatch%cb_moistmax(13,ico) = cpatch%cb_moistmax         (13,ico)         &
+                                             - cpatch%leaf_maintenance       (ico)         &
+                                             - cpatch%root_maintenance       (ico)
                   !------------------------------------------------------------------------!
 
                   !------------------------------------------------------------------------!
@@ -429,7 +442,8 @@ module growth_balive
                   !      Calculate actual, potential and maximum carbon balances.          !
                   !------------------------------------------------------------------------!
                   call plant_carbon_balances(cpatch,ipa,ico,daily_C_gain,carbon_balance    &
-                                            ,carbon_balance_pot,carbon_balance_max)
+                                            ,carbon_balance_pot,carbon_balance_lightmax    &
+                                            ,carbon_balance_moistmax)
                   !------------------------------------------------------------------------!
 
 
@@ -692,7 +706,8 @@ module growth_balive
    !=======================================================================================!
    !=======================================================================================!
    subroutine plant_carbon_balances(cpatch,ipa,ico,daily_C_gain,carbon_balance             &
-                                   ,carbon_balance_pot,carbon_balance_max)
+                                   ,carbon_balance_pot,carbon_balance_lightmax             &
+                                   ,carbon_balance_moistmax)
       use ed_state_vars, only : patchtype          ! ! structure
       use pft_coms     , only : growth_resp_factor ! ! intent(in)
       use consts_coms  , only : umol_2_kgC         & ! intent(in)
@@ -707,12 +722,15 @@ module growth_balive
       real                     , intent(in)  :: daily_C_gain
       real                     , intent(out) :: carbon_balance
       real                     , intent(out) :: carbon_balance_pot
-      real                     , intent(out) :: carbon_balance_max
+      real                     , intent(out) :: carbon_balance_lightmax
+      real                     , intent(out) :: carbon_balance_moistmax
       !----- Local variables. -------------------------------------------------------------!
       real                                   :: daily_C_gain_pot
-      real                                   :: daily_C_gain_max
+      real                                   :: daily_C_gain_lightmax
+      real                                   :: daily_C_gain_moistmax
       real                                   :: growth_respiration_pot
-      real                                   :: growth_respiration_max
+      real                                   :: growth_respiration_lightmax
+      real                                   :: growth_respiration_moistmax
       integer                                :: ipft
       !----- Local constants. -------------------------------------------------------------!
       logical                  , parameter   :: print_debug = .false.
@@ -740,43 +758,68 @@ module growth_balive
          growth_respiration_pot = max(0.0, daily_C_gain_pot * growth_resp_factor(ipft))
          carbon_balance_pot     = daily_C_gain_pot - growth_respiration_pot                &
                                 - cpatch%vleaf_respiration(ico)
+         !---------------------------------------------------------------------------------!
 
-         !----- Calculate maximum carbon balance (used for mortality). --------------------!
-         daily_C_gain_max       = umol_2_kgC * day_sec * ( cpatch%today_gpp_max(ico)       &
-                                                         - cpatch%today_leaf_resp(ico)     &
-                                                         - cpatch%today_root_resp(ico) )   &
-                                                       / cpatch%nplant(ico)
-         growth_respiration_max = max(0.0, daily_C_gain_max * growth_resp_factor(ipft))
-         carbon_balance_max     = daily_C_gain_max - growth_respiration_max                &
-                                                   - cpatch%vleaf_respiration(ico)
+
+
+         !---------------------------------------------------------------------------------!
+         !      Find carbon balance under full light and full soil moisture.  They will be !
+         ! used for density-dependent mortality.  Units: [kgC/plant/day].                  !
+         !---------------------------------------------------------------------------------!
+         !------ Full light. --------------------------------------------------------------!
+         daily_C_gain_lightmax       = umol_2_kgC * day_sec                                &
+                                     * ( cpatch%today_gpp_lightmax(ico)                    &
+                                       - cpatch%today_leaf_resp   (ico)                    &
+                                       - cpatch%today_root_resp   (ico) )                  &
+                                     / cpatch%nplant(ico)
+         growth_respiration_lightmax = max(0.0, daily_C_gain_lightmax                      &
+                                              * growth_resp_factor(ipft) )
+         carbon_balance_lightmax     = daily_C_gain_lightmax - growth_respiration_lightmax &
+                                     - cpatch%vleaf_respiration(ico)
+         !------ Full soil moisture. ------------------------------------------------------!
+         daily_C_gain_moistmax       = umol_2_kgC * day_sec                                &
+                                     * ( cpatch%today_gpp_moistmax(ico)                    &
+                                       - cpatch%today_leaf_resp   (ico)                    &
+                                       - cpatch%today_root_resp   (ico) )                  &
+                                     / cpatch%nplant(ico)
+         growth_respiration_moistmax = max(0.0, daily_C_gain_moistmax                      &
+                                              * growth_resp_factor(ipft) )
+         carbon_balance_moistmax     = daily_C_gain_moistmax - growth_respiration_moistmax &
+                                     - cpatch%vleaf_respiration(ico)
+         !---------------------------------------------------------------------------------!
       else
-         carbon_balance_max = 0.0
-         carbon_balance_pot = 0.0
+         carbon_balance_pot      = 0.0
+         carbon_balance_lightmax = 0.0
+         carbon_balance_moistmax = 0.0
       end if
 
       !----- Carbon balances for mortality. -----------------------------------------------!
-      cpatch%cb(13,ico)     = cpatch%cb(13,ico)     + carbon_balance
-      cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) + carbon_balance_max
+      cpatch%cb         (13,ico) = cpatch%cb         (13,ico) + carbon_balance
+      cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax(13,ico) + carbon_balance_lightmax
+      cpatch%cb_moistmax(13,ico) = cpatch%cb_moistmax(13,ico) + carbon_balance_moistmax
 
       if (print_debug) then
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,15(1x,a12))')                                    &
-                '      TIME','       PATCH','      COHORT','      NPLANT','    CB_TODAY'   &
-                            ,' GROWTH_RESP','  VLEAF_RESP','   TODAY_GPP','TODAY_GPPMAX'   &
-                            ,'  TODAY_LEAF','  TODAY_ROOT',' CBMAX_TODAY','          CB'   &
-                            ,'       CBMAX','  LEAF_MAINT','  ROOT_MAINT'
+            write (unit=30+ipft,fmt='(a10,18(1x,a18))')                                    &
+               '      TIME','             PATCH','            COHORT','            NPLANT' &
+                           ,'          CB_TODAY','       GROWTH_RESP','        VLEAF_RESP' &
+                           ,'         TODAY_GPP','TODAY_GPP_LIGHTMAX','TODAY_GPP_MOISTMAX' &
+                           ,'   TODAY_LEAF_RESP','   TODAY_ROOT_RESP',' CB_LIGHTMAX_TODAY' &
+                           ,' CB_MOISTMAX_TODAY','                CB','       CB_LIGHTMAX' &
+                           ,'       CB_MOISTMAX','  LEAF_MAINTENANCE','  ROOT_MAINTENANCE'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),13(1x,es12.5))')               &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),16(1x,es18.5))')               &
               current_time%month,'/',current_time%date,'/',current_time%year               &
              ,ipa,ico,cpatch%nplant(ico),carbon_balance,cpatch%growth_respiration(ico)     &
              ,cpatch%vleaf_respiration(ico),cpatch%today_gpp(ico)                          &
-             ,cpatch%today_gpp_max(ico),cpatch%today_leaf_resp(ico)                        &
-             ,cpatch%today_root_resp(ico),carbon_balance_max,cpatch%cb(13,ico)             &
-             ,cpatch%cb_max(13,ico),cpatch%leaf_maintenance(ico)                           &
-             ,cpatch%root_maintenance(ico)
+             ,cpatch%today_gpp_lightmax(ico),cpatch%today_gpp_moistmax(ico)                &
+             ,cpatch%today_leaf_resp(ico),cpatch%today_root_resp(ico)                      &
+             ,carbon_balance_lightmax,carbon_balance_moistmax,cpatch%cb(13,ico)            &
+             ,cpatch%cb_lightmax(13,ico),cpatch%cb_moistmax(13,ico)                        &
+             ,cpatch%leaf_maintenance(ico),cpatch%root_maintenance(ico)
       end if
 
       return

@@ -10,10 +10,11 @@ myplaces       = c("thispoly")
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
-outform        = "png"           # Formats for output file.  Supported formats are:
+outform        = "thisoutform"           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
+                                 #   - "pdf" - for PDF printing
 
 byeold         = TRUE           # Remove old files of the given format?
 
@@ -168,7 +169,8 @@ for (place in myplaces){
    npppftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
    mcopftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
    cbapftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   cbamaxpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbalightpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbamoistpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
    cbarelpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
    ldrpftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
    fsopftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
@@ -193,7 +195,8 @@ for (place in myplaces){
    npppft          = matrix(data=0,nrow=totmon,ncol=npft+1)
    mcopft          = matrix(data=0,nrow=totmon,ncol=npft+1)
    cbapft          = matrix(data=0,nrow=totmon,ncol=npft+1)
-   cbamaxpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbalightpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbamoistpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
    cbarelpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
    ldroppft        = matrix(data=0,nrow=totmon,ncol=npft+1)
    fsopft          = matrix(data=0,nrow=totmon,ncol=npft+1)
@@ -245,7 +248,8 @@ for (place in myplaces){
    mco             = NULL
    npp             = NULL
    cba             = NULL
-   cbamax          = NULL
+   cbalight        = NULL
+   cbamoist        = NULL
    cbarel          = NULL
    ldrop           = NULL
    nep             = NULL
@@ -333,7 +337,8 @@ for (place in myplaces){
    nppco        = list()
    cbaco        = list()
    cbarelco     = list()
-   cbamaxco     = list()
+   cbalightco   = list()
+   cbamoistco   = list()
    mcostco      = list()
    ldropco      = list()
    agbco        = list()
@@ -823,7 +828,8 @@ for (place in myplaces){
                                + mymont$MMEAN.VLEAF.RESP.CO  )
              nppconow        = gppconow-respconow
              cbaconow        = mymont$MMEAN.CB
-             cbamaxconow     = mymont$CB.MAX[,lastmonth]
+             cbalightconow   = mymont$CB.LIGHTMAX[,lastmonth]
+             cbamoistconow   = mymont$CB.MOISTMAX[,lastmonth]
              cbarelconow     = mymont$CBR.BAR
              mcostconow      = ( mymont$MMEAN.LEAF.MAINTENANCE
                                + mymont$MMEAN.ROOT.MAINTENANCE )
@@ -894,7 +900,8 @@ for (place in myplaces){
              respconow       = NA
              nppconow        = NA
              cbaconow        = NA
-             cbamaxconow     = NA
+             cbalightconow   = NA
+             cbamoistconow   = NA
              mcostconow      = NA
              ldropconow      = NA
              cbarelconow     = NA
@@ -917,7 +924,7 @@ for (place in myplaces){
              tfallmortconow  = NA
              coldmortconow   = NA
              distmortconow   = NA
-             recdbhconow     = NA
+             recruitconow    = NA
              growthconow     = NA
           }#end if
           #--------------------------------------------------------------------------------#
@@ -969,7 +976,8 @@ for (place in myplaces){
                 npppft       [m,p] = sum( w.nplant[sel] * nppconow       [sel] )
                 mcopft       [m,p] = sum( w.nplant[sel] * mcostconow     [sel] )
                 cbapft       [m,p] = sum( w.nplant[sel] * cbaconow       [sel] )
-                cbamaxpft    [m,p] = sum( w.nplant[sel] * cbamaxconow    [sel] )
+                cbalightpft  [m,p] = sum( w.nplant[sel] * cbalightconow  [sel] )
+                cbamoistpft  [m,p] = sum( w.nplant[sel] * cbamoistconow  [sel] )
                 ldroppft     [m,p] = sum( w.nplant[sel] * ldropconow     [sel] )
                 balivepft    [m,p] = sum( w.nplant[sel] * baliveconow    [sel] )
                 bdeadpft     [m,p] = sum( w.nplant[sel] * bdeadconow     [sel] )
@@ -1247,24 +1255,25 @@ for (place in myplaces){
                sel      = selpft & seldbh
                if (any(sel)){
                   #----- Extensive properties. --------------------------------------------#
-                  laipftdbh    [m,d,p] = sum( laiconow    [sel] * areaconow  [sel] )
-                  waipftdbh    [m,d,p] = sum( waiconow    [sel] * areaconow  [sel] )
-                  taipftdbh    [m,d,p] = sum( taiconow    [sel] * areaconow  [sel] )
-                  nplantpftdbh [m,d,p] = sum( nplantconow [sel] * areaconow  [sel] )
-                  demandpftdbh [m,d,p] = sum( demandconow [sel] * areaconow  [sel] )
-                  supplypftdbh [m,d,p] = sum( supplyconow [sel] * areaconow  [sel] )
+                  laipftdbh      [m,d,p] = sum( laiconow    [sel] * areaconow     [sel] )
+                  waipftdbh      [m,d,p] = sum( waiconow    [sel] * areaconow     [sel] )
+                  taipftdbh      [m,d,p] = sum( taiconow    [sel] * areaconow     [sel] )
+                  nplantpftdbh   [m,d,p] = sum( nplantconow [sel] * areaconow     [sel] )
+                  demandpftdbh   [m,d,p] = sum( demandconow [sel] * areaconow     [sel] )
+                  supplypftdbh   [m,d,p] = sum( supplyconow [sel] * areaconow     [sel] )
                   #----- Intensive properties, use nplant to make them extensive. ---------#
-                  agbpftdbh    [m,d,p] = sum( w.nplant    [sel] * agbconow   [sel] )
-                  gpppftdbh    [m,d,p] = sum( w.nplant    [sel] * gppconow   [sel] )
-                  npppftdbh    [m,d,p] = sum( w.nplant    [sel] * nppconow   [sel] )
-                  mcopftdbh    [m,d,p] = sum( w.nplant    [sel] * mcostconow [sel] )
-                  cbapftdbh    [m,d,p] = sum( w.nplant    [sel] * cbaconow   [sel] )
-                  cbamaxpftdbh [m,d,p] = sum( w.nplant    [sel] * cbamaxconow[sel] )
-                  ldrpftdbh    [m,d,p] = sum( w.nplant    [sel] * ldropconow [sel] )
+                  agbpftdbh      [m,d,p] = sum( w.nplant    [sel] * agbconow      [sel] )
+                  gpppftdbh      [m,d,p] = sum( w.nplant    [sel] * gppconow      [sel] )
+                  npppftdbh      [m,d,p] = sum( w.nplant    [sel] * nppconow      [sel] )
+                  mcopftdbh      [m,d,p] = sum( w.nplant    [sel] * mcostconow    [sel] )
+                  cbapftdbh      [m,d,p] = sum( w.nplant    [sel] * cbaconow      [sel] )
+                  cbalightpftdbh [m,d,p] = sum( w.nplant    [sel] * cbalightconow [sel] )
+                  cbamoistpftdbh [m,d,p] = sum( w.nplant    [sel] * cbamoistconow [sel] )
+                  ldrpftdbh      [m,d,p] = sum( w.nplant    [sel] * ldropconow    [sel] )
                   #----- FSO, use LAI to scale them, we will normalise outside the loop. --#
-                  fsopftdbh    [m,d,p] = sum( laiconow    [sel] * fsoconow   [sel] )
+                  fsopftdbh      [m,d,p] = sum( laiconow    [sel] * fsoconow      [sel] )
                   #----- CBAREL, like FSO, but we use nplant to scale them. ---------------#
-                  cbarelpftdbh [m,d,p] = sum( nplantconow [sel] * cbarelconow[sel] )
+                  cbarelpftdbh   [m,d,p] = sum( nplantconow [sel] * cbarelconow   [sel] )
                   #------------------------------------------------------------------------#
                }#end if
 
@@ -1461,7 +1470,8 @@ for (place in myplaces){
             respco      [[labwhen]] = respconow
             nppco       [[labwhen]] = nppconow
             cbaco       [[labwhen]] = cbaconow
-            cbamaxco    [[labwhen]] = cbamaxconow
+            cbalightco  [[labwhen]] = cbalightconow
+            cbamoistco  [[labwhen]] = cbamoistconow
             cbarelco    [[labwhen]] = cbarelconow
             mcostco     [[labwhen]] = mcostconow
             agbco       [[labwhen]] = agbconow
@@ -1917,7 +1927,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
 
@@ -2082,7 +2095,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
@@ -2229,7 +2245,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             #----- Load variable ----------------------------------------------------------#
@@ -2383,7 +2402,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             #----- Load variable ----------------------------------------------------------#
@@ -2551,7 +2573,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
                #----- Load variable -------------------------------------------------------#
@@ -2642,7 +2667,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
 
@@ -2732,7 +2760,10 @@ for (place in myplaces){
                ,pointsize=ptsz,res=depth)
          }else if(outform[o] == "eps"){
             postscript(file=fichier,width=size$width,height=size$height
-                      ,pointsize=ptsz,paper=paper)
+                      ,pointsize=ptsz,paper=size$paper)
+         }else if(outform[o] == "pdf"){
+            pdf(file=fichier,onefile=FALSE
+               ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
          }#end if
 
          #---------------------------------------------------------------------------------#
@@ -2888,7 +2919,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             #----- Load variable ----------------------------------------------------------#
@@ -3005,7 +3039,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
                #----- Load variable -------------------------------------------------------#
@@ -3119,7 +3156,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
@@ -3227,7 +3267,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
@@ -3348,7 +3391,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
@@ -3442,7 +3488,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste("Mean diurnal cycle \n ",description," - ",lieu,sep="")
@@ -3506,7 +3555,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
             ylimit  = range(thisvar, na.rm=TRUE)
             if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
@@ -3636,7 +3688,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -3806,7 +3861,11 @@ for (place in myplaces){
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
                      postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=paper)
+                               ,pointsize=ptsz,paper=size$paper)
+                  }else if(outform[o] == "pdf"){
+                     pdf(file=fichier,onefile=FALSE
+                        ,width=size$width,height=size$height,pointsize=ptsz
+                        ,paper=size$paper)
                   }#end if
 
                   stcol   = pft$colour[pftww]

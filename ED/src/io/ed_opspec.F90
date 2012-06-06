@@ -1144,6 +1144,7 @@ subroutine ed_opspec_misc
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
+                                    , ddmort_const                 & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
                                     , vmfact_c4                    & ! intent(in)
@@ -1603,10 +1604,18 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 4) then
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 4.  Yours is set to'  &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (ddmort_const < 0. .or. ddmort_const > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid DDMORT_CONST, it must be between 0 and 1.  Yours is set to'   &
+                    ,ddmort_const,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

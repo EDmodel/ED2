@@ -350,8 +350,12 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
                !      Deduct the leaf drop from the carbon balance.                        !
                !---------------------------------------------------------------------------!
-               cpatch%cb    (13,ico)  = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)       
-               cpatch%cb_max(13,ico)  = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)       
+               cpatch%cb          (13,ico)  = cpatch%cb          (13,ico)                  &
+                                            - cpatch%leaf_drop      (ico)
+               cpatch%cb_lightmax (13,ico)  = cpatch%cb_lightmax (13,ico)                  &
+                                            - cpatch%leaf_drop      (ico)
+               cpatch%cb_moistmax (13,ico)  = cpatch%cb_moistmax (13,ico)                  &
+                                            - cpatch%leaf_drop      (ico)
                !---------------------------------------------------------------------------!
 
             elseif(elongf_try > 1.0 .and. cpatch%phenology_status(ico) == 2) then
@@ -418,8 +422,12 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   !------------------------------------------------------------------------!
                   !      Deduct the leaf drop from the carbon balance.                     !
                   !------------------------------------------------------------------------!
-                  cpatch%cb(13,ico)     = cpatch%cb(13,ico) - cpatch%leaf_drop(ico)
-                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
+                  cpatch%cb          (13,ico) = cpatch%cb         (13,ico)                 &
+                                              - cpatch%leaf_drop     (ico)
+                  cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax(13,ico)                 &
+                                              - cpatch%leaf_drop     (ico)
+                  cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax(13,ico)                 &
+                                              - cpatch%leaf_drop     (ico)
                   !------------------------------------------------------------------------!
                end if
 
@@ -529,8 +537,12 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
                !      Deduct the leaf drop from the carbon balance.                        !
                !---------------------------------------------------------------------------!
-               cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
-               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
                !---------------------------------------------------------------------------!
             elseif (cpatch%phenology_status(ico) /= 0) then
                !---------------------------------------------------------------------------!
@@ -751,16 +763,21 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                   cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction)                 &
                                         * cpatch%lai(ico) / cpatch%sla(ico)                &
                                         / cpatch%nplant(ico)
+                  !------------------------------------------------------------------------!
 
                   !----- Update plant carbon pools. ---------------------------------------!
-                  cpatch%balive(ico)   = cpatch%balive(ico) - cpatch%bleaf(ico)
-                  cpatch%bleaf(ico)            = 0.0
-                  cpatch%phenology_status(ico) = 2
-                  cpatch%elongf(ico)           = 0.
-                  cpatch%cb(13,ico)            = cpatch%cb(13,ico)                         &
-                                               - cpatch%leaf_drop(ico)
-                  cpatch%cb_max(13,ico)        = cpatch%cb_max(13,ico)                     &
-                                               - cpatch%leaf_drop(ico)
+                  cpatch%balive              (ico) = cpatch%balive(ico)                    &
+                                                   - cpatch%bleaf(ico)
+                  cpatch%bleaf               (ico) = 0.0
+                  cpatch%phenology_status    (ico) = 2
+                  cpatch%elongf              (ico) = 0.
+                  cpatch%cb               (13,ico) = cpatch%cb           (13,ico)          &
+                                                   - cpatch%leaf_drop       (ico)
+                  cpatch%cb_lightmax      (13,ico) = cpatch%cb_lightmax  (13,ico)          &
+                                                   - cpatch%leaf_drop       (ico)
+                  cpatch%cb_moistmax      (13,ico) = cpatch%cb_moistmax  (13,ico)          &
+                                                   - cpatch%leaf_drop       (ico)
+                  !------------------------------------------------------------------------!
                end if
                
             elseif(theta(kroot) > 1.0 .and. cpatch%phenology_status(ico) == 2) then
@@ -817,9 +834,13 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                   !     Contribution due to the fact that c2n_leaf and c2n_storage may be  !
                   ! different.                                                             !
                   !------------------------------------------------------------------------!
-                  cpatch%bleaf(ico)     = bleaf_new
-                  cpatch%cb(13,ico)     = cpatch%cb(13,ico) - cpatch%leaf_drop(ico)
-                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
+                  cpatch%bleaf          (ico) = bleaf_new
+                  cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                &
+                                              - cpatch%leaf_drop      (ico)
+                  cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                &
+                                              - cpatch%leaf_drop      (ico)
+                  cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                &
+                                              - cpatch%leaf_drop      (ico)
                   !------------------------------------------------------------------------!
                end if
 
@@ -897,8 +918,12 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
                !      Deduct the leaf drop from the carbon balance.                        !
                !---------------------------------------------------------------------------!
-               cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
-               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
+               cpatch%cb          (13,ico) = cpatch%cb          (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_lightmax (13,ico) = cpatch%cb_lightmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
+               cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
+                                           - cpatch%leaf_drop      (ico)
                !---------------------------------------------------------------------------!
             else
                !---------------------------------------------------------------------------!

@@ -152,6 +152,7 @@ module ename_coms
       real                                              :: clump_tree
       real                                              :: clump_grass
       integer                                           :: h2o_plant_lim
+      real                                              :: ddmort_const
       real                                              :: vmfact_c3
       real                                              :: vmfact_c4
       real                                              :: mphoto_trc3
@@ -411,6 +412,7 @@ module ename_coms
       enl%clump_tree                = undef_real
       enl%clump_grass               = undef_real
       enl%h2o_plant_lim             = undef_integer
+      enl%ddmort_const              = undef_real
       enl%vmfact_c3                 = undef_real
       enl%vmfact_c4                 = undef_real
       enl%mphoto_trc3               = undef_real

@@ -110,7 +110,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                    , patchtype             & ! structure
                                    , polygontype           ! ! structure
    use therm_lib8           , only : tl2uint8              ! ! functions
-   use physiology_coms      , only : h2o_plant_lim         ! ! intent(in)
+   use physiology_coms      , only : h2o_plant_lim         & ! intent(in)
+                                   , ddmort_const          ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)  , target     :: initp            ! RK4 structure, intermediate step
@@ -289,7 +290,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       end do
       !------------------------------------------------------------------------------------!
 
-   case (2:4)
+   case (2)
       !------------------------------------------------------------------------------------!
       !     The available water factor is the soil moisture at field capacity minus wilt-  !
       ! ing, scaled by the wilting factor, defined as a function of soil potential.        !

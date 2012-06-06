@@ -39,7 +39,7 @@ $MODEL_GRIDS
    !               change IMONTHH, IDATEH,... and HFILIN, but do NOT change IMONTHA,       !
    !               IDATEA,...                                                              !
    !---------------------------------------------------------------------------------------!
-   RUNTYPE  = 'MAKESFC',
+   RUNTYPE  = 'INITIAL',
    !---------------------------------------------------------------------------------------!
 
 
@@ -55,8 +55,8 @@ $MODEL_GRIDS
    !     Start of simulation or isentropic analysis processing. Information must be given  !
    ! in UTC time.                                                                          !
    !---------------------------------------------------------------------------------------!
-   IMONTHA  =    05,
-   IDATEA   =    01,
+   IMONTHA  =  05,
+   IDATEA   =  01,
    IYEARA   =  2009,
    ITIMEA   =  0000,
    !---------------------------------------------------------------------------------------!
@@ -66,8 +66,8 @@ $MODEL_GRIDS
    !     End of simulation or isentropic analysis processing. Information must be given    !
    ! in UTC time.                                                                          !
    !---------------------------------------------------------------------------------------!
-   IMONTHZ  =    05,
-   IDATEZ   =    31,
+   IMONTHZ  =  06,
+   IDATEZ   =  01,
    IYEARZ   =  2009,
    ITIMEZ   =  0000,
    !---------------------------------------------------------------------------------------!
@@ -92,8 +92,8 @@ $MODEL_GRIDS
    !           a lot, leave this set to 1.  One value for all grids.                       ! 
    !---------------------------------------------------------------------------------------!
    NGRIDS   = 1,
-   NNXP     =  132,  68, 230,
-   NNYP     =  114,  56, 161,
+   NNXP     =  177,  68, 230,
+   NNYP     =   98,  56, 161,
    NNZP     =   44,  44,  44,
    NZG      =   10,
    NZS      =    1,
@@ -153,8 +153,8 @@ $MODEL_GRIDS
    ! DZMAX  -- maximum grid spacing in metres.                                             !
    ! ZZ     -- discrete layers in case you set DELTAZ to zero.                             !
    !---------------------------------------------------------------------------------------!
-   DELTAX   =    21000.,
-   DELTAY   =    21000.,
+   DELTAX   =    25000.,
+   DELTAY   =    25000.,
    DELTAZ   =      100.,
    DZRAT    =      1.08,
    DZMAX    =     1000.,
@@ -184,8 +184,8 @@ $MODEL_GRIDS
    !                  vary as needed.  It is useful for a first  guess of DTLONG, but not  !
    !                  a good option for actual runs because NACOUST tends to be too small. !
    !---------------------------------------------------------------------------------------!
-   DTLONG   = 40.,
-   NACOUST  =   4,
+   DTLONG   = 30.,
+   NACOUST  =   3,
    IDELTAT  =   0,
    !---------------------------------------------------------------------------------------!
 
@@ -231,10 +231,10 @@ $MODEL_GRIDS
    ! CENTLAT -- Latitude of the central point.  One value for each grid.                   !
    ! CENTLON -- Longitude of the central point.  One value for each grid.                  !
    !---------------------------------------------------------------------------------------!
-   POLELAT  =  -3.8,
-   POLELON  = -56.5,
-   CENTLAT  =  -3.8,
-   CENTLON  = -56.5,
+   POLELAT  =  -4.00,
+   POLELON  = -53.00,
+   CENTLAT  =  -4.00,
+   CENTLON  = -53.00,
    !---------------------------------------------------------------------------------------!
 
 
@@ -383,10 +383,10 @@ $MODEL_FILE_INFO
    !              the model gives up and quit.                                             !
    ! NUD_HFILE -- This is the prefix for when NUD_TYPE is set to 1.                        !
    !---------------------------------------------------------------------------------------!
-   VARFPFX   = '/myoutpath/isean/mysimul',
+   VARFPFX   = '/mypath/isean/ecmwf',
    VWAIT1    = 0.,
    VWAITTOT  = 0.,
-   NUD_HFILE = '/myoutpath/histo/mysimul',
+   NUD_HFILE = '/mypath/histo/mysimul',
    !---------------------------------------------------------------------------------------!
 
 
@@ -449,7 +449,7 @@ $MODEL_FILE_INFO
    ! WT_NUDGEC_GRID  --  Grid relative weights for nudging of condensed/frozen water.      !
    !---------------------------------------------------------------------------------------!
    NUD_COND       = 0,
-   COND_HFILE     = '/myoutpath/histo/mysimul-H-2001-07-21-000000-head.txt',
+   COND_HFILE     = '/mypath/histo/mysimul-H-2001-07-21-000000-head.txt',
    TCOND_BEG      = 0.,
    TCOND_END      = 21600.,
    T_NUDGE_RC     = 3600.,
@@ -546,7 +546,7 @@ $MODEL_FILE_INFO
    !              interpolate.                                                             !
    !---------------------------------------------------------------------------------------!
    IF_CUINV   =      0,
-   CU_PREFIX  = '/myoutpath/cumul/mysimul-C-',
+   CU_PREFIX  = '/mypath/cumul/mysimul-C-',
    TNUDCU     =   900.,
    WT_CU_GRID =     1.,   1.,   .5,
    TCU_BEG    =     0., 
@@ -572,7 +572,7 @@ $MODEL_FILE_INFO
    IDATEH   = 01,
    IYEARH   = 2009,
    ITIMEH   = 0600,
-   HFILIN   = '/myoutpath/histo/mysimul',
+   HFILIN   = '/mypath/histo/mysimul',
    !---------------------------------------------------------------------------------------!
 
 
@@ -586,7 +586,7 @@ $MODEL_FILE_INFO
    ! PASTFN  -- In case IPASTIN is 1, this is the input analysis file name.                !
    !---------------------------------------------------------------------------------------!
    IPASTIN   = 0,
-   PASTFN    = '/myoutpath/analy/mysimul-A-2000-01-09-000000-head.txt',
+   PASTFN    = '/mypath/analy/mysimul-A-2000-01-09-000000-head.txt',
    !---------------------------------------------------------------------------------------!
 
 
@@ -613,12 +613,12 @@ $MODEL_FILE_INFO
    ! FRQANL   -- time interval between analysis files.                                     !
    !---------------------------------------------------------------------------------------!
    IOUTPUT  =  2,
-   HFILOUT  = '/myoutpath/histo/mysimul',
-   AFILOUT  = '/myoutpath/analy/mysimul',
+   HFILOUT  = '/mypath/histo/support',
+   AFILOUT  = '/mypath/analy/support',
    ICLOBBER =  1,
    IHISTDEL =  0,
    FRQHIS   = 86400.,
-   FRQANL   =  3600.,
+   FRQANL   = 10800.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -644,18 +644,21 @@ $MODEL_FILE_INFO
    XLITE      = '/0:0/',
    YLITE      = '/0:0/',
    ZLITE      = '/0:0/',
-   NLITE_VARS = 54,
-   LITE_VARS  =        'GLAT',        'GLON',          'UP',          'VP',          'WP',
-                      'THETA',          'PP',          'RV',        'TOPT',        'TKEP',
-                     'CFXUP1',      'CFXUP2',      'CFXDN1',      'DFXUP1',      'DFXUP2',
-                     'EFXUP1',      'EFXUP2',      'DFXDN1',      'EFXDN1',     'SFLUX_U',
-                    'SFLUX_V',      'RSHORT',       'RLONG',       'ACCPR',       'ACCPP',
-                      'ACCPS',       'ACCPA',       'ACCPG',       'ACCPH',      'ACONPR',
-                 'PATCH_AREA',       'USTAR',       'TSTAR',       'RSTAR',      'PBLHGT',
-                    'SFLUX_T',     'SFLUX_R',     'RLONGUP',    'VEG_TEMP',      'ALBEDT',
-                 'SOIL_WATER',     'VEG_LAI',     'SFLUX_W',    'CAN_TEMP',    'CAN_RVAP',
-                'SOIL_ENERGY',  'SOIL_ROUGH',         'RCP',         'RRP',         'RPP',
-                        'RSP',         'RAP',         'RGP',         'RHP',
+   NLITE_VARS = 71,
+   LITE_VARS  =        'GLON',        'GLAT',        'TOPT',      'CONPRR',       'PCPRR',
+                      'PCPRP',       'PCPRS',       'PCPRA',       'PCPRG',       'PCPRH',
+                     'ACONPR',       'ACCPR',       'ACCPP',       'ACCPS',       'ACCPA',
+                      'ACCPG',       'ACCPH',          'PP',          'UP',          'VP',
+                       'TKEP',        'SIGW',       'THETA',          'RV',        'CO2P',
+                        'RCP',         'RRP',         'RPP',         'RSP',         'RAP',
+                        'RGP',         'RHP',          'Q6',          'Q7',     'CUPRLIQ',
+                    'CUPRICE',  'PATCH_AREA', 'PATCH_ROUGH',  'VEG_HEIGHT',    'CAN_PRSS',
+                  'CAN_THETA',    'CAN_RVAP',     'CAN_CO2',       'USTAR',       'TSTAR',
+                      'RSTAR',       'CSTAR',     'VEG_LAI',      'RIBULK',        'ZETA',
+                    'SFLUX_T',     'SFLUX_R',     'SFLUX_C',     'SFLUX_U',     'SFLUX_V',
+                    'SFLUX_W',      'PBLHGT',      'RSHORT',       'RLONG',     'RLONGUP',
+                     'ALBEDT',       'MYNUM', 'SOIL_ENERGY',  'SOIL_WATER',   'SOIL_TEXT',
+                 'LEAF_CLASS',
    !---------------------------------------------------------------------------------------!
 
 
@@ -718,10 +721,10 @@ $MODEL_FILE_INFO
    ! SSTFPFX  -- File path and prefix for SST files                                        !
    ! NDVIFPFX -- File path and prefix for NDVI or LAI files (see IUSELAI).                 !
    !---------------------------------------------------------------------------------------!
-   TOPFILES = '/myoutpath/surfa/mysimul-topog',
-   SFCFILES = '/myoutpath/surfa/mysimul-surfa',
-   SSTFPFX  = '/myoutpath/surfa/mysimul-seast',
-   NDVIFPFX = '/myoutpath/surfa/mysimul-laidx',
+   TOPFILES = '/mypath/surfa/topog',
+   SFCFILES = '/mypath/surfa/surfa',
+   SSTFPFX  = '/mypath/surfa/seast',
+   NDVIFPFX = '/mypath/surfa/laidx',
    !---------------------------------------------------------------------------------------!
 
 
@@ -789,7 +792,7 @@ $MODEL_FILE_INFO
    !---------------------------------------------------------------------------------------!
    ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
    ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/W',
-   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
+   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_defsce/bau2002/BAU-2002_',
    ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_brams406/RADAM+Quesada+IGBP/RADAM+Quesada+IGBP_',
     NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/lai-modis/2001LAI',
    !---------------------------------------------------------------------------------------!
@@ -852,7 +855,7 @@ $MODEL_FILE_INFO
    ! COLTABFN -- path and file name for the collection table.                              !
    !---------------------------------------------------------------------------------------!
    MKCOLTAB = 1,
-   COLTABFN = '/myoutpath/micro/mysimul_4.0.6',
+   COLTABFN = '/mypath/micro/coltab_4.0.6',
    !---------------------------------------------------------------------------------------!
 $END
 !==========================================================================================!
@@ -890,7 +893,7 @@ $CUPARM_OPTIONS
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-   NCLOUDS  = 2,
+   NCLOUDS  = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -946,8 +949,8 @@ $CUPARM_OPTIONS
    !             (grell_coms.f90).  Default min_down_radius is 900.                        !
    ! DEPTH_MIN - Minimum depth that the cloud must have [m].                               !
    !---------------------------------------------------------------------------------------!
-   RADIUS    = 12000., 600., ! 4577., 1746., 666.,
-   DEPTH_MIN =  1200., 100., ! 457.7, 174.6, 66.6,
+   RADIUS    = 9000., 3000.,  600.,
+   DEPTH_MIN = 3000., 1000.,  200.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -964,7 +967,7 @@ $CUPARM_OPTIONS
    !           velocity and sigma-w and assuming normal distribution, so this option works !
    !           only when IDIFFK is 1 or 7.                                                 !
    !---------------------------------------------------------------------------------------!
-   CAP_MAXS  =  -25.,
+   CAP_MAXS  = -25.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -972,11 +975,11 @@ $CUPARM_OPTIONS
    !---------------------------------------------------------------------------------------!
    !     The following variables are scalars.                                              !
    !---------------------------------------------------------------------------------------!
-   CLD2PREC = 0.001,  ! Ratio of conversion of condensates to precipitation.       [   ---]
-   ZKBMAX   = 4000.,  ! Maximum AGL height in which updrafts can originate.        [     m]
-   ZCUTDOWN = 3000.,  ! Maximum AGL height in which downdrafts can originate.      [     m]
-   Z_DETR   = 1250.,  ! Top of the downdraft detrainment layer                     [     m]
-   MAX_HEAT =  600.,  ! Maximum heating rate allowed for feedback                  [ K/day]
+   CLD2PREC = -0.500,     ! Ratio of conversion of condensates to precipitation.   [   ---]
+   ZKBMAX   =  4000.,     ! Maximum AGL height in which updrafts can originate.    [     m]
+   ZCUTDOWN =  3000.,     ! Maximum AGL height in which downdrafts can originate.  [     m]
+   Z_DETR   =  1250.,     ! Top of the downdraft detrainment layer                 [     m]
+   MAX_HEAT =   400.,     ! Maximum heating rate allowed for feedback              [ K/day]
    !---------------------------------------------------------------------------------------!
 
 
@@ -991,6 +994,7 @@ $CUPARM_OPTIONS
    !  !------+--------------------------------+------+------+----------------------------! !
    !  ! EN   | Ensemble (all closures)        | yes  |  no  | Grell and Dévényi, 2002    ! !
    !  ! NC   | Ensemble, excluding LO and MC  | yes  | yes  | Grell and Dévényi, 2002    ! !
+   !  ! QI   | Ensemble, with AS and KF only  | yes  | yes  | Grell and Dévényi, 2002    ! !
    !  ! GR   | Modified quasi-equilibrium ABE | yes  | yes  | Grell, 1993                ! !
    !  ! LO   | Low level omega                | yes  |  no  | Frank and Cohen, 1987      ! !
    !  ! MC   | moisture convergence           | yes  |  no  | Krishnamurti et al., 1983  ! !
@@ -999,8 +1003,10 @@ $CUPARM_OPTIONS
    !  !----------------------------------------------------------------------------------! !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   CLOSURE_TYPE = 'NC',
+   CLOSURE_TYPE = 'QI',
    !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    The following variables will define the ensemble members other than the reference  !
@@ -1057,7 +1063,7 @@ $MODEL_OPTIONS
 
    !---------------------------------------------------------------------------------------!
    ! IADVEC -- 1 - Original advection scheme                                               !
-   !           2 - Monotic advection scheme, as in Freitas et al. (2001, in press JAMES).  !
+   !           2 - Monotonic advection scheme, Freitas et al. (2012, in press JAMES).      !
    !---------------------------------------------------------------------------------------!
    IADVEC   = 1,
    !---------------------------------------------------------------------------------------!
@@ -1208,8 +1214,8 @@ $MODEL_OPTIONS
       !                    will be the minimum SITE area (I know it's confusing, but the   !
       !                    definition of PATCH in LEAF is different from ED).              !
       !------------------------------------------------------------------------------------!
-      NPATCH         = 5,
-      NVEGPAT        = 4,
+      NPATCH         = 2,
+      NVEGPAT        = 1,
       MIN_PATCH_AREA = 0.005,
       !------------------------------------------------------------------------------------!
 
@@ -1235,7 +1241,7 @@ $MODEL_OPTIONS
       !           must not exceed DTLONG.  In case DTLONG < DTLEAF, DTLONG will be used    !
       !           instead
       !------------------------------------------------------------------------------------!
-      ISFCL  =  1,
+      ISFCL  =  5,
       DTLEAF = 6.,
       !------------------------------------------------------------------------------------!
 
@@ -1342,7 +1348,7 @@ $MODEL_OPTIONS
       !           or 1, only the first value will be considered, and if ICO2=2, then       !
       !           provide one value per level.  Unit here is µmol/mol.                     !
       !------------------------------------------------------------------------------------!
-      ICO2   =    0,
+      ICO2   =    1,
       CO2CON = 380.,
       !------------------------------------------------------------------------------------!
 
@@ -1481,8 +1487,8 @@ $MODEL_OPTIONS
       !------------------------------------------------------------------------------------!
       SOIL_MOIST = 'i',
       SOIL_MOIST_FAIL = 's',
-      USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soilmoisture/mysmds/GL_SM.mysmds.',
-      USMODEL_IN = '/myoutpath/surfa/mysimul-lesmo',
+      USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soilmoisture/GPNR/GL_SM.GPNR.',
+      USMODEL_IN = '/mypath/surfa/lesmo',
       !------------------------------------------------------------------------------------!
 
 
@@ -1788,7 +1794,7 @@ $MODEL_OPTIONS
       !          is set to 5, CPARM represents the concentration of CCN.  Otherwise, the   !
       !          value is ignored if the IXXXX variable is set to 5.                       !
       !------------------------------------------------------------------------------------!
-      CPARM   =  .3e9,  ! cloud droplets, or less frequently, CCN
+      CPARM   =  3.e8,  ! cloud droplets, or less frequently, CCN
       RPARM   =  1e-3,  ! rain drops
       PPARM   =  0.,    ! pristine ice (ignored as IPRIS must be 5)
       SPARM   =  1e-3,  ! snow
@@ -1841,7 +1847,7 @@ $ED2_INFO
    !          If time is a problem, i.e., the runs are too slow, then try making it        !
    !          larger, but not much larger so to avoid problems...                          !
    !---------------------------------------------------------------------------------------!
-   DTLSM  = 240.0,
+   DTLSM  = 600.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1915,8 +1921,8 @@ $ED2_INFO
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
-   FFILOUT   = '/myoutpath/ecoss/mysimul',
-   SFILOUT   = '/myoutpath/ecort/mysimul',
+   FFILOUT   = '/mypath/ecoss/support',
+   SFILOUT   = '/mypath/ecort/support',
    !---------------------------------------------------------------------------------------!
 
 
@@ -1986,7 +1992,7 @@ $ED2_INFO
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   SFILIN   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/sa2.2008/BAU',
+   SFILIN   = '/n/moorcroft_data/data/ed2_data/restarts_sci_006/potveg/PVE_',
    !---------------------------------------------------------------------------------------!
 
 
@@ -2121,7 +2127,7 @@ $ED2_INFO
    !                   2.  Similar to 1, but branches are treated as separate pools in the !
    !                       biophysics (thus doubling the number of prognostic variables).  !
    !---------------------------------------------------------------------------------------!
-   IBRANCH_THERMO = 0,        
+   IBRANCH_THERMO = 1,        
    !---------------------------------------------------------------------------------------!
 
 
@@ -2312,14 +2318,14 @@ $ED2_INFO
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   ICANRAD        =      0,
-   LTRANS_VIS     =  0.028,
-   LTRANS_NIR     =  0.248,
-   LREFLECT_VIS   =  0.062,
-   LREFLECT_NIR   =  0.630,
-   ORIENT_TREE    =  0.250,
-   ORIENT_GRASS   = -0.300,
-   CLUMP_TREE     =  1.000,
+   ICANRAD        =  0,
+   LTRANS_VIS     =  0.050,
+   LTRANS_NIR     =  0.270,
+   LREFLECT_VIS   =  0.100,
+   LREFLECT_NIR   =  0.540,
+   ORIENT_TREE    =  0.100,
+   ORIENT_GRASS   = -0.100,
+   CLUMP_TREE     =  0.800,
    CLUMP_GRASS    =  1.000,
    !---------------------------------------------------------------------------------------!
 
@@ -2345,16 +2351,37 @@ $ED2_INFO
    !                  not limiting (the psi_0 term).  The supply is determined differently !
    !                  depending on the H2O_PLANT_LIM flag:                                 !
    !                  0.  Supply = Infinity (FSW = 1).                                     !
-   !                  1.  Supply = Kw *                                  !
-   !                  2.  Alternative and experimental method based on CLM.  It checks     !
-   !                      the water potential only, with all contribution of transpiration !
-   !                      accounted by gsw.  It also ignores root biomass.                 !
-   !                  3.  Tentative method.  FSW = 1, but D0 decays exponentially with     !
-   !                      soil potential.  The decay coefficient is a function of the      !
-   !                      ratio between leaves and root when on-allometry, so plants that  !
-   !                      invest more in roots take advantage.                             !
+   !                  1.  Available water is the total soil water above wilting point,     !
+   !                      integrated across all layers within the rooting zone.            !
+   !                  2.  Available water is the soil water at field capacity minus        !
+   !                      wilting point, scaled by the so-called wilting factor:           !
+   !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
+   !                      where psi is the matric potentital at layer k, z is the layer    !
+   !                      depth, H it the crown height and psi_fc and psi_wp are the       !
+   !                      matric potentials at wilting point and field capacity.  This is  !
    !---------------------------------------------------------------------------------------!
-   H2O_PLANT_LIM   = 1,
+   H2O_PLANT_LIM   = 2,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  DDMORT_CONST -- This constant (k) determines the relative contribution of light and  !
+   !                  soil water to the density-dependent mortality rate.  Values range    !
+   !                  from 0 (water only) to 1 (light only).  This variable makes a        !
+   !                  difference only if H2O_PLANT_LIM is not zero.                        !
+   !                                                                                       !
+   !                                   m1                                                  !
+   !                  mu_DD = ----------------------                                       !
+   !                            1 + exp [ m2 * cr ]                                        !
+   !                                                                                       !
+   !                   1               1                             1                     !
+   !                 ---- = k ------------------ + (1 - k)  ------------------             !
+   !                  cr              CB                            CB                     !
+   !                            --------------                --------------               !
+   !                             CB_max_light                  CB_max_moist                !
+   !---------------------------------------------------------------------------------------!
+   DDMORT_CONST    = 1.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2400,25 +2427,25 @@ $ED2_INFO
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   VMFACT_C3       =   1.25,
-   VMFACT_C4       =   1.00,
-   MPHOTO_TRC3     =    9.0,
-   MPHOTO_TEC3     =    7.2,
-   MPHOTO_C4       =    5.0,
+   VMFACT_C3       = 1.00,
+   VMFACT_C4       = 1.00,
+   MPHOTO_TRC3     = 9.0,
+   MPHOTO_TEC3     = 7.2,
+   MPHOTO_C4       = 5.2,
    BPHOTO_BLC3     = 10000.,
    BPHOTO_NLC3     = 1000.,
-   BPHOTO_C4       = 8000.,
-   KW_GRASS        =   300.,
-   KW_TREE         =   300.,
-   GAMMA_C3        =  0.015,
-   GAMMA_C4        =  0.036,
-   D0_GRASS        =  0.015,
-   D0_TREE         =  0.015,
-   ALPHA_C3        =  0.080,
-   ALPHA_C4        =  0.053,
-   KLOWCO2IN       =  4000.,
-   RRFFACT         =  1.000,
-   GROWTHRESP      =  0.33333333333,
+   BPHOTO_C4       = 10000.,
+   KW_GRASS        = 900.,
+   KW_TREE         = 600.,
+   GAMMA_C3        = 0.015,
+   GAMMA_C4        = 0.040,
+   D0_GRASS        = 0.016,
+   D0_TREE         = 0.016,
+   ALPHA_C3        = 0.080,
+   ALPHA_C4        = 0.055,
+   KLOWCO2IN       = 4000.,
+   RRFFACT         = 1.000,
+   GROWTHRESP      = 0.333,
    LWIDTH_GRASS    = 0.05,
    LWIDTH_BLTREE   = 0.10,
    LWIDTH_NLTREE   = 0.05,
@@ -2439,7 +2466,7 @@ $ED2_INFO
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   THETACRIT       = -0.75,
+   THETACRIT       = -1.20,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2499,7 +2526,7 @@ $ED2_INFO
    !                           greater than this value.                                    !
    !---------------------------------------------------------------------------------------!
    INCLUDE_FIRE    = 2,
-   FIRE_PARAMETER  = 1.,
+   FIRE_PARAMETER  = 0.5,
    SM_FIRE         = -1.40,
    !---------------------------------------------------------------------------------------!
 
@@ -2557,7 +2584,7 @@ $ED2_INFO
    ! 7 - southern pines                   | 17 - "Araucaria" (non-optimised                !
    ! 8 - late conifers                    |      Southern Pines).                          !
    !---------------------------------------------------------------------------------------!
-   INCLUDE_THESE_PFT = 1,2,3,4,16,17,
+   INCLUDE_THESE_PFT = 1,2,3,4,16,
    AGRI_STOCK        = 1,
    PLANTATION_STOCK  = 3,
    !---------------------------------------------------------------------------------------!
@@ -2594,8 +2621,8 @@ $ED2_INFO
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH       =    10,
-   MAXCOHORT      =    60,
+   MAXPATCH       =    20,
+   MAXCOHORT      =    80,
    MIN_PATCH_AREA = 0.005,
    !---------------------------------------------------------------------------------------!
 
@@ -2663,7 +2690,7 @@ $ED2_INFO
    ! between direct and diffuse is done by the Harrington scheme, and we just do a split   !
    ! between NIR and PAR using some standard factors.                                      !
    !---------------------------------------------------------------------------------------!
-   IMETRAD      = 0,
+   IMETRAD      = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2697,7 +2724,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    IEDCNFGF   = 'config.xml',
    EVENT_FILE = '',
-   PHENPATH   = '/myoutpath/inputs',
+   PHENPATH   = '/mypath/inputs',
    !---------------------------------------------------------------------------------------!
 $END
 !==========================================================================================!
@@ -2933,7 +2960,7 @@ $ISAN_CONTROL
    !           both VARPFX and VARFPFX set to the same name, so you can start running the  !
    !           RUNTYPE = 'INITIAL' right away.                                             !
    !---------------------------------------------------------------------------------------!
-   VARPFX    = 'myoutpath/isean/mysimul',
+   VARPFX    = '/n/moorcroftfs2/mlongo/EDBRAMS/coupled/sci006_spinup/optim_grell/isean/ecmwf',
    !---------------------------------------------------------------------------------------!
 
 

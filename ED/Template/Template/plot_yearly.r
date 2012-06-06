@@ -8,10 +8,11 @@ yearbeg        = thisyeara         # First year to consider
 yearend        = thisyearz         # Maximum year to consider
 season.mona    = thisseasonmona
 myplaces       = c("thispoly")
-outform        = "png"           # Formats for output file.  Supported formats are:
+outform        = "thisoutform"           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
+                                 #   - "pdf" - for PDF printing
 
 byeold         = TRUE           # Remove old files of the given format?
 
@@ -529,8 +530,11 @@ for (place in myplaces){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
-               postscript(file=fichier,width=size$width,height=size$height,pointsize=ptsz
-                         ,paper=paper)
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
             
             letitre = paste(lieu," \n",desc,sep="")
@@ -634,8 +638,11 @@ for (place in myplaces){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
-               postscript(file=fichier,width=size$width,height=size$height,pointsize=ptsz
-                         ,paper=paper)
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
             
             letitre = paste(lieu," \n Year comparison: ",desc,sep="")
@@ -744,7 +751,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
 

@@ -1,4 +1,4 @@
-#----- This should be called before anything else, don't define stuff before this line. ---#
+#----- This should be called before anything else, don't define stuff before this line. ------#
 rm(list=ls())
 
 #----- workdir is the user-defined variable section. -----------------------------------------#

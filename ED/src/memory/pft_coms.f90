@@ -280,6 +280,13 @@ module pft_coms
    real, dimension(n_pft) :: mort3 
 
    !---------------------------------------------------------------------------------------!
+   !     This variable sets up the relative carbon balance when plants are experiencing    !
+   ! severe stress (i.e., when the maximum carbon balance is negative due to severe light  !
+   ! or water stress).                                                                     !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: cbr_severe_stress
+
+   !---------------------------------------------------------------------------------------!
    !     This variable determines how rapidly trees die if it is too cold for them         !
    ! [1/years].                                                                            !
    !---------------------------------------------------------------------------------------!

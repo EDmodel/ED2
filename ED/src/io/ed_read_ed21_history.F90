@@ -109,6 +109,7 @@ subroutine read_ed21_history_file
    real                                :: elim_lai
    real                                :: salloc
    real                                :: salloci
+   logical                             :: foundvar
    !----- Local constants. ----------------------------------------------------------------!
    real                  , parameter   :: tiny_biomass = 1.e-20
    !----- External function. --------------------------------------------------------------!
@@ -327,9 +328,9 @@ subroutine read_ed21_history_file
          memsize(1)  = 1_8
          !---- The ipy:ipy notation is needed for ifort when checking interfaces. ---------!
          call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '                &
-                           ,dsetrank,iparallel,.true.)
-         call hdf_getslab_i(cgrid%ncol_soil(ipy:ipy),'NCOL_SOIL ',dsetrank,iparallel,.true.)
-         call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
+                           ,dsetrank,iparallel,.true.,foundvar)
+         call hdf_getslab_i(cgrid%ncol_soil(ipy:ipy),'NCOL_SOIL ',dsetrank,iparallel,.true.,foundvar)
+         call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.,foundvar)
          
          !----- Load the workload (2D). ---------------------------------------------------!
          dsetrank    = 2
@@ -345,7 +346,8 @@ subroutine read_ed21_history_file
          memdims(2)  = 1_8
          memsize(2)  = 1_8
          memoffs(2)  = 0_8
-         call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank,iparallel,.false.)
+         call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank,iparallel,.false.   &
+                           ,foundvar)
          !---------------------------------------------------------------------------------!
 
 
@@ -365,7 +367,7 @@ subroutine read_ed21_history_file
          chnkoffs(2)  = int(py_index - 1,8)
          memoffs(2)   = 0_8
          call hdf_getslab_i(cgrid%ntext_soil(nzg:nzg,ipy),'NTEXT_SOIL ',dsetrank           &
-                           ,iparallel,.true.)
+                           ,iparallel,.true.,foundvar)
          !----- Now fill the soil column based on the top layer data. ---------------------!
          do k=1,nzg-1
             cgrid%ntext_soil(k,ipy) = cgrid%ntext_soil(nzg,ipy)
@@ -384,7 +386,7 @@ subroutine read_ed21_history_file
          memdims(1)  = int(pysi_n(py_index),8)
          memsize(1)  = int(pysi_n(py_index),8)
          memoffs(1)  = 0_8  
-         call hdf_getslab_i(islakesite,'ISLAKESITE ',dsetrank,iparallel,.false.)
+         call hdf_getslab_i(islakesite,'ISLAKESITE ',dsetrank,iparallel,.false.,foundvar)
 
          ndry_sites = int(pysi_n(py_index))-sum(islakesite)
          !---------------------------------------------------------------------------------!
@@ -424,23 +426,23 @@ subroutine read_ed21_history_file
                memoffs(1)  = 0_8
 
                call hdf_getslab_r( cpoly%area       (is:is), 'AREA_SI '                    &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%moist_f    (is:is), 'MOIST_F '                    &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%moist_W    (is:is), 'MOIST_W '                    &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%elevation  (is:is), 'ELEVATION '                  &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%slope      (is:is), 'SLOPE '                      &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%aspect     (is:is), 'ASPECT '                     &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%TCI        (is:is), 'TCI '                        &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_i( cpoly%ncol_soil  (is:is), 'NCOL_SOIL_SI '               &
-                                 , dsetrank, iparallel, .true.)
+                                 , dsetrank, iparallel, .true.,foundvar)
 
                !----- Load 2D dataset. ----------------------------------------------------!
                dsetrank     = 2_8
@@ -458,7 +460,7 @@ subroutine read_ed21_history_file
                memsize(2)   = int(1,8)
                memoffs(2)   = 0_8
                call hdf_getslab_i(cpoly%ntext_soil(nzg:nzg,is:is),'NTEXT_SOIL_SI '         &
-                                 ,dsetrank,iparallel,.true.)
+                                 ,dsetrank,iparallel,.true.,foundvar)
 
 
 
@@ -501,30 +503,30 @@ subroutine read_ed21_history_file
                   memoffs(1)  = 0
 
                   call hdf_getslab_i(csite%dist_type ,'DIST_TYPE '                         &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%age       ,'AGE '                               &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%area      ,'AREA '                              &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%sum_dgd   ,'SUM_DGD '                           &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%sum_chd   ,'SUM_CHD '                           &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_i(csite%plantation,'PLANTATION '                        &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
 
                   call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '               &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '         &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
 
 
                   !------------------------------------------------------------------------!
@@ -571,13 +573,13 @@ subroutine read_ed21_history_file
                         memoffs(1)  = 0_8
 
                         call hdf_getslab_r(cpatch%dbh   ,'DBH '                            &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%bdead ,'BDEAD '                          &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_i(cpatch%pft   ,'PFT '                            &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%nplant,'NPLANT '                         &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
 
                         !------------------------------------------------------------------!
                         !    Find derived properties from Bdead.  In the unlikely case     !
@@ -614,27 +616,48 @@ subroutine read_ed21_history_file
                            cpatch%phenology_status(ico) = 0
                         end do
 
-                        !----- Then the 2-D variables. ------------------------------------!
-                        dsetrank    = 2
-                        globdims(1) = 13_8
-                        chnkdims(1) = 13_8
-                        chnkoffs(1) = 0_8
-                        memdims(1)  = 13_8
-                        memsize(1)  = 13_8
-                        memoffs(2)  = 0_8
-                        globdims(2) = int(dset_ncohorts_global,8)
-                        chnkdims(2) = int(cpatch%ncohorts,8)
-                        chnkoffs(2) = int(paco_id(pa_index) - 1,8)
-                        memdims(2)  = int(cpatch%ncohorts,8)
-                        memsize(2)  = int(cpatch%ncohorts,8)
-                        memoffs(2)  = 0_8
 
-                        call hdf_getslab_r(cpatch%cb    ,'CB '                             &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%cb_max,'CB_MAX '                         &
-                                          ,dsetrank,iparallel,.true.)
-                        
-                        
+                        !------------------------------------------------------------------!
+                        !     Carbon balance variables.                                    !
+                        ! MLO.  I commented this out because a restart is likely to have   !
+                        !       different settings and different environment, so it's      !
+                        !       likely that the system will reach a different equilibrium. !
+                        !       For simplicity, we just use the typical initialisation in  !
+                        !       which we give plants one year to adjust to the new         !
+                        !       conditions.                                                !
+                        !------------------------------------------------------------------!
+                        ! dsetrank    = 2
+                        ! globdims(1) = 13_8
+                        ! chnkdims(1) = 13_8
+                        ! chnkoffs(1) = 0_8
+                        ! memdims(1)  = 13_8
+                        ! memsize(1)  = 13_8
+                        ! memoffs(2)  = 0_8
+                        ! globdims(2) = int(dset_ncohorts_global,8)
+                        ! chnkdims(2) = int(cpatch%ncohorts,8)
+                        ! chnkoffs(2) = int(paco_id(pa_index) - 1,8)
+                        ! memdims(2)  = int(cpatch%ncohorts,8)
+                        ! memsize(2)  = int(cpatch%ncohorts,8)
+                        ! memoffs(2)  = 0_8
+
+                        ! call hdf_getslab_r(cpatch%cb    ,'CB '                           &
+                        !                   ,dsetrank,iparallel,.true.,foundvar)
+                        ! call hdf_getslab_r(cpatch%cb_lightmax,'CB_LIGHTMAX '             &
+                        !                   ,dsetrank,iparallel,.true.,foundvar)
+                        ! call hdf_getslab_r(cpatch%cb_moistmax,'CB_MOISTMAX '             &
+                        !                   ,dsetrank,iparallel,.true.,foundvar)
+                        do ico = 1, cpatch%ncohorts
+                           cpatch%cb          (1:12,ico) = 1.0
+                           cpatch%cb_lightmax (1:12,ico) = 1.0
+                           cpatch%cb_moistmax (1:12,ico) = 1.0
+                           cpatch%cb          (  13,ico) = 0.0
+                           cpatch%cb_lightmax (  13,ico) = 0.0
+                           cpatch%cb_moistmax (  13,ico) = 0.0
+                        end do
+                        !------------------------------------------------------------------!
+
+
+
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!
                            !    We will now check the PFT of each cohort, so we determine  !
@@ -993,6 +1016,7 @@ subroutine read_ed21_history_unstruct
    real                                                         :: elim_lai
    real                                                         :: salloc
    real                                                         :: salloci
+   logical                                                      :: foundvar
    !----- Local constants. ----------------------------------------------------------------!
    real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
@@ -1364,8 +1388,9 @@ subroutine read_ed21_history_unstruct
 
             !---- The ipy:ipy notation is needed for ifort when checking interfaces. ------!
             call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '             &
-                              ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
+                              ,dsetrank,iparallel,.true.,foundvar)
+            call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.       &
+                              ,foundvar)
             
             !----- Load the workload (2D). ------------------------------------------------!
             dsetrank    = 2
@@ -1382,7 +1407,7 @@ subroutine read_ed21_history_unstruct
             memsize(2)  = 1_8
             memoffs(2)  = 0_8
             call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank                  &
-                              ,iparallel,.false.)
+                              ,iparallel,.false.,foundvar)
             !------------------------------------------------------------------------------!
 
 
@@ -1400,7 +1425,7 @@ subroutine read_ed21_history_unstruct
             memdims(1)  = int(pysi_n(py_index),8)
             memsize(1)  = int(pysi_n(py_index),8)
             memoffs(1)  = 0_8
-            call hdf_getslab_i(islakesite,'ISLAKESITE ',dsetrank,iparallel,.false.)
+            call hdf_getslab_i(islakesite,'ISLAKESITE ',dsetrank,iparallel,.false.,foundvar)
             ndry_sites = int(pysi_n(py_index))-sum(islakesite)
             !------------------------------------------------------------------------------!
 
@@ -1461,23 +1486,23 @@ subroutine read_ed21_history_unstruct
                   memoffs (1) = 0_8
 
                   call hdf_getslab_r( tpoly_area       (is:is)     , 'AREA_SI '            &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_moist_f    (is:is)     , 'MOIST_F '            &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_moist_W    (is:is)     , 'MOIST_W '            &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_elevation  (is:is)     , 'ELEVATION '          &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_slope      (is:is)     , 'SLOPE '              &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_aspect     (is:is)     , 'ASPECT '             &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_TCI        (is:is)     , 'TCI '                &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_i( tpoly_lsl        (is:is)     ,'LSL_SI '              &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
 
 
@@ -1496,7 +1521,7 @@ subroutine read_ed21_history_unstruct
                   memsize(2)   = int(1,8)
                   memoffs(2)   = 0_8
                   call hdf_getslab_i( this_ntext     (:,is)     , 'NTEXT_SOIL_SI '         &
-                                    , dsetrank, iparallel, .true.)
+                                    , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
 
 
@@ -1607,29 +1632,29 @@ subroutine read_ed21_history_unstruct
                   memoffs(1)  = 0
 
                   call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%age               ,'AGE '                       &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%area              ,'AREA '                      &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%sum_dgd           ,'SUM_DGD '                   &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                   &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_i(csite%plantation        ,'PLANTATION '                &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '               &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '         &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
-                                    ,dsetrank,iparallel,.true.)
+                                    ,dsetrank,iparallel,.true.,foundvar)
 
                   !------------------------------------------------------------------------!
                   !     Check whether area should be re-scaled.                            !
@@ -1715,13 +1740,13 @@ subroutine read_ed21_history_unstruct
                         memoffs(1)  = 0_8
 
                         call hdf_getslab_r(cpatch%dbh             ,'DBH '                  &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_i(cpatch%pft             ,'PFT '                  &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%nplant          ,'NPLANT '               &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
 
                         !------------------------------------------------------------------!
                         !    Find derived properties from Bdead.  In the unlikely case     !
@@ -1759,25 +1784,44 @@ subroutine read_ed21_history_unstruct
                            cpatch%phenology_status(ico) = 0
                         end do
 
-                        !----- Then the 2-D variables. ------------------------------------!
-                        dsetrank    = 2
-                        globdims(1) = 13_8
-                        chnkdims(1) = 13_8
-                        chnkoffs(1) = 0_8
-                        memdims(1)  = 13_8
-                        memsize(1)  = 13_8
-                        memoffs(2)  = 0_8
-                        globdims(2) = int(dset_ncohorts_global,8)
-                        chnkdims(2) = int(cpatch%ncohorts,8)
-                        chnkoffs(2) = int(paco_id(pa_index) - 1,8)
-                        memdims(2)  = int(cpatch%ncohorts,8)
-                        memsize(2)  = int(cpatch%ncohorts,8)
-                        memoffs(2)  = 0_8
+                        !------------------------------------------------------------------!
+                        !     Carbon balance variables.                                    !
+                        ! MLO.  I commented this out because a restart is likely to have   !
+                        !       different settings and different environment, so it's      !
+                        !       likely that the system will reach a different equilibrium. !
+                        !       For simplicity, we just use the typical initialisation in  !
+                        !       which we give plants one year to adjust to the new         !
+                        !       conditions.                                                !
+                        !------------------------------------------------------------------!
+                        ! dsetrank    = 2
+                        ! globdims(1) = 13_8
+                        ! chnkdims(1) = 13_8
+                        ! chnkoffs(1) = 0_8
+                        ! memdims(1)  = 13_8
+                        ! memsize(1)  = 13_8
+                        ! memoffs(2)  = 0_8
+                        ! globdims(2) = int(dset_ncohorts_global,8)
+                        ! chnkdims(2) = int(cpatch%ncohorts,8)
+                        ! chnkoffs(2) = int(paco_id(pa_index) - 1,8)
+                        ! memdims(2)  = int(cpatch%ncohorts,8)
+                        ! memsize(2)  = int(cpatch%ncohorts,8)
+                        ! memoffs(2)  = 0_8
 
-                        call hdf_getslab_r(cpatch%cb    ,'CB '                             &
-                                          ,dsetrank,iparallel,.true.)
-                        call hdf_getslab_r(cpatch%cb_max,'CB_MAX '                         &
-                                          ,dsetrank,iparallel,.true.)
+                        ! call hdf_getslab_r(cpatch%cb    ,'CB '                           &
+                        !                   ,dsetrank,iparallel,.true.,foundvar)
+                        ! call hdf_getslab_r(cpatch%cb_lightmax,'CB_LIGHTMAX '             &
+                        !                   ,dsetrank,iparallel,.true.,foundvar)
+                        ! call hdf_getslab_r(cpatch%cb_moistmax,'CB_MOISTMAX '             &
+                        !                   ,dsetrank,iparallel,.true.,foundvar)
+                        do ico = 1, cpatch%ncohorts
+                           cpatch%cb          (1:12,ico) = 1.0
+                           cpatch%cb_lightmax (1:12,ico) = 1.0
+                           cpatch%cb_moistmax (1:12,ico) = 1.0
+                           cpatch%cb          (  13,ico) = 0.0
+                           cpatch%cb_lightmax (  13,ico) = 0.0
+                           cpatch%cb_moistmax (  13,ico) = 0.0
+                        end do
+                        !------------------------------------------------------------------!
 
                         cohortloop: do ico=1,cpatch%ncohorts
                            !---------------------------------------------------------------!

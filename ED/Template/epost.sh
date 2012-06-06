@@ -1,20 +1,27 @@
 #!/bin/bash
 . ${HOME}/.bashrc
 here=`pwd`                            # ! Main path
-diskthere='/n/scratch2/moorcroft_lab' # ! Disk where the output files are
-thisqueue='wofsy'                     # ! Queue where jobs should be submitted
+diskthere='/n/moorcroftfs2'           # ! Disk where the output files are
+thisqueue='moorcroft2b'               # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot='/n/moorcroftfs2/mlongo/diary/XXXXXXXXXXX/figures/xxx_XXX/xxxxxxxx'
 submit='y'       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-onemetcycle='n'  # Plot only one met cycle only (ignored by plot_eval_ed.r/plot_census.r)
+onemetcycle='y'  # Plot only one met cycle only (ignored by plot_eval_ed.r/plot_census.r)
 shiftiata=''     # Places that we must shift the cycle
-shiftcycle=-1    # In case your met driver doesn't match the model simulation
+shiftcycle=-5    # In case your met driver doesn't match the model simulation
 #----- Check whether to use openlava or typical job submission. ---------------------------#
 openlava='n'
 #----- Yearly comparison . ----------------------------------------------------------------#
 seasonmona=1
+#----- Census comparison. -----------------------------------------------------------------#
+varcycle='TRUE'  # Find the average mortality for various cycles (TRUE/FALSE).
+#----- Output format. ---------------------------------------------------------------------#
+outform='pdf'    # x11 - On screen (deprecated on shell scripts)
+                 # png - Portable Network Graphics
+                 # eps - Encapsulated Post Script
+                 # pdf - Portable Document Format
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -122,7 +129,7 @@ echo 'Number of polygons: '${npolys}'...'
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-rscripts="plot_monthly.r"
+rscripts="plot_census.r" # plot_monthly.r plot_yearly.r"
 #rscripts="patchprops.r plot_photo.r"
 #rscripts="patchprops.r"
 
@@ -141,88 +148,89 @@ do
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
    oi=`head -${line} ${lonlat} | tail -1`
-   polyname=`echo ${oi}        | awk '{print $1 }'`
-   polyiata=`echo ${oi}        | awk '{print $2 }'`
-   polylon=`echo ${oi}         | awk '{print $3 }'`
-   polylat=`echo ${oi}         | awk '{print $4 }'`
-   yeara=`echo ${oi}           | awk '{print $5 }'`
-   montha=`echo ${oi}          | awk '{print $6 }'`
-   datea=`echo ${oi}           | awk '{print $7 }'`
-   timea=`echo ${oi}           | awk '{print $8 }'`
-   yearz=`echo ${oi}           | awk '{print $9 }'`
-   monthz=`echo ${oi}          | awk '{print $10}'`
-   datez=`echo ${oi}           | awk '{print $11}'`
-   timez=`echo ${oi}           | awk '{print $12}'`
-   polyisoil=`echo ${oi}       | awk '{print $13}'`
-   polyntext=`echo ${oi}       | awk '{print $14}'`
-   polysand=`echo ${oi}        | awk '{print $15}'`
-   polyclay=`echo ${oi}        | awk '{print $16}'`
-   polydepth=`echo ${oi}       | awk '{print $17}'`
-   polycol=`echo ${oi}         | awk '{print $18}'`
-   slzres=`echo ${oi}          | awk '{print $19}'`
-   queue=`echo ${oi}           | awk '{print $20}'`
-   metdriver=`echo ${oi}       | awk '{print $21}'`
-   dtlsm=`echo ${oi}           | awk '{print $22}'`
-   vmfactc3=`echo ${oi}        | awk '{print $23}'`
-   vmfactc4=`echo ${oi}        | awk '{print $24}'`
-   mphototrc3=`echo ${oi}      | awk '{print $25}'`
-   mphototec3=`echo ${oi}      | awk '{print $26}'`
-   mphotoc4=`echo ${oi}        | awk '{print $27}'`
-   bphotoblc3=`echo ${oi}      | awk '{print $28}'`
-   bphotonlc3=`echo ${oi}      | awk '{print $29}'`
-   bphotoc4=`echo ${oi}        | awk '{print $30}'`
-   kwgrass=`echo ${oi}         | awk '{print $31}'`
-   kwtree=`echo ${oi}          | awk '{print $32}'`
-   gammac3=`echo ${oi}         | awk '{print $33}'`
-   gammac4=`echo ${oi}         | awk '{print $34}'`
-   d0grass=`echo ${oi}         | awk '{print $35}'`
-   d0tree=`echo ${oi}          | awk '{print $36}'`
-   alphac3=`echo ${oi}         | awk '{print $37}'`
-   alphac4=`echo ${oi}         | awk '{print $38}'`
-   klowco2=`echo ${oi}         | awk '{print $39}'`
-   rrffact=`echo ${oi}         | awk '{print $40}'`
-   growthresp=`echo ${oi}      | awk '{print $41}'`
-   lwidthgrass=`echo ${oi}     | awk '{print $42}'`
-   lwidthbltree=`echo ${oi}    | awk '{print $43}'`
-   lwidthnltree=`echo ${oi}    | awk '{print $44}'`
-   q10c3=`echo ${oi}           | awk '{print $45}'`
-   q10c4=`echo ${oi}           | awk '{print $46}'`
-   h2olimit=`echo ${oi}        | awk '{print $47}'`
-   isfclyrm=`echo ${oi}        | awk '{print $48}'`
-   icanturb=`echo ${oi}        | awk '{print $49}'`
-   ubmin=`echo ${oi}           | awk '{print $50}'`
-   ugbmin=`echo ${oi}          | awk '{print $51}'`
-   ustmin=`echo ${oi}          | awk '{print $52}'`
-   gamm=`echo ${oi}            | awk '{print $53}'`
-   gamh=`echo ${oi}            | awk '{print $54}'`
-   tprandtl=`echo ${oi}        | awk '{print $55}'`
-   ribmax=`echo ${oi}          | awk '{print $56}'`
-   atmco2=`echo ${oi}          | awk '{print $57}'`
-   thcrit=`echo ${oi}          | awk '{print $58}'`
-   smfire=`echo ${oi}          | awk '{print $59}'`
-   ifire=`echo ${oi}           | awk '{print $60}'`
-   fireparm=`echo ${oi}        | awk '{print $61}'`
-   ipercol=`echo ${oi}         | awk '{print $62}'`
-   isoilbc=`echo ${oi}         | awk '{print $63}'`
-   runoff=`echo ${oi}          | awk '{print $64}'`
-   imetrad=`echo ${oi}         | awk '{print $65}'`
-   ibranch=`echo ${oi}         | awk '{print $66}'`
-   icanrad=`echo ${oi}         | awk '{print $67}'`
-   crown=`echo   ${oi}         | awk '{print $68}'`
-   ltransvis=`echo ${oi}       | awk '{print $69}'`
-   lreflectvis=`echo ${oi}     | awk '{print $70}'`
-   ltransnir=`echo ${oi}       | awk '{print $71}'`
-   lreflectnir=`echo ${oi}     | awk '{print $72}'`
-   orienttree=`echo ${oi}      | awk '{print $73}'`
-   orientgrass=`echo ${oi}     | awk '{print $74}'`
-   clumptree=`echo ${oi}       | awk '{print $75}'`
-   clumpgrass=`echo ${oi}      | awk '{print $76}'`
-   ivegtdyn=`echo ${oi}        | awk '{print $77}'`
-   igndvap=`echo ${oi}         | awk '{print $78}'`
-   iphen=`echo ${oi}           | awk '{print $79}'`
-   iallom=`echo ${oi}          | awk '{print $80}'`
-   ibigleaf=`echo ${oi}        | awk '{print $81}'`
-   irepro=`echo ${oi}          | awk '{print $82}'`
+   polyname=`echo ${oi}     | awk '{print $1 }'`
+   polyiata=`echo ${oi}     | awk '{print $2 }'`
+   polylon=`echo ${oi}      | awk '{print $3 }'`
+   polylat=`echo ${oi}      | awk '{print $4 }'`
+   yeara=`echo ${oi}        | awk '{print $5 }'`
+   montha=`echo ${oi}       | awk '{print $6 }'`
+   datea=`echo ${oi}        | awk '{print $7 }'`
+   timea=`echo ${oi}        | awk '{print $8 }'`
+   yearz=`echo ${oi}        | awk '{print $9 }'`
+   monthz=`echo ${oi}       | awk '{print $10}'`
+   datez=`echo ${oi}        | awk '{print $11}'`
+   timez=`echo ${oi}        | awk '{print $12}'`
+   polyisoil=`echo ${oi}    | awk '{print $13}'`
+   polyntext=`echo ${oi}    | awk '{print $14}'`
+   polysand=`echo ${oi}     | awk '{print $15}'`
+   polyclay=`echo ${oi}     | awk '{print $16}'`
+   polydepth=`echo ${oi}    | awk '{print $17}'`
+   polycol=`echo ${oi}      | awk '{print $18}'`
+   slzres=`echo ${oi}       | awk '{print $19}'`
+   queue=`echo ${oi}        | awk '{print $20}'`
+   metdriver=`echo ${oi}    | awk '{print $21}'`
+   dtlsm=`echo ${oi}        | awk '{print $22}'`
+   vmfactc3=`echo ${oi}     | awk '{print $23}'`
+   vmfactc4=`echo ${oi}     | awk '{print $24}'`
+   mphototrc3=`echo ${oi}   | awk '{print $25}'`
+   mphototec3=`echo ${oi}   | awk '{print $26}'`
+   mphotoc4=`echo ${oi}     | awk '{print $27}'`
+   bphotoblc3=`echo ${oi}   | awk '{print $28}'`
+   bphotonlc3=`echo ${oi}   | awk '{print $29}'`
+   bphotoc4=`echo ${oi}     | awk '{print $30}'`
+   kwgrass=`echo ${oi}      | awk '{print $31}'`
+   kwtree=`echo ${oi}       | awk '{print $32}'`
+   gammac3=`echo ${oi}      | awk '{print $33}'`
+   gammac4=`echo ${oi}      | awk '{print $34}'`
+   d0grass=`echo ${oi}      | awk '{print $35}'`
+   d0tree=`echo ${oi}       | awk '{print $36}'`
+   alphac3=`echo ${oi}      | awk '{print $37}'`
+   alphac4=`echo ${oi}      | awk '{print $38}'`
+   klowco2=`echo ${oi}      | awk '{print $39}'`
+   rrffact=`echo ${oi}      | awk '{print $40}'`
+   growthresp=`echo ${oi}   | awk '{print $41}'`
+   lwidthgrass=`echo ${oi}  | awk '{print $42}'`
+   lwidthbltree=`echo ${oi} | awk '{print $43}'`
+   lwidthnltree=`echo ${oi} | awk '{print $44}'`
+   q10c3=`echo ${oi}        | awk '{print $45}'`
+   q10c4=`echo ${oi}        | awk '{print $46}'`
+   h2olimit=`echo ${oi}     | awk '{print $47}'`
+   ddmort=`echo ${oi}       | awk '{print $48}'`
+   isfclyrm=`echo ${oi}     | awk '{print $49}'`
+   icanturb=`echo ${oi}     | awk '{print $50}'`
+   ubmin=`echo ${oi}        | awk '{print $51}'`
+   ugbmin=`echo ${oi}       | awk '{print $52}'`
+   ustmin=`echo ${oi}       | awk '{print $53}'`
+   gamm=`echo ${oi}         | awk '{print $54}'`
+   gamh=`echo ${oi}         | awk '{print $55}'`
+   tprandtl=`echo ${oi}     | awk '{print $56}'`
+   ribmax=`echo ${oi}       | awk '{print $57}'`
+   atmco2=`echo ${oi}       | awk '{print $58}'`
+   thcrit=`echo ${oi}       | awk '{print $59}'`
+   smfire=`echo ${oi}       | awk '{print $60}'`
+   ifire=`echo ${oi}        | awk '{print $61}'`
+   fireparm=`echo ${oi}     | awk '{print $62}'`
+   ipercol=`echo ${oi}      | awk '{print $63}'`
+   isoilbc=`echo ${oi}      | awk '{print $64}'`
+   runoff=`echo ${oi}       | awk '{print $65}'`
+   imetrad=`echo ${oi}      | awk '{print $66}'`
+   ibranch=`echo ${oi}      | awk '{print $67}'`
+   icanrad=`echo ${oi}      | awk '{print $68}'`
+   crown=`echo   ${oi}      | awk '{print $69}'`
+   ltransvis=`echo ${oi}    | awk '{print $70}'`
+   lreflectvis=`echo ${oi}  | awk '{print $71}'`
+   ltransnir=`echo ${oi}    | awk '{print $72}'`
+   lreflectnir=`echo ${oi}  | awk '{print $73}'`
+   orienttree=`echo ${oi}   | awk '{print $74}'`
+   orientgrass=`echo ${oi}  | awk '{print $75}'`
+   clumptree=`echo ${oi}    | awk '{print $76}'`
+   clumpgrass=`echo ${oi}   | awk '{print $77}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $78}'`
+   igndvap=`echo ${oi}      | awk '{print $79}'`
+   iphen=`echo ${oi}        | awk '{print $80}'`
+   iallom=`echo ${oi}       | awk '{print $81}'`
+   ibigleaf=`echo ${oi}     | awk '{print $82}'`
+   irepro=`echo ${oi}       | awk '{print $83}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -350,7 +358,7 @@ do
       plot_census.r)
          thismontha=${montha}
          thismontha=${monthz}
-         thisyeara=${yeara}
+         let thisyeara=${yeara}+15
          thisyearz=${yearz}
 
          thisdatea=${datea}
@@ -486,6 +494,8 @@ do
       sed -i s@mydroughtyeara@${droughtyeara}@g   ${here}/${polyname}/${script}
       sed -i s@mydroughtyearz@${droughtyearz}@g   ${here}/${polyname}/${script}
       sed -i s@mymonthsdrought@${monthsdrought}@g ${here}/${polyname}/${script}
+      sed -i s@myvarcycle@${varcycle}@g           ${here}/${polyname}/${script}
+      sed -i s@thisoutform@${outform}@g           ${here}/${polyname}/${script}
 
       #----- Run R to get the plots. ------------------------------------------------------#
       comm="R CMD BATCH ${here}/${polyname}/${script} ${here}/${polyname}/${epostout}"

@@ -37,28 +37,29 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
 
 
-   cpatch%mean_gpp(ico)          = 0.0
-   cpatch%mean_leaf_resp(ico)    = 0.0
-   cpatch%mean_root_resp(ico)    = 0.0
-   cpatch%mean_growth_resp(ico)  = 0.0
-   cpatch%mean_storage_resp(ico) = 0.0
-   cpatch%mean_vleaf_resp(ico)   = 0.0
-   cpatch%today_leaf_resp(ico)   = 0.0
-   cpatch%today_root_resp(ico)   = 0.0
-   cpatch%today_gpp(ico)         = 0.0
-   cpatch%today_nppleaf(ico)     = 0.0
-   cpatch%today_nppfroot(ico)    = 0.0
-   cpatch%today_nppsapwood(ico)  = 0.0
-   cpatch%today_nppcroot(ico)    = 0.0
-   cpatch%today_nppseeds(ico)    = 0.0
-   cpatch%today_nppwood(ico)     = 0.0
-   cpatch%today_nppdaily(ico)    = 0.0
-   cpatch%today_gpp_pot(ico)     = 0.0
-   cpatch%today_gpp_max(ico)     = 0.0
+   cpatch%mean_gpp           (ico) = 0.0
+   cpatch%mean_leaf_resp     (ico) = 0.0
+   cpatch%mean_root_resp     (ico) = 0.0
+   cpatch%mean_growth_resp   (ico) = 0.0
+   cpatch%mean_storage_resp  (ico) = 0.0
+   cpatch%mean_vleaf_resp    (ico) = 0.0
+   cpatch%today_leaf_resp    (ico) = 0.0
+   cpatch%today_root_resp    (ico) = 0.0
+   cpatch%today_gpp          (ico) = 0.0
+   cpatch%today_nppleaf      (ico) = 0.0
+   cpatch%today_nppfroot     (ico) = 0.0
+   cpatch%today_nppsapwood   (ico) = 0.0
+   cpatch%today_nppcroot     (ico) = 0.0
+   cpatch%today_nppseeds     (ico) = 0.0
+   cpatch%today_nppwood      (ico) = 0.0
+   cpatch%today_nppdaily     (ico) = 0.0
+   cpatch%today_gpp_pot      (ico) = 0.0
+   cpatch%today_gpp_lightmax (ico) = 0.0
+   cpatch%today_gpp_moistmax (ico) = 0.0
 
-   cpatch%light_level     (ico)  = 0.0
-   cpatch%light_level_beam(ico)  = 0.0
-   cpatch%light_level_diff(ico)  = 0.0
+   cpatch%light_level        (ico) = 0.0
+   cpatch%light_level_beam   (ico) = 0.0
+   cpatch%light_level_diff   (ico) = 0.0
 
    cpatch%gpp(ico)                 = 0.0
    cpatch%leaf_respiration(ico)    = 0.0
@@ -133,10 +134,12 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! month carbon balance will be incorrect.                                               !
    !---------------------------------------------------------------------------------------!
    cpatch%cb               (1:12,ico) = 1.0
-   cpatch%cb_max           (1:12,ico) = 1.0
+   cpatch%cb_lightmax      (1:12,ico) = 1.0
+   cpatch%cb_moistmax      (1:12,ico) = 1.0
    cpatch%cbr_bar               (ico) = 1.0
    cpatch%cb                 (13,ico) = 0.0
-   cpatch%cb_max             (13,ico) = 0.0
+   cpatch%cb_lightmax        (13,ico) = 0.0
+   cpatch%cb_moistmax        (13,ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 

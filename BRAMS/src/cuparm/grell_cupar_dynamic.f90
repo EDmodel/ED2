@@ -736,17 +736,17 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
    !    Here for each different dynamic control style, the first element is the standard,  !
    !    like in the previous cases, and the others are perturbations.                      !
    !---------------------------------------------------------------------------------------!
-   case ('en','nc')
+   case ('en','nc','qi')
 
       !------------------------------------------------------------------------------------!
-      ! 6a. Grell (1993), modified quasi-equilibrium buoyant energy.                       !
+      ! 6a. Kain and Fritsch (1990), instability removal.                                  !
       !------------------------------------------------------------------------------------!
-      call grell_grell_solver(nclouds,cldd,clds,dtime,1.0,aatot0,aatot,mfke,ierr           &
-                             ,upmf_dyn(1:nclouds,1),upmx_dyn(1:nclouds,1))
-      call grell_grell_solver(nclouds,cldd,clds,dtime,0.9,aatot0,aatot,mfke,ierr           &
-                             ,upmf_dyn(1:nclouds,2),upmx_dyn(1:nclouds,2))
-      call grell_grell_solver(nclouds,cldd,clds,dtime,1.1,aatot0,aatot,mfke,ierr           &
-                             ,upmf_dyn(1:nclouds,3),upmx_dyn(1:nclouds,3))
+      call grell_inre_solver(nclouds,cldd,clds,tscal_kf,1.0,aatot0,mfke,ierr               &
+                            ,upmf_dyn(1:nclouds,1),upmx_dyn(1:nclouds,1))
+      call grell_inre_solver(nclouds,cldd,clds,tscal_kf,0.9,aatot0,mfke,ierr               &
+                            ,upmf_dyn(1:nclouds,2),upmx_dyn(1:nclouds,2))
+      call grell_inre_solver(nclouds,cldd,clds,tscal_kf,1.1,aatot0,mfke,ierr               &
+                            ,upmf_dyn(1:nclouds,3),upmx_dyn(1:nclouds,3))
 
       !------------------------------------------------------------------------------------!
       ! 6b. Arakawa and Schubert (1974), quasi-equilibrium buoyant energy.                 !
@@ -761,17 +761,23 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
       call grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,2,2,ktop,aatot,mfke   &
                                 ,ierr,upmf_dyn(1:nclouds,7),upmx_dyn(1:nclouds,7))
 
-      !------------------------------------------------------------------------------------!
-      ! 6c. Kain and Fritsch (1990), instability removal.                                  !
-      !------------------------------------------------------------------------------------!
-      call grell_inre_solver(nclouds,cldd,clds,tscal_kf,1.0,aatot0,mfke,ierr               &
-                            ,upmf_dyn(1:nclouds,8),upmx_dyn(1:nclouds,8))
-      call grell_inre_solver(nclouds,cldd,clds,tscal_kf,0.9,aatot0,mfke,ierr               &
-                            ,upmf_dyn(1:nclouds,9),upmx_dyn(1:nclouds,9))
-      call grell_inre_solver(nclouds,cldd,clds,tscal_kf,1.1,aatot0,mfke,ierr               &
-                            ,upmf_dyn(1:nclouds,10),upmx_dyn(1:nclouds,10))
 
-      if (closure_type == 'en') then
+      select case (closure_type)
+      case ('en','nc')
+         !---------------------------------------------------------------------------------!
+         ! 6c. Grell (1993), modified quasi-equilibrium buoyant energy.                    !
+         !---------------------------------------------------------------------------------!
+         call grell_grell_solver(nclouds,cldd,clds,dtime,1.0,aatot0,aatot,mfke,ierr        &
+                                ,upmf_dyn(1:nclouds,8),upmx_dyn(1:nclouds,8))
+         call grell_grell_solver(nclouds,cldd,clds,dtime,0.9,aatot0,aatot,mfke,ierr        &
+                                ,upmf_dyn(1:nclouds,9),upmx_dyn(1:nclouds,9))
+         call grell_grell_solver(nclouds,cldd,clds,dtime,1.1,aatot0,aatot,mfke,ierr        &
+                                ,upmf_dyn(1:nclouds,10),upmx_dyn(1:nclouds,10))
+         !---------------------------------------------------------------------------------!
+      end select
+
+      select case (closure_type)
+      case ('en')
          !---------------------------------------------------------------------------------!
          ! 6d. Frank and Cohen (1987), low-level environment mass flux.                    !
          !---------------------------------------------------------------------------------!
@@ -806,7 +812,7 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
             upmx_dyn(icld,15) = upmf_dyn(icld,15)
             upmx_dyn(icld,16) = upmf_dyn(icld,16)
          end do enmcloop
-      end if
+      end select
    end select
 
    do idyn=1,maxens_dyn

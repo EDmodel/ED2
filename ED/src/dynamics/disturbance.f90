@@ -1082,7 +1082,7 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
             !     Agriculture to secondary land (1 => 2).   Here we also account for       !
             ! transitions to primary land due to abandonment.  In ED definition, a land    !
-            ! can is considered primary only when the last disturbance.                    ! 
+            ! is considered primary only when the last disturbance was natural.            !
             !------------------------------------------------------------------------------!
             cpoly%disturbance_rates(2,1,isi) = clutime%landuse(8) + clutime%landuse(10)    &
                                              + clutime%landuse(3) + clutime%landuse(6)
@@ -1591,37 +1591,38 @@ module disturbance_utils
             !            be rescaled.  Variables whose units are per plant should _NOT_ be !
             !            included here.                                                    !
             !------------------------------------------------------------------------------!
-            tpatch%lai                (nco) = tpatch%lai              (nco) * survival_fac
-            tpatch%wai                (nco) = tpatch%wai              (nco) * survival_fac
-            tpatch%nplant             (nco) = tpatch%nplant           (nco) * survival_fac
-            tpatch%mean_gpp           (nco) = tpatch%mean_gpp         (nco) * survival_fac
-            tpatch%mean_leaf_resp     (nco) = tpatch%mean_leaf_resp   (nco) * survival_fac
-            tpatch%mean_root_resp     (nco) = tpatch%mean_root_resp   (nco) * survival_fac
-            tpatch%mean_growth_resp   (nco) = tpatch%mean_growth_resp (nco) * survival_fac
-            tpatch%mean_storage_resp  (nco) = tpatch%mean_storage_resp(nco) * survival_fac
-            tpatch%mean_vleaf_resp    (nco) = tpatch%mean_vleaf_resp  (nco) * survival_fac
-            tpatch%today_gpp          (nco) = tpatch%today_gpp        (nco) * survival_fac
-            tpatch%today_nppleaf      (nco) = tpatch%today_nppleaf    (nco) * survival_fac
-            tpatch%today_nppfroot     (nco) = tpatch%today_nppfroot   (nco) * survival_fac
-            tpatch%today_nppsapwood   (nco) = tpatch%today_nppsapwood (nco) * survival_fac
-            tpatch%today_nppcroot     (nco) = tpatch%today_nppcroot   (nco) * survival_fac
-            tpatch%today_nppseeds     (nco) = tpatch%today_nppseeds   (nco) * survival_fac
-            tpatch%today_nppwood      (nco) = tpatch%today_nppwood    (nco) * survival_fac
-            tpatch%today_nppdaily     (nco) = tpatch%today_nppdaily   (nco) * survival_fac
-            tpatch%today_gpp_pot      (nco) = tpatch%today_gpp_pot    (nco) * survival_fac
-            tpatch%today_gpp_max      (nco) = tpatch%today_gpp_max    (nco) * survival_fac
-            tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp  (nco) * survival_fac
-            tpatch%today_root_resp    (nco) = tpatch%today_root_resp  (nco) * survival_fac
-            tpatch%gpp                (nco) = tpatch%gpp              (nco) * survival_fac
-            tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration (nco) * survival_fac
-            tpatch%root_respiration   (nco) = tpatch%root_respiration (nco) * survival_fac
-            tpatch%monthly_dndt       (nco) = tpatch%monthly_dndt     (nco) * survival_fac
-            tpatch%leaf_water         (nco) = tpatch%leaf_water       (nco) * survival_fac
-            tpatch%leaf_hcap          (nco) = tpatch%leaf_hcap        (nco) * survival_fac
-            tpatch%leaf_energy        (nco) = tpatch%leaf_energy      (nco) * survival_fac
-            tpatch%wood_water         (nco) = tpatch%wood_water       (nco) * survival_fac
-            tpatch%wood_hcap          (nco) = tpatch%wood_hcap        (nco) * survival_fac
-            tpatch%wood_energy        (nco) = tpatch%wood_energy      (nco) * survival_fac
+            tpatch%lai                (nco) = tpatch%lai               (nco) * survival_fac
+            tpatch%wai                (nco) = tpatch%wai               (nco) * survival_fac
+            tpatch%nplant             (nco) = tpatch%nplant            (nco) * survival_fac
+            tpatch%mean_gpp           (nco) = tpatch%mean_gpp          (nco) * survival_fac
+            tpatch%mean_leaf_resp     (nco) = tpatch%mean_leaf_resp    (nco) * survival_fac
+            tpatch%mean_root_resp     (nco) = tpatch%mean_root_resp    (nco) * survival_fac
+            tpatch%mean_growth_resp   (nco) = tpatch%mean_growth_resp  (nco) * survival_fac
+            tpatch%mean_storage_resp  (nco) = tpatch%mean_storage_resp (nco) * survival_fac
+            tpatch%mean_vleaf_resp    (nco) = tpatch%mean_vleaf_resp   (nco) * survival_fac
+            tpatch%today_gpp          (nco) = tpatch%today_gpp         (nco) * survival_fac
+            tpatch%today_nppleaf      (nco) = tpatch%today_nppleaf     (nco) * survival_fac
+            tpatch%today_nppfroot     (nco) = tpatch%today_nppfroot    (nco) * survival_fac
+            tpatch%today_nppsapwood   (nco) = tpatch%today_nppsapwood  (nco) * survival_fac
+            tpatch%today_nppcroot     (nco) = tpatch%today_nppcroot    (nco) * survival_fac
+            tpatch%today_nppseeds     (nco) = tpatch%today_nppseeds    (nco) * survival_fac
+            tpatch%today_nppwood      (nco) = tpatch%today_nppwood     (nco) * survival_fac
+            tpatch%today_nppdaily     (nco) = tpatch%today_nppdaily    (nco) * survival_fac
+            tpatch%today_gpp_pot      (nco) = tpatch%today_gpp_pot     (nco) * survival_fac
+            tpatch%today_gpp_lightmax (nco) = tpatch%today_gpp_lightmax(nco) * survival_fac
+            tpatch%today_gpp_moistmax (nco) = tpatch%today_gpp_moistmax(nco) * survival_fac
+            tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp   (nco) * survival_fac
+            tpatch%today_root_resp    (nco) = tpatch%today_root_resp   (nco) * survival_fac
+            tpatch%gpp                (nco) = tpatch%gpp               (nco) * survival_fac
+            tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration  (nco) * survival_fac
+            tpatch%root_respiration   (nco) = tpatch%root_respiration  (nco) * survival_fac
+            tpatch%monthly_dndt       (nco) = tpatch%monthly_dndt      (nco) * survival_fac
+            tpatch%leaf_water         (nco) = tpatch%leaf_water        (nco) * survival_fac
+            tpatch%leaf_hcap          (nco) = tpatch%leaf_hcap         (nco) * survival_fac
+            tpatch%leaf_energy        (nco) = tpatch%leaf_energy       (nco) * survival_fac
+            tpatch%wood_water         (nco) = tpatch%wood_water        (nco) * survival_fac
+            tpatch%wood_hcap          (nco) = tpatch%wood_hcap         (nco) * survival_fac
+            tpatch%wood_energy        (nco) = tpatch%wood_energy       (nco) * survival_fac
             !----- Crown area shall not exceed 1. -----------------------------------------!
             tpatch%crown_area         (nco) = min(1.,tpatch%crown_area(nco) * survival_fac)
             !----- Carbon flux monthly means are extensive, we must convert them. ---------!
