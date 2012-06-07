@@ -82,7 +82,6 @@ subroutine grell_cupar_driver(cldd,clds)
          ! call grell_cupar_initial(i,j,confrq)
          call grell_cupar_initial(i,j,dtlt)
 
-
          !---------------------------------------------------------------------------------!
          ! 3. We will now go through the cloud sizes for the first time, in order to solve !
          !    the static control.                                                          !

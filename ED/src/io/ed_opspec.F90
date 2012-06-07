@@ -1339,14 +1339,25 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif ((ied_init_mode < -1 .or. ied_init_mode > 6) .and. ied_init_mode /= 99 ) then
+   elseif ((ied_init_mode < -1 .or. ied_init_mode > 7) .and. &
+           (ied_init_mode /= 99 )) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                     'Invalid IED_INIT_MODE, it must be between -1 and 6. Yours is set to' &
+                     'Invalid IED_INIT_MODE, it must be between -1 and 7. Yours is set to' &
                     ,ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
+
+
+   if (ied_init_mode == 7 .and. isoilstateinit>0 ) then
+      write (reason,fmt='(a)')                                                   &
+           'Please set ISOILSTATEINIT=0 if using IED_INIT_MODE=7'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+      
 #if defined(COUPLED)
    do ifm=1,ngrids
       if (isoilflg(ifm) < 0 .or. isoilflg(ifm) > 3) then
