@@ -2556,6 +2556,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%bleaf,'BLEAF ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%recruit_dbh,'RECRUIT_DBH ',dsetrank,iparallel,.true.)
+     call hdf_getslab_i(cpatch%census_status,'CENSUS_STATUS ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%broot,'BROOT  ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%bsapwooda,'BSAPWOODA ',dsetrank,iparallel,.true.)

@@ -10,34 +10,6 @@ thisnum=myorder
 #------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#    Special queues, make sure they use the least amount of nodes.                         #
-#------------------------------------------------------------------------------------------#
-if [ ${queue} == "wofsy" ]
-then
-   if [ ${thisnum} -le 12 ]
-   then
-      options='hname=wofsy011'
-   elif [ ${thisnum} -le 24 ]
-   then
-      options='hname=wofsy012'
-   elif [ ${thisnum} -le 36 ]
-   then
-      options='hname=wofsy013'
-   fi
-elif [ ${queue} == "camd" ]
-then
-   if [ ${thisnum} -le 48 ]
-   then
-      options='hname=camd06'
-   elif [ ${thisnum} -le 96 ]
-   then
-      options='hname=camd08'
-   fi
-fi
-#------------------------------------------------------------------------------------------#
-
-
 #----- Erase old logfiles and joblogs -----------------------------------------------------#
 if [ -s ${joblog} ]
 then

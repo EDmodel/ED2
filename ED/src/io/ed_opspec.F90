@@ -1202,7 +1202,11 @@ subroutine ed_opspec_misc
                                     , rk4_tolerance                ! ! intent(in)
    use mem_polygons          , only : n_ed_region                  & ! intent(in)
                                     , n_poi                        ! ! intent(in)
-   use detailed_coms         , only : idetailed                    & ! intent(in)
+   use detailed_coms         , only : dt_census                    & ! intent(in)
+                                    , yr1st_census                 & ! intent(in)
+                                    , mon1st_census                & ! intent(in)
+                                    , min_recruit_dbh              & ! intent(in)
+                                    , idetailed                    & ! intent(in)
                                     , patch_keep                   ! ! intent(in)
 
    use met_driver_coms       , only : imetrad                      ! ! intent(in)
@@ -1559,6 +1563,13 @@ end do
                     ,igrass,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   elseif (igrass == 1 .and. ibigleaf == 1) then
+      write (reason,fmt='(a,1x,a)')                                                        &
+                    'Invalid setting.  New grass allometry (IGRASS = 1) is not supported'  &
+                   ,'in big leaf ED (IBIGLEAF = 1)...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   
    end if
 
    if (iphen_scheme < -1 .or. iphen_scheme > 3) then
@@ -1592,9 +1603,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 4.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -2206,6 +2217,38 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IMETRAD, it must be between 0 and 4.  Yours is set to'        &
                     ,imetrad,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (dt_census < 1 .or. dt_census > 120) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid DT_CENSUS, it must be between 1 and 120.  Yours is set to'    &
+                    ,dt_census,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (yr1st_census < 1900 .or. yr1st_census > 2100) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+             'Invalid YR1ST_CENSUS, it must be between 1900 and 2100.  Yours is set to'    &
+            ,yr1st_census,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (mon1st_census < 1 .or. mon1st_census > 12) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+             'Invalid MON1ST_CENSUS, it must be between 1 and 12.  Yours is set to'        &
+            ,mon1st_census,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (min_recruit_dbh < 0 .or. min_recruit_dbh > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+             'Invalid MIN_RECRUIT_DBH, it must be between 0 and 100.  Yours is set to'     &
+            ,min_recruit_dbh,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if

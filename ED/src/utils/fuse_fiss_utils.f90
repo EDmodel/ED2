@@ -269,72 +269,16 @@ module fuse_fiss_utils
                              ,count(remain_table),count(remain_table))
       call deallocate_sitetype(tempsite)
       deallocate(tempsite)
+      deallocate(remain_table)
 
       !------------------------------------------------------------------------------------!
-      !    Renormalize the total area.  We must also rescale all extensive properties from !
-      ! cohorts, since they are per unit area and we are effectively changing the area.    !
-      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
-      !            rescaled.  Variables whose units are per plant or per leaf area         !
-      !            (m2_leaf) should _NOT_ be included here.                                !
+      !    Renormalize the total area.                                                     !
       !------------------------------------------------------------------------------------!
       new_area=0.
       area_scale = 1./(1. - elim_area)
       do ipa = 1,csite%npatches
          csite%area(ipa) = csite%area(ipa) * area_scale
-         new_area = new_area + csite%area(ipa)
-
-         cpatch => csite%patch(ipa)
-         do ico = 1, cpatch%ncohorts
-            cpatch%nplant               (ico) = cpatch%nplant            (ico) * area_scale
-            cpatch%lai                  (ico) = cpatch%lai               (ico) * area_scale
-            cpatch%wai                  (ico) = cpatch%wai               (ico) * area_scale
-            cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * area_scale
-            cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * area_scale
-            cpatch%mean_root_resp       (ico) = cpatch%mean_root_resp    (ico) * area_scale
-            cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * area_scale
-            cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * area_scale
-            cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * area_scale
-            cpatch%gpp                  (ico) = cpatch%gpp               (ico) * area_scale
-            cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * area_scale
-            cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * area_scale
-            cpatch%leaf_water           (ico) = cpatch%leaf_water        (ico) * area_scale
-            cpatch%leaf_hcap            (ico) = cpatch%leaf_hcap         (ico) * area_scale
-            cpatch%leaf_energy          (ico) = cpatch%leaf_energy       (ico) * area_scale
-            cpatch%wood_water           (ico) = cpatch%wood_water        (ico) * area_scale
-            cpatch%wood_hcap            (ico) = cpatch%wood_hcap         (ico) * area_scale
-            cpatch%wood_energy          (ico) = cpatch%wood_energy       (ico) * area_scale
-            cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * area_scale
-            cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * area_scale
-            cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * area_scale
-            cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * area_scale
-            cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * area_scale
-            cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * area_scale
-            cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * area_scale
-            cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * area_scale
-            cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * area_scale
-            cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * area_scale
-            cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * area_scale
-            cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * area_scale
-            cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * area_scale
-                     
-            !----- Crown area shall not exceed one. ---------------------------------------!
-            cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * area_scale)
-            if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-               cpatch%dmean_par_l       (ico) = cpatch%dmean_par_l       (ico) * area_scale
-               cpatch%dmean_par_l_beam  (ico) = cpatch%dmean_par_l_beam  (ico) * area_scale
-               cpatch%dmean_par_l_diff  (ico) = cpatch%dmean_par_l_diff  (ico) * area_scale
-            end if
-            if (imoutput > 0 .or. iqoutput > 0) then
-               cpatch%mmean_par_l       (ico) = cpatch%mmean_par_l       (ico) * area_scale
-               cpatch%mmean_par_l_beam  (ico) = cpatch%mmean_par_l_beam  (ico) * area_scale
-               cpatch%mmean_par_l_diff  (ico) = cpatch%mmean_par_l_diff  (ico) * area_scale
-            end if
-            if (iqoutput > 0) then
-               cpatch%qmean_par_l     (:,ico) = cpatch%qmean_par_l     (:,ico) * area_scale
-               cpatch%qmean_par_l_beam(:,ico) = cpatch%qmean_par_l_beam(:,ico) * area_scale
-               cpatch%qmean_par_l_diff(:,ico) = cpatch%qmean_par_l_diff(:,ico) * area_scale
-            end if
-         end do
+       new_area = new_area + csite%area(ipa)
       end do
 
       if (abs(new_area-1.0) > 1.e-5) then
@@ -368,30 +312,29 @@ module fuse_fiss_utils
                               , imoutput           & ! intent(in)
                               , idoutput           ! ! intent(in)
       use allometry    , only : size2bl            ! ! function
-      use ed_max_dims  , only : n_dist_types       ! ! intent(in)
+      use ed_max_dims  , only : n_dist_types       & ! intent(in)
+                              , n_pft              ! ! intent(in)
       
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)               , target  :: csite           ! Current site
+      type(sitetype)         , target      :: csite        ! Current site
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)              , pointer     :: cpatch      ! Pointer to current site
-      type(sitetype)               , pointer     :: tempsite    ! Scratch site
-      integer                                    :: ipa         ! Counter
-      integer                                    :: ico         ! Counter
-      integer                                    :: lu          ! Counter
-      logical                                    :: norescale   ! flag whether rescaling
-                                                                !   is necessary
-      logical        , dimension(:), allocatable :: remain_table! Flag: this patch will remain.
-      real           , dimension(:), allocatable :: old_area    ! Area before rescaling
-      real           , dimension(:), allocatable :: elim_area   ! Area of removed patches
-      real                                       :: new_area    ! New area, so the sum of
-                                                                !    all patches is 1.
-      real           , dimension(:), allocatable :: dist_area   ! Area of disturbance type
-      real                                       :: area_scale  ! Scaling area factor.
-      real                                       :: site_area   ! Total area.
-      real           , dimension(:), allocatable :: patch_blmax ! Total bleaf_max for patch
-      real           , dimension(:), allocatable :: dist_blmax  ! total bleaf per dist type
-      real           , dimension(:), allocatable :: dist_patch  ! number of patches per dist
+      type(patchtype)        , pointer     :: cpatch       ! Pointer to current site
+      type(sitetype)         , pointer     :: tempsite     ! Scratch site
+      integer                              :: ipa          ! Counter
+      integer                              :: ico          ! Counter
+      integer                              :: ilu          ! Counter
+      integer                              :: ipft         ! Counter
+      logical, dimension  (:), allocatable :: remain_table ! Flag: this patch shall remain.
+      real   , dimension  (:), allocatable :: old_area     ! Area before rescaling
+      real   , dimension  (:), allocatable :: elim_area    ! Area of removed patches
+      real                                 :: laimax       ! Max. LAI for current cohort
+      real   , dimension  (:), allocatable :: lu_area      ! Area of disturbance type
+      real                                 :: n_scale      ! Scaling nplant factor.
+      real                                 :: site_area    ! Total site area (must be 1).
+      real   , dimension  (:), allocatable :: patch_laimax ! Total LAI_max per patch
+      real   , dimension  (:), allocatable :: lu_laimax    ! total bleaf per land use type
+      integer, dimension  (:), allocatable :: lu_npatch    ! # of patches per land use type
       !------------------------------------------------------------------------------------!
 
 
@@ -400,6 +343,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       if (csite%npatches == 1) return
       !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     Loop through all the patches in this site and determine which of these patches !
@@ -414,52 +358,59 @@ module fuse_fiss_utils
 
       do ipa = 1,csite%npatches
          if (csite%area(ipa) < min_patch_area) then
-            lu = csite%dist_type(ipa)
-            elim_area(lu)= elim_area (lu) + csite%area(ipa)
+            ilu = csite%dist_type(ipa)
+            elim_area(ilu)= elim_area (ilu) + csite%area(ipa)
             remain_table(ipa) = .false.
          end if
       end do
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !     Remove patches that are smaller than the minimum non-negligible area.          !
+      !------------------------------------------------------------------------------------!
       if ( sum(elim_area) > 0.0 ) then
-         !----- Use the mask to resize the patch vectors in the current site. ----------------!
+         !----- Use the mask to resize the patch vectors in the current site. -------------!
          allocate(tempsite)
          call allocate_sitetype(tempsite,count(remain_table))
-         call copy_sitetype_mask(csite,tempsite,remain_table,size(remain_table)               &
+         call copy_sitetype_mask(csite,tempsite,remain_table,size(remain_table)            &
                                 ,count(remain_table))
          call deallocate_sitetype(csite)
          call allocate_sitetype(csite,count(remain_table))
 
          remain_table(:)                   = .false.
          remain_table(1:tempsite%npatches) = .true.
-         call copy_sitetype_mask(tempsite,csite,remain_table(1:tempsite%npatches)             &
+         call copy_sitetype_mask(tempsite,csite,remain_table(1:tempsite%npatches)          &
                                 ,count(remain_table),count(remain_table))
          call deallocate_sitetype(tempsite)
          deallocate(tempsite)
       end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Allocate a temporary array that will contain the potential leaf biomass of     !
       ! each patch.  This is done so phenology doesn't impact the area.                    !
       !------------------------------------------------------------------------------------!
-      allocate (patch_blmax(csite%npatches))
-      allocate (old_area   (csite%npatches))
-      patch_blmax(:) = 0.0
-      old_area(:)    = 0.0
+      allocate (patch_laimax(csite%npatches))
+      allocate (old_area    (csite%npatches))
+      patch_laimax (:) = 0.0
+      old_area     (:) = 0.0
       !------------------------------------------------------------------------------------!
 
+
+
       !------------------------------------------------------------------------------------!
-      !     Loop through disturbance types, total area per disturbance type will remain    !
+      !     Loop through land use types, total area per disturbance type will remain       !
       !  unchanged.  Area of the patches (PFTs) within a disturbance type will be rescaled !
-      !  based on their area                                                               !
+      !  based on their area.                                                              !
       !------------------------------------------------------------------------------------!
-      allocate (dist_area(n_dist_types))
-      allocate (dist_blmax(n_dist_types))
-      allocate (dist_patch(n_dist_types))
-      dist_patch(:) = 0.0
-      dist_area (:) = 0.0
-      dist_blmax(:) = 0.0
-      norescale     = .true.
+      allocate (lu_npatch(n_dist_types))
+      allocate (lu_laimax(n_dist_types))
+      allocate (lu_area  (n_dist_types))
+      lu_npatch (:) = 0
+      lu_area   (:) = 0.0
+      lu_laimax (:) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -471,133 +422,146 @@ module fuse_fiss_utils
       do ipa=1,csite%npatches
          !----- This patch. ---------------------------------------------------------------!
          cpatch => csite%patch(ipa)
-         
+         !---------------------------------------------------------------------------------!
+
          !----- Find the disturbance type. ------------------------------------------------!
-         lu = csite%dist_type(ipa)
+         ilu = csite%dist_type(ipa)
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
-         ! ACTUALLY USE LAI MAX INSTEAD OF BLEAF MAX                                       !
+         !      Determine the maximum attainable leaf area index for each PFT, which will  !
+         ! be used to rescale the relative area of the patch.                              !
          !---------------------------------------------------------------------------------!
          do ico = 1,cpatch%ncohorts
-            patch_blmax(ipa) = patch_blmax(ipa) + cpatch%nplant(ico) * cpatch%sla(ico)     &
-                             * size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))   &
-                             * csite%area(ipa)
+            ipft              = cpatch%pft(ico)
+            laimax            = cpatch%nplant(ico) * cpatch%sla(ico)                       &
+                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            patch_laimax(ipa) = patch_laimax(ipa) + laimax * csite%area(ipa)
          end do
 
-         dist_area(lu)  = dist_area(lu)  + csite%area(ipa)
-         dist_blmax(lu) = dist_blmax(lu) + patch_blmax(ipa)
-         dist_patch(lu) = dist_patch(lu) + 1
+         lu_area  (ilu) = lu_area  (ilu) + csite%area  (ipa)
+         lu_laimax(ilu) = lu_laimax(ilu) + patch_laimax(ipa)
+         lu_npatch(ilu) = lu_npatch(ilu) + 1
 
-         norescale      = dist_patch(lu) == 1
          site_area      = site_area + csite%area(ipa) 
       end do
-      dist_area(:) = dist_area(:) / site_area
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Normalise the area of each land use type so the total is going to be one. ---!
+      lu_area(:) = lu_area(:) / site_area
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     No need to re-scale patches if there is only one patch (or less) per           !
-      !  per disturbance type.                                                             !
+      !    Renormalize the total area.                                                     !
       !------------------------------------------------------------------------------------!
-      if (norescale) return
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Renormalize the total area.  We must also rescale all extensive properties from !
-      ! cohorts, since they are per unit area and we are effectively changing the area.    !
-      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
-      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
-      !            here.                                                                   !
-      !------------------------------------------------------------------------------------!
-      new_area = 0.0
+      site_area = 0.0
       do ipa = 1,csite%npatches
-         lu = csite%dist_type(ipa)
+
+         !----- Find the disturbance type. ------------------------------------------------!
+         ilu = csite%dist_type(ipa)
+         !---------------------------------------------------------------------------------!
+
+
          !----- Find the new area, based on the fraction of biomass. ----------------------!
-         area_scale      = patch_blmax(ipa) / dist_blmax(lu) * dist_area(lu)               &
-                           / csite%area(ipa)
          old_area(ipa)   = csite%area(ipa)
-         csite%area(ipa) = csite%area(ipa) * area_scale
-         new_area = new_area + csite%area(ipa)
+         csite%area(ipa) = patch_laimax(ipa) / lu_laimax(ilu) * lu_area(ilu)
+         site_area       = site_area + csite%area(ipa)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     We must change the scale for nplant (and all "extensive" cohort-level       !
+         ! variables) so the site-level maximum LAI and maximum biomass stay the same.     !
+         !---------------------------------------------------------------------------------!
+         n_scale = old_area(ipa) / csite%area(ipa)
+         !---------------------------------------------------------------------------------!
 
          cpatch => csite%patch(ipa)
          do ico = 1, cpatch%ncohorts
-            cpatch%nplant               (ico) = cpatch%nplant            (ico) * area_scale
-            cpatch%lai                  (ico) = cpatch%lai               (ico) * area_scale
-            cpatch%wai                  (ico) = cpatch%wai               (ico) * area_scale
-            cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * area_scale
-            cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * area_scale
-            cpatch%mean_root_resp       (ico) = cpatch%mean_root_resp    (ico) * area_scale
-            cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * area_scale
-            cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * area_scale
-            cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * area_scale
-            cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * area_scale
-            cpatch%gpp                  (ico) = cpatch%gpp               (ico) * area_scale
-            cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * area_scale
-            cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * area_scale
-            cpatch%leaf_water           (ico) = cpatch%leaf_water        (ico) * area_scale
-            cpatch%leaf_hcap            (ico) = cpatch%leaf_hcap         (ico) * area_scale
-            cpatch%leaf_energy          (ico) = cpatch%leaf_energy       (ico) * area_scale
-            cpatch%wood_water           (ico) = cpatch%wood_water        (ico) * area_scale
-            cpatch%wood_hcap            (ico) = cpatch%wood_hcap         (ico) * area_scale
-            cpatch%wood_energy          (ico) = cpatch%wood_energy       (ico) * area_scale
-            cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * area_scale
-            cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * area_scale
-            cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * area_scale
-            cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * area_scale
-            cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * area_scale
-            cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * area_scale
-            cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * area_scale
-            cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * area_scale
-            cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * area_scale
-            cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * area_scale
-            cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * area_scale
-            cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * area_scale
-            cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * area_scale
+            cpatch%nplant               (ico) = cpatch%nplant            (ico) * n_scale
+            cpatch%lai                  (ico) = cpatch%lai               (ico) * n_scale
+            cpatch%wai                  (ico) = cpatch%wai               (ico) * n_scale
+            cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * n_scale
+            cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * n_scale
+            cpatch%mean_root_resp       (ico) = cpatch%mean_root_resp    (ico) * n_scale
+            cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * n_scale
+            cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * n_scale
+            cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * n_scale
+            cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * n_scale
+            cpatch%gpp                  (ico) = cpatch%gpp               (ico) * n_scale
+            cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * n_scale
+            cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * n_scale
+            cpatch%leaf_water           (ico) = cpatch%leaf_water        (ico) * n_scale
+            cpatch%leaf_hcap            (ico) = cpatch%leaf_hcap         (ico) * n_scale
+            cpatch%leaf_energy          (ico) = cpatch%leaf_energy       (ico) * n_scale
+            cpatch%wood_water           (ico) = cpatch%wood_water        (ico) * n_scale
+            cpatch%wood_hcap            (ico) = cpatch%wood_hcap         (ico) * n_scale
+            cpatch%wood_energy          (ico) = cpatch%wood_energy       (ico) * n_scale
+            cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * n_scale
+            cpatch%monthly_dlnndt       (ico) = cpatch%monthly_dlnndt    (ico) * n_scale
+            cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * n_scale
+            cpatch%today_nppleaf        (ico) = cpatch%today_nppleaf     (ico) * n_scale
+            cpatch%today_nppfroot       (ico) = cpatch%today_nppfroot    (ico) * n_scale
+            cpatch%today_nppsapwood     (ico) = cpatch%today_nppsapwood  (ico) * n_scale
+            cpatch%today_nppcroot       (ico) = cpatch%today_nppcroot    (ico) * n_scale
+            cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * n_scale
+            cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * n_scale
+            cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * n_scale
+            cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * n_scale
+            cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * n_scale
+            cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * n_scale
+            cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * n_scale
                      
             !----- Crown area shall not exceed one. ---------------------------------------!
-            cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * area_scale)
+            cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * n_scale)
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-               cpatch%dmean_par_l       (ico) = cpatch%dmean_par_l       (ico) * area_scale
-               cpatch%dmean_par_l_beam  (ico) = cpatch%dmean_par_l_beam  (ico) * area_scale
-               cpatch%dmean_par_l_diff  (ico) = cpatch%dmean_par_l_diff  (ico) * area_scale
+               cpatch%dmean_par_l       (ico) = cpatch%dmean_par_l       (ico) * n_scale
+               cpatch%dmean_par_l_beam  (ico) = cpatch%dmean_par_l_beam  (ico) * n_scale
+               cpatch%dmean_par_l_diff  (ico) = cpatch%dmean_par_l_diff  (ico) * n_scale
             end if
             if (imoutput > 0 .or. iqoutput > 0) then
-               cpatch%mmean_par_l       (ico) = cpatch%mmean_par_l       (ico) * area_scale
-               cpatch%mmean_par_l_beam  (ico) = cpatch%mmean_par_l_beam  (ico) * area_scale
-               cpatch%mmean_par_l_diff  (ico) = cpatch%mmean_par_l_diff  (ico) * area_scale
+               cpatch%mmean_par_l       (ico) = cpatch%mmean_par_l       (ico) * n_scale
+               cpatch%mmean_par_l_beam  (ico) = cpatch%mmean_par_l_beam  (ico) * n_scale
+               cpatch%mmean_par_l_diff  (ico) = cpatch%mmean_par_l_diff  (ico) * n_scale
             end if
             if (iqoutput > 0) then
-               cpatch%qmean_par_l     (:,ico) = cpatch%qmean_par_l     (:,ico) * area_scale
-               cpatch%qmean_par_l_beam(:,ico) = cpatch%qmean_par_l_beam(:,ico) * area_scale
-               cpatch%qmean_par_l_diff(:,ico) = cpatch%qmean_par_l_diff(:,ico) * area_scale
+               cpatch%qmean_par_l     (:,ico) = cpatch%qmean_par_l     (:,ico) * n_scale
+               cpatch%qmean_par_l_beam(:,ico) = cpatch%qmean_par_l_beam(:,ico) * n_scale
+               cpatch%qmean_par_l_diff(:,ico) = cpatch%qmean_par_l_diff(:,ico) * n_scale
             end if
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
+
+
+
 
 
 
       !------------------------------------------------------------------------------------!
       !     Sanity check: total new area must be 1.0.                                      !
       !------------------------------------------------------------------------------------!
-      if (abs(new_area-1.0) > 1.e-5) then
+      if (abs(site_area-1.0) > 1.e-5) then
          write (unit=*,fmt='(a)'          ) '---------------------------------------------'
          write (unit=*,fmt='(a)'          ) ' PATCH BIOMASS:'
          write (unit=*,fmt='(a)'          ) ' '
-         write (unit=*,fmt='(7(1x,a))'    ) '       PATCH','   DIST_TYPE',' PATCH_BLMAX'   &
-                                           ,'  DIST_BLMAX','   DIST_AREA','    OLD_AREA'   &
+         write (unit=*,fmt='(7(1x,a))'    ) '       PATCH','     LU_TYPE','PATCH_LAIMAX'   &
+                                           ,'   LU_LAIMAX','     LU_AREA','    OLD_AREA'   &
                                            ,'    NEW_AREA'
          do ipa=1,csite%npatches
-            lu = csite%dist_type(ipa)
+            ilu = csite%dist_type(ipa)
             write(unit=*,fmt='(2(1x,i12),5(1x,es12.5))')                                   &
-                    ipa,lu,patch_blmax(ipa),dist_blmax(lu),dist_area(lu),old_area(ipa)     &
+                    ipa,ilu,patch_laimax(ipa),lu_laimax(ilu),lu_area(ilu),old_area(ipa)    &
                    ,csite%area(ipa)
          end do
-         write (unit=*,fmt='(a,1x,es12.5)') ' SITE BIOMASS :',sum(dist_blmax)
-         write (unit=*,fmt='(a,1x,es12.5)') ' NEW_AREA     :',new_area
+         write (unit=*,fmt='(a,1x,es12.5)') ' SITE LAIMAX  :',sum(lu_laimax)
+         write (unit=*,fmt='(a,1x,es12.5)') ' SITE_AREA    :',site_area
          write (unit=*,fmt='(a)'          ) '---------------------------------------------'
          call fatal_error('New_area should be 1 but it isn''t!!!','rescale_patches'        &
                          ,'fuse_fiss_utils.f90')
@@ -609,12 +573,13 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Free memory before we leave the sub-routine.                                   !
       !------------------------------------------------------------------------------------!
-      deallocate(patch_blmax)
-      deallocate(old_area)
-      deallocate(dist_area)
-      deallocate(dist_blmax)
-      deallocate(dist_patch)
-      deallocate(elim_area)
+      deallocate(patch_laimax)
+      deallocate(remain_table)
+      deallocate(old_area    )
+      deallocate(lu_area     )
+      deallocate(lu_laimax   )
+      deallocate(lu_npatch   )
+      deallocate(elim_area   )
       !------------------------------------------------------------------------------------!
       return
    end subroutine rescale_patches
@@ -802,13 +767,16 @@ module fuse_fiss_utils
                   !    first census.                                                       !
                   ! 5. Both cohorts must have the same recruitment status with respect to  !
                   !    the DBH.                                                            !
-                  ! 6. Both cohorts must have the same phenology status.                   !
+                  ! 6. Both cohorts must have the same recruitment status with respect to  !
+                  !    the census.                                                         !
+                  ! 7. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
                      .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
                      .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
+                     .and. cpatch%census_status   (donc) == cpatch%census_status(recc)     &
                      .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
                      ) then
 
@@ -1172,6 +1140,7 @@ module fuse_fiss_utils
       cpatch%bsapwoodb(idt)            = cpatch%bsapwoodb(isc)
       cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
       cpatch%recruit_dbh(idt)          = cpatch%recruit_dbh(isc)
+      cpatch%census_status(idt)        = cpatch%census_status(isc)
       cpatch%balive(idt)               = cpatch%balive(isc)
       cpatch%lai(idt)                  = cpatch%lai(isc)
       cpatch%wai(idt)                  = cpatch%wai(isc)

@@ -620,34 +620,23 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
    !----- Local constants. ----------------------------------------------------------------!
    logical, parameter     :: debug =.false. ! Print debug info?                    [   T|F]
    !----- External functions --------------------------------------------------------------!
-   real, external                     :: buoyancy_acc   ! Buoyancy acceleration funtion.
+   real, external         :: buoyancy_acc   ! Buoyancy acceleration funtion.
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! 1. First of all, I'll check whether this is a precipitating cloud or not.  The        !
-   !    conversion rate from cloud to rain should be a function of the cloud size and wind !
-   !    shear, but it is only a step function, 0 if the radius is small, or a non-zero     !
-   !    constant otherwise. Perhaps this should be done in a different way in the future.  !
-   !---------------------------------------------------------------------------------------!
-   if (preccld) then
-      c0 = cld2prec
-   else 
-      c0 = 0.
-   end if
-   
-   !---------------------------------------------------------------------------------------!
-   ! 2.  Initialise integrated condensation and top flag.                                  !
+   !    Initialise integrated condensation and top flag.                                   !
    !---------------------------------------------------------------------------------------!
    pwavu     = 0.
    pwu_cld   = 0.
    leftu_cld = 0.
-   
-   
    !---------------------------------------------------------------------------------------!
-   ! 3.  Initialise the cloud top check. The check is done only once. The non-forced and   !
-   !     the modified profiles should use the original cloud top definition.               !
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initialise the cloud top check. The check is done only once. The non-forced and    !
+   ! the modified profiles should use the original cloud top definition.                   !
    !---------------------------------------------------------------------------------------!
    if (check_top) then
       foundtop  = .false.
@@ -656,13 +645,15 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
       klnb      = ktpse
       ktop      = ktpse
    end if
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
-   ! 4. Between the surface and the level of free convection, everything is already set up !
-   !    (it was done at the grell_find_cloud_lfc subroutine) but between the LFC and the   !
-   !    cloud top I will need a first guess for most variables, so I will initialise with  !
-   !    the environment. Above the cloud top, no mass flux, nothing happens in terms of    !
-   !    updraft, so I will set up the variables with environment values.                   !
+   !    Between the surface and the level of free convection, everything is already set up !
+   ! (it was done at the grell_find_cloud_lfc subroutine) but between the LFC and the      !
+   ! cloud top we need first guesses for most variables, so we initialise with the         !
+   ! environment. Above the cloud top, no mass flux, nothing happens in terms of updraft,  !
+   ! so we set up the variables with environment values.                                   !
    !---------------------------------------------------------------------------------------!
    thilu_cld((klfc+1):mkx) = thil_cup((klfc+1):mkx)
    tu_cld   ((klfc+1):mkx) = t_cup   ((klfc+1):mkx)
@@ -673,16 +664,44 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
    co2u_cld ((klfc+1):mkx) = co2_cup ((klfc+1):mkx)
    rhou_cld ((klfc+1):mkx) = rho_cup ((klfc+1):mkx)
    dbyu     ((klfc+1):mkx) = 0.
+   !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! 5. Between the LFC and the cloud top, we need to consider entrainment and detrainment !
-   !    contributions. Also, as the air parcel moves upward, condensation will happen, and !
-   !    a fraction of this condensation will fall out as rainfall. Here we will compute    !
-   !    all these variables, some of them in an iterative way.                             !
+   !    Between the LFC and the cloud top, we need to consider entrainment and detrainment !
+   ! contributions. Also, as the air parcel moves upward, condensation will happen, and a  !
+   ! fraction of this condensation will fall out as rainfall. Here we will compute all     !
+   ! these variables, some of them in an iterative way.                                    !
    !---------------------------------------------------------------------------------------!
    vertiloop: do k=klfc,ktpse
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether this is a precipitating cloud or not.  The conversion rate from   !
+      ! cloud to rain ultimately should be a function of the cloud size and wind shear.    !
+      ! These parameters are very unconstrained so we keep it simple here.  Right now only !
+      ! three options exist:                                                               !
+      ! 1. The cloud radius is too small so the lost water is assumed zero.                !
+      ! 2. cld2prec is positive.  The fraction is a function of the layer thickness, al-   !
+      !    though we make sure that the actual fraction never exceeds one.                 !
+      ! 3. cld2prec is negative, so we simply assume a constant rate throughout the cloud. !
+      !------------------------------------------------------------------------------------!
+      if (preccld) then
+         if (cld2prec > 0.) then
+            c0 = max(0.,min(cld2prec * dzu_cld(k),1.0))
+         else
+            c0 = -cld2prec
+         end if
+      else 
+         c0 = 0.
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !    The total mixing ratio is what came from level immediately beneath us plus      !
       ! entrainment and detrainment, plus the water and ice that is about to leave the     !
@@ -765,18 +784,19 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                  ,qtotua,which)
       call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotua,qliqu_cld(k)               &
                      ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-      leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+      leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
       funa         = qtotua - ( qeverything - leftu_cld(k) )
       !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       if (debug) then
-         write (unit=38,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')     &
+         write (unit=38,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,9(a,1x,f10.4,1x),a,1x,es12.5)')     &
              'k=',k,'it=',-1,'bisection=',.false.,'qall=',1000.*qeverything                &
             ,'qtot=',1000.*qtotua,'left=',1000.*leftu_cld(k),'qsat=',1000.*qsatu_cld(k)    &
             ,'qvap=',1000.*qvapu_cld(k),'qliq=',1000.*qliqu_cld(k)                         &
-            ,'qice=',1000.*qiceu_cld(k),'temp=',tu_cld(k)-t00,'funa=',1000.*funa
+            ,'qice=',1000.*qiceu_cld(k),'thil=',thilu_cld(k),'temp=',tu_cld(k)-t00         &
+            ,'funa=',1000.*funa
       end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -798,17 +818,18 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                     ,qtotuc,which)
          call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuc,qliqu_cld(k)            &
                         ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-         leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+         leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
          func         = qtotuc - ( qeverything - leftu_cld(k) )
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          if (debug) then
-            write (unit=38,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
+            write (unit=38,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,9(a,1x,f10.4,1x),a,1x,es12.5)')  &
                 'k=',k,'it=',0,'bisection=',.false.,'qall=',1000.*qeverything              &
                ,'qtot=',1000.*qtotuc,'left=',1000.*leftu_cld(k),'qsat=',1000.*qsatu_cld(k) &
                ,'qvap=',1000.*qvapu_cld(k),'qliq=',1000.*qliqu_cld(k)                      &
-               ,'qice=',1000.*qiceu_cld(k),'temp=',tu_cld(k)-t00,'func=',1000.*func
+               ,'qice=',1000.*qiceu_cld(k),'thil=',thilu_cld(k),'temp=',tu_cld(k)-t00      &
+               ,'func=',1000.*func
          end if
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -846,7 +867,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuz                   &
                               ,qliqu_cld(k),qiceu_cld(k),tubis,qvapu_cld(k)                &
                               ,qsatu_cld(k))
-               leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+               leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
                funz         = qtotuz - ( qeverything - leftu_cld(k) )
 
                bisection = funa*funz < 0.
@@ -864,12 +885,12 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
             if (debug) then
-               write (unit=38,fmt='(a,1x,i5,1x,a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')  &
+               write (unit=38,fmt='(a,1x,i5,1x,a,1x,l1,1x,9(a,1x,f10.4,1x),a,1x,es12.5)')  &
                    'k=',k,'it=     ½ bisection=',.true.,'qall=',1000.*qeverything          &
                   ,'qtot=',1000.*qtotuc,'left=',1000.*leftu_cld(k)                         &
                   ,'qsat=',1000.*qsatu_cld(k),'qvap=',1000.*qvapu_cld(k)                   &
                   ,'qliq=',1000.*qliqu_cld(k),'qice=',1000.*qiceu_cld(k)                   &
-                  ,'temp=',tubis-t00,'funz=',1000.*funz
+                  ,'thil=',thilu_cld(k),'temp=',tubis-t00,'funz=',1000.*funz
             end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -917,19 +938,19 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                        ,qtotu_cld(k),which)
             call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotu_cld(k),qliqu_cld(k)   &
                            ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
-            leftu_cld(k) = c0 * dzu_cld(k) * (qliqu_cld(k) + qiceu_cld(k))
+            leftu_cld(k) = c0 * (qliqu_cld(k) + qiceu_cld(k))
             funnow       = qtotu_cld(k) - ( qeverything - leftu_cld(k) )
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
             if (debug) then
                write (unit=38                                                              &
-                     ,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,8(a,1x,f10.4,1x),a,1x,es12.5)')       &
-                   'k=',k,'it=',it,'bisection=',bisection,'qall=',1000.*qeverything        &
-                  ,'qtot=',1000.*qtotu_cld(k),'left=',1000.*leftu_cld(k)                   &
-                  ,'qsat=',1000.*qsatu_cld(k),'qvap=',1000.*qvapu_cld(k)                   &
-                  ,'qliq=',1000.*qliqu_cld(k),'qice=',1000.*qiceu_cld(k)                   &
-                  ,'temp=',tu_cld(k)-t00,'funnow=',1000.*funnow
+                     ,fmt='(2(a,1x,i5,1x),a,1x,l1,1x,9(a,1x,f10.4,1x),a,1x,es12.5)')       &
+                      'k=',k,'it=',it,'bisection=',bisection,'qall=',1000.*qeverything     &
+                     ,'qtot=',1000.*qtotu_cld(k),'left=',1000.*leftu_cld(k)                &
+                     ,'qsat=',1000.*qsatu_cld(k),'qvap=',1000.*qvapu_cld(k)                &
+                     ,'qliq=',1000.*qliqu_cld(k),'qice=',1000.*qiceu_cld(k)                &
+                     ,'thil=',thilu_cld(k),'temp=',tu_cld(k)-t00,'funnow=',1000.*funnow
             end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -971,6 +992,15 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
 
          end do itloop
       end if iterif
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Make sure that the total mixing ratio makes sense.                             !
+      !------------------------------------------------------------------------------------!
+      qtotu_cld(k) = qvapu_cld(k) + qliqu_cld(k) + qiceu_cld(k)
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1015,7 +1045,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
       !    Liquid water that leaves the cloud as rain, in kg[liq. water]/kg[air], remember-!
       ! ing that c0 is in m^-1.                                                            !
       !------------------------------------------------------------------------------------!
-      pwu_cld(k) = leftu_cld(k)*etau_cld(k)
+      pwu_cld(k) = leftu_cld(k) * etau_cld(k)
       !----- Integrate condensation -------------------------------------------------------!
       pwavu = pwavu + pwu_cld(k)
       !------ Finding density, assuming pu_cld(k) ~= p_cup(k)... --------------------------!

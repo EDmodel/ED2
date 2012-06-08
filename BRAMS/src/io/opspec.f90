@@ -815,8 +815,8 @@ subroutine opspec3
          IFATERR=IFATERR+1
      end if
 
-     if (cld2prec < 0. .or. cld2prec > 1.0) then
-       print *, 'FATAL - cld2prec must be between 0 and 1.'
+     if (cld2prec < -1.0. .or. cld2prec > 1.0) then
+       print *, 'FATAL - cld2prec must be between -1 and 1.'
        print *, 'Yours is currently set to ',cld2prec
        IFATERR=IFATERR+1
      end if

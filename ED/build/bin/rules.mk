@@ -93,6 +93,11 @@ ed_1st.o : $(ED_DRIVER)/ed_1st.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+ed_bigleaf_init.o : $(ED_INIT)/ed_bigleaf_init.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 ed_driver.o : $(ED_DRIVER)/ed_driver.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

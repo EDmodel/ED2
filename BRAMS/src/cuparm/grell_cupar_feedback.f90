@@ -12,7 +12,8 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
 
    use rconstants        , only : day_sec       ! ! intent(in)
    use mem_ensemble      , only : ensemble_vars ! ! type
-   use mem_scratch_grell , only : mkx           ! ! intent(out)
+   use mem_scratch_grell , only : mkx           & ! intent(in)
+                                , z_cup         ! ! intent(in)
    implicit none
    !----- Arguments, input variables. -----------------------------------------------------!
    integer               , intent(in)    :: mgmzp             ! # of levels
@@ -132,8 +133,18 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
 
 
    !---------------------------------------------------------------------------------------!
-   !     Find the averaged mass fluxes for each static control.                            !
+   !     Find the averaged mass fluxes for each static control.  We will average over all  !
+   ! members.  Here we are also doing something slightly different from the original code: !
+   ! upmf (the mb term using Grell's notation) is simply the average accross all members,  !
+   ! not only the positive ones.  This should avoid biasing the convection towards the     !
+   ! strong convective members.  The argument here is that if most terms are zero, then    !
+   ! the environment is unfavourable for convection, so little, if any, convection should  !
+   ! happen.                                                                               !
    !---------------------------------------------------------------------------------------!
+   dnmf = 0.
+   dnmx = 0.
+   upmf = 0.
+   upmx = 0.
    do icap=1,maxens_cap
 
       dnmf_cap(icap) = 0.
@@ -142,8 +153,12 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
       do iedt=1,maxens_eff
          do imbp=1,maxens_lsf
             do idyn=1,maxens_dyn
-               dnmf_cap(icap) = dnmf_cap(icap) + dnmf_ens(idyn,imbp,iedt,icap)
-               upmf_cap(icap) = upmf_cap(icap) + upmf_ens(idyn,imbp,iedt,icap)
+               dnmf_cap(icap) = dnmf_cap(icap) + max(0.,dnmf_ens(idyn,imbp,iedt,icap))
+               upmf_cap(icap) = upmf_cap(icap) + max(0.,upmf_ens(idyn,imbp,iedt,icap))
+               dnmf           = dnmf           + max(0.,dnmf_ens(idyn,imbp,iedt,icap))
+               dnmx           = dnmx           + max(0.,dnmx_ens(idyn,imbp,iedt,icap))
+               upmf           = upmf           + max(0.,upmf_ens(idyn,imbp,iedt,icap))
+               upmx           = upmx           + max(0.,upmx_ens(idyn,imbp,iedt,icap))
             end do
          end do
       end do
@@ -151,41 +166,78 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
       !----- Normalise the mass fluxes. ---------------------------------------------------!
       dnmf_cap(icap) = dnmf_cap(icap) * inv_maxens_eld
       upmf_cap(icap) = upmf_cap(icap) * inv_maxens_eld
+      !------------------------------------------------------------------------------------!
 
    end do
    !---------------------------------------------------------------------------------------!
 
 
 
+   !----- Normalise the mass fluxes. ------------------------------------------------------!
+   dnmf = dnmf * inv_ensdim
+   dnmx = dnmx * inv_ensdim
+   upmf = upmf * inv_ensdim
+   upmx = upmx * inv_ensdim
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !    We will average over all members.  Here we are also doing something slightly       !
-   ! different from the original code: upmf (the mb term using Grell's notation) is simply !
-   ! the average accross all members, not only the positive ones.  This should avoid bias- !
-   ! ing the convection towards the strong convective members.  The argument here is that  !
-   ! if most terms are zero, then the environment is unfavourable for convection, so       !
-   ! little, if any, convection should happen.                                             !
-   !---------------------------------------------------------------------------------------!
-   upmf=sum(upmf_ens) * inv_ensdim
-   if (any(comp_down_cap) .and. upmf > 0) then
-      !------------------------------------------------------------------------------------!
-      !     Convection happened and it this cloud supports downdrafts.  Find the downdraft !
-      ! reference and the ratio between downdrafts and updrafts, and the potential mass    !
-      ! fluxes if the clouds were the only size that had happened.                         !
-      !------------------------------------------------------------------------------------!
-      dnmf = sum(dnmf_ens) * inv_ensdim
-      upmx = sum(upmx_ens) * inv_ensdim
-      dnmx = sum(dnmx_ens) * inv_ensdim
-   elseif (upmf == 0.) then
+   if (upmf == 0. .and. any(ierr_cap == 0)) then
       !------------------------------------------------------------------------------------!
       !     Unlikely, but if the reference upward mass flux is zero, that means that there !
       ! is no cloud...                                                                     !
       !------------------------------------------------------------------------------------!
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      if (print_debug) then
+         iun = 40 + icld
+         write (unit=iun,fmt='(143a)') ('=',k=1,143)
+         write(unit=iun,fmt='(1(a,1x,i12,1x))'  ) ' I        =',i
+         write(unit=iun,fmt='(1(a,1x,i12,1x))'  ) ' J        =',j
+         write(unit=iun,fmt='(1(a,1x,f12.5,1x))') ' DNMF     =',dnmf
+         write(unit=iun,fmt='(1(a,1x,f12.5,1x))') ' DNMX     =',dnmx
+         write(unit=iun,fmt='(1(a,1x,f12.5,1x))') ' UPMF     =',upmf
+         write(unit=iun,fmt='(1(a,1x,f12.5,1x))') ' UPMX     =',upmx
+         write (unit=iun,fmt='(143a)') ('-',k=1,143)
+         write (unit=iun,fmt='(11(a,1x))') '        ICAP','        IEDT','        IMBP'    &
+                                          ,'        IDYN','    IERR_CAP','    DNMF_ENS'    &
+                                          ,'    DNMX_ENS','    DNMF_CAP','    UPMF_ENS'    &
+                                          ,'    UPMX_ENS','    DNMF_CAP'
+         write (unit=iun,fmt='(143a)') ('-',k=1,143)
+         do icap=1,maxens_cap
+            do iedt=1,maxens_eff
+               do imbp=1,maxens_lsf
+                  do idyn=1,maxens_dyn
+                     write (unit=iun,fmt='(5(i12,1x),6(f12.5,1x))')                        &
+                                                      icap,iedt,imbp,idyn,ierr_cap(icap)   &
+                                                     ,dnmf_ens(idyn,imbp,iedt,icap)        &
+                                                     ,dnmx_ens(idyn,imbp,iedt,icap)        &
+                                                     ,dnmf_cap(icap)                       &
+                                                     ,upmf_ens(idyn,imbp,iedt,icap)        &
+                                                     ,upmx_ens(idyn,imbp,iedt,icap)        &
+                                                     ,upmf_cap(icap)
+                  end do
+               end do
+            end do
+         end do
+         write (unit=iun,fmt='(143a)') ('=',k=1,143)
+         write (unit=iun,fmt='(a)'   ) ' '
+      end if
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
       where (ierr_cap == 0)
-         ierr_cap = 10
+         ierr_cap = 13
       end where
       return
    end if
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !   Average the temperature tendency among the precipitation efficiency ensemble. If it !
@@ -280,29 +332,47 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
    end if
    
    !---------------------------------------------------------------------------------------!
-   !    Redefining epsilon.                                                                !
+   !    Redefine epsilon.                                                                  !
    !---------------------------------------------------------------------------------------!
    if (any(comp_down_cap) .and. upmf > 0.) then
       edt  = dnmf/upmf
    end if
+   !---------------------------------------------------------------------------------------!
 
-   !----- If the user wants print outs, now that is the time... ---------------------------!
-   if (print_debug) then
+
+
+
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+   !      If the user wants print outs, now that is the time...                            !
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   if (print_debug .and. upmf /= 0.) then
       iun=mynum+50
-      write(unit=iun,fmt='(a)') '---------------------------------------------------------'
-      write(unit=iun,fmt='(3(a,1x,i5,1x))') ' I=',i,'J=',j,'ICLD=',icld
-      write(unit=iun,fmt='(4(a,1x,f10.4,1x))') ' PRECIP   =',precip(1)                     &
-                                              ,' EDT      =',edt                           &
-                                              ,' DNMF     =',dnmf                          &
-                                              ,' UPMF     =',upmf
-      write(unit=iun,fmt='(a,3(1x,a))')  'Level','    DTHILDT','    DQTOTDT','     DCO2DT'
-      do k=1,mkx
-         write(unit=iun,fmt='(i5,3(1x,es12.5))') k,outthil(k),outqtot(k),outco2(k)
+      write(unit=iun,fmt='(70a)'       ) ('=',k=1,70)
+      write(unit=iun,fmt='(a,1x,i5)'   ) ' I        =',i
+      write(unit=iun,fmt='(a,1x,i5)'   ) ' J        =',j
+      write(unit=iun,fmt='(a,1x,i5)'   ) ' ICLD     =',icld
+      write(unit=iun,fmt='(a,1x,f10.4)') ' PRECIP   =',precip(1)
+      write(unit=iun,fmt='(a,1x,f10.4)') ' EDT      =',edt
+      write(unit=iun,fmt='(a,1x,f10.4)') ' DNMF     =',dnmf
+      write(unit=iun,fmt='(a,1x,f10.4)') ' UPMF     =',upmf
+      write(unit=iun,fmt='(70a)'       ) ('-',k=1,70)
+      write(unit=iun,fmt='(5(a,1x))'   )  '       LEVEL','      HEIGHT'                    &
+                                         ,'     DTHILDT','     DQTOTDT','      DCO2DT'
+      write(unit=iun,fmt='(5(a,1x))'   )  '            ','           m'                    &
+                                         ,'       K/day','    g/kg/day','umol/mol/day'
+      write(unit=iun,fmt='(70a)'       ) ('-',k=1,70)
+      do k=mkx,1,-1
+         write (unit=iun,fmt='(i13,1x,4(f13.5,1x))') k,z_cup  (k)                          &
+                                                      ,outthil(k) * day_sec                &
+                                                      ,outqtot(k) * 1000. * day_sec        &
+                                                      ,outco2 (k) * day_sec
       end do
-      write(unit=iun,fmt='(a)') '---------------------------------------------------'
+      write(unit=iun,fmt='(70a)'       ) ('=',k=1,70)
       write(unit=iun,fmt='(a)') ' '
-      
    end if
+   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
    return
 end subroutine grell_cupar_feedback

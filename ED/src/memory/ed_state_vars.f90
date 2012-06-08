@@ -102,11 +102,17 @@ module ed_state_vars
      ! 2 - plant has no leaves
      integer ,pointer,dimension(:) :: phenology_status
 
-     ! recruit_dbh codes:
+     ! recruit_dbh codes (updated every month):
      ! 0 - new plant
-     ! 1 - first census with DBH > 10cm
+     ! 1 - first month with DBH > 10cm
      ! 2 - established as DBH > 10cm
      integer, pointer, dimension(:) :: recruit_dbh
+
+     ! census_status codes (updated every census):
+     ! 0 - this cohort has never been with DBH > 10 cm at census times
+     ! 1 - New recruit (DBH > 10 cm for the first census)
+     ! 2 - Established (DBH > 10 cm for at least two censuses
+     integer, pointer, dimension(:) :: census_status
 
 
      ! Biomass of live tissue (kgC/plant)
@@ -3281,6 +3287,7 @@ contains
     allocate(cpatch%bleaf(ncohorts))
     allocate(cpatch%phenology_status(ncohorts))
     allocate(cpatch%recruit_dbh(ncohorts))
+    allocate(cpatch%census_status(ncohorts))
     allocate(cpatch%balive(ncohorts))
     allocate(cpatch%broot(ncohorts))
     allocate(cpatch%bsapwooda(ncohorts))
@@ -4455,6 +4462,7 @@ contains
     nullify(cpatch%bleaf)
     nullify(cpatch%phenology_status)
     nullify(cpatch%recruit_dbh)
+    nullify(cpatch%census_status)
     nullify(cpatch%balive)
     nullify(cpatch%broot)
     nullify(cpatch%bsapwooda)
@@ -5649,6 +5657,7 @@ contains
     if(associated(cpatch%bleaf))               deallocate(cpatch%bleaf)
     if(associated(cpatch%phenology_status))    deallocate(cpatch%phenology_status)
     if(associated(cpatch%recruit_dbh))         deallocate(cpatch%recruit_dbh)
+    if(associated(cpatch%census_status))       deallocate(cpatch%census_status)
     if(associated(cpatch%balive))              deallocate(cpatch%balive)
     if(associated(cpatch%broot))               deallocate(cpatch%broot)
     if(associated(cpatch%bsapwooda))           deallocate(cpatch%bsapwooda)
@@ -6502,6 +6511,7 @@ contains
     patchout%bleaf(1:inc)            = pack(patchin%bleaf,mask)
     patchout%phenology_status(1:inc) = pack(patchin%phenology_status,mask)
     patchout%recruit_dbh(1:inc)      = pack(patchin%recruit_dbh,mask)
+    patchout%census_status(1:inc)    = pack(patchin%census_status,mask)
     patchout%balive(1:inc)           = pack(patchin%balive,mask)
     patchout%broot(1:inc)            = pack(patchin%broot,mask)
     patchout%bsapwooda(1:inc)        = pack(patchin%bsapwooda,mask)
@@ -6746,6 +6756,7 @@ contains
        patchout%bleaf(iout)            = patchin%bleaf(iin)
        patchout%phenology_status(iout) = patchin%phenology_status(iin)
        patchout%recruit_dbh(iout)      = patchin%recruit_dbh(iin)
+       patchout%census_status(iout)    = patchin%census_status(iin)
        patchout%balive(iout)           = patchin%balive(iin)
        patchout%broot(iout)            = patchin%broot(iin)
        patchout%bsapwooda(iout)        = patchin%bsapwooda(iin)
@@ -13379,6 +13390,13 @@ contains
          nvar=nvar+1
            call vtable_edio_i(npts,cpatch%recruit_dbh,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'RECRUIT_DBH :40:hist:dail:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%census_status)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,cpatch%census_status,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'CENSUS_STATUS :40:hist:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

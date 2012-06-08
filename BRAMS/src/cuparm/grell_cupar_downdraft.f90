@@ -689,6 +689,16 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,z
 
          end do itloop
       end if iterif
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Make sure that the total mixing ratio makes sense.                             !
+      !------------------------------------------------------------------------------------!
+      qtotd_cld(k) = qvapd_cld(k) + qliqd_cld(k) + qiced_cld(k)
+      !------------------------------------------------------------------------------------!
+
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       if (debug) then
@@ -734,7 +744,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,z
       ! small amount of liquid/ice that may exist in the downdraft due to entrainment of   !
       ! saturated air.                                                                     !
       !------------------------------------------------------------------------------------!
-      pwd_cld(k) = etad_cld(k) * evapd_cld(k) * dzd_cld(k)
+      pwd_cld(k) = etad_cld(k) * evapd_cld(k)
       pwev       = pwev        + pwd_cld(k)
 
       !------ Finding density, assuming pd_cld(k) ~= p_cup(k)... --------------------------!

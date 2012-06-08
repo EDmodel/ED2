@@ -239,7 +239,11 @@ subroutine copy_nl(copy_type)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
-   use detailed_coms        , only : idetailed                 & ! intent(out)
+   use detailed_coms        , only : dt_census                 & ! intent(out)
+                                   , yr1st_census              & ! intent(out)
+                                   , mon1st_census             & ! intent(out)
+                                   , min_recruit_dbh           & ! intent(out)
+                                   , idetailed                 & ! intent(out)
                                    , patch_keep                ! ! intent(out)
    use consts_coms          , only : vonk                      & ! intent(in)
                                    , day_sec                   & ! intent(in)
@@ -452,6 +456,10 @@ subroutine copy_nl(copy_type)
       ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
 
+      dt_census                 = nl%dt_census
+      yr1st_census              = nl%yr1st_census
+      mon1st_census             = nl%mon1st_census
+      min_recruit_dbh           = nl%min_recruit_dbh
       idetailed                 = nl%idetailed
       patch_keep                = nl%patch_keep
 

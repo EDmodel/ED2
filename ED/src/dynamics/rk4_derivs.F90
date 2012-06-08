@@ -289,7 +289,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       end do
       !------------------------------------------------------------------------------------!
 
-   case (2)
+   case (2:4)
       !------------------------------------------------------------------------------------!
       !     The available water factor is the soil moisture at field capacity minus wilt-  !
       ! ing, scaled by the wilting factor, defined as a function of soil potential.        !

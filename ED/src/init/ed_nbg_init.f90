@@ -406,34 +406,34 @@ end subroutine init_cohorts_by_layers
 !      This subroutine initializes a near-bare ground 'big-leaf' ed run.                   !
 !------------------------------------------------------------------------------------------!
 subroutine near_bare_ground_big_leaf_init(cgrid)
-   use ed_state_vars  , only : edtype            & ! structure
-                             , polygontype       & ! structure
-                             , sitetype          & ! structure
-                             , patchtype         & ! structure
-                             , allocate_sitetype & ! subroutine
-                             , allocate_patchtype! ! subroutine
-   use ed_misc_coms   , only : ied_init_mode     & ! intent(in)
-                             , ibigleaf          ! ! intent(in)
-   use physiology_coms, only : n_plant_lim       ! ! intent(in)
-   use grid_coms      , only : nzg               ! ! intent(in)
-   use pft_coms       , only : q                 & ! intent(in)
-                             , qsw               & ! intent(in)
-                             , sla               & ! intent(in)
-                             , agf_bs            & ! intent(in)
-                             , hgt_min           & ! intent(in)
-                             , include_pft       & ! intent(in)
-                             , include_these_pft & ! intent(in)
-                             , include_pft_ag    & ! intent(in)
-                             , init_density      ! ! intent(in)
-   use consts_coms        , only : t3ple         & ! intent(in)
-                                 , pio4          & ! intent(in)
-                                 , kgom2_2_tonoha& ! intent(in)
-                                 , tonoha_2_kgom2! ! intent(in)
-   use allometry          , only : h2dbh         & ! function
-                                 , dbh2bd        & ! function
-                                 , size2bl       & ! function
-                                 , ed_biomass    & ! function
-                                 , area_indices  ! ! subroutine
+   use ed_state_vars      , only : edtype             & ! structure
+                                 , polygontype        & ! structure
+                                 , sitetype           & ! structure
+                                 , patchtype          & ! structure
+                                 , allocate_sitetype  & ! subroutine
+                                 , allocate_patchtype ! ! subroutine
+   use ed_misc_coms       , only : ied_init_mode      & ! intent(in)
+                                 , ibigleaf           ! ! intent(in)
+   use physiology_coms    , only : n_plant_lim        ! ! intent(in)
+   use grid_coms          , only : nzg                ! ! intent(in)
+   use pft_coms           , only : q                  & ! intent(in)
+                                 , qsw                & ! intent(in)
+                                 , sla                & ! intent(in)
+                                 , agf_bs             & ! intent(in)
+                                 , dbh_bigleaf        & ! intent(in)
+                                 , hgt_max            & ! intent(in)
+                                 , include_pft        & ! intent(in)
+                                 , include_these_pft  & ! intent(in)
+                                 , include_pft_ag     & ! intent(in)
+                                 , init_density       ! ! intent(in)
+   use consts_coms        , only : t3ple              & ! intent(in)
+                                 , pio4               & ! intent(in)
+                                 , kgom2_2_tonoha     & ! intent(in)
+                                 , tonoha_2_kgom2     ! ! intent(in)
+   use allometry          , only : dbh2bd             & ! function
+                                 , size2bl            & ! function
+                                 , ed_biomass         & ! function
+                                 , area_indices       ! ! subroutine
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -527,10 +527,10 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                ! quantities using the standard allometry for this PFT.                     !
                !---------------------------------------------------------------------------!
                cpatch%nplant(ico)           = init_density(ipft)
-               cpatch%hite(ico)             = hgt_min(ipft)
+               cpatch%dbh(ico)              = dbh_bigleaf(ipft)
+               cpatch%hite(ico)             = hgt_max(ipft)
                cpatch%phenology_status(ico) = 0
                cpatch%bstorage(ico)         = 0.0
-               cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
                cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
                cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%sla(ico)              = sla(ipft)

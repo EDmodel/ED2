@@ -117,7 +117,7 @@ else
          #----- Copy the meteorological forcing. ------------------------------------------#
          blah='  - Copying the meterological forcing driver...'
          echo ${blah} 1>> ${logfile} 2>> ${errfile}
-         cp -rfv ${datasrc}/${mddir} ${datadest} 1>> ${logfile} 2>> ${errfile}
+         rsync -Pruvaz ${datasrc}/${mddir} ${datadest} 1>> ${logfile} 2>> ${errfile}
 
 
          #----- Copy finished.  Create a file to unlock this node. ------------------------#
@@ -172,7 +172,7 @@ else
             #----- Copy the meteorological forcing. ---------------------------------------------#
             blah='  - Copying the meterological forcing driver...'
             echo ${blah} 1>> ${logfile} 2>> ${errfile}
-            cp -rfv ${datasrc}/${mddir} ${datadest} 1>> ${logfile} 2>> ${errfile}
+            rsync -Pruvaz ${datasrc}/${mddir} ${datadest} 1>> ${logfile} 2>> ${errfile}
 
 
             #----- Copy finished.  Create a file to unlock this node. ---------------------------#

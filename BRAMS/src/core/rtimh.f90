@@ -112,7 +112,7 @@ subroutine timestep()
    !---------------------------------------------------------------------------------------!
    if (.not. bulk_on) then
       t1 = cputime(w1)
-      call thermo(mzp,mxp,myp,ia,iz,ja,jz)
+      call thermo(mzp,mxp,myp,1,mxp,1,myp)
       if (acct) call acctimes('accu',3,'THERMO',t1,w1)
    end if
    !---------------------------------------------------------------------------------------!

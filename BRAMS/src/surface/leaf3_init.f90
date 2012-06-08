@@ -830,12 +830,13 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          veg_agb   (i,j,1)  = 0.0
 
          !----- Soil properties. Except for top layer energy, everything is set to zero. --!
-         soil_energy(:,i,j,1) = 0.
          soil_water (:,i,j,1) = 1.
          psibar_10d   (i,j,1) = 1.
-         soil_energy(mzg,i,j,1) = tl2uint( seatp(i,j)+(seatf(i,j)-seatp(i,j))*timefac_sst  &
-                                         , 1.0)
-
+         do k=1,mzg
+            soil_energy(k,i,j,1) = tl2uint( seatp(i,j)+(seatf(i,j)-seatp(i,j))*timefac_sst &
+                                          , 1.0)
+         end do
+         
          !----- Fluxes.  Initially they should be all zero. -------------------------------!
          sensible_gc (i,j,1) = 0.0
          sensible_vc (i,j,1) = 0.0
