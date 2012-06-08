@@ -1275,9 +1275,9 @@ subroutine hybrid_timestep(cgrid)
    ! ---------------- Maximum change in canopy Relative Humidity ----------------------!
 
    max_dshv_can = 0.15d0
-   hmin = (max_dshv_can*y%can_shv)/abs(dydx%can_shv)
+   hmin = (max_dshv_can*y%can_shv)/max(abs(dydx%can_shv),1.0d-10)
 
-   if ( h > max_dshv_can/abs(dydx%can_shv) .and. record_err) then
+   if ( h > max_dshv_can/max(abs(dydx%can_shv),1.0d-10) .and. record_err) then
       integ_err(3,1) = integ_err(3,1) + 1_8
    end if
 

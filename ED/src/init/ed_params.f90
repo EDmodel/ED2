@@ -1937,6 +1937,7 @@ subroutine init_pft_mort_params()
    use pft_coms    , only : mort1                      & ! intent(out)
                           , mort2                      & ! intent(out)
                           , mort3                      & ! intent(out)
+                          , cbr_severe_stress          & ! intent(out)
                           , rho                        & ! intent(out)
                           , seedling_mortality         & ! intent(out)
                           , treefall_s_gtht            & ! intent(out)
@@ -1974,6 +1975,9 @@ subroutine init_pft_mort_params()
    frost_mort(16:17) = 3.0
 
 
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the density-dependent mortality rates.            !
+   !---------------------------------------------------------------------------------------!
    mort1(1)  = 5.0 ! 10.0
    mort1(2)  = 5.0 ! 10.0
    mort1(3)  = 5.0 ! 10.0
@@ -2010,6 +2014,10 @@ subroutine init_pft_mort_params()
    mort2(16) = 10.0 ! 20.0
    mort2(17) = 10.0 ! 20.0
 
+   !---------------------------------------------------------------------------------------!
+   !     This variable controls the density-independent mortality rate due to ageing.      !
+   ! This value is a constant in units of [fraction/year].                                 !
+   !---------------------------------------------------------------------------------------!
    mort3(1)  = 0.15 * (1. - rho(1) / rho(4)) 
    mort3(2)  = 0.15 * (1. - rho(2) / rho(4))  
    mort3(3)  = 0.15 * (1. - rho(3) / rho(4))
@@ -2027,6 +2035,17 @@ subroutine init_pft_mort_params()
    mort3(15) = 0.15 * (1. - rho(15) / rho(4))
    mort3(16) = 0.15 * (1. - rho(16) / rho(4))
    mort3(17) = 0.0043 ! Same as pines
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      This is the default mortality for when the maximum carbon balance is negative.   !
+   !  Default in ED-1.0 and ED-2.0 was to assume zero, an alternative is to assume maximum !
+   !  mortality.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   !cbr_severe_stress(1:17) = 0.0
+   cbr_severe_stress(1:17) = log(epsilon(1.0)) / mort2(1:17)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

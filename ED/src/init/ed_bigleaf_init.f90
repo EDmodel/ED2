@@ -275,12 +275,14 @@ subroutine ed_bigleaf_init(cgrid)
                      !     Start plants with full phenology and in great carbon balance,   !
                      ! we will take care of phenology after this sub-routine.              !
                      !---------------------------------------------------------------------!
-                     cpatch%cb              (1:12,1) = 1.0
-                     cpatch%cb_max          (1:12,1) = 1.0
-                     cpatch%cb                (13,1) = 0.0
-                     cpatch%cb_max            (13,1) = 0.0
-                     cpatch%phenology_status     (1) = 0
-                     cpatch%bstorage             (1) = 0.0
+                     cpatch%cb               (1:12,1) = 1.0
+                     cpatch%cb_lightmax      (1:12,1) = 1.0
+                     cpatch%cb_moistmax      (1:12,1) = 1.0
+                     cpatch%cb                 (13,1) = 0.0
+                     cpatch%cb_lightmax        (13,1) = 0.0
+                     cpatch%cb_moistmax        (13,1) = 0.0
+                     cpatch%phenology_status      (1) = 0
+                     cpatch%bstorage              (1) = 0.0
                      !---------------------------------------------------------------------!
 
 

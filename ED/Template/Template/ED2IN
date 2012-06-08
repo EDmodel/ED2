@@ -412,10 +412,9 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
-   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
-   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
-   !             and near infra-red.                                                       !
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes.  Soil classes are from 1 to 20       !
+   !             (1 = lightest; 20 = darkest).  The values are the same as CLM-4.0.  The   !
+   !             table is the albedo for visible and near infra-red.                       !
    !---------------------------------------------------------------------------------------!
    !                                                                                       !
    !       |-----------------------------------------------------------------------|       !
@@ -869,6 +868,27 @@ $ED_NL
    !                      matric potentials at wilting point and field capacity.  This is  !
    !---------------------------------------------------------------------------------------!
    NL%H2O_PLANT_LIM   = myh2olimit
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  DDMORT_CONST -- This constant (k) determines the relative contribution of light and  !
+   !                  soil water to the density-dependent mortality rate.  Values range    !
+   !                  from 0 (water only) to 1 (light only).  This variable makes a        !
+   !                  difference only if H2O_PLANT_LIM is not zero.                        !
+   !                                                                                       !
+   !                                   m1                                                  !
+   !                  mu_DD = ----------------------                                       !
+   !                            1 + exp [ m2 * cr ]                                        !
+   !                                                                                       !
+   !                   1               1                             1                     !
+   !                 ---- = k ------------------ + (1 - k)  ------------------             !
+   !                  cr              CB                            CB                     !
+   !                            --------------                --------------               !
+   !                             CB_max_light                  CB_max_moist                !
+   !---------------------------------------------------------------------------------------!
+   NL%DDMORT_CONST    = myddmort
    !---------------------------------------------------------------------------------------!
 
 

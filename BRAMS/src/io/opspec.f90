@@ -781,7 +781,7 @@ subroutine opspec3
      end do
 
      select case (closure_type)
-     case ('en','nc','gr','lo','mc','kf','as')
+     case ('en','nc','qi','gr','lo','mc','kf','as')
        continue
      case default
        print *, 'FATAL - Invalid closure_type for Grell''s convection.'
@@ -815,7 +815,7 @@ subroutine opspec3
          IFATERR=IFATERR+1
      end if
 
-     if (cld2prec < -1.0. .or. cld2prec > 1.0) then
+     if (cld2prec < -1.0 .or. cld2prec > 1.0) then
        print *, 'FATAL - cld2prec must be between -1 and 1.'
        print *, 'Yours is currently set to ',cld2prec
        IFATERR=IFATERR+1

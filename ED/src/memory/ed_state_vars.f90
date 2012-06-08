@@ -144,15 +144,24 @@ module ed_state_vars
      real ,pointer,dimension(:) :: bstorage
      
      ! Monthly carbon balance for past 12 months and the current month
-     ! (kgC/plant/yr) - 13th column will have the partial month integration
-     real, pointer,dimension(:,:) :: cb       !(13,ncohorts)
-     
+     ! (kgC/plant/yr) - 13th column holds the partial month integration
+     real, pointer,dimension(:,:) :: cb           !(13,ncohorts)
+
      ! Maximum monthly carbon balance for past 12 months and the current 
-     ! month  if cohort were at the top of the canopy (kgC/plant, over one month)
-     ! 13th column will have the partial month integration.
-     real, pointer,dimension(:,:) :: cb_max  !(13,ncohorts)
-     
-     ! Annual average ratio of cb/cb_max
+     ! month  if cohort were at the top of the canopy (maximum light).
+     ! (kgC/plant/yr) - 13th column holds the partial month integration.
+     real, pointer,dimension(:,:) :: cb_lightmax  !(13,ncohorts)
+
+     ! Maximum monthly carbon balance for past 12 months and the current 
+     ! month  if cohort had access to all soil moisture needed (maximum moisture/fsw).
+     ! (kgC/plant/yr) - 13th column holds the partial month integration.
+     real, pointer,dimension(:,:) :: cb_moistmax  !(13,ncohorts)
+
+     ! Relative carbon balance:
+     !                                 CB                      CB       
+     !                  cr    = k ------------- + (1 - k) ------------- 
+     !                             CB_lightmax             CB_watermax  
+     ! k is the ddmort_const given on the namelist
      real ,pointer,dimension(:) :: cbr_bar
      
      ! Monthly mean of cb. The only difference from cb is the way it is scaled, so
@@ -259,9 +268,13 @@ module ed_state_vars
      ! averaged over 1 day
      real ,pointer,dimension(:) :: today_gpp_pot
 
-     ! Maximum GPP if cohort were at the top of the canopy 
+     ! Maximum GPP if cohort were at the top of the canopy (maximum light)
      ! [umol/m2 ground/s], averaged over 1 day
-     real ,pointer,dimension(:) :: today_gpp_max
+     real ,pointer,dimension(:) :: today_gpp_lightmax
+
+     ! Maximum GPP if cohort had all soil moisture needed (maximum soil moisture)
+     ! [umol/m2 ground/s], averaged over 1 day
+     real ,pointer,dimension(:) :: today_gpp_moistmax
 
      ! Plant growth respiration (kgC/plant/day)
      real ,pointer,dimension(:) :: growth_respiration
@@ -3299,7 +3312,8 @@ contains
     allocate(cpatch%wood_resolvable(ncohorts))
     allocate(cpatch%bstorage(ncohorts))
     allocate(cpatch%cb(13,ncohorts))
-    allocate(cpatch%cb_max(13,ncohorts))
+    allocate(cpatch%cb_lightmax(13,ncohorts))
+    allocate(cpatch%cb_moistmax(13,ncohorts))
     allocate(cpatch%cbr_bar(ncohorts))
     allocate(cpatch%leaf_energy(ncohorts))
     allocate(cpatch%leaf_temp  (ncohorts))
@@ -3338,7 +3352,8 @@ contains
     allocate(cpatch%today_nppwood(ncohorts))
     allocate(cpatch%today_nppdaily(ncohorts))
     allocate(cpatch%today_gpp_pot(ncohorts))
-    allocate(cpatch%today_gpp_max(ncohorts))
+    allocate(cpatch%today_gpp_lightmax(ncohorts))
+    allocate(cpatch%today_gpp_moistmax(ncohorts))
     allocate(cpatch%growth_respiration(ncohorts))
     allocate(cpatch%storage_respiration(ncohorts))
     allocate(cpatch%vleaf_respiration(ncohorts))
@@ -4474,7 +4489,8 @@ contains
     nullify(cpatch%wood_resolvable)
     nullify(cpatch%bstorage)
     nullify(cpatch%cb)
-    nullify(cpatch%cb_max)
+    nullify(cpatch%cb_lightmax)
+    nullify(cpatch%cb_moistmax)
     nullify(cpatch%cbr_bar)
     nullify(cpatch%mmean_cb)
     nullify(cpatch%leaf_energy)
@@ -4514,7 +4530,8 @@ contains
     nullify(cpatch%today_nppwood)
     nullify(cpatch%today_nppdaily)
     nullify(cpatch%today_gpp_pot)
-    nullify(cpatch%today_gpp_max)
+    nullify(cpatch%today_gpp_lightmax)
+    nullify(cpatch%today_gpp_moistmax)
     nullify(cpatch%dmean_gpp         )
     nullify(cpatch%dmean_nppleaf           )
     nullify(cpatch%dmean_nppfroot          )
@@ -5669,7 +5686,8 @@ contains
     if(associated(cpatch%wood_resolvable))     deallocate(cpatch%wood_resolvable)
     if(associated(cpatch%bstorage))            deallocate(cpatch%bstorage)
     if(associated(cpatch%cb))                  deallocate(cpatch%cb)
-    if(associated(cpatch%cb_max))              deallocate(cpatch%cb_max)
+    if(associated(cpatch%cb_lightmax))         deallocate(cpatch%cb_lightmax)
+    if(associated(cpatch%cb_moistmax))         deallocate(cpatch%cb_moistmax)
     if(associated(cpatch%cbr_bar))             deallocate(cpatch%cbr_bar)
     if(associated(cpatch%mmean_cb))            deallocate(cpatch%mmean_cb)
     if(associated(cpatch%leaf_energy))         deallocate(cpatch%leaf_energy)
@@ -5709,7 +5727,8 @@ contains
     if(associated(cpatch%today_nppwood))       deallocate(cpatch%today_nppwood)
     if(associated(cpatch%today_nppdaily))      deallocate(cpatch%today_nppdaily)
     if(associated(cpatch%today_gpp_pot))       deallocate(cpatch%today_gpp_pot)
-    if(associated(cpatch%today_gpp_max))       deallocate(cpatch%today_gpp_max)
+    if(associated(cpatch%today_gpp_lightmax))  deallocate(cpatch%today_gpp_lightmax)
+    if(associated(cpatch%today_gpp_moistmax))  deallocate(cpatch%today_gpp_moistmax)
     if(associated(cpatch%growth_respiration))  deallocate(cpatch%growth_respiration)
     if(associated(cpatch%storage_respiration)) deallocate(cpatch%storage_respiration)
     if(associated(cpatch%vleaf_respiration))   deallocate(cpatch%vleaf_respiration)
@@ -6560,8 +6579,9 @@ contains
     patchout%today_nppwood(1:inc)    = pack(patchin%today_nppwood,mask)
     patchout%today_nppdaily(1:inc)   = pack(patchin%today_nppdaily,mask)
     patchout%today_gpp_pot(1:inc)    = pack(patchin%today_gpp_pot,mask)
-    patchout%today_gpp_max(1:inc)    = pack(patchin%today_gpp_max,mask)
-    patchout%growth_respiration(1:inc) = pack(patchin%growth_respiration,mask)
+    patchout%today_gpp_lightmax(1:inc)  = pack(patchin%today_gpp_lightmax,mask)
+    patchout%today_gpp_moistmax(1:inc)  = pack(patchin%today_gpp_moistmax,mask)
+    patchout%growth_respiration(1:inc)  = pack(patchin%growth_respiration,mask)
     patchout%storage_respiration(1:inc) = pack(patchin%storage_respiration,mask)
     patchout%vleaf_respiration(1:inc) = pack(patchin%vleaf_respiration,mask)
     patchout%fsn(1:inc)              = pack(patchin%fsn,mask)
@@ -6620,8 +6640,9 @@ contains
     do m=1,inc
        k=incmask(m)
        do i = 1,13
-          patchout%cb(i,m)               = patchin%cb(i,k)
-          patchout%cb_max(i,m)           = patchin%cb_max(i,k)
+          patchout%cb         (i,m)  = patchin%cb         (i,k)
+          patchout%cb_lightmax(i,m)  = patchin%cb_lightmax(i,k)
+          patchout%cb_moistmax(i,m)  = patchin%cb_moistmax(i,k)
        end do
        do i = 1,n_mort
           patchout%mort_rate(i,m)       = patchin%mort_rate(i,k)
@@ -6768,7 +6789,8 @@ contains
        patchout%wood_resolvable(iout)  = patchin%wood_resolvable(iin)
        patchout%bstorage(iout)         = patchin%bstorage(iin)
        patchout%cb(:,iout)             = patchin%cb(:,iin)
-       patchout%cb_max(:,iout)         = patchin%cb_max(:,iin)
+       patchout%cb_lightmax(:,iout)    = patchin%cb_lightmax(:,iin)
+       patchout%cb_moistmax(:,iout)    = patchin%cb_moistmax(:,iin)
        patchout%cbr_bar(iout)          = patchin%cbr_bar(iin)
        patchout%leaf_energy(iout)      = patchin%leaf_energy(iin)
        patchout%leaf_hcap(iout)        = patchin%leaf_hcap(iin)
@@ -6807,7 +6829,8 @@ contains
        patchout%today_nppwood(iout)    = patchin%today_nppwood(iin)
        patchout%today_nppdaily(iout)   = patchin%today_nppdaily(iin)
        patchout%today_gpp_pot(iout)    = patchin%today_gpp_pot(iin)
-       patchout%today_gpp_max(iout)    = patchin%today_gpp_max(iin)
+       patchout%today_gpp_lightmax(iout) = patchin%today_gpp_lightmax(iin)
+       patchout%today_gpp_moistmax(iout) = patchin%today_gpp_moistmax(iin)
        patchout%growth_respiration(iout) = patchin%growth_respiration(iin)
        patchout%storage_respiration(iout) = patchin%storage_respiration(iin)
        patchout%vleaf_respiration(iout) = patchin%vleaf_respiration(iin)
@@ -13559,7 +13582,7 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%cbr_bar,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'CBR_BAR :41:hist:mont:year:dcyc') 
-         call metadata_edio(nvar,igr,'Annual average ratio of cb/cb_max','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Relative carbon balance','[NA]','NA') 
       end if
 
       if (associated(cpatch%mmean_cb)) then
@@ -13809,10 +13832,17 @@ contains
          call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO PRIOR TO DAILY WRITE OUT','[NA]','NA') 
       end if
 
-      if (associated(cpatch%today_gpp_max)) then
+      if (associated(cpatch%today_gpp_lightmax)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%today_gpp_max,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'TODAY_GPP_MAX :41:hist') 
+           call vtable_edio_r(npts,cpatch%today_gpp_lightmax,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP_LIGHTMAX :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIANOSTIC-WILL ZERO PRIOR TO DAILY WRITE OUT','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%today_gpp_moistmax)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_gpp_moistmax,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP_MOISTMAX :41:hist') 
          call metadata_edio(nvar,igr,'NOT A DIANOSTIC-WILL ZERO PRIOR TO DAILY WRITE OUT','[NA]','NA') 
       end if
 
@@ -14671,16 +14701,29 @@ contains
 
       if (associated(cpatch%cb)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%cb,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'CB :49:hist:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'carbon balance previous 12 months+current','[kgC/plant]','13 - icohort') 
+         call vtable_edio_r(npts,cpatch%cb,nvar,igr,init,cpatch%coglob_id                  &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'CB :49:hist:mont:dcyc:year')
+         call metadata_edio(nvar,igr,'carbon balance previous 12 months+current'           &
+                           ,'[kgC/plant]','13 - icohort') 
       end if
 
-      if (associated(cpatch%cb_max)) then
+      if (associated(cpatch%cb_lightmax)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%cb_max,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'CB_MAX :49:hist:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'TOC carbon balance previous 12 months+current','[kgC/plant]','13 - icohort') 
+         call vtable_edio_r(npts,cpatch%cb_lightmax,nvar,igr,init,cpatch%coglob_id         &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'CB_LIGHTMAX :49:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Full light carbon balance last 12 months+current'    &
+                           ,'[kgC/plant]','13 - icohort') 
+      end if
+
+      if (associated(cpatch%cb_moistmax)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%cb_moistmax,nvar,igr,init,cpatch%coglob_id         &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'CB_MOISTMAX :49:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Full moisture carbon balance last 12 months+current' &
+                           ,'[kgC/plant]','13 - icohort') 
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!

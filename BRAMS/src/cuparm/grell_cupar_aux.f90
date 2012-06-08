@@ -651,7 +651,8 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
                               ,maxens_cap,inv_ensdim,closure_type,ierr_cap,upmf_ens        &
                               ,sgrell1_3d,sgrell2_3d)
 
-   use rconstants  , only : hr_sec
+   use rconstants  , only : hr_sec        & ! intent(in)
+                          , onethird      ! ! intent(in)
    use mem_ensemble, only : ensemble_vars ! ! type
    use mem_scratch_grell, only: &
            kgoff                & ! intent(in) - BRAMS grid offset
@@ -770,34 +771,33 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
       do icap=1,maxens_cap
          upmf_ave_cap5(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
-   case ('nc','en')
+   case ('nc','en','qi')
       !------------------------------------------------------------------------------------!
       !  This became quite out of order after I changed the order in which each closure    !
       ! is called. I will keep "disorganized" for back compability.                        !
-      ! 1-3: Grell            (upmf_ave_cap1)                                              !
+      ! 1-3: Kain-Fritsch     (upmf_ave_cap4)                                              !
       ! 4-7: Arakawa-Schubert (upmf_ave_cap5)                                              !
-      ! 8-10: Kain-Fritsch    (upmf_ave_cap4)                                              !
+      ! 8-10: Grell           (upmf_ave_cap1)                                              !
       ! 11-13: Krishnamurti   (upmf_ave_cap3)                                              !
       ! 14-16: Frank-Cohen    (upmf_ave_cap2)                                              !
       !------------------------------------------------------------------------------------!
       do icap=1,maxens_cap
-         upmf_ave_cap1(icap) = sum(upmf_ens(1:3,:,:,icap))*0.3333333333*maxens_efflsf_i
+         upmf_ave_cap4(icap) = sum(upmf_ens(1:3,:,:,icap)) * onethird * maxens_efflsf_i
       end do
       do icap=1,maxens_cap
          upmf_ave_cap5(icap) = sum(upmf_ens(4:7,:,:,icap))*0.250*maxens_efflsf_i
       end do
-      do icap=1,maxens_cap
-         upmf_ave_cap4(icap) = sum(upmf_ens(8:10,:,:,icap))                                &
-                             * 0.3333333333 * maxens_efflsf_i
-      end do
+      if (closure_type == 'nc' .or. closure_type == 'en') then
+         do icap=1,maxens_cap
+            upmf_ave_cap1(icap) = sum(upmf_ens(8:10,:,:,icap)) * onethird * maxens_efflsf_i
+         end do
+      end if
       if (closure_type == 'en') then
          do icap=1,maxens_cap
-            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap))                            &
-                                * 0.3333333333*maxens_efflsf_i
+            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap)) * onethird*maxens_efflsf_i
          end do
          do imbp=1,maxens_lsf
-            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap))                            &
-                                * 0.3333333333*maxens_efflsf_i
+            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap)) * onethird*maxens_efflsf_i
          end do
       end if
    end select
@@ -892,13 +892,15 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
          sgrell1_3d(8)  = 0.
          sgrell1_3d(9)  = 0.
          sgrell1_3d(10) = upmf_ave(1)
-      case ('nc','en')
-         sgrell1_3d(6)  = .3333333 * sum(upmf_ave(1:3))
-         sgrell1_3d(9)  = .3333333 * sum(upmf_ave(8:10))
+      case ('nc','en','qi')
+         sgrell1_3d(9)  = onethird * sum(upmf_ave(1:3))
          sgrell1_3d(10) = .25      * sum(upmf_ave(4:7))
+         if (closure_type == 'nc' .or. closure_type == 'en') then
+            sgrell1_3d(6)  = onethird * sum(upmf_ave(8:10))
+         end if
          if (closure_type == 'en') then
-            sgrell1_3d(7) = .3333333 * sum(upmf_ave(14:16))
-            sgrell1_3d(8) = .3333333 * sum(upmf_ave(11:13))
+            sgrell1_3d(7) = onethird * sum(upmf_ave(14:16))
+            sgrell1_3d(8) = onethird * sum(upmf_ave(11:13))
          else
             sgrell1_3d(7) = 0.
             sgrell1_3d(8) = 0.
@@ -956,13 +958,15 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
          sgrell1_3d(13) = 0.
          sgrell1_3d(14) = 0.
          sgrell1_3d(15) = upmf_ave(1)*hr_sec
-      case ('nc','en')
-         sgrell1_3d(11) = .3333333 * sum(upmf_ave(1:3))*hr_sec
-         sgrell1_3d(14) = .3333333 * sum(upmf_ave(8:10))*hr_sec
-         sgrell1_3d(15) = .25      * sum(upmf_ave(4:7))*hr_sec
+      case ('nc','en','qi')
+         sgrell1_3d(14) = onethird * sum(upmf_ave(1:3)) *hr_sec
+         sgrell1_3d(15) = .25      * sum(upmf_ave(4:7)) *hr_sec
+         if (closure_type == 'nc' .or. closure_type == 'en') then
+            sgrell1_3d(11) = onethird * sum(upmf_ave(8:10))*hr_sec
+         end if
          if (closure_type == 'en') then
-            sgrell1_3d(12)= .3333333 * sum(upmf_ave(14:16))*hr_sec
-            sgrell1_3d(13)= .3333333 * sum(upmf_ave(11:13))*hr_sec
+            sgrell1_3d(12)= onethird * sum(upmf_ave(14:16))*hr_sec
+            sgrell1_3d(13)= onethird * sum(upmf_ave(11:13))*hr_sec
          else
             sgrell1_3d(12)= 0.
             sgrell1_3d(13)= 0.
@@ -1015,10 +1019,12 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
          sgrell1_3d(21) = 0.
          sgrell1_3d(22) = upmf_ave(1)
          sgrell1_3d(23) = 0.
-      case ('nc')
-         sgrell1_3d(21) = .3333333 * sum(upmf_ave(1:3))*hr_sec
+      case ('nc','qi')
+         sgrell1_3d(23) = onethird * sum(upmf_ave(1:3))*hr_sec
          sgrell1_3d(22) = .25      * sum(upmf_ave(4:7))*hr_sec
-         sgrell1_3d(23) = .3333333 * sum(upmf_ave(8:10))*hr_sec
+         if (closure_type == 'nc') then
+            sgrell1_3d(21) = onethird * sum(upmf_ave(8:10))*hr_sec
+         end if
       end select
    end if
    return

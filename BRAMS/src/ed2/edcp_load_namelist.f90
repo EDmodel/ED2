@@ -45,6 +45,7 @@ subroutine read_ednl(iunit,filename)
    use physiology_coms      , only : iphysiol                              & ! intent(out)
                                    , quantum_efficiency_t                  & ! intent(out)
                                    , h2o_plant_lim                         & ! intent(out)
+                                   , ddmort_const                          & ! intent(out)
                                    , n_plant_lim                           & ! intent(out)
                                    , vmfact_c3                             & ! intent(out)
                                    , vmfact_c4                             & ! intent(out)
@@ -238,8 +239,8 @@ subroutine read_ednl(iunit,filename)
                        ,igrass,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme        &
                        ,crown_mod,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir  &
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
-                       ,h2o_plant_lim,vmfact_c3,vmfact_c4,mphoto_trc3,mphoto_tec3          &
-                       ,mphoto_c4,bphoto_blc3,bphoto_nlc3,bphoto_c4,kw_grass               &
+                       ,h2o_plant_lim,ddmort_const,vmfact_c3,vmfact_c4,mphoto_trc3         &
+                       ,mphoto_tec3,mphoto_c4,bphoto_blc3,bphoto_nlc3,bphoto_c4,kw_grass   &
                        ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,alpha_c3                &
                        ,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass,lwidth_bltree   &
                        ,lwidth_nltree,q10_c3,q10_c4,thetacrit,quantum_efficiency_t         &
@@ -332,6 +333,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' clump_grass               =',clump_grass
       write (unit=*,fmt=*) ' decomp_scheme             =',decomp_scheme
       write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
+      write (unit=*,fmt=*) ' ddmort_const              =',ddmort_const
       write (unit=*,fmt=*) ' vmfact_c3                 =',vmfact_c3
       write (unit=*,fmt=*) ' vmfact_c4                 =',vmfact_c4
       write (unit=*,fmt=*) ' mphoto_trc3               =',mphoto_trc3

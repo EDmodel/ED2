@@ -27,7 +27,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    use ed_misc_coms   , only : current_time       ! ! intent(in)
    use met_driver_coms, only : met_driv_state     ! ! structure
    use physiology_coms, only : print_photo_debug  & ! intent(in)
-                             , h2o_plant_lim      ! ! intent(in)
+                             , h2o_plant_lim      & ! intent(in)
+                             , ddmort_const       ! ! intent(in)
    use phenology_coms , only : llspan_inf         ! ! intent(in)
    use farq_leuning   , only : lphysiol_full      ! ! sub-routine
    use allometry      , only : h2crownbh          ! ! function
@@ -149,7 +150,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
       end do
       !------------------------------------------------------------------------------------!
 
-   case (2:4)
+   case (2)
       !------------------------------------------------------------------------------------!
       !     The available water factor is the soil moisture at field capacity minus wilt-  !
       ! ing point, scaled by the wilting factor, defined as a function of soil potential   !
@@ -299,12 +300,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             !    Find the 100% relative humidity.  This is a temporary test to make the    !
             ! maximum carbon balance less negative.                                        !
             !------------------------------------------------------------------------------!
-            select case (h2o_plant_lim)
-            case (0:3)
-               can_ssh = csite%can_shv(ipa)
-            case (4)
-               can_ssh = qslif(csite%can_prss(ipa),cpatch%leaf_temp(tuco))
-            end select
+            can_ssh = csite%can_shv(ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -481,7 +477,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             cpatch%stomatal_conductance(ico) =  cpatch%fs_open(ico) *cpatch%gsw_open(ico)  &
                                              + (1.0 - cpatch%fs_open(ico))                 &
                                              * cpatch%gsw_closed(ico)
-            !------------------------------------------------------------------------------#
+            !------------------------------------------------------------------------------!
 
 
             !----- GPP, averaged over frqstate. -------------------------------------------!
@@ -490,12 +486,12 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                     + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) ) &
                                   + cpatch%leaf_respiration(ico)
             cpatch%mean_gpp(ico)  = cpatch%mean_gpp(ico) + cpatch%gpp(ico)
-            !------------------------------------------------------------------------------#
+            !------------------------------------------------------------------------------!
 
 
             !----- GPP, summed over 1 day. [µmol/m²ground] --------------------------------!
             cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico)
-            !------------------------------------------------------------------------------#
+            !------------------------------------------------------------------------------!
 
 
             !----- Potential GPP if no N limitation. [µmol/m²ground] ----------------------!
@@ -504,28 +500,33 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                       * ( cpatch%fsw(ico) * cpatch%A_open(ico)             &
                                         + (1.0 - cpatch%fsw(ico)) * cpatch%A_closed(ico))  &
                                       + cpatch%leaf_respiration(ico)
-            !------------------------------------------------------------------------------#
+            !------------------------------------------------------------------------------!
 
 
 
-            !------------------------------------------------------------------------------#
-            !     Maximum GPP if at the top of the canopy and in case h2o_plant_lim is 3   #
-            ! or 4, with no soil water stress [µmol/m²ground].                             #
-            !------------------------------------------------------------------------------#
-            select case (h2o_plant_lim)
-            case (0:2)
-               cpatch%today_gpp_max(ico) = cpatch%today_gpp_max(ico)                       &
-                                         + cpatch%lai(ico)                                 &
-                                         * ( cpatch%fs_open(ico) * csite%A_o_max(ipft,ipa) &
-                                           + (1.0 - cpatch%fs_open(ico))                   &
-                                           * csite%A_c_max(ipft,ipa) )                     &
-                                         + cpatch%leaf_respiration(ico)
-            case (3:4)
-               cpatch%today_gpp_max(ico) = cpatch%today_gpp_max(ico)                       &
-                                         + cpatch%lai(ico) * csite%A_o_max(ipft,ipa)       &
-                                         + cpatch%leaf_respiration(ico)
-            end select
-            !------------------------------------------------------------------------------#
+            !------------------------------------------------------------------------------!
+            !     Find the maximum productivities:                                         !
+            !                                                                              !
+            !     - today_gpp_lightmax: productivity of this cohort if it were at the top  !
+            !                           of the canopy (full light), with the actual fsw.   !
+            !     - today_gpp_moistmax: productivity of this cohort if the soil moisture   !
+            !                           was such that fsw would be 1 (full moisture), with !
+            !                           the actual light.                                  !
+            !                                                                              !
+            !     These productivites are used to scale the relative carbon balance, which !
+            ! will control density-dependent mortality.                                    !
+            !------------------------------------------------------------------------------!
+            cpatch%today_gpp_lightmax(ico) = cpatch%today_gpp_lightmax(ico)                &
+                                           + cpatch%lai(ico)                               &
+                                           * ( cpatch%fs_open(ico)                         &
+                                             * csite%A_o_max(ipft,ipa)                     &
+                                             + (1.0 - cpatch%fs_open(ico))                 &
+                                             * csite%A_c_max(ipft,ipa) )                   &
+                                           + cpatch%leaf_respiration(ico)
+            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
+                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
+                                           + cpatch%leaf_respiration(ico)
+            !------------------------------------------------------------------------------!
 
       else
          !----- If the cohort wasn't solved, we must assign some zeroes. ------------------!

@@ -672,7 +672,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             fcpct           = max(0., 0.11 - 0.40 * csite%soil_water(mzg,ipa))
             albedo_soil_par = min(soilcol(colour)%alb_vis_dry                              &
                                  ,soilcol(colour)%alb_vis_wet  + fcpct)
-            albedo_soil_nir = min(soilcol(colour)%alb_nir_dry                             &
+            albedo_soil_nir = min(soilcol(colour)%alb_nir_dry                              &
                                  ,soilcol(colour)%alb_nir_wet  + fcpct)
             !------------------------------------------------------------------------------!
          end select

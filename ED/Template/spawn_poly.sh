@@ -295,41 +295,42 @@ do
    q10c3=`echo ${oi}        | awk '{print $45}'`
    q10c4=`echo ${oi}        | awk '{print $46}'`
    h2olimit=`echo ${oi}     | awk '{print $47}'`
-   isfclyrm=`echo ${oi}     | awk '{print $48}'`
-   icanturb=`echo ${oi}     | awk '{print $49}'`
-   ubmin=`echo ${oi}        | awk '{print $50}'`
-   ugbmin=`echo ${oi}       | awk '{print $51}'`
-   ustmin=`echo ${oi}       | awk '{print $52}'`
-   gamm=`echo ${oi}         | awk '{print $53}'`
-   gamh=`echo ${oi}         | awk '{print $54}'`
-   tprandtl=`echo ${oi}     | awk '{print $55}'`
-   ribmax=`echo ${oi}       | awk '{print $56}'`
-   atmco2=`echo ${oi}       | awk '{print $57}'`
-   thcrit=`echo ${oi}       | awk '{print $58}'`
-   smfire=`echo ${oi}       | awk '{print $59}'`
-   ifire=`echo ${oi}        | awk '{print $60}'`
-   fireparm=`echo ${oi}     | awk '{print $61}'`
-   ipercol=`echo ${oi}      | awk '{print $62}'`
-   isoilbc=`echo ${oi}      | awk '{print $63}'`
-   runoff=`echo ${oi}       | awk '{print $64}'`
-   imetrad=`echo ${oi}      | awk '{print $65}'`
-   ibranch=`echo ${oi}      | awk '{print $66}'`
-   icanrad=`echo ${oi}      | awk '{print $67}'`
-   crown=`echo   ${oi}      | awk '{print $68}'`
-   ltransvis=`echo ${oi}    | awk '{print $69}'`
-   lreflectvis=`echo ${oi}  | awk '{print $70}'`
-   ltransnir=`echo ${oi}    | awk '{print $71}'`
-   lreflectnir=`echo ${oi}  | awk '{print $72}'`
-   orienttree=`echo ${oi}   | awk '{print $73}'`
-   orientgrass=`echo ${oi}  | awk '{print $74}'`
-   clumptree=`echo ${oi}    | awk '{print $75}'`
-   clumpgrass=`echo ${oi}   | awk '{print $76}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $77}'`
-   igndvap=`echo ${oi}      | awk '{print $78}'`
-   iphen=`echo ${oi}        | awk '{print $79}'`
-   iallom=`echo ${oi}       | awk '{print $80}'`
-   ibigleaf=`echo ${oi}     | awk '{print $81}'`
-   irepro=`echo ${oi}       | awk '{print $82}'`
+   ddmort=`echo ${oi}       | awk '{print $48}'`
+   isfclyrm=`echo ${oi}     | awk '{print $49}'`
+   icanturb=`echo ${oi}     | awk '{print $50}'`
+   ubmin=`echo ${oi}        | awk '{print $51}'`
+   ugbmin=`echo ${oi}       | awk '{print $52}'`
+   ustmin=`echo ${oi}       | awk '{print $53}'`
+   gamm=`echo ${oi}         | awk '{print $54}'`
+   gamh=`echo ${oi}         | awk '{print $55}'`
+   tprandtl=`echo ${oi}     | awk '{print $56}'`
+   ribmax=`echo ${oi}       | awk '{print $57}'`
+   atmco2=`echo ${oi}       | awk '{print $58}'`
+   thcrit=`echo ${oi}       | awk '{print $59}'`
+   smfire=`echo ${oi}       | awk '{print $60}'`
+   ifire=`echo ${oi}        | awk '{print $61}'`
+   fireparm=`echo ${oi}     | awk '{print $62}'`
+   ipercol=`echo ${oi}      | awk '{print $63}'`
+   isoilbc=`echo ${oi}      | awk '{print $64}'`
+   runoff=`echo ${oi}       | awk '{print $65}'`
+   imetrad=`echo ${oi}      | awk '{print $66}'`
+   ibranch=`echo ${oi}      | awk '{print $67}'`
+   icanrad=`echo ${oi}      | awk '{print $68}'`
+   crown=`echo   ${oi}      | awk '{print $69}'`
+   ltransvis=`echo ${oi}    | awk '{print $70}'`
+   lreflectvis=`echo ${oi}  | awk '{print $71}'`
+   ltransnir=`echo ${oi}    | awk '{print $72}'`
+   lreflectnir=`echo ${oi}  | awk '{print $73}'`
+   orienttree=`echo ${oi}   | awk '{print $74}'`
+   orientgrass=`echo ${oi}  | awk '{print $75}'`
+   clumptree=`echo ${oi}    | awk '{print $76}'`
+   clumpgrass=`echo ${oi}   | awk '{print $77}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $78}'`
+   igndvap=`echo ${oi}      | awk '{print $79}'`
+   iphen=`echo ${oi}        | awk '{print $80}'`
+   iallom=`echo ${oi}       | awk '{print $81}'`
+   ibigleaf=`echo ${oi}     | awk '{print $82}'`
+   irepro=`echo ${oi}       | awk '{print $83}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -526,22 +527,23 @@ do
    #---------------------------------------------------------------------------------------#
    #     Determine the census structure.                                                   #
    #---------------------------------------------------------------------------------------#
+   let yodd=${yeara}%2
    case ${polyiata} in
    gyf)
       dtcensus=24
-      yr1stcensus=2004
+      let yr1stcensus=${yeara}+${yodd}
       mon1stcensus=7
       minrecruitdbh=10
       ;;
    s66|s67)
       dtcensus=24
-      yr1stcensus=1999
+      let yr1stcensus=${yeara}+1-${yodd}
       mon1stcensus=7
       minrecruitdbh=10
       ;;
    *)
       dtcensus=1
-      yr1stcensus=2000
+      yr1stcensus=${yeara}
       mon1stcensus=1
       minrecruitdbh=10
       ;;
@@ -1237,6 +1239,7 @@ do
    sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
    sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
    sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
+   sed -i s@myddmort@${ddmort}@g                ${ED2IN}
    sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
    sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
    sed -i s@myatmco2@${atmco2}@g                ${ED2IN}

@@ -512,7 +512,8 @@ module fuse_fiss_utils
             cpatch%today_nppwood        (ico) = cpatch%today_nppwood     (ico) * n_scale
             cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * n_scale
             cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * n_scale
-            cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * n_scale
+            cpatch%today_gpp_lightmax   (ico) = cpatch%today_gpp_lightmax(ico) * n_scale
+            cpatch%today_gpp_moistmax   (ico) = cpatch%today_gpp_moistmax(ico) * n_scale
             cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * n_scale
             cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * n_scale
                      
@@ -1013,7 +1014,8 @@ module fuse_fiss_utils
                cpatch%today_nppseeds       (ico) = cpatch%today_nppseeds    (ico) * 0.5
                cpatch%today_nppdaily       (ico) = cpatch%today_nppdaily    (ico) * 0.5
                cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * 0.5
-               cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * 0.5
+               cpatch%today_gpp_lightmax   (ico) = cpatch%today_gpp_lightmax(ico) * 0.5
+               cpatch%today_gpp_moistmax   (ico) = cpatch%today_gpp_moistmax(ico) * 0.5
                cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * 0.5
                cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * 0.5
                cpatch%gpp                  (ico) = cpatch%gpp               (ico) * 0.5
@@ -1129,133 +1131,135 @@ module fuse_fiss_utils
       integer                      :: imonth
       !------------------------------------------------------------------------------------!
 
-      cpatch%pft(idt)                  = cpatch%pft(isc)
-      cpatch%nplant(idt)               = cpatch%nplant(isc)
-      cpatch%hite(idt)                 = cpatch%hite(isc)
-      cpatch%dbh(idt)                  = cpatch%dbh(isc)
-      cpatch%bdead(idt)                = cpatch%bdead(isc)
-      cpatch%bleaf(idt)                = cpatch%bleaf(isc)
-      cpatch%broot(idt)                = cpatch%broot(isc)
-      cpatch%bsapwooda(idt)            = cpatch%bsapwooda(isc)
-      cpatch%bsapwoodb(idt)            = cpatch%bsapwoodb(isc)
-      cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
-      cpatch%recruit_dbh(idt)          = cpatch%recruit_dbh(isc)
-      cpatch%census_status(idt)        = cpatch%census_status(isc)
-      cpatch%balive(idt)               = cpatch%balive(isc)
-      cpatch%lai(idt)                  = cpatch%lai(isc)
-      cpatch%wai(idt)                  = cpatch%wai(isc)
-      cpatch%crown_area(idt)           = cpatch%crown_area(isc)
-      cpatch%bstorage(idt)             = cpatch%bstorage(isc)
-      cpatch%leaf_resolvable(idt)      = cpatch%leaf_resolvable(isc)
-      cpatch%wood_resolvable(idt)      = cpatch%wood_resolvable(isc)
+      cpatch%pft(idt)                   = cpatch%pft(isc)
+      cpatch%nplant(idt)                = cpatch%nplant(isc)
+      cpatch%hite(idt)                  = cpatch%hite(isc)
+      cpatch%dbh(idt)                   = cpatch%dbh(isc)
+      cpatch%bdead(idt)                 = cpatch%bdead(isc)
+      cpatch%bleaf(idt)                 = cpatch%bleaf(isc)
+      cpatch%broot(idt)                 = cpatch%broot(isc)
+      cpatch%bsapwooda(idt)             = cpatch%bsapwooda(isc)
+      cpatch%bsapwoodb(idt)             = cpatch%bsapwoodb(isc)
+      cpatch%phenology_status(idt)      = cpatch%phenology_status(isc)
+      cpatch%recruit_dbh(idt)           = cpatch%recruit_dbh(isc)
+      cpatch%census_status(idt)         = cpatch%census_status(isc)
+      cpatch%balive(idt)                = cpatch%balive(isc)
+      cpatch%lai(idt)                   = cpatch%lai(isc)
+      cpatch%wai(idt)                   = cpatch%wai(isc)
+      cpatch%crown_area(idt)            = cpatch%crown_area(isc)
+      cpatch%bstorage(idt)              = cpatch%bstorage(isc)
+      cpatch%leaf_resolvable(idt)       = cpatch%leaf_resolvable(isc)
+      cpatch%wood_resolvable(idt)       = cpatch%wood_resolvable(isc)
 
       do imonth = 1,13
-         cpatch%cb(imonth,idt)         = cpatch%cb(imonth,isc)
-         cpatch%cb_max(imonth,idt)     = cpatch%cb_max(imonth,isc)
+         cpatch%cb         (imonth,idt) = cpatch%cb         (imonth,isc)
+         cpatch%cb_lightmax(imonth,idt) = cpatch%cb_lightmax(imonth,isc)
+         cpatch%cb_moistmax(imonth,idt) = cpatch%cb_moistmax(imonth,isc)
       enddo
 
-      cpatch%cbr_bar(idt)              = cpatch%cbr_bar(isc)
-      cpatch%leaf_energy(idt)          = cpatch%leaf_energy(isc)
-      cpatch%leaf_hcap(idt)            = cpatch%leaf_hcap(isc)
-      cpatch%leaf_temp(idt)            = cpatch%leaf_temp(isc)
-      cpatch%leaf_temp_pv(idt)         = cpatch%leaf_temp_pv(isc)
-      cpatch%leaf_fliq(idt)            = cpatch%leaf_fliq(isc)
-      cpatch%leaf_water(idt)           = cpatch%leaf_water(isc)
-      cpatch%wood_energy(idt)          = cpatch%wood_energy(isc)
-      cpatch%wood_hcap(idt)            = cpatch%wood_hcap(isc)
-      cpatch%wood_temp(idt)            = cpatch%wood_temp(isc)
-      cpatch%wood_temp_pv(idt)         = cpatch%wood_temp_pv(isc)
-      cpatch%wood_fliq(idt)            = cpatch%wood_fliq(isc)
-      cpatch%wood_water(idt)           = cpatch%wood_water(isc)
-      cpatch%veg_wind(idt)             = cpatch%veg_wind(isc)
-      cpatch%lsfc_shv_open(idt)        = cpatch%lsfc_shv_open(isc)
-      cpatch%lsfc_shv_closed(idt)      = cpatch%lsfc_shv_closed(isc)
-      cpatch%lsfc_co2_open(idt)        = cpatch%lsfc_co2_open(isc)
-      cpatch%lsfc_co2_closed(idt)      = cpatch%lsfc_co2_closed(isc)
-      cpatch%lint_shv(idt)             = cpatch%lint_shv(isc)
-      cpatch%lint_co2_open(idt)        = cpatch%lint_co2_open(isc)
-      cpatch%lint_co2_closed(idt)      = cpatch%lint_co2_closed(isc)
-      cpatch%mean_gpp(idt)             = cpatch%mean_gpp(isc)
-      cpatch%mean_leaf_resp(idt)       = cpatch%mean_leaf_resp(isc)
-      cpatch%mean_root_resp(idt)       = cpatch%mean_root_resp(isc)
-      cpatch%mean_storage_resp(idt)    = cpatch%mean_storage_resp(isc)
-      cpatch%mean_growth_resp(idt)     = cpatch%mean_growth_resp(isc)
-      cpatch%mean_vleaf_resp(idt)      = cpatch%mean_vleaf_resp(isc)
-      cpatch%today_leaf_resp(idt)      = cpatch%today_leaf_resp(isc)
-      cpatch%today_root_resp(idt)      = cpatch%today_root_resp(isc)
-      cpatch%today_gpp(idt)            = cpatch%today_gpp(isc)
-      cpatch%today_nppleaf(idt)        = cpatch%today_nppleaf(isc)
-      cpatch%today_nppfroot(idt)       = cpatch%today_nppfroot(isc)
-      cpatch%today_nppsapwood(idt)     = cpatch%today_nppsapwood(isc)
-      cpatch%today_nppcroot(idt)       = cpatch%today_nppcroot(isc)
-      cpatch%today_nppseeds(idt)       = cpatch%today_nppseeds(isc)
-      cpatch%today_nppwood(idt)        = cpatch%today_nppwood(isc)
-      cpatch%today_nppdaily(idt)       = cpatch%today_nppdaily(isc)
-      cpatch%today_gpp_pot(idt)        = cpatch%today_gpp_pot(isc)
-      cpatch%today_gpp_max(idt)        = cpatch%today_gpp_max(isc)
-      cpatch%growth_respiration(idt)   = cpatch%growth_respiration(isc)
-      cpatch%storage_respiration(idt)  = cpatch%storage_respiration(isc)
-      cpatch%vleaf_respiration(idt)    = cpatch%vleaf_respiration(isc)
-      cpatch%fsn(idt)                  = cpatch%fsn(isc)
-      cpatch%monthly_dndt(idt)         = cpatch%monthly_dndt(isc)
-      cpatch%monthly_dlnndt(idt)       = cpatch%monthly_dlnndt(isc)
-      cpatch%agb(idt)                  = cpatch%agb(isc)
-      cpatch%basarea(idt)              = cpatch%basarea(isc)
-      cpatch%dagb_dt(idt)              = cpatch%dagb_dt(isc)
-      cpatch%dba_dt(idt)               = cpatch%dba_dt(isc)
-      cpatch%ddbh_dt(idt)              = cpatch%ddbh_dt(isc)
-      cpatch%dlndbh_dt(idt)            = cpatch%dlndbh_dt(isc)
-      cpatch%Psi_open(idt)             = cpatch%Psi_open(isc)
-      cpatch%krdepth(idt)              = cpatch%krdepth(isc)
-      cpatch%first_census(idt)         = cpatch%first_census(isc)
-      cpatch%new_recruit_flag(idt)     = cpatch%new_recruit_flag(isc)
-      cpatch%par_l(idt)                = cpatch%par_l(isc)
-      cpatch%par_l_beam(idt)           = cpatch%par_l_beam(isc)
-      cpatch%par_l_diffuse(idt)        = cpatch%par_l_diffuse(isc)
-      cpatch%rshort_l(idt)             = cpatch%rshort_l(isc)
-      cpatch%rshort_l_beam(idt)        = cpatch%rshort_l_beam(isc)
-      cpatch%rshort_l_diffuse(idt)     = cpatch%rshort_l_diffuse(isc)
-      cpatch%rlong_l(idt)              = cpatch%rlong_l(isc)
-      cpatch%rlong_l_surf(idt)         = cpatch%rlong_l_surf(isc)
-      cpatch%rlong_l_incid(idt)        = cpatch%rlong_l_incid(isc)
-      cpatch%rshort_w(idt)             = cpatch%rshort_w(isc)
-      cpatch%rshort_w_beam(idt)        = cpatch%rshort_w_beam(isc)
-      cpatch%rshort_w_diffuse(idt)     = cpatch%rshort_w_diffuse(isc)
-      cpatch%rlong_w(idt)              = cpatch%rlong_w(isc)
-      cpatch%rlong_w_surf(idt)         = cpatch%rlong_w_surf(isc)
-      cpatch%rlong_w_incid(idt)        = cpatch%rlong_w_incid(isc)
-      cpatch%light_level(idt)          = cpatch%light_level(isc)
-      cpatch%light_level_beam(idt)     = cpatch%light_level_beam(isc)
-      cpatch%light_level_diff(idt)     = cpatch%light_level_diff(isc)
-      cpatch%leaf_gbh(idt)             = cpatch%leaf_gbh(isc)
-      cpatch%leaf_gbw(idt)             = cpatch%leaf_gbw(isc)
-      cpatch%wood_gbh(idt)             = cpatch%wood_gbh(isc)
-      cpatch%wood_gbw(idt)             = cpatch%wood_gbw(isc)
-      cpatch%A_open(idt)               = cpatch%A_open(isc)
-      cpatch%A_closed(idt)             = cpatch%A_closed(isc)
-      cpatch%Psi_closed(idt)           = cpatch%Psi_closed(isc)
-      cpatch%gsw_open(idt)             = cpatch%gsw_open(isc)
-      cpatch%gsw_closed(idt)           = cpatch%gsw_closed(isc)
-      cpatch%fsw(idt)                  = cpatch%fsw(isc)
-      cpatch%fs_open(idt)              = cpatch%fs_open(isc)
-      cpatch%water_supply(idt)         = cpatch%water_supply(isc)
-      cpatch%stomatal_conductance(idt) = cpatch%stomatal_conductance(isc)
-      cpatch%leaf_maintenance(idt)     = cpatch%leaf_maintenance(isc)
-      cpatch%root_maintenance(idt)     = cpatch%root_maintenance(isc)
-      cpatch%leaf_drop(idt)            = cpatch%leaf_drop(isc)
-      cpatch%bseeds(idt)               = cpatch%bseeds(isc)
-      cpatch%leaf_respiration(idt)     = cpatch%leaf_respiration(isc)
-      cpatch%root_respiration(idt)     = cpatch%root_respiration(isc)
-      cpatch%mort_rate(:,idt)          = cpatch%mort_rate(:,isc)
+      cpatch%cbr_bar(idt)               = cpatch%cbr_bar(isc)
+      cpatch%leaf_energy(idt)           = cpatch%leaf_energy(isc)
+      cpatch%leaf_hcap(idt)             = cpatch%leaf_hcap(isc)
+      cpatch%leaf_temp(idt)             = cpatch%leaf_temp(isc)
+      cpatch%leaf_temp_pv(idt)          = cpatch%leaf_temp_pv(isc)
+      cpatch%leaf_fliq(idt)             = cpatch%leaf_fliq(isc)
+      cpatch%leaf_water(idt)            = cpatch%leaf_water(isc)
+      cpatch%wood_energy(idt)           = cpatch%wood_energy(isc)
+      cpatch%wood_hcap(idt)             = cpatch%wood_hcap(isc)
+      cpatch%wood_temp(idt)             = cpatch%wood_temp(isc)
+      cpatch%wood_temp_pv(idt)          = cpatch%wood_temp_pv(isc)
+      cpatch%wood_fliq(idt)             = cpatch%wood_fliq(isc)
+      cpatch%wood_water(idt)            = cpatch%wood_water(isc)
+      cpatch%veg_wind(idt)              = cpatch%veg_wind(isc)
+      cpatch%lsfc_shv_open(idt)         = cpatch%lsfc_shv_open(isc)
+      cpatch%lsfc_shv_closed(idt)       = cpatch%lsfc_shv_closed(isc)
+      cpatch%lsfc_co2_open(idt)         = cpatch%lsfc_co2_open(isc)
+      cpatch%lsfc_co2_closed(idt)       = cpatch%lsfc_co2_closed(isc)
+      cpatch%lint_shv(idt)              = cpatch%lint_shv(isc)
+      cpatch%lint_co2_open(idt)         = cpatch%lint_co2_open(isc)
+      cpatch%lint_co2_closed(idt)       = cpatch%lint_co2_closed(isc)
+      cpatch%mean_gpp(idt)              = cpatch%mean_gpp(isc)
+      cpatch%mean_leaf_resp(idt)        = cpatch%mean_leaf_resp(isc)
+      cpatch%mean_root_resp(idt)        = cpatch%mean_root_resp(isc)
+      cpatch%mean_storage_resp(idt)     = cpatch%mean_storage_resp(isc)
+      cpatch%mean_growth_resp(idt)      = cpatch%mean_growth_resp(isc)
+      cpatch%mean_vleaf_resp(idt)       = cpatch%mean_vleaf_resp(isc)
+      cpatch%today_leaf_resp(idt)       = cpatch%today_leaf_resp(isc)
+      cpatch%today_root_resp(idt)       = cpatch%today_root_resp(isc)
+      cpatch%today_gpp(idt)             = cpatch%today_gpp(isc)
+      cpatch%today_nppleaf(idt)         = cpatch%today_nppleaf(isc)
+      cpatch%today_nppfroot(idt)        = cpatch%today_nppfroot(isc)
+      cpatch%today_nppsapwood(idt)      = cpatch%today_nppsapwood(isc)
+      cpatch%today_nppcroot(idt)        = cpatch%today_nppcroot(isc)
+      cpatch%today_nppseeds(idt)        = cpatch%today_nppseeds(isc)
+      cpatch%today_nppwood(idt)         = cpatch%today_nppwood(isc)
+      cpatch%today_nppdaily(idt)        = cpatch%today_nppdaily(isc)
+      cpatch%today_gpp_pot(idt)         = cpatch%today_gpp_pot(isc)
+      cpatch%today_gpp_lightmax(idt)    = cpatch%today_gpp_lightmax(isc)
+      cpatch%today_gpp_moistmax(idt)    = cpatch%today_gpp_moistmax(isc)
+      cpatch%growth_respiration(idt)    = cpatch%growth_respiration(isc)
+      cpatch%storage_respiration(idt)   = cpatch%storage_respiration(isc)
+      cpatch%vleaf_respiration(idt)     = cpatch%vleaf_respiration(isc)
+      cpatch%fsn(idt)                   = cpatch%fsn(isc)
+      cpatch%monthly_dndt(idt)          = cpatch%monthly_dndt(isc)
+      cpatch%monthly_dlnndt(idt)        = cpatch%monthly_dlnndt(isc)
+      cpatch%agb(idt)                   = cpatch%agb(isc)
+      cpatch%basarea(idt)               = cpatch%basarea(isc)
+      cpatch%dagb_dt(idt)               = cpatch%dagb_dt(isc)
+      cpatch%dba_dt(idt)                = cpatch%dba_dt(isc)
+      cpatch%ddbh_dt(idt)               = cpatch%ddbh_dt(isc)
+      cpatch%dlndbh_dt(idt)             = cpatch%dlndbh_dt(isc)
+      cpatch%Psi_open(idt)              = cpatch%Psi_open(isc)
+      cpatch%krdepth(idt)               = cpatch%krdepth(isc)
+      cpatch%first_census(idt)          = cpatch%first_census(isc)
+      cpatch%new_recruit_flag(idt)      = cpatch%new_recruit_flag(isc)
+      cpatch%par_l(idt)                 = cpatch%par_l(isc)
+      cpatch%par_l_beam(idt)            = cpatch%par_l_beam(isc)
+      cpatch%par_l_diffuse(idt)         = cpatch%par_l_diffuse(isc)
+      cpatch%rshort_l(idt)              = cpatch%rshort_l(isc)
+      cpatch%rshort_l_beam(idt)         = cpatch%rshort_l_beam(isc)
+      cpatch%rshort_l_diffuse(idt)      = cpatch%rshort_l_diffuse(isc)
+      cpatch%rlong_l(idt)               = cpatch%rlong_l(isc)
+      cpatch%rlong_l_surf(idt)          = cpatch%rlong_l_surf(isc)
+      cpatch%rlong_l_incid(idt)         = cpatch%rlong_l_incid(isc)
+      cpatch%rshort_w(idt)              = cpatch%rshort_w(isc)
+      cpatch%rshort_w_beam(idt)         = cpatch%rshort_w_beam(isc)
+      cpatch%rshort_w_diffuse(idt)      = cpatch%rshort_w_diffuse(isc)
+      cpatch%rlong_w(idt)               = cpatch%rlong_w(isc)
+      cpatch%rlong_w_surf(idt)          = cpatch%rlong_w_surf(isc)
+      cpatch%rlong_w_incid(idt)         = cpatch%rlong_w_incid(isc)
+      cpatch%light_level(idt)           = cpatch%light_level(isc)
+      cpatch%light_level_beam(idt)      = cpatch%light_level_beam(isc)
+      cpatch%light_level_diff(idt)      = cpatch%light_level_diff(isc)
+      cpatch%leaf_gbh(idt)              = cpatch%leaf_gbh(isc)
+      cpatch%leaf_gbw(idt)              = cpatch%leaf_gbw(isc)
+      cpatch%wood_gbh(idt)              = cpatch%wood_gbh(isc)
+      cpatch%wood_gbw(idt)              = cpatch%wood_gbw(isc)
+      cpatch%A_open(idt)                = cpatch%A_open(isc)
+      cpatch%A_closed(idt)              = cpatch%A_closed(isc)
+      cpatch%Psi_closed(idt)            = cpatch%Psi_closed(isc)
+      cpatch%gsw_open(idt)              = cpatch%gsw_open(isc)
+      cpatch%gsw_closed(idt)            = cpatch%gsw_closed(isc)
+      cpatch%fsw(idt)                   = cpatch%fsw(isc)
+      cpatch%fs_open(idt)               = cpatch%fs_open(isc)
+      cpatch%water_supply(idt)          = cpatch%water_supply(isc)
+      cpatch%stomatal_conductance(idt)  = cpatch%stomatal_conductance(isc)
+      cpatch%leaf_maintenance(idt)      = cpatch%leaf_maintenance(isc)
+      cpatch%root_maintenance(idt)      = cpatch%root_maintenance(isc)
+      cpatch%leaf_drop(idt)             = cpatch%leaf_drop(isc)
+      cpatch%bseeds(idt)                = cpatch%bseeds(isc)
+      cpatch%leaf_respiration(idt)      = cpatch%leaf_respiration(isc)
+      cpatch%root_respiration(idt)      = cpatch%root_respiration(isc)
+      cpatch%mort_rate(:,idt)           = cpatch%mort_rate(:,isc)
 
-      cpatch%gpp(idt)                  = cpatch%gpp(isc)
-      cpatch%paw_avg(idt)              = cpatch%paw_avg(isc)
-      cpatch%elongf(idt)               = cpatch%elongf(isc)
+      cpatch%gpp(idt)                   = cpatch%gpp(isc)
+      cpatch%paw_avg(idt)               = cpatch%paw_avg(isc)
+      cpatch%elongf(idt)                = cpatch%elongf(isc)
 
-      cpatch%turnover_amp(idt)         = cpatch%turnover_amp(isc)     
-      cpatch%llspan(idt)               = cpatch%llspan(isc)     
-      cpatch%vm_bar(idt)               = cpatch%vm_bar(isc)  
-      cpatch%sla(idt)                  = cpatch%sla(isc)  
+      cpatch%turnover_amp(idt)          = cpatch%turnover_amp(isc)     
+      cpatch%llspan(idt)                = cpatch%llspan(isc)     
+      cpatch%vm_bar(idt)                = cpatch%vm_bar(isc)  
+      cpatch%sla(idt)                   = cpatch%sla(isc)  
      
      
       if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
@@ -1517,17 +1521,29 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     CB and CB_Max are scaled by population, as they are in kgC/plant/yr.  The      !
-      ! relative carbon balance, however, is no longer derived from the annual values of   !
-      ! CB and CB_Max, but tracked independently as it used to be in ED-1.0.               !
+      !     CB, CB_lightmax, and CB_moistmax are scaled by population, as they are in      !
+      ! kgC/plant/yr.  The relative carbon balance, however, is no longer derived from the !
+      ! annual values of CB, CB_LightMax, and CB_MoistMax, but tracked independently as it !
+      ! used to be done in ED-1.0.                                                         !
       !------------------------------------------------------------------------------------!
       do imon = 1,13
-         cpatch%cb(imon,recc)     = ( cpatch%cb(imon,recc) * cpatch%nplant(recc)           &
-                                    + cpatch%cb(imon,donc) * cpatch%nplant(donc) ) * newni
+         cpatch%cb         (imon,recc) = newni                                             &
+                                       * ( cpatch%cb          (imon,recc)                  &
+                                         * cpatch%nplant           (recc)                  &
+                                         + cpatch%cb          (imon,donc)                  &
+                                         * cpatch%nplant           (donc) )
 
-         cpatch%cb_max(imon,recc) = ( cpatch%cb_max(imon,recc) * cpatch%nplant(recc)       &
-                                    + cpatch%cb_max(imon,donc) * cpatch%nplant(donc))      &
-                                    * newni
+         cpatch%cb_lightmax(imon,recc) = newni                                             &
+                                       * ( cpatch%cb_lightmax (imon,recc)                  &
+                                         * cpatch%nplant           (recc)                  &
+                                         + cpatch%cb_lightmax (imon,donc)                  &
+                                         * cpatch%nplant           (donc) )
+
+         cpatch%cb_moistmax(imon,recc) = newni                                             &
+                                       * ( cpatch%cb_moistmax (imon,recc)                  &
+                                         * cpatch%nplant           (recc)                  &
+                                         + cpatch%cb_moistmax (imon,donc)                  &
+                                         * cpatch%nplant           (donc) )
       end do
       !------------------------------------------------------------------------------------!
 
@@ -1535,7 +1551,8 @@ module fuse_fiss_utils
 
       !------------------------------------------------------------------------------------!
       !     Relative carbon balance is also averaged between the cohorts, to avoid wild    !
-      ! oscillations in mortality.                                                         !
+      ! oscillations in mortality when cohorts are fused.  This is the original method     !
+      ! used in ED-1.0.                                                                    !
       !------------------------------------------------------------------------------------!
       cpatch%cbr_bar(recc) = ( cpatch%cbr_bar(recc) * cpatch%nplant(recc)                  &
                              + cpatch%cbr_bar(donc) * cpatch%nplant(donc) ) * newni
@@ -1562,41 +1579,44 @@ module fuse_fiss_utils
 
        !------------------------------------------------------------------------------------!
 
-      cpatch%today_gpp(recc)     = cpatch%today_gpp(recc)                                  &
-                                 + cpatch%today_gpp(donc)
-                                 
-      cpatch%today_nppleaf(recc) = cpatch%today_nppleaf(recc)                              &
-                                 + cpatch%today_nppleaf(donc)
-                                 
-      cpatch%today_nppfroot(recc)= cpatch%today_nppfroot(recc)                             &
-                                 + cpatch%today_nppfroot(donc)
-                                 
-      cpatch%today_nppsapwood(recc) = cpatch%today_nppsapwood(recc)                        &
-                                 + cpatch%today_nppsapwood(donc)
-                                 
-      cpatch%today_nppcroot(recc)= cpatch%today_nppcroot(recc)                             &
-                                 + cpatch%today_nppcroot(donc)
-                                 
-      cpatch%today_nppseeds(recc)= cpatch%today_nppseeds(recc)                             &
-                                 + cpatch%today_nppseeds(donc)
-                                 
-      cpatch%today_nppwood(recc) = cpatch%today_nppwood(recc)                              &
-                                 + cpatch%today_nppwood(donc)
-                                 
-      cpatch%today_nppdaily(recc)= cpatch%today_nppdaily(recc)                             &
-                                 + cpatch%today_nppdaily(donc)
-                                 
-      cpatch%today_gpp_pot(recc) = cpatch%today_gpp_pot(recc)                              &
-                                 + cpatch%today_gpp_pot(donc)
+      cpatch%today_gpp          (recc) = cpatch%today_gpp          (recc)                  &
+                                       + cpatch%today_gpp          (donc)
+                                  
+      cpatch%today_nppleaf      (recc) = cpatch%today_nppleaf      (recc)                  &
+                                       + cpatch%today_nppleaf      (donc)
+                                  
+      cpatch%today_nppfroot     (recc) = cpatch%today_nppfroot     (recc)                  &
+                                       + cpatch%today_nppfroot     (donc)
+                                  
+      cpatch%today_nppsapwood   (recc) = cpatch%today_nppsapwood   (recc)                  &
+                                       + cpatch%today_nppsapwood   (donc)
+                                  
+      cpatch%today_nppcroot     (recc) = cpatch%today_nppcroot     (recc)                  &
+                                       + cpatch%today_nppcroot     (donc)
+                                  
+      cpatch%today_nppseeds     (recc) = cpatch%today_nppseeds     (recc)                  &
+                                       + cpatch%today_nppseeds     (donc)
+                                  
+      cpatch%today_nppwood      (recc) = cpatch%today_nppwood      (recc)                  &
+                                       + cpatch%today_nppwood      (donc)
+                                  
+      cpatch%today_nppdaily     (recc) = cpatch%today_nppdaily     (recc)                  &
+                                       + cpatch%today_nppdaily     (donc)
+                                  
+      cpatch%today_gpp_pot      (recc) = cpatch%today_gpp_pot      (recc)                  &
+                                       + cpatch%today_gpp_pot      (donc)
 
-      cpatch%today_gpp_max(recc) = cpatch%today_gpp_max(recc)                              &
-                                 + cpatch%today_gpp_max(donc)
+      cpatch%today_gpp_lightmax (recc) = cpatch%today_gpp_lightmax (recc)                  &
+                                       + cpatch%today_gpp_lightmax (donc)
 
-      cpatch%today_leaf_resp(recc) = cpatch%today_leaf_resp(recc)                          &
-                                  + cpatch%today_leaf_resp(donc)
+      cpatch%today_gpp_moistmax (recc) = cpatch%today_gpp_moistmax (recc)                  &
+                                       + cpatch%today_gpp_moistmax (donc)
 
-      cpatch%today_root_resp(recc) = cpatch%today_root_resp(recc)                          &
-                                   + cpatch%today_root_resp(donc)
+      cpatch%today_leaf_resp    (recc) = cpatch%today_leaf_resp    (recc)                  &
+                                       + cpatch%today_leaf_resp    (donc)
+
+      cpatch%today_root_resp    (recc) = cpatch%today_root_resp    (recc)                  &
+                                       + cpatch%today_root_resp    (donc)
       !------------------------------------------------------------------------------------!
 
 
@@ -3896,7 +3916,8 @@ module fuse_fiss_utils
          cpatch%today_nppwood         (ico) = cpatch%today_nppwood      (ico)  * area_scale
          cpatch%today_nppdaily        (ico) = cpatch%today_nppdaily     (ico)  * area_scale
          cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
-         cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
+         cpatch%today_gpp_lightmax    (ico) = cpatch%today_gpp_lightmax (ico)  * area_scale
+         cpatch%today_gpp_moistmax    (ico) = cpatch%today_gpp_moistmax (ico)  * area_scale
          cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale
          cpatch%today_root_resp       (ico) = cpatch%today_root_resp    (ico)  * area_scale
          cpatch%Psi_open              (ico) = cpatch%Psi_open           (ico)  * area_scale
@@ -3956,7 +3977,8 @@ module fuse_fiss_utils
          cpatch%today_nppwood         (ico) = cpatch%today_nppwood      (ico)  * area_scale
          cpatch%today_nppdaily        (ico) = cpatch%today_nppdaily     (ico)  * area_scale
          cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
-         cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
+         cpatch%today_gpp_lightmax    (ico) = cpatch%today_gpp_lightmax (ico)  * area_scale
+         cpatch%today_gpp_moistmax    (ico) = cpatch%today_gpp_moistmax (ico)  * area_scale
          cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale
          cpatch%today_root_resp       (ico) = cpatch%today_root_resp    (ico)  * area_scale
          cpatch%Psi_open              (ico) = cpatch%Psi_open           (ico)  * area_scale

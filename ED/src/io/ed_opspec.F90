@@ -1144,6 +1144,7 @@ subroutine ed_opspec_misc
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
+                                    , ddmort_const                 & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
                                     , vmfact_c4                    & ! intent(in)
@@ -1338,14 +1339,25 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif ((ied_init_mode < -1 .or. ied_init_mode > 6) .and. ied_init_mode /= 99 ) then
+   elseif ((ied_init_mode < -1 .or. ied_init_mode > 7) .and. &
+           (ied_init_mode /= 99 )) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                     'Invalid IED_INIT_MODE, it must be between -1 and 6. Yours is set to' &
+                     'Invalid IED_INIT_MODE, it must be between -1 and 7. Yours is set to' &
                     ,ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
+
+
+   if (ied_init_mode == 7 .and. isoilstateinit>0 ) then
+      write (reason,fmt='(a)')                                                   &
+           'Please set ISOILSTATEINIT=0 if using IED_INIT_MODE=7'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+      
 #if defined(COUPLED)
    do ifm=1,ngrids
       if (isoilflg(ifm) < 0 .or. isoilflg(ifm) > 3) then
@@ -1603,10 +1615,18 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if  
-   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 4) then
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid H2O_PLANT_LIM, it must be between 0 and 4.  Yours is set to'  &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (ddmort_const < 0. .or. ddmort_const > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid DDMORT_CONST, it must be between 0 and 1.  Yours is set to'   &
+                    ,ddmort_const,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

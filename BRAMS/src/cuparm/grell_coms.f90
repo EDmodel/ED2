@@ -273,6 +273,11 @@ module grell_coms
          comp_noforc_cldwork  = .true.
          comp_modif_thermo    = .true.
 
+      case ('qi')
+         maxens_dyn           = 7
+         comp_noforc_cldwork  = .true.
+         comp_modif_thermo    = .true.
+
       case ('kf','gr')
          maxens_dyn          = 1
          comp_noforc_cldwork = .true.

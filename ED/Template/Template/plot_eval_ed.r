@@ -16,10 +16,11 @@ myplaces       = c("thispoly")
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
-outform        = "png"          # Formats for output file.  Supported formats are:
+outform        = "thisoutform"          # Formats for output file.  Supported formats are:
                                 #   - "X11" - for printing on screen
                                 #   - "eps" - for postscript printing
                                 #   - "png" - for PNG printing
+                                #   - "pdf" - for PDF printing
 
 byeold         = TRUE           # Remove old files of the given format?
 
@@ -615,7 +616,10 @@ for (place in myplaces){
                   ,height=size$height*depth,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -817,7 +821,11 @@ for (place in myplaces){
                               ,height=size$height*depth,pointsize=ptsz,res=depth)
                         }else if(outform[o] == "eps"){
                            postscript(file=fichier,width=size$width,height=size$height
-                                     ,pointsize=ptsz,paper=paper)
+                                     ,pointsize=ptsz,paper=size$paper)
+                        }else if(outform[o] == "pdf"){
+                           pdf(file=fichier,onefile=FALSE
+                              ,width=size$width,height=size$height,pointsize=ptsz
+                              ,paper=size$paper)
                         }#end if
                         #------------------------------------------------------------------#
 
@@ -896,7 +904,11 @@ for (place in myplaces){
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
                      postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=paper)
+                               ,pointsize=ptsz,paper=size$paper)
+                  }else if(outform[o] == "pdf"){
+                     pdf(file=fichier,onefile=FALSE
+                        ,width=size$width,height=size$height,pointsize=ptsz
+                        ,paper=size$paper)
                   }#end if
                   #------------------------------------------------------------------------#
 

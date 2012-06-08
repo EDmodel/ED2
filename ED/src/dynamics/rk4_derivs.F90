@@ -110,7 +110,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                    , patchtype             & ! structure
                                    , polygontype           ! ! structure
    use therm_lib8           , only : tl2uint8              ! ! functions
-   use physiology_coms      , only : h2o_plant_lim         ! ! intent(in)
+   use physiology_coms      , only : h2o_plant_lim         & ! intent(in)
+                                   , ddmort_const          ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)  , target     :: initp            ! RK4 structure, intermediate step
@@ -289,7 +290,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       end do
       !------------------------------------------------------------------------------------!
 
-   case (2:4)
+   case (2)
       !------------------------------------------------------------------------------------!
       !     The available water factor is the soil moisture at field capacity minus wilt-  !
       ! ing, scaled by the wilting factor, defined as a function of soil potential.        !
@@ -427,7 +428,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                          ,ddewgnd,throughfall_tot,qthroughfall_tot,dthroughfall_tot        &
                          ,wshed_tot,qwshed_tot,dwshed_tot,dt)
    !---------------------------------------------------------------------------------------!
-
+   
 
 
 
@@ -956,8 +957,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    cpatch => csite%patch(ipa)
    !---------------------------------------------------------------------------------------!
 
-
-
    !---------------------------------------------------------------------------------------!
    !    Computing the fluxes from atmosphere to canopy.                                    !
    !---------------------------------------------------------------------------------------!
@@ -1223,6 +1222,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
 
+
       !------------------------------------------------------------------------------------!
       ! LEAF BUDGET - Check whether the leaves of this cohort haven't been flagged as non- !
       !               resolvable, i.e., it has leaves, belongs to a patch that is not too  !
@@ -1239,6 +1239,26 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ipft  = cpatch%pft(ico)
          kroot = cpatch%krdepth(ico)
 
+
+         !---------------------------------------------------------------------------------!
+         !     Calculate interception by leaves by scaling the intercepted water by the    !
+         ! LAI of each cohort.  If this causes excess of water/ice over the leaf surface,  !
+         ! no problem, the water will shed at adjust_veg_properties.                       !
+         !                                                                                 !
+         ! IMPORTANT, according to RGK, this block must come before the dt < -8000. block  !
+         !            because hybrid predictive capping needs leaf_intercepted.            !
+         !---------------------------------------------------------------------------------!
+         wshed             = 0.d0
+         qwshed            = 0.d0
+         dwshed            = 0.d0
+         leaf_intercepted  = intercepted_max  * initp%lai(ico) * taii
+         leaf_qintercepted = qintercepted_max * initp%lai(ico) * taii
+         throughfall       = 0.d0
+         qthroughfall      = 0.d0
+         dthroughfall      = 0.d0
+         !---------------------------------------------------------------------------------!
+      
+      
 
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
          leaf_flux = initp%gpp(ico) - initp%leaf_resp(ico)
@@ -1299,17 +1319,18 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
                   max_dwdt = initp%leaf_water(ico)/dt
                   
-                  max_leaf_water = rk4leaf_maxwhc*initp%lai(ico)
-
                   !------------------------------------------------------------------------!
                   !     If we ever have shedding, force wshed to cap out at that maximum   !
                   ! leaf water.  Assume this process happens before evaporation.           !
                   !------------------------------------------------------------------------!
-                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
-                                    - max_leaf_water) / dt)
-                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
-                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
-                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
+!! TURNIGN OFF SHEDDING FOR NOW
+!!
+
+!!                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
+!!                                    - max_leaf_water) / dt)
+!!                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
+!!                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
+!!                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
                   !------------------------------------------------------------------------!
 
 
@@ -1398,23 +1419,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          flux_area = effarea_heat * initp%lai(ico)
          hflxlc    = flux_area    * initp%leaf_gbh(ico)                                    &
                    * (initp%leaf_temp(ico) - initp%can_temp)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate interception by leaves by scaling the intercepted water by the    !
-         ! LAI of each cohort.  If this causes excess of water/ice over the leaf surface,  !
-         ! no problem, the water will shed at adjust_veg_properties.                       !
-         !---------------------------------------------------------------------------------!
-         wshed             = 0.d0
-         qwshed            = 0.d0
-         dwshed            = 0.d0
-         leaf_intercepted  = intercepted_max  * initp%lai(ico) * taii
-         leaf_qintercepted = qintercepted_max * initp%lai(ico) * taii
-         throughfall       = 0.d0
-         qthroughfall      = 0.d0
-         dthroughfall      = 0.d0
          !---------------------------------------------------------------------------------!
 
 
@@ -1524,10 +1528,33 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       !               throughfall.  Later on, these "unsafe" cohorts will have their wood  !
       !               energy set to equilibrium with the canopy air space (temperature).   !
       !------------------------------------------------------------------------------------!
+
+
       if (initp%wood_resolvable(ico)) then
 
          !------ Define some aliases to indices -------------------------------------------!
          ipft  = cpatch%pft(ico)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Calculate interception by wood by scaling the intercepted water by the      !
+         ! WAI of each cohort.  If this causes excess of water/ice over the wood surface,  !
+         ! no problem, the water will shed at adjust_veg_properties.                       !
+         !                                                                                 !
+         ! IMPORTANT, according to RGK, this block must come before the dt < -8000. block  !
+         !            because hybrid predictive capping needs wood_intercepted.            !
+         !---------------------------------------------------------------------------------!
+         wshed             = 0.d0
+         qwshed            = 0.d0
+         dwshed            = 0.d0
+         wood_intercepted  = intercepted_max  * initp%wai(ico) * taii
+         wood_qintercepted = qintercepted_max * initp%wai(ico) * taii
+         throughfall       = 0.d0
+         qthroughfall      = 0.d0
+         dthroughfall      = 0.d0
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !     Define the minimum wood water to be considered, and the maximum amount      !
@@ -1597,6 +1624,37 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !---------------------------------------------------------------------------------!
 
 
+              !---------------------------------------------------------------------------!
+               !       This is called by the hybrid solver only.                           !
+               !---------------------------------------------------------------------------!
+               if (dt>-8000.d0) then
+
+                  max_dwdt = initp%wood_water(ico)/dt
+
+                  !------------------------------------------------------------------------!
+                  !     If we ever have shedding, force wshed to cap out at that maximum   !
+                  ! leaf water.  Assume this process happens before evaporation.           !
+                  !------------------------------------------------------------------------!
+!! TURNIGN OFF SHEDDING FOR NOW
+!!
+
+!!                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
+!!                                    - max_wood_water) / dt)
+!!                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
+!!                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
+!!                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Then constrain the amount that can be evaporated. ----------------!
+                  wflxwc = min(wflxwc,max_dwdt+wood_intercepted-wshed)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+
+
+
 
          !---------------------------------------------------------------------------------!
          !   Calculate wood-to-canopy sensible heat flux.  Consider the full circumference !
@@ -1605,23 +1663,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          flux_area = pi18 * initp%wai(ico)
          hflxwc    = flux_area * initp%wood_gbh(ico)                                       &
                    * (initp%wood_temp(ico) - initp%can_temp)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate interception by wood by scaling the intercepted water by the      !
-         ! WAI of each cohort.  If this causes excess of water/ice over the wood surface,  !
-         ! no problem, the water will shed at adjust_veg_properties.                       !
-         !---------------------------------------------------------------------------------!
-         wshed             = 0.d0
-         qwshed            = 0.d0
-         dwshed            = 0.d0
-         wood_intercepted  = intercepted_max  * initp%wai(ico) * taii
-         wood_qintercepted = qintercepted_max * initp%wai(ico) * taii
-         throughfall       = 0.d0
-         qthroughfall      = 0.d0
-         dthroughfall      = 0.d0
          !---------------------------------------------------------------------------------!
 
 

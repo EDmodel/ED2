@@ -39,31 +39,84 @@ module physiology_coms
    implicit none
 
 
-   !---------------------------------------------------------------------------------------!
+   !=======================================================================================!
+   !=======================================================================================!
    !     Variables that are defined by the user in the namelist.                           !
    !---------------------------------------------------------------------------------------!
-   !----- This flag controls which physiology scheme we should use. -----------------------!
-   integer                :: iphysiol !  0 -- Original ED-2.1, with temperature functions
-                                      !       described as in F96
-                                      !  1 -- Original ED-2.1, but with compensation point
-                                      !       as a function of the Michaelis-Mentel 
-                                      !       constants for CO2 and O2 (like in F80)
-                                      !  2 -- Temperature response is based on C91/C92,
-                                      !       with temperature decay for Vm0 and leaf 
-                                      !       respiration for both C3 and C4 as in C91
-                                      !  3 -- Same as 2, except that the compensation point
-                                      !       were found as functions of the Michaelis-
-                                      !       Mentel constants for CO2 and O2 (like in F80)
-   !----- This flag controls whether the plants should be limited by nitrogen. ------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IPHYSIOL --  This variable will determine the functional form that will control how   !
+   !              the various parameters will vary with temperature, and how the CO2       !
+   !              compensation point for gross photosynthesis (Gamma*) will be found.      !
+   !              Options are:                                                             !
+   !                                                                                       !
+   ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
+   !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
+   !      Foley et al. (1996).                                                             !
+   ! 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        !
+   !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
+   ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
+   !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
+   !      correction for high and low temperatures are the same as in Moorcroft et al.     !
+   !      (2001).                                                                          !
+   ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
+   !---------------------------------------------------------------------------------------!
+   integer                :: iphysiol 
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! N_PLANT_LIM -- This controls whether plant photosynthesis can be limited by nitrogen. !
+   !                0.  No limitation                                                      !
+   !                1.  ED-2.1 nitrogen limitation model.                                  !
+   !---------------------------------------------------------------------------------------!
    integer                :: n_plant_lim
    !---------------------------------------------------------------------------------------!
-   !     This parameter will decide whether the fraction of open stomata should be         !
-   ! calculated through the original method or the new empirical relation.                 !
+
+
    !---------------------------------------------------------------------------------------!
-   integer               :: h2o_plant_lim ! 0 -- No plant limitation
-                                          ! 1 -- Original ED-2.1 model
-                                          ! 2 -- CLM-based function.
+   ! H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by       !
+   !                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply). !
+   !                                                                                       !
+   !                  Demand is always the transpiration rates in case soil moisture is    !
+   !                  not limiting (the psi_0 term times LAI).  The supply is determined   !
+   !                  by Kw * nplant * Broot * Available_Water, and the definition of      !
+   !                  available water changes depending on H2O_PLANT_LIM:                  !
+   !                  0.  Force FSW = 1 (effectively available water is infinity).         !
+   !                  1.  Available water is the total soil water above wilting point,     !
+   !                      integrated across all layers within the rooting zone.            !
+   !                  2.  Available water is the soil water at field capacity minus        !
+   !                      wilting point, scaled by the so-called wilting factor:           !
+   !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
+   !                      where psi is the matric potentital at layer k, z is the layer    !
+   !                      depth, H it the crown height and psi_fc and psi_wp are the       !
+   !                      matric potentials at wilting point and field capacity.           !
    !---------------------------------------------------------------------------------------!
+   integer               :: h2o_plant_lim 
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  DDMORT_CONST -- This constant (k) determines the relative contribution of light and  !
+   !                  soil moisture to the density-dependent mortality rate.  Values range !
+   !                  from 0 (soil moisture only) to 1 (light only).  This variable makes  !
+   !                  a difference only if H2O_PLANT_LIM is not zero.                      !
+   !                                                                                       !
+   !                                    mort1                                              !
+   !                  mu_DD = -------------------------                                    !
+   !                            1 + exp [ mort2 * cr ]                                     !
+   !                                                                                       !
+   !                                 CB                      CB                            !
+   !                  cr    = k ------------- + (1 - k) -------------                      !
+   !                             CB_lightmax             CB_watermax                       !
+   !---------------------------------------------------------------------------------------!
+   real                 :: ddmort_const
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     The following variables are factors that control photosynthesis and respiration.  !

@@ -1712,11 +1712,17 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
             
             !----- Included a loop so it won't crash with empty cohorts... ----------------!
             cohortloop: do ico=1,cpatch%ncohorts
-               cpatch%today_gpp(ico)       = cpatch%today_gpp(ico)       * timefac1
-               cpatch%today_gpp_pot(ico)   = cpatch%today_gpp_pot(ico)   * timefac1
-               cpatch%today_gpp_max(ico)   = cpatch%today_gpp_max(ico)   * timefac1
-               cpatch%today_leaf_resp(ico) = cpatch%today_leaf_resp(ico) * timefac1
-               cpatch%today_root_resp(ico) = cpatch%today_root_resp(ico) * timefac1
+               !---------------------------------------------------------------------------!
+               !     Normalise the variables used to compute carbon balance.               !
+               !---------------------------------------------------------------------------!
+               cpatch%today_gpp          (ico) = cpatch%today_gpp          (ico) * timefac1
+               cpatch%today_gpp_pot      (ico) = cpatch%today_gpp_pot      (ico) * timefac1
+               cpatch%today_gpp_lightmax (ico) = cpatch%today_gpp_lightmax (ico) * timefac1
+               cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico) * timefac1
+               cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico) * timefac1
+               cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico) * timefac1
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !    We now update the daily means of GPP, and leaf and root respiration,   !
@@ -1742,6 +1748,8 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                                               * csite%area(ipa)                            &
                                               * umols_2_kgCyr
                end if
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !    We update the following monthly means here because these dmean vari-   !
@@ -1756,8 +1764,11 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                   cpatch%mmean_root_resp(ico)     = cpatch%mmean_root_resp(ico)            &
                                                   + cpatch%dmean_root_resp(ico)
                end if
+               !---------------------------------------------------------------------------!
             end do cohortloop
+            !------------------------------------------------------------------------------!
          end do patchloop
+         !---------------------------------------------------------------------------------!
          if (save_daily) then
             sss_gpp       = sss_gpp       + pss_gpp       * site_area_i * cpoly%area(isi)
             sss_leaf_resp = sss_leaf_resp + pss_leaf_resp * site_area_i * cpoly%area(isi)
@@ -2496,25 +2507,32 @@ subroutine zero_ed_daily_vars(cgrid)
             !----- Reset variables stored in sitetype. ------------------------------------!
             csite%today_A_decomp(ipa)  = 0.0
             csite%today_Af_decomp(ipa) = 0.0
+            !------------------------------------------------------------------------------!
+
 
             !----- Reset variables stored in patchtype. -----------------------------------!
             do ico = 1, cpatch%ncohorts
-               cpatch%today_gpp      (ico) = 0.0
-               cpatch%today_nppleaf  (ico) = 0.0
-               cpatch%today_nppfroot (ico) = 0.0
-               cpatch%today_nppsapwood (ico) = 0.0
-               cpatch%today_nppcroot (ico) = 0.0
-               cpatch%today_nppseeds (ico) = 0.0
-               cpatch%today_nppwood  (ico) = 0.0
-               cpatch%today_nppdaily (ico) = 0.0
-               cpatch%today_gpp_pot  (ico) = 0.0
-               cpatch%today_gpp_max  (ico) = 0.0
-               cpatch%today_leaf_resp(ico) = 0.0
-               cpatch%today_root_resp(ico) = 0.0
+               cpatch%today_gpp          (ico) = 0.0
+               cpatch%today_nppleaf      (ico) = 0.0
+               cpatch%today_nppfroot     (ico) = 0.0
+               cpatch%today_nppsapwood   (ico) = 0.0
+               cpatch%today_nppcroot     (ico) = 0.0
+               cpatch%today_nppseeds     (ico) = 0.0
+               cpatch%today_nppwood      (ico) = 0.0
+               cpatch%today_nppdaily     (ico) = 0.0
+               cpatch%today_gpp_pot      (ico) = 0.0
+               cpatch%today_gpp_lightmax (ico) = 0.0
+               cpatch%today_gpp_moistmax (ico) = 0.0
+               cpatch%today_leaf_resp    (ico) = 0.0
+               cpatch%today_root_resp    (ico) = 0.0
             end do
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
    return
 end subroutine zero_ed_daily_vars
 !==========================================================================================!

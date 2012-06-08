@@ -95,6 +95,7 @@ soil_respiration.o: rk4_coms.mod soil_coms.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: detailed_coms.mod ed_max_dims.mod ed_misc_coms.mod
 structural_growth.o: ed_state_vars.mod ed_therm_lib.mod pft_coms.mod
+structural_growth.o: physiology_coms.mod
 twostream_rad.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 twostream_rad.o: rk4_coms.mod
 vegetation_dynamics.o: consts_coms.mod disturbance_utils.mod ed_misc_coms.mod
