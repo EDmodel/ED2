@@ -110,7 +110,6 @@ subroutine read_ed21_history_file
    real                                :: elim_lai
    real                                :: salloc
    real                                :: salloci
-   real                                :: initial_bdead
    !----- Local constants. ----------------------------------------------------------------!
    real                  , parameter   :: tiny_biomass = 1.e-20
    !----- External function. --------------------------------------------------------------!
@@ -593,16 +592,13 @@ subroutine read_ed21_history_file
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
-                              ! will be set to zero and we need to account for the extra   !
-                              ! mass by adding it to the balive pools                      !
-                              initial_bdead = cpatch%bdead(ico)
+                              ! is set to zero and that biomass is discarded               !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = 0.0
                               
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
-                              initial_bdead = 0.0
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
@@ -621,10 +617,8 @@ subroutine read_ed21_history_file
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
                            salloci = 1.0 / salloc
-                           cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc + initial_bdead
+                           cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
                            cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
-                           ! repeat bleaf in case bdead was added to balive
-                           cpatch%bleaf   (ico) = cpatch%balive(ico) * salloci 
                            cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci * agf_bs(ipft)
                            cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
@@ -632,8 +626,6 @@ subroutine read_ed21_history_file
                                                  * (1.-agf_bs(ipft))
                            cpatch%bstorage(ico) = 0.0
                            cpatch%phenology_status(ico) = 0
-
-                          ! write (unit=*,fmt='(a,1x,es14.7)') 'initial_bdead=',initial_bdead
                            
                            
                         end do
@@ -1018,7 +1010,6 @@ subroutine read_ed21_history_unstruct
    real                                                         :: elim_lai
    real                                                         :: salloc
    real                                                         :: salloci
-   real                                                         :: initial_bdead
    !----- Local constants. ----------------------------------------------------------------!
    real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
@@ -1761,16 +1752,13 @@ subroutine read_ed21_history_unstruct
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
-                              ! will be set to zero and we need to account for the extra   !
-                              ! mass by adding it to the balive pools                      !
-                              initial_bdead = cpatch%bdead(ico)
+                              ! is set to zero and the mass is discarded                   !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = 0.0
                               
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
-                              initial_bdead = 0.0
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
@@ -1789,11 +1777,8 @@ subroutine read_ed21_history_unstruct
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
                            salloci = 1.0 / salloc
-                           cpatch%balive  (ico)  = cpatch%bleaf(ico)  * salloc             &
-                                                 + initial_bdead
+                           cpatch%balive  (ico)  = cpatch%bleaf(ico)  * salloc
                            cpatch%broot    (ico) = cpatch%balive(ico) * q(ipft) * salloci
-                           ! repeat bleaf in case bdead was added to balive
-                           cpatch%bleaf    (ico) = cpatch%balive(ico) * salloci
                            cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci * agf_bs(ipft)
                            cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
@@ -1802,8 +1787,6 @@ subroutine read_ed21_history_unstruct
                            cpatch%bstorage(ico)  = 0.0
                            cpatch%phenology_status(ico) = 0
                            
-                          ! write (unit=*,fmt='(a,1x,es14.7)') 'initial_bdead=',initial_bdead
-
                         end do
 
                         !----- Then the 2-D variables. ------------------------------------!
