@@ -3087,7 +3087,7 @@ subroutine init_pft_leaf_params()
          phenology(5)     = 0
          phenology(6:8)   = 0
          phenology(9:11)  = 2
-         phenology(12:15) = 4
+         phenology(12:15) = 0
          phenology(16)    = 0
          phenology(17)    = 0
       case (3)
@@ -3382,7 +3382,6 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       min_recruit_size(ipft) = min_plant_dens * one_plant_c(ipft)
       !------------------------------------------------------------------------------------!
-
 
 
       !------------------------------------------------------------------------------------!

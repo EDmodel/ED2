@@ -29,6 +29,7 @@ subroutine read_ed21_history_file
                              , imonthh                 & ! intent(in)
                              , iyearh                  & ! intent(in)
                              , idateh                  & ! intent(in)
+                             , igrass                  & ! intent(in)
                              , itimeh                  ! ! intent(in)
    use ed_state_vars  , only : polygontype             & ! variable type
                              , sitetype                & ! variable type
@@ -589,15 +590,28 @@ subroutine read_ed21_history_file
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
 
-                           if (cpatch%bdead(ico) > 0.0) then
-                              cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
-                              cpatch%dbh(ico)   = bd2dbh(cpatch%pft(ico),cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
-                           else
+                           if (igrass == 1 .and. is_grass(ipft)                            &
+                                           .and. cpatch%bdead(ico)>0.0) then
+                              !-- if the initial file was running with igrass = 0, bdead   !
+                              ! should be nonzero.  If the new run has igrass = 1, bdead   !
+                              ! is set to zero and that biomass is discarded               !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (cpatch%pft(ico),cpatch%dbh  (ico))
-                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh(ico),cpatch%pft  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = 0.0
+                              
+                           else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
+                              ! grasses have bdead in both input and current run (igrass=0)
+                              cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
+                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                           else 
+                              ! it is either a new grass (igrass=1) in the initial file,   !
+                              ! or the value for bdead is missing from the files           !
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
+
 
                            cpatch%bleaf(ico)  = size2bl(cpatch%dbh(ico),cpatch%hite(ico)   &
                                                         ,cpatch%pft(ico))
@@ -614,6 +628,8 @@ subroutine read_ed21_history_file
                                                  * (1.-agf_bs(ipft))
                            cpatch%bstorage(ico) = 0.0
                            cpatch%phenology_status(ico) = 0
+                           
+                           
                         end do
 
 
@@ -884,6 +900,7 @@ subroutine read_ed21_history_unstruct
                              , idateh                  & ! intent(in)
                              , itimeh                  & ! intent(in)
                              , ied_init_mode           & ! intent(in)
+                             , igrass                  & ! intent(in)
                              , max_poi99_dist          ! ! intent(in)
    use ed_state_vars  , only : polygontype             & ! variable type
                              , sitetype                & ! variable type
@@ -1759,11 +1776,23 @@ subroutine read_ed21_history_unstruct
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
 
-                           if (cpatch%bdead(ico) > 0.0) then
+                           if (igrass == 1 .and. is_grass(ipft)                            &
+                                           .and. cpatch%bdead(ico)>0.0) then
+                              !-- if the initial file was running with igrass = 0, bdead   !
+                              ! should be nonzero.  If the new run has igrass = 1, bdead   !
+                              ! is set to zero and the mass is discarded                   !
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = 0.0
+                              
+                           else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
+                              ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                           else
+                           else 
+                              ! it is either a new grass (igrass=1) in the initial file,   !
+                              ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
@@ -1776,8 +1805,8 @@ subroutine read_ed21_history_unstruct
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
                            salloci = 1.0 / salloc
-                           cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
-                           cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
+                           cpatch%balive  (ico)  = cpatch%bleaf(ico)  * salloc
+                           cpatch%broot    (ico) = cpatch%balive(ico) * q(ipft) * salloci
                            cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci * agf_bs(ipft)
                            cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
@@ -1785,6 +1814,7 @@ subroutine read_ed21_history_unstruct
                                                  * (1.-agf_bs(ipft))
                            cpatch%bstorage(ico)  = 0.0
                            cpatch%phenology_status(ico) = 0
+                           
                         end do
 
                         !------------------------------------------------------------------!
@@ -2159,6 +2189,7 @@ subroutine read_ed21_polyclone
    logical                                                      :: exists
    logical                                                      :: rescale_glob
    logical                                                      :: rescale_loc
+   logical                                                      :: foundvar
    real                  , dimension(  :)         , allocatable :: pdist
    !real                  , dimension(huge_polygon)              :: pdist
    real                  , dimension(huge_polygon)              :: plon_list
@@ -2495,7 +2526,7 @@ subroutine read_ed21_polyclone
          allocate(dset_slzm(dset_nzg))
          
          call hdf_getslab_r(dset_slzm,'SLZ ',dsetrank                  &
-              ,iparallel,.true.)
+              ,iparallel,.true.,foundvar)
 
          ! Calculate the mid-points of the dataset soil-layers
          do kd=1,dset_nzg-1
@@ -2557,8 +2588,8 @@ subroutine read_ed21_polyclone
 
             !---- The ipy:ipy notation is needed for ifort when checking interfaces. ------!
             call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '             &
-                              ,dsetrank,iparallel,.true.)
-            call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
+                              ,dsetrank,iparallel,.true.,foundvar)
+            call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.,foundvar)
             
             !----- Load the workload (2D). ------------------------------------------------!
             dsetrank    = 2
@@ -2575,7 +2606,7 @@ subroutine read_ed21_polyclone
             memsize(2)  = 1_8
             memoffs(2)  = 0_8
             call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank                  &
-                              ,iparallel,.false.)
+                              ,iparallel,.false.,foundvar)
             !------------------------------------------------------------------------------!
 
 
@@ -2593,7 +2624,7 @@ subroutine read_ed21_polyclone
             memdims(1)  = int(pysi_n(py_index),8)
             memsize(1)  = int(pysi_n(py_index),8)
             memoffs(1)  = 0_8
-            call hdf_getslab_i(islakesite,'ISLAKESITE ',dsetrank,iparallel,.false.)
+            call hdf_getslab_i(islakesite,'ISLAKESITE ',dsetrank,iparallel,.false.,foundvar)
             ndry_sites = int(pysi_n(py_index))-sum(islakesite)
             !------------------------------------------------------------------------------!
 
@@ -2634,11 +2665,11 @@ subroutine read_ed21_polyclone
                   memsize(1)  = int(1,8)
                   memoffs(1)  = 0_8
 
-                  call hdf_getslab_i(cpoly%patch_count(is),'PATCH_COUNT ',dsetrank,iparallel,.true.)  
-                  call hdf_getslab_i(cpoly%sitenum(is),'SITENUM ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_i(cpoly%lsl(is),'LSL_SI ',dsetrank,iparallel,.true.)   
+                  call hdf_getslab_i(cpoly%patch_count(is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)  
+                  call hdf_getslab_i(cpoly%sitenum(is),'SITENUM ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_i(cpoly%lsl(is),'LSL_SI ',dsetrank,iparallel,.true.,foundvar)   
                   
-                  call hdf_getslab_i(cpoly%ncol_soil(is),'NCOL_SOIL_SI ',dsetrank,iparallel,.false.)
+                  call hdf_getslab_i(cpoly%ncol_soil(is),'NCOL_SOIL_SI ',dsetrank,iparallel,.false.,foundvar)
 
                   ! If this data is not available in the dataset, we should really just use
                   ! a default value.  It is probably not a good idea to use values derived from
@@ -2653,19 +2684,19 @@ subroutine read_ed21_polyclone
                   end if
                   
 
-                  call hdf_getslab_r(cpoly%area(is),'AREA_SI ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%patch_area(is),'PATCH_AREA ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%elevation(is),'ELEVATION ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%slope(is),'SLOPE ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%aspect(is),'ASPECT ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%TCI(is),'TCI ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_i(cpoly%hydro_next(is),'HYDRO_NEXT ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_i(cpoly%hydro_prev(is),'HYDRO_PREV ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%moist_W(is),'MOIST_W ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%moist_f(is),'MOIST_F ',dsetrank,iparallel,.true.)  
-                  call hdf_getslab_r(cpoly%moist_tau(is),'MOIST_TAU ',dsetrank,iparallel,.true.)
-                  call hdf_getslab_r(cpoly%moist_zi(is),'MOIST_ZI ',dsetrank,iparallel,.true.) 
-                  call hdf_getslab_r(cpoly%baseflow(is),'BASEFLOW_SI ',dsetrank,iparallel,.true.)
+                  call hdf_getslab_r(cpoly%area(is),'AREA_SI ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%patch_area(is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%elevation(is),'ELEVATION ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%slope(is),'SLOPE ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%aspect(is),'ASPECT ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%TCI(is),'TCI ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_i(cpoly%hydro_next(is),'HYDRO_NEXT ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_i(cpoly%hydro_prev(is),'HYDRO_PREV ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%moist_W(is),'MOIST_W ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%moist_f(is),'MOIST_F ',dsetrank,iparallel,.true.,foundvar)  
+                  call hdf_getslab_r(cpoly%moist_tau(is),'MOIST_TAU ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%moist_zi(is),'MOIST_ZI ',dsetrank,iparallel,.true.,foundvar) 
+                  call hdf_getslab_r(cpoly%baseflow(is),'BASEFLOW_SI ',dsetrank,iparallel,.true.,foundvar)
 
                   sum_poly_area = sum_poly_area+cpoly%area(is)
 
@@ -2685,7 +2716,7 @@ subroutine read_ed21_polyclone
                   memoffs(2)   = 0_8
 
                   call hdf_getslab_i( this_ntext(:), &
-                       'NTEXT_SOIL_SI ',dsetrank, iparallel, .true.)
+                       'NTEXT_SOIL_SI ',dsetrank, iparallel, .true.,foundvar)
 
                   
 
@@ -2746,29 +2777,29 @@ subroutine read_ed21_polyclone
                      memoffs(1)  = 0
                      
                      call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%age               ,'AGE '                       &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%area              ,'AREA '                      &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%sum_dgd           ,'SUM_DGD '                   &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                   &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_i(csite%plantation        ,'PLANTATION '                &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '               &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '         &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
                      
                      !----- Load 2D soil water
                      dsetrank     = 2_8
@@ -2787,7 +2818,7 @@ subroutine read_ed21_polyclone
                      
                      allocate(this_soil_water(dset_nzg,csite%npatches))
                      call hdf_getslab_r(this_soil_water,'SOIL_WATER_PA '        &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.true.,foundvar)
 
                      ! ----------------------------------------------------------
                      ! Go through the layer centers of the model layers
@@ -2895,13 +2926,13 @@ subroutine read_ed21_polyclone
                         memoffs(1)  = 0_8
 
                         call hdf_getslab_r(cpatch%dbh             ,'DBH '                  &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_i(cpatch%pft             ,'PFT '                  &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
                         call hdf_getslab_r(cpatch%nplant          ,'NPLANT '               &
-                                          ,dsetrank,iparallel,.true.)
+                                          ,dsetrank,iparallel,.true.,foundvar)
 
                         !------------------------------------------------------------------!
                         !    Find derived properties from Bdead.  In the unlikely case     !

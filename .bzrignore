@@ -7351,3 +7351,10 @@ ED/dbgbuild/bin/zero_ed_yearly_vars_mod.mod
 Ramspost/build/bin/rout_coms.mod
 BRAMS/gnubuild
 BRAMS/i11build
+ED/dbgbuild/bin/ed_bigleaf_init.f90
+ED/dbgbuild/bin/ed_bigleaf_init_mod.f90
+ED/dbgbuild/bin/ed_bigleaf_init_mod.mod
+ED/dbgbuild/bin/check_rescale_mod.f90
+ED/dbgbuild/bin/check_rescale_mod.mod
+ED/dbgbuild/bin/read_ed21_polyclone_mod.f90
+ED/dbgbuild/bin/read_ed21_polyclone_mod.mod

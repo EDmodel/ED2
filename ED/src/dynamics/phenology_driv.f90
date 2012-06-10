@@ -944,7 +944,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
-
          !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &

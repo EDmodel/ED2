@@ -140,7 +140,6 @@ subroutine structural_growth(cgrid, month)
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
-
                if (ibigleaf == 0 ) then
                   !------ NPP allocation to wood and course roots in KgC /m2 --------------!
                   cpatch%today_NPPwood(ico) = agf_bs(ipft)*f_bdead*cpatch%bstorage(ico)    &

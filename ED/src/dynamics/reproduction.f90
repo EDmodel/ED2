@@ -44,6 +44,7 @@ subroutine reproduction(cgrid, month)
    use allometry          , only : dbh2bd                   & ! function
                                  , size2bl                  & ! function
                                  , h2dbh                    & ! function
+                                 , dbh2h                    & ! function
                                  , ed_biomass               & ! function
                                  , area_indices             & ! subroutine
                                  , dbh2krdepth              ! ! function
@@ -154,7 +155,6 @@ subroutine reproduction(cgrid, month)
                !---- This time we loop over PFTs, not cohorts. ----------------------------!
                pftloop: do ipft = 1, n_pft
                   
-
                   !------------------------------------------------------------------------!
                   !    Check to make sure we are including the PFT and that it is not too  !
                   ! cold.                                                                  !
@@ -168,7 +168,6 @@ subroutine reproduction(cgrid, month)
                      ! this PFT to be in an agriculture patch.                             !
                      !---------------------------------------------------------------------!
                      if(csite%dist_type(ipa) /= 1 .or. include_pft_ag(ipft)) then
-
                         !------------------------------------------------------------------!
                         !    We assign the recruit in the temporary recruitment structure. !
                         !------------------------------------------------------------------!
@@ -177,11 +176,12 @@ subroutine reproduction(cgrid, month)
                         rectest%wood_temp = csite%can_temp(ipa)
                         rectest%leaf_temp_pv=csite%can_temp(ipa)
                         rectest%wood_temp_pv=csite%can_temp(ipa)
-                        rectest%hite      = hgt_min(ipft)
+                        
                         !------------------------------------------------------------------!
                         !    Recruits start at minimum height and dbh and bleaf are        !
                         ! calculated from that.                                            !
                         !------------------------------------------------------------------!
+                        rectest%hite      = hgt_min(ipft)
                         rectest%dbh       = h2dbh(rectest%hite, ipft)
                         rectest%krdepth   = dbh2krdepth(rectest%hite,rectest%dbh           &
                                                        ,rectest%pft,cpoly%lsl(isi))
@@ -231,8 +231,7 @@ subroutine reproduction(cgrid, month)
                      else
                         !------------------------------------------------------------------!
                         !     If we have reached this branch, we are in an agricultural    !
-                        ! patch.  Send the seed litter to the soil pools for               !
-                        ! decomposition.                                                   !
+                        ! patch.  Send the seed litter to the soil pools for decomposition.!
                         !------------------------------------------------------------------!
                         !---ALS=== dont send all seeds to litter!  Keep it for harvesting? !
                         csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                    &
@@ -314,7 +313,6 @@ subroutine reproduction(cgrid, month)
                      cpatch%leaf_temp_pv    (ico) = recruit(inew)%leaf_temp_pv
                      cpatch%wood_temp_pv    (ico) = recruit(inew)%wood_temp_pv
                      !---------------------------------------------------------------------!
-
 
 
                      !----- Initialise the next variables with zeroes... ------------------!
@@ -816,7 +814,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                   nseed_maygo = 0.
                end if
                !---------------------------------------------------------------------------!
-
+               
                !---------------------------------------------------------------------------!
                !   Spread the seedlings across all patches in this polygon.                !
                !---------------------------------------------------------------------------!
@@ -835,8 +833,6 @@ subroutine seed_dispersal(cpoly,late_spring)
                                                  * cpoly%area(donsi)
                      !---------------------------------------------------------------------!
 
-
-
                      !---------------------------------------------------------------------!
                      !      Include the local dispersal if this is the donor patch.        !
                      !---------------------------------------------------------------------!
@@ -845,7 +841,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                                                     + nseed_stays
                      end if
                      !---------------------------------------------------------------------!
-
+                     
                   end do recpaloop2
                   !------------------------------------------------------------------------!
                end do recsiloop2
