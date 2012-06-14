@@ -1065,7 +1065,7 @@ $MODEL_OPTIONS
    ! IADVEC -- 1 - Original advection scheme                                               !
    !           2 - Monotonic advection scheme, Freitas et al. (2012, in press JAMES).      !
    !---------------------------------------------------------------------------------------!
-   IADVEC   = 1,
+   IADVEC   = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2026,7 +2026,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
    SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
-   LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-',
+   LU_DATABASE       = '/n/moorcroft_data/mlongo/scenarios/glu-3.3.1+sb1/one/glu-3.3.1+sb1-',
    PLANTATION_FILE   = '',
    LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2038.txt',
    THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
@@ -2365,7 +2365,7 @@ $ED2_INFO
    !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
    !                      where psi is the matric potentital at layer k, z is the layer    !
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
-   !                      matric potentials at wilting point and field capacity.  This is  !
+   !                      matric potentials at wilting point and field capacity.           !
    !---------------------------------------------------------------------------------------!
    H2O_PLANT_LIM   = 2,
    !---------------------------------------------------------------------------------------!

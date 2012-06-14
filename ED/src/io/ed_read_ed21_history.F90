@@ -2665,11 +2665,11 @@ subroutine read_ed21_polyclone
                   memsize(1)  = int(1,8)
                   memoffs(1)  = 0_8
 
-                  call hdf_getslab_i(cpoly%patch_count(is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)  
-                  call hdf_getslab_i(cpoly%sitenum(is),'SITENUM ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_i(cpoly%lsl(is),'LSL_SI ',dsetrank,iparallel,.true.,foundvar)   
+                  call hdf_getslab_i(cpoly%patch_count(is:is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)  
+                  call hdf_getslab_i(cpoly%sitenum(is:is),'SITENUM ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_i(cpoly%lsl(is:is),'LSL_SI ',dsetrank,iparallel,.true.,foundvar)   
                   
-                  call hdf_getslab_i(cpoly%ncol_soil(is),'NCOL_SOIL_SI ',dsetrank,iparallel,.false.,foundvar)
+                  call hdf_getslab_i(cpoly%ncol_soil(is:is),'NCOL_SOIL_SI ',dsetrank,iparallel,.false.,foundvar)
 
                   ! If this data is not available in the dataset, we should really just use
                   ! a default value.  It is probably not a good idea to use values derived from
@@ -2684,19 +2684,19 @@ subroutine read_ed21_polyclone
                   end if
                   
 
-                  call hdf_getslab_r(cpoly%area(is),'AREA_SI ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%patch_area(is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%elevation(is),'ELEVATION ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%slope(is),'SLOPE ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%aspect(is),'ASPECT ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%TCI(is),'TCI ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_i(cpoly%hydro_next(is),'HYDRO_NEXT ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_i(cpoly%hydro_prev(is),'HYDRO_PREV ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%moist_W(is),'MOIST_W ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%moist_f(is),'MOIST_F ',dsetrank,iparallel,.true.,foundvar)  
-                  call hdf_getslab_r(cpoly%moist_tau(is),'MOIST_TAU ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%moist_zi(is),'MOIST_ZI ',dsetrank,iparallel,.true.,foundvar) 
-                  call hdf_getslab_r(cpoly%baseflow(is),'BASEFLOW_SI ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%area(is:is),'AREA_SI ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%patch_area(is:is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%elevation(is:is),'ELEVATION ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%slope(is:is),'SLOPE ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%aspect(is:is),'ASPECT ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%TCI(is:is),'TCI ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_i(cpoly%hydro_next(is:is),'HYDRO_NEXT ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_i(cpoly%hydro_prev(is:is),'HYDRO_PREV ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%moist_W(is:is),'MOIST_W ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%moist_f(is:is),'MOIST_F ',dsetrank,iparallel,.true.,foundvar)  
+                  call hdf_getslab_r(cpoly%moist_tau(is:is),'MOIST_TAU ',dsetrank,iparallel,.true.,foundvar)
+                  call hdf_getslab_r(cpoly%moist_zi(is:is),'MOIST_ZI ',dsetrank,iparallel,.true.,foundvar) 
+                  call hdf_getslab_r(cpoly%baseflow(is:is),'BASEFLOW_SI ',dsetrank,iparallel,.true.,foundvar)
 
                   sum_poly_area = sum_poly_area+cpoly%area(is)
 

@@ -859,7 +859,7 @@ $ED_NL
    !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
    !                      where psi is the matric potentital at layer k, z is the layer    !
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
-   !                      matric potentials at wilting point and field capacity.  This is  !
+   !                      matric potentials at wilting point and field capacity.           !
    !---------------------------------------------------------------------------------------!
    NL%H2O_PLANT_LIM   = 2
    !---------------------------------------------------------------------------------------!

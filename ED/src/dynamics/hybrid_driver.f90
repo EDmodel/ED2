@@ -180,12 +180,12 @@ subroutine hybrid_timestep(cgrid)
            !------------------------------------------------------------------!
            call copy_patch_init_carbon(csite,ipa,initp)
            
-            !------------------------------------------------------------------!
-            !  Perform the forward and backward step.  It is possible this will!
-            !  be done over a series of sub-steps.  1)derivs,2)forward,3)back  !
-            !  4) check stability and error 5) repeat as shorter or continue   !
-            !------------------------------------------------------------------!
-!            call integrate_patch_hybrid(csite,                               &
+           !------------------------------------------------------------------!
+           !  Perform the forward and backward step.  It is possible this will!
+           !  be done over a series of sub-steps.  1)derivs,2)forward,3)back  !
+           !  4) check stability and error 5) repeat as shorter or continue   !
+           !------------------------------------------------------------------!
+!            call integrate_patch_hybrid(csite,                                 &
 !                 integration_buff%yprev,integration_buff%initp,                &
 !                 integration_buff%dinitp,integration_buff%ytemp,               &
 !                 ipa,wcurr_loss2atm,                                           &
@@ -409,9 +409,9 @@ subroutine hybrid_timestep(cgrid)
 
          call leaf_derivs(initp,dinitp,csite,ipa,h)
 
-
          !---------------------------------------------------------------------!
-         ! Error analysis. Two parts. First leaf/air/step then surface         !
+         ! Very simple analysis of derivative.  ie try to reduce drastic
+         ! changes in key state variables.
          !---------------------------------------------------------------------!
          call fb_dy_step_trunc(initp,restart_step,csite,ipa,dinitp,h,htrunc)
 
@@ -443,7 +443,7 @@ subroutine hybrid_timestep(cgrid)
          !   used in the implicit step.                                       !
          !   nsolve = 1 + n_leaf_cohorts + n_wood_cohorts                     !
          !--------------------------------------------------------------------!
-         call copy_fb_patch(initp,ytemp,cpatch,nsolve)
+         call copy_fb_patch(initp,ytemp,cpatch)
 
          !--------------------------------------------------------------------!
          !   Integrate the forward step                                       !
@@ -453,7 +453,7 @@ subroutine hybrid_timestep(cgrid)
          !--------------------------------------------------------------------!
          !   Integrate the implicit/backwards step                            !
          !--------------------------------------------------------------------!
-         call bdf2_solver(cpatch,yprev,initp,ytemp,dinitp,nsolve,h, &
+         call bdf2_solver(cpatch,yprev,initp,ytemp,dinitp,h, &
               dble(csite%hprev(ipa)))
           
          
@@ -674,7 +674,7 @@ subroutine hybrid_timestep(cgrid)
  !=========================================================================================!
 
 
- subroutine copy_fb_patch(sourcep, targetp, cpatch,nsolve)
+ subroutine copy_fb_patch(sourcep, targetp, cpatch)
   
   use rk4_coms      , only : rk4site           & ! intent(in)
                             , rk4patchtype      & ! structure
@@ -776,9 +776,8 @@ subroutine hybrid_timestep(cgrid)
 
    do k=1,cpatch%ncohorts
       targetp%leaf_resolvable (k) = sourcep%leaf_resolvable (k)
+      targetp%wood_resolvable (k) = sourcep%wood_resolvable (k)
 
-      if(targetp%leaf_resolvable(k)) nsolve=nsolve+1
-      
       targetp%leaf_energy     (k) = sourcep%leaf_energy     (k)
       targetp%leaf_water      (k) = sourcep%leaf_water      (k)
       targetp%leaf_temp       (k) = sourcep%leaf_temp       (k)
@@ -794,8 +793,6 @@ subroutine hybrid_timestep(cgrid)
       targetp%rlong_l         (k) = sourcep%rlong_l         (k)
 
       targetp%wood_resolvable (k) = sourcep%wood_resolvable (k)
-
-      if(targetp%wood_resolvable(k)) nsolve=nsolve+1
 
       targetp%wood_energy     (k) = sourcep%wood_energy     (k)
       targetp%wood_water      (k) = sourcep%wood_water      (k)
