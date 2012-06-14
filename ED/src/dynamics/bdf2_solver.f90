@@ -229,7 +229,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
         ! ---------------------------------------------------------
 
         xv(ico)   = ycurr%leaf_fliq(ico)*cliq8*ynext%leaf_water(ico)        + &
-                    (1.d0-ycurr%leaf_fliq(ico))*cice8*qv(ico)               + &
+                    (1.d0-ycurr%leaf_fliq(ico))*cice8*ynext%leaf_water(ico) + &
                     ycurr%leaf_hcap(ico)                                    + &
                     ycurr%wood_fliq(ico)*cliq8*ynext%wood_water(ico)        + &
                     (1.d0-ycurr%wood_fliq(ico))*cice8*ynext%wood_water(ico) + &
