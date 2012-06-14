@@ -2525,7 +2525,7 @@ subroutine read_ed21_polyclone
          allocate(this_ntext(dset_nzg))
          allocate(dset_slzm(dset_nzg))
          
-         call hdf_getslab_r(dset_slzm,'SLZ ',dsetrank                  &
+         call hdf_getslab_r(dset_slzm,'SLZ',dsetrank                  &
               ,iparallel,.true.,foundvar)
 
          ! Calculate the mid-points of the dataset soil-layers
