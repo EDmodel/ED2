@@ -17,8 +17,10 @@ FPP_COMMAND = $(F_COMP) -c  -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMAC
 CXX_COMMAND = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(INCLUDES) $(PAR_DEFS)
 
 #----- Define archive and executable names. -----------------------------------------------#
-EXE=$(BASE)/edbrams-$(OPT)
-LIBMODEL=$(BASE)/edbrams-$(OPT).a
+# EXE=$(BASE)/edbrams-$(OPT)
+# LIBMODEL=$(BASE)/edbrams-$(OPT).a
+EXE=$(BASE)/edbrams-new
+LIBMODEL=$(BASE)/edbrams-new.a
 
 include objects.mk
 

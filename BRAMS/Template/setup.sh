@@ -7,7 +7,7 @@
 here=`pwd`                             # Local disk
 moi=`whoami`                           # User name
 diskthere='/n/moorcroftfs2'            # Output directory
-queue='camd'                           # Queue to be used
+queue='moorcroft_6100b'                # Queue to be used
 whena='01-01-2008 00:00'               # Initial time for simulation
 whenz='01-01-2009 00:00'               # Final time for simulation
 isfcl=5                                # 1 = LEAF-3 run, 5 = ED-2.2 run
@@ -155,6 +155,13 @@ sed -i s@mynvegpat@${nvegpat}@g   ${RAMSIN}
 sed -i s@thispath@${here}@g    ${here}/orun.sh
 sed -i s@thisqueue@${queue}@g  ${here}/orun.sh
 sed -i s@thisjob@${thissim}@g ${here}/orun.sh
+#------------------------------------------------------------------------------------------#
+
+
+#----- Replace some flags in callopenmpi.sh. ----------------------------------------------#
+sed -i s@thispath@${here}@g    ${here}/callopenmpi.sh
+sed -i s@thisqueue@${queue}@g  ${here}/callopenmpi.sh
+sed -i s@thisjob@${thissim}@g ${here}/callopenmpi.sh
 #------------------------------------------------------------------------------------------#
 
 

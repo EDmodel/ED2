@@ -10,7 +10,7 @@
 #module add hpc/hdf5-intel
 
 #------------------------------- CHANGE YOUR SETTINGS HERE. -------------------------------#
-here='mypath'                                          # Folder to start the run
+here='thispath'                                        # Folder to start the run
 brams=${here}'/edbrams'                                # Executable
 logfile=${here}'/out.out'                              # Log file
 errfile=${here}'/out.err'                              # MPI error file

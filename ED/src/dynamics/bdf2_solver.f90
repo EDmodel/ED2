@@ -213,11 +213,12 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
            gv_hfa(ico) = gv_hfa(ico)+(ycurr%wood_gbh(ico)/(ycurr%can_rhos*cpdry8) &
                 *effarea_heat*ycurr%wai(ico))
            mlc(ico)  = mlc(ico)+ycurr%wflxwc(ico)
-           if(fliq(ico)>-1 .and. ycurr%wood_fliq(ico).ne.ycurr%leaf_fliq(ico))then
-              print*,"LIQUID FRACTIONS DO NOT MATCH"
-              stop
+           if(fliq(ico)>-0.99)then
+              fliq(ico) = (fliq(ico)+ycurr%wood_fliq(ico))/2.0
+           else
+              fliq(ico) = ycurr%wood_fliq(ico)
            end if
-           fliq(ico) = ycurr%wood_fliq(ico)
+           
            qv(ico)   = qv(ico)+ynext%wood_water(ico)
            dqvdt(ico)= dqvdt(ico)+dydt%wood_water(ico)
            hflx(ico) = hflx(ico)+ycurr%hflx_wrsti(ico)
@@ -228,7 +229,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
         ! ---------------------------------------------------------
 
         xv(ico)   = ycurr%leaf_fliq(ico)*cliq8*ynext%leaf_water(ico)        + &
-                    (1.d0-ycurr%leaf_fliq(ico))*cice8*qv(ico)               + &
+                    (1.d0-ycurr%leaf_fliq(ico))*cice8*ynext%leaf_water(ico) + &
                     ycurr%leaf_hcap(ico)                                    + &
                     ycurr%wood_fliq(ico)*cliq8*ynext%wood_water(ico)        + &
                     (1.d0-ycurr%wood_fliq(ico))*cice8*ynext%wood_water(ico) + &
