@@ -8,7 +8,7 @@ lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 outroot='/n/moorcroftfs2/mlongo/diary/XXXXXXXXXXX/figures/xxx_XXX/xxxxxxxx'
 submit='y'       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-onemetcycle='y'  # Plot only one met cycle only (ignored by plot_eval_ed.r/plot_census.r)
+onemetcycle='n'  # Plot only one met cycle only (ignored by plot_eval_ed.r/plot_census.r)
 shiftiata=''     # Places that we must shift the cycle
 shiftcycle=-5    # In case your met driver doesn't match the model simulation
 #----- Check whether to use openlava or typical job submission. ---------------------------#

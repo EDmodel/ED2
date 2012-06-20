@@ -2249,9 +2249,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if (yr1st_census < 1900 .or. yr1st_census > 2100) then
+   if (yr1st_census < 1200 .or. yr1st_census > 3200) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-             'Invalid YR1ST_CENSUS, it must be between 1900 and 2100.  Yours is set to'    &
+             'Invalid YR1ST_CENSUS, it must be between 1200 and 3200.  Yours is set to'    &
             ,yr1st_census,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
