@@ -2083,7 +2083,8 @@ subroutine read_ed21_polyclone
                              , idateh                  & ! intent(in)
                              , itimeh                  & ! intent(in)
                              , ied_init_mode           & ! intent(in)
-                             , max_poi99_dist          ! ! intent(in)
+                             , max_poi99_dist          & ! intent(in)
+                             , igrass
    use ed_state_vars  , only : polygontype             & ! variable type
                              , sitetype                & ! variable type
                              , patchtype               & ! variable type
@@ -2435,9 +2436,6 @@ subroutine read_ed21_polyclone
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzg,globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
-         
-
- 
 
          call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
          call h5dget_space_f(dset_id, dspace_id, hdferr)
@@ -2942,11 +2940,23 @@ subroutine read_ed21_polyclone
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
 
-                           if (cpatch%bdead(ico) > 0.0) then
+                           if (igrass == 1 .and. is_grass(ipft)                            &
+                                           .and. cpatch%bdead(ico)>0.0) then
+                              !-- if the initial file was running with igrass = 0, bdead   !
+                              ! should be nonzero.  If the new run has igrass = 1, bdead   !
+                              ! is set to zero and that biomass is discarded               !
+                              cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%bdead(ico) = 0.0
+                              
+                           else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
+                              ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                           else
+                           else 
+                              ! it is either a new grass (igrass=1) in the initial file,   !
+                              ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)

@@ -2996,7 +2996,10 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
                        , stride       & ! intent(inout)
                        , memdims      & ! intent(inout)
                        , memoffs      & ! intent(inout)
-                       , memsize      ! ! intent(inout)
+                       , memsize        ! intent(inout)
+
+   use ed_misc_coms,only: suppress_h5_warnings
+
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))                &
@@ -3038,6 +3041,8 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
       !    Variable wasn't found but it wasn't required either; initialise buffer with     !
       ! zeroes, and warn the user that we are doing this.                                  !
       !------------------------------------------------------------------------------------!
+
+      if(.not.suppress_h5_warnings)then
       write(unit=*,fmt=*) 'File_ID = ',file_id
       write(unit=*,fmt=*) 'Dset_ID = ',dset_id
       write (unit=*,fmt='(a)') '----------------------------------------------------------'
@@ -3052,6 +3057,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
       write (unit=*,fmt='(a)') '   NOT ABSOUTELY NECESSARY TO RESTART THE PROGNOSTIC STATE'
       write (unit=*,fmt='(a)') '----------------------------------------------------------'
       write (unit=*,fmt='(a)') ''
+      end if
       
       buff(:,:,:,:) = 0.
       return
@@ -3161,6 +3167,9 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
                        , memdims      & ! intent(inout)
                        , memoffs      & ! intent(inout)
                        , memsize      ! ! intent(inout)
+
+   use ed_misc_coms,only: suppress_h5_warnings
+   
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))                &
@@ -3202,6 +3211,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
       !    Variable wasn't found but it wasn't required either; initialise buffer with     !
       ! zeroes, and warn the user that we are doing this.                                  !
       !------------------------------------------------------------------------------------!
+      if(.not.suppress_h5_warnings)then
       write(unit=*,fmt=*) 'File_ID = ',file_id
       write(unit=*,fmt=*) 'Dset_ID = ',dset_id
       write (unit=*,fmt='(a)') '----------------------------------------------------------'
@@ -3216,7 +3226,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
       write (unit=*,fmt='(a)') '   NOT ABSOUTELY NECESSARY TO RESTART THE PROGNOSTIC STATE'
       write (unit=*,fmt='(a)') '----------------------------------------------------------'
       write (unit=*,fmt='(a)') ''
-      
+      end if
       buff(:,:,:,:) = 0.d0
       return
       !------------------------------------------------------------------------------------!
@@ -3325,6 +3335,8 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
                        , memdims      & ! intent(inout)
                        , memoffs      & ! intent(inout)
                        , memsize      ! ! intent(inout)
+
+   use ed_misc_coms,only: suppress_h5_warnings
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))                &
@@ -3366,6 +3378,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
       !    Variable wasn't found but it wasn't required either; initialise buffer with     !
       ! zeroes, and warn the user that we are doing this.                                  !
       !------------------------------------------------------------------------------------!
+      if(.not.suppress_h5_warnings)then
       write(unit=*,fmt=*) 'File_ID = ',file_id
       write(unit=*,fmt=*) 'Dset_ID = ',dset_id
       write (unit=*,fmt='(a)') '----------------------------------------------------------'
@@ -3380,7 +3393,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
       write (unit=*,fmt='(a)') '   NOT ABSOUTELY NECESSARY TO RESTART THE PROGNOSTIC STATE'
       write (unit=*,fmt='(a)') '----------------------------------------------------------'
       write (unit=*,fmt='(a)') ''
-      
+      end if
       buff(:,:,:,:) = 0
       return
       !------------------------------------------------------------------------------------!
