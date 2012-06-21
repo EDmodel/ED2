@@ -21,7 +21,7 @@ MAKE=/usr/bin/make
 
 # libraries.
 
-BASE=$(BRAMS_ROOT)/i11dbg/
+BASE=$(BRAMS_ROOT)/i12dbg/
 LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-opt.a
 
 # Activate appropriate parts below, comment out others.

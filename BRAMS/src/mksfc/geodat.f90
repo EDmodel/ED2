@@ -90,7 +90,7 @@ CALL SFCOPQR(NO,MOF,NP,NIQ,NJQ,N2,N3,XTN(1,NGR),YTN(1,NGR)  &
      ,ERAD,DELTALLO,DELTAXP,DELTAYP,DELTAXQ,DELTAYQ,IBLKSIZO  &
      ,ISBEGO,IWBEGO,DATO(1),VT2DA,VT2DB,DATR  &
      ,OFN,offlat,offlon,VNAM,NGR,itopsflg(ngr),iz0flg(ngr))
-
+if (allocated(dato)) write (unit=*,fmt='(a,1x,i13)') 'SIZE(DATO) =',size(dato)
 deallocate(dato)
 
 RETURN

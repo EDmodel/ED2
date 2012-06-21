@@ -190,7 +190,8 @@ subroutine init_ed_misc_coms
                            , vary_rad            & ! intent(out)
                            , max_thsums_dist     & ! intent(out)
                            , max_poihist_dist    & ! intent(out)
-                           , max_poi99_dist      ! ! intent(out)
+                           , max_poi99_dist      & ! intent(out)
+                           , suppress_h5_warnings
    implicit none
 
 
@@ -271,6 +272,13 @@ subroutine init_ed_misc_coms
    !---------------------------------------------------------------------------------------!
    max_poihist_dist   = 250.
    !---------------------------------------------------------------------------------------!
+
+   ! If you dont want to read a million warnings about certain initialization
+   ! variables not being available in the history input file, set this to 
+   ! true.  Its better for new users to see what is missing though.
+   
+   suppress_h5_warnings = .false.
+
 
    return
 end subroutine init_ed_misc_coms

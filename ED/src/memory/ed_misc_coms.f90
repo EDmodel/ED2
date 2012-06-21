@@ -225,4 +225,10 @@ Module ed_misc_coms
                      !      growth occurs daily
    !---------------------------------------------------------------------------------------!
    
+   !----- Namelist option to suppress warnings when HDF5 data is not in the 
+   !      initialization file.  Errors will still report and halt the run.
+
+   logical :: suppress_h5_warnings
+
+
 end module ed_misc_coms

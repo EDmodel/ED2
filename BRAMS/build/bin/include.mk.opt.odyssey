@@ -22,7 +22,7 @@ MAKE=/usr/bin/make
 # libraries.
 
 BASE=$(BRAMS_ROOT)/build/
-LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-new.a
+LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-opt.a
 
 # Activate appropriate parts below, comment out others.
 
