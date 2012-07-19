@@ -14,6 +14,7 @@ subroutine read_ednl(iunit,filename)
                                    , isoilstateinit                        & ! intent(out)
                                    , isoildepthflg                         & ! intent(out)
                                    , isoilbc                               & ! intent(out)
+                                   , sldrain                               & ! intent(out)
                                    , soilstate_db                          & ! intent(out)
                                    , soildepth_db                          & ! intent(out)
                                    , runoff_time                           & ! intent(out)
@@ -45,6 +46,7 @@ subroutine read_ednl(iunit,filename)
    use physiology_coms      , only : iphysiol                              & ! intent(out)
                                    , quantum_efficiency_t                  & ! intent(out)
                                    , h2o_plant_lim                         & ! intent(out)
+                                   , iddmort_scheme                        & ! intent(out)
                                    , ddmort_const                          & ! intent(out)
                                    , n_plant_lim                           & ! intent(out)
                                    , vmfact_c3                             & ! intent(out)
@@ -200,6 +202,7 @@ subroutine read_ednl(iunit,filename)
                                    , igrndvap                              & ! intent(in)
                                    , leaf_zrough         => zrough         & ! intent(in)
                                    , leaf_isoilbc        => isoilbc        & ! intent(in)
+                                   , leaf_sldrain        => sldrain        & ! intent(in)
                                    , leaf_ipercol        => ipercol        & ! intent(in)
                                    , leaf_runoff_time    => runoff_time    ! ! intent(in)
    use leaf_coms            , only : leaf_ubmin          => ubmin          & ! intent(in)
@@ -239,17 +242,17 @@ subroutine read_ednl(iunit,filename)
                        ,igrass,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme        &
                        ,crown_mod,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir  &
                        ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
-                       ,h2o_plant_lim,ddmort_const,vmfact_c3,vmfact_c4,mphoto_trc3         &
-                       ,mphoto_tec3,mphoto_c4,bphoto_blc3,bphoto_nlc3,bphoto_c4,kw_grass   &
-                       ,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree,alpha_c3                &
-                       ,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass,lwidth_bltree   &
-                       ,lwidth_nltree,q10_c3,q10_c4,thetacrit,quantum_efficiency_t         &
-                       ,n_plant_lim,n_decomp_lim,include_fire,fire_parameter,sm_fire       &
-                       ,ianth_disturb,icanturb,include_these_pft,agri_stock                &
-                       ,plantation_stock,pft_1st_check,maxpatch,maxcohort,min_patch_area   &
-                       ,treefall_disturbance_rate,time2canopy,iprintpolys,npvars,printvars &
-                       ,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff    &
-                       ,iedcnfgf,event_file,phenpath
+                       ,h2o_plant_lim,iddmort_scheme,ddmort_const,vmfact_c3,vmfact_c4      &
+                       ,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3,bphoto_nlc3          &
+                       ,bphoto_c4,kw_grass,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree      &
+                       ,alpha_c3,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass        &
+                       ,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4,thetacrit                &
+                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
+                       ,fire_parameter,sm_fire,ianth_disturb,icanturb,include_these_pft    &
+                       ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
+                       ,min_patch_area,treefall_disturbance_rate,time2canopy,iprintpolys   &
+                       ,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf     &
+                       ,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -333,6 +336,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' clump_grass               =',clump_grass
       write (unit=*,fmt=*) ' decomp_scheme             =',decomp_scheme
       write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
+      write (unit=*,fmt=*) ' iddmort_scheme            =',iddmort_scheme
       write (unit=*,fmt=*) ' ddmort_const              =',ddmort_const
       write (unit=*,fmt=*) ' vmfact_c3                 =',vmfact_c3
       write (unit=*,fmt=*) ' vmfact_c4                 =',vmfact_c4
@@ -413,8 +417,8 @@ subroutine read_ednl(iunit,filename)
                        ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
                        ,nzg,nzs,isoilflg,nslcon,isoilcol,slz,slmstr,stgoff,leaf_zrough     &
                        ,ngrids,leaf_ubmin,leaf_ugbmin,leaf_ustmin,leaf_isoilbc             &
-                       ,leaf_ipercol,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl    &
-                       ,leaf_ribmax,leaf_leaf_maxwhc)
+                       ,leaf_sldrain,leaf_ipercol,leaf_runoff_time,leaf_gamm,leaf_gamh     &
+                       ,leaf_tprandtl,leaf_ribmax,leaf_leaf_maxwhc)
 
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
@@ -573,8 +577,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
                           ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,isoilcol_b,slz_b     &
                           ,slmstr_b,stgoff_b,zrough_b,ngrids_b,ubmin_b,ugbmin_b,ustmin_b   &
-                          ,isoilbc_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b      &
-                          ,ribmax_b,leaf_maxwhc_b)
+                          ,isoilbc_b,sldrain_b,ipercol_b,runoff_time_b,gamm_b,gamh_b       &
+                          ,tprandtl_b,ribmax_b,leaf_maxwhc_b)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
                              , itimez            & ! intent(out)
@@ -614,6 +618,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , slz               & ! intent(out)
                              , stgoff            & ! intent(out)
                              , isoilbc           & ! intent(in)
+                             , sldrain           & ! intent(in)
                              , runoff_time       ! ! intent(in)
    use grid_dims      , only : maxgrds           & ! intent(out)
                              , nzgmax            ! ! intent(out)
@@ -673,6 +678,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    real                      , intent(in) :: ugbmin_b      ! Minimum u at leaf level
    real                      , intent(in) :: ustmin_b      ! Minimum u*
    integer                   , intent(in) :: isoilbc_b     ! Bottom soil boundary condition
+   real                      , intent(in) :: sldrain_b     ! Drainage slope in degrees
    integer                   , intent(in) :: ipercol_b     ! Percolation scheme.
    real                      , intent(in) :: runoff_time_b ! Runoff time scale.
    real                      , intent(in) :: ribmax_b      ! Maximum bulk Richardson number
@@ -732,6 +738,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    ugbmin      = ugbmin_b
    ustmin      = ustmin_b
    isoilbc     = isoilbc_b
+   sldrain     = sldrain_b
    ipercol     = ipercol_b
    runoff_time = runoff_time_b
 

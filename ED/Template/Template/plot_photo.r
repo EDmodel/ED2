@@ -15,7 +15,7 @@ whenz          = c("thismonthz/thisdatez/thisyearz","thishourz:thisminuz:00")
 ptype          = "l"                  # Type of plot
 ptyped         = "p"                  # Type of plot
 
-outform        = "thisoutform"           # Formats for output file.  Supported formats are:
+outform        = thisoutform           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing

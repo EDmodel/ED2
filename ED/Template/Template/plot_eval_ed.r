@@ -16,7 +16,7 @@ myplaces       = c("thispoly")
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
-outform        = "thisoutform"          # Formats for output file.  Supported formats are:
+outform        = thisoutform          # Formats for output file.  Supported formats are:
                                 #   - "X11" - for printing on screen
                                 #   - "eps" - for postscript printing
                                 #   - "png" - for PNG printing

@@ -99,10 +99,17 @@ module physiology_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !  DDMORT_CONST -- This constant (k) determines the relative contribution of light and  !
-   !                  soil moisture to the density-dependent mortality rate.  Values range !
-   !                  from 0 (soil moisture only) to 1 (light only).  This variable makes  !
-   !                  a difference only if H2O_PLANT_LIM is not zero.                      !
+   !  IDDMORT_SCHEME -- This flag determines whether storage should be accounted in the    !
+   !                    carbon balance.                                                    !
+   !                    0 -- Carbon balance is done in terms of fluxes only.  This is the  !
+   !                         default in ED-2.1                                             !
+   !                    1 -- Carbon balance is offset by the storage pool.  Plants will be !
+   !                         in negative carbon balance only when they run out of storage  !
+   !                         and are still losing more carbon than gaining.                !
+   !                                                                                       !
+   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !                    and soil moisture to the density-dependent mortality rate.  Values !
+   !                    range from 0 (soil moisture only) to 1 (light only).               !
    !                                                                                       !
    !                                    mort1                                              !
    !                  mu_DD = -------------------------                                    !
@@ -112,6 +119,7 @@ module physiology_coms
    !                  cr    = k ------------- + (1 - k) -------------                      !
    !                             CB_lightmax             CB_watermax                       !
    !---------------------------------------------------------------------------------------!
+   integer              :: iddmort_scheme
    real                 :: ddmort_const
    !---------------------------------------------------------------------------------------!
 

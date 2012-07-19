@@ -10,7 +10,7 @@ myplaces       = c("thispoly")
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
-outform        = "thisoutform"           # Formats for output file.  Supported formats are:
+outform        = thisoutform           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
@@ -38,6 +38,7 @@ inset          = 0.01           # inset distance between legend and edge of plot
 legbg          = "white"        # Legend background colour.
 scalleg        = 0.20
 cex.main       = 0.8             # Scale coefficient for the title
+slz.min        = -5.0           # Find the deepest depth that trees access water.
 
 theta           = 315.                    # Azimuth for perspective projection
 phi             = 30.                     # Vertical angle for perspective projection
@@ -106,7 +107,7 @@ source(paste(srcdir,"pft.coms.r"       ,sep="/"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v6.RData",sep="/")
+obsrfile = paste(srcdir,"LBA_MIP.v7.RData",sep="/")
 load(file=obsrfile)
 
 #----- Define plot window size ------------------------------------------------------------#
@@ -245,6 +246,7 @@ for (place in myplaces){
    root.resp       = NULL
    growth.resp     = NULL
    hetresp         = NULL
+   reco            = NULL
    mco             = NULL
    npp             = NULL
    cba             = NULL
@@ -270,6 +272,9 @@ for (place in myplaces){
    wood.temp       = NULL
    atm.shv         = NULL
    can.shv         = NULL
+   atm.vpd         = NULL
+   can.vpd         = NULL
+   leaf.vpd        = NULL
    can.co2         = NULL
    hflxca          = NULL
    qwflxca         = NULL
@@ -304,6 +309,8 @@ for (place in myplaces){
    albedo.beam     = NULL
    albedo.diff     = NULL
    rlong.albedo    = NULL
+   paw             = NULL
+   smpot           = NULL
    npat.global     = NULL
    ncoh.global     = NULL
    mmsqu.gpp       = NULL
@@ -312,6 +319,7 @@ for (place in myplaces){
    mmsqu.root.resp = NULL
    mmsqu.plresp    = NULL
    mmsqu.hetresp   = NULL
+   mmsqu.reco      = NULL
    mmsqu.cflxca    = NULL
    mmsqu.cflxst    = NULL
    mmsqu.hflxca    = NULL
@@ -473,6 +481,23 @@ for (place in myplaces){
              ntext      = mymont$NTEXT.SOIL[nzg]
 
              soil.prop  = soil.params(ntext,isoilflg,slxsand,slxclay)
+             dslz       = diff(c(slz,0))
+             soil.depth = rev(cumsum(rev(dslz)))
+             soil.dry   = rev(cumsum(rev(soil.prop$soilcp * wdns * dslz)))
+             soil.poro  = rev(cumsum(rev(soil.prop$slmsts * wdns * dslz)))
+
+
+             #----- Find the layers we care about. ----------------------------------------#
+             sel        = slz < slz.min
+             if (any(sel)){
+                ka      = which.max(slz[sel])
+             }else{
+                ka      = 1
+             }#end if
+             kz         = nzg
+             #-----------------------------------------------------------------------------#
+
+
 
              #----- Mean diurnal cycle. ---------------------------------------------------#
              dcycmean                = list()
@@ -485,6 +510,7 @@ for (place in myplaces){
              dcycmean$hetresp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nep            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nee            = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$reco           = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$cflxca         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$cflxst         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hflxca         = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -506,6 +532,9 @@ for (place in myplaces){
              dcycmean$atm.shv        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$can.shv        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$gnd.shv        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$atm.vpd        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$can.vpd        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$leaf.vpd       = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$atm.co2        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$can.co2        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$atm.prss       = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -535,6 +564,7 @@ for (place in myplaces){
              dcycmsqu$hetresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nep         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nee         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$reco        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$cflxca      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$cflxst      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hflxca      = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -572,6 +602,8 @@ for (place in myplaces){
           nep             = c(nep              ,   mymont$MMEAN.NEP                      )
           nee             = c(nee              , - mymont$MMEAN.CARBON.AC                
                                                  + mymont$MMEAN.CARBON.ST                )
+          reco            = c(reco             ,   mymont$MMEAN.PLRESP                   
+                                                 + mymont$MMEAN.RH                       )
           cflxca          = c(cflxca           , - mymont$MMEAN.CARBON.AC                )
           cflxst          = c(cflxst           ,   mymont$MMEAN.CARBON.ST                )
           hflxca          = c(hflxca           , - mymont$MMEAN.SENSIBLE.AC              )
@@ -621,16 +653,19 @@ for (place in myplaces){
           atm.temp      = c(atm.temp     ,mymont$MMEAN.ATM.TEMP  - t00                   )
           atm.shv       = c(atm.shv      ,mymont$MMEAN.ATM.SHV   * kg2g                  )
           atm.co2       = c(atm.co2      ,mymont$MMEAN.ATM.CO2                           )
+          atm.vpd       = c(atm.vpd      ,mymont$MMEAN.ATM.VPDEF * 0.01                  )
 
           can.prss      = c(can.prss     ,mymont$MMEAN.CAN.PRSS  * 0.01                  )
           can.temp      = c(can.temp     ,mymont$MMEAN.CAN.TEMP  - t00                   )
           can.shv       = c(can.shv      ,mymont$MMEAN.CAN.SHV   * kg2g                  )
           can.co2       = c(can.co2      ,mymont$MMEAN.CAN.CO2                           )
+          can.vpd       = c(can.vpd      ,mymont$MMEAN.CAN.VPDEF * 0.01                  )
 
           gnd.temp      = c(gnd.temp     ,mymont$MMEAN.GND.TEMP  - t00                   )
           gnd.shv       = c(gnd.shv      ,mymont$MMEAN.GND.SHV   * kg2g                  )
 
           leaf.temp     = c(leaf.temp    ,mymont$MMEAN.LEAF.TEMP  - t00                  )
+          leaf.vpd      = c(leaf.vpd     ,mymont$MMEAN.LEAF.VPDEF * 0.01                 )
           wood.temp     = c(wood.temp    ,mymont$MMEAN.WOOD.TEMP  - t00                  )
           rain          = c(rain         ,mymont$MMEAN.PCPG*ddd  * day.sec               )
 
@@ -648,6 +683,17 @@ for (place in myplaces){
           rlong.albedo  = c(rlong.albedo ,mymont$MMEAN.RLONG.ALBEDO                      )
           #--------------------------------------------------------------------------------#
 
+
+          #----- Find averaged soil properties. -------------------------------------------#
+          swater.now  = rev(cumsum(rev(mymont$MMEAN.SOIL.WATER * wdns * dslz)))
+          smoist.avg  = swater.now / (wdns * soil.depth)
+          paw.now     = 100. * ( ( swater.now[ka] - soil.dry [ka] )
+                               / ( soil.poro [ka] - soil.dry [ka] ) )
+          smpot.now   = ( - smoist2mpot(smoist=smoist.avg[ka],mysoil=soil.prop)
+                        * 0.001 * grav )
+          paw         = c(   paw,   paw.now )
+          smpot       = c( smpot, smpot.now )
+          #--------------------------------------------------------------------------------#
 
 
           #------ Read in soil properties. ------------------------------------------------#
@@ -681,6 +727,7 @@ for (place in myplaces){
           dcycmean$hetresp     [m,] = mymont$QMEAN.RH
           dcycmean$nep         [m,] = mymont$QMEAN.NEP
           dcycmean$nee         [m,] = - mymont$QMEAN.CARBON.AC + mymont$QMEAN.CARBON.ST
+          dcycmean$reco        [m,] = mymont$QMEAN.PLRESP + mymont$QMEAN.RH
           dcycmean$cflxca      [m,] = - mymont$QMEAN.CARBON.AC
           dcycmean$cflxst      [m,] = - mymont$QMEAN.CARBON.ST
           dcycmean$hflxca      [m,] = - mymont$QMEAN.SENSIBLE.AC
@@ -705,6 +752,9 @@ for (place in myplaces){
           dcycmean$atm.shv     [m,] = mymont$QMEAN.ATM.SHV            * kg2g
           dcycmean$can.shv     [m,] = mymont$QMEAN.CAN.SHV            * kg2g
           dcycmean$gnd.shv     [m,] = mymont$QMEAN.GND.SHV            * kg2g
+          dcycmean$atm.vpd     [m,] = mymont$QMEAN.ATM.VPDEF          * 0.01
+          dcycmean$can.vpd     [m,] = mymont$QMEAN.CAN.VPDEF          * 0.01
+          dcycmean$leaf.vpd    [m,] = mymont$QMEAN.LEAF.VPDEF         * 0.01
           dcycmean$atm.co2     [m,] = mymont$QMEAN.ATM.CO2
           dcycmean$can.co2     [m,] = mymont$QMEAN.CAN.CO2
           dcycmean$atm.vels    [m,] = mymont$QMEAN.ATM.VELS
@@ -1534,6 +1584,7 @@ for (place in myplaces){
    mont12mn$cflxca      = tapply(X=cflxca       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$cflxst      = tapply(X=cflxst       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$nee         = tapply(X=nee          ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
+   mont12mn$reco        = tapply(X=reco         ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hflxca      = tapply(X=hflxca       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hflxlc      = tapply(X=hflxlc       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hflxwc      = tapply(X=hflxwc       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
@@ -1636,11 +1687,12 @@ for (place in myplaces){
    mont12sd$evap       [!is.finite(mont12mn$evap       )] = 0.
    mont12sd$transp     [!is.finite(mont12mn$transp     )] = 0.
    #---------------------------------------------------------------------------------------#
-   #     Estimate the standard deviation of NPP, NEP, and NEE.                             #
+   #     Estimate the standard deviation of NPP, NEP, NEE, and REco.                       #
    #---------------------------------------------------------------------------------------#
-   mont12sd$npp  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2)
-   mont12sd$nep  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2 + mont12sd$hetresp^2)
-   mont12sd$nee  = sqrt(mont12sd$cflxca^2 + mont12sd$cflxst^2)
+   mont12sd$npp  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2                       )
+   mont12sd$nep  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2  + mont12sd$hetresp^2 )
+   mont12sd$nee  = sqrt(mont12sd$cflxca^2 + mont12sd$cflxst^2                       )
+   mont12sd$reco = sqrt(mont12sd$plresp^2 + mont12sd$hetresp^2                      )
    #---------------------------------------------------------------------------------------#
 
 
@@ -1658,6 +1710,7 @@ for (place in myplaces){
    dcyc12mn$hetresp     =qapply(X=dcycmean$hetresp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$nep         =qapply(X=dcycmean$nep         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$nee         =qapply(X=dcycmean$nee         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$reco        =qapply(X=dcycmean$reco        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$cflxca      =qapply(X=dcycmean$cflxca      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$cflxst      =qapply(X=dcycmean$cflxst      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$hflxca      =qapply(X=dcycmean$hflxca      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
@@ -1679,6 +1732,9 @@ for (place in myplaces){
    dcyc12mn$atm.shv     =qapply(X=dcycmean$atm.shv     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$can.shv     =qapply(X=dcycmean$can.shv     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$gnd.shv     =qapply(X=dcycmean$gnd.shv     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$atm.vpd     =qapply(X=dcycmean$atm.vpd     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$can.vpd     =qapply(X=dcycmean$can.vpd     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$leaf.vpd    =qapply(X=dcycmean$leaf.vpd    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$atm.co2     =qapply(X=dcycmean$atm.co2     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$can.co2     =qapply(X=dcycmean$can.co2     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$atm.prss    =qapply(X=dcycmean$atm.prss    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
@@ -1781,8 +1837,9 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Estimate NPP and NEE standard deviation.                                         #
    #---------------------------------------------------------------------------------------#
-   dcyc12sd$npp = sqrt(dcyc12sd$gpp^2    + dcyc12sd$plresp^2)
-   dcyc12sd$nee = sqrt(dcyc12sd$cflxca^2 + dcyc12sd$cflxst^2)
+   dcyc12sd$npp  = sqrt(dcyc12sd$gpp^2    + dcyc12sd$plresp^2 )
+   dcyc12sd$nee  = sqrt(dcyc12sd$cflxca^2 + dcyc12sd$cflxst^2 )
+   dcyc12sd$reco = sqrt(dcyc12sd$plresp^2 + dcyc12sd$hetresp^2)
    #---------------------------------------------------------------------------------------#
 
 

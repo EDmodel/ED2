@@ -91,8 +91,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                    , dslzti8               & ! intent(in)
                                    , slcons18              & ! intent(in)
                                    , slzt8                 & ! intent(in)
+                                   , dslzt8                & ! intent(in)
                                    , ss                    & ! intent(in)
                                    , isoilbc               & ! intent(in)
+                                   , sin_sldrain8          & ! intent(in)
                                    , freezecoef8           ! ! intent(in)
    use ed_misc_coms         , only : dtlsm                 & ! intent(in)
                                    , current_time          & ! intent(in)
@@ -110,8 +112,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                    , patchtype             & ! structure
                                    , polygontype           ! ! structure
    use therm_lib8           , only : tl2uint8              ! ! functions
-   use physiology_coms      , only : h2o_plant_lim         & ! intent(in)
-                                   , ddmort_const          ! ! intent(in)
+   use physiology_coms      , only : h2o_plant_lim         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)  , target     :: initp            ! RK4 structure, intermediate step
@@ -372,37 +373,24 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
 
    case (2)
       !------------------------------------------------------------------------------------!
-      !     Super drainage.   Make the water potential at the layer beneath to be at dry   !
-      ! air soil, and find the corresponding hydraulic conductivity.                       !
+      !     Lateral drainage (or reduced drainage).  Find the equivalent depth of the      !
+      ! layer beneath as a function of the slope (sldrain), and assume the soil moisture   !
+      ! and matric potential to be the same as the bottom layer.  Notice that when sldrain !
+      ! is zero this becomes the flat bedrock condition, and when sldrain is 90 degrees,   !
+      ! then it becomes free drainage.                                                     !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = soil8(nsoil)%soilcp
+      initp%soil_water   (kben) = initp%soil_water   (klsl)
       initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
 
       wgpfrac                   = min(initp%soil_water(kben)/soil8(nsoil)%slmsts, 1.d0)
-      rk4aux%hydcond     (kben) = slcons18(kben,nsoil)                                     &
-                                * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-      rk4aux%psiplusz    (kben) = slzt8(kben) + soil8(nsoil)%slpots                        &
-                                              / wgpfrac ** soil8(nsoil)%slbs
+      rk4aux%hydcond     (kben) = rk4aux%hydcond     (klsl)
+      rk4aux%psiplusz    (kben) = slzt8(klsl) - dslzt8(klsl) * sin_sldrain8                &
+                                + soil8(nsoil)%slpots / wgpfrac ** soil8(nsoil)%slbs
       rk4aux%drysoil     (kben) = .false.
       rk4aux%satsoil     (kben) = .false.
       !------------------------------------------------------------------------------------!
 
    case (3)
-      !------------------------------------------------------------------------------------!
-      !     Make the soil moisture in the layer beneath to be at field capacity.           !
-      !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = soil8(nsoil)%slmsts
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-
-      wgpfrac                   = min(initp%soil_water(kben)/soil8(nsoil)%sfldcap, 1.d0)
-      rk4aux%hydcond     (kben) = slcons18(kben,nsoil)                                     &
-                                * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-      rk4aux%psiplusz    (kben) = slzt8(kben) + soil8(nsoil)%slpots                        &
-                                              / wgpfrac ** soil8(nsoil)%slbs
-      rk4aux%drysoil     (kben) = .false.
-      rk4aux%satsoil     (kben) = .false.
-
-   case (4)
       !------------------------------------------------------------------------------------!
       !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
       !------------------------------------------------------------------------------------!
@@ -416,6 +404,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                               / wgpfrac ** soil8(nsoil)%slbs
       rk4aux%drysoil     (kben) = .false.
       rk4aux%satsoil     (kben) = .false.
+
    end select
    !---------------------------------------------------------------------------------------!
 

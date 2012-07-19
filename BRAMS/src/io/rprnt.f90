@@ -294,6 +294,8 @@ elseif (vnam == 'can_prss'       ) then
         vnam2 = '[can_prss   (Pa)]        '
 elseif (vnam == 'can_theiv'      ) then
         vnam2 = '[can_theiv   (K)]        '
+elseif (vnam == 'can_vpdef'      ) then
+        vnam2 = '[can_vpdef  (Pa)]        '
 elseif (vnam == 'can_theta'      ) then
         vnam2 = '[can_theta   (K)]        '
 elseif (vnam == 'can_rvap'       ) then
@@ -504,6 +506,10 @@ do k = k1,k2
             elseif (vnam == 'can_theiv'      ) then
                call plin(nc,j,ipat,3,1.e0             &
                   ,leaf%can_theiv(i1:i2,j,ipat)          &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'can_vpdef'      ) then
+               call plin(nc,j,ipat,3,1.e0             &
+                  ,leaf%can_vpdef(i1:i2,j,ipat)          &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'can_theta'      ) then
                call plin(nc,j,ipat,3,1.e0             &

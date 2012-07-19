@@ -27,8 +27,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    use ed_misc_coms   , only : current_time       ! ! intent(in)
    use met_driver_coms, only : met_driv_state     ! ! structure
    use physiology_coms, only : print_photo_debug  & ! intent(in)
-                             , h2o_plant_lim      & ! intent(in)
-                             , ddmort_const       ! ! intent(in)
+                             , h2o_plant_lim      ! ! intent(in)
    use phenology_coms , only : llspan_inf         ! ! intent(in)
    use farq_leuning   , only : lphysiol_full      ! ! sub-routine
    use allometry      , only : h2crownbh          ! ! function

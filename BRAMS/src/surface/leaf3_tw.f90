@@ -34,15 +34,15 @@ subroutine leaf3_prognostic(ifm,i,j,ip)
               ,leaf_g(ifm)%ground_temp      (i,j,ip),leaf_g(ifm)%ground_fliq      (i,j,ip) &
               ,leaf_g(ifm)%veg_water        (i,j,ip),leaf_g(ifm)%veg_hcap         (i,j,ip) &
               ,leaf_g(ifm)%veg_energy       (i,j,ip),leaf_g(ifm)%can_prss         (i,j,ip) &
-              ,leaf_g(ifm)%can_theiv        (i,j,ip),leaf_g(ifm)%can_theta        (i,j,ip) &
-              ,leaf_g(ifm)%can_rvap         (i,j,ip),leaf_g(ifm)%can_co2          (i,j,ip) &
-              ,leaf_g(ifm)%sensible_gc      (i,j,ip),leaf_g(ifm)%sensible_vc      (i,j,ip) &
-              ,leaf_g(ifm)%evap_gc          (i,j,ip),leaf_g(ifm)%evap_vc          (i,j,ip) &
-              ,leaf_g(ifm)%transp           (i,j,ip),leaf_g(ifm)%gpp              (i,j,ip) &
-              ,leaf_g(ifm)%plresp           (i,j,ip),leaf_g(ifm)%resphet          (i,j,ip) &
-              ,leaf_g(ifm)%veg_ndvip        (i,j,ip),leaf_g(ifm)%veg_ndvic        (i,j,ip) &
-              ,leaf_g(ifm)%veg_ndvif        (i,j,ip),radiate_g(ifm)%rshort        (i,j)    &
-              ,radiate_g(ifm)%cosz          (i,j)   )
+              ,leaf_g(ifm)%can_theiv        (i,j,ip),leaf_g(ifm)%can_vpdef        (i,j,ip) &
+              ,leaf_g(ifm)%can_theta        (i,j,ip),leaf_g(ifm)%can_rvap         (i,j,ip) &
+              ,leaf_g(ifm)%can_co2          (i,j,ip),leaf_g(ifm)%sensible_gc      (i,j,ip) &
+              ,leaf_g(ifm)%sensible_vc      (i,j,ip),leaf_g(ifm)%evap_gc          (i,j,ip) &
+              ,leaf_g(ifm)%evap_vc          (i,j,ip),leaf_g(ifm)%transp           (i,j,ip) &
+              ,leaf_g(ifm)%gpp              (i,j,ip),leaf_g(ifm)%plresp           (i,j,ip) &
+              ,leaf_g(ifm)%resphet          (i,j,ip),leaf_g(ifm)%veg_ndvip        (i,j,ip) &
+              ,leaf_g(ifm)%veg_ndvic        (i,j,ip),leaf_g(ifm)%veg_ndvif        (i,j,ip) &
+              ,radiate_g(ifm)%rshort        (i,j)   ,radiate_g(ifm)%cosz          (i,j)    )
 
    return
 end subroutine leaf3_prognostic
@@ -61,9 +61,9 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
                    ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height           &
                    ,veg_displace,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough &
                    ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp          &
-                   ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_theta &
-                   ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp    &
-                   ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz)
+                   ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_vpdef &
+                   ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc     &
+                   ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz)
 
    use leaf_coms
    use mem_leaf
@@ -113,6 +113,7 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
    real                   , intent(inout) :: veg_energy
    real                   , intent(inout) :: can_prss
    real                   , intent(inout) :: can_theiv
+   real                   , intent(inout) :: can_vpdef
    real                   , intent(inout) :: can_theta
    real                   , intent(inout) :: can_rvap
    real                   , intent(inout) :: can_co2
@@ -243,8 +244,8 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
    select case (isoilbc)
    case (0)
       !------------------------------------------------------------------------------------!
-      !    Bedrock.  Make the potential exactly the same as the bottom layer, and the flux !
-      ! will be zero.                                                                      !
+      !    Flat bedrock.  Make the potential exactly the same as the bottom layer, and the !
+      ! flux will be zero.                                                                 !
       !------------------------------------------------------------------------------------!
       soil_water_0   = soil_water   (1)
       soil_fracliq_0 = soil_fracliq (1)
@@ -264,26 +265,20 @@ subroutine leaf3_tw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_in
       !------------------------------------------------------------------------------------!
    case (2)
       !------------------------------------------------------------------------------------!
-      !     Super drainage.   Make the water potential at the layer beneath to be at dry   !
-      ! air soil, and find the corresponding hydraulic conductivity.                       !
+      !     Lateral drainage (or reduced drainage).  Find the equivalent depth of the      !
+      ! layer beneath as a function of the slope (sldrain), and assume the soil moisture   !
+      ! and matric potential to be the same as the bottom layer.  Notice that when sldrain !
+      ! is zero this becomes the flat bedrock condition, and when sldrain is 90 degrees,   !
+      ! then it becomes free drainage.                                                     !
       !------------------------------------------------------------------------------------!
-      soil_water_0   = soilcp(nsoil)
+      soil_water_0   = soil_water   (1)
       soil_fracliq_0 = soil_fracliq (1)
       wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
       hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
-      psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
+      psiplusz_0     = slzt(1) - dslzt(1) * sin(sldrain * pio180)                          &
+                     + slpots(nsoil) / wgpfrac ** slbs(nsoil)
       !------------------------------------------------------------------------------------!
    case (3)
-      !------------------------------------------------------------------------------------!
-      !     Make the soil moisture in the layer beneath to be at field capacity.           !
-      !------------------------------------------------------------------------------------!
-      soil_water_0   = sfldcap(nsoil)
-      soil_fracliq_0 = soil_fracliq (1)
-      wgpfrac        = min(soil_water_0/slmsts(nsoil), 1.0)
-      hydcond_0      = slcons1_0(nsoil) * wgpfrac ** (2.0 * slbs(nsoil) + 3.0)
-      psiplusz_0     = slzt_0 + slpots(nsoil) / wgpfrac ** slbs(nsoil)
-      !------------------------------------------------------------------------------------!
-   case (4)
       !------------------------------------------------------------------------------------!
       !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
       !------------------------------------------------------------------------------------!

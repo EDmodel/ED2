@@ -1710,11 +1710,13 @@ subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height 
                         , atm_vels     & ! intent(out)
                         , atm_temp     & ! intent(out)
                         , atm_theiv    & ! intent(out)
+                        , atm_vpdef    & ! intent(out)
                         , pcpgl        & ! intent(out)
                         , qpcpgl       & ! intent(out)
                         , dpcpgl       ! ! intent(out)
    use rconstants, only : srtwo        ! ! intent(in)
    use therm_lib , only : thetaeiv     & ! function
+                        , vpdefil      & ! function
                         , exner2press  & ! function
                         , extheta2temp ! ! function
 
@@ -1771,6 +1773,7 @@ subroutine leaf3_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height 
    atm_prss     = exner2press(atm_exner)
    atm_temp     = extheta2temp(atm_exner,atm_theta)
    atm_theiv    = thetaeiv(atm_thil,atm_prss,atm_temp,atm_rvap,atm_rtot)
+   atm_vpdef    = vpdefil(atm_prss,atm_temp,atm_shv,.true.)
    pcpgl        = pcpg(i,j)
    qpcpgl       = qpcpg(i,j)
    dpcpgl       = dpcpg(i,j)
@@ -1791,7 +1794,8 @@ end subroutine leaf3_atmo1d
 !      This sub-routine assigns various canopy air space variables for the case in which   !
 ! leaf is not solved.                                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,patch_area)
+subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,can_vpdef    &
+                ,patch_area)
    use mem_leaf  , only : dthcon         & ! intent(in)
                         , drtcon         & ! intent(in)
                         , pctlcon        ! ! intent(in)
@@ -1815,6 +1819,7 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
                         , cpdry          & ! intent(in)
                         , cph2o          ! ! intent(in)
    use therm_lib , only : thetaeiv       & ! function
+                        , vpdefil        & ! function
                         , rslif          & ! function
                         , reducedpress   & ! function
                         , idealdenssh    & ! function
@@ -1834,6 +1839,7 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
    real   , dimension(m2,m3,mpat), intent(inout) :: can_co2
    real   , dimension(m2,m3,mpat), intent(inout) :: can_prss
    real   , dimension(m2,m3,mpat), intent(inout) :: can_theiv
+   real   , dimension(m2,m3,mpat), intent(inout) :: can_vpdef
    real   , dimension(m2,m3,mpat), intent(inout) :: patch_area
    !---------------------------------------------------------------------------------------!
 
@@ -1859,6 +1865,8 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
 
    can_theiv(i,j,2)  = thetaeiv(can_theta(i,j,2),can_prss(i,j,2),can_temp,can_rvap(i,j,2)  &
                                ,can_rvap(i,j,2))
+
+   can_vpdef(i,j,2)  = vpdefil(can_prss(i,j,2),can_temp,can_shv,.true.)
 
    can_enthalpy      = tq2enthalpy(can_temp,can_shv,.true.)
    can_rhos          = idealdenssh(can_prss(i,j,2),can_temp,can_shv)

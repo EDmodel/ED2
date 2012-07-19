@@ -355,6 +355,7 @@ module rk4_coms
       real(kind=8)                    :: atm_tmp
       real(kind=8)                    :: atm_theta
       real(kind=8)                    :: atm_theiv
+      real(kind=8)                    :: atm_vpdef
       real(kind=8)                    :: atm_shv
       real(kind=8)                    :: atm_rhv
       real(kind=8)                    :: atm_co2

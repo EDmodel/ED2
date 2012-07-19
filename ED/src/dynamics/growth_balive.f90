@@ -708,12 +708,13 @@ module growth_balive
    subroutine plant_carbon_balances(cpatch,ipa,ico,daily_C_gain,carbon_balance             &
                                    ,carbon_balance_pot,carbon_balance_lightmax             &
                                    ,carbon_balance_moistmax)
-      use ed_state_vars, only : patchtype          ! ! structure
-      use pft_coms     , only : growth_resp_factor ! ! intent(in)
-      use consts_coms  , only : umol_2_kgC         & ! intent(in)
-                              , day_sec            ! ! intent(in)
-      use ed_misc_coms , only : current_time       ! ! intent(in)
-      use ed_max_dims  , only : n_pft              ! ! intent(in)
+      use ed_state_vars  , only : patchtype          ! ! structure
+      use pft_coms       , only : growth_resp_factor ! ! intent(in)
+      use consts_coms    , only : umol_2_kgC         & ! intent(in)
+                                , day_sec            ! ! intent(in)
+      use ed_misc_coms   , only : current_time       ! ! intent(in)
+      use ed_max_dims    , only : n_pft              ! ! intent(in)
+      use physiology_coms, only : iddmort_scheme     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)          , target      :: cpatch
@@ -731,6 +732,7 @@ module growth_balive
       real                                   :: growth_respiration_pot
       real                                   :: growth_respiration_lightmax
       real                                   :: growth_respiration_moistmax
+      real                                   :: storage_offset
       integer                                :: ipft
       !----- Local constants. -------------------------------------------------------------!
       logical                  , parameter   :: print_debug = .false.
@@ -740,10 +742,35 @@ module growth_balive
 
       !----- Alias for PFT type. ----------------------------------------------------------!
       ipft = cpatch%pft(ico)
+      !------------------------------------------------------------------------------------!
 
-      !------ Calculate actual daily carbon balance: kgC/plant/day. -----------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Compute the storage offset for carbon balance.  By including this term we     !
+      ! make sure that plants won't start dying as soon as they shed their leaves, but     !
+      ! only when they are in negative carbon balance and without storage.  This is done   !
+      ! only when iddmort_scheme is set to 1.                                              !
+      !------------------------------------------------------------------------------------!
+      select case (iddmort_scheme)
+      case (0)
+         !------ Storage is not accounted. ------------------------------------------------!
+         storage_offset = 0
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !------ Storage is accounted. ----------------------------------------------------!
+         storage_offset = cpatch%bstorage(ico)
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !       Calculate actual daily carbon balance: kgC/plant/day.                        !
+      !------------------------------------------------------------------------------------!
       carbon_balance = daily_C_gain - cpatch%growth_respiration(ico)                       &
                                     - cpatch%vleaf_respiration(ico)
+      !------------------------------------------------------------------------------------!
 
       if (cpatch%nplant(ico) > tiny(1.0)) then
 
@@ -794,24 +821,28 @@ module growth_balive
       end if
 
       !----- Carbon balances for mortality. -----------------------------------------------!
-      cpatch%cb         (13,ico) = cpatch%cb         (13,ico) + carbon_balance
-      cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax(13,ico) + carbon_balance_lightmax
-      cpatch%cb_moistmax(13,ico) = cpatch%cb_moistmax(13,ico) + carbon_balance_moistmax
+      cpatch%cb         (13,ico) = cpatch%cb         (13,ico) + carbon_balance             &
+                                                              + storage_offset
+      cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax(13,ico) + carbon_balance_lightmax    &
+                                                              + storage_offset
+      cpatch%cb_moistmax(13,ico) = cpatch%cb_moistmax(13,ico) + carbon_balance_moistmax    &
+                                                              + storage_offset
 
       if (print_debug) then
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,18(1x,a18))')                                    &
+            write (unit=30+ipft,fmt='(a10,19(1x,a18))')                                    &
                '      TIME','             PATCH','            COHORT','            NPLANT' &
                            ,'          CB_TODAY','       GROWTH_RESP','        VLEAF_RESP' &
                            ,'         TODAY_GPP','TODAY_GPP_LIGHTMAX','TODAY_GPP_MOISTMAX' &
                            ,'   TODAY_LEAF_RESP','   TODAY_ROOT_RESP',' CB_LIGHTMAX_TODAY' &
                            ,' CB_MOISTMAX_TODAY','                CB','       CB_LIGHTMAX' &
-                           ,'       CB_MOISTMAX','  LEAF_MAINTENANCE','  ROOT_MAINTENANCE'
+                           ,'       CB_MOISTMAX','  LEAF_MAINTENANCE','  ROOT_MAINTENANCE' &
+                           ,'    STORAGE_OFFSET'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),16(1x,es18.5))')               &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),17(1x,es18.5))')               &
               current_time%month,'/',current_time%date,'/',current_time%year               &
              ,ipa,ico,cpatch%nplant(ico),carbon_balance,cpatch%growth_respiration(ico)     &
              ,cpatch%vleaf_respiration(ico),cpatch%today_gpp(ico)                          &
@@ -819,7 +850,7 @@ module growth_balive
              ,cpatch%today_leaf_resp(ico),cpatch%today_root_resp(ico)                      &
              ,carbon_balance_lightmax,carbon_balance_moistmax,cpatch%cb(13,ico)            &
              ,cpatch%cb_lightmax(13,ico),cpatch%cb_moistmax(13,ico)                        &
-             ,cpatch%leaf_maintenance(ico),cpatch%root_maintenance(ico)
+             ,cpatch%leaf_maintenance(ico),cpatch%root_maintenance(ico),storage_offset
       end if
 
       return

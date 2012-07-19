@@ -545,20 +545,32 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.  If      !
-   !            unsure, use 0 for short-term simulations (couple of days), and 1 for long- !
-   !            -term simulations (months to years).                                       !
-   !            0.  Bedrock.  Flux from the bottom of the bottommost layer is set to 0.    !
-   !            1.  Gravitational flow.  The flux from the bottom of the bottommost layer  !
-   !                is due to gradient of height only.                                     !
-   !            2.  Super drainage.  Soil moisture of the ficticious layer beneath the     !
-   !                bottom is always at dry air soil moisture.                             !
-   !            3.  Half-way.  Assume that the fictious layer beneath the bottom is always !
-   !                at field capacity.                                                     !
-   !            4.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
+   ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.  Choose  !
+   !            the option according to the site characteristics.                          !
+   !            0.  Flat bedrock.  Flux from the bottom of the bottommost layer is zero.   !
+   !            1.  Gravitational flow (free drainage).  The flux from the bottom of the   !
+   !                bottommost layer is due to gradient of height only.                    !
+   !            2.  Lateral drainage.  Similar to free drainage, but the gradient is       !
+   !                reduced by the slope not being completely vertical.  The reduction is  !
+   !                controlled by variable SLDRAIN.  In the future options 0, 1, and 2 may !
+   !                be combined into a single option.                                      !
+   !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
    !                always at saturation.                                                  !
    !---------------------------------------------------------------------------------------!
    NL%ISOILBC        = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! SLDRAIN -- This is used only when ISOILBC is set to 2.  In this case SLDRAIN is the   !
+   !            equivalent slope that will slow down drainage.  If this is set to zero,    !
+   !            then lateral drainage reduces to flat bedrock, and if this is set to 90,   !
+   !            then lateral drainage becomes free drainage.  SLDRAIN must be between 0    !
+   !            and 90.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   NL%SLDRAIN        = 10.
    !---------------------------------------------------------------------------------------!
 
 
@@ -867,21 +879,27 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   !  DDMORT_CONST -- This constant (k) determines the relative contribution of light and  !
-   !                  soil water to the density-dependent mortality rate.  Values range    !
-   !                  from 0 (water only) to 1 (light only).  This variable makes a        !
-   !                  difference only if H2O_PLANT_LIM is not zero.                        !
+   !  IDDMORT_SCHEME -- This flag determines whether storage should be accounted in the    !
+   !                    carbon balance.                                                    !
+   !                    0 -- Carbon balance is done in terms of fluxes only.  This is the  !
+   !                         default in ED-2.1                                             !
+   !                    1 -- Carbon balance is offset by the storage pool.  Plants will be !
+   !                         in negative carbon balance only when they run out of storage  !
+   !                         and are still losing more carbon than gaining.                !
    !                                                                                       !
-   !                                   m1                                                  !
-   !                  mu_DD = ----------------------                                       !
-   !                            1 + exp [ m2 * cr ]                                        !
+   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !                    and soil moisture to the density-dependent mortality rate.  Values !
+   !                    range from 0 (soil moisture only) to 1 (light only).               !
    !                                                                                       !
-   !                   1               1                             1                     !
-   !                 ---- = k ------------------ + (1 - k)  ------------------             !
-   !                  cr              CB                            CB                     !
-   !                            --------------                --------------               !
-   !                             CB_max_light                  CB_max_moist                !
+   !                                    mort1                                              !
+   !                  mu_DD = -------------------------                                    !
+   !                            1 + exp [ mort2 * cr ]                                     !
+   !                                                                                       !
+   !                                 CB                      CB                            !
+   !                  cr    = k ------------- + (1 - k) -------------                      !
+   !                             CB_lightmax             CB_watermax                       !
    !---------------------------------------------------------------------------------------!
+   NL%IDDMORT_SCHEME  = 0
    NL%DDMORT_CONST    = 0.8
    !---------------------------------------------------------------------------------------!
 

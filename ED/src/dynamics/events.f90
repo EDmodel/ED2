@@ -771,6 +771,7 @@ subroutine event_till(rval8)
                  cpatch%leaf_water(ico)       = 0.0
                  cpatch%leaf_fliq(ico)        = 0.0
                  cpatch%leaf_temp(ico)        = csite%can_temp(ipa)
+                 cpatch%leaf_vpdef(ico)       = csite%can_vpdef(ipa)
                  cpatch%wood_water(ico)       = 0.0
                  cpatch%wood_fliq(ico)        = 0.0
                  cpatch%wood_temp(ico)        = csite%can_temp(ipa)

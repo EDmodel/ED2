@@ -131,6 +131,10 @@ subroutine patch_interp_driver(icm,ifm)
                     ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
                     ,scratch%vt2db )
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%can_vpdef,leaf_g(ifm)%can_vpdef,leaf_g(icm)%patch_area    &
+                    ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
+                    ,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
                     ,leaf_g(icm)%can_theta,leaf_g(ifm)%can_theta,leaf_g(icm)%patch_area    &
                     ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
                     ,scratch%vt2db )
@@ -207,6 +211,7 @@ subroutine coarse2fine_driver(icm,ifm)
                                  ,leaf_g(ifm)%can_rvap       , leaf_g(icm)%can_rvap        &
                                  ,leaf_g(ifm)%can_co2        , leaf_g(icm)%can_co2         &
                                  ,leaf_g(ifm)%can_theiv      , leaf_g(icm)%can_theiv       &
+                                 ,leaf_g(ifm)%can_vpdef      , leaf_g(icm)%can_vpdef       &
                                  ,leaf_g(ifm)%can_theta      , leaf_g(icm)%can_theta       &
                                  ,leaf_g(ifm)%can_prss       , leaf_g(icm)%can_prss        &
                                  ,leaf_g(ifm)%veg_ndvic      , leaf_g(icm)%veg_ndvic       &
@@ -246,12 +251,13 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
                 ,f_veg_water      , c_veg_water      ,f_veg_energy     , c_veg_energy      &
                 ,f_veg_hcap       , c_veg_hcap       ,f_can_rvap       , c_can_rvap        &
                 ,f_can_co2        , c_can_co2        ,f_can_theiv      , c_can_theiv       &
-                ,f_can_theta      , c_can_theta      ,f_can_prss       , c_can_prss        &
-                ,f_veg_ndvic      , c_veg_ndvic      ,f_sensible_gc    , c_sensible_gc     &
-                ,f_sensible_vc    , c_sensible_vc    ,f_evap_gc        , c_evap_gc         &
-                ,f_evap_vc        , c_evap_vc        ,f_transp         , c_transp          &
-                ,f_psibar_10d     , c_psibar_10d     ,f_gpp            , c_gpp             &
-                ,f_plresp         , c_plresp         ,f_resphet        , c_resphet         )
+                ,f_can_vpdef      , c_can_vpdef      ,f_can_theta      , c_can_theta       &
+                ,f_can_prss       , c_can_prss       ,f_veg_ndvic      , c_veg_ndvic       &
+                ,f_sensible_gc    , c_sensible_gc    ,f_sensible_vc    , c_sensible_vc     &
+                ,f_evap_gc        , c_evap_gc        ,f_evap_vc        , c_evap_vc         &
+                ,f_transp         , c_transp         ,f_psibar_10d     , c_psibar_10d      &
+                ,f_gpp            , c_gpp            ,f_plresp         , c_plresp          &
+                ,f_resphet        , c_resphet        )
    use mem_grid, only : ipm & ! intent(in)
                       , jpm ! ! intent(in)
    implicit none
@@ -293,6 +299,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_rvap
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_co2
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_theiv
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_vpdef
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_theta
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_prss
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_veg_ndvic
@@ -333,6 +340,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_rvap
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_co2
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_theiv
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_vpdef
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_theta
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_prss
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_veg_ndvic
@@ -395,6 +403,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
             f_can_rvap             (i,j,ipat) = c_can_rvap        (ic,jc,ipat)
             f_can_co2              (i,j,ipat) = c_can_co2         (ic,jc,ipat)
             f_can_theiv            (i,j,ipat) = c_can_theiv       (ic,jc,ipat) 
+            f_can_vpdef            (i,j,ipat) = c_can_vpdef       (ic,jc,ipat) 
             f_can_theta            (i,j,ipat) = c_can_theta       (ic,jc,ipat) 
             f_can_prss             (i,j,ipat) = c_can_prss        (ic,jc,ipat) 
             f_veg_ndvic            (i,j,ipat) = c_veg_ndvic       (ic,jc,ipat)

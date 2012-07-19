@@ -414,6 +414,7 @@ subroutine init_lapse_params()
    lapse%atm_tmp      = 0.0
    lapse%atm_theta    = 0.0
    lapse%atm_theiv    = 0.0
+   lapse%atm_vpdef    = 0.0
    lapse%atm_shv      = 0.0
    lapse%prss         = 0.0
    lapse%pcpg         = 0.0
@@ -2026,23 +2027,43 @@ subroutine init_pft_mort_params()
    !     This variable controls the density-independent mortality rate due to ageing.      !
    ! This value is a constant in units of [fraction/year].                                 !
    !---------------------------------------------------------------------------------------!
-   mort3(1)  = 0.15 * (1. - rho(1) / rho(4)) 
-   mort3(2)  = 0.15 * (1. - rho(2) / rho(4))  
-   mort3(3)  = 0.15 * (1. - rho(3) / rho(4))
-   mort3(4)  = 0.0
-   mort3(5)  = 0.066
-   mort3(6)  = 0.0033928
-   mort3(7)  = 0.0043
-   mort3(8)  = 0.0023568
-   mort3(9)  = 0.006144
-   mort3(10) = 0.003808
-   mort3(11) = 0.00428
-   mort3(12) = 0.066
-   mort3(13) = 0.066
-   mort3(14) = 0.15 * (1. - rho(14) / rho(4))
-   mort3(15) = 0.15 * (1. - rho(15) / rho(4))
-   mort3(16) = 0.15 * (1. - rho(16) / rho(4))
-   mort3(17) = 0.0043 ! Same as pines
+   if (treefall_disturbance_rate > 0.) then
+      mort3(1)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(1) / rho(4)) ) / 0.014
+      mort3(2)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(2) / rho(4)) ) / 0.014
+      mort3(3)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(3) / rho(4)) ) / 0.014
+      mort3(4)  = 0.0
+      mort3(5)  = 0.066
+      mort3(6)  = 0.0033928
+      mort3(7)  = 0.0043
+      mort3(8)  = 0.0023568
+      mort3(9)  = 0.006144
+      mort3(10) = 0.003808
+      mort3(11) = 0.00428
+      mort3(12) = 0.066
+      mort3(13) = 0.066
+      mort3(14) = treefall_disturbance_rate * ( 0.15 * (1. - rho(14) / rho(4)) ) / 0.014
+      mort3(15) = treefall_disturbance_rate * ( 0.15 * (1. - rho(15) / rho(4)) ) / 0.014
+      mort3(16) = treefall_disturbance_rate * ( 0.15 * (1. - rho(16) / rho(4)) ) / 0.014
+      mort3(17) = 0.0043 ! Same as pines
+   else
+      mort3(1)  = 0.15 * (1. - rho(1) / rho(4))
+      mort3(2)  = 0.15 * (1. - rho(2) / rho(4))
+      mort3(3)  = 0.15 * (1. - rho(3) / rho(4))
+      mort3(4)  = 0.0
+      mort3(5)  = 0.066
+      mort3(6)  = 0.0033928
+      mort3(7)  = 0.0043
+      mort3(8)  = 0.0023568
+      mort3(9)  = 0.006144
+      mort3(10) = 0.003808
+      mort3(11) = 0.00428
+      mort3(12) = 0.066
+      mort3(13) = 0.066
+      mort3(14) = 0.15 * (1. - rho(14) / rho(4))
+      mort3(15) = 0.15 * (1. - rho(15) / rho(4))
+      mort3(16) = 0.15 * (1. - rho(16) / rho(4))
+      mort3(17) = 0.0043 ! Same as pines
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -3963,14 +3984,20 @@ subroutine init_soil_coms
                              , soil_rough8           & ! intent(out)
                              , snow_rough8           & ! intent(out)
                              , freezecoef            & ! intent(out)
-                             , freezecoef8           ! ! intent(out)
+                             , freezecoef8           & ! intent(out)
+                             , sldrain               & ! intent(out)
+                             , sldrain8              & ! intent(out)
+                             , sin_sldrain           & ! intent(out)
+                             , sin_sldrain8          ! ! intent(out)
    use phenology_coms , only : thetacrit             ! ! intent(in)
    use disturb_coms   , only : sm_fire               ! ! intent(in)
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
                              , wdns                  & ! intent(in)
                              , hr_sec                & ! intent(in)
-                             , day_sec               ! ! intent(in)
+                             , day_sec               & ! intent(in)
+                             , pio180                & ! intent(in)
+                             , pio1808               ! ! intent(in)
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -4376,6 +4403,16 @@ subroutine init_soil_coms
    soil_rough8 = dble(soil_rough)
    snow_rough8 = dble(snow_rough)
    freezecoef8 = dble(freezecoef)
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the double precision version of the drainage slope, and find and save the    !
+   ! sine of it.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   sldrain8     = dble(sldrain)
+   sin_sldrain  = sin(sldrain  * pio180 )
+   sin_sldrain8 = sin(sldrain8 * pio1808)
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine init_soil_coms
 !==========================================================================================!

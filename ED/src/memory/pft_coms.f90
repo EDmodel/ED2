@@ -596,6 +596,7 @@ module pft_coms
       real    :: wood_temp
       real    :: leaf_temp_pv
       real    :: wood_temp_pv
+      real    :: leaf_vpdef
       real    :: hite
       real    :: dbh
       real    :: bdead
@@ -638,6 +639,7 @@ module pft_coms
          recruit(p)%wood_temp        = 0.
          recruit(p)%leaf_temp_pv     = 0.
          recruit(p)%wood_temp_pv     = 0.
+         recruit(p)%leaf_vpdef       = 0.
          recruit(p)%hite             = 0.
          recruit(p)%dbh              = 0.
          recruit(p)%bdead            = 0.
@@ -680,6 +682,7 @@ module pft_coms
       rectarget%wood_temp        = recsource%wood_temp
       rectarget%leaf_temp_pv     = recsource%leaf_temp_pv
       rectarget%wood_temp_pv     = recsource%wood_temp_pv
+      rectarget%leaf_vpdef       = recsource%leaf_vpdef
       rectarget%hite             = recsource%hite
       rectarget%dbh              = recsource%dbh
       rectarget%bdead            = recsource%bdead

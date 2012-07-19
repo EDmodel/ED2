@@ -20,7 +20,7 @@ secoend        = 0
 
 region         = "thispoly"   # Region name.
 myplaces       = c("thispoly")
-outform        = "thisoutform"           # Formats for output file.  Supported formats are:
+outform        = thisoutform           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing

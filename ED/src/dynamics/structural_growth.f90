@@ -978,10 +978,12 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !     Change the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH    !
    ! growth to cm/year.                                                                    !
    !---------------------------------------------------------------------------------------!
-   cpatch%dagb_dt(ico)    =    (cpatch%agb(ico)     - agb_in ) * 12.0
-   cpatch%dba_dt(ico)     =    (cpatch%basarea(ico) - ba_in  ) * 12.0
-   cpatch%ddbh_dt(ico)    =    (cpatch%dbh(ico)     - dbh_in ) * 12.0
-   cpatch%dlndbh_dt(ico)  = log(cpatch%dbh(ico)     / dbh_in ) * 12.0
+   cpatch%dagb_dt   (ico) =    (cpatch%agb(ico)     - agb_in ) * 12.0
+   cpatch%dlnagb_dt (ico) = log(cpatch%agb(ico)     / agb_in ) * 12.0
+   cpatch%dba_dt    (ico) =    (cpatch%basarea(ico) - ba_in  ) * 12.0
+   cpatch%dlnba_dt  (ico) = log(cpatch%basarea(ico) / ba_in  ) * 12.0
+   cpatch%ddbh_dt   (ico) =    (cpatch%dbh(ico)     - dbh_in ) * 12.0
+   cpatch%dlndbh_dt (ico) = log(cpatch%dbh(ico)     / dbh_in ) * 12.0
    !---------------------------------------------------------------------------------------!
 
 

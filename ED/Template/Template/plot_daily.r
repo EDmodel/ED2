@@ -9,7 +9,7 @@ yearend        = thisyearz         # Maximum year to consider
 region         = "thispoly"   # Region name.
 myplaces       = c("thispoly")
 sasday         = 15
-outform        = "thisoutform"           # Formats for output file.  Supported formats are:
+outform        = thisoutform           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing

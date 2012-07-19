@@ -1241,6 +1241,7 @@ module disturbance_utils
       csite%can_depth                  (np) = 0.0
       csite%can_theta                  (np) = 0.0
       csite%can_theiv                  (np) = 0.0
+      csite%can_vpdef                  (np) = 0.0
       csite%can_prss                   (np) = 0.0
       csite%can_shv                    (np) = 0.0
       csite%can_co2                    (np) = 0.0
@@ -1301,6 +1302,7 @@ module disturbance_utils
       csite%sum_chd           (ipa) = csite%sum_chd           (ipa) * area_fac
       csite%can_theta         (ipa) = csite%can_theta         (ipa) * area_fac
       csite%can_theiv         (ipa) = csite%can_theiv         (ipa) * area_fac
+      csite%can_vpdef         (ipa) = csite%can_vpdef         (ipa) * area_fac
       csite%can_prss          (ipa) = csite%can_prss          (ipa) * area_fac
       csite%can_shv           (ipa) = csite%can_shv           (ipa) * area_fac
       csite%can_co2           (ipa) = csite%can_co2           (ipa) * area_fac
@@ -1409,6 +1411,9 @@ module disturbance_utils
                                             * area_fac
       csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
                                             + csite%can_theiv                  (cp)        &
+                                            * area_fac
+      csite%can_vpdef                  (np) = csite%can_vpdef                  (np)        &
+                                            + csite%can_vpdef                  (cp)        &
                                             * area_fac
       csite%can_prss                   (np) = csite%can_prss                   (np)        &
                                             + csite%can_prss                   (cp)        &
@@ -1924,14 +1929,15 @@ module disturbance_utils
       cpatch%agb(nc)    = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc)                     &
                                     ,cpatch%bsapwooda(nc),cpatch%pft(nc))
 
-      cpatch%leaf_temp(nc)  = csite%can_temp(np)
-      cpatch%leaf_temp_pv(nc)=csite%can_temp(np)
-      cpatch%leaf_water(nc) = 0.0
-      cpatch%leaf_fliq(nc)  = 0.0
-      cpatch%wood_temp(nc)  = csite%can_temp(np)
-      cpatch%wood_temp_pv(nc)=csite%can_temp(np)
-      cpatch%wood_water(nc) = 0.0
-      cpatch%wood_fliq(nc)  = 0.0
+      cpatch%leaf_temp    (nc) = csite%can_temp  (np)
+      cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
+      cpatch%leaf_water   (nc) = 0.0
+      cpatch%leaf_vpdef   (nc) = csite%can_vpdef (np)
+      cpatch%leaf_fliq    (nc) = 0.0
+      cpatch%wood_temp    (nc) = csite%can_temp  (np)
+      cpatch%wood_temp_pv (nc) = csite%can_temp  (np)
+      cpatch%wood_water   (nc) = 0.0
+      cpatch%wood_fliq    (nc) = 0.0
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
       call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)            &

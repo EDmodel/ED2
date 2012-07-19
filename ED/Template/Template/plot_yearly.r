@@ -8,7 +8,7 @@ yearbeg        = thisyeara         # First year to consider
 yearend        = thisyearz         # Maximum year to consider
 season.mona    = thisseasonmona
 myplaces       = c("thispoly")
-outform        = "thisoutform"           # Formats for output file.  Supported formats are:
+outform        = thisoutform           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
@@ -100,7 +100,7 @@ source(paste(srcdir,"pyearly_varlist.r" ,sep="/"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v6.RData",sep="/")
+obsrfile = paste(srcdir,"LBA_MIP.v7.RData",sep="/")
 load(file=obsrfile)
 
 #----- Define plot window size ------------------------------------------------------------#
@@ -738,6 +738,33 @@ for (place in myplaces){
             lez       = paste(zkey,"\n [",zunit,"]",sep="")
             #----- Find the position to plot the legend. ----------------------------------#
             leg.pos   = paste(yleg[y],xleg[x],sep="")
+
+
+
+            #------------------------------------------------------------------------------#
+            #    Make lists for colourmap.                                                 #
+            #------------------------------------------------------------------------------#
+            ptitle = list()
+            ptitle[[1]] = list(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
+            paxes       = list()
+            paxes[[1]]  = list( x.axis = list(side=1)
+                              , y.axis = list(side=2)
+                              , grid   = list(col="gray62",lty="solid")
+                              , legend = list( x      = leg.pos
+                                             , inset  = 0.01
+                                             , legend = yr3mon.desc
+                                             , col    = "black"
+                                             , bg     = "white"
+                                             , pch    = yr3mon.pch
+                                             , title  = "Period"
+                                             , ncol   = 2
+                                             , pt.cex = 1./0.9
+                                             , cex    = 0.9
+                                             )#end legend
+                              )#end list
+            #------------------------------------------------------------------------------#
+
+
             #------------------------------------------------------------------------------#
             #     Plot the bar plot.                                                       #
             #------------------------------------------------------------------------------#
@@ -762,23 +789,9 @@ for (place in myplaces){
                #----- Plot the parameter space. -------------------------------------------#
                colourmap(x=xvar,y=yvar,z=zvar,xlim=xlimit,ylim=ylimit
                         ,colour.palette=muitas,cex=1.6,pch=this.pch,lwd=2
-                        ,plot.title=title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
+                        ,plot.title=ptitle
                         ,key.title=title(main=lez,cex.main=0.8)
-                        ,plot.axes={ axis(side=1)
-                                     axis(side=2)
-                                     grid(col="gray62",lty="solid")
-                                     legend( x      = leg.pos
-                                           , inset  = 0.01
-                                           , legend = yr3mon.desc
-                                           , col    = "black"
-                                           , bg     = "white"
-                                           , pch    = yr3mon.pch
-                                           , title  = "Period"
-                                           , ncol   = 2
-                                           , pt.cex = 1./0.9
-                                           , cex    = 0.9
-                                           )#end legend
-                                   }#end plot.axes
+                        ,plot.axes=paxes
                         )#end colourmap
                #---------------------------------------------------------------------------#
 

@@ -76,8 +76,14 @@ module ed_state_vars
      ! Rate of change in agb (kgC/plant/yr)
      real, pointer, dimension(:) :: dagb_dt
      
+     ! Rate of change in agb (1/yr)
+     real, pointer, dimension(:) :: dlnagb_dt
+     
      ! Rate of change in basal area (cm2/yr)
      real, pointer, dimension(:) :: dba_dt
+     
+     ! Rate of change in basal area (1/yr)
+     real, pointer, dimension(:) :: dlnba_dt
      
      ! Rate of change in dbh (cm/yr)
      real, pointer, dimension(:) :: ddbh_dt
@@ -173,6 +179,9 @@ module ed_state_vars
 
      ! Leaf temperature (K)
      real ,pointer,dimension(:) :: leaf_temp
+
+     ! Leaf vapour pressure deficit (Pa)
+     real ,pointer,dimension(:) :: leaf_vpdef
 
      ! Leaf temperature of the previous step (K)
      real, pointer,dimension(:) :: leaf_temp_pv
@@ -596,6 +605,9 @@ module ed_state_vars
 
      ! Ice-vapour equivalent potential temperature of canopy air space [K]
      real , pointer,dimension(:) :: can_theiv
+
+     ! Vapour pressure deficit [Pa]
+     real , pointer,dimension(:) :: can_vpdef
 
      ! Temperature (K) of canopy air
      real , pointer,dimension(:) :: can_temp
@@ -1083,6 +1095,7 @@ module ed_state_vars
      !----- Mass and Energy ---------------------------------------------------------------!
      real,pointer,dimension(:) :: avg_leaf_energy ! Average leaf internal energy   [  J/m2]
      real,pointer,dimension(:) :: avg_leaf_temp   ! Average leaf temperature       [     K]
+     real,pointer,dimension(:) :: avg_leaf_vpdef  ! Average leaf VPD               [    Pa]
      real,pointer,dimension(:) :: avg_leaf_fliq   ! Avg. liq. frac. of leaf water  [   ---]
      real,pointer,dimension(:) :: avg_leaf_water  ! Avg. water on top of leaves    [ kg/m2]
      real,pointer,dimension(:) :: avg_leaf_hcap   ! Avg. leaf heat capacity        [J/m2/K]
@@ -1355,6 +1368,7 @@ module ed_state_vars
      !----- Mass and Energy ---------------------------------------------------------------!
      real,pointer,dimension(:) :: avg_leaf_energy ! Average leaf internal energy   [  J/m2]
      real,pointer,dimension(:) :: avg_leaf_temp   ! Average leaf temperature       [     K]
+     real,pointer,dimension(:) :: avg_leaf_vpdef  ! Average leaf VPD               [    Pa]
      real,pointer,dimension(:) :: avg_leaf_fliq   ! Avg. liq. frac. of leaf water  [   ---]
      real,pointer,dimension(:) :: avg_leaf_water  ! Avg. water on top of leaves    [ kg/m2]
      real,pointer,dimension(:) :: avg_leaf_hcap   ! Avg. leaf heat capacity        [J/m2/K]
@@ -1371,6 +1385,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_prss
      real,pointer,dimension(:) :: avg_can_theta
      real,pointer,dimension(:) :: avg_can_theiv
+     real,pointer,dimension(:) :: avg_can_vpdef
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
@@ -1393,6 +1408,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_atm_tmp
      real,pointer,dimension(:) :: avg_atm_shv
      real,pointer,dimension(:) :: avg_atm_prss
+     real,pointer,dimension(:) :: avg_atm_vpdef
 
 
      !----- NACP intercomparison ---------------------------------------------!
@@ -1650,6 +1666,7 @@ module ed_state_vars
      !----- Mass and Energy ---------------------------------------------------------------!
      real,pointer,dimension(:) :: avg_leaf_energy ! Average leaf internal energy   [  J/m2]
      real,pointer,dimension(:) :: avg_leaf_temp   ! Average leaf temperature       [     K]
+     real,pointer,dimension(:) :: avg_leaf_vpdef  ! Average leaf VPD               [    Pa]
      real,pointer,dimension(:) :: avg_leaf_fliq   ! Avg. liq. frac. of leaf water  [   ---]
      real,pointer,dimension(:) :: avg_leaf_water  ! Avg. water on top of leaves    [ kg/m2]
      real,pointer,dimension(:) :: avg_leaf_hcap   ! Avg. leaf heat capacity        [J/m2/K]
@@ -1666,6 +1683,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_prss
      real,pointer,dimension(:) :: avg_can_theta
      real,pointer,dimension(:) :: avg_can_theiv
+     real,pointer,dimension(:) :: avg_can_vpdef
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
@@ -1739,6 +1757,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_par_beam
      real,pointer,dimension(:) :: avg_par_diffuse
      real,pointer,dimension(:) :: avg_atm_tmp
+     real,pointer,dimension(:) :: avg_atm_vpdef
      real,pointer,dimension(:) :: avg_atm_shv
      real,pointer,dimension(:) :: avg_rshort
      real,pointer,dimension(:) :: avg_rshort_diffuse
@@ -1842,17 +1861,20 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_can_prss      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_theta     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_theiv     ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_can_vpdef     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_gnd_temp      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_gnd_shv       ! (npolygons)
      real, pointer, dimension(:)   :: dmean_leaf_energy   ! (npolygons)
      real, pointer, dimension(:)   :: dmean_leaf_water    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_leaf_hcap     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_leaf_temp     ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_leaf_vpdef    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_wood_energy   ! (npolygons)
      real, pointer, dimension(:)   :: dmean_wood_water    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_wood_hcap     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_wood_temp     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_atm_temp      ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_atm_vpdef     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_atm_shv       ! (npolygons)
      real, pointer, dimension(:)   :: dmean_atm_co2       ! (npolygons)
      real, pointer, dimension(:)   :: dmean_atm_prss      ! (npolygons)
@@ -1907,17 +1929,20 @@ module ed_state_vars
      real, pointer, dimension(:,:)   :: qmean_can_prss       ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_can_theta      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_can_theiv      ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_can_vpdef      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_gnd_temp       ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_gnd_shv        ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_leaf_energy    ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_leaf_water     ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_leaf_hcap      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_leaf_temp      ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_leaf_vpdef     ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_wood_energy    ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_wood_water     ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_wood_hcap      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_wood_temp      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_atm_temp       ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_atm_vpdef      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_atm_shv        ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_atm_co2        ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_atm_prss       ! (ndcycle,npolygons)
@@ -2044,17 +2069,20 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_can_prss       ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_theta      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_theiv      ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_can_vpdef      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_gnd_temp       ! (npolygons)
      real, pointer, dimension(:)   :: mmean_gnd_shv        ! (npolygons)
      real, pointer, dimension(:)   :: mmean_leaf_energy    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_leaf_water     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_leaf_temp      ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_leaf_vpdef     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_leaf_hcap      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_wood_energy    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_wood_water     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_wood_temp      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_wood_hcap      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_temp       ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_atm_vpdef      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rshort         ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rshort_diff    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rlong          ! (npolygons)
@@ -2356,6 +2384,7 @@ contains
        allocate(cgrid%avg_leaf_energy  (npolygons))
        allocate(cgrid%avg_leaf_hcap    (npolygons))
        allocate(cgrid%avg_leaf_temp    (npolygons))
+       allocate(cgrid%avg_leaf_vpdef   (npolygons))
        allocate(cgrid%avg_leaf_fliq    (npolygons))
        allocate(cgrid%avg_leaf_water   (npolygons))
        allocate(cgrid%avg_wood_energy  (npolygons))
@@ -2369,7 +2398,8 @@ contains
        allocate(cgrid%avg_can_rhos    (npolygons))
        allocate(cgrid%avg_can_prss    (npolygons))
        allocate(cgrid%avg_can_theta   (npolygons))
-       allocate(cgrid%avg_can_theiv(npolygons))
+       allocate(cgrid%avg_can_theiv   (npolygons))
+       allocate(cgrid%avg_can_vpdef   (npolygons))
        allocate(cgrid%avg_can_depth   (npolygons))
        allocate(cgrid%avg_soil_energy(nzg,npolygons))
        allocate(cgrid%avg_soil_mstpot(nzg,npolygons))
@@ -2462,6 +2492,7 @@ contains
        allocate(cgrid%avg_par_beam       (npolygons))
        allocate(cgrid%avg_par_diffuse    (npolygons))
        allocate(cgrid%avg_atm_tmp        (npolygons))
+       allocate(cgrid%avg_atm_vpdef      (npolygons))
        allocate(cgrid%avg_atm_shv        (npolygons))
        allocate(cgrid%avg_rshort         (npolygons))
        allocate(cgrid%avg_rshort_diffuse (npolygons))
@@ -2540,17 +2571,20 @@ contains
           allocate(cgrid%dmean_can_prss       (             npolygons))
           allocate(cgrid%dmean_can_theta      (             npolygons))
           allocate(cgrid%dmean_can_theiv      (             npolygons))
+          allocate(cgrid%dmean_can_vpdef      (             npolygons))
           allocate(cgrid%dmean_gnd_temp       (             npolygons))
           allocate(cgrid%dmean_gnd_shv        (             npolygons))
           allocate(cgrid%dmean_leaf_energy    (             npolygons))
           allocate(cgrid%dmean_leaf_water     (             npolygons))
           allocate(cgrid%dmean_leaf_hcap      (             npolygons))
           allocate(cgrid%dmean_leaf_temp      (             npolygons))
+          allocate(cgrid%dmean_leaf_vpdef     (             npolygons))
           allocate(cgrid%dmean_wood_energy    (             npolygons))
           allocate(cgrid%dmean_wood_water     (             npolygons))
           allocate(cgrid%dmean_wood_hcap      (             npolygons))
           allocate(cgrid%dmean_wood_temp      (             npolygons))
           allocate(cgrid%dmean_atm_temp       (             npolygons))
+          allocate(cgrid%dmean_atm_vpdef      (             npolygons))
           allocate(cgrid%dmean_atm_shv        (             npolygons))
           allocate(cgrid%dmean_atm_co2        (             npolygons))
           allocate(cgrid%dmean_atm_prss       (             npolygons))
@@ -2633,17 +2667,20 @@ contains
           allocate(cgrid%mmean_can_prss       (             npolygons))
           allocate(cgrid%mmean_can_theta      (             npolygons))
           allocate(cgrid%mmean_can_theiv      (             npolygons))
+          allocate(cgrid%mmean_can_vpdef      (             npolygons))
           allocate(cgrid%mmean_gnd_temp       (             npolygons))
           allocate(cgrid%mmean_gnd_shv        (             npolygons))
           allocate(cgrid%mmean_leaf_energy    (             npolygons))
           allocate(cgrid%mmean_leaf_water     (             npolygons))
           allocate(cgrid%mmean_leaf_temp      (             npolygons))
+          allocate(cgrid%mmean_leaf_vpdef     (             npolygons))
           allocate(cgrid%mmean_leaf_hcap      (             npolygons))
           allocate(cgrid%mmean_wood_energy    (             npolygons))
           allocate(cgrid%mmean_wood_water     (             npolygons))
           allocate(cgrid%mmean_wood_temp      (             npolygons))
           allocate(cgrid%mmean_wood_hcap      (             npolygons))
           allocate(cgrid%mmean_atm_temp       (             npolygons))
+          allocate(cgrid%mmean_atm_vpdef      (             npolygons))
           allocate(cgrid%mmean_rshort         (             npolygons))
           allocate(cgrid%mmean_rshort_diff    (             npolygons))
           allocate(cgrid%mmean_rlong          (             npolygons))
@@ -2734,17 +2771,20 @@ contains
           allocate(cgrid%qmean_can_prss       (     ndcycle, npolygons))
           allocate(cgrid%qmean_can_theta      (     ndcycle, npolygons))
           allocate(cgrid%qmean_can_theiv      (     ndcycle, npolygons))
+          allocate(cgrid%qmean_can_vpdef      (     ndcycle, npolygons))
           allocate(cgrid%qmean_gnd_temp       (     ndcycle, npolygons))
           allocate(cgrid%qmean_gnd_shv        (     ndcycle, npolygons))
           allocate(cgrid%qmean_leaf_energy    (     ndcycle, npolygons))
           allocate(cgrid%qmean_leaf_water     (     ndcycle, npolygons))
           allocate(cgrid%qmean_leaf_temp      (     ndcycle, npolygons))
+          allocate(cgrid%qmean_leaf_vpdef     (     ndcycle, npolygons))
           allocate(cgrid%qmean_leaf_hcap      (     ndcycle, npolygons))
           allocate(cgrid%qmean_wood_energy    (     ndcycle, npolygons))
           allocate(cgrid%qmean_wood_water     (     ndcycle, npolygons))
           allocate(cgrid%qmean_wood_temp      (     ndcycle, npolygons))
           allocate(cgrid%qmean_wood_hcap      (     ndcycle, npolygons))
           allocate(cgrid%qmean_atm_temp       (     ndcycle, npolygons))
+          allocate(cgrid%qmean_atm_vpdef      (     ndcycle, npolygons))
           allocate(cgrid%qmean_rshort         (     ndcycle, npolygons))
           allocate(cgrid%qmean_rshort_diff    (     ndcycle, npolygons))
           allocate(cgrid%qmean_rlong          (     ndcycle, npolygons))
@@ -2922,6 +2962,7 @@ contains
     allocate(cpoly%avg_leaf_energy         (nsites))
     allocate(cpoly%avg_leaf_hcap           (nsites))
     allocate(cpoly%avg_leaf_temp           (nsites))
+    allocate(cpoly%avg_leaf_vpdef          (nsites))
     allocate(cpoly%avg_leaf_fliq           (nsites))
     allocate(cpoly%avg_leaf_water          (nsites))
     allocate(cpoly%avg_wood_energy         (nsites))
@@ -2936,6 +2977,7 @@ contains
     allocate(cpoly%avg_can_prss            (nsites))
     allocate(cpoly%avg_can_theta           (nsites))
     allocate(cpoly%avg_can_theiv           (nsites))
+    allocate(cpoly%avg_can_vpdef           (nsites))
     allocate(cpoly%avg_can_depth           (nsites))
     allocate(cpoly%avg_soil_energy     (nzg,nsites))
     allocate(cpoly%avg_soil_mstpot     (nzg,nsites))
@@ -2951,6 +2993,7 @@ contains
     allocate(cpoly%rad_avg                 (nsites))
     ! Meteorological data
     allocate(cpoly%avg_atm_tmp             (nsites))
+    allocate(cpoly%avg_atm_vpdef           (nsites))
     allocate(cpoly%avg_atm_shv             (nsites))
     allocate(cpoly%avg_atm_prss            (nsites))
 
@@ -3028,6 +3071,7 @@ contains
     allocate(csite%sum_chd(npatches))
     allocate(csite%plantation(npatches))
     allocate(csite%can_theiv(npatches))
+    allocate(csite%can_vpdef(npatches))
     allocate(csite%can_temp(npatches))
     allocate(csite%can_temp_pv(npatches))
     allocate(csite%can_shv(npatches))
@@ -3210,6 +3254,7 @@ contains
 
     allocate(csite%avg_leaf_energy(npatches))
     allocate(csite%avg_leaf_temp  (npatches))
+    allocate(csite%avg_leaf_vpdef (npatches))
     allocate(csite%avg_leaf_hcap  (npatches))
     allocate(csite%avg_leaf_fliq  (npatches))
     allocate(csite%avg_leaf_water (npatches))
@@ -3292,7 +3337,9 @@ contains
     allocate(cpatch%agb(ncohorts))
     allocate(cpatch%basarea(ncohorts))
     allocate(cpatch%dagb_dt(ncohorts))
+    allocate(cpatch%dlnagb_dt(ncohorts))
     allocate(cpatch%dba_dt(ncohorts))
+    allocate(cpatch%dlnba_dt(ncohorts))
     allocate(cpatch%ddbh_dt(ncohorts))
     allocate(cpatch%dlndbh_dt(ncohorts))
     allocate(cpatch%dbh(ncohorts))
@@ -3317,6 +3364,7 @@ contains
     allocate(cpatch%cbr_bar(ncohorts))
     allocate(cpatch%leaf_energy(ncohorts))
     allocate(cpatch%leaf_temp  (ncohorts))
+    allocate(cpatch%leaf_vpdef (ncohorts))
     allocate(cpatch%leaf_temp_pv(ncohorts))
     allocate(cpatch%leaf_hcap  (ncohorts))
     allocate(cpatch%leaf_fliq  (ncohorts))
@@ -3600,6 +3648,7 @@ contains
        nullify(cgrid%avg_leaf_energy         )
        nullify(cgrid%avg_leaf_hcap           )
        nullify(cgrid%avg_leaf_temp           )
+       nullify(cgrid%avg_leaf_vpdef          )
        nullify(cgrid%avg_leaf_fliq           )
        nullify(cgrid%avg_leaf_water          )
        nullify(cgrid%avg_wood_energy         )
@@ -3614,6 +3663,7 @@ contains
        nullify(cgrid%avg_can_prss            )
        nullify(cgrid%avg_can_theta           )
        nullify(cgrid%avg_can_theiv           )
+       nullify(cgrid%avg_can_vpdef           )
        nullify(cgrid%avg_can_depth           )
        nullify(cgrid%avg_soil_energy         )
        nullify(cgrid%avg_soil_mstpot         )
@@ -3710,6 +3760,7 @@ contains
      nullify(cgrid%avg_par_beam            )
      nullify(cgrid%avg_par_diffuse         )
      nullify(cgrid%avg_atm_tmp             )
+     nullify(cgrid%avg_atm_vpdef           )
      nullify(cgrid%avg_atm_shv             )
      nullify(cgrid%avg_rshort              )
      nullify(cgrid%avg_rshort_diffuse      )
@@ -3777,17 +3828,20 @@ contains
      nullify(cgrid%dmean_can_prss          )
      nullify(cgrid%dmean_can_theta         )
      nullify(cgrid%dmean_can_theiv         )
+     nullify(cgrid%dmean_can_vpdef         )
      nullify(cgrid%dmean_gnd_temp          )
      nullify(cgrid%dmean_gnd_shv           )
      nullify(cgrid%dmean_leaf_energy       )
      nullify(cgrid%dmean_leaf_water        )
      nullify(cgrid%dmean_leaf_hcap         )
      nullify(cgrid%dmean_leaf_temp         )
+     nullify(cgrid%dmean_leaf_vpdef        )
      nullify(cgrid%dmean_wood_energy       )
      nullify(cgrid%dmean_wood_water        )
      nullify(cgrid%dmean_wood_hcap         )
      nullify(cgrid%dmean_wood_temp         )
      nullify(cgrid%dmean_atm_temp          )
+     nullify(cgrid%dmean_atm_vpdef         )
      nullify(cgrid%dmean_atm_shv           )
      nullify(cgrid%dmean_atm_co2           )
      nullify(cgrid%dmean_atm_prss          )
@@ -3856,17 +3910,20 @@ contains
      nullify(cgrid%mmean_can_prss          )
      nullify(cgrid%mmean_can_theta         )
      nullify(cgrid%mmean_can_theiv         )
+     nullify(cgrid%mmean_can_vpdef         )
      nullify(cgrid%mmean_gnd_temp          )
      nullify(cgrid%mmean_gnd_shv           )
      nullify(cgrid%mmean_leaf_energy       )
      nullify(cgrid%mmean_leaf_water        )
      nullify(cgrid%mmean_leaf_hcap         )
      nullify(cgrid%mmean_leaf_temp         )
+     nullify(cgrid%mmean_leaf_vpdef        )
      nullify(cgrid%mmean_wood_energy       )
      nullify(cgrid%mmean_wood_water        )
      nullify(cgrid%mmean_wood_hcap         )
      nullify(cgrid%mmean_wood_temp         )
      nullify(cgrid%mmean_atm_temp          )
+     nullify(cgrid%mmean_atm_vpdef         )
      nullify(cgrid%mmean_rshort            )
      nullify(cgrid%mmean_rshort_diff       )
      nullify(cgrid%mmean_rlong             )
@@ -3951,17 +4008,20 @@ contains
      nullify(cgrid%qmean_can_prss       )
      nullify(cgrid%qmean_can_theta      )
      nullify(cgrid%qmean_can_theiv      )
+     nullify(cgrid%qmean_can_vpdef      )
      nullify(cgrid%qmean_gnd_temp       )
      nullify(cgrid%qmean_gnd_shv        )
      nullify(cgrid%qmean_leaf_energy    )
      nullify(cgrid%qmean_leaf_water     )
      nullify(cgrid%qmean_leaf_temp      )
+     nullify(cgrid%qmean_leaf_vpdef     )
      nullify(cgrid%qmean_leaf_hcap      )
      nullify(cgrid%qmean_wood_energy    )
      nullify(cgrid%qmean_wood_water     )
      nullify(cgrid%qmean_wood_temp      )
      nullify(cgrid%qmean_wood_hcap      )
      nullify(cgrid%qmean_atm_temp       )
+     nullify(cgrid%qmean_atm_vpdef      )
      nullify(cgrid%qmean_rshort         )
      nullify(cgrid%qmean_rshort_diff    )
      nullify(cgrid%qmean_rlong          )
@@ -4127,6 +4187,7 @@ contains
     nullify(cpoly%avg_leaf_energy)
     nullify(cpoly%avg_leaf_hcap  )
     nullify(cpoly%avg_leaf_temp  )
+    nullify(cpoly%avg_leaf_vpdef )
     nullify(cpoly%avg_leaf_fliq  )
     nullify(cpoly%avg_leaf_water )
     nullify(cpoly%avg_wood_energy)
@@ -4141,6 +4202,7 @@ contains
     nullify(cpoly%avg_can_prss   )
     nullify(cpoly%avg_can_theta  )
     nullify(cpoly%avg_can_theiv  )
+    nullify(cpoly%avg_can_vpdef  )
     nullify(cpoly%avg_can_depth  )
     nullify(cpoly%avg_soil_energy)
     nullify(cpoly%avg_soil_mstpot)
@@ -4156,6 +4218,7 @@ contains
     nullify(cpoly%rad_avg          )
     ! Meteorological conditions
     nullify(cpoly%avg_atm_tmp      )
+    nullify(cpoly%avg_atm_vpdef    )
     nullify(cpoly%avg_atm_shv      )
     nullify(cpoly%avg_atm_prss     )
     ! NACP
@@ -4220,6 +4283,7 @@ contains
     nullify(csite%plantation) 
     nullify(csite%cohort_count)
     nullify(csite%can_theiv)
+    nullify(csite%can_vpdef)
     nullify(csite%can_temp)
     nullify(csite%can_temp_pv)
     nullify(csite%can_shv)
@@ -4418,6 +4482,7 @@ contains
     ! ----------------------------------------------
     nullify(csite%avg_leaf_energy)
     nullify(csite%avg_leaf_temp  )
+    nullify(csite%avg_leaf_vpdef )
     nullify(csite%avg_leaf_hcap  )
     nullify(csite%avg_leaf_fliq  )
     nullify(csite%avg_leaf_water )
@@ -4469,7 +4534,9 @@ contains
     nullify(cpatch%agb)
     nullify(cpatch%basarea)
     nullify(cpatch%dagb_dt)
+    nullify(cpatch%dlnagb_dt)
     nullify(cpatch%dba_dt)
+    nullify(cpatch%dlnba_dt)
     nullify(cpatch%ddbh_dt)
     nullify(cpatch%dlndbh_dt)
     nullify(cpatch%dbh)
@@ -4495,6 +4562,7 @@ contains
     nullify(cpatch%mmean_cb)
     nullify(cpatch%leaf_energy)
     nullify(cpatch%leaf_temp  )
+    nullify(cpatch%leaf_vpdef )
     nullify(cpatch%leaf_temp_pv)
     nullify(cpatch%leaf_hcap  )
     nullify(cpatch%leaf_fliq  )
@@ -4773,6 +4841,7 @@ contains
        if(associated(cgrid%avg_leaf_energy         )) deallocate(cgrid%avg_leaf_energy         )
        if(associated(cgrid%avg_leaf_hcap           )) deallocate(cgrid%avg_leaf_hcap           )
        if(associated(cgrid%avg_leaf_temp           )) deallocate(cgrid%avg_leaf_temp           )
+       if(associated(cgrid%avg_leaf_vpdef          )) deallocate(cgrid%avg_leaf_vpdef          )
        if(associated(cgrid%avg_leaf_fliq           )) deallocate(cgrid%avg_leaf_fliq           )
        if(associated(cgrid%avg_leaf_water          )) deallocate(cgrid%avg_leaf_water          )
        if(associated(cgrid%avg_wood_energy         )) deallocate(cgrid%avg_wood_energy         )
@@ -4787,6 +4856,7 @@ contains
        if(associated(cgrid%avg_can_prss            )) deallocate(cgrid%avg_can_prss            )
        if(associated(cgrid%avg_can_theta           )) deallocate(cgrid%avg_can_theta           )
        if(associated(cgrid%avg_can_theiv           )) deallocate(cgrid%avg_can_theiv           )
+       if(associated(cgrid%avg_can_vpdef           )) deallocate(cgrid%avg_can_vpdef           )
        if(associated(cgrid%avg_can_depth           )) deallocate(cgrid%avg_can_depth           )
        if(associated(cgrid%avg_soil_energy         )) deallocate(cgrid%avg_soil_energy         )
        if(associated(cgrid%avg_soil_mstpot         )) deallocate(cgrid%avg_soil_mstpot         )
@@ -4886,6 +4956,7 @@ contains
        if(associated(cgrid%avg_par_beam            )) deallocate(cgrid%avg_par_beam            )
        if(associated(cgrid%avg_par_diffuse         )) deallocate(cgrid%avg_par_diffuse         )
        if(associated(cgrid%avg_atm_tmp             )) deallocate(cgrid%avg_atm_tmp             )
+       if(associated(cgrid%avg_atm_vpdef           )) deallocate(cgrid%avg_atm_vpdef           )
        if(associated(cgrid%avg_atm_shv             )) deallocate(cgrid%avg_atm_shv             )
        if(associated(cgrid%avg_rshort              )) deallocate(cgrid%avg_rshort              )
        if(associated(cgrid%avg_rshort_diffuse      )) deallocate(cgrid%avg_rshort_diffuse      )
@@ -4957,17 +5028,20 @@ contains
        if(associated(cgrid%dmean_can_prss          )) deallocate(cgrid%dmean_can_prss          )
        if(associated(cgrid%dmean_can_theta         )) deallocate(cgrid%dmean_can_theta         )
        if(associated(cgrid%dmean_can_theiv         )) deallocate(cgrid%dmean_can_theiv         )
+       if(associated(cgrid%dmean_can_vpdef         )) deallocate(cgrid%dmean_can_vpdef         )
        if(associated(cgrid%dmean_gnd_temp          )) deallocate(cgrid%dmean_gnd_temp          )
        if(associated(cgrid%dmean_gnd_shv           )) deallocate(cgrid%dmean_gnd_shv           )
        if(associated(cgrid%dmean_leaf_energy       )) deallocate(cgrid%dmean_leaf_energy       )
        if(associated(cgrid%dmean_leaf_water        )) deallocate(cgrid%dmean_leaf_water        )
        if(associated(cgrid%dmean_leaf_hcap         )) deallocate(cgrid%dmean_leaf_hcap         )
        if(associated(cgrid%dmean_leaf_temp         )) deallocate(cgrid%dmean_leaf_temp         )
+       if(associated(cgrid%dmean_leaf_vpdef        )) deallocate(cgrid%dmean_leaf_vpdef        )
        if(associated(cgrid%dmean_wood_energy       )) deallocate(cgrid%dmean_wood_energy       )
        if(associated(cgrid%dmean_wood_water        )) deallocate(cgrid%dmean_wood_water        )
        if(associated(cgrid%dmean_wood_hcap         )) deallocate(cgrid%dmean_wood_hcap         )
        if(associated(cgrid%dmean_wood_temp         )) deallocate(cgrid%dmean_wood_temp         )
        if(associated(cgrid%dmean_atm_temp          )) deallocate(cgrid%dmean_atm_temp          )
+       if(associated(cgrid%dmean_atm_vpdef         )) deallocate(cgrid%dmean_atm_vpdef         )
        if(associated(cgrid%dmean_atm_shv           )) deallocate(cgrid%dmean_atm_shv           )
        if(associated(cgrid%dmean_atm_co2           )) deallocate(cgrid%dmean_atm_co2           )
        if(associated(cgrid%dmean_atm_prss          )) deallocate(cgrid%dmean_atm_prss          )
@@ -5037,17 +5111,20 @@ contains
        if(associated(cgrid%mmean_can_prss          )) deallocate(cgrid%mmean_can_prss          )
        if(associated(cgrid%mmean_can_theta         )) deallocate(cgrid%mmean_can_theta         )
        if(associated(cgrid%mmean_can_theiv         )) deallocate(cgrid%mmean_can_theiv         )
+       if(associated(cgrid%mmean_can_vpdef         )) deallocate(cgrid%mmean_can_vpdef         )
        if(associated(cgrid%mmean_gnd_temp          )) deallocate(cgrid%mmean_gnd_temp          )
        if(associated(cgrid%mmean_gnd_shv           )) deallocate(cgrid%mmean_gnd_shv           )
        if(associated(cgrid%mmean_leaf_energy       )) deallocate(cgrid%mmean_leaf_energy       )
        if(associated(cgrid%mmean_leaf_water        )) deallocate(cgrid%mmean_leaf_water        )
        if(associated(cgrid%mmean_leaf_hcap         )) deallocate(cgrid%mmean_leaf_hcap         )
        if(associated(cgrid%mmean_leaf_temp         )) deallocate(cgrid%mmean_leaf_temp         )
+       if(associated(cgrid%mmean_leaf_vpdef        )) deallocate(cgrid%mmean_leaf_vpdef        )
        if(associated(cgrid%mmean_wood_energy       )) deallocate(cgrid%mmean_wood_energy       )
        if(associated(cgrid%mmean_wood_water        )) deallocate(cgrid%mmean_wood_water        )
        if(associated(cgrid%mmean_wood_hcap         )) deallocate(cgrid%mmean_wood_hcap         )
        if(associated(cgrid%mmean_wood_temp         )) deallocate(cgrid%mmean_wood_temp         )
        if(associated(cgrid%mmean_atm_temp          )) deallocate(cgrid%mmean_atm_temp          )
+       if(associated(cgrid%mmean_atm_vpdef         )) deallocate(cgrid%mmean_atm_vpdef         )
        if(associated(cgrid%mmean_rshort            )) deallocate(cgrid%mmean_rshort            )
        if(associated(cgrid%mmean_rshort_diff       )) deallocate(cgrid%mmean_rshort_diff       )
        if(associated(cgrid%mmean_rlong             )) deallocate(cgrid%mmean_rlong             )
@@ -5133,17 +5210,20 @@ contains
     if(associated(cgrid%qmean_can_prss       )) deallocate(cgrid%qmean_can_prss       )
     if(associated(cgrid%qmean_can_theta      )) deallocate(cgrid%qmean_can_theta      )
     if(associated(cgrid%qmean_can_theiv      )) deallocate(cgrid%qmean_can_theiv      )
+    if(associated(cgrid%qmean_can_vpdef      )) deallocate(cgrid%qmean_can_vpdef      )
     if(associated(cgrid%qmean_gnd_temp       )) deallocate(cgrid%qmean_gnd_temp       )
     if(associated(cgrid%qmean_gnd_shv        )) deallocate(cgrid%qmean_gnd_shv        )
     if(associated(cgrid%qmean_leaf_energy    )) deallocate(cgrid%qmean_leaf_energy    )
     if(associated(cgrid%qmean_leaf_water     )) deallocate(cgrid%qmean_leaf_water     )
     if(associated(cgrid%qmean_leaf_temp      )) deallocate(cgrid%qmean_leaf_temp      )
+    if(associated(cgrid%qmean_leaf_vpdef     )) deallocate(cgrid%qmean_leaf_vpdef     )
     if(associated(cgrid%qmean_leaf_hcap      )) deallocate(cgrid%qmean_leaf_hcap      )
     if(associated(cgrid%qmean_wood_energy    )) deallocate(cgrid%qmean_wood_energy    )
     if(associated(cgrid%qmean_wood_water     )) deallocate(cgrid%qmean_wood_water     )
     if(associated(cgrid%qmean_wood_temp      )) deallocate(cgrid%qmean_wood_temp      )
     if(associated(cgrid%qmean_wood_hcap      )) deallocate(cgrid%qmean_wood_hcap      )
     if(associated(cgrid%qmean_atm_temp       )) deallocate(cgrid%qmean_atm_temp       )
+    if(associated(cgrid%qmean_atm_vpdef      )) deallocate(cgrid%qmean_atm_vpdef      )
     if(associated(cgrid%qmean_rshort         )) deallocate(cgrid%qmean_rshort         )
     if(associated(cgrid%qmean_rshort_diff    )) deallocate(cgrid%qmean_rshort_diff    )
     if(associated(cgrid%qmean_rlong          )) deallocate(cgrid%qmean_rlong          )
@@ -5315,6 +5395,7 @@ contains
     if(associated(cpoly%avg_leaf_energy             )) deallocate(cpoly%avg_leaf_energy             )
     if(associated(cpoly%avg_leaf_hcap               )) deallocate(cpoly%avg_leaf_hcap               )
     if(associated(cpoly%avg_leaf_temp               )) deallocate(cpoly%avg_leaf_temp               )
+    if(associated(cpoly%avg_leaf_vpdef              )) deallocate(cpoly%avg_leaf_vpdef              )
     if(associated(cpoly%avg_leaf_fliq               )) deallocate(cpoly%avg_leaf_fliq               )
     if(associated(cpoly%avg_leaf_water              )) deallocate(cpoly%avg_leaf_water              )
     if(associated(cpoly%avg_wood_energy             )) deallocate(cpoly%avg_wood_energy             )
@@ -5329,6 +5410,7 @@ contains
     if(associated(cpoly%avg_can_prss                )) deallocate(cpoly%avg_can_prss                )
     if(associated(cpoly%avg_can_theta               )) deallocate(cpoly%avg_can_theta               )
     if(associated(cpoly%avg_can_theiv               )) deallocate(cpoly%avg_can_theiv               )
+    if(associated(cpoly%avg_can_vpdef               )) deallocate(cpoly%avg_can_vpdef               )
     if(associated(cpoly%avg_can_depth               )) deallocate(cpoly%avg_can_depth               )
     if(associated(cpoly%avg_soil_energy             )) deallocate(cpoly%avg_soil_energy             )
     if(associated(cpoly%avg_soil_mstpot             )) deallocate(cpoly%avg_soil_mstpot             )
@@ -5343,6 +5425,7 @@ contains
     if(associated(cpoly%rad_avg                     )) deallocate(cpoly%rad_avg                     )
     ! Meteorological information
     if(associated(cpoly%avg_atm_tmp                 )) deallocate(cpoly%avg_atm_tmp                 )
+    if(associated(cpoly%avg_atm_vpdef               )) deallocate(cpoly%avg_atm_vpdef               )
     if(associated(cpoly%avg_atm_shv                 )) deallocate(cpoly%avg_atm_shv                 )
     if(associated(cpoly%avg_atm_prss                )) deallocate(cpoly%avg_atm_prss                )
     ! NACP
@@ -5415,6 +5498,7 @@ contains
     if(associated(csite%plantation                   )) deallocate(csite%plantation                   )
     if(associated(csite%cohort_count                 )) deallocate(csite%cohort_count                 )
     if(associated(csite%can_theiv                    )) deallocate(csite%can_theiv                    )
+    if(associated(csite%can_vpdef                    )) deallocate(csite%can_vpdef                    )
     if(associated(csite%can_temp                     )) deallocate(csite%can_temp                     )
     if(associated(csite%can_temp_pv                  )) deallocate(csite%can_temp_pv                  )
     if(associated(csite%can_shv                      )) deallocate(csite%can_shv                      )
@@ -5609,6 +5693,7 @@ contains
     if(associated(csite%avg_runoff_heat              )) deallocate(csite%avg_runoff_heat              )
     if(associated(csite%avg_leaf_energy              )) deallocate(csite%avg_leaf_energy              )
     if(associated(csite%avg_leaf_temp                )) deallocate(csite%avg_leaf_temp                )
+    if(associated(csite%avg_leaf_vpdef               )) deallocate(csite%avg_leaf_vpdef               )
     if(associated(csite%avg_leaf_hcap                )) deallocate(csite%avg_leaf_hcap                )
     if(associated(csite%avg_leaf_fliq                )) deallocate(csite%avg_leaf_fliq                )
     if(associated(csite%avg_leaf_water               )) deallocate(csite%avg_leaf_water               )
@@ -5666,7 +5751,9 @@ contains
     if(associated(cpatch%agb))                 deallocate(cpatch%agb)
     if(associated(cpatch%basarea))             deallocate(cpatch%basarea)
     if(associated(cpatch%dagb_dt))             deallocate(cpatch%dagb_dt)
+    if(associated(cpatch%dlnagb_dt))           deallocate(cpatch%dlnagb_dt)
     if(associated(cpatch%dba_dt))              deallocate(cpatch%dba_dt)
+    if(associated(cpatch%dlnba_dt))            deallocate(cpatch%dlnba_dt)
     if(associated(cpatch%ddbh_dt))             deallocate(cpatch%ddbh_dt)
     if(associated(cpatch%dlndbh_dt))           deallocate(cpatch%dlndbh_dt)
     if(associated(cpatch%dbh))                 deallocate(cpatch%dbh)
@@ -5692,6 +5779,7 @@ contains
     if(associated(cpatch%mmean_cb))            deallocate(cpatch%mmean_cb)
     if(associated(cpatch%leaf_energy))         deallocate(cpatch%leaf_energy)
     if(associated(cpatch%leaf_temp  ))         deallocate(cpatch%leaf_temp  )
+    if(associated(cpatch%leaf_vpdef ))         deallocate(cpatch%leaf_vpdef )
     if(associated(cpatch%leaf_temp_pv ))       deallocate(cpatch%leaf_temp_pv  )    
     if(associated(cpatch%leaf_hcap  ))         deallocate(cpatch%leaf_hcap  )
     if(associated(cpatch%leaf_fliq  ))         deallocate(cpatch%leaf_fliq  )
@@ -5926,6 +6014,7 @@ contains
          osite%plantation(opa)                  = isite%plantation(ipa)
          osite%cohort_count(opa)                = isite%cohort_count(ipa)
          osite%can_theiv(opa)                   = isite%can_theiv(ipa)
+         osite%can_vpdef(opa)                   = isite%can_vpdef(ipa)
          osite%can_temp(opa)                    = isite%can_temp(ipa)
          osite%can_temp_pv(opa)                 = isite%can_temp_pv(ipa)
          osite%can_shv(opa)                     = isite%can_shv(ipa)
@@ -6074,6 +6163,7 @@ contains
          osite%avg_runoff_heat(opa)             = isite%avg_runoff_heat(ipa)
          osite%avg_leaf_energy(opa)             = isite%avg_leaf_energy(ipa)
          osite%avg_leaf_temp(opa)               = isite%avg_leaf_temp(ipa)
+         osite%avg_leaf_vpdef(opa)              = isite%avg_leaf_vpdef(ipa)
          osite%avg_leaf_hcap(opa)               = isite%avg_leaf_hcap(ipa)
          osite%avg_leaf_fliq(opa)               = isite%avg_leaf_fliq(ipa)
          osite%avg_leaf_water(opa)              = isite%avg_leaf_water(ipa)
@@ -6227,6 +6317,7 @@ contains
     siteout%plantation(1:inc)           = pack(sitein%plantation,logmask)
     siteout%cohort_count(1:inc)         = pack(sitein%cohort_count,logmask)
     siteout%can_theiv(1:inc)            = pack(sitein%can_theiv,logmask)
+    siteout%can_vpdef(1:inc)            = pack(sitein%can_vpdef,logmask)
     siteout%can_temp(1:inc)             = pack(sitein%can_temp,logmask)
     siteout%can_temp_pv(1:inc)          = pack(sitein%can_temp_pv,logmask)
     siteout%can_shv(1:inc)              = pack(sitein%can_shv,logmask)
@@ -6375,6 +6466,7 @@ contains
     siteout%avg_runoff_heat(1:inc)      = pack(sitein%avg_runoff_heat,logmask)
     siteout%avg_leaf_energy(1:inc)      = pack(sitein%avg_leaf_energy,logmask)
     siteout%avg_leaf_temp(1:inc)        = pack(sitein%avg_leaf_temp,logmask)
+    siteout%avg_leaf_vpdef(1:inc)       = pack(sitein%avg_leaf_vpdef,logmask)
     siteout%avg_leaf_hcap(1:inc)        = pack(sitein%avg_leaf_hcap,logmask)
     siteout%avg_leaf_fliq(1:inc)        = pack(sitein%avg_leaf_fliq,logmask)
     siteout%avg_leaf_water(1:inc)       = pack(sitein%avg_leaf_water,logmask)
@@ -6522,7 +6614,9 @@ contains
     patchout%agb(1:inc)              = pack(patchin%agb,mask)
     patchout%basarea(1:inc)          = pack(patchin%basarea,mask)
     patchout%dagb_dt(1:inc)          = pack(patchin%dagb_dt,mask)
+    patchout%dlnagb_dt(1:inc)        = pack(patchin%dlnagb_dt,mask)
     patchout%dba_dt(1:inc)           = pack(patchin%dba_dt,mask)
+    patchout%dlnba_dt(1:inc)         = pack(patchin%dlnba_dt,mask)
     patchout%ddbh_dt(1:inc)          = pack(patchin%ddbh_dt,mask)
     patchout%dlndbh_dt(1:inc)        = pack(patchin%dlndbh_dt,mask)
     patchout%dbh(1:inc)              = pack(patchin%dbh,mask)
@@ -6545,6 +6639,7 @@ contains
     patchout%leaf_energy(1:inc)      = pack(patchin%leaf_energy,mask)
     patchout%leaf_hcap(1:inc)        = pack(patchin%leaf_hcap,mask)
     patchout%leaf_temp(1:inc)        = pack(patchin%leaf_temp,mask)
+    patchout%leaf_vpdef(1:inc)       = pack(patchin%leaf_vpdef,mask)
     patchout%leaf_temp_pv(1:inc)     = pack(patchin%leaf_temp_pv,mask)
     patchout%leaf_fliq(1:inc)        = pack(patchin%leaf_fliq,mask)
     patchout%leaf_water(1:inc)       = pack(patchin%leaf_water,mask)
@@ -6769,7 +6864,9 @@ contains
        patchout%agb(iout)              = patchin%agb(iin)
        patchout%basarea(iout)          = patchin%basarea(iin)
        patchout%dagb_dt(iout)          = patchin%dagb_dt(iin)
+       patchout%dlnagb_dt(iout)        = patchin%dlnagb_dt(iin)
        patchout%dba_dt(iout)           = patchin%dba_dt(iin)
+       patchout%dlnba_dt(iout)         = patchin%dlnba_dt(iin)
        patchout%ddbh_dt(iout)          = patchin%ddbh_dt(iin)
        patchout%dlndbh_dt(iout)        = patchin%dlndbh_dt(iin)
        patchout%dbh(iout)              = patchin%dbh(iin)
@@ -6795,6 +6892,7 @@ contains
        patchout%leaf_energy(iout)      = patchin%leaf_energy(iin)
        patchout%leaf_hcap(iout)        = patchin%leaf_hcap(iin)
        patchout%leaf_temp(iout)        = patchin%leaf_temp(iin)
+       patchout%leaf_vpdef(iout)       = patchin%leaf_vpdef(iin)
        patchout%leaf_temp_pv(iout)     = patchin%leaf_temp_pv(iin)
        patchout%leaf_fliq(iout)        = patchin%leaf_fliq(iin)
        patchout%leaf_water(iout)       = patchin%leaf_water(iin)
@@ -8559,6 +8657,13 @@ contains
          call metadata_edio(nvar,igr,'Polygon Averaged Atmospheric Temperature at Reference Height','[K]','ipoly') 
       end if
       
+      if (associated(cgrid%avg_atm_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_atm_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_ATM_VPDEF :11:hist:opti:anal') 
+         call metadata_edio(nvar,igr,'Polygon Averaged Atmospheric VPD at Reference Height','[Pa]','ipoly') 
+      end if
+      
       if (associated(cgrid%avg_atm_shv)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%avg_atm_shv,nvar,igr,init,cgrid%pyglob_id, &
@@ -8741,6 +8846,13 @@ contains
          call metadata_edio(nvar,igr,'Polygon Average Temperature of Vegetation','[K]','ipoly') 
       end if
 
+      if (associated(cgrid%avg_leaf_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_leaf_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_LEAF_VPDEF :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average VPD of Vegetation','[Pa]','ipoly') 
+      end if
+
       if (associated(cgrid%avg_leaf_fliq)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%avg_leaf_fliq,nvar,igr,init,cgrid%pyglob_id, &
@@ -8837,6 +8949,13 @@ contains
          call vtable_edio_r(npts,cgrid%avg_can_theiv,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'AVG_CAN_THEIV :11:hist:anal') 
          call metadata_edio(nvar,igr,'Polygon Average Canopy Air ice-vapour equiv. pot. temp.','[K]','NA') 
+      end if
+      
+      if (associated(cgrid%avg_can_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_can_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_CAN_VPDEF :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average Canopy Air VPD.','[Pa]','NA') 
       end if
       
       if (associated(cgrid%avg_can_depth)) then
@@ -9190,6 +9309,13 @@ contains
          call metadata_edio(nvar,igr,'Daily mean canopy air theta_Eiv','[K]','ipoly') 
       end if
       
+      if(associated(cgrid%dmean_can_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_can_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_CAN_VPDEF :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean canopy air VPD','[Pa]','ipoly') 
+      end if
+      
       if(associated(cgrid%dmean_gnd_temp)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%dmean_gnd_temp,nvar,igr,init,cgrid%pyglob_id, &
@@ -9223,6 +9349,13 @@ contains
          call vtable_edio_r(npts,cgrid%dmean_leaf_temp,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'DMEAN_LEAF_TEMP :11:hist:dail') 
          call metadata_edio(nvar,igr,'Daily mean vegetation temperature','[K]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_leaf_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_leaf_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_LEAF_VPDEF :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean vegetation VPD','[Pa]','ipoly') 
       end if
       
       if(associated(cgrid%dmean_leaf_hcap)) then
@@ -9265,6 +9398,13 @@ contains
          call vtable_edio_r(npts,cgrid%dmean_atm_temp,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'DMEAN_ATM_TEMP :11:hist:dail') 
          call metadata_edio(nvar,igr,'Daily mean air temperature','[K]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_atm_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_atm_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_ATM_VPDEF :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean air VPD','[Pa]','ipoly') 
       end if
       
       if(associated(cgrid%dmean_atm_shv)) then
@@ -9680,6 +9820,13 @@ contains
          call metadata_edio(nvar,igr,'Monthly mean canopy air theta_Eiv','[K]','ipoly') 
       end if
       
+      if(associated(cgrid%mmean_can_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_can_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_CAN_VPDEF :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean canopy air VPD','[Pa]','ipoly') 
+      end if
+      
       if(associated(cgrid%mmean_gnd_temp)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%mmean_gnd_temp,nvar,igr,init,cgrid%pyglob_id, &
@@ -9706,6 +9853,13 @@ contains
          call vtable_edio_r(npts,cgrid%mmean_leaf_temp,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'MMEAN_LEAF_TEMP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Monthly mean leaf temperature','[K]','ipoly') 
+      end if
+
+      if(associated(cgrid%mmean_leaf_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_leaf_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_LEAF_VPDEF :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean leaf VPD','[Pa]','ipoly') 
       end if
 
       if(associated(cgrid%mmean_leaf_water)) then
@@ -9825,6 +9979,13 @@ contains
          call vtable_edio_r(npts,cgrid%mmean_atm_temp,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'MMEAN_ATM_TEMP :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Monthly mean air temperature','[K]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_atm_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_atm_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_ATM_VPDEF :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean air VPD','[Pa]','ipoly') 
       end if
       
       if(associated(cgrid%mmean_atm_shv)) then
@@ -10308,6 +10469,13 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if(associated(cgrid%qmean_can_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_can_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_CAN_VPDEF :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if(associated(cgrid%qmean_gnd_temp)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_gnd_temp,nvar,igr,init,cgrid%pyglob_id, &
@@ -10340,6 +10508,13 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_temp,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMEAN_LEAF_TEMP :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_leaf_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_leaf_vpdef,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_LEAF_VPDEF :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -10382,6 +10557,13 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_temp,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMEAN_ATM_TEMP :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_atm_vpdef)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_atm_temp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_ATM_VPDEF :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -12032,6 +12214,13 @@ contains
          call metadata_edio(nvar,igr,'Canopy air ice-vapour equivalent potential temperature','[K]','NA') 
       end if
 
+      if (associated(csite%can_vpdef)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%can_vpdef,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'CAN_VPDEF :31:hist') 
+         call metadata_edio(nvar,igr,'Canopy air ice-vapour equivalent potential temperature','[K]','NA') 
+      end if
+
       if (associated(csite%can_temp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%can_temp,nvar,igr,init,csite%paglob_id, &
@@ -13480,11 +13669,25 @@ contains
          call metadata_edio(nvar,igr,'Above-ground biomass growth','[kgC/plant/yr]','icohort') 
       end if
 
+      if (associated(cpatch%dlnagb_dt)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dlnagb_dt,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'DLNAGB_DT :41:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Relative AGB growth','[1/yr]','icohort') 
+      end if
+
       if (associated(cpatch%dba_dt)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%dba_dt,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'DBA_DT :41:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Basal-area growth','[cm2/plant/yr]','icohort') 
+      end if
+
+      if (associated(cpatch%dlnba_dt)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dlnba_dt,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'DLNBA_DT :41:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Relative Basal-area growth','[1/yr]','icohort') 
       end if
 
       if (associated(cpatch%ddbh_dt)) then
@@ -13610,6 +13813,13 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%leaf_temp,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'LEAF_TEMP :41:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%leaf_vpdef)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%leaf_vpdef,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'LEAF_VPDEF :41:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

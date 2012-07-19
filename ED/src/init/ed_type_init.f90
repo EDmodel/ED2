@@ -84,7 +84,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%mort_rate           (:,ico) = 0.0
 
    cpatch%dagb_dt               (ico) = 0.0
+   cpatch%dlnagb_dt             (ico) = 0.0
    cpatch%dba_dt                (ico) = 0.0
+   cpatch%dlnba_dt              (ico) = 0.0
    cpatch%ddbh_dt               (ico) = 0.0
    cpatch%dlndbh_dt             (ico) = 0.0
 
@@ -173,6 +175,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%leaf_hcap(ico)        = 0.
    cpatch%leaf_temp(ico)        = 0.
    cpatch%leaf_temp_pv(ico)     = 0.
+   cpatch%leaf_vpdef(ico)       = 0.
    cpatch%leaf_water(ico)       = 0.
    cpatch%leaf_fliq(ico)        = 0.
    cpatch%wood_energy(ico)      = 0.
@@ -527,6 +530,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_available_water  (ip1:ip2) = 0.0
    csite%avg_leaf_energy      (ip1:ip2) = 0.0 
    csite%avg_leaf_temp        (ip1:ip2) = 0.0 
+   csite%avg_leaf_vpdef       (ip1:ip2) = 0.0 
    csite%avg_leaf_hcap        (ip1:ip2) = 0.0 
    csite%avg_leaf_fliq        (ip1:ip2) = 0.0 
    csite%avg_leaf_water       (ip1:ip2) = 0.0 
@@ -579,6 +583,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%wpwp  (ip1:ip2) = 0.0
 
    csite%can_theiv   (ip1:ip2) = 0.0
+   csite%can_vpdef   (ip1:ip2) = 0.0
    csite%can_temp    (ip1:ip2) = 0.0
    csite%can_temp_pv (ip1:ip2) = 0.0
    csite%can_rhos    (ip1:ip2) = 0.0

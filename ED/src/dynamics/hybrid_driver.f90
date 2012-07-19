@@ -142,13 +142,13 @@ subroutine hybrid_timestep(cgrid)
            !    Copy the meteorological variables to the rk4site structure.   !
            !------------------------------------------------------------------!
            call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)&
-                ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv          &
-                ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2  &
-                ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg  &
-                ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam         &
-                ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse        &
-                ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)      &
-                ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
+                ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv,cmet%atm_vpdef &
+                ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2        &
+                ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg        &
+                ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam               &
+                ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse              &
+                ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)            &
+                ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)                &
                 ,cgrid%lat(ipy),cgrid%cosz(ipy))
            
            

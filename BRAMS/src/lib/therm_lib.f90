@@ -2070,6 +2070,196 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function computes the vapour pressure deficit based on pressure, temper-     !
+   ! ature, and vapour mixing ratio (or specific humidity).                                !
+   !                                                                                       !
+   ! IMPORTANT: IT ALWAYS ASSUMES THAT VAPOUR PRESSURE DEFICIT IS WITH RESPECT TO THE      !
+   !            LIQUID PHASE.  If you would like it to switch between ice and liquid, then !
+   !            use vpdefil instead.                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function vpdefl(pres,temp,humi,is_shv)
+      use rconstants , only : ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in) :: pres    ! Air pressure                           [    Pa]
+      real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
+      real(kind=4), intent(in) :: humi    ! Humidity                               [ kg/kg]
+      logical     , intent(in) :: is_shv  ! Input humidity is specific humidity    [   T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=4)             :: shv     ! Specific humidity                      [ kg/kg]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: psat    ! Saturation vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
+      else
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      psat = eslf(temp)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      vpdefl = max(0.0 , psat - pvap)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function vpdefl
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the vapour pressure deficit based on pressure, temper-     !
+   ! ature, and vapour mixing ratio (or specific humidity).                                !
+   !                                                                                       !
+   ! IMPORTANT: IT ALWAYS ASSUMES THAT VAPOUR PRESSURE DEFICIT IS WITH RESPECT TO THE      !
+   !            ICE PHASE.  If you would like it to switch between ice and liquid, then    !
+   !            use vpdefil instead.                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function vpdefi(pres,temp,humi,is_shv)
+      use rconstants , only : ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in) :: pres    ! Air pressure                           [    Pa]
+      real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
+      real(kind=4), intent(in) :: humi    ! Humidity                               [ kg/kg]
+      logical     , intent(in) :: is_shv  ! Input humidity is specific humidity    [   T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=4)             :: shv     ! Specific humidity                      [ kg/kg]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: psat    ! Saturation vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
+      else
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      psat = esif(temp)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      vpdefi = max(0.0 , psat - pvap)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function vpdefi
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the vapour pressure deficit based on pressure, temper-     !
+   ! ature, and vapour mixing ratio (or specific humidity).                                !
+   !                                                                                       !
+   ! IMPORTANT: This fucntion may consider whether the temperature is above or below the   !
+   !            freezing point to choose which saturation to use. It is possible to        !
+   !            explicitly force not to use ice in case level is 2 or if you have reasons  !
+   !            not to use ice (e.g. reading data that did not consider ice).              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function vpdefil(pres,temp,humi,is_shv,useice)
+      use rconstants , only : t3ple  & ! intent(in)
+                            , ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=4), intent(in)           :: pres    ! Air pressure                 [    Pa]
+      real(kind=4), intent(in)           :: temp    ! Temperature                  [     K]
+      real(kind=4), intent(in)           :: humi    ! Humidity                     [ kg/kg]
+      logical     , intent(in)           :: is_shv  ! Input is specific humidity   [   T|F]
+       !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice  ! May use ice thermodynamics   [   T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=4)                       :: shv     ! Specific humidity            [ kg/kg]
+      real(kind=4)                       :: pvap    ! Vapour pressure              [    Pa]
+      real(kind=4)                       :: psat    ! Saturation vapour pressure   [    Pa]
+      logical                            :: frozen  ! Will use ice saturation now  [   T|F]
+      !------------------------------------------------------------------------------------!
+      
+      !------------------------------------------------------------------------------------!
+      !    Check whether we should use ice or liquid saturation.                           !
+      !------------------------------------------------------------------------------------!
+      if (present(useice)) then
+         frozen = useice  .and. temp < t3ple
+      else 
+         frozen = bulk_on .and. temp < t3ple
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
+      else
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      if (frozen) then
+         psat = esif(temp)
+      else
+         psat = esif(temp)
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      vpdefil = max(0.0 , psat - pvap)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function vpdefil
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This function finds the actual temperature based on the virtual temperature and   !
    ! mixing ratio. Two notes:                                                              !
    ! 1. It will use the condensation effect in case the total mixing ratio is provided.    !

@@ -65,6 +65,7 @@ module leaf_coms
             , atm_shv          & ! specific humidity at top of surface layer     [   kg/kg]
             , atm_co2          & ! CO2 mixing ratio at top of surface layer      [µmol/mol]
             , atm_theiv        & ! atmospheric ice-vapour equiv. potential temp. [       K]
+            , atm_vpdef        & ! atmospheric vapour pressure deficit           [      Pa]
             , atm_rhos         & ! air density                                   [   kg/m³]
             , geoht            & ! height at top of surface layer                [       m]
             , atm_exner        & ! "Exner" function at surface (Exner/cp)        [     ---]
@@ -568,6 +569,7 @@ module leaf_coms
          atm_shv       = 0.
          atm_co2       = 0.
          atm_theiv     = 0
+         atm_vpdef     = 0
          atm_rhos      = 0.
          geoht         = 0.
          atm_exner     = 0

@@ -301,7 +301,9 @@ subroutine ed_bigleaf_init(cgrid)
 
                      !----- Growth rates, start with zero. --------------------------------!
                      cpatch%dagb_dt  (1)  = 0.
+                     cpatch%dlnagb_dt(1)  = 0.
                      cpatch%dba_dt   (1)  = 0.
+                     cpatch%dlnba_dt (1)  = 0.
                      cpatch%ddbh_dt  (1)  = 0.
                      cpatch%dlndbh_dt(1)  = 0.
                      

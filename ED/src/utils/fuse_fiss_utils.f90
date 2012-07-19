@@ -784,7 +784,7 @@ module fuse_fiss_utils
                      !----- Proceed with fusion -------------------------------------------!
                      call fuse_2_cohorts(cpatch,donc,recc,newn                             &
                                         ,green_leaf_factor(cpatch%pft(donc))               &
-                                        ,csite%can_prss(ipa),lsl)
+                                        ,csite%can_prss(ipa),csite%can_shv(ipa),lsl)
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
                      fuse_table(donc) = .false.
@@ -1164,6 +1164,7 @@ module fuse_fiss_utils
       cpatch%leaf_temp_pv(idt)          = cpatch%leaf_temp_pv(isc)
       cpatch%leaf_fliq(idt)             = cpatch%leaf_fliq(isc)
       cpatch%leaf_water(idt)            = cpatch%leaf_water(isc)
+      cpatch%leaf_vpdef(idt)            = cpatch%leaf_vpdef(isc)
       cpatch%wood_energy(idt)           = cpatch%wood_energy(isc)
       cpatch%wood_hcap(idt)             = cpatch%wood_hcap(isc)
       cpatch%wood_temp(idt)             = cpatch%wood_temp(isc)
@@ -1353,12 +1354,13 @@ module fuse_fiss_utils
    !  information from both cohorts.                                                       !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor, can_prss,lsl)
+   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor,can_prss,can_shv,lsl)
       use ed_state_vars , only : patchtype              ! ! Structure
       use pft_coms      , only : q                      & ! intent(in), lookup table
                                , qsw                    & ! intent(in), lookup table
                                , is_grass               ! ! intent(in)
       use therm_lib     , only : uextcm2tl              & ! subroutine
+                               , vpdefil                & ! subroutine
                                , qslif                  ! ! function
       use allometry     , only : dbh2krdepth            & ! function
                                , bd2dbh                 & ! function
@@ -1379,6 +1381,7 @@ module fuse_fiss_utils
       real            , intent(in) :: newn              ! New nplant
       real            , intent(in) :: green_leaf_factor ! Green leaf factor
       real            , intent(in) :: can_prss          ! Canopy air pressure
+      real            , intent(in) :: can_shv           ! Canopy air specific humidity
       integer         , intent(in) :: lsl               ! Lowest soil level
       !----- Local variables --------------------------------------------------------------!
       integer                      :: imon              ! Month for cb loop
@@ -1494,10 +1497,8 @@ module fuse_fiss_utils
                                    + cpatch%leaf_temp(donc)  * cpatch%nplant(donc))
          cpatch%leaf_fliq(recc)  = 0.0
       end if
-      
-      !----- Simply set the previous time-steps temp as the current
-      
-      
+
+
       if ( cpatch%wood_hcap(recc) > 0. ) then
          !----- Update temperature using the standard thermodynamics. ---------------------!
          call uextcm2tl(cpatch%wood_energy(recc),cpatch%wood_water(recc)                   &
@@ -1511,12 +1512,17 @@ module fuse_fiss_utils
          cpatch%wood_fliq(recc)  = 0.0
       end if
       
-      !----- Set time-steps temp as the current
+      !----- Set time-steps temperatures as the current. ----------------------------------!
       cpatch%leaf_temp_pv(recc) = cpatch%leaf_temp(recc)
       cpatch%wood_temp_pv(recc) = cpatch%wood_temp(recc)
+      !------------------------------------------------------------------------------------!
 
       !------ Find the intercellular value assuming saturation. ---------------------------!
       cpatch%lint_shv(recc) = qslif(can_prss,cpatch%leaf_temp(recc))
+      !------------------------------------------------------------------------------------!
+
+      !------ Find the vapour pressure deficit. -------------------------------------------!
+      cpatch%leaf_vpdef(recc) = vpdefil(can_prss,cpatch%leaf_temp(recc),can_shv,.true.)
       !------------------------------------------------------------------------------------!
 
 
@@ -1626,24 +1632,24 @@ module fuse_fiss_utils
       ! properties, they are scaled by the number of plants.  These numbers are diagnostic !
       ! and this should be used for the output only.                                       !
       !------------------------------------------------------------------------------------!
-      cpatch%lsfc_shv_open(recc) = ( cpatch%lsfc_shv_open(recc) * cpatch%nplant(recc)      &
-                                   + cpatch%lsfc_shv_open(donc) * cpatch%nplant(donc) )    &
-                                   * newni
-      cpatch%lsfc_shv_closed(recc) = ( cpatch%lsfc_shv_closed(recc) * cpatch%nplant(recc)  &
-                                     + cpatch%lsfc_shv_closed(donc) * cpatch%nplant(donc)) &
-                                   * newni
-      cpatch%lsfc_co2_open(recc) = ( cpatch%lsfc_co2_open(recc) * cpatch%nplant(recc)      &
-                                   + cpatch%lsfc_co2_open(donc) * cpatch%nplant(donc) )    &
-                                   * newni
-      cpatch%lsfc_co2_closed(recc) = ( cpatch%lsfc_co2_closed(recc) * cpatch%nplant(recc)  &
-                                     + cpatch%lsfc_co2_closed(donc) * cpatch%nplant(donc)) &
-                                   * newni
-      cpatch%lint_co2_open(recc) = ( cpatch%lint_co2_open(recc) * cpatch%nplant(recc)      &
-                                   + cpatch%lint_co2_open(donc) * cpatch%nplant(donc) )    &
-                                   * newni
-      cpatch%lint_co2_closed(recc) = ( cpatch%lint_co2_closed(recc) * cpatch%nplant(recc)  &
-                                     + cpatch%lint_co2_closed(donc) * cpatch%nplant(donc)) &
-                                   * newni
+      cpatch%lsfc_shv_open  (recc) = ( cpatch%lsfc_shv_open  (recc)  * cpatch%lai(recc)    &
+                                     + cpatch%lsfc_shv_open  (donc)  * cpatch%lai(donc) )  &
+                                   * newlaii
+      cpatch%lsfc_shv_closed(recc) = ( cpatch%lsfc_shv_closed(recc)  * cpatch%lai(recc)    &
+                                     + cpatch%lsfc_shv_closed(donc)  * cpatch%lai(donc))   &
+                                   * newlaii
+      cpatch%lsfc_co2_open  (recc) = ( cpatch%lsfc_co2_open  (recc)  * cpatch%lai(recc)    &
+                                     + cpatch%lsfc_co2_open  (donc)  * cpatch%lai(donc) )  &
+                                   * newlaii
+      cpatch%lsfc_co2_closed(recc) = ( cpatch%lsfc_co2_closed(recc)  * cpatch%lai(recc)    &
+                                     + cpatch%lsfc_co2_closed(donc)  * cpatch%lai(donc) )  &
+                                   * newlaii
+      cpatch%lint_co2_open  (recc) = ( cpatch%lint_co2_open  (recc)  * cpatch%lai(recc)    &
+                                     + cpatch%lint_co2_open  (donc)  * cpatch%lai(donc) )  &
+                                   * newlaii
+      cpatch%lint_co2_closed(recc) = ( cpatch%lint_co2_closed(recc)  * cpatch%lai(recc)    &
+                                     + cpatch%lint_co2_closed(donc)  * cpatch%lai(donc) )  &
+                                   * newlaii
       !------------------------------------------------------------------------------------!
 
 
@@ -3358,6 +3364,10 @@ module fuse_fiss_utils
                                      ( csite%can_theiv(donp)          * csite%area(donp)   &
                                      + csite%can_theiv(recp)          * csite%area(recp) )
 
+      csite%can_vpdef(recp)          = newareai *                                          &
+                                     ( csite%can_vpdef(donp)          * csite%area(donp)   &
+                                     + csite%can_vpdef(recp)          * csite%area(recp) )
+
       csite%can_prss(recp)           = newareai *                                          &
                                      ( csite%can_prss(donp)           * csite%area(donp)   &
                                      + csite%can_prss(recp)           * csite%area(recp) )
@@ -3642,6 +3652,10 @@ module fuse_fiss_utils
       csite%avg_leaf_hcap(recp)       = newareai *                                         &
                                       ( csite%avg_leaf_hcap(donp)     * csite%area(donp)   &
                                       + csite%avg_leaf_hcap(recp)     * csite%area(recp) )
+
+      csite%avg_leaf_vpdef(recp)      = newareai *                                         &
+                                      ( csite%avg_leaf_vpdef(donp)    * csite%area(donp)   &
+                                      + csite%avg_leaf_vpdef(recp)    * csite%area(recp) )
 
       csite%avg_wood_energy(recp)     = newareai *                                         &
                                       ( csite%avg_wood_energy(donp)   * csite%area(donp)   &

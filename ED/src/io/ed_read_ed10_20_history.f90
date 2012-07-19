@@ -747,7 +747,9 @@ subroutine read_ed10_ed20_history_file
 
                         !----- Growth rates, start with zero. -----------------------------!
                         cpatch%dagb_dt  (ic2)  = 0.
+                        cpatch%dlnagb_dt(ic2)  = 0.
                         cpatch%dba_dt   (ic2)  = 0.
+                        cpatch%dlnba_dt (ic2)  = 0.
                         cpatch%ddbh_dt  (ic2)  = 0.
                         cpatch%dlndbh_dt(ic2)  = 0.
                         

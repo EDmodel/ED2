@@ -66,7 +66,7 @@ endif
 
 iodim=max(100000,4*no*no)
 MOF=IODIM/(NO*NO)
-
+ 
    allocate(dato(iodim+mof+mof))
 
 !     temp grid (Q) - smoothing only applied to topo
@@ -80,7 +80,7 @@ endif
 NIQ=INT(FLOAT(NNXP(NGR)-1)*DELTAXN(NGR)/DELTAXQ)+4
 NJQ=INT(FLOAT(NNYP(NGR)-1)*DELTAYN(NGR)/DELTAYQ)+4
 
-!     interpollated raw data grid (P)
+!     interpolated raw data grid (P)
 NP=MIN(10,MAX(1,INT(DELTAXQ/(DELTALLO*spcon))))
 DELTAXP=DELTAXQ/FLOAT(NP)
 DELTAYP=DELTAYQ/FLOAT(NP)

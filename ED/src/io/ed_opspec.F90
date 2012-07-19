@@ -1138,12 +1138,14 @@ subroutine ed_opspec_misc
                                     , isoilstateinit               & ! intent(in)
                                     , isoildepthflg                & ! intent(in)
                                     , isoilbc                      & ! intent(in)
+                                    , sldrain                      & ! intent(in)
                                     , zrough                       & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
    use mem_polygons          , only : maxsite                      ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
+                                    , iddmort_scheme               & ! intent(in)
                                     , ddmort_const                 & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
@@ -1489,9 +1491,14 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (isoilbc < 0 .or. isoilbc > 4) then
+   if (isoilbc < 0 .or. isoilbc > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
+        'Invalid ISOILBC, it must be between 0 and 3.  Yours is set to',isoilbc,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   else if(isoilbc == 2 .and. (sldrain < 0. .or. sldrain > 90.)) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+        'Invalid SLDRAIN, it must be between 0 and 90.  Yours is set to',sldrain,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1619,6 +1626,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (iddmort_scheme < 0 .or. iddmort_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IDDMORT_SCHEME, it must be between 0 and 1.  Yours is set to' &
+                    ,iddmort_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

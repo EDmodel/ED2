@@ -1031,9 +1031,13 @@ subroutine opspec3
      ifaterr = ifaterr + 1
   end if
 
-  if (isoilbc < 0 .or. isoilbc > 4) then
+  if (isoilbc < 0 .or. isoilbc > 3) then
      write (unit=*,fmt='(a,1x,i4,a)')                                                      &
-       'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
+       'Invalid ISOILBC, it must be between 0 and 3.  Yours is set to',isoilbc,'...'
+     ifaterr = ifaterr +1
+  else if (isoilbc == 2 .and. (sldrain < 0. .or. sldrain > 90.)) then
+     write (unit=*,fmt='(a,1x,es12.5,a)')                                                  &
+       'Invalid SLDRAIN, it must be between 0 and 90.  Yours is set to ',sldrain,'...'
      ifaterr = ifaterr +1
   end if
  

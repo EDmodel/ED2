@@ -171,11 +171,12 @@ subroutine reproduction(cgrid, month)
                         !------------------------------------------------------------------!
                         !    We assign the recruit in the temporary recruitment structure. !
                         !------------------------------------------------------------------!
-                        rectest%pft       = ipft
-                        rectest%leaf_temp = csite%can_temp(ipa)
-                        rectest%wood_temp = csite%can_temp(ipa)
-                        rectest%leaf_temp_pv=csite%can_temp(ipa)
-                        rectest%wood_temp_pv=csite%can_temp(ipa)
+                        rectest%pft          = ipft
+                        rectest%leaf_temp    = csite%can_temp (ipa)
+                        rectest%wood_temp    = csite%can_temp (ipa)
+                        rectest%leaf_temp_pv = csite%can_temp (ipa)
+                        rectest%wood_temp_pv = csite%can_temp (ipa)
+                        rectest%leaf_vpdef   = csite%can_vpdef(ipa)
                         
                         !------------------------------------------------------------------!
                         !    Recruits start at minimum height and dbh and bleaf are        !
@@ -312,6 +313,7 @@ subroutine reproduction(cgrid, month)
                      cpatch%wood_temp       (ico) = recruit(inew)%wood_temp
                      cpatch%leaf_temp_pv    (ico) = recruit(inew)%leaf_temp_pv
                      cpatch%wood_temp_pv    (ico) = recruit(inew)%wood_temp_pv
+                     cpatch%leaf_vpdef      (ico) = recruit(inew)%leaf_vpdef
                      !---------------------------------------------------------------------!
 
 
@@ -333,7 +335,9 @@ subroutine reproduction(cgrid, month)
                                                        , cpatch%pft       (ico) )
                      cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                      cpatch%dagb_dt  (ico) = 0.0
+                     cpatch%dlnagb_dt(ico) = 0.0
                      cpatch%dba_dt   (ico) = 0.0
+                     cpatch%dlnba_dt (ico) = 0.0
                      cpatch%ddbh_dt  (ico) = 0.0
                      cpatch%dlndbh_dt(ico) = 0.0
                      !---------------------------------------------------------------------!

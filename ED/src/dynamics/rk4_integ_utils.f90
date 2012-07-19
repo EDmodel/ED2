@@ -215,10 +215,11 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm_theta     &
-                             ,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss     &
-                             ,rshort,rlong,par_beam,par_diffuse,nir_beam,nir_diffuse,geoht &
-                             ,lsl,ntext_soil,green_leaf_factor,lon,lat,cosz)
+subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm_vpdef     &
+                             ,atm_theta,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg      &
+                             ,dpcpg,prss,rshort,rlong,par_beam,par_diffuse,nir_beam        &
+                             ,nir_diffuse,geoht,lsl,ntext_soil,green_leaf_factor,lon,lat   &
+                             ,cosz)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
@@ -237,6 +238,7 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm
    real                     , intent(in) :: can_depth
    real                     , intent(in) :: vels
    real                     , intent(in) :: atm_theiv
+   real                     , intent(in) :: atm_vpdef
    real                     , intent(in) :: atm_theta
    real                     , intent(in) :: atm_tmp
    real                     , intent(in) :: atm_shv
@@ -276,6 +278,7 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm
 
    !----- Convert to double precision. ----------------------------------------------------!
    rk4site%atm_theiv             = dble(atm_theiv           )
+   rk4site%atm_vpdef             = dble(atm_vpdef           )
    rk4site%atm_theta             = dble(atm_theta           )
    rk4site%atm_tmp               = dble(atm_tmp             )
    rk4site%atm_shv               = dble(atm_shv             )

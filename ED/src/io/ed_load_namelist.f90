@@ -60,6 +60,7 @@ subroutine copy_nl(copy_type)
                                    , isoilstateinit            & ! intent(out)
                                    , isoildepthflg             & ! intent(out)
                                    , isoilbc                   & ! intent(out)
+                                   , sldrain                   & ! intent(out)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
@@ -91,6 +92,7 @@ subroutine copy_nl(copy_type)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
+                                   , iddmort_scheme            & ! intent(out)
                                    , ddmort_const              & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact_c3                 & ! intent(out)
@@ -328,6 +330,7 @@ subroutine copy_nl(copy_type)
       isoilstateinit            = nl%isoilstateinit
       isoildepthflg             = nl%isoildepthflg
       isoilbc                   = nl%isoilbc
+      sldrain                   = nl%sldrain
 
       n_poi                     = nl%n_poi
       n_ed_region               = nl%n_ed_region
@@ -363,6 +366,7 @@ subroutine copy_nl(copy_type)
       clump_tree                = nl%clump_tree
       clump_grass               = nl%clump_grass
       h2o_plant_lim             = nl%h2o_plant_lim
+      iddmort_scheme            = nl%iddmort_scheme
       ddmort_const              = nl%ddmort_const
       vmfact_c3                 = nl%vmfact_c3
       vmfact_c4                 = nl%vmfact_c4

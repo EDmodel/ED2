@@ -36,6 +36,7 @@ subroutine ed_init_atm()
    use ed_therm_lib          , only : calc_veg_hcap     & ! subroutine
                                     , ed_grndvap        ! ! subroutine
    use therm_lib             , only : thetaeiv          & ! function
+                                    , vpdefil           & ! function
                                     , idealdenssh       & ! function
                                     , qslif             & ! function
                                     , reducedpress      & ! function
@@ -129,6 +130,8 @@ subroutine ed_init_atm()
 
                csite%can_theiv(ipa) = thetaeiv(csite%can_theta(ipa),csite%can_prss(ipa)    &
                                               ,csite%can_temp(ipa),rvaux,rvaux)
+               csite%can_vpdef(ipa) = vpdefil (csite%can_prss(ipa),csite%can_temp(ipa)     &
+                                              ,csite%can_shv (ipa),.true.)
                csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa)                      &
                                                  ,csite%can_temp(ipa),csite%can_shv(ipa))
 
@@ -150,12 +153,13 @@ subroutine ed_init_atm()
                   ! thermal equilibrium with the canopy air space and no intercepted       !
                   ! water sitting on top of leaves and branches.                           !
                   !------------------------------------------------------------------------!
-                  cpatch%leaf_water  (ico) = 0.0
-                  cpatch%wood_water  (ico) = 0.0
-                  cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
-                  cpatch%wood_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%leaf_water   (ico) = 0.0
+                  cpatch%wood_water   (ico) = 0.0
+                  cpatch%leaf_temp    (ico) = csite%can_temp   (ipa)
+                  cpatch%wood_temp    (ico) = csite%can_temp   (ipa)
                   cpatch%leaf_temp_pv (ico) = csite%can_temp_pv(ipa)
                   cpatch%wood_temp_pv (ico) = csite%can_temp_pv(ipa)
+                  cpatch%leaf_vpdef   (ico) = csite%can_vpdef  (ipa)
                   if (csite%can_temp(ipa) == t3ple) then
                      cpatch%leaf_fliq   (ico) = 0.5
                      cpatch%wood_fliq   (ico) = 0.5
