@@ -1036,6 +1036,9 @@ do
          hvd)
             thissfilin=${bioinit}'/hvd_nounder.'
             ;;
+         cax)
+            thissfilin=${bioinit}'/cax_nounder.'
+            ;;
          s67|s83)
             thissfilin=${bioinit}'/s67_nounder.'
             ;;
@@ -1071,6 +1074,9 @@ do
          case ${polyiata} in
          hvd)
             thissfilin=${bioinit}'/hvd_under_sci005.'
+            ;;
+         cax)
+            thissfilin=${bioinit}'/cax_under_sci005.'
             ;;
          s67|s83)
             thissfilin=${bioinit}'/s67_under_sci005.'

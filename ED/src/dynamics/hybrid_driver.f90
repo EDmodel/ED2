@@ -27,7 +27,7 @@ subroutine hybrid_timestep(cgrid)
   use grid_coms             , only : nzg                & ! intent(in)
                                    , nzs                ! ! intent(in)
   use ed_misc_coms          , only : dtlsm              ! ! intent(in)
-
+  use therm_lib             , only : tq2enthalpy        ! ! function
   
   implicit none
   !----- Arguments ----------------------------------------------------------!
@@ -136,6 +136,9 @@ subroutine hybrid_timestep(cgrid)
            old_can_co2      = csite%can_co2(ipa)
            old_can_rhos     = csite%can_rhos(ipa)
            old_can_temp     = csite%can_temp(ipa)
+           old_can_prss     = csite%can_prss (ipa)
+           old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa)                 &
+                                         ,csite%can_shv(ipa),.true.)
            !------------------------------------------------------------------!
            
            !------------------------------------------------------------------!

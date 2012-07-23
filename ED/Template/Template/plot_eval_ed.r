@@ -37,10 +37,6 @@ scalleg        = 0.20
 cex.main       = 0.8            # Scale coefficient for the title
 
 hourblock.len  = 3              # Length of the time blocks, in hours
-monthcensus    = mymonthcensus  # Which month should the census happen
-dtcensus       = mydtcensus     # How often did the census happened (years)
-firstcensus    = myfirstcensus  # When was the first census conducted. 
-lastcensus     = mylastcensus   # When was the last census conducted?
 #------------------------------------------------------------------------------------------#
 
 reload.data    = TRUE           # Reload data?
