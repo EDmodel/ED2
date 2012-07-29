@@ -11,7 +11,7 @@ currloc=`pwd`                                  # Current location
 
 mddir='met_driver'
 datasrc='mypackdata'
-datadest='/scratch/ed2_data'
+datadest='/scratch/mlongo'
 
 datasize=39000000
 #------------------------------------------------------------------------------------------#

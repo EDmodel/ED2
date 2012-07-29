@@ -413,6 +413,7 @@ subroutine spatial_averages
          cgrid%avg_vleaf_resp      (ipy) = 0.0
          cgrid%avg_plant_resp      (ipy) = 0.0
          cgrid%avg_htroph_resp     (ipy) = 0.0
+         cgrid%avg_cwd_resp        (ipy) = 0.0
          cgrid%avg_leaf_drop       (ipy) = 0.0
          cgrid%avg_leaf_maintenance(ipy) = 0.0
          cgrid%avg_root_maintenance(ipy) = 0.0
@@ -878,6 +879,10 @@ subroutine spatial_averages
 
                cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy)                     &
                                           + csite%mean_rh(ipa)                             &
+                                          * csite%area(ipa)*cpoly%area(isi)                &
+                                          * site_area_i * poly_area_i
+               cgrid%avg_cwd_resp   (ipy) = cgrid%avg_cwd_resp(ipy)                        &
+                                          + csite%mean_cwd_rh(ipa)                         &
                                           * csite%area(ipa)*cpoly%area(isi)                &
                                           * site_area_i * poly_area_i
 

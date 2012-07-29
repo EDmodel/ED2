@@ -3509,6 +3509,9 @@ module fuse_fiss_utils
       csite%mean_rh(recp)                = newareai *                                      &
                                          ( csite%mean_rh(donp)        * csite%area(donp)   &
                                          + csite%mean_rh(recp)        * csite%area(recp) )
+      csite%mean_cwd_rh(recp)            = newareai *                                      &
+                                         ( csite%mean_cwd_rh(donp)    * csite%area(donp)   &
+                                         + csite%mean_cwd_rh(recp)    * csite%area(recp) )
 
       csite%today_A_decomp(recp)         = newareai *                                      &
                                          ( csite%today_A_decomp(donp) * csite%area(donp)   &
@@ -3692,6 +3695,9 @@ module fuse_fiss_utils
       csite%co2budget_rh(recp)        = newareai *                                         &
                                       ( csite%co2budget_rh(donp)      * csite%area(donp)   &
                                       + csite%co2budget_rh(recp)      * csite%area(recp) )  
+      csite%co2budget_cwd_rh(recp)    = newareai *                                         &
+                                      ( csite%co2budget_cwd_rh(donp)  * csite%area(donp)   &
+                                      + csite%co2budget_cwd_rh(recp)  * csite%area(recp) )  
 
       csite%ebudget_residual(recp)    = newareai *                                         &
                                       ( csite%ebudget_residual(donp)  * csite%area(donp)   &
@@ -3780,6 +3786,9 @@ module fuse_fiss_utils
          csite%dmean_rh(recp)           = newareai                                         &
                                         * ( csite%dmean_rh(donp) * csite%area(donp)        &
                                           + csite%dmean_rh(recp) * csite%area(recp) )
+         csite%dmean_cwd_rh(recp)       = newareai                                         &
+                                        * ( csite%dmean_cwd_rh(donp) * csite%area(donp)    &
+                                          + csite%dmean_cwd_rh(recp) * csite%area(recp) )
          csite%dmean_co2_residual(recp) = newareai                                         &
                                         * ( csite%dmean_co2_residual(donp)                 &
                                           * csite%area(donp)                               &
@@ -3816,6 +3825,9 @@ module fuse_fiss_utils
          csite%mmean_rh(recp)           = newareai                                         &
                                         * ( csite%mmean_rh(donp) * csite%area(donp)        &
                                           + csite%mmean_rh(recp) * csite%area(recp) )
+         csite%mmean_cwd_rh(recp)       = newareai                                         &
+                                        * ( csite%mmean_cwd_rh(donp) * csite%area(donp)    &
+                                          + csite%mmean_cwd_rh(recp) * csite%area(recp) )
          csite%mmean_co2_residual(recp) = newareai                                         &
                                         * ( csite%mmean_co2_residual(donp)                 &
                                           * csite%area(donp)                               &
@@ -3854,6 +3866,11 @@ module fuse_fiss_utils
                                            * ( csite%qmean_rh               (icyc,donp)    &
                                              * csite%area                        (donp)    &
                                              + csite%qmean_rh               (icyc,recp)    &
+                                             * csite%area                        (recp))
+            csite%qmean_cwd_rh (icyc,recp) = newareai                                      &
+                                           * ( csite%qmean_cwd_rh           (icyc,donp)    &
+                                             * csite%area                        (donp)    &
+                                             + csite%qmean_cwd_rh           (icyc,recp)    &
                                              * csite%area                        (recp))
          end do
       end if

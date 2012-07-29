@@ -1311,6 +1311,7 @@ module disturbance_utils
       csite%ggveg             (ipa) = csite%ggveg             (ipa) * area_fac
       csite%rough             (ipa) = csite%rough             (ipa) * area_fac
       csite%mean_rh           (ipa) = csite%mean_rh           (ipa) * area_fac
+      csite%mean_cwd_rh       (ipa) = csite%mean_cwd_rh       (ipa) * area_fac
       csite%today_A_decomp    (ipa) = csite%today_A_decomp    (ipa) * area_fac
       csite%today_Af_decomp   (ipa) = csite%today_Af_decomp   (ipa) * area_fac
       csite%fsc_in            (ipa) = csite%fsc_in            (ipa) * area_fac
@@ -1438,6 +1439,9 @@ module disturbance_utils
                                             * area_fac
       csite%mean_rh                    (np) = csite%mean_rh                    (np)        &
                                             + csite%mean_rh                    (cp)        &
+                                            * area_fac
+      csite%mean_cwd_rh                (np) = csite%mean_cwd_rh                (np)        &
+                                            + csite%mean_cwd_rh                (cp)        &
                                             * area_fac
       csite%today_A_decomp             (np) = csite%today_A_decomp             (np)        &
                                             + csite%today_A_decomp             (cp)        &

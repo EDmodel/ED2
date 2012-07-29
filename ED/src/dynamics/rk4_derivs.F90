@@ -907,12 +907,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: transp_tot        ! Total transpiration (water)
    real(kind=8)                     :: qtransp_tot       ! Total transpiration (energy)
    real(kind=8)                     :: cflxlc_tot        ! Total leaf -> CAS CO2 flux
+   real(kind=8)                     :: cflxwc_tot        ! Total wood -> CAS CO2 flux
    real(kind=8)                     :: wflxlc_tot        ! Leaf -> CAS evaporation (water)
    real(kind=8)                     :: wflxwc_tot        ! Wood -> CAS evaporation (water)
    real(kind=8)                     :: qwflxlc_tot       ! Leaf -> CAS evaporation (energy)
    real(kind=8)                     :: qwflxwc_tot       ! Wood -> CAS evaporation (energy)
    real(kind=8)                     :: rho_ustar         !
-   real(kind=8)                     :: storage_decay     !
    real(kind=8)                     :: leaf_flux         !
    real(kind=8)                     :: min_leaf_water    !
    real(kind=8)                     :: max_leaf_water    !
@@ -1190,10 +1190,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------! 
    !    Heterotrophic respiration is a patch-level variable, so we initialise the total    !
    ! vegetation to canopy carbon flux with the total heterotrophic respiration due to the  !
-   ! coarse wood debris, and remove that from the ground to canopy carbon flux to avoid    !
+   ! coarse woody debris, and remove that from the ground to canopy carbon flux to avoid   !
    ! double counting.                                                                      !
    !---------------------------------------------------------------------------------------! 
-   cflxlc_tot       = initp%cwd_rh
+   cflxlc_tot       = 0.d0
+   cflxwc_tot       = initp%cwd_rh
    cflxgc           = initp%rh - initp%cwd_rh
    !---------------------------------------------------------------------------------------!
   
@@ -1202,11 +1203,14 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       cflxgc = cflxgc + initp%root_resp(ico)
 
       !------------------------------------------------------------------------------------!
-      !    Calculate 'decay' term of storage.                                              !
+      !    Add the respiration terms according to their "source".                          !
+      ! Ground -> CAS : root respiration and non-CWD heterotrophic respiration.            !
+      ! Wood   -> CAS : CWD respiration, Growth respiration, and storage (the latter due   !
+      !                 to lack of a better place to put).                                 !
+      ! Leaf   -> CAS : Leaf respiration, Virtual leaf respiration - GPP.                  !
       !------------------------------------------------------------------------------------!
-      storage_decay = initp%growth_resp(ico) + initp%storage_resp(ico)                     &
-                    + initp%vleaf_resp(ico)
-      cflxlc_tot    = cflxlc_tot + storage_decay
+      cflxlc_tot    = cflxlc_tot + initp%vleaf_resp(ico)
+      cflxwc_tot    = cflxwc_tot + initp%growth_resp(ico) + initp%storage_resp(ico)
       !------------------------------------------------------------------------------------!
 
 
@@ -1761,17 +1765,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    dinitp%can_enthalpy = ( hflxgc + hflxlc_tot + hflxwc_tot                                &
                          + qwflxgc - qdewgndflx + qwflxlc_tot + qwflxwc_tot + qtransp_tot  &
-                         + eflxac                                   ) * hcapcani
+                         + eflxac                                     ) * hcapcani
    dinitp%can_shv      = ( wflxgc - dewgndflx + wflxlc_tot                                 &
-                         + wflxwc_tot + transp_tot +  wflxac        ) * wcapcani
-   dinitp%can_co2      = ( cflxgc + cflxlc_tot + cflxac             ) * ccapcani
+                         + wflxwc_tot + transp_tot +  wflxac          ) * wcapcani
+   dinitp%can_co2      = ( cflxgc + cflxlc_tot + cflxwc_tot  + cflxac ) * ccapcani
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    if (.false.) then 
    !if (dt>-8000.d0) then
 
-      a = ( cflxgc + cflxlc_tot                                                            &
+      a = ( cflxgc + cflxlc_tot + cflxwc_tot                                               &
           + initp%can_rhos*initp%ggbare*mmdryi8*rk4site%atm_co2) * ccapcani
       
       b  = (initp%can_rhos*initp%ggbare*mmdryi8) * ccapcani
@@ -1786,7 +1790,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
              * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +     &
                 c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
       
-      dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxac) * ccapcani
+      dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxwc_tot + cflxac) * ccapcani
 
    end if
    !---------------------------------------------------------------------------------------!
@@ -1801,7 +1805,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
       dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy
-      dinitp%avg_carbon_st    = cflxgc + cflxlc_tot + cflxac ! Carbon storage flux
+      dinitp%avg_carbon_st    = cflxgc     + cflxwc_tot                                    &
+                              + cflxlc_tot + cflxac          ! Carbon storage flux
       dinitp%avg_sensible_ac  = hflxac                       ! Sens. heat,  Atmo->Canopy
       dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
@@ -1866,7 +1871,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%co2budget_loss2atm = - cflxac
       dinitp%ebudget_loss2atm   = - eflxac
       dinitp%wbudget_loss2atm   = - wflxac
-      dinitp%co2budget_storage  = dinitp%co2budget_storage + cflxgc + cflxlc_tot + cflxac
+      dinitp%co2budget_storage  = dinitp%co2budget_storage                                 &
+                                + cflxgc + cflxlc_tot + cflxwc_tot + cflxac
       dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
       dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad         &
                                 + rk4site%qpcpg - dinitp%ebudget_loss2atm

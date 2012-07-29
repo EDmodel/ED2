@@ -299,7 +299,10 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_netrad  
    csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                          &
                                     + ( leaf_resp + root_resp + growth_resp + storage_resp &
                                       + vleaf_resp ) * dtlsm
-   csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa) + csite%rh(ipa) * dtlsm
+   csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                              &
+                                    + csite%rh(ipa) * dtlsm
+   csite%co2budget_cwd_rh(ipa)      = csite%co2budget_cwd_rh(ipa)                          &
+                                    + csite%cwd_rh(ipa) * dtlsm
    csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa) + co2curr_denseffect
    csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)   + co2curr_loss2atm
    !----- 2. Energy. ----------------------------------------------------------------------!

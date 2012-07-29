@@ -131,7 +131,7 @@ subroutine copy_nl(copy_type)
                                    , radslp                    & ! intent(out)
                                    , thetacrit                 ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
-                                   , LloydTaylor               ! ! intent(out)
+                                   , decomp_scheme             ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
                                    , fire_parameter            & ! intent(out)
                                    , ianth_disturb             & ! intent(out)
@@ -402,10 +402,8 @@ subroutine copy_nl(copy_type)
       fire_parameter            = nl%fire_parameter
       sm_fire                   = nl%sm_fire
       ianth_disturb             = nl%ianth_disturb
+      decomp_scheme             = nl%decomp_scheme
 
-      !----- Decomp_scheme is not a true ED variable, we save it in LloydTaylor instead. --!
-      LloydTaylor               = nl%decomp_scheme == 1
-      
       icanturb                  = nl%icanturb
       isfclyrm                  = nl%isfclyrm
       ied_grndvap               = nl%ied_grndvap

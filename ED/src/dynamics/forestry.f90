@@ -770,6 +770,7 @@ subroutine norm_harv_patch(csite,newp)
    csite%ggveg(newp)                       = csite%ggveg(newp)               * area_fac
    csite%rough(newp)                       = csite%rough(newp)               * area_fac
    csite%mean_rh(newp)                     = csite%mean_rh(newp)             * area_fac
+   csite%mean_cwd_rh(newp)                 = csite%mean_cwd_rh(newp)         * area_fac
    csite%today_A_decomp(newp)              = csite%today_A_decomp(newp)      * area_fac
    csite%today_Af_decomp(newp)             = csite%today_Af_decomp(newp)     * area_fac
    csite%repro(1:n_pft,newp)               = csite%repro(1:n_pft,newp)       * area_fac

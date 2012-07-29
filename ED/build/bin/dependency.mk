@@ -91,7 +91,7 @@ rk4_misc.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
 rk4_stepper.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 soil_respiration.o: consts_coms.mod decomp_coms.mod ed_state_vars.mod
 soil_respiration.o: farq_leuning.mod pft_coms.mod physiology_coms.mod
-soil_respiration.o: rk4_coms.mod soil_coms.mod
+soil_respiration.o: rk4_coms.mod soil_coms.mod therm_lib.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: detailed_coms.mod ed_max_dims.mod ed_misc_coms.mod
 structural_growth.o: ed_state_vars.mod ed_therm_lib.mod pft_coms.mod

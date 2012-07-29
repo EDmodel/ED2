@@ -1173,7 +1173,8 @@ subroutine ed_opspec_misc
                                     , q10_c3                       & ! intent(in)
                                     , q10_c4                       & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
-   use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
+   use decomp_coms           , only : n_decomp_lim                 & ! intent(in)
+                                    , decomp_scheme                ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , fire_parameter               & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -1866,6 +1867,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_DECOMP_LIM, it must be between 0 and 1. Yours is set to'    &
                     ,n_decomp_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (decomp_scheme < 0 .or. decomp_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid DECOMP_SCHEME, it must be between 0 and 2. Yours is set to'   &
+                    ,decomp_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

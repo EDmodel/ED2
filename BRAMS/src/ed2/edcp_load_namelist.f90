@@ -84,7 +84,7 @@ subroutine read_ednl(iunit,filename)
                                    , radslp                                & ! intent(out)
                                    , thetacrit                             ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim                          & ! intent(out)
-                                   , LloydTaylor                           ! ! intent(out)
+                                   , decomp_scheme                         ! ! intent(out)
    use disturb_coms         , only : include_fire                          & ! intent(out)
                                    , fire_parameter                        & ! intent(out)
                                    , ianth_disturb                         & ! intent(out)
@@ -229,7 +229,6 @@ subroutine read_ednl(iunit,filename)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: i
    integer                      :: err
-   integer                      :: decomp_scheme
    logical                      :: fexists
    logical                      :: op
    !----- Namelist. -----------------------------------------------------------------------!
@@ -400,12 +399,6 @@ subroutine read_ednl(iunit,filename)
       call abort_run('Error reading namelist, ED2_INFO block.','read_ednl'                 &
                     ,'edcp_load_namelist.f90')
    end if
-   
-   !---------------------------------------------------------------------------------------!
-   !    Decomposition scheme is not a real variable in the model, internally we use        !
-   ! Lloyd_Taylor instead.                                                                 !
-   !---------------------------------------------------------------------------------------!
-   LloydTaylor = decomp_scheme == 1
 
    !---------------------------------------------------------------------------------------!
    !     Some variables that ED needs are also defined and used by other BRAMS modules.    !

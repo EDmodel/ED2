@@ -693,6 +693,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%dmean_rh             (ipy:ipy) ,'DMEAN_RH              '     &
                        ,dsetrank,iparallel,.false.,foundvar)                                        
 
+  if (associated(cgrid%dmean_cwd_rh         ))                                             &
+     call hdf_getslab_r(cgrid%dmean_cwd_rh         (ipy:ipy) ,'DMEAN_CWD_RH          '     &
+                       ,dsetrank,iparallel,.false.,foundvar)                                        
+
   if (associated(cgrid%dmean_leaf_resp      ))                                             &
      call hdf_getslab_r(cgrid%dmean_leaf_resp      (ipy:ipy) ,'DMEAN_LEAF_RESP       '     &
                        ,dsetrank,iparallel,.false.,foundvar)
@@ -976,6 +980,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
  
   if (associated(cgrid%mmean_rh             ))                                             &
      call hdf_getslab_r(cgrid%mmean_rh             (ipy:ipy) ,'MMEAN_RH              '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+ 
+  if (associated(cgrid%mmean_cwd_rh         ))                                             &
+     call hdf_getslab_r(cgrid%mmean_cwd_rh         (ipy:ipy) ,'MMEAN_CWD_RH          '     &
                        ,dsetrank,iparallel,.false.,foundvar)
  
   if (associated(cgrid%mmean_leaf_resp      ))                                             &
@@ -1371,6 +1379,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   if (associated(cgrid%qmean_rh             ))                                             &
      call hdf_getslab_r(cgrid%qmean_rh             (:,ipy)   ,'QMEAN_RH              '     &
+                       ,dsetrank,iparallel,.false.,foundvar)                                        
+
+  if (associated(cgrid%qmean_cwd_rh         ))                                             &
+     call hdf_getslab_r(cgrid%qmean_cwd_rh         (:,ipy)   ,'QMEAN_CWD_RH          '     &
                        ,dsetrank,iparallel,.false.,foundvar)                                        
 
   if (associated(cgrid%qmean_leaf_resp      ))                                             &
@@ -2140,11 +2152,16 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%avg_daily_temp,'AVG_DAILY_TEMP ',dsetrank,iparallel,.true.,foundvar)  
    call hdf_getslab_r(csite%avg_monthly_gndwater,'AVG_MONTHLY_GNDWATER ',dsetrank,iparallel,.true.,foundvar)  
    call hdf_getslab_r(csite%mean_rh,'MEAN_RH ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%mean_cwd_rh,'MEAN_CWD_RH ',dsetrank,iparallel,.true.,foundvar)
 
    if (associated(csite%dmean_rh       )) &
         call hdf_getslab_r(csite%dmean_rh,'DMEAN_RH_PA ',dsetrank,iparallel,.false.,foundvar)
    if (associated(csite%mmean_rh       )) &
         call hdf_getslab_r(csite%mmean_rh,'MMEAN_RH_PA ',dsetrank,iparallel,.false.,foundvar)
+   if (associated(csite%dmean_cwd_rh   )) &
+        call hdf_getslab_r(csite%dmean_cwd_rh,'DMEAN_CWD_RH_PA ',dsetrank,iparallel,.false.,foundvar)
+   if (associated(csite%mmean_cwd_rh   )) &
+        call hdf_getslab_r(csite%mmean_cwd_rh,'MMEAN_CWD_RH_PA ',dsetrank,iparallel,.false.,foundvar)
 
    if (associated(csite%dmean_albedo       )) &
         call hdf_getslab_r(csite%dmean_albedo,'DMEAN_ALBEDO_PA ',dsetrank,iparallel,.false.,foundvar)
@@ -2362,7 +2379,11 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memoffs(2)  = 0
    
    if (associated(csite%qmean_rh))                                                         &
-      call hdf_getslab_r(csite%qmean_rh,'QMEAN_RH_PA ',dsetrank,iparallel,.true.,foundvar)
+      call hdf_getslab_r(csite%qmean_rh    ,'QMEAN_RH_PA '                                 &
+                        ,dsetrank,iparallel,.true.,foundvar)
+   if (associated(csite%qmean_cwd_rh))                                                     &
+      call hdf_getslab_r(csite%qmean_cwd_rh,'QMEAN_CWD_RH_PA '                             &
+                        ,dsetrank,iparallel,.true.,foundvar)
 
    if (associated(csite%qmean_albedo       ))                                              &
         call hdf_getslab_r(csite%qmean_albedo,'QMEAN_ALBEDO_PA '                           &

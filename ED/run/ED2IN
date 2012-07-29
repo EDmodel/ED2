@@ -846,9 +846,16 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! DECOMP_SCHEME -- This specifies the dependence of soil decomposition on temperature.  !
-   !                  0.  ED-2.0 default, the original exponential                         !
+   !                  0.  ED-2.1 default, the original exponential (low temperature        !
+   !                      limitation only).                                                !
    !                  1.  Lloyd and Taylor (1994) model                                    !
    !                      [[option 1 requires parameters to be set in xml]]                !
+   !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
+   !                      reaches a maximum at around 38C (using the default parameters),  !
+   !                      then quickly falls to zero at around 50C.  It applies a similar  !
+   !                      function for soil moisture, which allows higher decomposition    !
+   !                      rates when it is close to the optimal, plumetting when it is     !
+   !                      almost saturated.                                                !
    !---------------------------------------------------------------------------------------!
    NL%DECOMP_SCHEME   = 0
    !---------------------------------------------------------------------------------------!

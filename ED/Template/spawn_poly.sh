@@ -101,9 +101,9 @@ execname='ed_2.1-opt'
 #----- Set the main path for the site, pseudo drought and Sheffield met drivers. ----------#
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
-   sitemet='/scratch/ed2_data/met_driver/site_met_driver'
-   pdroughtpath='/scratch/ed2_data/met_driver/drought_met_driver'
-   shefpath='/scratch/ed2_data/met_driver/sheffield'
+   sitemet='/scratch/mlongo/met_driver/site_met_driver'
+   pdroughtpath='/scratch/mlongo/met_driver/drought_met_driver'
+   shefpath='/scratch/mlongo/met_driver/sheffield'
 else
    sitemet=${sitemetdef}
    pdroughtpath=${pdroughtpathdef}
@@ -288,51 +288,52 @@ do
    alphac3=`echo ${oi}      | awk '{print $39}'`
    alphac4=`echo ${oi}      | awk '{print $40}'`
    klowco2=`echo ${oi}      | awk '{print $41}'`
-   rrffact=`echo ${oi}      | awk '{print $42}'`
-   growthresp=`echo ${oi}   | awk '{print $43}'`
-   lwidthgrass=`echo ${oi}  | awk '{print $44}'`
-   lwidthbltree=`echo ${oi} | awk '{print $45}'`
-   lwidthnltree=`echo ${oi} | awk '{print $46}'`
-   q10c3=`echo ${oi}        | awk '{print $47}'`
-   q10c4=`echo ${oi}        | awk '{print $48}'`
-   h2olimit=`echo ${oi}     | awk '{print $49}'`
-   imortscheme=`echo ${oi}  | awk '{print $50}'`
-   ddmortconst=`echo ${oi}  | awk '{print $51}'`
-   isfclyrm=`echo ${oi}     | awk '{print $52}'`
-   icanturb=`echo ${oi}     | awk '{print $53}'`
-   ubmin=`echo ${oi}        | awk '{print $54}'`
-   ugbmin=`echo ${oi}       | awk '{print $55}'`
-   ustmin=`echo ${oi}       | awk '{print $56}'`
-   gamm=`echo ${oi}         | awk '{print $57}'`
-   gamh=`echo ${oi}         | awk '{print $58}'`
-   tprandtl=`echo ${oi}     | awk '{print $59}'`
-   ribmax=`echo ${oi}       | awk '{print $60}'`
-   atmco2=`echo ${oi}       | awk '{print $61}'`
-   thcrit=`echo ${oi}       | awk '{print $62}'`
-   smfire=`echo ${oi}       | awk '{print $63}'`
-   ifire=`echo ${oi}        | awk '{print $64}'`
-   fireparm=`echo ${oi}     | awk '{print $65}'`
-   ipercol=`echo ${oi}      | awk '{print $66}'`
-   runoff=`echo ${oi}       | awk '{print $67}'`
-   imetrad=`echo ${oi}      | awk '{print $68}'`
-   ibranch=`echo ${oi}      | awk '{print $69}'`
-   icanrad=`echo ${oi}      | awk '{print $70}'`
-   crown=`echo   ${oi}      | awk '{print $71}'`
-   ltransvis=`echo ${oi}    | awk '{print $72}'`
-   lreflectvis=`echo ${oi}  | awk '{print $73}'`
-   ltransnir=`echo ${oi}    | awk '{print $74}'`
-   lreflectnir=`echo ${oi}  | awk '{print $75}'`
-   orienttree=`echo ${oi}   | awk '{print $76}'`
-   orientgrass=`echo ${oi}  | awk '{print $77}'`
-   clumptree=`echo ${oi}    | awk '{print $78}'`
-   clumpgrass=`echo ${oi}   | awk '{print $79}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $80}'`
-   igndvap=`echo ${oi}      | awk '{print $81}'`
-   iphen=`echo ${oi}        | awk '{print $82}'`
-   iallom=`echo ${oi}       | awk '{print $83}'`
-   ibigleaf=`echo ${oi}     | awk '{print $84}'`
-   irepro=`echo ${oi}       | awk '{print $85}'`
-   treefall=`echo ${oi}     | awk '{print $86}'`
+   decomp=`echo ${oi}       | awk '{print $42}'`
+   rrffact=`echo ${oi}      | awk '{print $43}'`
+   growthresp=`echo ${oi}   | awk '{print $44}'`
+   lwidthgrass=`echo ${oi}  | awk '{print $45}'`
+   lwidthbltree=`echo ${oi} | awk '{print $46}'`
+   lwidthnltree=`echo ${oi} | awk '{print $47}'`
+   q10c3=`echo ${oi}        | awk '{print $48}'`
+   q10c4=`echo ${oi}        | awk '{print $49}'`
+   h2olimit=`echo ${oi}     | awk '{print $50}'`
+   imortscheme=`echo ${oi}  | awk '{print $51}'`
+   ddmortconst=`echo ${oi}  | awk '{print $52}'`
+   isfclyrm=`echo ${oi}     | awk '{print $53}'`
+   icanturb=`echo ${oi}     | awk '{print $54}'`
+   ubmin=`echo ${oi}        | awk '{print $55}'`
+   ugbmin=`echo ${oi}       | awk '{print $56}'`
+   ustmin=`echo ${oi}       | awk '{print $57}'`
+   gamm=`echo ${oi}         | awk '{print $58}'`
+   gamh=`echo ${oi}         | awk '{print $59}'`
+   tprandtl=`echo ${oi}     | awk '{print $60}'`
+   ribmax=`echo ${oi}       | awk '{print $61}'`
+   atmco2=`echo ${oi}       | awk '{print $62}'`
+   thcrit=`echo ${oi}       | awk '{print $63}'`
+   smfire=`echo ${oi}       | awk '{print $64}'`
+   ifire=`echo ${oi}        | awk '{print $65}'`
+   fireparm=`echo ${oi}     | awk '{print $66}'`
+   ipercol=`echo ${oi}      | awk '{print $67}'`
+   runoff=`echo ${oi}       | awk '{print $68}'`
+   imetrad=`echo ${oi}      | awk '{print $69}'`
+   ibranch=`echo ${oi}      | awk '{print $70}'`
+   icanrad=`echo ${oi}      | awk '{print $71}'`
+   crown=`echo   ${oi}      | awk '{print $72}'`
+   ltransvis=`echo ${oi}    | awk '{print $73}'`
+   lreflectvis=`echo ${oi}  | awk '{print $74}'`
+   ltransnir=`echo ${oi}    | awk '{print $75}'`
+   lreflectnir=`echo ${oi}  | awk '{print $76}'`
+   orienttree=`echo ${oi}   | awk '{print $77}'`
+   orientgrass=`echo ${oi}  | awk '{print $78}'`
+   clumptree=`echo ${oi}    | awk '{print $79}'`
+   clumpgrass=`echo ${oi}   | awk '{print $80}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $81}'`
+   igndvap=`echo ${oi}      | awk '{print $82}'`
+   iphen=`echo ${oi}        | awk '{print $83}'`
+   iallom=`echo ${oi}       | awk '{print $84}'`
+   ibigleaf=`echo ${oi}     | awk '{print $85}'`
+   irepro=`echo ${oi}       | awk '{print $86}'`
+   treefall=`echo ${oi}     | awk '{print $87}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -574,34 +575,46 @@ do
          metcycf=2003
          imetavg=1
          ;;
+      Fazenda_Nossa_Senhora)
+         metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
+         metcyc1=1999
+         metcycf=2002
+         imetavg=1
+         ;;
       Harvard)
          metdriverdb=${sitemet}'/Harvard/Harvard_HEADER'
          metcyc1=1992
          metcycf=2003
          imetavg=1
          ;;
-      Tonzi)
-         metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
-         metcyc1=2000
-         metcycf=2010
-         imetavg=1
-         ;;
-      Manaus_K34)
-         metdriverdb=${sitemet}'/Manaus_K34/Manaus_K34_HEADER'
-         metcyc1=2002
+      Manaus_Km34)
+         metdriverdb=${sitemet}'/Manaus_Km34/Manaus_Km34_HEADER'
+         metcyc1=1999
          metcycf=2005
          imetavg=1
          ;;
-      Rebio_Jaru)
-         metdriverdb=${sitemet}'/Rebio_Jaru/Rebio_Jaru_HEADER'
-         metcyc1=2000
-         metcycf=2002
+      Paracou)
+         metdriverdb=${sitemet}'/Paracou/Paracou_HEADER'
+         metcyc1=2004
+         metcycf=2009
          imetavg=1
          ;;
       Pe-de-Gigante)
          metdriverdb=${sitemet}'/Pe-de-Gigante/Pe-de-Gigante_HEADER'
          metcyc1=2001
          metcycf=2003
+         imetavg=1
+         ;;
+      Petrolina)
+         metdriverdb=${sitemet}'/Petrolina/Petrolina_HEADER'
+         metcyc1=2004
+         metcycf=2011
+         imetavg=1
+         ;;
+      Rebio_Jaru)
+         metdriverdb=${sitemet}'/Rebio_Jaru/Rebio_Jaru_HEADER'
+         metcyc1=1999
+         metcycf=2002
          imetavg=1
          ;;
       Santarem_Km67)
@@ -618,20 +631,8 @@ do
          ;;
       Santarem_Km83)
          metdriverdb=${sitemet}'/Santarem_Km83/Santarem_Km83_HEADER'
-         metcyc1=2001
+         metcyc1=2000
          metcycf=2003
-         imetavg=1
-         ;;
-      Fazenda_Nossa_Senhora)
-         metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
-         metcyc1=1999
-         metcycf=2001
-         imetavg=1
-         ;;
-      Paracou)
-         metdriverdb=${sitemet}'/Paracou/Paracou_HEADER'
-         metcyc1=2004
-         metcycf=2009
          imetavg=1
          ;;
       Sheffield)
@@ -644,6 +645,12 @@ do
          metcyc1=1969
          metcycf=2008
          imetavg=2
+         ;;
+      Tonzi)
+         metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
+         metcyc1=2000
+         metcycf=2010
+         imetavg=1
          ;;
       *)
          echo 'Met driver: '${metdriver}
@@ -1174,6 +1181,7 @@ do
    sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
    sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
    sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
+   sed -i s@mydecomp@${decomp}@g                ${ED2IN}
    sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
    sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
    sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}

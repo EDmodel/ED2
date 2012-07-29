@@ -107,7 +107,7 @@ source(paste(srcdir,"pft.coms.r"       ,sep="/"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v7.RData",sep="/")
+obsrfile = paste(srcdir,"LBA_MIP.v8.RData",sep="/")
 load(file=obsrfile)
 
 #----- Define plot window size ------------------------------------------------------------#
@@ -246,6 +246,7 @@ for (place in myplaces){
    root.resp       = NULL
    growth.resp     = NULL
    hetresp         = NULL
+   cwdresp         = NULL
    reco            = NULL
    mco             = NULL
    npp             = NULL
@@ -319,6 +320,7 @@ for (place in myplaces){
    mmsqu.root.resp = NULL
    mmsqu.plresp    = NULL
    mmsqu.hetresp   = NULL
+   mmsqu.cwdresp   = NULL
    mmsqu.reco      = NULL
    mmsqu.cflxca    = NULL
    mmsqu.cflxst    = NULL
@@ -508,6 +510,7 @@ for (place in myplaces){
              dcycmean$root.resp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$growth.resp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hetresp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$cwdresp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nep            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nee            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$reco           = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -562,6 +565,7 @@ for (place in myplaces){
              dcycmsqu$leaf.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$root.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hetresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$cwdresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nep         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nee         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$reco        = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -599,6 +603,7 @@ for (place in myplaces){
           root.resp       = c(root.resp        ,   mymont$MMEAN.ROOT.RESP                )
           growth.resp     = c(growth.resp      ,   mymont$MMEAN.GROWTH.RESP              )
           hetresp         = c(hetresp          ,   mymont$MMEAN.RH                       )
+          cwdresp         = c(cwdresp          ,   mymont$MMEAN.CWD.RH                   )
           nep             = c(nep              ,   mymont$MMEAN.NEP                      )
           nee             = c(nee              , - mymont$MMEAN.CARBON.AC                
                                                  + mymont$MMEAN.CARBON.ST                )
@@ -624,6 +629,7 @@ for (place in myplaces){
           mmsqu.leaf.resp = c(mmsqu.leaf.resp , mymont$MMSQU.PLRESP                      )
           mmsqu.root.resp = c(mmsqu.root.resp , mymont$MMSQU.PLRESP                      )
           mmsqu.hetresp   = c(mmsqu.hetresp   , mymont$MMSQU.RH                          )
+          mmsqu.cwdresp   = c(mmsqu.cwdresp   , mymont$MMSQU.CWD.RH                      )
           mmsqu.cflxca    = c(mmsqu.cflxca    , mymont$MMSQU.CARBON.AC                   )
           mmsqu.cflxst    = c(mmsqu.cflxst    , mymont$MMSQU.CARBON.ST                   )
           mmsqu.hflxca    = c(mmsqu.hflxca    , mymont$MMSQU.SENSIBLE.AC                 )
@@ -725,6 +731,7 @@ for (place in myplaces){
           dcycmean$leaf.resp   [m,] = mymont$QMEAN.LEAF.RESP
           dcycmean$root.resp   [m,] = mymont$QMEAN.ROOT.RESP
           dcycmean$hetresp     [m,] = mymont$QMEAN.RH
+          dcycmean$cwdresp     [m,] = mymont$QMEAN.CWD.RH
           dcycmean$nep         [m,] = mymont$QMEAN.NEP
           dcycmean$nee         [m,] = - mymont$QMEAN.CARBON.AC + mymont$QMEAN.CARBON.ST
           dcycmean$reco        [m,] = mymont$QMEAN.PLRESP + mymont$QMEAN.RH
@@ -780,6 +787,7 @@ for (place in myplaces){
           dcycmsqu$leaf.resp   [m,] = mymont$QMSQU.LEAF.RESP
           dcycmsqu$root.resp   [m,] = mymont$QMSQU.ROOT.RESP
           dcycmsqu$hetresp     [m,] = mymont$QMSQU.RH
+          dcycmsqu$cwdresp     [m,] = mymont$QMSQU.CWD.RH
           dcycmsqu$nep         [m,] = mymont$QMSQU.NEP
           dcycmsqu$cflxca      [m,] = mymont$QMSQU.CARBON.AC
           dcycmsqu$cflxst      [m,] = mymont$QMSQU.CARBON.ST
@@ -1581,6 +1589,7 @@ for (place in myplaces){
    mont12mn$root.resp   = tapply(X=root.resp    ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$growth.resp = tapply(X=growth.resp  ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hetresp     = tapply(X=hetresp      ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
+   mont12mn$cwdresp     = tapply(X=cwdresp      ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$cflxca      = tapply(X=cflxca       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$cflxst      = tapply(X=cflxst       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$nee         = tapply(X=nee          ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
@@ -1616,6 +1625,7 @@ for (place in myplaces){
    mont12sq$leaf.resp = tapply(X=mmsqu.leaf.resp ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$root.resp = tapply(X=mmsqu.root.resp ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$hetresp   = tapply(X=mmsqu.hetresp   ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
+   mont12sq$cwdresp   = tapply(X=mmsqu.cwdresp   ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$cflxca    = tapply(X=mmsqu.cflxca    ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$cflxst    = tapply(X=mmsqu.cflxst    ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$hflxca    = tapply(X=mmsqu.hflxca    ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
@@ -1650,6 +1660,7 @@ for (place in myplaces){
    mont12sd$leaf.resp  = sqrt(mont12sq$leaf.resp  - mont12mn$leaf.resp^2  ) * srnorm1
    mont12sd$root.resp  = sqrt(mont12sq$root.resp  - mont12mn$root.resp^2  ) * srnorm1
    mont12sd$hetresp    = sqrt(mont12sq$hetresp    - mont12mn$hetresp^2    ) * srnorm1
+   mont12sd$cwdresp    = sqrt(mont12sq$cwdresp    - mont12mn$cwdresp^2    ) * srnorm1
    mont12sd$cflxca     = sqrt(mont12sq$cflxca     - mont12mn$cflxca^2     ) * srnorm1
    mont12sd$cflxst     = sqrt(mont12sq$cflxst     - mont12mn$cflxst^2     ) * srnorm1
    mont12sd$hflxca     = sqrt(mont12sq$hflxca     - mont12mn$hflxca^2     ) * srnorm1
@@ -1673,6 +1684,7 @@ for (place in myplaces){
    mont12sd$leaf.resp  [!is.finite(mont12mn$leaf.resp  )] = 0.
    mont12sd$root.resp  [!is.finite(mont12mn$root.resp  )] = 0.
    mont12sd$hetresp    [!is.finite(mont12mn$hetresp    )] = 0.
+   mont12sd$cwdresp    [!is.finite(mont12mn$cwdresp    )] = 0.
    mont12sd$cflxca     [!is.finite(mont12mn$cflxca     )] = 0.
    mont12sd$cflxst     [!is.finite(mont12mn$cflxst     )] = 0.
    mont12sd$hflxca     [!is.finite(mont12mn$hflxca     )] = 0.
@@ -1708,6 +1720,7 @@ for (place in myplaces){
    dcyc12mn$leaf.resp   =qapply(X=dcycmean$leaf.resp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$root.resp   =qapply(X=dcycmean$root.resp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$hetresp     =qapply(X=dcycmean$hetresp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$cwdresp     =qapply(X=dcycmean$cwdresp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$nep         =qapply(X=dcycmean$nep         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$nee         =qapply(X=dcycmean$nee         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$reco        =qapply(X=dcycmean$reco        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
@@ -1763,6 +1776,7 @@ for (place in myplaces){
    dcyc12sq$leaf.resp  = qapply(X=dcycmsqu$leaf.resp ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$root.resp  = qapply(X=dcycmsqu$root.resp ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$hetresp    = qapply(X=dcycmsqu$hetresp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12sq$cwdresp    = qapply(X=dcycmsqu$cwdresp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$nep        = qapply(X=dcycmsqu$nep       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$cflxca     = qapply(X=dcycmsqu$cflxca    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$cflxst     = qapply(X=dcycmsqu$cflxst    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
@@ -1798,6 +1812,7 @@ for (place in myplaces){
    dcyc12sd$leaf.resp  = sqrt(dcyc12sq$leaf.resp-dcyc12mn$leaf.resp^2       )*srnorm1
    dcyc12sd$root.resp  = sqrt(dcyc12sq$root.resp-dcyc12mn$root.resp^2       )*srnorm1
    dcyc12sd$hetresp    = sqrt(dcyc12sq$hetresp  -dcyc12mn$hetresp^2         )*srnorm1
+   dcyc12sd$cwdresp    = sqrt(dcyc12sq$cwdresp  -dcyc12mn$cwdresp^2         )*srnorm1
    dcyc12sd$nep        = sqrt(dcyc12sq$nep      -dcyc12mn$nep^2             )*srnorm1
    dcyc12sd$cflxca     = sqrt(dcyc12sq$cflxca   -dcyc12mn$cflxca^2          )*srnorm1
    dcyc12sd$cflxst     = sqrt(dcyc12sq$cflxst   -dcyc12mn$cflxst^2          )*srnorm1
@@ -1821,6 +1836,7 @@ for (place in myplaces){
    dcyc12sd$leaf.resp  [!is.finite(dcyc12sd$leaf.resp )] = 0.
    dcyc12sd$root.resp  [!is.finite(dcyc12sd$root.resp )] = 0.
    dcyc12sd$hetresp    [!is.finite(dcyc12sd$hetresp   )] = 0.
+   dcyc12sd$cwdresp    [!is.finite(dcyc12sd$cwdresp   )] = 0.
    dcyc12sd$nep        [!is.finite(dcyc12sd$nep       )] = 0.
    dcyc12sd$cflxca     [!is.finite(dcyc12sd$cflxca    )] = 0.
    dcyc12sd$cflxst     [!is.finite(dcyc12sd$cflxst    )] = 0.

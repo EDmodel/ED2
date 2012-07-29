@@ -398,6 +398,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_monthly_gndwater(ip1:ip2) = 0.0
 
    csite%mean_rh(ip1:ip2) = 0.0
+   csite%mean_cwd_rh(ip1:ip2) = 0.0
    csite%mean_nep(ip1:ip2) = 0.0
      
    csite%A_decomp(ip1:ip2)             = 0.0
@@ -429,6 +430,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%co2budget_gpp             (ip1:ip2) = 0.0
    csite%co2budget_gpp_dbh       (:,ip1:ip2) = 0.0
    csite%co2budget_rh              (ip1:ip2) = 0.0
+   csite%co2budget_cwd_rh          (ip1:ip2) = 0.0
    csite%co2budget_plresp          (ip1:ip2) = 0.0
    csite%co2budget_initialstorage  (ip1:ip2) = 0.0
    csite%co2budget_loss2atm        (ip1:ip2) = 0.0
@@ -457,6 +459,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%dmean_A_decomp        (ip1:ip2) = 0.0
       csite%dmean_Af_decomp       (ip1:ip2) = 0.0
       csite%dmean_rh              (ip1:ip2) = 0.0
+      csite%dmean_cwd_rh          (ip1:ip2) = 0.0
       csite%dmean_co2_residual    (ip1:ip2) = 0.0
       csite%dmean_energy_residual (ip1:ip2) = 0.0
       csite%dmean_water_residual  (ip1:ip2) = 0.0
@@ -470,6 +473,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%mmean_A_decomp        (ip1:ip2) = 0.0
       csite%mmean_Af_decomp       (ip1:ip2) = 0.0
       csite%mmean_rh              (ip1:ip2) = 0.0
+      csite%mmean_cwd_rh          (ip1:ip2) = 0.0
       csite%mmean_co2_residual    (ip1:ip2) = 0.0
       csite%mmean_energy_residual (ip1:ip2) = 0.0
       csite%mmean_water_residual  (ip1:ip2) = 0.0
@@ -481,6 +485,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
    if (iqoutput > 0) then
       csite%qmean_rh              (:,ip1:ip2) = 0.0
+      csite%qmean_cwd_rh          (:,ip1:ip2) = 0.0
       csite%qmean_albedo          (:,ip1:ip2) = 0.0
       csite%qmean_albedo_beam     (:,ip1:ip2) = 0.0
       csite%qmean_albedo_diffuse  (:,ip1:ip2) = 0.0
