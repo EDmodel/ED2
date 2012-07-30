@@ -396,6 +396,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    
    csite%avg_daily_temp      (ip1:ip2) = 0.0
    csite%avg_monthly_gndwater(ip1:ip2) = 0.0
+   csite%avg_monthly_waterdef(ip1:ip2) = 0.0
 
    csite%mean_rh(ip1:ip2) = 0.0
    csite%mean_cwd_rh(ip1:ip2) = 0.0

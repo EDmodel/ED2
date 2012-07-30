@@ -2547,16 +2547,23 @@ $ED2_INFO
    !                       often  will never allow fires.                                  !
    !                   2.  Fire will be triggered with enough biomass and the total soil   !
    !                       water at the top 75 cm falls below a threshold.                 !
+   !                   3.  Fire will be triggered with enough biomass and accumulated      !
+   !                       30-day water deficit exceeds the threshold given by SM_FIRE.    !
+   !                       This is soil independent.                                       !
    ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
    !                   given the amount of fuel (currently the total above-ground          !
    !                   biomass).                                                           !
-   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.    !
-   !                   >= 0. - Minimum relative soil moisture above dry air of the top 1m  !
-   !                           that will prevent fires to happen.                          !
-   !                   <  0. - Minimum mean soil moisture potential in MPa of the top 1m   !
-   !                           that will prevent fires to happen.  The dry air soil        !
-   !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
-   !                           greater than this value.                                    !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2 or 3, and it has different  !
+   !                   meanings.  The sign here matters.                                   !
+   !                   When INCLUDE_FIRE = 2:                                              !
+   !                      >= 0. - Minimum relative soil moisture above dry air of the top  !
+   !                              1m that will prevent fires to happen.                    !
+   !                      <  0. - Minimum mean soil moisture potential in MPa of the top   !
+   !                              1m that will prevent fires to happen.  The dry air soil  !
+   !                              potential is defined as -3.1 MPa, so make sure SM_FIRE   !
+   !                              is greater than this value.                              !
+   !                   When INCLUDE_FIRE = 3, only positive values are allowed.  This is   !
+   !                   the minimum water deficit, in kg/m2/30 days, to trigger fires.      !
    !---------------------------------------------------------------------------------------!
    INCLUDE_FIRE    = 2,
    FIRE_PARAMETER  = 0.5,

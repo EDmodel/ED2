@@ -429,6 +429,12 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%wbudget_loss2drainage = 0.d0
       targetp%wbudget_loss2runoff   = 0.d0
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Water deficit, always start with zero. ------------------------------------------!
+   targetp%water_deficit = 0.d0
+   !---------------------------------------------------------------------------------------!
 
 
    if (print_detailed) call reset_rk4_fluxes(targetp)

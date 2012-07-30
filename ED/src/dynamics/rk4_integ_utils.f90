@@ -390,7 +390,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    rkp%virtual_water   = rkp%virtual_water   + fac * inc%virtual_water
    rkp%virtual_depth   = rkp%virtual_depth   + fac * inc%virtual_depth
 
-  
+   rkp%water_deficit   = rkp%water_deficit   + fac * inc%water_deficit
+
    rkp%upwp = rkp%upwp + fac * inc%upwp
    rkp%wpwp = rkp%wpwp + fac * inc%wpwp
    rkp%tpwp = rkp%tpwp + fac * inc%tpwp
@@ -1250,6 +1251,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
    targetp%cwd_rh           = sourcep%cwd_rh
    targetp%rh               = sourcep%rh
+
+   targetp%water_deficit    = sourcep%water_deficit
 
    do k=rk4site%lsl,nzg      
       targetp%soil_water            (k) = sourcep%soil_water            (k)

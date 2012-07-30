@@ -3484,6 +3484,12 @@ module fuse_fiss_utils
                                           * csite%area                 (donp)              &
                                           + csite%avg_monthly_gndwater (recp)              &
                                           * csite%area                 (recp) )
+
+      csite%avg_monthly_waterdef (recp) = newareai                                         &
+                                        * ( csite%avg_monthly_waterdef (donp)              &
+                                          * csite%area                 (donp)              &
+                                          + csite%avg_monthly_waterdef (recp)              &
+                                          * csite%area                 (recp) )
       !------------------------------------------------------------------------------------!
 
 

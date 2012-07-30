@@ -700,7 +700,7 @@ subroutine hybrid_timestep(cgrid)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
-  targetp%can_enthalpy     = sourcep%can_enthalpy
+   targetp%can_enthalpy     = sourcep%can_enthalpy
    targetp%can_theta        = sourcep%can_theta
    targetp%can_temp         = sourcep%can_temp
    targetp%can_shv          = sourcep%can_shv
@@ -756,6 +756,9 @@ subroutine hybrid_timestep(cgrid)
 
    targetp%cwd_rh           = sourcep%cwd_rh
    targetp%rh               = sourcep%rh
+
+   targetp%water_deficit    = sourcep%water_deficit
+
 
    do k=rk4site%lsl,nzg      
       targetp%soil_water            (k) = sourcep%soil_water            (k)
@@ -877,6 +880,7 @@ subroutine hybrid_timestep(cgrid)
       targetp%avg_sensible_ac        = sourcep%avg_sensible_ac
       targetp%avg_drainage           = sourcep%avg_drainage
       targetp%avg_drainage_heat      = sourcep%avg_drainage_heat
+
 
       do k=rk4site%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
@@ -1059,6 +1063,8 @@ subroutine hybrid_timestep(cgrid)
    rkp%qpwp = rkp%qpwp + fac * inc%qpwp
    rkp%cpwp = rkp%cpwp + fac * inc%cpwp
 
+   rkp%water_deficit   = rkp%water_deficit      + fac * inc%water_deficit
+
    do ico = 1,cpatch%ncohorts
       rkp%leaf_water (ico) = rkp%leaf_water (ico) + fac * inc%leaf_water (ico)
       rkp%leaf_energy(ico) = rkp%leaf_energy(ico) + fac * inc%leaf_energy(ico)
@@ -1117,6 +1123,7 @@ subroutine hybrid_timestep(cgrid)
       rkp%avg_qthroughfall   = rkp%avg_qthroughfall   + fac * inc%avg_qthroughfall
       rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac
+
 
       do k=rk4site%lsl,nzg
          rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)

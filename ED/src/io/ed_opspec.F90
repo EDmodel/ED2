@@ -1895,14 +1895,26 @@ end do
       end if
    end if
 
-   
-   if (sm_fire < -3.1 .or. sm_fire > 1.) then
-      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid SM_FIRE, it must be between -3.1 and 1.  Yours is set to'     &
-                    ,sm_fire,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
+   select case (include_fire)
+   case(3)
+      if (sm_fire < 0.) then
+         write (reason,fmt='(a,1x,a,1x,i4,a,1x,es12.5,a)')                                 &
+                        'Invalid SM_FIRE, it must be non-negative'                         &
+                       ,'when INLCUDE_FIRE is ',include_fire,'.  Your SM_FIRE is set to'   &
+                       ,sm_fire,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+   case(0:2)
+      if (sm_fire < -3.1 .or. sm_fire > 1.) then
+         write (reason,fmt='(a,1x,a,1x,i4,a,1x,es12.5,a)')                                 &
+                        'Invalid SM_FIRE, it must be between -3.1 and 1.0'                 &
+                       ,'when INLCUDE_FIRE is ',include_fire,'.  Your SM_FIRE is set to'   &
+                       ,sm_fire,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+   end select
 
    if (ianth_disturb < 0 .or. ianth_disturb > 1) then
       write (reason,fmt='(a,1x,i4,a)') &

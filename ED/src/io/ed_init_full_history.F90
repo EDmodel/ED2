@@ -2151,6 +2151,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rough,'ROUGH ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%avg_daily_temp,'AVG_DAILY_TEMP ',dsetrank,iparallel,.true.,foundvar)  
    call hdf_getslab_r(csite%avg_monthly_gndwater,'AVG_MONTHLY_GNDWATER ',dsetrank,iparallel,.true.,foundvar)  
+   call hdf_getslab_r(csite%avg_monthly_waterdef,'AVG_MONTHLY_WATERDEF ',dsetrank,iparallel,.true.,foundvar)  
    call hdf_getslab_r(csite%mean_rh,'MEAN_RH ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%mean_cwd_rh,'MEAN_CWD_RH ',dsetrank,iparallel,.true.,foundvar)
 

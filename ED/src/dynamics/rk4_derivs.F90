@@ -1797,6 +1797,15 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
    initp%wflxac = wflxac
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Water deficit.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   dinitp%water_deficit = - (wflxac + rk4site%pcpg)
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !     Integrate diagnostic variables - These are not activated unless fast file-type    !
    ! outputs are selected. This will speed up the integrator.                              !

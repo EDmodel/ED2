@@ -399,9 +399,11 @@ module rk4_driver
       real(kind=8)                    :: gnd_water
       real(kind=8)                    :: psiplusz
       real(kind=8)                    :: mcheight
+      real(kind=4)                    :: step_waterdef
       real(kind=4)                    :: can_rvap
       !----- Local contants ---------------------------------------------------------------!
-      real        , parameter         :: tendays_sec=10.*day_sec
+      real        , parameter         :: tendays_sec    = 10. * day_sec
+      real        , parameter         :: thirtydays_sec = 30. * day_sec
       !----- External function ------------------------------------------------------------!
       real        , external          :: sngloff
       !------------------------------------------------------------------------------------!
@@ -542,6 +544,15 @@ module rk4_driver
       ! functions, preserve this variable and its dependencies in all contexts.            !
       !------------------------------------------------------------------------------------!
       csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Update the water deficit.  This is done as a 30-day running average.           !
+      !------------------------------------------------------------------------------------!
+      step_waterdef                   = sngloff(initp%water_deficit,tiny_offset)
+      csite%avg_monthly_waterdef(ipa) = csite%avg_monthly_waterdef(ipa) + step_waterdef
       !------------------------------------------------------------------------------------!
 
 

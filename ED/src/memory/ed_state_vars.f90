@@ -727,6 +727,9 @@ module ed_state_vars
      ! Average monthly ground water [kg/m2], used for fire ignition
      real , pointer,dimension(:) :: avg_monthly_gndwater
 
+     ! Average monthly water deficit [kg/m2], used for fire ignition
+     real , pointer,dimension(:) :: avg_monthly_waterdef
+
      ! average of rh and cwd_rh [umol/m2/s] over FRQSTATE
      real , pointer,dimension(:) :: mean_rh
      real , pointer,dimension(:) :: mean_cwd_rh
@@ -3134,6 +3137,7 @@ contains
 
     allocate(csite%avg_daily_temp(npatches))  
     allocate(csite%avg_monthly_gndwater(npatches))  
+    allocate(csite%avg_monthly_waterdef(npatches))  
     allocate(csite%mean_rh(npatches))
     allocate(csite%mean_cwd_rh(npatches))
     allocate(csite%mean_nep(npatches))
@@ -4356,6 +4360,7 @@ contains
     nullify(csite%A_c_max) 
     nullify(csite%avg_daily_temp)
     nullify(csite%avg_monthly_gndwater)
+    nullify(csite%avg_monthly_waterdef)
     nullify(csite%mean_rh)
     nullify(csite%dmean_rh)
     nullify(csite%mmean_rh)
@@ -5583,6 +5588,7 @@ contains
 
     if(associated(csite%avg_daily_temp               )) deallocate(csite%avg_daily_temp               )
     if(associated(csite%avg_monthly_gndwater         )) deallocate(csite%avg_monthly_gndwater         )
+    if(associated(csite%avg_monthly_waterdef         )) deallocate(csite%avg_monthly_waterdef         )
     if(associated(csite%mean_rh                      )) deallocate(csite%mean_rh                      )
     if(associated(csite%dmean_rh                     )) deallocate(csite%dmean_rh                     )
     if(associated(csite%qmean_rh                     )) deallocate(csite%qmean_rh                     )
@@ -6078,6 +6084,7 @@ contains
          osite%wai(opa)                         = isite%wai(ipa)
          osite%avg_daily_temp(opa)              = isite%avg_daily_temp(ipa)
          osite%avg_monthly_gndwater(opa)        = isite%avg_monthly_gndwater(ipa)
+         osite%avg_monthly_waterdef(opa)        = isite%avg_monthly_waterdef(ipa)
          osite%mean_rh(opa)                     = isite%mean_rh(ipa)
          osite%mean_cwd_rh(opa)                 = isite%mean_cwd_rh(ipa)
          osite%mean_nep(opa)                    = isite%mean_nep(ipa)
@@ -6386,6 +6393,7 @@ contains
     siteout%wai(1:inc)                  = pack(sitein%wai,logmask)
     siteout%avg_daily_temp(1:inc)       = pack(sitein%avg_daily_temp,logmask)
     siteout%avg_monthly_gndwater(1:inc) = pack(sitein%avg_monthly_gndwater,logmask)
+    siteout%avg_monthly_waterdef(1:inc) = pack(sitein%avg_monthly_waterdef,logmask)
     siteout%mean_rh(1:inc)              = pack(sitein%mean_rh,logmask)
     siteout%mean_cwd_rh(1:inc)          = pack(sitein%mean_cwd_rh,logmask)
     siteout%mean_nep(1:inc)             = pack(sitein%mean_nep,logmask)
@@ -12711,6 +12719,13 @@ contains
            call vtable_edio_r(npts,csite%avg_monthly_gndwater,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'AVG_MONTHLY_GNDWATER :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if  
+
+      if (associated(csite%avg_monthly_waterdef)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_monthly_waterdef,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_MONTHLY_WATERDEF :31:hist:anal:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Running average of water deficit','[kg/m2/30days]','NA') 
       end if  
 
       if (associated(csite%co2budget_plresp)) then

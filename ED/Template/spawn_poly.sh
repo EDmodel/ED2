@@ -564,7 +564,7 @@ do
       #------------------------------------------------------------------------------------#
       case ${metdriver} in
       Bananal)
-         metdriverdb=${sitemet}'/Bananal_Island/Bananal_HEADER'
+         metdriverdb=${sitemet}'/Bananal/Bananal_HEADER'
          metcyc1=2004
          metcycf=2006
          imetavg=1

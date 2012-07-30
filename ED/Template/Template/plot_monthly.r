@@ -335,6 +335,7 @@ for (place in myplaces){
    mmsqu.wflxgc    = NULL
    mmsqu.evap      = NULL
    mmsqu.transp    = NULL
+   water.deficit   = NULL
 
    #----- Cohort level lists. -------------------------------------------------------------#
    lightco      = list()
@@ -825,6 +826,13 @@ for (place in myplaces){
           fast.soil.c   = c(fast.soil.c  ,sum(mymont$FAST.SOIL.C       * areapa))
           slow.soil.c   = c(slow.soil.c  ,sum(mymont$SLOW.SOIL.C       * areapa))
           struct.soil.c = c(struct.soil.c,sum(mymont$STRUCTURAL.SOIL.C * areapa))
+          #--------------------------------------------------------------------------------#
+
+
+          #--------------------------------------------------------------------------------#
+          #     Get the water deficit.                                                     #
+          #--------------------------------------------------------------------------------#
+          water.deficit = c(water.deficit,sum(mymont$AVG.MONTHLY.WATERDEF * areapa))
           #--------------------------------------------------------------------------------#
 
 
@@ -2243,20 +2251,32 @@ for (place in myplaces){
          obsnow = paste("obs.",iata,sep="")
       }#end if
 
+      #------------------------------------------------------------------------------------#
+      #     Last check to see if we should plot it or not.                                 #
+      #------------------------------------------------------------------------------------#
       plotit       = plotit && obsnow %in% ls()
+      if (plotit){
+         thisobs = get(obsnow)
+         obswhen = thisobs$tomonth
+         sel     = thismonth >= min(obswhen) & thismonth <= max(obswhen)
+         plotit  = any(sel)
+      }#end if
+      #------------------------------------------------------------------------------------#
 
 
 
 
 
+      #------------------------------------------------------------------------------------#
+      #     Enter here only if there is any overlap of time between observations and       #
+      # model.                                                                             #
+      #------------------------------------------------------------------------------------#
       if (plotit){
          #---------------------------------------------------------------------------------#
          #    Copy the observations to a scratch variable.                                 #
          #---------------------------------------------------------------------------------#
-         thisobs = get(obsnow)
          mnvar   = paste("emean",vname,sep=".")
          obsmean = thisobs[[mnvar]]
-         obswhen = thisobs$tomonth
          #---------------------------------------------------------------------------------#
 
 
@@ -2272,15 +2292,14 @@ for (place in myplaces){
 
 
          #----- Define the number of layers. ----------------------------------------------#
-         sel       = thismonth >= min(obswhen) & thismonth <= max(obswhen)
-         thiswhen  = thismonth
-         thismean  = get(vname)
+         thiswhen  = thismonth [sel]
+         thismean  = get(vname)[sel]
          #---------------------------------------------------------------------------------# 
 
 
 
          #----- Find the plot range. ------------------------------------------------------#
-         ylimit    = range(c(thismean[sel],obsmean),na.rm=TRUE)
+         ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
          #----- Expand the upper range in so the legend doesn't hide things. --------------#
          if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
             ylimit[1] = -1
@@ -2412,6 +2431,28 @@ for (place in myplaces){
 
 
          #---------------------------------------------------------------------------------#
+         #      Some observations do not have enough measurements to make a full year.  If #
+         # this is the case, then we must split the observations into smaller intervals so #
+         # the polygon works.  In case no observation is available, make the vectors NULL  #
+         # so we will not plot observations at all.                                        #
+         #---------------------------------------------------------------------------------#
+         if (all(is.na(obsmean+obssdev))){
+            obs.x     = NULL
+            obs.ylow  = NULL
+            obs.yhigh = NULL
+         }else{
+            #------ Find the periods with continous data. ---------------------------------#
+            ok        = is.finite(obsmean+obssdev)
+            obs.x     = montmont[ok]
+            obs.ylow  = obsmean [ok] - obssdev[ok]
+            obs.yhigh = obsmean [ok] + obssdev[ok]
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
          outdir   = paste(outpref,"compmmean",sep="/")
@@ -2421,28 +2462,27 @@ for (place in myplaces){
 
 
 
-         #----- Define the number of layers. ----------------------------------------------#
+         #---------------------------------------------------------------------------------# 
+         #    Define the number of layers.  Some variables have no standard deviation in   #
+         # the model, so Make them 0 if this is the case.                                  #
+         #---------------------------------------------------------------------------------# 
          thismean  = mont12mn[[vname]]
-         thissdev  = mont12sd[[vname]]
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #---------------------------------------------------------------------------------# 
-         #    Some variables have no standard deviation in the model.  Make them 0 if this #
-         # is the case.                                                                    #
-         #---------------------------------------------------------------------------------# 
-         if (length(thissdev) == 0){
+         thissdev = mont12sd[[vname]]
+         if (length(mont12sd[[vname]]) == 0){
             thissdev = 0. * thismean
+         }else{
+            thissdev = mont12sd[[vname]]
          }#end if
+         mod.x     = montmont
+         mod.ylow  = thismean - thissdev
+         mod.yhigh = thismean + thissdev 
          #---------------------------------------------------------------------------------# 
 
 
 
          #----- Find the plot range. ------------------------------------------------------#
          if (plotsd){
-            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
-                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
+            ylimit    = range(c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh),na.rm=TRUE)
          }else{
             ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
          }#end if
@@ -2491,11 +2531,17 @@ for (place in myplaces){
                abline(v=montplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
             }#end if
             if (plotsd){
-               err.x = c(montmont,rev(montmont),NA,montmont,rev(montmont))
-               err.y = c(thismean + thissdev,rev(thismean) - rev(thissdev),NA
-                        ,obsmean  + obssdev ,rev(obsmean ) - rev(obssdev )   )
-               polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                      ,lty="solid",lwd=shwd)
+               if (is.null(obs.x)){
+                  err.x = c(mod.x,rev(mod.x))
+                  err.y = c(mod.ylow,rev(mod.yhigh))
+                  polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1],density=dens[1]
+                         ,lty="solid",lwd=shwd[1])
+               }else{
+                  err.x = c(mod.x,rev(mod.x),NA,obs.x,rev(obs.x))
+                  err.y = c(mod.ylow,rev(mod.yhigh),NA,obs.ylow,rev(obs.yhigh))
+                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
+                         ,lty="solid",lwd=shwd)
+               }#end if
             }#end if
             points(x=montmont,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
                   ,pch=16,cex=1.0)
@@ -2578,6 +2624,20 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
 
 
+
+         #---------------------------------------------------------------------------------#
+         #      Some observations do not have enough measurements to make a full year.  If #
+         # this is the case, then we must split the observations into smaller intervals so #
+         # the polygon works.  In case no observation is available, make the vectors NULL  #
+         # so we will not plot observations at all.                                        #
+         #---------------------------------------------------------------------------------#
+         obs.ylow  = obsmean - obssdev
+         obs.yhigh = obsmean + obssdev
+         #---------------------------------------------------------------------------------#
+
+
+
+
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
@@ -2590,33 +2650,28 @@ for (place in myplaces){
 
 
 
-         #----- Define the number of layers. ----------------------------------------------#
+
+         #---------------------------------------------------------------------------------# 
+         #    Define the number of layers.  Some variables have no standard deviation in   #
+         # the model, so Make them 0 if this is the case.  We also append the last hour    #
+         # before the first one so 00 UTC appears in the left.                             #
+         #---------------------------------------------------------------------------------# 
          thismean  = dcyc12mn[[vname]]
-         thissdev  = dcyc12sd[[vname]]
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #---------------------------------------------------------------------------------# 
-         #    Some variables have no standard deviation in the model.  Make them 0 if this #
-         # is the case.                                                                    #
-         #---------------------------------------------------------------------------------# 
-         if (length(thissdev) == 0){
-            thissdev = 0. * thismean
-         }#end if
-         #---------------------------------------------------------------------------------# 
-
-
-         #----- Append the last hour before the first one. --------------------------------#
          thismean  = cbind(thismean[,ndcycle],thismean)
-         thissdev  = cbind(thissdev[,ndcycle],thissdev)
+         if (length(dcyc12sd[[vname]]) == 0){
+            thissdev = 0. * thismean
+         }else{
+            thissdev = dcyc12sd[[vname]]
+           thissdev  = cbind(thissdev[,ndcycle],thissdev)
+         }#end if
+         mod.ylow  = thismean - thissdev
+         mod.yhigh = thismean + thissdev 
          #---------------------------------------------------------------------------------# 
 
 
          #----- Find the plot range. ------------------------------------------------------#
          if (plotsd){
-            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
-                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
+            ylimit    = range(c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh),na.rm=TRUE)
          }else{
             ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
          }#end if
@@ -2663,14 +2718,34 @@ for (place in myplaces){
                   abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
                }#end if
                if (plotsd){
-                  err.x = c(thisday,rev(thisday),NA,thisday,rev(thisday))
-                  err.y = c(thismean[pmon,] + thissdev[pmon,]
-                           ,rev(thismean[pmon,]) - rev(thissdev[pmon,])
-                           ,NA
-                           ,obsmean[pmon,]      + obssdev[pmon,]
-                           ,rev(obsmean[pmon,]) - rev(obssdev[pmon,]))
-                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                         ,lty="solid",lwd=shwd)
+                  mod.x.now     = thisday
+                  mod.ylow.now  = mod.ylow [pmon,]
+                  mod.yhigh.now = mod.yhigh[pmon,]
+                  #------ Find the periods with continous data. ---------------------------#
+                  ok        = is.finite(obs.ylow[pmon,]) & is.finite(obs.yhigh[pmon,])
+                  if (any(ok)){
+                     obs.x.now     = thisday       [ok]
+                     obs.ylow.now  = obs.ylow [pmon,ok]
+                     obs.yhigh.now = obs.yhigh[pmon,ok]
+                  }else{
+                     obs.x.now     = NULL
+                     obs.ylow.now  = NULL
+                     obs.yhigh.now = NULL
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+                  if (is.null(obs.x.now)){
+                     err.x = c(mod.x.now,rev(mod.x.now))
+                     err.y = c(mod.ylow.now,rev(mod.yhigh.now))
+                     polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1]
+                            ,density=dens[1],lty="solid",lwd=shwd[1])
+                  }else{
+                     err.x = c(mod.x.now,rev(mod.x.now),NA,obs.x.now,rev(obs.x.now))
+                     err.y = c(mod.ylow.now,rev(mod.yhigh.now),NA
+                              ,obs.ylow.now,rev(obs.yhigh.now))
+                     polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
+                            ,lty="solid",lwd=shwd)
+                  }#end if
                }#end if
                points(x=thisday,y=thismean[pmon,],col=lcolours[1]
                      ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)

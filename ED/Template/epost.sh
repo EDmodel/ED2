@@ -504,7 +504,8 @@ do
       sed -i s@mymetcycz@${metcycz}@g             ${here}/${polyname}/${script}
 
       #----- Run R to get the plots. ------------------------------------------------------#
-      comm="R CMD BATCH ${here}/${polyname}/${script} ${here}/${polyname}/${epostout}"
+      rbin="R CMD BATCH --no-save --no-restore"
+      comm="${rbin} ${here}/${polyname}/${script} ${here}/${polyname}/${epostout}"
 
       #------------------------------------------------------------------------------------#
       #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
