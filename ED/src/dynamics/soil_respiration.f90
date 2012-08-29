@@ -389,7 +389,7 @@ subroutine resp_f_decomp(csite,ipa,Lc)
    use ed_state_vars, only : sitetype               ! ! structure
    use decomp_coms  , only : r_stsc                 & ! intent(in)
                            , N_immobil_supply_scale & ! intent(in)
-                           , K1                     & ! intent(in)
+                           , decay_rate_stsc        & ! intent(in)
                            , n_decomp_lim           ! ! intent(in)
    use pft_coms     , only : c2n_structural         & ! intent(in)
                            , c2n_slow               ! ! intent(in)
@@ -415,7 +415,7 @@ subroutine resp_f_decomp(csite,ipa,Lc)
    end if
    
    if (n_decomp_lim == 1) then
-      N_immobilization_demand = csite%A_decomp(ipa) * Lc * K1                              &
+      N_immobilization_demand = csite%A_decomp(ipa) * Lc * decay_rate_stsc                 &
                               * csite%structural_soil_C(ipa)                               &
                               * ((1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
       
@@ -443,15 +443,15 @@ end subroutine resp_f_decomp
 !------------------------------------------------------------------------------------------!
 subroutine resp_rh(csite,ipa,Lc)
 
-   use ed_state_vars, only : sitetype       ! ! structure
-   use consts_coms  , only : kgCday_2_umols ! ! intent(in)
-   use decomp_coms  , only : K1             & ! intent(in)
-                           , K2             & ! intent(in)
-                           , K3             & ! intent(in)
-                           , r_fsc          & ! intent(in)
-                           , r_ssc          & ! intent(in)
-                           , r_stsc         & ! intent(in)
-                           , cwd_frac       ! ! intent(in)
+   use ed_state_vars, only : sitetype        ! ! structure
+   use consts_coms  , only : kgCday_2_umols  ! ! intent(in)
+   use decomp_coms  , only : decay_rate_stsc & ! intent(in)
+                           , decay_rate_fsc  & ! intent(in)
+                           , decay_rate_ssc  & ! intent(in)
+                           , r_fsc           & ! intent(in)
+                           , r_ssc           & ! intent(in)
+                           , r_stsc          & ! intent(in)
+                           , cwd_frac        ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -467,10 +467,12 @@ subroutine resp_rh(csite,ipa,Lc)
 
 
    !----- The following variables have units of [umol_CO2/m2/s]. --------------------------!
-   fast_C_loss       = kgCday_2_umols * csite%A_decomp(ipa) * K2 * csite%fast_soil_C(ipa)
-   structural_C_loss = kgCday_2_umols * csite%A_decomp(ipa) * Lc * K1                      &
+   fast_C_loss       = kgCday_2_umols * csite%A_decomp(ipa)                                &
+                     * decay_rate_fsc * csite%fast_soil_C(ipa)
+   structural_C_loss = kgCday_2_umols * csite%A_decomp(ipa) * Lc * decay_rate_stsc         &
                      * csite%structural_soil_C(ipa)* csite%f_decomp(ipa)
-   slow_C_loss       = kgCday_2_umols * csite%A_decomp(ipa) * K3 * csite%slow_soil_C(ipa)
+   slow_C_loss       = kgCday_2_umols * csite%A_decomp(ipa)                                &
+                     * decay_rate_ssc * csite%slow_soil_C(ipa)
    !---------------------------------------------------------------------------------------!
 
    !----- Find the heterotrophic respiration and the fraction due to CWD. -----------------!
@@ -498,9 +500,9 @@ subroutine update_C_and_N_pools(cgrid)
    use ed_state_vars, only : edtype          & ! structure
                            , polygontype     & ! structure
                            , sitetype        ! ! structure
-   use decomp_coms  , only : K1              & ! intent(in)
-                           , K2              & ! intent(in)
-                           , K3              & ! intent(in)
+   use decomp_coms  , only : decay_rate_fsc  & ! intent(in)
+                           , decay_rate_stsc & ! intent(in)
+                           , decay_rate_ssc  & ! intent(in)
                            , r_stsc          ! ! intent(in)
    use pft_coms     , only : c2n_slow        & ! intent(in)
                            , c2n_structural  ! ! intent(in)
@@ -544,23 +546,26 @@ subroutine update_C_and_N_pools(cgrid)
             end if
       
             !----- Fast pools. ------------------------------------------------------------!
-            fast_C_loss = csite%today_A_decomp(ipa) * K2 * csite%fast_soil_C(ipa)
-            fast_N_loss = csite%today_A_decomp(ipa) * K2 * csite%fast_soil_N(ipa)
+            fast_C_loss = csite%today_A_decomp(ipa) * decay_rate_fsc                       &
+                        * csite%fast_soil_C(ipa)
+            fast_N_loss = csite%today_A_decomp(ipa) * decay_rate_fsc                       &
+                        * csite%fast_soil_N(ipa)
 
             !----- Structural pools. ------------------------------------------------------!
-            structural_C_loss = csite%today_Af_decomp(ipa) * Lc * K1                       &
+            structural_C_loss = csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc          &
                               * csite%structural_soil_C(ipa)
-            structural_L_loss = csite%today_Af_decomp(ipa) * Lc * K1                       &
+            structural_L_loss = csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc          &
                               * csite%structural_soil_L(ipa)
 
             !----- Slow pools. ------------------------------------------------------------!
             slow_C_input = (1.0 - r_stsc) * structural_C_loss
-            slow_C_loss  = csite%today_A_decomp(ipa) * K3 * csite%slow_soil_C(ipa)
+            slow_C_loss  = csite%today_A_decomp(ipa) * decay_rate_ssc                      &
+                         * csite%slow_soil_C(ipa)
             
             !----- Mineralized pool. ------------------------------------------------------!
             csite%mineralized_N_input = fast_N_loss + slow_C_loss / c2n_slow
             csite%mineralized_N_loss  = csite%total_plant_nitrogen_uptake(ipa)             &
-                                      + csite%today_Af_decomp(ipa) * Lc * K1               &
+                                      + csite%today_Af_decomp(ipa) * Lc * decay_rate_stsc  &
                                       * csite%structural_soil_C(ipa)                       &
                                       * ( (1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
 

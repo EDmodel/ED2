@@ -1559,7 +1559,7 @@ subroutine init_pft_photo_params()
       case (0,1)
          ssfact = 3.0
       case (2)
-         ssfact = 2.0
+         ssfact = 3.0
       end select
    end select
    !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
@@ -1763,7 +1763,8 @@ subroutine init_decomp_params()
    use grid_coms   , only : nzg                         ! ! intent(in)
    use consts_coms , only : yr_day                      & ! intent(in)
                           , t00                         ! ! intent(in)
-   use decomp_coms , only : decomp_scheme               & ! intent(in)
+   use decomp_coms , only : n_decomp_lim                & ! intent(in)
+                          , decomp_scheme               & ! intent(in)
                           , resp_opt_water              & ! intent(out)
                           , resp_water_below_opt        & ! intent(out)
                           , resp_water_above_opt        & ! intent(out)
@@ -1773,9 +1774,9 @@ subroutine init_decomp_params()
                           , r_fsc                       & ! intent(out)
                           , r_stsc                      & ! intent(out)
                           , r_ssc                       & ! intent(out)
-                          , K1                          & ! intent(out)
-                          , K2                          & ! intent(out)
-                          , K3                          & ! intent(out)
+                          , decay_rate_stsc             & ! intent(out)
+                          , decay_rate_fsc              & ! intent(out)
+                          , decay_rate_ssc              & ! intent(out)
                           , rh_lloyd_1                  & ! intent(out)
                           , rh_lloyd_2                  & ! intent(out)
                           , rh_lloyd_3                  & ! intent(out)
@@ -1800,28 +1801,28 @@ subroutine init_decomp_params()
    r_stsc                    = 0.3
    r_ssc                     = 1.0
    !---------------------------------------------------------------------------------------!
-   ! MLO.  I found K3 strange given that it should be a "slow pool".  I went back to ED-1  !
-   !       code and found this comment:                                                    !
-   !                                                                                       !
-   !       "K3 is high bc we wanted to added back the n immobilization story without       !
-   !        dist_typeing the slow pool"                                                    !
-   !                                                                                       !
-   !       I also checked the Parton et al. (1993) GBC about the century model, and there  !
-   !       it seems the value should be 0.2, not 100.2.  Does any one know what is the     !
-   !       immobilization story, and whether it still holds? Thanks.                       !
-   !                                                                                       !
-   !       I temporarily reverted the slow carbon decomposition to 0.2 when decomp_scheme  !
-   ! is 2, if it becomes a huge pool, I will switch back.                                  !
+   ! MLO.  After talking to Paul, it seems the decay rate for the slow carbon pool is      !
+   !       artificially high for when nitrogen limitation is turned on.  If it is turned   !
+   !       off, however, then the slow carbon will disappear very quickly.  I don't want   !
+   !       to mess other people's results, so I will change the rate only when             !
+   !       decomp_scheme is 2, and only when nitrogen limitation is off.  I think this     !
+   !       should be applied to all schemes, but I will let the users of these schemes to  !
+   !       decide.                                                                         !
    !---------------------------------------------------------------------------------------!
    select case (decomp_scheme)
    case (0,1)
-      K1                        =   4.5 / yr_day
-      K2                        =  11.0 / yr_day
-      K3                        = 100.2 / yr_day
+      decay_rate_fsc  =  11.0 / yr_day    ! former K2
+      decay_rate_stsc =   4.5 / yr_day    ! former K1
+      decay_rate_ssc  = 100.2 / yr_day    ! former K3
    case (2)
-      K1                        =   4.5 / yr_day
-      K2                        =  11.0 / yr_day
-      K3                        =   0.2 / yr_day
+      decay_rate_fsc  =  11.0 / yr_day    ! former K2
+      decay_rate_stsc =   4.5 / yr_day    ! former K1
+      select case (n_decomp_lim)
+      case (0)
+         decay_rate_ssc  =   0.2 / yr_day ! former K3
+      case (1)
+         decay_rate_ssc  = 100.2 / yr_day ! former K3
+      end select
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -1843,10 +1844,10 @@ subroutine init_decomp_params()
    rh_decay_high  = 0.60
    rh_low_temp    = 18.0 + t00
    rh_high_temp   = 45.0 + t00
-   rh_decay_dry   = 10.0
-   rh_decay_wet   = 60.0
-   rh_dry_smoist  = 0.36
-   rh_wet_smoist  = 0.96
+   rh_decay_dry   = 12.0
+   rh_decay_wet   = 36.0
+   rh_dry_smoist  = 0.48
+   rh_wet_smoist  = 0.98
    !---------------------------------------------------------------------------------------!
 
 
@@ -2059,7 +2060,8 @@ subroutine init_pft_mort_params()
                           , lnexp_max                  & ! intent(in)
                           , onethird                   & ! intent(in)
                           , twothirds                  ! ! intent(in)
-   use ed_misc_coms, only : ibigleaf                   ! ! intent(in)
+   use ed_misc_coms, only : ibigleaf                   & ! intent(in)
+                          , iallom                     ! ! intent(in)
    use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
                           , time2canopy                ! ! intent(in)
 
@@ -2266,13 +2268,24 @@ subroutine init_pft_mort_params()
       seedling_mortality(16)   = 0.95
       seedling_mortality(17)   = 0.95
    case (1)
-      seedling_mortality(1)     = 0.9500
-      seedling_mortality(2:4)   = onethird
-      seedling_mortality(5)     = 0.9500
-      seedling_mortality(6:8)   = onethird
-      seedling_mortality(9:11)  = onethird
-      seedling_mortality(12:16) = 0.9500
-      seedling_mortality(17)    = onethird
+      select case (iallom)
+      case (0,1)
+         seedling_mortality(1)     = 0.9500
+         seedling_mortality(2:4)   = onethird
+         seedling_mortality(5)     = 0.9500
+         seedling_mortality(6:8)   = onethird
+         seedling_mortality(9:11)  = onethird
+         seedling_mortality(12:16) = 0.9500
+         seedling_mortality(17)    = onethird
+      case (2)
+         seedling_mortality(1)     = 0.9500
+         seedling_mortality(2:4)   = 0.4000
+         seedling_mortality(5)     = 0.9500
+         seedling_mortality(6:8)   = 0.4000
+         seedling_mortality(9:11)  = 0.4000
+         seedling_mortality(12:16) = 0.9500
+         seedling_mortality(17)    = 0.4000
+      end select
    end select
 
    treefall_s_gtht(1:17)    = 0.0
@@ -2721,291 +2734,206 @@ subroutine init_pft_alloc_params()
    !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
    ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
    ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
-   ! guess is 1/3 of the critical DBH.                                                     !
+   ! guess is about 1/3 of the critical DBH for trees.                                     !
    !---------------------------------------------------------------------------------------!
-   dbh_bigleaf( 1) = dbh_crit( 1)
-   dbh_bigleaf( 2) = dbh_crit( 2) ! 29.69716
-   dbh_bigleaf( 3) = dbh_crit( 3) ! 31.41038
-   dbh_bigleaf( 4) = dbh_crit( 4) ! 16.67251
-   dbh_bigleaf( 5) = dbh_crit( 5)
-   dbh_bigleaf( 6) = dbh_crit( 6) * onethird
-   dbh_bigleaf( 7) = dbh_crit( 7) * onethird
-   dbh_bigleaf( 8) = dbh_crit( 8) * onethird
-   dbh_bigleaf( 9) = dbh_crit( 9) * onethird
-   dbh_bigleaf(10) = dbh_crit(10) * onethird
-   dbh_bigleaf(11) = dbh_crit(11) * onethird
-   dbh_bigleaf(12) = dbh_crit(12)
-   dbh_bigleaf(13) = dbh_crit(13)
-   dbh_bigleaf(14) = dbh_crit(14)
-   dbh_bigleaf(15) = dbh_crit(15)
-   dbh_bigleaf(16) = dbh_crit(16)
-   dbh_bigleaf(17) = 30.0
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     DBH-leaf and dead biomass allometries.  We must define the parameters differently !
-   ! depending on the type of vegetation structure (Size and Age or Big Leaf).             !
-   !---------------------------------------------------------------------------------------!
-   select case (ibigleaf)
-   case (0)
-      !------------------------------------------------------------------------------------!
-      !     Size-and-Age Structure.  Assign temperate PFTs outside the loop, and the       !
-      ! tropical ones inside the loop.                                                     !
-      !------------------------------------------------------------------------------------!
-      !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ---------!
-      b1Bl(1:4)   = 0.0
-      b1Bl(5)     = 0.08
-      b1Bl(6)     = 0.024
-      b1Bl(7)     = 0.024
-      b1Bl(8)     = 0.0454
-      b1Bl(9)     = 0.0129
-      b1Bl(10)    = 0.048
-      b1Bl(11)    = 0.017
-      b1Bl(12:13) = 0.08
-      b1Bl(14:15) = 0.0
-      b1Bl(16)    = 0.0
-      b1Bl(17)    = 0.0
-      !-----  DBH-leaf allometry slope [dimensionless]. -----------------------------------!
-      b2Bl(1:4)   = 0.0
-      b2Bl(5)     = 1.0
-      b2Bl(6)     = 1.899
-      b2Bl(7)     = 1.899
-      b2Bl(8)     = 1.6829
-      b2Bl(9)     = 1.7477
-      b2Bl(10)    = 1.455
-      b2Bl(11)    = 1.731
-      b2Bl(12:13) = 1.0
-      b2Bl(14:15) = 0.0
-      b2Bl(16)    = 0.0
-      b2Bl(17)    = 0.0
-      !------------------------------------------------------------------------------------!
-
-      !------- Fill in the tropical PFTs, which are functions of wood density. ------------!
-      do ipft=1,n_pft
-         if (is_tropical(ipft)) then
-            select case(iallom)
-            case (0,1)
-               !---- ED-2.1 allometry. ----------------------------------------------------!
-               b1Bl(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
-               aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))       &
-                          * (d2l - d1l)) * (1.0/log(dcrit))
-               b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
-            case (2)
-               !---- Based on modified Chave et al. (2001) allometry. ---------------------!
-               b1Bl(ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
-               b2Bl(ipft) = nleaf(2)
-            end select
-         end if
-      end do
-      !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] ----------!
-      b1Bs_small(1:4)   = 0.0 
-      b1Bs_small(5)     = 1.0e-5
-      b1Bs_small(6)     = 0.147
-      b1Bs_small(7)     = 0.147
-      b1Bs_small(8)     = 0.1617
-      b1Bs_small(9)     = 0.02648
-      b1Bs_small(10)    = 0.1617
-      b1Bs_small(11)    = 0.235
-      b1Bs_small(12:13) = 1.0e-5
-      b1Bs_small(14:15) = 0.0 
-      b1Bs_small(16)    = 0.0 
-      b1Bs_small(17)    = 0.0
-      !----- DBH-stem allometry slope [dimensionless]. ------------------------------------!
-      b2Bs_small(1:4)   = 0.0
-      b2Bs_small(5)     = 1.0
-      b2Bs_small(6)     = 2.238
-      b2Bs_small(7)     = 2.238
-      b2Bs_small(8)     = 2.1536
-      b2Bs_small(9)     = 2.95954
-      b2Bs_small(10)    = 2.4572
-      b2Bs_small(11)    = 2.2518
-      b2Bs_small(12:13) = 1.0
-      b2Bs_small(14:15) = 0.0
-      b2Bs_small(16)    = 0.0
-      b2Bs_small(17)    = 0.0
-      !------------------------------------------------------------------------------------!
-      !     The temperate PFTs use the same b1Bs and b2Bs for small and big trees, copy    !
-      ! the values.                                                                        !
-      !------------------------------------------------------------------------------------!
-      b1Bs_large(:) = b1Bs_small(:)
-      b2Bs_large(:) = b2Bs_small(:)
-      !------- Fill in the tropical PFTs, which are functions of wood density. ------------!
-      do ipft = 1, n_pft
-         if (is_tropical(ipft)) then
-            select case (iallom)
-            case (0)
-               !---- ED-2.1 allometry. ----------------------------------------------------!
-               b1Bs_small(ipft) = exp(a1 + c1d * b1Ht(ipft) + d1d * log(rho(ipft)))
-               b1Bs_large(ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
-
-               aux              = ( (a2d - a1) + b1Ht(ipft) * (c2d - c1d) + log(rho(ipft)) &
-                                  * (d2d - d1d)) * (1.0/log(dcrit))
-               b2Bs_small(ipft) = C2B * b2d + c2d * b2Ht(ipft) + aux
-
-               aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)          &
-                                  + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
-               b2Bs_large(ipft) = C2B * b2d + aux
-
-            case (1)
-               !---- Based on modified Chave et al. (2001) allometry. ---------------------!
-               b1Bs_small(ipft) = C2B * exp(odead_small(1)) * rho(ipft) / odead_small(3)
-               b2Bs_small(ipft) = odead_small(2)
-               b1Bs_large(ipft) = C2B * exp(odead_large(1)) * rho(ipft) / odead_large(3)
-               b2Bs_large(ipft) = odead_large(2)
-
-            case (2)
-               !---- Based an alternative modification of Chave et al. (2001) allometry. --!
-               b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
-               b2Bs_small(ipft) = ndead_small(2)
-               b1Bs_large(ipft) = C2B * exp(ndead_large(1)) * rho(ipft) / ndead_large(3)
-               b2Bs_large(ipft) = ndead_large(2)
-
-            end select
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-   case (1)
-      !------------------------------------------------------------------------------------!
-      !     Big-leaf.  Decide which parameters to use depending on the allometry.          !
-      !------------------------------------------------------------------------------------!
-      select case (iallom)
-      case (0,1)
-         !----- Original ED-2.1 allometry. ------------------------------------------------!
-         b1Bl      (    1)  = 0.04538826
-         b1Bl      (    2)  = 0.07322115
-         b1Bl      (    3)  = 0.07583497
-         b1Bl      (    4)  = 0.08915847
-         b1Bl      (    5)  = 0.08
-         b1Bl      (    6)  = 0.024
-         b1Bl      (    7)  = 0.024
-         b1Bl      (    8)  = 0.0454
-         b1Bl      (    9)  = 0.0129
-         b1Bl      (   10)  = 0.048
-         b1Bl      (   11)  = 0.017
-         b1Bl      (12:13)  = 0.08
-         b1Bl      (14:16)  = 0.04538826
-         b1Bl      (   17)  = 0.07322115
-         
-         b2Bl      (    1)  = 1.316338
-         b2Bl      (    2)  = 1.509083
-         b2Bl      (    3)  = 1.646576
-         b2Bl      (    4)  = 1.663773
-         b2Bl      (    5)  = 1.0
-         b2Bl      (    6)  = 1.899
-         b2Bl      (    7)  = 1.899
-         b2Bl      (    8)  = 1.6829
-         b2Bl      (    9)  = 1.7477
-         b2Bl      (   10)  = 1.455
-         b2Bl      (   11)  = 1.731
-         b2Bl      (12:13)  = 1.0
-         b2Bl      (14:16)  = 1.316338
-         b2Bl      (   17)  = 1.509083
-         
-         b1Bs_small(    1)  = 0.05291854
-         b1Bs_small(    2)  = 0.15940854
-         b1Bs_small(    3)  = 0.21445616
-         b1Bs_small(    4)  = 0.26890751
-         b1Bs_small(    5)  = 1.0e-5
-         b1Bs_small(    6)  = 0.147
-         b1Bs_small(    7)  = 0.147
-         b1Bs_small(    8)  = 0.1617
-         b1Bs_small(    9)  = 0.02648
-         b1Bs_small(   10)  = 0.1617
-         b1Bs_small(   11)  = 0.235
-         b1Bs_small(12:13)  = 1.0e-5
-         b1Bs_small(14:16)  = 0.05291854
-         b1Bs_small(   17)  = 0.15940854
-         
-         b2Bs_small(    1)  = 3.706955
-         b2Bs_small(    2)  = 2.342587
-         b2Bs_small(    3)  = 2.370640
-         b2Bs_small(    4)  = 2.254336
-         b2Bs_small(    5)  = 1.0
-         b2Bs_small(    6)  = 2.238
-         b2Bs_small(    7)  = 2.238
-         b2Bs_small(    8)  = 2.1536
-         b2Bs_small(    9)  = 2.95954
-         b2Bs_small(   10)  = 2.4572
-         b2Bs_small(   11)  = 2.2518
-         b2Bs_small(12:13)  = 1.0
-         b2Bs_small(14:16)  = 3.706955
-         b2Bs_small(   17)  = 2.342587
-         
-         b1Bs_large    (:)  = b1Bs_small(:)
-         b2Bs_large    (:)  = b2Bs_small(:)
-
-      case (2)
-         !----- Updated tropical allometry. -----------------------------------------------!
-         b1Bl      (    1)  = 0.1685341
-         b1Bl      (    2)  = 0.4786179
-         b1Bl      (    3)  = 0.6279531
-         b1Bl      (    4)  = 0.7865164
-         b1Bl      (    5)  = 0.08
-         b1Bl      (    6)  = 0.024
-         b1Bl      (    7)  = 0.024
-         b1Bl      (    8)  = 0.0454
-         b1Bl      (    9)  = 0.0129
-         b1Bl      (   10)  = 0.048
-         b1Bl      (   11)  = 0.017
-         b1Bl      (12:13)  = 0.08
-         b1Bl      (14:16)  = 0.1685341
-         b1Bl      (   17)  = 0.4786179
-         
-         b2Bl      (    1)  = 1.108895
-         b2Bl      (    2)  = 1.115922
-         b2Bl      (    3)  = 1.078379
-         b2Bl      (    4)  = 1.110581
-         b2Bl      (    5)  = 1.0
-         b2Bl      (    6)  = 1.899
-         b2Bl      (    7)  = 1.899
-         b2Bl      (    8)  = 1.6829
-         b2Bl      (    9)  = 1.7477
-         b2Bl      (   10)  = 1.455
-         b2Bl      (   11)  = 1.731
-         b2Bl      (12:13)  = 1.0
-         b2Bl      (14:16)  = 1.108895
-         b2Bl      (   17)  = 1.115922
-         
-         b1Bs_small(    1)  = 0.07240535
-         b1Bs_small(    2)  = 0.15546533
-         b1Bs_small(    3)  = 0.21830716
-         b1Bs_small(    4)  = 0.28354061
-         b1Bs_small(    5)  = 1.0e-5
-         b1Bs_small(    6)  = 0.147
-         b1Bs_small(    7)  = 0.147
-         b1Bs_small(    8)  = 0.1617
-         b1Bs_small(    9)  = 0.02648
-         b1Bs_small(   10)  = 0.1617
-         b1Bs_small(   11)  = 0.235
-         b1Bs_small(12:13)  = 1.0e-5
-         b1Bs_small(14:16)  = 0.07240535
-         b1Bs_small(   17)  = 0.15546533
-         
-         b2Bs_small(    1)  = 2.039878
-         b2Bs_small(    2)  = 2.233071
-         b2Bs_small(    3)  = 2.188913
-         b2Bs_small(    4)  = 2.035768
-         b2Bs_small(    5)  = 1.0
-         b2Bs_small(    6)  = 2.238
-         b2Bs_small(    7)  = 2.238
-         b2Bs_small(    8)  = 2.1536
-         b2Bs_small(    9)  = 2.95954
-         b2Bs_small(   10)  = 2.4572
-         b2Bs_small(   11)  = 2.2518
-         b2Bs_small(12:13)  = 1.0
-         b2Bs_small(14:16)  = 2.039878
-         b2Bs_small(   17)  = 2.233071
-         
-         b1Bs_large(:) = b1Bs_small(:)
-         b2Bs_large(:) = b2Bs_small(:)
-      end select
-      !------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (0,1)
+      dbh_bigleaf( 1) = dbh_crit( 1)
+      dbh_bigleaf( 2) = dbh_crit( 2)
+      dbh_bigleaf( 3) = dbh_crit( 3)
+      dbh_bigleaf( 4) = dbh_crit( 4)
+      dbh_bigleaf( 5) = dbh_crit( 5)
+      dbh_bigleaf( 6) = dbh_crit( 6)
+      dbh_bigleaf( 7) = dbh_crit( 7)
+      dbh_bigleaf( 8) = dbh_crit( 8)
+      dbh_bigleaf( 9) = dbh_crit( 9)
+      dbh_bigleaf(10) = dbh_crit(10)
+      dbh_bigleaf(11) = dbh_crit(11)
+      dbh_bigleaf(12) = dbh_crit(12)
+      dbh_bigleaf(13) = dbh_crit(13)
+      dbh_bigleaf(14) = dbh_crit(14)
+      dbh_bigleaf(15) = dbh_crit(15)
+      dbh_bigleaf(16) = dbh_crit(16)
+      dbh_bigleaf(17) = dbh_crit(17)
+   case (2)
+      dbh_bigleaf( 1) = dbh_crit( 1)
+      dbh_bigleaf( 2) = 29.69716
+      dbh_bigleaf( 3) = 31.41038
+      dbh_bigleaf( 4) = 16.67251
+      dbh_bigleaf( 5) = dbh_crit( 5)
+      dbh_bigleaf( 6) = dbh_crit( 6) * onethird
+      dbh_bigleaf( 7) = dbh_crit( 7) * onethird
+      dbh_bigleaf( 8) = dbh_crit( 8) * onethird
+      dbh_bigleaf( 9) = dbh_crit( 9) * onethird
+      dbh_bigleaf(10) = dbh_crit(10) * onethird
+      dbh_bigleaf(11) = dbh_crit(11) * onethird
+      dbh_bigleaf(12) = dbh_crit(12)
+      dbh_bigleaf(13) = dbh_crit(13)
+      dbh_bigleaf(14) = dbh_crit(14)
+      dbh_bigleaf(15) = dbh_crit(15)
+      dbh_bigleaf(16) = dbh_crit(16)
+      dbh_bigleaf(17) = 30.0
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-leaf and dead biomass allometries.  We first define them for the default,     !
+   ! size-and-age structure case, but we may overwrite them depending on the allometry.    !
+   !---------------------------------------------------------------------------------------!
+   !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
+   b1Bl(1:4)   = 0.0
+   b1Bl(5)     = 0.08
+   b1Bl(6)     = 0.024
+   b1Bl(7)     = 0.024
+   b1Bl(8)     = 0.0454
+   b1Bl(9)     = 0.0129
+   b1Bl(10)    = 0.048
+   b1Bl(11)    = 0.017
+   b1Bl(12:13) = 0.08
+   b1Bl(14:15) = 0.0
+   b1Bl(16)    = 0.0
+   b1Bl(17)    = 0.0
+   !-----  DBH-leaf allometry slope [dimensionless]. --------------------------------------!
+   b2Bl(1:4)   = 0.0
+   b2Bl(5)     = 1.0
+   b2Bl(6)     = 1.899
+   b2Bl(7)     = 1.899
+   b2Bl(8)     = 1.6829
+   b2Bl(9)     = 1.7477
+   b2Bl(10)    = 1.455
+   b2Bl(11)    = 1.731
+   b2Bl(12:13) = 1.0
+   b2Bl(14:15) = 0.0
+   b2Bl(16)    = 0.0
+   b2Bl(17)    = 0.0
+   !---------------------------------------------------------------------------------------!
+
+   !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
+   do ipft=1,n_pft
+      if (is_tropical(ipft)) then
+         select case(iallom)
+         case (0,1)
+            !---- ED-2.1 allometry. -------------------------------------------------------!
+            b1Bl(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
+            aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))          &
+                       * (d2l - d1l)) * (1.0/log(dcrit))
+            b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+         case (2)
+            !---- Based on modified Chave et al. (2001) allometry. ------------------------!
+            b1Bl(ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
+            b2Bl(ipft) = nleaf(2)
+         end select
+      end if
+   end do
+   !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] -------------!
+   b1Bs_small(1:4)   = 0.0 
+   b1Bs_small(5)     = 1.0e-5
+   b1Bs_small(6)     = 0.147
+   b1Bs_small(7)     = 0.147
+   b1Bs_small(8)     = 0.1617
+   b1Bs_small(9)     = 0.02648
+   b1Bs_small(10)    = 0.1617
+   b1Bs_small(11)    = 0.235
+   b1Bs_small(12:13) = 1.0e-5
+   b1Bs_small(14:15) = 0.0 
+   b1Bs_small(16)    = 0.0 
+   b1Bs_small(17)    = 0.0
+   !----- DBH-stem allometry slope [dimensionless]. ---------------------------------------!
+   b2Bs_small(1:4)   = 0.0
+   b2Bs_small(5)     = 1.0
+   b2Bs_small(6)     = 2.238
+   b2Bs_small(7)     = 2.238
+   b2Bs_small(8)     = 2.1536
+   b2Bs_small(9)     = 2.95954
+   b2Bs_small(10)    = 2.4572
+   b2Bs_small(11)    = 2.2518
+   b2Bs_small(12:13) = 1.0
+   b2Bs_small(14:15) = 0.0
+   b2Bs_small(16)    = 0.0
+   b2Bs_small(17)    = 0.0
+   !---------------------------------------------------------------------------------------!
+   !     The temperate PFTs use the same b1Bs and b2Bs for small and big trees, copy       !
+   ! the values.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   b1Bs_large(:) = b1Bs_small(:)
+   b2Bs_large(:) = b2Bs_small(:)
+   !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
+   do ipft = 1, n_pft
+      if (is_tropical(ipft)) then
+         select case (iallom)
+         case (0)
+            !---- ED-2.1 allometry. -------------------------------------------------------!
+            b1Bs_small(ipft) = exp(a1 + c1d * b1Ht(ipft) + d1d * log(rho(ipft)))
+            b1Bs_large(ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
+
+            aux              = ( (a2d - a1) + b1Ht(ipft) * (c2d - c1d) + log(rho(ipft))    &
+                               * (d2d - d1d)) * (1.0/log(dcrit))
+            b2Bs_small(ipft) = C2B * b2d + c2d * b2Ht(ipft) + aux
+
+            aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)             &
+                               + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
+            b2Bs_large(ipft) = C2B * b2d + aux
+
+         case (1)
+            !---- Based on modified Chave et al. (2001) allometry. ------------------------!
+            b1Bs_small(ipft) = C2B * exp(odead_small(1)) * rho(ipft) / odead_small(3)
+            b2Bs_small(ipft) = odead_small(2)
+            b1Bs_large(ipft) = C2B * exp(odead_large(1)) * rho(ipft) / odead_large(3)
+            b2Bs_large(ipft) = odead_large(2)
+
+         case (2)
+            !---- Based an alternative modification of Chave et al. (2001) allometry. -----!
+            b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
+            b2Bs_small(ipft) = ndead_small(2)
+            b1Bs_large(ipft) = C2B * exp(ndead_large(1)) * rho(ipft) / ndead_large(3)
+            b2Bs_large(ipft) = ndead_large(2)
+
+         end select
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     In case we run big leaf model with IALLOM set to 0 or 1, we must change some of   !
+   ! the allometric parameters.                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (ibigleaf == 1 .and. (iallom == 0 .or. iallom == 1)) then
+      b1Bl      (    1)  = 0.04538826
+      b1Bl      (    2)  = 0.07322115
+      b1Bl      (    3)  = 0.07583497
+      b1Bl      (    4)  = 0.08915847
+      b1Bl      (14:16)  = 0.04538826
+      b1Bl      (   17)  = 0.07322115
+      
+      b2Bl      (    1)  = 1.316338
+      b2Bl      (    2)  = 1.509083
+      b2Bl      (    3)  = 1.646576
+      b2Bl      (    4)  = 1.663773
+      b2Bl      (14:16)  = 1.316338
+      b2Bl      (   17)  = 1.509083
+      
+      b1Bs_small(    1)  = 0.05291854
+      b1Bs_small(    2)  = 0.15940854
+      b1Bs_small(    3)  = 0.21445616
+      b1Bs_small(    4)  = 0.26890751
+      b1Bs_small(14:16)  = 0.05291854
+      b1Bs_small(   17)  = 0.15940854
+      
+      b2Bs_small(    1)  = 3.706955
+      b2Bs_small(    2)  = 2.342587
+      b2Bs_small(    3)  = 2.370640
+      b2Bs_small(    4)  = 2.254336
+      b2Bs_small(14:16)  = 3.706955
+      b2Bs_small(   17)  = 2.342587
+      
+      b1Bs_large    (:)  = b1Bs_small(:)
+      b2Bs_large    (:)  = b2Bs_small(:)
+   end if
    !---------------------------------------------------------------------------------------!
 
 

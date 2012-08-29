@@ -55,6 +55,7 @@ module disturbance_utils
       use pft_coms     , only : include_pft             ! ! intent(in)
       use allometry    , only : area_indices            ! ! function
       use mortality    , only : disturbance_mortality   ! ! subroutine
+      use consts_coms  , only : lnexp_max               ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid
@@ -245,6 +246,7 @@ module disturbance_utils
                      if  (ploughed .or. abandoned .or. natural .or. logged) then
                         total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)       &
                                        + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                        total_distrate = min(lnexp_max,max(0.,total_distrate))
                         dA             = csite%area(ipa) * ( 1.0 - exp(- total_distrate) )
                         area           = area + dA
                      end if
@@ -331,6 +333,7 @@ module disturbance_utils
                         if (ploughed .or. abandoned .or. natural .or. logged) then
                            total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)    &
                                           + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                           total_distrate = min(lnexp_max,max(0.,total_distrate))
                            dA             = csite%area(ipa) * (1.0 - exp(- total_distrate))
 
                            area_fac = dA / csite%area(onsp+new_lu)
@@ -602,6 +605,7 @@ module disturbance_utils
                      if  (ploughed .or. abandoned .or. natural .or. logged) then
                         total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)       &
                                        + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                        total_distrate = min(lnexp_max,max(0.,total_distrate))
                         dA             = csite%area(ipa) * (1.0 - exp(- total_distrate))
                         area = area + dA
                      end if
@@ -697,6 +701,7 @@ module disturbance_utils
                         if (ploughed) then
                            total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi)    &
                                           + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                           total_distrate = min(lnexp_max,max(0.,total_distrate))
                            dA             = csite%area(ipa) * (1.0 - exp(- total_distrate))
 
                            area_fac = dA / csite%area(onsp+new_lu)
@@ -713,6 +718,7 @@ module disturbance_utils
                               i   = (new_lu-2)*mypfts+1+ipft
                               total_distrate = cpoly%disturbance_rates (new_lu,old_lu,isi) &
                                              + cpoly%disturbance_memory(new_lu,old_lu,isi)
+                              total_distrate = min(lnexp_max,max(0.,total_distrate))
                               dA             = csite%area(ipa)                             &
                                              * (1.0 - exp(- total_distrate))
                               dA             = dA / real(mypfts)
@@ -1113,14 +1119,14 @@ module disturbance_utils
 
                   !------------------------------------------------------------------------!
                   !     If this patch is secondary and mature, compute the weighted aver-  !
-                  ! age of the probability of harvest, using the number of plants as the   !
-                  ! weight.                                                                !
+                  ! age of the probability of harvest, using the basal area as the weight. !
                   !------------------------------------------------------------------------!
                   if (mature_plantation .or. mature_secondary) then
                      cohortloop: do ico=1,cpatch%ncohorts
                         ipft = cpatch%pft(ico)
                         if (cpatch%dbh(ico) >= cpoly%mindbh_secondary(ipft,isi)) then
-                           weight    = cpatch%nplant(ico) * csite%area(ipa)
+                           weight    = cpatch%nplant(ico) * cpatch%basarea(ico)            &
+                                     * csite%area(ipa)
                            pharvest  = pharvest                                            &
                                      + cpoly%probharv_secondary(ipft,isi) * weight
                            sumweight = sumweight + weight
@@ -1135,7 +1141,8 @@ module disturbance_utils
                   end if
                end do patchloop
             end if
-            cpoly%disturbance_rates(2,2,isi) = -0.5 * log(1.0 - pharvest)
+            !----- Convert the probability into disturbance rate. -------------------------#
+            cpoly%disturbance_rates(2,2,isi) = - log(1.0 - pharvest)
             !------------------------------------------------------------------------------!
 
 

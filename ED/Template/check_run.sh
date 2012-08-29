@@ -10,6 +10,7 @@ echo ${ncol}
 
 here=`pwd`
 lonlat=${here}'/joborder.txt'
+desc=`basename ${here}`
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=`wc -l ${lonlat} | awk '{print $1 }'`-3
@@ -135,23 +136,85 @@ do
    treefall=`echo ${oi}     | awk '{print $87}'`
    #---------------------------------------------------------------------------------------#
 
+   #---------------------------------------------------------------------------------------#
+   #     Set some variables to check whether the simulation is running.                    #
+   #---------------------------------------------------------------------------------------#
+   jobname="${desc}-${polyname}"
+   stdout="${here}/${polyname}/serial_out.out"
+   stderr="${here}/${polyname}/serial_out.err"
+   lsfout="${here}/${polyname}/serial_lsf.out"
+   stopped=
+   #---------------------------------------------------------------------------------------#
 
 
-   if [ -s ${here}/${polyname}/serial_out.out ]
+   #---------------------------------------------------------------------------------------#
+   #     Check whether the simulation is still running, and if not, why it isn't.          #
+   #---------------------------------------------------------------------------------------#
+   if [ -s ${stdout} ]
    then
-      fatal=`grep "FATAL ERROR" ${here}/${polyname}/serial_out.out | wc -l`
-      simulating=`grep "Simulating: " ${here}/${polyname}/serial_out.out | tail -1`
-      if [ ${fatal} -gt 0 ]
-      then 
-         echo -e ${opt} ${off}':-( '${polyname}' HAS CRASHED  ... <======================'
-      elif [ -s ${here}/${polyname}/serial_lsf.out ]
+      #----- Check whether the simulation is running, and when in model time it is. -------#
+      running=`bjobs -J ${jobname} 2> /dev/null | grep RUN | wc -l`
+      simline=`grep "Simulating: "   ${stdout} | tail -1`
+      runtime=`echo ${simline} | awk '{print $3}'`
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Check for segmentation violations. -------------------------------------------#
+      if [ -s ${stderr} ]
       then
-         echo -e ${opt} ${off}':-D '${polyname}' has finished  ...'
+         segv1=`grep -i "sigsegv"            ${stderr} | wc -l`
+         segv2=`grep -i "segmentation fault" ${stderr} | wc -l`
+         let sigsegv=${segv1}+${segv2}
       else
-         echo -e ${opt} ${off}':-) '${polyname}' is running. '${simulating}'...'
+         sigsegv=0
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Check whether met files are missing... (bad start) ---------------------------#
+      metbs1=`grep "Cannot open met driver input file" ${stdout} | wc -l`
+      metbs2=`grep "Specify ED_MET_DRIVER_DB properly" ${stdout} | wc -l`
+      let metmiss=${metbs1}+${metbs2}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Check for other possible outcomes. -------------------------------------------#
+      stopped=`grep "FATAL ERROR"       ${stdout} | wc -l`
+      crashed=`grep "IFLAG1 problem."   ${stdout} | wc -l`
+      the_end=`grep "ED execution ends" ${stdout} | wc -l`
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Plot a message so the user knows what is going on.                             #
+      #------------------------------------------------------------------------------------#
+      if [ ${running} -gt 0 ] && [ ${sigsegv} -eq 0 ]
+      then
+         echo -e ${opt} "${off} :-) ${polyname} is running (${runtime})..."
+      elif [ ${sigsegv} -gt 0 ]
+      then
+         echo -e ${opt} "${off}>:-# ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+      elif [ ${crashed} -gt 0 ]
+      then 
+         echo -e ${opt} "${off} :-( ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
+      elif [ ${metmiss} -gt 0 ]
+      then 
+         echo -e ${opt} "${off} :-/ ${polyname} DID NOT FIND MET DRIVERS... <==========="
+      elif [ ${stopped} -gt 0 ]
+      then
+         echo -e ${opt} "${off} :-S ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+      elif [ ${the_end} -gt 0 ]
+      then
+         echo -e ${opt} "${off}o/\o ${polyname} has finished..."
+      else
+         echo -e ${opt} "${off}<:-| ${polyname} status is unknown..."
       fi
    else
-      echo -e ${opt} ${off}':-| '${polyname}' is pending ...'
+      echo -e ${opt} ${off}' :-| '${polyname}' is pending ...'
    fi
 done
 

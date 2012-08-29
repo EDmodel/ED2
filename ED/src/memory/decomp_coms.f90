@@ -114,18 +114,19 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: r_ssc
    !---------------------------------------------------------------------------------------!
-   !     Intrinsic decay rate of fast pool soil carbon (1/days); this is modulated by Lc.  !
+   !     Intrinsic decay rate of structural pool soil carbon (1/days); this is modulated   !
+   ! by Lc.                                                                                !
    !---------------------------------------------------------------------------------------!
-   real :: K1
+   real :: decay_rate_stsc
    !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of fast pool soil carbon (1/days).                           !
    !---------------------------------------------------------------------------------------!
-   real :: K2
+   real :: decay_rate_fsc
    !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of slow pool soil carbon (1/days).  This pool has already    !
    ! decayed from the structural pool.                                                     !
    !---------------------------------------------------------------------------------------!
-   real :: K3
+   real :: decay_rate_ssc
    !---------------------------------------------------------------------------------------!
    !     Labile fraction of leaves, fine roots and sapwood.                                !
    !     ([[MCD]].  Moved setting of values to initialize_pft_resp_params)                 !
