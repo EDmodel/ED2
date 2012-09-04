@@ -203,10 +203,14 @@ module grell_coms
       integer, dimension(ngrids), intent(in) :: grell_1st  ! First cloud for Grell to solve
       integer, dimension(ngrids), intent(in) :: grell_last ! Last cloud for Grell to solve
       integer                                :: icld       ! Cloud counter
+      integer                                :: cldd       ! Deepest possible cloud
+      integer                                :: clds       ! Shallowest possible cloud
       real                                   :: mycdf      ! User-based CDF
       real   , external                      :: cdf2normal ! Cumulative distribution func.
       !----- Getting the maximum number of layers among the grids -------------------------!
-      mgmzp = maxval(mmzp)
+      mgmzp = maxval(mmzp(1:ngrids))
+      cldd  = minval(grell_1st (1:ngrids))
+      clds  = maxval(grell_last(1:ngrids))
 
       !------------------------------------------------------------------------------------!
       !     Now I check whether I am running an ensemble of a simple dynamic control, and  !
@@ -248,22 +252,29 @@ module grell_coms
       !------------------------------------------------------------------------------------!
       select case (closure_type)
       case ('en')
-         if (.not. prec_cld(icld)) then
-            write(unit=*,fmt='(a)') '--------------------------------------------------'
-            write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
-            write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
-            write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type
-            write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
-                                                min_down_radius
-            call abort_run('Radius is too small for the chosen clousure type',          &
-                           'define_grell_coms','grell_coms.f90')
-         end if
+         do icld=cldd,clds
+            if (.not. prec_cld(icld)) then
+               write(unit=*,fmt='(a)') '--------------------------------------------------'
+               write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
+               write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
+               write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type
+               write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
+                                                   min_down_radius
+               call abort_run('Radius is too small for the chosen clousure type',          &
+                              'define_grell_coms','grell_coms.f90')
+            end if
+         end do
          maxens_dyn          = 16
          comp_noforc_cldwork = .true.
          comp_modif_thermo   = .true.
 
       case ('nc')
          maxens_dyn           = 10
+         comp_noforc_cldwork  = .true.
+         comp_modif_thermo    = .true.
+
+      case ('qi')
+         maxens_dyn           = 7
          comp_noforc_cldwork  = .true.
          comp_modif_thermo    = .true.
 
@@ -278,16 +289,18 @@ module grell_coms
          comp_modif_thermo   = .true.
 
       case default
-         if (.not. prec_cld(icld)) then
-            write(unit=*,fmt='(a)') '--------------------------------------------------'
-            write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
-            write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
-            write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type
-            write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
-                                                min_down_radius
-            call abort_run('Radius is too small for the chosen clousure type',          &
-                           'define_grell_coms','grell_coms.f90')
-         end if
+         do icld=cldd,clds
+            if (.not. prec_cld(icld)) then
+               write(unit=*,fmt='(a)') '--------------------------------------------------'
+               write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
+               write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
+               write(unit=*,fmt='(a,1x,a)')    ' - Closure type is ',closure_type
+               write(unit=*,fmt='(a,1x,f8.2)') ' - Minimum radius for this closure ',      &
+                                                   min_down_radius
+               call abort_run('Radius is too small for the chosen clousure type',          &
+                              'define_grell_coms','grell_coms.f90')
+            end if
+         end do
          maxens_dyn          = 1
          comp_noforc_cldwork = .false.
          comp_modif_thermo   = .false.

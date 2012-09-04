@@ -291,7 +291,7 @@ rm -fv decomp_coms.?90               decomp_coms.o              decomp_coms.mod
 rm -fv detailed_coms.?90             detailed_coms.o            detailed_coms.mod
 rm -fv disturb_coms.?90              disturb_coms.o             disturb_coms.mod
 rm -fv disturbance.?90               disturbance.o              disturbance.mod
-rm -fv ed_bare_restart.?90           ed_bare_restart.o          ed_bare_restart.mod
+rm -fv ed_bigleaf_init.?90           ed_bigleaf_init.o          ed_bigleaf_init.mod
 rm -fv ed_filelist.?90               ed_filelist.o              ed_filelist.mod
 rm -fv ed_grid.?90                   ed_grid.o                  ed_grid.mod
 rm -fv ed_init.?90                   ed_init.o                  ed_init.mod

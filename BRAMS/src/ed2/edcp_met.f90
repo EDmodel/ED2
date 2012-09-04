@@ -38,6 +38,7 @@ subroutine copy_atm2lsm(ifm,init)
    use mem_edcp             , only : co2_offset    & ! intent(in)
                                    , atm_co2_min   ! ! intent(in)
    use therm_lib            , only : thetaeiv      & ! function
+                                   , vpdefil       & ! function
                                    , rehuil        & ! function
                                    , ptrh2rvapil   & ! function
                                    , press2exner   & ! function
@@ -390,6 +391,12 @@ subroutine copy_atm2lsm(ifm,init)
       cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
                                          ,cgrid%met(ipy)%atm_tmp,rtp_mean(ix,iy)           &
                                          ,rtp_mean(ix,iy))
+      !------------------------------------------------------------------------------------!
+
+      !----- Find the vapour pressure deficit. --------------------------------------------!
+      cgrid%met(ipy)%atm_vpdef = vpdefil (cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp       &
+                                         ,cgrid%met(ipy)%atm_shv,.true.)
+      !------------------------------------------------------------------------------------!
    end do polyloop1st
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
@@ -464,6 +471,12 @@ subroutine copy_atm2lsm(ifm,init)
          rvaux = cpoly%met(isi)%atm_shv / (1.0 - cpoly%met(isi)%atm_shv)
          cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
                                             ,cpoly%met(isi)%atm_tmp,rvaux,rvaux)
+         !---------------------------------------------------------------------------------!
+
+         !----- Find the atmospheric vapour pressure deficit. -----------------------------!
+         cpoly%met(isi)%atm_vpdef = vpdefil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp     &
+                                           ,cpoly%met(isi)%atm_shv,.true.)
+         !---------------------------------------------------------------------------------!
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -970,6 +983,7 @@ subroutine initialize_ed2leaf(ifm)
    use therm_lib    , only : bulk_on        & ! intent(in)
                            , reducedpress   & ! function
                            , thetaeiv       & ! function
+                           , vpdefil        & ! function
                            , exner2press    & ! function
                            , extheta2temp   ! ! function
    use ed_state_vars, only : edgrid_g       & ! intent(in)
@@ -1077,13 +1091,14 @@ subroutine initialize_ed2leaf(ifm)
          atm_temp                     = extheta2temp(pi0_mean(i,j),theta_mean(i,j))
 
          !----- Compute the state variables. ----------------------------------------------!
-         leaf_g(ifm)%can_theta(i,j,1) =  theta_mean(i,j)
-         leaf_g(ifm)%can_rvap (i,j,1) =  rv_mean(i,j)
-         leaf_g(ifm)%can_prss (i,j,1) =  reducedpress(atm_prss,theta_mean(i,j),atm_shv     &
-                                                     ,geoht(i,j),theta_mean(i,j)           &
-                                                     ,atm_shv,can_depth)
-         leaf_g(ifm)%can_theiv(i,j,1) =  thetaeiv(thil_mean(i,j),atm_prss,atm_temp         &
-                                                 ,rtp_mean(i,j),rtp_mean(i,j))
+         leaf_g(ifm)%can_theta   (i,j,1) = theta_mean(i,j)
+         leaf_g(ifm)%can_rvap    (i,j,1) = rv_mean(i,j)
+         leaf_g(ifm)%can_prss    (i,j,1) = reducedpress(atm_prss,theta_mean(i,j),atm_shv   &
+                                                       ,geoht(i,j),theta_mean(i,j)         &
+                                                       ,atm_shv,can_depth)
+         leaf_g(ifm)%can_theiv   (i,j,1) = thetaeiv(thil_mean(i,j),atm_prss,atm_temp       &
+                                                   ,rtp_mean(i,j),rtp_mean(i,j))
+         leaf_g(ifm)%can_vpdef   (i,j,1) = vpdefil(atm_prss,atm_temp,atm_shv,.true.)
          leaf_g(ifm)%gpp         (i,j,1) = 0.0
          leaf_g(ifm)%resphet     (i,j,1) = 0.0
          leaf_g(ifm)%plresp      (i,j,1) = 0.0
@@ -1096,8 +1111,9 @@ subroutine initialize_ed2leaf(ifm)
          do ilp=2,npatch
             leaf_g(ifm)%can_theta   (i,j,ilp) = leaf_g(ifm)%can_theta(i,j,1)
             leaf_g(ifm)%can_theiv   (i,j,ilp) = leaf_g(ifm)%can_theiv(i,j,1)
+            leaf_g(ifm)%can_vpdef   (i,j,ilp) = leaf_g(ifm)%can_vpdef(i,j,1)
             leaf_g(ifm)%can_rvap    (i,j,ilp) = leaf_g(ifm)%can_rvap (i,j,1)
-            leaf_g(ifm)%can_prss    (i,j,ilp) = leaf_g(ifm)%can_prss(i,j,1)
+            leaf_g(ifm)%can_prss    (i,j,ilp) = leaf_g(ifm)%can_prss (i,j,1)
             leaf_g(ifm)%gpp         (i,j,ilp) = 0.0
             leaf_g(ifm)%resphet     (i,j,ilp) = 0.0
             leaf_g(ifm)%plresp      (i,j,ilp) = 0.0
@@ -1704,6 +1720,7 @@ subroutine copy_avgvars_to_leaf(ifm)
          !---------------------------------------------------------------------------------!
          leaf_g(ifm)%can_theta  (ix,iy,ilp) = cpoly%avg_can_theta(isi)
          leaf_g(ifm)%can_theiv  (ix,iy,ilp) = cpoly%avg_can_theiv(isi)
+         leaf_g(ifm)%can_vpdef  (ix,iy,ilp) = cpoly%avg_can_vpdef(isi)
          leaf_g(ifm)%can_co2    (ix,iy,ilp) = max( atm_co2_min                             &
                                                  , cpoly%avg_can_co2(isi) - co2_offset)
          leaf_g(ifm)%can_prss   (ix,iy,ilp) = cpoly%avg_can_prss(isi)

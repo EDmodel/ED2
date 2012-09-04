@@ -17,6 +17,7 @@ subroutine fire_frequency(cgrid)
                             , dslz                   & ! intent(in)
                             , dslzi                  ! ! intent(in)
    use disturb_coms  , only : include_fire           & ! intent(in)
+                            , sm_fire                & ! intent(in)
                             , fire_dryness_threshold & ! intent(in)
                             , fire_smoist_depth      & ! intent(in)
                             , k_fire_first           & ! intent(in)
@@ -78,6 +79,12 @@ subroutine fire_frequency(cgrid)
             !----- Normalise the monthly mean ground water. -------------------------------!
             csite%avg_monthly_gndwater(ipa) = csite%avg_monthly_gndwater(ipa) * normfac
             !------------------------------------------------------------------------------!
+
+
+            !----- Normalise the monthly mean ground water. -------------------------------!
+            csite%avg_monthly_waterdef(ipa) = max(0.0,csite%avg_monthly_waterdef(ipa))
+            !------------------------------------------------------------------------------!
+
 
             !----- Initialize patch fuel. -------------------------------------------------!
             fuel = 0.0
@@ -145,50 +152,19 @@ subroutine fire_frequency(cgrid)
                   fire_intensity      = 0.0
                end if
                !---------------------------------------------------------------------------!
+
             case (3)
                !---------------------------------------------------------------------------!
-               !     The threshold not only determines whether fires will happen, it will  !
-               ! also control the fire intensity.                                          !
+               !     The threshold is independent on soil moisture.  We use climatological !
+               ! water deficit instead.                                                    !
                !---------------------------------------------------------------------------!
-               fire_wmass_threshold = 0.
-               avg_slpot            = 0.
-               do k = k_fire_first, nzg
-                  nsoil                = cpoly%ntext_soil(k,isi)
-                  fire_wmass_threshold = fire_wmass_threshold                              &
-                                       + soil(nsoil)%soilfr * dslz(k) * wdns
-               end do
-
-               if (csite%avg_monthly_gndwater(ipa) < fire_wmass_threshold) then
-                  nsoil          = cpoly%ntext_soil(nzg,isi)
-                  !----- Find the equivalent soil moisture. -------------------------------!
-                  avg_slmst      = max( soil(nsoil)%soilcp                                 &
-                                      , min( soil(nsoil)%slmsts                            &
-                                           , csite%avg_monthly_gndwater(ipa)               &
-                                             / ( wdns * abs(slz(k_fire_first)) ) ) )
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Find the equivalent soil potential. ------------------------------!
-                  avg_slpot      = soil(nsoil)%slpots                                      &
-                                 / ( avg_slmst / soil(nsoil)%slmsts ) ** soil(nsoil)%slbs
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Find the scale to reduce or amplify fires. -----------------------!
-                  fire_scale     = log(          avg_slpot / soil(nsoil)%slpotwp)          &
-                                 / log(soil(nsoil)%slpotfr / soil(nsoil)%slpotwp)
-                  fire_intensity = max(0.0, fire_parameter * (1.0 - fire_scale) )
-                  !------------------------------------------------------------------------!
-
+               if (csite%avg_monthly_waterdef(ipa) > sm_fire) then
+                  fire_intensity      = fire_parameter
+                  mean_fire_intensity = mean_fire_intensity                                &
+                                      + fire_intensity * csite%area(ipa)
                else
-                  fire_intensity = 0.0
+                  fire_intensity      = 0.0
                end if
-               !---------------------------------------------------------------------------!
-
-               !---------------------------------------------------------------------------!
-               !     Find the contribution of this patch to fires.                         !
-               !---------------------------------------------------------------------------!
-               mean_fire_intensity = mean_fire_intensity + fire_intensity * csite%area(ipa)
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!

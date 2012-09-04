@@ -280,6 +280,13 @@ module pft_coms
    real, dimension(n_pft) :: mort3 
 
    !---------------------------------------------------------------------------------------!
+   !     This variable sets up the relative carbon balance when plants are experiencing    !
+   ! severe stress (i.e., when the maximum carbon balance is negative due to severe light  !
+   ! or water stress).                                                                     !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: cbr_severe_stress
+
+   !---------------------------------------------------------------------------------------!
    !     This variable determines how rapidly trees die if it is too cold for them         !
    ! [1/years].                                                                            !
    !---------------------------------------------------------------------------------------!
@@ -398,6 +405,8 @@ module pft_coms
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
    real   , dimension(n_pft)    :: dbh_crit
+   !----- Prescribed DBH for the big leaf model, that allows a reasonable LAI/biomass. ----!
+   real   , dimension(n_pft)    :: dbh_bigleaf
    !----- Minimum Bdead attainable by this PFT. -------------------------------------------!
    real   , dimension(n_pft)    :: min_bdead
    !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
@@ -509,7 +518,7 @@ module pft_coms
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!
    real   , dimension(n_pft) :: nonlocal_dispersal !  
    !----- Minimum height plants need to attain before allocating to reproduction. ---------!
-   real   , dimension(n_pft) :: repro_min_h 
+   real   , dimension(n_pft) :: repro_min_h
    !=======================================================================================!
    !=======================================================================================!
 
@@ -587,6 +596,7 @@ module pft_coms
       real    :: wood_temp
       real    :: leaf_temp_pv
       real    :: wood_temp_pv
+      real    :: leaf_vpdef
       real    :: hite
       real    :: dbh
       real    :: bdead
@@ -629,6 +639,7 @@ module pft_coms
          recruit(p)%wood_temp        = 0.
          recruit(p)%leaf_temp_pv     = 0.
          recruit(p)%wood_temp_pv     = 0.
+         recruit(p)%leaf_vpdef       = 0.
          recruit(p)%hite             = 0.
          recruit(p)%dbh              = 0.
          recruit(p)%bdead            = 0.
@@ -641,7 +652,7 @@ module pft_coms
          recruit(p)%elongf           = 0.
          recruit(p)%bstorage         = 0.
          recruit(p)%nplant           = 0.
-       end do
+      end do
 
       return
    end subroutine zero_recruit
@@ -671,6 +682,7 @@ module pft_coms
       rectarget%wood_temp        = recsource%wood_temp
       rectarget%leaf_temp_pv     = recsource%leaf_temp_pv
       rectarget%wood_temp_pv     = recsource%wood_temp_pv
+      rectarget%leaf_vpdef       = recsource%leaf_vpdef
       rectarget%hite             = recsource%hite
       rectarget%dbh              = recsource%dbh
       rectarget%bdead            = recsource%bdead

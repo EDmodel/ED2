@@ -1444,6 +1444,11 @@ disturbance.o : $(ED_DYNAMICS)/disturbance.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+ed_bigleaf_init.o : $(ED_INIT)/ed_bigleaf_init.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 ed_driver.o : $(ED_DRIVER)/ed_driver.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)

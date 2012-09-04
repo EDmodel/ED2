@@ -133,6 +133,7 @@ module met_driver_coms
       real :: atm_tmp
       real :: atm_theta
       real :: atm_theiv
+      real :: atm_vpdef
       real :: atm_shv
       real :: theta
       real :: rshort

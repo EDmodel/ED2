@@ -31,7 +31,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    use phenology_coms , only : llspan_inf         ! ! intent(in)
    use farq_leuning   , only : lphysiol_full      ! ! sub-routine
    use allometry      , only : h2crownbh          ! ! function
-
+   use therm_lib      , only : qslif              ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite             ! Current site
@@ -79,6 +79,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: pss_available_water
    real                                    :: vm0_tuco
    real                                    :: llspan_tuco
+   real                                    :: can_ssh
    integer, dimension(n_pft)               :: tuco_pft
    !---------------------------------------------------------------------------------------!
 
@@ -294,12 +295,13 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             !------------------------------------------------------------------------------!
 
 
+            !------------------------------------------------------------------------------!
+            !    Find the 100% relative humidity.  This is a temporary test to make the    !
+            ! maximum carbon balance less negative.                                        !
+            !------------------------------------------------------------------------------!
+            can_ssh = csite%can_shv(ipa)
+            !------------------------------------------------------------------------------!
 
-            !------------------------------------------------------------------------------!
-            !    Scale photosynthetically active radiation per unit of leaf.               !
-            !------------------------------------------------------------------------------!
-            leaf_par = csite%par_l_max(ipa) / cpatch%lai(tuco)
-            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !    Call the photosynthesis for maximum photosynthetic rates.  The units      !
@@ -311,10 +313,10 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             call lphysiol_full(            & !
                csite%can_prss(ipa)         & ! Canopy air pressure              [       Pa]
              , csite%can_rhos(ipa)         & ! Canopy air density               [    kg/m³]
-             , csite%can_shv(ipa)          & ! Canopy air sp. humidity          [    kg/kg]
+             , can_ssh                     & ! Canopy air sp. humidity          [    kg/kg]
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ µmol/mol]
              , ipft                        & ! Plant functional type            [      ---]
-             , leaf_par                    & ! Absorbed photos. active rad.     [     W/m²]
+             , csite%par_l_max(ipa)        & ! Absorbed photos. active rad.     [ W/m²leaf]
              , cpatch%leaf_temp(tuco)      & ! Leaf temperature                 [        K]
              , cpatch%lint_shv(tuco)       & ! Leaf intercellular spec. hum.    [    kg/kg]
              , green_leaf_factor(ipft)     & ! Greenness rel. to on-allometry   [      ---]
@@ -394,7 +396,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , csite%can_shv(ipa)          & ! Canopy air sp. humidity          [    kg/kg]
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ µmol/mol]
              , ipft                        & ! Plant functional type            [      ---]
-             , leaf_par                    & ! Absorbed photos. active rad.     [     W/m²]
+             , leaf_par                    & ! Absorbed photos. active rad.     [ W/m²leaf]
              , cpatch%leaf_temp(ico)       & ! Leaf temperature                 [        K]
              , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum.    [    kg/kg]
              , green_leaf_factor(ipft)     & ! Greenness rel. to on-allometry   [      ---]
@@ -474,6 +476,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             cpatch%stomatal_conductance(ico) =  cpatch%fs_open(ico) *cpatch%gsw_open(ico)  &
                                              + (1.0 - cpatch%fs_open(ico))                 &
                                              * cpatch%gsw_closed(ico)
+            !------------------------------------------------------------------------------!
+
 
             !----- GPP, averaged over frqstate. -------------------------------------------!
             cpatch%gpp(ico)       = cpatch%lai(ico)                                        &
@@ -481,9 +485,13 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                     + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) ) &
                                   + cpatch%leaf_respiration(ico)
             cpatch%mean_gpp(ico)  = cpatch%mean_gpp(ico) + cpatch%gpp(ico)
+            !------------------------------------------------------------------------------!
+
 
             !----- GPP, summed over 1 day. [µmol/m²ground] --------------------------------!
             cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico)
+            !------------------------------------------------------------------------------!
+
 
             !----- Potential GPP if no N limitation. [µmol/m²ground] ----------------------!
             cpatch%today_gpp_pot(ico) = cpatch%today_gpp_pot(ico)                          &
@@ -491,14 +499,33 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                       * ( cpatch%fsw(ico) * cpatch%A_open(ico)             &
                                         + (1.0 - cpatch%fsw(ico)) * cpatch%A_closed(ico))  &
                                       + cpatch%leaf_respiration(ico)
+            !------------------------------------------------------------------------------!
 
-            !----- Maximum GPP if at the top of the canopy [µmol/m²ground] ----------------!
-            cpatch%today_gpp_max(ico) = cpatch%today_gpp_max(ico)                          &
-                                      + cpatch%lai(ico)                                    &
-                                      * ( cpatch%fs_open(ico) * csite%A_o_max(ipft,ipa)    &
-                                        + (1.0 - cpatch%fs_open(ico))                      &
-                                          * csite%A_c_max(ipft,ipa))                       &
-                                      + cpatch%leaf_respiration(ico)
+
+
+            !------------------------------------------------------------------------------!
+            !     Find the maximum productivities:                                         !
+            !                                                                              !
+            !     - today_gpp_lightmax: productivity of this cohort if it were at the top  !
+            !                           of the canopy (full light), with the actual fsw.   !
+            !     - today_gpp_moistmax: productivity of this cohort if the soil moisture   !
+            !                           was such that fsw would be 1 (full moisture), with !
+            !                           the actual light.                                  !
+            !                                                                              !
+            !     These productivites are used to scale the relative carbon balance, which !
+            ! will control density-dependent mortality.                                    !
+            !------------------------------------------------------------------------------!
+            cpatch%today_gpp_lightmax(ico) = cpatch%today_gpp_lightmax(ico)                &
+                                           + cpatch%lai(ico)                               &
+                                           * ( cpatch%fs_open(ico)                         &
+                                             * csite%A_o_max(ipft,ipa)                     &
+                                             + (1.0 - cpatch%fs_open(ico))                 &
+                                             * csite%A_c_max(ipft,ipa) )                   &
+                                           + cpatch%leaf_respiration(ico)
+            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
+                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
+                                           + cpatch%leaf_respiration(ico)
+            !------------------------------------------------------------------------------!
 
       else
          !----- If the cohort wasn't solved, we must assign some zeroes. ------------------!

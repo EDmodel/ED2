@@ -42,9 +42,8 @@ subroutine reproduction(cgrid, month)
    use consts_coms        , only : pio4                     ! ! intent(in)
    use ed_therm_lib       , only : calc_veg_hcap            ! ! function
    use allometry          , only : dbh2bd                   & ! function
-                                 , dbh2bl                   & ! function
-                                 , h2dbh                    & ! function
                                  , size2bl                  & ! function
+                                 , h2dbh                    & ! function
                                  , dbh2h                    & ! function
                                  , ed_biomass               & ! function
                                  , area_indices             & ! subroutine
@@ -172,13 +171,17 @@ subroutine reproduction(cgrid, month)
                         !------------------------------------------------------------------!
                         !    We assign the recruit in the temporary recruitment structure. !
                         !------------------------------------------------------------------!
-                        rectest%pft       = ipft
-                        rectest%leaf_temp = csite%can_temp(ipa)
-                        rectest%wood_temp = csite%can_temp(ipa)
-                        rectest%leaf_temp_pv=csite%can_temp(ipa)
-                        rectest%wood_temp_pv=csite%can_temp(ipa)
+                        rectest%pft          = ipft
+                        rectest%leaf_temp    = csite%can_temp (ipa)
+                        rectest%wood_temp    = csite%can_temp (ipa)
+                        rectest%leaf_temp_pv = csite%can_temp (ipa)
+                        rectest%wood_temp_pv = csite%can_temp (ipa)
+                        rectest%leaf_vpdef   = csite%can_vpdef(ipa)
                         
-                        !- recruits start at minimum height and dbh and bleaf are calculated from that
+                        !------------------------------------------------------------------!
+                        !    Recruits start at minimum height and dbh and bleaf are        !
+                        ! calculated from that.                                            !
+                        !------------------------------------------------------------------!
                         rectest%hite      = hgt_min(ipft)
                         rectest%dbh       = h2dbh(rectest%hite, ipft)
                         rectest%krdepth   = dbh2krdepth(rectest%hite,rectest%dbh           &
@@ -232,7 +235,6 @@ subroutine reproduction(cgrid, month)
                         ! patch.  Send the seed litter to the soil pools for decomposition.!
                         !------------------------------------------------------------------!
                         !---ALS=== dont send all seeds to litter!  Keep it for harvesting? !
-
                         csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa)                    &
                                                + csite%repro(ipft,ipa) / c2n_recruit(ipft)
                         csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa)                    &
@@ -311,6 +313,7 @@ subroutine reproduction(cgrid, month)
                      cpatch%wood_temp       (ico) = recruit(inew)%wood_temp
                      cpatch%leaf_temp_pv    (ico) = recruit(inew)%leaf_temp_pv
                      cpatch%wood_temp_pv    (ico) = recruit(inew)%wood_temp_pv
+                     cpatch%leaf_vpdef      (ico) = recruit(inew)%leaf_vpdef
                      !---------------------------------------------------------------------!
 
 
@@ -326,13 +329,17 @@ subroutine reproduction(cgrid, month)
                      !    Computing initial AGB and Basal Area. Their derivatives will be  !
                      ! zero.                                                               !
                      !---------------------------------------------------------------------!
-                     cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)  &
-                                                    ,cpatch%bsapwooda(ico),cpatch%pft(ico))
-
-                     cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
-                     cpatch%dagb_dt(ico) = 0.0
-                     cpatch%dba_dt(ico)  = 0.0
-                     cpatch%ddbh_dt(ico) = 0.0
+                     cpatch%agb      (ico) = ed_biomass( cpatch%bdead     (ico)            &
+                                                       , cpatch%bleaf     (ico)            &
+                                                       , cpatch%bsapwooda (ico)            &
+                                                       , cpatch%pft       (ico) )
+                     cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
+                     cpatch%dagb_dt  (ico) = 0.0
+                     cpatch%dlnagb_dt(ico) = 0.0
+                     cpatch%dba_dt   (ico) = 0.0
+                     cpatch%dlnba_dt (ico) = 0.0
+                     cpatch%ddbh_dt  (ico) = 0.0
+                     cpatch%dlndbh_dt(ico) = 0.0
                      !---------------------------------------------------------------------!
                      !     Setting new_recruit_flag to 1 indicates that this cohort is     !
                      ! included when we tally agb_recruit, basal_area_recruit.             !
@@ -357,7 +364,7 @@ subroutine reproduction(cgrid, month)
                      cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico)*cpatch%leaf_temp(ico)
                      cpatch%wood_energy(ico) = cpatch%wood_hcap(ico)*cpatch%wood_temp(ico)
 
-                     call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                     call is_resolvable(csite,ipa,ico)
 
                      !----- Update number of cohorts in this site. ------------------------!
                      csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1
@@ -450,71 +457,67 @@ subroutine reproduction(cgrid, month)
                   !------------------------------------------------------------------------!
                   !    Check to make sure that it is not too cold and reproduction is on   !
                   !------------------------------------------------------------------------!
-                  if( cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.      &
-                      repro_scheme /= 0 ) then
+                  if ( cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.     &
+                       repro_scheme /= 0 ) then
 
-                        nplant_inc = csite%repro(ipft,ipa) / one_plant_c(ipft)
-                        
-                        !------------------------------------------------------------------!
-                        !    Will only reproduce/grow if on-allometry so dont' have to     !
-                        ! worry about elongation factor                                    !
-                        !------------------------------------------------------------------!
-                        bleaf_plant    = dbh2bl(cpatch%dbh(ico),ipft) 
-                        bdead_plant    = dbh2bd(cpatch%dbh(ico),ipft)
-                        balive_plant   = dbh2bl(cpatch%dbh(ico),ipft) * (1.0 + qsw(ipft)  &
-                                         * cpatch%hite(ico) + q(ipft))
-                        broot_plant    = balive_plant * q(ipft) / (1.0 + qsw(ipft)        &
-                                         * cpatch%hite(ico) + q(ipft))
-                        bsapwood_plant = balive_plant * qsw(ipft) * cpatch%hite(ico)      &
-                                         / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
-                        
-                        cpatch%today_nppleaf(ico)   =  nplant_inc * bleaf_plant
-                        cpatch%today_nppfroot(ico)  =  nplant_inc * broot_plant
-                        cpatch%today_nppsapwood(ico)=  nplant_inc * bsapwood_plant
-                        cpatch%today_nppwood(ico)   = agf_bs(ipft) * nplant_inc            &
-                                                       * bdead_plant
-                        cpatch%today_nppcroot(ico)  = (1. - agf_bs(ipft)) * nplant_inc     &
-                                                       * bdead_plant
-
-                        cpatch%nplant(ico) = cpatch%nplant(ico) + nplant_inc
-                        
-                        
-                        !----- Reset the carbon available for reproduction. ---------------!
-                        csite%repro(ipft,ipa) = 0.0
+                     !---------------------------------------------------------------------!
+                     !    Plants don't have size distribution, so use the standard value   !
+                     ! of one plant to find a population increase that is consistent with  !
+                     ! the expected average biomass.                                       !
+                     !---------------------------------------------------------------------!
+                     nplant_inc         = csite%repro(ipft,ipa) / one_plant_c(ipft)
+                     cpatch%nplant(ico) = cpatch%nplant(ico) + nplant_inc
+                     !---------------------------------------------------------------------!
 
 
-                        !------------------------------------------------------------------!
-                        !    Obtain derived properties these will have changed             !
-                        !------------------------------------------------------------------!
-                        !----- Find LAI, WAI, and CAI. ------------------------------------!
-                        call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)             &
-                                      ,cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico)&
-                                      ,cpatch%hite(ico), cpatch%pft(ico),cpatch%sla(ico)   &
+                     !----- Reset the carbon available for reproduction. ------------------!
+                     csite%repro(ipft,ipa) = 0.0
+                     !---------------------------------------------------------------------!
+
+                     !---------------------------------------------------------------------!
+                     !    Will only reproduce/grow if on-allometry so dont' have to worry  !
+                     ! about elongation factor.                                            !
+                     !---------------------------------------------------------------------!
+                     bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
+                     broot_plant     = bleaf_plant * q(ipft)
+                     bsapwood_plant  = bleaf_plant * qsw(ipft) * cpatch%hite(ico)
+                     balive_plant    = bleaf_plant + broot_plant + bsapwood_plant
+                     bdead_plant     = dbh2bd(cpatch%dbh(ico),ipft)
+
+                     cpatch%today_nppleaf(ico)   =  nplant_inc * bleaf_plant
+                     cpatch%today_nppfroot(ico)  =  nplant_inc * broot_plant
+                     cpatch%today_nppsapwood(ico)=  nplant_inc * bsapwood_plant
+                     cpatch%today_nppwood(ico)   = agf_bs(ipft) * nplant_inc * bdead_plant
+                     cpatch%today_nppcroot(ico)  = (1. - agf_bs(ipft)) * nplant_inc        &
+                                                 * bdead_plant
+
+
+                     !---------------------------------------------------------------------!
+                     !    Obtain derived properties these will have changed                !
+                     !---------------------------------------------------------------------!
+                     !----- Find LAI, WAI, and CAI. ---------------------------------------!
+                     call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                &
+                                      ,cpatch%bdead(ico),cpatch%balive(ico)                &
+                                      ,cpatch%dbh(ico),cpatch%hite(ico)                    &
+                                      ,cpatch%pft(ico),cpatch%sla(ico)                     &
                                       ,cpatch%lai(ico),cpatch%wai(ico)                     &
                                       ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
-                        !----- Find heat capacity and vegetation internal energy. ---------!
-                        call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)             &
+                     !----- Find heat capacity and vegetation internal energy. ------------!
+                     call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
                                        ,cpatch%pft(ico)                                    &
                                        ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
 
-                        cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico)                    &
-                                                  * cpatch%leaf_temp(ico)
-                        cpatch%wood_energy(ico) = cpatch%wood_hcap(ico)                    &
-                                                  * cpatch%wood_temp(ico)
+                     cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
+                     cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
   
-                        call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                     call is_resolvable(csite,ipa,ico)
                   end if
 
                end do cohortloop_big
             end do patchloop_big
-            
-            
             !------------------------------------------------------------------------------!
-            !   Now that recruitment has occured rescale patches and update properties     !
-            !------------------------------------------------------------------------------!
-            !call rescale_patches(csite)
-            
+
             update_patch_loop_big: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
@@ -585,10 +588,6 @@ subroutine reproduction_eq_0(cgrid, month)
    use mem_polygons       , only : maxcohort             ! ! intent(in)
    use consts_coms        , only : pio4                  ! ! intent(in)
    use ed_therm_lib       , only : calc_veg_hcap         ! ! function
-   use allometry          , only : dbh2bd                & ! function
-                                 , dbh2bl                & ! function
-                                 , h2dbh                 & ! function
-                                 , area_indices          ! ! subroutine
    use grid_coms          , only : nzg                   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!

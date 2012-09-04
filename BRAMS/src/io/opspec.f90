@@ -781,7 +781,7 @@ subroutine opspec3
      end do
 
      select case (closure_type)
-     case ('en','nc','gr','lo','mc','kf','as')
+     case ('en','nc','qi','gr','lo','mc','kf','as')
        continue
      case default
        print *, 'FATAL - Invalid closure_type for Grell''s convection.'
@@ -815,8 +815,8 @@ subroutine opspec3
          IFATERR=IFATERR+1
      end if
 
-     if (cld2prec < 0. .or. cld2prec > 1.0) then
-       print *, 'FATAL - cld2prec must be between 0 and 1.'
+     if (cld2prec < -1.0 .or. cld2prec > 1.0) then
+       print *, 'FATAL - cld2prec must be between -1 and 1.'
        print *, 'Yours is currently set to ',cld2prec
        IFATERR=IFATERR+1
      end if
@@ -1031,9 +1031,13 @@ subroutine opspec3
      ifaterr = ifaterr + 1
   end if
 
-  if (isoilbc < 0 .or. isoilbc > 4) then
+  if (isoilbc < 0 .or. isoilbc > 3) then
      write (unit=*,fmt='(a,1x,i4,a)')                                                      &
-       'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
+       'Invalid ISOILBC, it must be between 0 and 3.  Yours is set to',isoilbc,'...'
+     ifaterr = ifaterr +1
+  else if (isoilbc == 2 .and. (sldrain < 0. .or. sldrain > 90.)) then
+     write (unit=*,fmt='(a,1x,es12.5,a)')                                                  &
+       'Invalid SLDRAIN, it must be between 0 and 90.  Yours is set to ',sldrain,'...'
      ifaterr = ifaterr +1
   end if
  

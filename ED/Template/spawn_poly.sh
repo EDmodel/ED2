@@ -15,7 +15,7 @@ bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
 #----- File containing the list of jobs and their settings: -------------------------------#
 lonlat=${here}'/joborder.txt'
 #----- Should the output be in a disk other than the one set in "here"? -------------------#
-outthere='y'
+outthere='n'
 #----- Disk name (usually just the path until right before your own directory). -----------#
 diskthere='/n/moorcroftfs2'
 #----- This is the default path with the met driver. --------------------------------------#
@@ -25,9 +25,9 @@ shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Should we use pseudo drought data? -------------------------------------------------#
 pseudodrought='n'
 #----- Path with default pseudo drought drivers. ------------------------------------------#
-pdroughtpathdef='/n/moorcroft_data/mlongo/data/ed2_data/pseudo_drought'
+pdroughtpathdef='/n/moorcroft_data/mlongo/data/ed2_data/drought_met_driver'
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
-copy2scratch='y'
+copy2scratch='n'
 #------------------------------------------------------------------------------------------#
 #    In case we should copy, this is the source where the data is organised to go.  This   #
 # will override sitemetdef and pdroughtpath.                                               #
@@ -57,6 +57,15 @@ toldef='0.01'
 #  6 : Biomass initialisation files (only for those that we have such data).               #
 #------------------------------------------------------------------------------------------#
 initmode=6
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Which type of under storey should I use?                                             #
+# 0 -- No understorey                                                                      #
+# 1 -- Based on sci_005 runs.                                                              #
+#------------------------------------------------------------------------------------------#
+iustein=1
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -92,9 +101,9 @@ execname='ed_2.1-opt'
 #----- Set the main path for the site, pseudo drought and Sheffield met drivers. ----------#
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
-   sitemet='/scratch/ed2_data/met_driver/site_met_driver'
-   pdroughtpath='/scratch/ed2_data/met_driver/pseudo_drought'
-   shefpath='/scratch/ed2_data/met_driver/sheffield'
+   sitemet='/scratch/mlongo/met_driver/site_met_driver'
+   pdroughtpath='/scratch/mlongo/met_driver/drought_met_driver'
+   shefpath='/scratch/mlongo/met_driver/sheffield'
 else
    sitemet=${sitemetdef}
    pdroughtpath=${pdroughtpathdef}
@@ -255,71 +264,76 @@ do
    polysand=`echo ${oi}     | awk '{print $15}'`
    polyclay=`echo ${oi}     | awk '{print $16}'`
    polydepth=`echo ${oi}    | awk '{print $17}'`
-   polycol=`echo ${oi}      | awk '{print $18}'`
-   slzres=`echo ${oi}       | awk '{print $19}'`
-   queue=`echo ${oi}        | awk '{print $20}'`
-   metdriver=`echo ${oi}    | awk '{print $21}'`
-   dtlsm=`echo ${oi}        | awk '{print $22}'`
-   vmfactc3=`echo ${oi}     | awk '{print $23}'`
-   vmfactc4=`echo ${oi}     | awk '{print $24}'`
-   mphototrc3=`echo ${oi}   | awk '{print $25}'`
-   mphototec3=`echo ${oi}   | awk '{print $26}'`
-   mphotoc4=`echo ${oi}     | awk '{print $27}'`
-   bphotoblc3=`echo ${oi}   | awk '{print $28}'`
-   bphotonlc3=`echo ${oi}   | awk '{print $29}'`
-   bphotoc4=`echo ${oi}     | awk '{print $30}'`
-   kwgrass=`echo ${oi}      | awk '{print $31}'`
-   kwtree=`echo ${oi}       | awk '{print $32}'`
-   gammac3=`echo ${oi}      | awk '{print $33}'`
-   gammac4=`echo ${oi}      | awk '{print $34}'`
-   d0grass=`echo ${oi}      | awk '{print $35}'`
-   d0tree=`echo ${oi}       | awk '{print $36}'`
-   alphac3=`echo ${oi}      | awk '{print $37}'`
-   alphac4=`echo ${oi}      | awk '{print $38}'`
-   klowco2=`echo ${oi}      | awk '{print $39}'`
-   rrffact=`echo ${oi}      | awk '{print $40}'`
-   growthresp=`echo ${oi}   | awk '{print $41}'`
-   lwidthgrass=`echo ${oi}  | awk '{print $42}'`
-   lwidthbltree=`echo ${oi} | awk '{print $43}'`
-   lwidthnltree=`echo ${oi} | awk '{print $44}'`
-   q10c3=`echo ${oi}        | awk '{print $45}'`
-   q10c4=`echo ${oi}        | awk '{print $46}'`
-   h2olimit=`echo ${oi}     | awk '{print $47}'`
-   isfclyrm=`echo ${oi}     | awk '{print $48}'`
-   icanturb=`echo ${oi}     | awk '{print $49}'`
-   ubmin=`echo ${oi}        | awk '{print $50}'`
-   ugbmin=`echo ${oi}       | awk '{print $51}'`
-   ustmin=`echo ${oi}       | awk '{print $52}'`
-   gamm=`echo ${oi}         | awk '{print $53}'`
-   gamh=`echo ${oi}         | awk '{print $54}'`
-   tprandtl=`echo ${oi}     | awk '{print $55}'`
-   ribmax=`echo ${oi}       | awk '{print $56}'`
-   atmco2=`echo ${oi}       | awk '{print $57}'`
-   thcrit=`echo ${oi}       | awk '{print $58}'`
-   smfire=`echo ${oi}       | awk '{print $59}'`
-   ifire=`echo ${oi}        | awk '{print $60}'`
-   fireparm=`echo ${oi}     | awk '{print $61}'`
-   ipercol=`echo ${oi}      | awk '{print $62}'`
-   isoilbc=`echo ${oi}      | awk '{print $63}'`
-   runoff=`echo ${oi}       | awk '{print $64}'`
-   imetrad=`echo ${oi}      | awk '{print $65}'`
-   ibranch=`echo ${oi}      | awk '{print $66}'`
-   icanrad=`echo ${oi}      | awk '{print $67}'`
-   crown=`echo   ${oi}      | awk '{print $68}'`
-   ltransvis=`echo ${oi}    | awk '{print $69}'`
-   lreflectvis=`echo ${oi}  | awk '{print $70}'`
-   ltransnir=`echo ${oi}    | awk '{print $71}'`
-   lreflectnir=`echo ${oi}  | awk '{print $72}'`
-   orienttree=`echo ${oi}   | awk '{print $73}'`
-   orientgrass=`echo ${oi}  | awk '{print $74}'`
-   clumptree=`echo ${oi}    | awk '{print $75}'`
-   clumpgrass=`echo ${oi}   | awk '{print $76}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $77}'`
-   igndvap=`echo ${oi}      | awk '{print $78}'`
-   iphen=`echo ${oi}        | awk '{print $79}'`
-   iallom=`echo ${oi}       | awk '{print $80}'`
-   ibigleaf=`echo ${oi}     | awk '{print $81}'`
-   irepro=`echo ${oi}       | awk '{print $82}'`
+   polysoilbc=`echo ${oi}   | awk '{print $18}'`
+   polysldrain=`echo ${oi}  | awk '{print $19}'`
+   polycol=`echo ${oi}      | awk '{print $20}'`
+   slzres=`echo ${oi}       | awk '{print $21}'`
+   queue=`echo ${oi}        | awk '{print $22}'`
+   metdriver=`echo ${oi}    | awk '{print $23}'`
+   dtlsm=`echo ${oi}        | awk '{print $24}'`
+   vmfactc3=`echo ${oi}     | awk '{print $25}'`
+   vmfactc4=`echo ${oi}     | awk '{print $26}'`
+   mphototrc3=`echo ${oi}   | awk '{print $27}'`
+   mphototec3=`echo ${oi}   | awk '{print $28}'`
+   mphotoc4=`echo ${oi}     | awk '{print $29}'`
+   bphotoblc3=`echo ${oi}   | awk '{print $30}'`
+   bphotonlc3=`echo ${oi}   | awk '{print $31}'`
+   bphotoc4=`echo ${oi}     | awk '{print $32}'`
+   kwgrass=`echo ${oi}      | awk '{print $33}'`
+   kwtree=`echo ${oi}       | awk '{print $34}'`
+   gammac3=`echo ${oi}      | awk '{print $35}'`
+   gammac4=`echo ${oi}      | awk '{print $36}'`
+   d0grass=`echo ${oi}      | awk '{print $37}'`
+   d0tree=`echo ${oi}       | awk '{print $38}'`
+   alphac3=`echo ${oi}      | awk '{print $39}'`
+   alphac4=`echo ${oi}      | awk '{print $40}'`
+   klowco2=`echo ${oi}      | awk '{print $41}'`
+   decomp=`echo ${oi}       | awk '{print $42}'`
+   rrffact=`echo ${oi}      | awk '{print $43}'`
+   growthresp=`echo ${oi}   | awk '{print $44}'`
+   lwidthgrass=`echo ${oi}  | awk '{print $45}'`
+   lwidthbltree=`echo ${oi} | awk '{print $46}'`
+   lwidthnltree=`echo ${oi} | awk '{print $47}'`
+   q10c3=`echo ${oi}        | awk '{print $48}'`
+   q10c4=`echo ${oi}        | awk '{print $49}'`
+   h2olimit=`echo ${oi}     | awk '{print $50}'`
+   imortscheme=`echo ${oi}  | awk '{print $51}'`
+   ddmortconst=`echo ${oi}  | awk '{print $52}'`
+   isfclyrm=`echo ${oi}     | awk '{print $53}'`
+   icanturb=`echo ${oi}     | awk '{print $54}'`
+   ubmin=`echo ${oi}        | awk '{print $55}'`
+   ugbmin=`echo ${oi}       | awk '{print $56}'`
+   ustmin=`echo ${oi}       | awk '{print $57}'`
+   gamm=`echo ${oi}         | awk '{print $58}'`
+   gamh=`echo ${oi}         | awk '{print $59}'`
+   tprandtl=`echo ${oi}     | awk '{print $60}'`
+   ribmax=`echo ${oi}       | awk '{print $61}'`
+   atmco2=`echo ${oi}       | awk '{print $62}'`
+   thcrit=`echo ${oi}       | awk '{print $63}'`
+   smfire=`echo ${oi}       | awk '{print $64}'`
+   ifire=`echo ${oi}        | awk '{print $65}'`
+   fireparm=`echo ${oi}     | awk '{print $66}'`
+   ipercol=`echo ${oi}      | awk '{print $67}'`
+   runoff=`echo ${oi}       | awk '{print $68}'`
+   imetrad=`echo ${oi}      | awk '{print $69}'`
+   ibranch=`echo ${oi}      | awk '{print $70}'`
+   icanrad=`echo ${oi}      | awk '{print $71}'`
+   crown=`echo   ${oi}      | awk '{print $72}'`
+   ltransvis=`echo ${oi}    | awk '{print $73}'`
+   lreflectvis=`echo ${oi}  | awk '{print $74}'`
+   ltransnir=`echo ${oi}    | awk '{print $75}'`
+   lreflectnir=`echo ${oi}  | awk '{print $76}'`
+   orienttree=`echo ${oi}   | awk '{print $77}'`
+   orientgrass=`echo ${oi}  | awk '{print $78}'`
+   clumptree=`echo ${oi}    | awk '{print $79}'`
+   clumpgrass=`echo ${oi}   | awk '{print $80}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $81}'`
+   igndvap=`echo ${oi}      | awk '{print $82}'`
+   iphen=`echo ${oi}        | awk '{print $83}'`
+   iallom=`echo ${oi}       | awk '{print $84}'`
+   ibigleaf=`echo ${oi}     | awk '{print $85}'`
+   irepro=`echo ${oi}       | awk '{print $86}'`
+   treefall=`echo ${oi}     | awk '{print $87}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -402,42 +416,60 @@ do
 
             /bin/rm -f ${here}/badfile.txt
          done
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Run the small R script to check whether the simulation was running or not, #
+         # and whether there was any cohort left by the time the runs were stopped.        #
+         #---------------------------------------------------------------------------------#
+         sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
+         sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
+         sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
+         sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
+         R CMD BATCH ${here}/${polyname}/whichrun.r ${here}/${polyname}/outwhichrun.txt
+         while [ ! -s ${here}/${polyname}/statusrun.txt ]
+         do
+            sleep 0.5
+         done
+         year=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}'`
+         month=`cat ${here}/${polyname}/statusrun.txt | awk '{print $3}'`
+         date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
+         time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
+         runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
+         #---------------------------------------------------------------------------------#
+      else
+
+         #---------------------------------------------------------------------------------#
+         #      Make a copy of the directory "there" in case here and there aren't the     #
+         # same.                                                                           #
+         #---------------------------------------------------------------------------------#
+         if [ ${here} != ${there} ]
+         then
+            cp -r ${here}/Template ${there}/${polyname}
+         fi
+
+         sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
+         sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
+         sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
+         sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
+         year=${yeara}
+         month=${montha}
+         date=${datea}
+         time=${timea}
+         runt='INITIAL'
+         #---------------------------------------------------------------------------------#
       fi
       #------------------------------------------------------------------------------------#
-
-
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #      Run the small R script to check whether the simulation was running or not,    #
-      # and whether there was any cohort left by the time the runs were stopped.           #
-      #------------------------------------------------------------------------------------#
-      sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
-      sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
-      sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
-      sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
-      R CMD BATCH ${here}/${polyname}/whichrun.r ${here}/${polyname}/outwhichrun.txt
-      while [ ! -s ${here}/${polyname}/statusrun.txt ]
-      do
-         sleep 0.5
-      done
-      year=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}'`
-      month=`cat ${here}/${polyname}/statusrun.txt | awk '{print $3}'`
-      date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
-      time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
-      runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
-      #------------------------------------------------------------------------------------#
-
    else
-   
+
       #----- Make a copy of the directory "there" in case here and there aren't the same. -#
       if [ ${here} != ${there} ]
       then
          cp -r ${here}/Template ${there}/${polyname}
       fi
-   
+
       sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
       sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
       sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
@@ -449,13 +481,6 @@ do
       runt='INITIAL'
    fi
    #---------------------------------------------------------------------------------------#
-
-
-
-
-
-
-
 
 
 
@@ -502,6 +527,35 @@ do
 
 
 
+   #---------------------------------------------------------------------------------------#
+   #     Determine the census structure.                                                   #
+   #---------------------------------------------------------------------------------------#
+   let yodd=${yeara}%2
+   case ${polyiata} in
+   gyf)
+      dtcensus=24
+      let yr1stcensus=${yeara}+${yodd}
+      mon1stcensus=7
+      minrecruitdbh=10
+      ;;
+   s67)
+      dtcensus=24
+      let yr1stcensus=${yeara}+1-${yodd}
+      mon1stcensus=7
+      minrecruitdbh=10
+      ;;
+   *)
+      dtcensus=1
+      yr1stcensus=${yeara}
+      mon1stcensus=1
+      minrecruitdbh=10
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
+
    if [ ${pseudodrought} != 'y' ] && [ ${pseudodrought} != 'Y' ]
    then
       #------------------------------------------------------------------------------------#
@@ -509,82 +563,76 @@ do
       # dataset, otherwise the site-level tower data is used.                              #
       #------------------------------------------------------------------------------------#
       case ${metdriver} in
-      Bananal_Island)
-         metdriverdb=${sitemet}'/Bananal_Island/Bananal_HEADER'
+      Bananal)
+         metdriverdb=${sitemet}'/Bananal/Bananal_HEADER'
          metcyc1=2004
          metcycf=2006
          imetavg=1
          ;;
       Caxiuana)
-         metdriverdb=${sitemet}'/Caxiuana/Caxiuana06_HEADER'
+         metdriverdb=${sitemet}'/Caxiuana/Caxiuana_HEADER'
          metcyc1=1999
          metcycf=2003
          imetavg=1
          ;;
+      Fazenda_Nossa_Senhora)
+         metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
+         metcyc1=1999
+         metcycf=2002
+         imetavg=1
+         ;;
       Harvard)
-         metdriverdb=${sitemet}'/Harvard_Forest/Harvard_Forest_HEADER'
+         metdriverdb=${sitemet}'/Harvard/Harvard_HEADER'
          metcyc1=1992
          metcycf=2003
          imetavg=1
          ;;
-      Tonzi)
-         metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
-         metcyc1=2000
-         metcycf=2010
-         imetavg=1
-         ;;
-      Manaus_KM34)
-         metdriverdb=${sitemet}'/Manaus_KM34/Manaus_KM34_HEADER'
-         metcyc1=2002
+      Manaus_Km34)
+         metdriverdb=${sitemet}'/Manaus_Km34/Manaus_Km34_HEADER'
+         metcyc1=1999
          metcycf=2005
          imetavg=1
          ;;
-      Reserva_Jaru)
-         metdriverdb=${sitemet}'/Reserva_Jaru/Reserva_Jaru_HEADER'
-         metcyc1=2000
+      Paracou)
+         metdriverdb=${sitemet}'/Paracou/Paracou_HEADER'
+         metcyc1=2004
+         metcycf=2009
+         imetavg=1
+         ;;
+      Pe-de-Gigante)
+         metdriverdb=${sitemet}'/Pe-de-Gigante/Pe-de-Gigante_HEADER'
+         metcyc1=2001
+         metcycf=2003
+         imetavg=1
+         ;;
+      Petrolina)
+         metdriverdb=${sitemet}'/Petrolina/Petrolina_HEADER'
+         metcyc1=2004
+         metcycf=2011
+         imetavg=1
+         ;;
+      Rebio_Jaru)
+         metdriverdb=${sitemet}'/Rebio_Jaru/Rebio_Jaru_HEADER'
+         metcyc1=1999
          metcycf=2002
          imetavg=1
          ;;
-      Reserva_Pe-de-Gigante)
-         metdriverdb=${sitemet}'/Reserva_Pe_de_Gigante/Reserva_Pe-de-Gigante_HEADER'
+      Santarem_Km67)
+         metdriverdb=${sitemet}'/Santarem_Km67/Santarem_Km67_HEADER'
          metcyc1=2001
-         metcycf=2003
-         imetavg=1
-         ;;
-      Santarem_KM66)
-         metdriverdb=${sitemet}'/Santarem_KM66/Santarem_KM66_HEADER'
-         metcyc1=2002
          metcycf=2010
          imetavg=1
          ;;
-      Santarem_KM67)
-         metdriverdb=${sitemet}'/Santarem_KM67/Santarem_KM67_HEADER'
-         metcyc1=2002
-         metcycf=2004
-         imetavg=1
-         ;;
-      Santarem_KM77)
-         metdriverdb=${sitemet}'/Santarem_KM77/Santarem_KM77_HEADER'
+      Santarem_Km77)
+         metdriverdb=${sitemet}'/Santarem_Km77/Santarem_Km77_HEADER'
          metcyc1=2001
          metcycf=2005
          imetavg=1
          ;;
-      Santarem_KM83)
-         metdriverdb=${sitemet}'/Santarem_KM83/Santarem_KM83_HEADER'
-         metcyc1=2001
+      Santarem_Km83)
+         metdriverdb=${sitemet}'/Santarem_Km83/Santarem_Km83_HEADER'
+         metcyc1=2000
          metcycf=2003
-         imetavg=1
-         ;;
-      Fazenda_NS)
-         metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
-         metcyc1=1999
-         metcycf=2001
-         imetavg=1
-         ;;
-      Guyaflux)
-         metdriverdb=${sitemet}'/Guyaflux/Guyaflux_HEADER'
-         metcyc1=2007
-         metcycf=2009
          imetavg=1
          ;;
       Sheffield)
@@ -597,6 +645,12 @@ do
          metcyc1=1969
          metcycf=2008
          imetavg=2
+         ;;
+      Tonzi)
+         metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
+         metcyc1=2000
+         metcycf=2010
+         imetavg=1
          ;;
       *)
          echo 'Met driver: '${metdriver}
@@ -616,43 +670,39 @@ do
       # a on/off flag, or if we turn on and off each of the drought components.  We must   #
       # figure out which one we are doing here.                                            #
       #------------------------------------------------------------------------------------#
-      let dr0=${nchar}-9
-      drought=`echo ${polyname} | awk '{print substr($1,'${dr0}',9)}'`
-      if [ ${drought} == 'drought00' ]
-      then
-         metdesc='tmp00_shv00_rad00_raf00'
-      elif [ ${drought} == 'drought01' ]
-      then
-         metdesc='tmp01_shv00_rad01_raf01'
-      else
-         let mda=${nchar}-23
-         metdesc=`echo ${polyname} | awk '{print substr($1,'${mda}',23)}'`
-      fi
+      let next=${nchar}-11
+      polyext=`echo ${polyname} | awk '{print substr($1,'${next}',5)}'`
+      let nseq=${nchar}-5
+      polyseq=`echo ${polyname} | awk '{print substr($1,'${nseq}',5)}'`
+      metdesc="${polyiata}-${polyext}_${polyseq}"
+      metdriverdb="${pdroughtpath}/${metdesc}/${metdesc}_HEADER"
       #------------------------------------------------------------------------------------#
 
-      case ${metdriver} in
-      Santarem_KM66)
-         metdriverdb=${pdroughtpath}'/Santarem_KM66/S66_'${metdesc}'_HEADER'
-         metcyc1=1600
-         metcycf=1609
+      case ${polyiata} in
+      s67)
+         case polyseq in
+         seq00)
+            metcyc1=2021
+            metcycf=2041
+            ;;
+         seq01)
+            metcyc1=2021
+            metcycf=2037
+            ;;
+         esac
          imetavg=1
          ;;
-      Santarem_KM67)
-         metdriverdb=${pdroughtpath}'/Santarem_KM67/S67_'${metdesc}'_HEADER'
-         metcyc1=1600
-         metcycf=1609
-         imetavg=1
-         ;;
-      Santarem_KM77)
-         metdriverdb=${pdroughtpath}'/Santarem_KM77/S77_'${metdesc}'_HEADER'
-         metcyc1=1600
-         metcycf=1609
-         imetavg=1
-         ;;
-      Manaus_KM34)
-         metdriverdb=${pdroughtpath}'/Manaus_KM34/M34_'${metdesc}'_HEADER'
-         metcyc1=1600
-         metcycf=1609
+      gyf)
+         case polyseq in
+         seq00)
+            metcyc1=2021
+            metcycf=2032
+            ;;
+         seq01)
+            metcyc1=2021
+            metcycf=2033
+            ;;
+         esac
          imetavg=1
          ;;
       *)
@@ -983,66 +1033,92 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
-   elif [ ${initmode} -eq 6 ]
+   elif [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
-      case ${polyiata} in
-      hvd)
-         thissfilin=${bioinit}'/harvard.'
+      case ${iustein} in
+      0)
+         #----- Frankeinstein's understorey for those that have one. ----------------------#
+         case ${polyiata} in
+         hvd)
+            thissfilin=${bioinit}'/hvd_nounder.'
+            ;;
+         cax)
+            thissfilin=${bioinit}'/cax_nounder.'
+            ;;
+         s67|s83)
+            thissfilin=${bioinit}'/s67_nounder.'
+            ;;
+         m34)
+            thissfilin=${bioinit}'/m34_nounder.'
+            ;;
+         gyf)
+            thissfilin=${bioinit}'/gyf_nounder.'
+            ;;
+         pdg)
+            thissfilin=${bioinit}'/pdg_nounder.'
+            ;;
+         rja)
+            thissfilin=${bioinit}'/rja_nounder.'
+            ;;
+         fns)
+            thissfilin=${bioinit}'/fns_nounder.'
+            ;;
+         s77)
+            thissfilin=${bioinit}'/fns_nounder.'
+            ;;
+         *)
+            echo ' Polygon: '${polyname}
+            echo ' IATA: '${polyiata}
+            echo ' IUSTEIN: '${iustein}
+            echo 'This IATA cannot be used by biomass initialisation with this IUSTEIN!'
+            exit 59
+            ;;
+         esac
          ;;
-      s66)
-         thissfilin=${bioinit}'/km67_ustein_newallom.'
-         ;;
-      s67)
-         thissfilin=${bioinit}'/km67_ustein_newallom.'
-         ;;
-      s83)
-         thissfilin=${bioinit}'/km67_ustein_newallom.'
-         ;;
-      m34)
-         thissfilin=${bioinit}'/k34_ustein_newallom.'
-         ;;
-      bdf)
-         thissfilin=${bioinit}'/pBDFFP1_1983_ustein.'
-         ;;
-      pdg)
-         thissfilin=${bioinit}'/pdg_ustein_newallom.'
-         ;;
-      fns)
-         thissfilin=${bioinit}'/fns_c4.'
-         ;;
-      fns_c4)
-         thissfilin=${bioinit}'/fns_c4.'
-         ;;
-      fns_c3)
-         thissfilin=${bioinit}'/fns_c3.'
-         ;;
-      fns_34)
-         thissfilin=${bioinit}'/fns_c3c4.'
-         ;;
-      s77)
-         thissfilin=${bioinit}'/km77_c3.'
-         ;;
-      s77_c3)
-         thissfilin=${bioinit}'/km77_c3.'
-         ;;
-      s77_c4)
-         thissfilin=${bioinit}'/km77_c4.'
-         ;;
-      s77_34)
-         thissfilin=${bioinit}'/km77_c3c4.'
-         ;;
-      cax)
-         thissfilin=${bioinit}'/cax06_ustein_newallom.'
-         ;;
-      rja)
-         thissfilin=${bioinit}'/rja_ustein_newallom.'
+      1)
+         #----- New Frankeinstein's under-storey for those that have one. -----------------#
+         case ${polyiata} in
+         hvd)
+            thissfilin=${bioinit}'/hvd_under_sci005.'
+            ;;
+         cax)
+            thissfilin=${bioinit}'/cax_under_sci005.'
+            ;;
+         s67|s83)
+            thissfilin=${bioinit}'/s67_under_sci005.'
+            ;;
+         m34)
+            thissfilin=${bioinit}'/m34_under_sci005.'
+            ;;
+         gyf)
+            thissfilin=${bioinit}'/gyf_under_sci005.'
+            ;;
+         pdg)
+            thissfilin=${bioinit}'/pdg_under_sci005.'
+            ;;
+         rja)
+            thissfilin=${bioinit}'/rja_under_sci005.'
+            ;;
+         fns)
+            thissfilin=${bioinit}'/fns_under_sci005.'
+            ;;
+         s77)
+            thissfilin=${bioinit}'/s77_under_sci005.'
+            ;;
+         *)
+            echo ' Polygon: '${polyname}
+            echo ' IATA: '${polyiata}
+            echo ' IUSTEIN: '${iustein}
+            echo 'This IATA cannot be used by biomass initialisation with this IUSTEIN!'
+            exit 59
+            ;;
+         esac
          ;;
       *)
-         echo ' Polygon: '${polyname}
-         echo ' IATA: '${polyiata}
-         echo 'This IATA cannot be used by biomass initialisation!'
-         exit 59
+         #----- Bad settings. -------------------------------------------------------------#
+         echo ' IUSTEIN should be 0, or 1 and yours is set to '${iustein}'...'
+         exit 66
          ;;
       esac
    else
@@ -1051,100 +1127,109 @@ do
    #---------------------------------------------------------------------------------------#
 
    ED2IN=${here}'/'${polyname}'/ED2IN'
-   sed -i s@paththere@${there}@g             ${ED2IN}
-   sed -i s@myyeara@${thisyeara}@g           ${ED2IN}
-   sed -i s@mymontha@${montha}@g             ${ED2IN}
-   sed -i s@mydatea@${datea}@g               ${ED2IN}
-   sed -i s@mytimea@${timea}@g               ${ED2IN}
-   sed -i s@myyearz@${thisyearz}@g           ${ED2IN}
-   sed -i s@mymonthz@${monthz}@g             ${ED2IN}
-   sed -i s@mydatez@${datez}@g               ${ED2IN}
-   sed -i s@mytimez@${timez}@g               ${ED2IN}
-   sed -i s@mydtlsm@${dtlsm}@g               ${ED2IN}
-   sed -i s@thispoly@${polyname}@g           ${ED2IN}
-   sed -i s@plonflag@${polylon}@g            ${ED2IN}
-   sed -i s@platflag@${polylat}@g            ${ED2IN}
-   sed -i s@timehhhh@${time}@g               ${ED2IN}
-   sed -i s@datehhhh@${date}@g               ${ED2IN}
-   sed -i s@monthhhh@${month}@g              ${ED2IN}
-   sed -i s@yearhhhh@${year}@g               ${ED2IN}
-   sed -i s@myinitmode@${initmode}@g         ${ED2IN}
-   sed -i s@mysfilin@${thissfilin}@g         ${ED2IN}
-   sed -i s@mytrees@${pfts}@g                ${ED2IN}
-   sed -i s@mycrop@${crop}@g                 ${ED2IN}
-   sed -i s@myplantation@${plantation}@g     ${ED2IN}
-   sed -i s@myiphen@${iphen}@g               ${ED2IN}
-   sed -i s@myallom@${iallom}@g              ${ED2IN}
-   sed -i s@myisoilflg@${polyisoil}@g        ${ED2IN}
-   sed -i s@mynslcon@${polyntext}@g          ${ED2IN}
-   sed -i s@myslxsand@${polysand}@g          ${ED2IN}
-   sed -i s@myslxclay@${polyclay}@g          ${ED2IN}
-   sed -i s@mysoilcol@${polycol}@g           ${ED2IN}
-   sed -i s@mynzg@${polynzg}@g               ${ED2IN}
-   sed -i s@mymetdriverdb@${metdriverdb}@g   ${ED2IN}
-   sed -i s@mymetcyc1@${metcyc1}@g           ${ED2IN}
-   sed -i s@mymetcycf@${metcycf}@g           ${ED2IN}
-   sed -i s@mytoler@${toler}@g               ${ED2IN}
-   sed -i s@RUNFLAG@${runt}@g                ${ED2IN}
-   sed -i s@myvmfactc3@${vmfactc3}@g         ${ED2IN}
-   sed -i s@myvmfactc4@${vmfactc4}@g         ${ED2IN}
-   sed -i s@mymphototrc3@${mphototrc3}@g     ${ED2IN}
-   sed -i s@mymphototec3@${mphototec3}@g     ${ED2IN}
-   sed -i s@mymphotoc4@${mphotoc4}@g         ${ED2IN}
-   sed -i s@mybphotoblc3@${bphotoblc3}@g     ${ED2IN}
-   sed -i s@mybphotonlc3@${bphotonlc3}@g     ${ED2IN}
-   sed -i s@mybphotoc4@${bphotoc4}@g         ${ED2IN}
-   sed -i s@mykwgrass@${kwgrass}@g           ${ED2IN}
-   sed -i s@mykwtree@${kwtree}@g             ${ED2IN}
-   sed -i s@mygammac3@${gammac3}@g           ${ED2IN}
-   sed -i s@mygammac4@${gammac4}@g           ${ED2IN}
-   sed -i s@myd0grass@${d0grass}@g           ${ED2IN}
-   sed -i s@myd0tree@${d0tree}@g             ${ED2IN}
-   sed -i s@myalphac3@${alphac3}@g           ${ED2IN}
-   sed -i s@myalphac4@${alphac4}@g           ${ED2IN}
-   sed -i s@myklowco2@${klowco2}@g           ${ED2IN}
-   sed -i s@myrrffact@${rrffact}@g           ${ED2IN}
-   sed -i s@mygrowthresp@${growthresp}@g     ${ED2IN}
-   sed -i s@mylwidthgrass@${lwidthgrass}@g   ${ED2IN}
-   sed -i s@mylwidthbltree@${lwidthbltree}@g ${ED2IN}
-   sed -i s@mylwidthnltree@${lwidthnltree}@g ${ED2IN}
-   sed -i s@myq10c3@${q10c3}@g               ${ED2IN}
-   sed -i s@myq10c4@${q10c4}@g               ${ED2IN}
-   sed -i s@myh2olimit@${h2olimit}@g         ${ED2IN}
-   sed -i s@mysfclyrm@${isfclyrm}@g          ${ED2IN}
-   sed -i s@myicanturb@${icanturb}@g         ${ED2IN}
-   sed -i s@myatmco2@${atmco2}@g             ${ED2IN}
-   sed -i s@mythcrit@${thcrit}@g             ${ED2IN}
-   sed -i s@mysmfire@${smfire}@g             ${ED2IN}
-   sed -i s@myfire@${ifire}@g                ${ED2IN}
-   sed -i s@myfuel@${fireparm}@g             ${ED2IN}
-   sed -i s@mymetavg@${imetavg}@g            ${ED2IN}
-   sed -i s@mypercol@${ipercol}@g            ${ED2IN}
-   sed -i s@mysoilbc@${isoilbc}@g            ${ED2IN}
-   sed -i s@myrunoff@${runoff}@g             ${ED2IN}
-   sed -i s@mymetrad@${imetrad}@g            ${ED2IN}
-   sed -i s@mybranch@${ibranch}@g            ${ED2IN}
-   sed -i s@mycanrad@${icanrad}@g            ${ED2IN}
-   sed -i s@mycrown@${crown}@g               ${ED2IN}
-   sed -i s@myltransvis@${ltransvis}@g       ${ED2IN}
-   sed -i s@myltransnir@${ltransnir}@g       ${ED2IN}
-   sed -i s@mylreflectvis@${lreflectvis}@g   ${ED2IN}
-   sed -i s@mylreflectnir@${lreflectnir}@g   ${ED2IN}
-   sed -i s@myorienttree@${orienttree}@g     ${ED2IN}
-   sed -i s@myorientgrass@${orientgrass}@g   ${ED2IN}
-   sed -i s@myclumptree@${clumptree}@g       ${ED2IN}
-   sed -i s@myclumpgrass@${clumpgrass}@g     ${ED2IN}
-   sed -i s@myvegtdyn@${ivegtdyn}@g          ${ED2IN}
-   sed -i s@mybigleaf@${ibigleaf}@g          ${ED2IN}
-   sed -i s@myrepro@${irepro}@g              ${ED2IN}
-   sed -i s@myubmin@${ubmin}@g               ${ED2IN}
-   sed -i s@myugbmin@${ugbmin}@g             ${ED2IN}
-   sed -i s@myustmin@${ustmin}@g             ${ED2IN}
-   sed -i s@mygamm@${gamm}@g                 ${ED2IN}
-   sed -i s@mygamh@${gamh}@g                 ${ED2IN}
-   sed -i s@mytprandtl@${tprandtl}@g         ${ED2IN}
-   sed -i s@myribmax@${ribmax}@g             ${ED2IN}
-   sed -i s@mygndvap@${igndvap}@g            ${ED2IN}
+   sed -i s@paththere@${there}@g                ${ED2IN}
+   sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
+   sed -i s@mymontha@${montha}@g                ${ED2IN}
+   sed -i s@mydatea@${datea}@g                  ${ED2IN}
+   sed -i s@mytimea@${timea}@g                  ${ED2IN}
+   sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
+   sed -i s@mymonthz@${monthz}@g                ${ED2IN}
+   sed -i s@mydatez@${datez}@g                  ${ED2IN}
+   sed -i s@mytimez@${timez}@g                  ${ED2IN}
+   sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
+   sed -i s@thispoly@${polyname}@g              ${ED2IN}
+   sed -i s@plonflag@${polylon}@g               ${ED2IN}
+   sed -i s@platflag@${polylat}@g               ${ED2IN}
+   sed -i s@timehhhh@${time}@g                  ${ED2IN}
+   sed -i s@datehhhh@${date}@g                  ${ED2IN}
+   sed -i s@monthhhh@${month}@g                 ${ED2IN}
+   sed -i s@yearhhhh@${year}@g                  ${ED2IN}
+   sed -i s@myinitmode@${initmode}@g            ${ED2IN}
+   sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
+   sed -i s@mytrees@${pfts}@g                   ${ED2IN}
+   sed -i s@mycrop@${crop}@g                    ${ED2IN}
+   sed -i s@myplantation@${plantation}@g        ${ED2IN}
+   sed -i s@myiphen@${iphen}@g                  ${ED2IN}
+   sed -i s@myallom@${iallom}@g                 ${ED2IN}
+   sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
+   sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
+   sed -i s@myslxsand@${polysand}@g             ${ED2IN}
+   sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
+   sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
+   sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
+   sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
+   sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
+   sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
+   sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
+   sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
+   sed -i s@mytoler@${toler}@g                  ${ED2IN}
+   sed -i s@RUNFLAG@${runt}@g                   ${ED2IN}
+   sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
+   sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
+   sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
+   sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
+   sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
+   sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
+   sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
+   sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
+   sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
+   sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
+   sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
+   sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
+   sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
+   sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
+   sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
+   sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
+   sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
+   sed -i s@mydecomp@${decomp}@g                ${ED2IN}
+   sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
+   sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
+   sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
+   sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
+   sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
+   sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
+   sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
+   sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
+   sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
+   sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
+   sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
+   sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
+   sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
+   sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
+   sed -i s@mysmfire@${smfire}@g                ${ED2IN}
+   sed -i s@myfire@${ifire}@g                   ${ED2IN}
+   sed -i s@myfuel@${fireparm}@g                ${ED2IN}
+   sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
+   sed -i s@mypercol@${ipercol}@g               ${ED2IN}
+   sed -i s@myrunoff@${runoff}@g                ${ED2IN}
+   sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
+   sed -i s@mybranch@${ibranch}@g               ${ED2IN}
+   sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
+   sed -i s@mycrown@${crown}@g                  ${ED2IN}
+   sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
+   sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
+   sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
+   sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
+   sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
+   sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
+   sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
+   sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+   sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
+   sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
+   sed -i s@myrepro@${irepro}@g                 ${ED2IN}
+   sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
+   sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
+   sed -i s@myustmin@${ustmin}@g                ${ED2IN}
+   sed -i s@mygamm@${gamm}@g                    ${ED2IN}
+   sed -i s@mygamh@${gamh}@g                    ${ED2IN}
+   sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
+   sed -i s@myribmax@${ribmax}@g                ${ED2IN}
+   sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
+   sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
+   sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
+   sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
+   sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
+   sed -i s@mytreefall@${treefall}@g            ${ED2IN}
 
    #------ Soil variables. ----------------------------------------------------------------#
    sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}

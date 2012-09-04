@@ -160,9 +160,17 @@ module disturb_coms
    real :: fire_dryness_threshold 
 
    !---------------------------------------------------------------------------------------!
-   !     Fire may occur when the total water (ground + underground) converted to           !
-   ! equivalent average soil moisture is below this threshold and include_fire is 2.       !
-   ! Units: relative fraction.                                                             !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2 or 3, and it has different  !
+   !                   meanings.  The sign here matters.                                   !
+   !                   When INCLUDE_FIRE = 2:                                              !
+   !                      >= 0. - Minimum relative soil moisture above dry air of the top  !
+   !                              1m that will prevent fires to happen.                    !
+   !                      <  0. - Minimum mean soil moisture potential in MPa of the top   !
+   !                              1m that will prevent fires to happen.  The dry air soil  !
+   !                              potential is defined as -3.1 MPa, so make sure SM_FIRE   !
+   !                              is greater than this value.                              !
+   !                   When INCLUDE_FIRE = 3, only positive values are allowed.  This is   !
+   !                   the minimum water deficit, in kg/m2/30 days, to trigger fires.      !
    !---------------------------------------------------------------------------------------!
    real :: sm_fire
 

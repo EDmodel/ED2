@@ -99,6 +99,7 @@ module ename_coms
       integer                                           :: isoilstateinit
       integer                                           :: isoildepthflg
       integer                                           :: isoilbc
+      real                                              :: sldrain
 
       real                  , dimension(nzgmax)         :: slz
       real                  , dimension(nzgmax)         :: slmstr
@@ -152,6 +153,8 @@ module ename_coms
       real                                              :: clump_tree
       real                                              :: clump_grass
       integer                                           :: h2o_plant_lim
+      integer                                           :: iddmort_scheme
+      real                                              :: ddmort_const
       real                                              :: vmfact_c3
       real                                              :: vmfact_c4
       real                                              :: mphoto_trc3
@@ -176,7 +179,6 @@ module ename_coms
       real                                              :: lwidth_nltree
       real                                              :: q10_c3
       real                                              :: q10_c4
-      real                                              :: lturnover_grass
       real                                              :: thetacrit
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
@@ -237,6 +239,10 @@ module ename_coms
       character(len=str_len)                            :: event_file
 
       !----- Variables to control detailed output. ----------------------------------------!
+      integer                                           :: dt_census
+      integer                                           :: yr1st_census
+      integer                                           :: mon1st_census
+      real                                              :: min_recruit_dbh
       integer                                           :: idetailed
       integer                                           :: patch_keep
 
@@ -356,6 +362,7 @@ module ename_coms
       enl%isoilstateinit            = undef_integer
       enl%isoildepthflg             = undef_integer
       enl%isoilbc                   = undef_integer
+      enl%sldrain                   = undef_real
 
       enl%slz                       = (/ (-undef_real, i=1,nzgmax) /)
       enl%slmstr                    = (/ ( undef_real, i=1,nzgmax) /)
@@ -408,6 +415,8 @@ module ename_coms
       enl%clump_tree                = undef_real
       enl%clump_grass               = undef_real
       enl%h2o_plant_lim             = undef_integer
+      enl%iddmort_scheme            = undef_integer
+      enl%ddmort_const              = undef_real
       enl%vmfact_c3                 = undef_real
       enl%vmfact_c4                 = undef_real
       enl%mphoto_trc3               = undef_real
@@ -432,7 +441,6 @@ module ename_coms
       enl%lwidth_nltree             = undef_real
       enl%q10_c3                    = undef_real
       enl%q10_c4                    = undef_real
-      enl%lturnover_grass           = undef_real
       enl%thetacrit                 = undef_real
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
@@ -489,6 +497,10 @@ module ename_coms
       enl%phenpath                  = undef_path
       enl%event_file                = undef_path
 
+      enl%dt_census                 = undef_integer
+      enl%yr1st_census              = undef_integer
+      enl%mon1st_census             = undef_integer
+      enl%min_recruit_dbh           = undef_real
       enl%idetailed                 = undef_integer
       enl%patch_keep                = undef_integer
 

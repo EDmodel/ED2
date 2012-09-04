@@ -1138,12 +1138,15 @@ subroutine ed_opspec_misc
                                     , isoilstateinit               & ! intent(in)
                                     , isoildepthflg                & ! intent(in)
                                     , isoilbc                      & ! intent(in)
+                                    , sldrain                      & ! intent(in)
                                     , zrough                       & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
    use mem_polygons          , only : maxsite                      ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
+                                    , iddmort_scheme               & ! intent(in)
+                                    , ddmort_const                 & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
                                     , vmfact_c4                    & ! intent(in)
@@ -1170,7 +1173,8 @@ subroutine ed_opspec_misc
                                     , q10_c3                       & ! intent(in)
                                     , q10_c4                       & ! intent(in)
                                     , quantum_efficiency_T         ! ! intent(in)
-   use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
+   use decomp_coms           , only : n_decomp_lim                 & ! intent(in)
+                                    , decomp_scheme                ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , fire_parameter               & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -1202,7 +1206,11 @@ subroutine ed_opspec_misc
                                     , rk4_tolerance                ! ! intent(in)
    use mem_polygons          , only : n_ed_region                  & ! intent(in)
                                     , n_poi                        ! ! intent(in)
-   use detailed_coms         , only : idetailed                    & ! intent(in)
+   use detailed_coms         , only : dt_census                    & ! intent(in)
+                                    , yr1st_census                 & ! intent(in)
+                                    , mon1st_census                & ! intent(in)
+                                    , min_recruit_dbh              & ! intent(in)
+                                    , idetailed                    & ! intent(in)
                                     , patch_keep                   ! ! intent(in)
 
    use met_driver_coms       , only : imetrad                      ! ! intent(in)
@@ -1334,7 +1342,8 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif ((ied_init_mode < -1 .or. ied_init_mode > 6) .and. ied_init_mode /= 99 ) then
+   elseif ((ied_init_mode < -1 .or. ied_init_mode > 6) .and. &
+           (ied_init_mode /= 99 )) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                      'Invalid IED_INIT_MODE, it must be between -1 and 6. Yours is set to' &
                     ,ied_init_mode,'...'
@@ -1342,6 +1351,16 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+
+
+   if (ied_init_mode == 7 .and. isoilstateinit>0 ) then
+      write (reason,fmt='(a)')                                                   &
+           'Please set ISOILSTATEINIT=0 if using IED_INIT_MODE=7'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+      
 #if defined(COUPLED)
    do ifm=1,ngrids
       if (isoilflg(ifm) < 0 .or. isoilflg(ifm) > 3) then
@@ -1473,9 +1492,14 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (isoilbc < 0 .or. isoilbc > 4) then
+   if (isoilbc < 0 .or. isoilbc > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid ISOILBC, it must be between 0 and 4. Yours is set to',isoilbc,'...'
+        'Invalid ISOILBC, it must be between 0 and 3.  Yours is set to',isoilbc,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   else if(isoilbc == 2 .and. (sldrain < 0. .or. sldrain > 90.)) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+        'Invalid SLDRAIN, it must be between 0 and 90.  Yours is set to',sldrain,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1559,6 +1583,13 @@ end do
                     ,igrass,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   elseif (igrass == 1 .and. ibigleaf == 1) then
+      write (reason,fmt='(a,1x,a)')                                                        &
+                    'Invalid setting.  New grass allometry (IGRASS = 1) is not supported'  &
+                   ,'in big leaf ED (IBIGLEAF = 1)...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   
    end if
 
    if (iphen_scheme < -1 .or. iphen_scheme > 3) then
@@ -1596,6 +1627,22 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to'  &
                     ,h2o_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (iddmort_scheme < 0 .or. iddmort_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IDDMORT_SCHEME, it must be between 0 and 1.  Yours is set to' &
+                    ,iddmort_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (ddmort_const < 0. .or. ddmort_const > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid DDMORT_CONST, it must be between 0 and 1.  Yours is set to'   &
+                    ,ddmort_const,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1824,6 +1871,14 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (decomp_scheme < 0 .or. decomp_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid DECOMP_SCHEME, it must be between 0 and 2. Yours is set to'   &
+                    ,decomp_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (include_fire < 0 .or. include_fire > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid INCLUDE_FIRE, it must be between 0 and 3. Yours is set to'    &
@@ -1840,14 +1895,26 @@ end do
       end if
    end if
 
-   
-   if (sm_fire < -3.1 .or. sm_fire > 1.) then
-      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid SM_FIRE, it must be between -3.1 and 1.  Yours is set to'     &
-                    ,sm_fire,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
+   select case (include_fire)
+   case(3)
+      if (sm_fire < 0.) then
+         write (reason,fmt='(a,1x,a,1x,i4,a,1x,es12.5,a)')                                 &
+                        'Invalid SM_FIRE, it must be non-negative'                         &
+                       ,'when INLCUDE_FIRE is ',include_fire,'.  Your SM_FIRE is set to'   &
+                       ,sm_fire,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+   case(0:2)
+      if (sm_fire < -3.1 .or. sm_fire > 1.) then
+         write (reason,fmt='(a,1x,a,1x,i4,a,1x,es12.5,a)')                                 &
+                        'Invalid SM_FIRE, it must be between -3.1 and 1.0'                 &
+                       ,'when INLCUDE_FIRE is ',include_fire,'.  Your SM_FIRE is set to'   &
+                       ,sm_fire,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+   end select
 
    if (ianth_disturb < 0 .or. ianth_disturb > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
@@ -2206,6 +2273,38 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IMETRAD, it must be between 0 and 4.  Yours is set to'        &
                     ,imetrad,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (dt_census < 1 .or. dt_census > 120) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid DT_CENSUS, it must be between 1 and 120.  Yours is set to'    &
+                    ,dt_census,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (yr1st_census < 1200 .or. yr1st_census > 3200) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+             'Invalid YR1ST_CENSUS, it must be between 1200 and 3200.  Yours is set to'    &
+            ,yr1st_census,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (mon1st_census < 1 .or. mon1st_census > 12) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+             'Invalid MON1ST_CENSUS, it must be between 1 and 12.  Yours is set to'        &
+            ,mon1st_census,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (min_recruit_dbh < 0 .or. min_recruit_dbh > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+             'Invalid MIN_RECRUIT_DBH, it must be between 0 and 100.  Yours is set to'     &
+            ,min_recruit_dbh,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if

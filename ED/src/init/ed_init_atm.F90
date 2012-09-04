@@ -5,7 +5,8 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_init_atm()
    use ed_misc_coms          , only : runtype           & ! intent(in)
-                                    , ibigleaf          ! ! intent(in)
+                                    , ibigleaf          & ! intent(in)
+                                    , ied_init_mode     ! ! intent(in)
    use ed_state_vars         , only : edtype            & ! structure
                                     , polygontype       & ! structure
                                     , sitetype          & ! structure
@@ -35,6 +36,7 @@ subroutine ed_init_atm()
    use ed_therm_lib          , only : calc_veg_hcap     & ! subroutine
                                     , ed_grndvap        ! ! subroutine
    use therm_lib             , only : thetaeiv          & ! function
+                                    , vpdefil           & ! function
                                     , idealdenssh       & ! function
                                     , qslif             & ! function
                                     , reducedpress      & ! function
@@ -128,6 +130,8 @@ subroutine ed_init_atm()
 
                csite%can_theiv(ipa) = thetaeiv(csite%can_theta(ipa),csite%can_prss(ipa)    &
                                               ,csite%can_temp(ipa),rvaux,rvaux)
+               csite%can_vpdef(ipa) = vpdefil (csite%can_prss(ipa),csite%can_temp(ipa)     &
+                                              ,csite%can_shv (ipa),.true.)
                csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa)                      &
                                                  ,csite%can_temp(ipa),csite%can_shv(ipa))
 
@@ -149,12 +153,13 @@ subroutine ed_init_atm()
                   ! thermal equilibrium with the canopy air space and no intercepted       !
                   ! water sitting on top of leaves and branches.                           !
                   !------------------------------------------------------------------------!
-                  cpatch%leaf_water  (ico) = 0.0
-                  cpatch%wood_water  (ico) = 0.0
-                  cpatch%leaf_temp   (ico) = csite%can_temp(ipa)
-                  cpatch%wood_temp   (ico) = csite%can_temp(ipa)
+                  cpatch%leaf_water   (ico) = 0.0
+                  cpatch%wood_water   (ico) = 0.0
+                  cpatch%leaf_temp    (ico) = csite%can_temp   (ipa)
+                  cpatch%wood_temp    (ico) = csite%can_temp   (ipa)
                   cpatch%leaf_temp_pv (ico) = csite%can_temp_pv(ipa)
                   cpatch%wood_temp_pv (ico) = csite%can_temp_pv(ipa)
+                  cpatch%leaf_vpdef   (ico) = csite%can_vpdef  (ipa)
                   if (csite%can_temp(ipa) == t3ple) then
                      cpatch%leaf_fliq   (ico) = 0.5
                      cpatch%wood_fliq   (ico) = 0.5
@@ -181,7 +186,7 @@ subroutine ed_init_atm()
                                                       , cpatch%wood_temp   (ico)           &
                                                       , cpatch%wood_fliq   (ico) )
 
-                  call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                  call is_resolvable(csite,ipa,ico)
 
                   !----- Initialise the leaf surface and intercellular properties. --------!
                   cpatch%lsfc_shv_open(ico)   = cmet%atm_shv
@@ -250,7 +255,8 @@ subroutine ed_init_atm()
             patchloop2: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
-               if (csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0) then
+               if (csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0              &
+                   .or. ied_init_mode == 7 ) then  ! The third is redundant, but keep it
 
                   groundloop2: do k = 1, nzg
                      nsoil=cpoly%ntext_soil(k,isi)
@@ -274,7 +280,9 @@ subroutine ed_init_atm()
                      !---------------------------------------------------------------------!
                      !    Initialise soil moisture and internal energy.                    !
                      !---------------------------------------------------------------------!
-                     csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
+                     if (ied_init_mode /= 7) then
+                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
+                     end if
                      csite%soil_energy(k,ipa)  = cmtl2uext( soil(nsoil)%slcpd              &
                                                           , csite%soil_water(k,ipa)*wdns   &
                                                           , csite%soil_tempk(k,ipa)        &

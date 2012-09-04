@@ -10,10 +10,11 @@ myplaces       = c("thispoly")
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
-outform        = "png"           # Formats for output file.  Supported formats are:
+outform        = thisoutform           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
+                                 #   - "pdf" - for PDF printing
 
 byeold         = TRUE           # Remove old files of the given format?
 
@@ -37,6 +38,7 @@ inset          = 0.01           # inset distance between legend and edge of plot
 legbg          = "white"        # Legend background colour.
 scalleg        = 0.20
 cex.main       = 0.8             # Scale coefficient for the title
+slz.min        = -5.0           # Find the deepest depth that trees access water.
 
 theta           = 315.                    # Azimuth for perspective projection
 phi             = 30.                     # Vertical angle for perspective projection
@@ -105,7 +107,7 @@ source(paste(srcdir,"pft.coms.r"       ,sep="/"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v6.RData",sep="/")
+obsrfile = paste(srcdir,"LBA_MIP.v8.RData",sep="/")
 load(file=obsrfile)
 
 #----- Define plot window size ------------------------------------------------------------#
@@ -160,53 +162,83 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    totmon      = (yearz-yeara-1)*12+meszz+(12-monthbeg+1)
    #----- Size (DBH) and age arrays. ------------------------------------------------------#
-   agbpftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   laipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   waipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   taipftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   gpppftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   npppftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   mcopftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   cbapftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   ldrpftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   fsopftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   demandpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   supplypftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   nplantpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
-   ncbmortpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   agbpftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   laipftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   waipftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   taipftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   gpppftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   npppftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   mcopftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbapftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbalightpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbamoistpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   cbarelpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   ldrpftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   fsopftdbh       = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   demandpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   supplypftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   nplantpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   mortpftdbh      = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   agemortpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   ncbmortpftdbh   = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   tfallmortpftdbh = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   coldmortpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   distmortpftdbh  = array(data=0.,dim=c(totmon,ndbh+1,npft))
+   growthpftdbh    = array(data=0.,dim=c(totmon,ndbh+1,npft))
    #----- PFT arrays.   The "+1" column contains the total. -------------------------------#
-   agbpft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bseedspft      = matrix(data=0,nrow=totmon,ncol=npft+1)
-   nplantpft      = matrix(data=0,nrow=totmon,ncol=npft+1)
-   laipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   waipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   taipft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   gpppft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   npppft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   mcopft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   cbapft         = matrix(data=0,nrow=totmon,ncol=npft+1)
-   ldroppft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   balivepft      = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bdeadpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bleafpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   brootpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bswoodpft      = matrix(data=0,nrow=totmon,ncol=npft+1)
-   bstorepft      = matrix(data=0,nrow=totmon,ncol=npft+1)
-   basareapft     = matrix(data=0,nrow=totmon,ncol=npft+1)
-   leafresppft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   rootresppft    = matrix(data=0,nrow=totmon,ncol=npft+1)
-   growthresppft  = matrix(data=0,nrow=totmon,ncol=npft+1)
+   agbpft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bseedspft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   nplantpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   laipft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   waipft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   taipft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   gpppft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   npppft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   mcopft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbapft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbalightpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbamoistpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   cbarelpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   ldroppft        = matrix(data=0,nrow=totmon,ncol=npft+1)
+   fsopft          = matrix(data=0,nrow=totmon,ncol=npft+1)
+   balivepft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bdeadpft        = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bleafpft        = matrix(data=0,nrow=totmon,ncol=npft+1)
+   brootpft        = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bswoodpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   bstorepft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   basareapft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   leafresppft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   rootresppft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   growthresppft   = matrix(data=0,nrow=totmon,ncol=npft+1)
+   mortpft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   agemortpft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   ncbmortpft      = matrix(data=0,nrow=totmon,ncol=npft+1)
+   tfallmortpft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   coldmortpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   distmortpft     = matrix(data=0,nrow=totmon,ncol=npft+1)
+   recrpft         = matrix(data=0,nrow=totmon,ncol=npft+1)
+   growthpft       = matrix(data=0,nrow=totmon,ncol=npft+1)
+   censusnplantpft = matrix(data=0,nrow=totmon,ncol=npft+1)
+   censuslaipft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   censuswaipft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   censustaipft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   censusagbpft    = matrix(data=0,nrow=totmon,ncol=npft+1)
+   censusbapft     = matrix(data=0,nrow=totmon,ncol=npft+1)
 
    #----- LU arrays.   The "+1" column contains the total. --------------------------------#
-   agblu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   lailu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   gpplu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   npplu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   arealu         = matrix(data=0,nrow=totmon,ncol=nlu+1)
-   basarealu      = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   agblu           = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   lailu           = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   gpplu           = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   npplu           = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   arealu          = matrix(data=0,nrow=totmon,ncol=nlu+1)
+   basarealu       = matrix(data=0,nrow=totmon,ncol=nlu+1)
    #----- Miscellaneous arrays. -----------------------------------------------------------#
    dist           = array(NA,dim=c(totmon,nlu,nlu))
    #----- Polygon level vectors. ----------------------------------------------------------#
+   fast.soil.c     = NULL
+   slow.soil.c     = NULL
+   struct.soil.c   = NULL
    gpp             = NULL
    npp             = NULL
    plresp          = NULL
@@ -214,9 +246,14 @@ for (place in myplaces){
    root.resp       = NULL
    growth.resp     = NULL
    hetresp         = NULL
+   cwdresp         = NULL
+   reco            = NULL
    mco             = NULL
    npp             = NULL
    cba             = NULL
+   cbalight        = NULL
+   cbamoist        = NULL
+   cbarel          = NULL
    ldrop           = NULL
    nep             = NULL
    nee             = NULL
@@ -236,6 +273,9 @@ for (place in myplaces){
    wood.temp       = NULL
    atm.shv         = NULL
    can.shv         = NULL
+   atm.vpd         = NULL
+   can.vpd         = NULL
+   leaf.vpd        = NULL
    can.co2         = NULL
    hflxca          = NULL
    qwflxca         = NULL
@@ -270,6 +310,8 @@ for (place in myplaces){
    albedo.beam     = NULL
    albedo.diff     = NULL
    rlong.albedo    = NULL
+   paw             = NULL
+   smpot           = NULL
    npat.global     = NULL
    ncoh.global     = NULL
    mmsqu.gpp       = NULL
@@ -278,6 +320,8 @@ for (place in myplaces){
    mmsqu.root.resp = NULL
    mmsqu.plresp    = NULL
    mmsqu.hetresp   = NULL
+   mmsqu.cwdresp   = NULL
+   mmsqu.reco      = NULL
    mmsqu.cflxca    = NULL
    mmsqu.cflxst    = NULL
    mmsqu.hflxca    = NULL
@@ -291,6 +335,7 @@ for (place in myplaces){
    mmsqu.wflxgc    = NULL
    mmsqu.evap      = NULL
    mmsqu.transp    = NULL
+   water.deficit   = NULL
 
    #----- Cohort level lists. -------------------------------------------------------------#
    lightco      = list()
@@ -301,11 +346,12 @@ for (place in myplaces){
    gpplco       = list()
    respco       = list()
    nppco        = list()
-   cbrbarco     = list()
-   cbalco       = list()
+   cbaco        = list()
+   cbarelco     = list()
+   cbalightco   = list()
+   cbamoistco   = list()
    mcostco      = list()
    ldropco      = list()
-   ncbmortco    = list()
    agbco        = list()
    fsoco        = list()
    nplantco     = list()
@@ -326,6 +372,14 @@ for (place in myplaces){
    brootco      = list()
    bswoodco     = list()
    bstoreco     = list()
+   growthco     = list()
+   mortco       = list()
+   agemortco    = list()
+   ncbmortco    = list()
+   tfallmortco  = list()
+   coldmortco   = list()
+   distmortco   = list()
+   recruitco    = list()
 
    n            = 0
    m            = 0
@@ -382,6 +436,9 @@ for (place in myplaces){
        #----- Loop over months. -----------------------------------------------------------#
        for (month in firstmonth:lastmonth){
           m = m + 1
+          
+          #----- Find out the previous month. ---------------------------------------------#
+          lastmonth = 12 * (month == 1) + month - 1
 
           #----- Build the month and year vector. -----------------------------------------#
           monnum = c(monnum,month)
@@ -427,6 +484,23 @@ for (place in myplaces){
              ntext      = mymont$NTEXT.SOIL[nzg]
 
              soil.prop  = soil.params(ntext,isoilflg,slxsand,slxclay)
+             dslz       = diff(c(slz,0))
+             soil.depth = rev(cumsum(rev(dslz)))
+             soil.dry   = rev(cumsum(rev(soil.prop$soilcp * wdns * dslz)))
+             soil.poro  = rev(cumsum(rev(soil.prop$slmsts * wdns * dslz)))
+
+
+             #----- Find the layers we care about. ----------------------------------------#
+             sel        = slz < slz.min
+             if (any(sel)){
+                ka      = which.max(slz[sel])
+             }else{
+                ka      = 1
+             }#end if
+             kz         = nzg
+             #-----------------------------------------------------------------------------#
+
+
 
              #----- Mean diurnal cycle. ---------------------------------------------------#
              dcycmean                = list()
@@ -437,8 +511,10 @@ for (place in myplaces){
              dcycmean$root.resp      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$growth.resp    = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hetresp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$cwdresp        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nep            = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$nee            = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$reco           = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$cflxca         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$cflxst         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$hflxca         = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -460,6 +536,9 @@ for (place in myplaces){
              dcycmean$atm.shv        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$can.shv        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$gnd.shv        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$atm.vpd        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$can.vpd        = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmean$leaf.vpd       = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$atm.co2        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$can.co2        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmean$atm.prss       = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -487,8 +566,10 @@ for (place in myplaces){
              dcycmsqu$leaf.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$root.resp   = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hetresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$cwdresp     = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nep         = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$nee         = matrix(data=0,nrow=totmon,ncol=ndcycle)
+             dcycmsqu$reco        = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$cflxca      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$cflxst      = matrix(data=0,nrow=totmon,ncol=ndcycle)
              dcycmsqu$hflxca      = matrix(data=0,nrow=totmon,ncol=ndcycle)
@@ -523,9 +604,12 @@ for (place in myplaces){
           root.resp       = c(root.resp        ,   mymont$MMEAN.ROOT.RESP                )
           growth.resp     = c(growth.resp      ,   mymont$MMEAN.GROWTH.RESP              )
           hetresp         = c(hetresp          ,   mymont$MMEAN.RH                       )
+          cwdresp         = c(cwdresp          ,   mymont$MMEAN.CWD.RH                   )
           nep             = c(nep              ,   mymont$MMEAN.NEP                      )
           nee             = c(nee              , - mymont$MMEAN.CARBON.AC                
                                                  + mymont$MMEAN.CARBON.ST                )
+          reco            = c(reco             ,   mymont$MMEAN.PLRESP                   
+                                                 + mymont$MMEAN.RH                       )
           cflxca          = c(cflxca           , - mymont$MMEAN.CARBON.AC                )
           cflxst          = c(cflxst           ,   mymont$MMEAN.CARBON.ST                )
           hflxca          = c(hflxca           , - mymont$MMEAN.SENSIBLE.AC              )
@@ -546,6 +630,7 @@ for (place in myplaces){
           mmsqu.leaf.resp = c(mmsqu.leaf.resp , mymont$MMSQU.PLRESP                      )
           mmsqu.root.resp = c(mmsqu.root.resp , mymont$MMSQU.PLRESP                      )
           mmsqu.hetresp   = c(mmsqu.hetresp   , mymont$MMSQU.RH                          )
+          mmsqu.cwdresp   = c(mmsqu.cwdresp   , mymont$MMSQU.CWD.RH                      )
           mmsqu.cflxca    = c(mmsqu.cflxca    , mymont$MMSQU.CARBON.AC                   )
           mmsqu.cflxst    = c(mmsqu.cflxst    , mymont$MMSQU.CARBON.ST                   )
           mmsqu.hflxca    = c(mmsqu.hflxca    , mymont$MMSQU.SENSIBLE.AC                 )
@@ -575,16 +660,19 @@ for (place in myplaces){
           atm.temp      = c(atm.temp     ,mymont$MMEAN.ATM.TEMP  - t00                   )
           atm.shv       = c(atm.shv      ,mymont$MMEAN.ATM.SHV   * kg2g                  )
           atm.co2       = c(atm.co2      ,mymont$MMEAN.ATM.CO2                           )
+          atm.vpd       = c(atm.vpd      ,mymont$MMEAN.ATM.VPDEF * 0.01                  )
 
           can.prss      = c(can.prss     ,mymont$MMEAN.CAN.PRSS  * 0.01                  )
           can.temp      = c(can.temp     ,mymont$MMEAN.CAN.TEMP  - t00                   )
           can.shv       = c(can.shv      ,mymont$MMEAN.CAN.SHV   * kg2g                  )
           can.co2       = c(can.co2      ,mymont$MMEAN.CAN.CO2                           )
+          can.vpd       = c(can.vpd      ,mymont$MMEAN.CAN.VPDEF * 0.01                  )
 
           gnd.temp      = c(gnd.temp     ,mymont$MMEAN.GND.TEMP  - t00                   )
           gnd.shv       = c(gnd.shv      ,mymont$MMEAN.GND.SHV   * kg2g                  )
 
           leaf.temp     = c(leaf.temp    ,mymont$MMEAN.LEAF.TEMP  - t00                  )
+          leaf.vpd      = c(leaf.vpd     ,mymont$MMEAN.LEAF.VPDEF * 0.01                 )
           wood.temp     = c(wood.temp    ,mymont$MMEAN.WOOD.TEMP  - t00                  )
           rain          = c(rain         ,mymont$MMEAN.PCPG*ddd  * day.sec               )
 
@@ -602,6 +690,17 @@ for (place in myplaces){
           rlong.albedo  = c(rlong.albedo ,mymont$MMEAN.RLONG.ALBEDO                      )
           #--------------------------------------------------------------------------------#
 
+
+          #----- Find averaged soil properties. -------------------------------------------#
+          swater.now  = rev(cumsum(rev(mymont$MMEAN.SOIL.WATER * wdns * dslz)))
+          smoist.avg  = swater.now / (wdns * soil.depth)
+          paw.now     = 100. * ( ( swater.now[ka] - soil.dry [ka] )
+                               / ( soil.poro [ka] - soil.dry [ka] ) )
+          smpot.now   = ( - smoist2mpot(smoist=smoist.avg[ka],mysoil=soil.prop)
+                        * 0.001 * grav )
+          paw         = c(   paw,   paw.now )
+          smpot       = c( smpot, smpot.now )
+          #--------------------------------------------------------------------------------#
 
 
           #------ Read in soil properties. ------------------------------------------------#
@@ -633,8 +732,10 @@ for (place in myplaces){
           dcycmean$leaf.resp   [m,] = mymont$QMEAN.LEAF.RESP
           dcycmean$root.resp   [m,] = mymont$QMEAN.ROOT.RESP
           dcycmean$hetresp     [m,] = mymont$QMEAN.RH
+          dcycmean$cwdresp     [m,] = mymont$QMEAN.CWD.RH
           dcycmean$nep         [m,] = mymont$QMEAN.NEP
           dcycmean$nee         [m,] = - mymont$QMEAN.CARBON.AC + mymont$QMEAN.CARBON.ST
+          dcycmean$reco        [m,] = mymont$QMEAN.PLRESP + mymont$QMEAN.RH
           dcycmean$cflxca      [m,] = - mymont$QMEAN.CARBON.AC
           dcycmean$cflxst      [m,] = - mymont$QMEAN.CARBON.ST
           dcycmean$hflxca      [m,] = - mymont$QMEAN.SENSIBLE.AC
@@ -659,6 +760,9 @@ for (place in myplaces){
           dcycmean$atm.shv     [m,] = mymont$QMEAN.ATM.SHV            * kg2g
           dcycmean$can.shv     [m,] = mymont$QMEAN.CAN.SHV            * kg2g
           dcycmean$gnd.shv     [m,] = mymont$QMEAN.GND.SHV            * kg2g
+          dcycmean$atm.vpd     [m,] = mymont$QMEAN.ATM.VPDEF          * 0.01
+          dcycmean$can.vpd     [m,] = mymont$QMEAN.CAN.VPDEF          * 0.01
+          dcycmean$leaf.vpd    [m,] = mymont$QMEAN.LEAF.VPDEF         * 0.01
           dcycmean$atm.co2     [m,] = mymont$QMEAN.ATM.CO2
           dcycmean$can.co2     [m,] = mymont$QMEAN.CAN.CO2
           dcycmean$atm.vels    [m,] = mymont$QMEAN.ATM.VELS
@@ -684,6 +788,7 @@ for (place in myplaces){
           dcycmsqu$leaf.resp   [m,] = mymont$QMSQU.LEAF.RESP
           dcycmsqu$root.resp   [m,] = mymont$QMSQU.ROOT.RESP
           dcycmsqu$hetresp     [m,] = mymont$QMSQU.RH
+          dcycmsqu$cwdresp     [m,] = mymont$QMSQU.CWD.RH
           dcycmsqu$nep         [m,] = mymont$QMSQU.NEP
           dcycmsqu$cflxca      [m,] = mymont$QMSQU.CARBON.AC
           dcycmsqu$cflxst      [m,] = mymont$QMSQU.CARBON.ST
@@ -712,6 +817,22 @@ for (place in myplaces){
           areapa     = mymont$AREA * rep(areasi,times=npatches)
           lupa       = mymont$DIST.TYPE
           agepa      = mymont$AGE
+          #--------------------------------------------------------------------------------#
+
+
+          #--------------------------------------------------------------------------------#
+          #     Get the soil carbon.                                                       #
+          #--------------------------------------------------------------------------------#
+          fast.soil.c   = c(fast.soil.c  ,sum(mymont$FAST.SOIL.C       * areapa))
+          slow.soil.c   = c(slow.soil.c  ,sum(mymont$SLOW.SOIL.C       * areapa))
+          struct.soil.c = c(struct.soil.c,sum(mymont$STRUCTURAL.SOIL.C * areapa))
+          #--------------------------------------------------------------------------------#
+
+
+          #--------------------------------------------------------------------------------#
+          #     Get the water deficit.                                                     #
+          #--------------------------------------------------------------------------------#
+          water.deficit = c(water.deficit,sum(mymont$AVG.MONTHLY.WATERDEF * areapa))
           #--------------------------------------------------------------------------------#
 
 
@@ -772,12 +893,13 @@ for (place in myplaces){
                                + mymont$MMEAN.GROWTH.RESP.CO + mymont$MMEAN.STORAGE.RESP.CO
                                + mymont$MMEAN.VLEAF.RESP.CO  )
              nppconow        = gppconow-respconow
-             cbalconow       = mymont$MMEAN.CB
+             cbaconow        = mymont$MMEAN.CB
+             cbalightconow   = mymont$CB.LIGHTMAX[,lastmonth]
+             cbamoistconow   = mymont$CB.MOISTMAX[,lastmonth]
+             cbarelconow     = mymont$CBR.BAR
              mcostconow      = ( mymont$MMEAN.LEAF.MAINTENANCE
                                + mymont$MMEAN.ROOT.MAINTENANCE )
              ldropconow      = mymont$MMEAN.LEAF.DROP.CO
-             cbrbarconow     = mymont$CBR.BAR
-             ncbmortconow    = mymont$MMEAN.MORT.RATE[,2]
              fsoconow        = mymont$MMEAN.FS.OPEN.CO
              lightconow      = mymont$MMEAN.LIGHT.LEVEL
              lightbeamconow  = mymont$MMEAN.LIGHT.LEVEL.BEAM
@@ -788,7 +910,7 @@ for (place in myplaces){
              bdeadconow      = mymont$BDEAD
              bleafconow      = mymont$BLEAF
              brootconow      = mymont$BROOT
-             bswoodconow     = mymont$BSAPWOOD
+             bswoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
              bstoreconow     = mymont$BSTORAGE
 
 
@@ -798,6 +920,16 @@ for (place in myplaces){
              gpplconow         = gppconow
              gpplconow  [sel]  = nplantconow[sel] * gppconow[sel] / laiconow[sel]
              gpplconow  [!sel] = 0.
+
+
+             mortconow       = rowSums(mymont$MMEAN.MORT.RATE)
+             agemortconow    = mymont$MMEAN.MORT.RATE[,1]
+             ncbmortconow    = mymont$MMEAN.MORT.RATE[,2]
+             tfallmortconow  = mymont$MMEAN.MORT.RATE[,3]
+             coldmortconow   = mymont$MMEAN.MORT.RATE[,4]
+             distmortconow   = mymont$MMEAN.MORT.RATE[,5]
+             recruitconow    = mymont$RECRUIT.DBH
+             growthconow     = 100. * mymont$DLNDBH.DT
              #-----------------------------------------------------------------------------#
           }else{
              #----- Make everything NA. ---------------------------------------------------#
@@ -831,27 +963,48 @@ for (place in myplaces){
              leafrespconow   = NA
              rootrespconow   = NA
              growthrespconow = NA
-             respconow       = NA 
-             nppconow        = NA 
-             cbalconow       = NA 
-             mcostconow      = NA 
-             ldropconow      = NA 
-             cbrbarconow     = NA 
-             ncbmortconow    = NA 
-             fsoconow        = NA 
-             lightconow      = NA 
-             lightbeamconow  = NA 
-             lightdiffconow  = NA 
-             parlconow       = NA 
-             demandconow     = NA 
-             supplyconow     = NA 
-             baliveconow     = NA 
-             bdeadconow      = NA 
-             bleafconow      = NA 
-             brootconow      = NA 
-             bswoodconow     = NA 
-             bstoreconow     = NA 
+             respconow       = NA
+             nppconow        = NA
+             cbaconow        = NA
+             cbalightconow   = NA
+             cbamoistconow   = NA
+             mcostconow      = NA
+             ldropconow      = NA
+             cbarelconow     = NA
+             fsoconow        = NA
+             lightconow      = NA
+             lightbeamconow  = NA
+             lightdiffconow  = NA
+             parlconow       = NA
+             demandconow     = NA
+             supplyconow     = NA
+             baliveconow     = NA
+             bdeadconow      = NA
+             bleafconow      = NA
+             brootconow      = NA
+             bswoodconow     = NA
+             bstoreconow     = NA
+             mortconow       = NA
+             agemortconow    = NA
+             ncbmortconow    = NA
+             tfallmortconow  = NA
+             coldmortconow   = NA
+             distmortconow   = NA
+             recruitconow    = NA
+             growthconow     = NA
           }#end if
+          #--------------------------------------------------------------------------------#
+
+
+          #--------------------------------------------------------------------------------#
+          #     The following two variables are used to scale "intensive" properties       #
+          # (whatever/plant) to "extensive" (whatever/m2).  Sometimes they may be used to  #
+          # build weighted averages.                                                       #
+          #--------------------------------------------------------------------------------#
+          w.nplant = nplantconow * areaconow
+          w.lai    = laiconow    * areaconow
+          #--------------------------------------------------------------------------------#
+
 
           #----- Define some classes that can be defined even when no cohorts exist. ------#
           agebks     = c(-Inf,seq(from=dage,to=(nage-1)*dage,by=dage),Inf)
@@ -859,6 +1012,7 @@ for (place in myplaces){
           agepafac   = match(agepacut,agelevs)
           areapaage  = tapply(X=areapa,INDEX=agepafac,sum,na.rm=TRUE)
           areaage    = areapaage[as.character(agefac)]
+          #--------------------------------------------------------------------------------#
 
 
 
@@ -866,72 +1020,50 @@ for (place in myplaces){
           #     Build the PFT arrays.                                                      #
           #--------------------------------------------------------------------------------#
           for (p in 1:npft){
-              if (all(is.na(pftconow))){
-                 sel      = rep(FALSE,times=length(pftconow))
-              }else{
-                 sel      = pftconow == p
-              }#end if
-              if (any(sel)){
-                 #----- "Extensive" variables, add them. ----------------------------------#
-                 nplantpft[m,p] = nplantpft[m,p] + sum(nplantconow[sel] * areaconow[sel])
-                 laipft   [m,p] = laipft   [m,p] + sum(laiconow   [sel] * areaconow[sel])
-                 waipft   [m,p] = waipft   [m,p] + sum(waiconow   [sel] * areaconow[sel])
-                 taipft   [m,p] = taipft   [m,p] + sum(taiconow   [sel] * areaconow[sel])
+             if (all(is.na(pftconow))){
+                sel      = rep(FALSE,times=length(pftconow))
+             }else{
+                sel      = pftconow == p
+             }#end if
+             if (any(sel)){
 
-                 #----- "Intensive" variables, nplant or LAI are used as weights. ---------#
-                 basareapft[m,p]    = ( basareapft [m,p] 
-                                      + sum( nplantconow[sel] * baconow [sel]   
-                                           * areaconow[sel]))
-                 agbpft    [m,p]    = ( agbpft [m,p] 
-                                      + sum( nplantconow[sel] * agbconow [sel]   
-                                           * areaconow[sel]))
-                 bseedspft [m,p]    = ( bseedspft [m,p]
-                                      + sum( nplantconow[sel] * bseedsconow [sel] 
-                                           * areaconow [sel]))
-                 gpppft    [m,p]    = ( gpppft [m,p]
-                                      + sum( nplantconow[sel] * gppconow [sel]
-                                           * areaconow[sel]))
-                 npppft    [m,p]    = ( npppft [m,p]
-                                      + sum( nplantconow[sel] * nppconow [sel]  
-                                           * areaconow[sel]))
-                 mcopft    [m,p]    = ( mcopft [m,p]
-                                      + sum( nplantconow[sel] * mcostconow [sel]
-                                           * areaconow[sel]))
-                 cbapft    [m,p]    = ( cbapft [m,p] 
-                                      + sum( nplantconow[sel] * cbalconow [sel]  
-                                           * areaconow[sel]))
-                 ldroppft  [m,p]    = ( ldroppft [m,p] 
-                                      + sum( nplantconow[sel] * ldropconow [sel]  
-                                           * areaconow[sel]))
-                 balivepft [m,p]    = ( balivepft [m,p]
-                                      + sum( nplantconow[sel] * baliveconow[sel]
-                                           * areaconow[sel]))
-                 bdeadpft  [m,p]    = ( bdeadpft [m,p]
-                                      + sum( nplantconow[sel] * bdeadconow[sel]
-                                           * areaconow[sel]))
-                 bleafpft  [m,p]    = ( bleafpft [m,p]
-                                      + sum( nplantconow[sel] * bleafconow[sel]
-                                           * areaconow[sel]))
-                 brootpft  [m,p]    = ( brootpft [m,p]
-                                      + sum( nplantconow[sel] * brootconow[sel]
-                                           * areaconow[sel]))
-                 bswoodpft [m,p]    = ( bswoodpft [m,p]
-                                      + sum( nplantconow[sel] * bswoodconow[sel]
-                                           * areaconow[sel]))
-                 bstorepft [m,p]    = ( bstorepft [m,p]
-                                      + sum( nplantconow[sel] * bstoreconow[sel]
-                                           * areaconow[sel]))
-                 leafresppft[m,p]   = ( leafresppft [m,p] 
-                                      + sum( nplantconow[sel] * leafrespconow[sel]
-                                           * areaconow[sel]))
-                 rootresppft[m,p]   = ( rootresppft [m,p] 
-                                      + sum( nplantconow[sel] * rootrespconow[sel]
-                                           * areaconow[sel]))
-                 growthresppft[m,p] = ( growthresppft [m,p] 
-                                      + sum( nplantconow[sel] * growthrespconow[sel]
-                                           * areaconow[sel]))
-              }
-          }
+                #----- "Extensive" variables, add them. -----------------------------------#
+                nplantpft    [m,p] = sum(nplantconow[sel] * areaconow[sel])
+                laipft       [m,p] = sum(laiconow   [sel] * areaconow[sel])
+                waipft       [m,p] = sum(waiconow   [sel] * areaconow[sel])
+                taipft       [m,p] = sum(taiconow   [sel] * areaconow[sel])
+                #--------------------------------------------------------------------------#
+
+                #----- "Intensive" variables, use nplant or LAI to make them extensive. ---#
+                basareapft   [m,p] = sum( w.nplant[sel] * baconow        [sel] )
+                agbpft       [m,p] = sum( w.nplant[sel] * agbconow       [sel] )
+                bseedspft    [m,p] = sum( w.nplant[sel] * bseedsconow    [sel] )
+                gpppft       [m,p] = sum( w.nplant[sel] * gppconow       [sel] )
+                npppft       [m,p] = sum( w.nplant[sel] * nppconow       [sel] )
+                mcopft       [m,p] = sum( w.nplant[sel] * mcostconow     [sel] )
+                cbapft       [m,p] = sum( w.nplant[sel] * cbaconow       [sel] )
+                cbalightpft  [m,p] = sum( w.nplant[sel] * cbalightconow  [sel] )
+                cbamoistpft  [m,p] = sum( w.nplant[sel] * cbamoistconow  [sel] )
+                ldroppft     [m,p] = sum( w.nplant[sel] * ldropconow     [sel] )
+                balivepft    [m,p] = sum( w.nplant[sel] * baliveconow    [sel] )
+                bdeadpft     [m,p] = sum( w.nplant[sel] * bdeadconow     [sel] )
+                bleafpft     [m,p] = sum( w.nplant[sel] * bleafconow     [sel] )
+                brootpft     [m,p] = sum( w.nplant[sel] * brootconow     [sel] )
+                bswoodpft    [m,p] = sum( w.nplant[sel] * bswoodconow    [sel] )
+                bstorepft    [m,p] = sum( w.nplant[sel] * bstoreconow    [sel] )
+                leafresppft  [m,p] = sum( w.nplant[sel] * leafrespconow  [sel] )
+                rootresppft  [m,p] = sum( w.nplant[sel] * rootrespconow  [sel] )
+                growthresppft[m,p] = sum( w.nplant[sel] * growthrespconow[sel] )
+
+                #----- Fso is added here, but it will be scaled back to intensive. --------#
+                fsopft       [m,p] = sum( w.lai   [sel] * fsoconow       [sel] )
+                #--------------------------------------------------------------------------#
+
+                #----- cbarel is added here, but it will be scaled back to intensive. -----#
+                cbarelpft    [m,p] = sum( w.nplant[sel] * cbarelconow    [sel] )
+                #--------------------------------------------------------------------------#
+             }#end if (any(sel))
+          }#end for (p in 1:npft)
           #------ Find the total. ---------------------------------------------------------#
           nplantpft    [m,npft+1] = sum(nplantpft    [m,1:npft],na.rm=TRUE)
           laipft       [m,npft+1] = sum(laipft       [m,1:npft],na.rm=TRUE)
@@ -957,211 +1089,487 @@ for (place in myplaces){
           #--------------------------------------------------------------------------------#
 
 
+         #----- Find the average Fsopen for each PFT. -------------------------------------#
+         for (p in 1:npft){
+            if (laipft[m,p] != 0){
+               fsopft[m,p] = fsopft[m,p] / laipft[m,p]
+            }#end if
+         }#end for
+         if (laipft[m,npft+1] != 0){
+            fsopft[m,npft+1] = sum(fsopft[m,1:npft] * laipft[m,1:npft]) / laipft[m,npft+1]
+         }#end for
+         #---------------------------------------------------------------------------------#
 
 
-          #--------------------------------------------------------------------------------#
-          #     Build the LU arrays.                                                       #
-          #--------------------------------------------------------------------------------#
-          for (l in 1:nlu){
-             selpa    = lupa    == l
-             if (all(is.na(luconow))){
-                sel      = rep(FALSE,times=length(luconow))
-             }else{
-                sel      = luconow == l
-             }#end if
-             if (any(sel)){
-                lailu    [m,l] = lailu [m,l]    + sum(laiconow [sel] * areaconow[sel])
-                basarealu[m,l] = basarealu [m,l] + 
-                                 sum(nplantconow[sel] * baconow [sel]    * areaconow[sel])
-                agblu [m,l]    = agblu [m,l] + 
-                                 sum(nplantconow[sel] * agbconow [sel]   * areaconow[sel])
-                gpplu [m,l]    = gpplu [m,l] + 
-                                 sum(nplantconow[sel] * gppconow [sel]   * areaconow[sel])
-                npplu [m,l]    = npplu [m,l] +
-                                 sum(nplantconow[sel] * nppconow [sel]   * areaconow[sel])
-             }#end if
-             arealu [m,l]   = arealu [m,l] + sum(areapa[selpa])
-          }#end for
-          #------ Find the total. ---------------------------------------------------------#
-          lailu    [m,nlu+1] = sum(lailu    [m,1:nlu], na.rm=TRUE)
-          basarealu[m,nlu+1] = sum(basarealu[m,1:nlu], na.rm=TRUE)
-          agblu    [m,nlu+1] = sum(agblu    [m,1:nlu], na.rm=TRUE)
-          gpplu    [m,nlu+1] = sum(gpplu    [m,1:nlu], na.rm=TRUE)
-          npplu    [m,nlu+1] = sum(npplu    [m,1:nlu], na.rm=TRUE)
-          arealu   [m,nlu+1] = sum(arealu   [m,1:nlu], na.rm=TRUE)
-          #--------------------------------------------------------------------------------#
+         #----- Find the average Fsopen for each PFT. -------------------------------------#
+         for (p in 1:npft){
+            if (nplantpft[m,p] != 0){
+               cbarelpft[m,p] = cbarelpft[m,p] / nplantpft[m,p]
+            }#end if
+         }#end for
+         if (nplantpft[m,npft+1] != 0){
+            cbarelpft[m,npft+1] = ( sum(cbarelpft[m,1:npft] * nplantpft[m,1:npft]) 
+                                  / nplantpft[m,npft+1] )
+         }#end for
+         #---------------------------------------------------------------------------------#
 
 
 
-
-          #--------------------------------------------------------------------------------#
-          #     Build the size (DBH) structure arrays.                                     #
-          #--------------------------------------------------------------------------------#
-          for (d in 1:ndbh){
-             if (all(is.na(dbhfac))){
-                seldbh  = rep(FALSE,times=length(dbhfac))
-             }else{
-                seldbh  = dbhfac == d
-             }#end if
-             for (p in 1:npft){
-                 selpft   = pftconow == p
-                 sel      = selpft & seldbh
-                 if (any(sel)){
-                    laipftdbh    [m,d,p] = laipftdbh [m,d,p] + 
-                                           sum(laiconow [sel] * areaconow[sel])
-                    waipftdbh    [m,d,p] = waipftdbh [m,d,p] + 
-                                           sum(waiconow [sel] * areaconow[sel])
-                    taipftdbh    [m,d,p] = taipftdbh [m,d,p] + 
-                                           sum(taiconow [sel] * areaconow[sel])
-                    nplantpftdbh [m,d,p] = nplantpftdbh [m,d,p] + 
-                                           sum(nplantconow [sel] * areaconow[sel])
-                    agbpftdbh    [m,d,p] = agbpftdbh [m,d,p] + 
-                                           sum( nplantconow[sel] * agbconow   [sel]
-                                              * areaconow[sel])
-                    gpppftdbh    [m,d,p] = gpppftdbh [m,d,p] + 
-                                           sum( nplantconow[sel] * gppconow   [sel]
-                                              * areaconow[sel])
-                    npppftdbh    [m,d,p] = npppftdbh [m,d,p] +
-                                           sum( nplantconow[sel] * nppconow   [sel]
-                                              * areaconow[sel])
-                    mcopftdbh    [m,d,p] = mcopftdbh [m,d,p] +
-                                           sum( nplantconow[sel] * mcostconow [sel]
-                                              * areaconow[sel])
-                    cbapftdbh    [m,d,p] = cbapftdbh [m,d,p] +
-                                           sum( nplantconow[sel] * cbalconow  [sel]
-                                              * areaconow[sel])
-                    ldrpftdbh    [m,d,p] = ldrpftdbh [m,d,p] +
-                                           sum( nplantconow[sel] * ldropconow [sel]
-                                              * areaconow[sel])
-                    fsopftdbh    [m,d,p] = fsopftdbh [m,d,p] +
-                                           sum( laiconow[sel]    * fsoconow [sel]
-                                              * areaconow[sel])
-                    ncbmortpftdbh[m,d,p] = ncbmortpftdbh [m,d,p] + 
-                                           sum( nplantconow[sel] * ncbmortconow   [sel]
-                                              * areaconow[sel])
-                    demandpftdbh [m,d,p] = demandpftdbh [m,d,p] + 
-                                           sum(demandconow [sel] * areaconow[sel])
-                    supplypftdbh [m,d,p] = supplypftdbh [m,d,p] + 
-                                           sum(supplyconow [sel] * areaconow[sel])
-                 }
-             }
-          }
-          #------ Fso must be normalised by LAI. ------------------------------------------#
-          for (p in 1:npft){
-
-             #---- Find the total for this PFT and store at class ndbh + 1... -------------#
-             laipftdbh    [m,ndbh+1,p] = sum(laipftdbh    [m,1:ndbh,p])
-             waipftdbh    [m,ndbh+1,p] = sum(waipftdbh    [m,1:ndbh,p])
-             taipftdbh    [m,ndbh+1,p] = sum(taipftdbh    [m,1:ndbh,p])
-             nplantpftdbh [m,ndbh+1,p] = sum(nplantpftdbh [m,1:ndbh,p])
-             agbpftdbh    [m,ndbh+1,p] = sum(agbpftdbh    [m,1:ndbh,p])
-             gpppftdbh    [m,ndbh+1,p] = sum(gpppftdbh    [m,1:ndbh,p])
-             npppftdbh    [m,ndbh+1,p] = sum(npppftdbh    [m,1:ndbh,p])
-             mcopftdbh    [m,ndbh+1,p] = sum(mcopftdbh    [m,1:ndbh,p])
-             cbapftdbh    [m,ndbh+1,p] = sum(cbapftdbh    [m,1:ndbh,p])
-             ldrpftdbh    [m,ndbh+1,p] = sum(ldrpftdbh    [m,1:ndbh,p])
-             demandpftdbh [m,ndbh+1,p] = sum(demandpftdbh [m,1:ndbh,p])
-             supplypftdbh [m,ndbh+1,p] = sum(supplypftdbh [m,1:ndbh,p])
-             #-----------------------------------------------------------------------------#
+         #---------------------------------------------------------------------------------#
+         #     Find the growth, mortality, and recruitment rates for each PFT, and the     #
+         # global rates.  We only use the cohorts that were flagged as 1 or 2 (which means #
+         # that their DBH is greater than 10 cm).                                          #
+         #---------------------------------------------------------------------------------#
+         for (p in 1:npft){
+            if (all(is.na(pftconow))){
+               sel.hgt      = rep(FALSE,times=length(pftconow))
+               sel.dbh      = rep(FALSE,times=length(pftconow))
+               sel.re2      = rep(FALSE,times=length(pftconow))
+            }else{
+               sel.hgt      = pftconow == p & heightconow  >  1.5
+               sel.dbh      = pftconow == p & recruitconow >  0
+               sel.re2      = pftconow == p & recruitconow == 2
+            }#end if
+            #------------------------------------------------------------------------------#
 
 
-             #----- Find the average Fsopen for each DBH class and amongst all classes. ---#
-             for (d in 1:ndbh){
-                if (laipftdbh[m,d,p] != 0){
-                   fsopftdbh[m,d,p] = fsopftdbh[m,d,p] / laipftdbh[m,d,p]
-                }#end if
-                if (laipftdbh[m,ndbh+1,p] != 0){
-                   fsopftdbh[m,ndbh+1,p] = ( sum( fsopftdbh[m,1:ndbh,p]
-                                                * laipftdbh[m,1:ndbh,p] )
-                                           / laipftdbh[m,ndbh+1,p] )
-                }#end for
-                #--------------------------------------------------------------------------#
-             }#end for
-             #-----------------------------------------------------------------------------#
+            #----- Census LAI, WAI, and TAI neglect plants shorter than 1.5m. -------------#
+            if (any(sel.hgt)){
+               censuslaipft    [m,p] = sum(laiconow[sel.hgt] * areaconow[sel.hgt])
+               censuswaipft    [m,p] = sum(waiconow[sel.hgt] * areaconow[sel.hgt])
+               censustaipft    [m,p] = sum(taiconow[sel.hgt] * areaconow[sel.hgt])
+            }#end if
+            #------------------------------------------------------------------------------#
 
 
-             #-----------------------------------------------------------------------------#
-             #     Find the average mortality rate for each DBH class and amongst all      #
-             # classes.                                                                    #
-             #-----------------------------------------------------------------------------#
-             for (d in 1:ndbh){
-                if (nplantpftdbh[m,d,p] != 0){
-                   ncbmortpftdbh[m,d,p] = ncbmortpftdbh[m,d,p] / nplantpftdbh[m,d,p]
-                }#end if
-                if (nplantpftdbh[m,ndbh+1,p] != 0){
-                   ncbmortpftdbh[m,ndbh+1,p] = ( sum( ncbmortpftdbh[m,1:ndbh,p]
-                                                    * nplantpftdbh [m,1:ndbh,p] )
-                                               / nplantpftdbh[m,ndbh+1,p] )
-                }#end for
-                #--------------------------------------------------------------------------#
-             }#end for
-             #-----------------------------------------------------------------------------#
-          }#end for
-          #--------------------------------------------------------------------------------#
+
+            #----- Census AGB and Basal area ignore plants whose DBH is less than 10cm. ---#
+            if (any(sel.dbh)){
+               censusbapft [m,p] = sum( w.nplant[sel.dbh] * baconow  [sel.dbh] )
+               censusagbpft[m,p] = sum( w.nplant[sel.dbh] * agbconow [sel.dbh] )
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the PFT-level mortality rates.                                      #
+            #------------------------------------------------------------------------------#
+            if (any(sel.re2)){
+               #---- This is the number of survivors. -------------------------------------#
+               survivor          = sum(w.nplant[sel.re2])
+               previous          = sum(w.nplant[sel.re2] * exp(mortconow[sel.re2]) )
+               mortpft[m,p]      = 100. * log( previous / survivor )
+
+               survivor          = sum(w.nplant[sel.re2])
+               previous          = sum(w.nplant[sel.re2] * exp(agemortconow[sel.re2]) )
+               agemortpft[m,p]   = 100. * log( previous / survivor )
+
+               survivor          = sum(w.nplant[sel.re2])
+               previous          = sum(w.nplant[sel.re2] * exp(ncbmortconow[sel.re2]) )
+               ncbmortpft[m,p]   = 100. * log( previous / survivor )
+
+               survivor          = sum(w.nplant[sel.re2])
+               previous          = sum(w.nplant[sel.re2] * exp(tfallmortconow[sel.re2]) )
+               tfallmortpft[m,p] = 100. * log( previous / survivor )
+
+               survivor          = sum(w.nplant[sel.re2])
+               previous          = sum(w.nplant[sel.re2] * exp(coldmortconow[sel.re2]) )
+               coldmortpft[m,p]  = 100. * log( previous / survivor )
+
+               survivor          = sum(w.nplant[sel.re2])
+               previous          = sum(w.nplant[sel.re2] * exp(distmortconow[sel.re2]) )
+               distmortpft[m,p]  = 100. * log( previous / survivor )
+            }#end if
+            if (any(sel.dbh) & any(sel.re2)){
+               #---- This is the number of survivors. -------------------------------------#
+               population   = sum(w.nplant[sel.dbh])
+               established  = sum(w.nplant[sel.re2])
+               recrpft[m,p] = 100. * log( population / established) / 12.0
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Growth rates are found only for established cohorts.                     #
+            #------------------------------------------------------------------------------#
+            if (any(sel.re2)){
+               censusnplantpft [m,p] = sum( w.nplant[sel.re2] )
+               growthpft[m,p]        = sum( w.nplant[sel.re2] * growthconow [sel.re2] )
+            }#end if
+            #------------------------------------------------------------------------------#
+         }#end for
+         #---------------------------------------------------------------------------------#
 
 
 
 
-          #--------------------------------------------------------------------------------#
-          #       Build the derived variables.                                             #
-          #--------------------------------------------------------------------------------#
-          npp    = c(npp   ,sum(npppft   [m,1:npft]) )
-          mco    = c(mco   ,sum(mcopft   [m,1:npft]) )
-          cba    = c(cba   ,sum(cbapft   [m,1:npft]) )
-          nplant = c(nplant,sum(nplantpft[m,1:npft]) )
-          lai    = c(lai   ,sum(laipft   [m,1:npft]) )
-          wai    = c(wai   ,sum(waipft   [m,1:npft]) )
-          tai    = c(tai   ,sum(taipft   [m,1:npft]) )
-          agb    = c(agb   ,sum(agbpft   [m,1:npft]) )
-          ldrop  = c(ldrop ,sum(ldroppft [m,1:npft]) )
-          #--------------------------------------------------------------------------------#
+         #---------------------------------------------------------------------------------#
+         #      Find the total or the mean amongst all PFTs.                               #
+         #---------------------------------------------------------------------------------#
+         #----- "Extensive" properties, just add them up. ---------------------------------#
+         censusnplantpft    [m,npft+1] = sum(censusnplantpft    [m,1:npft],na.rm=TRUE)
+         censuslaipft       [m,npft+1] = sum(censuslaipft       [m,1:npft],na.rm=TRUE)
+         censuswaipft       [m,npft+1] = sum(censuswaipft       [m,1:npft],na.rm=TRUE)
+         censustaipft       [m,npft+1] = sum(censustaipft       [m,1:npft],na.rm=TRUE)
+         censusagbpft       [m,npft+1] = sum(censusagbpft       [m,1:npft],na.rm=TRUE)
+         censusbapft        [m,npft+1] = sum(censusbapft        [m,1:npft],na.rm=TRUE)
+         #----- Growth rates are averaged, not added. -------------------------------------#
+         if (censusnplantpft[m,npft+1] > 0.){
+            growthpft[m,npft+1] = ( sum(growthpft[m,1:npft] * censusnplantpft[m,1:npft])
+                                  / censusnplantpft[m,npft+1] )
+         }#end if
+         #---------------------------------------------------------------------------------#
+         #      Mortality and recruitment rates are done by looking at the entire          #
+         # population rather than averaged.                                                #
+         #---------------------------------------------------------------------------------#
+         if (all(is.na(pftconow))){
+            sel.dbh = rep(FALSE,times=length(pftconow))
+            sel.re2 = rep(FALSE,times=length(pftconow))
+         }else{
+            sel.dbh = recruitconow >  0
+            sel.re2 = recruitconow == 2
+         }#end if
+
+         #----- w.nplant will convert intensive variables into extensive. -----------------#
+         w.nplant          = nplantconow * areaconow
+         #---------------------------------------------------------------------------------#
+
+         if (any(sel.re2)){
+            #---- This is the number of survivors. ----------------------------------------#
+            survivor               = sum( w.nplant[sel.re2] )
+            previous               = sum( w.nplant[sel.re2] * exp(mortconow[sel.re2]))
+            mortpft[m,npft+1]      = 100. * log( previous / survivor )
+
+            survivor               = sum( w.nplant[sel.re2] )
+            previous               = sum( w.nplant[sel.re2] * exp(agemortconow[sel.re2]))
+            agemortpft  [m,npft+1] = 100. * log( previous / survivor )
+
+            survivor               = sum( w.nplant[sel.re2] )
+            previous               = sum( w.nplant[sel.re2] * exp(ncbmortconow[sel.re2]))
+            ncbmortpft  [m,npft+1] = 100. * log( previous / survivor )
+
+            survivor               = sum( w.nplant[sel.re2] )
+            previous               = sum( w.nplant[sel.re2] * exp(tfallmortconow[sel.re2]))
+            tfallmortpft[m,npft+1] = 100. * log( previous / survivor )
+
+            survivor               = sum( w.nplant[sel.re2] )
+            previous               = sum( w.nplant[sel.re2] * exp(coldmortconow[sel.re2]))
+            coldmortpft [m,npft+1] = 100. * log( previous / survivor )
+
+            survivor               = sum( w.nplant[sel.re2] )
+            previous               = sum( w.nplant[sel.re2] * exp(distmortconow[sel.re2]))
+            distmortpft [m,npft+1] = 100. * log( previous / survivor )
+         }#end if
+
+         if (any(sel.dbh) & any(sel.re2)){
+            #---- This is the number of survivors. ----------------------------------------#
+            population        = sum( w.nplant[sel.dbh] )
+            established       = sum( w.nplant[sel.re2] )
+            recrpft[m,npft+1] = 100. * log( population / established ) / 12.0
+         }#end if
+         #---------------------------------------------------------------------------------#
 
 
 
 
-          #--------------------------------------------------------------------------------#
-          #      Build the cohort-level lists if this is the right month.                  #
-          #--------------------------------------------------------------------------------#
-          if (month %in% sasmonth){
-             cyear  = substring(10000 + year,2,5)
-             cmonth = substring(100+month,2,3)
-             labwhen     = paste("y",cyear,"m",cmonth,sep="")
-             #----- Binding the current cohorts. ------------------------------------------#
-             lightco     [[labwhen]] = lightconow
-             lightbeamco [[labwhen]] = lightbeamconow
-             lightdiffco [[labwhen]] = lightdiffconow
-             parlco      [[labwhen]] = parlconow
-             gppco       [[labwhen]] = gppconow
-             gpplco      [[labwhen]] = gpplconow
-             respco      [[labwhen]] = respconow
-             nppco       [[labwhen]] = nppconow
-             cbrbarco    [[labwhen]] = cbrbarconow
-             cbalco      [[labwhen]] = cbalconow
-             mcostco     [[labwhen]] = mcostconow
-             ncbmortco   [[labwhen]] = ncbmortconow
-             agbco       [[labwhen]] = agbconow
-             fsoco       [[labwhen]] = fsoconow
-             nplantco    [[labwhen]] = nplantconow * areaconow
-             heightco    [[labwhen]] = heightconow
-             baco        [[labwhen]] = nplantconow * baconow * areaconow
-             pftco       [[labwhen]] = pftconow
-             dbhco       [[labwhen]] = dbhconow
-             laico       [[labwhen]] = laiconow
-             waico       [[labwhen]] = waiconow
-             taico       [[labwhen]] = taiconow
-             ageco       [[labwhen]] = ageconow
-             areaco      [[labwhen]] = areaconow
-             demandco    [[labwhen]] = demandconow
-             supplyco    [[labwhen]] = supplyconow
-             baliveco    [[labwhen]] = baliveconow
-             bdeadco     [[labwhen]] = bdeadconow
-             bleafco     [[labwhen]] = bleafconow
-             brootco     [[labwhen]] = brootconow
-             bswoodco    [[labwhen]] = bswoodconow
-             bstoreco    [[labwhen]] = bstoreconow
-          } #end if month=sasmonth
-          #--------------------------------------------------------------------------------#
 
+
+         #---------------------------------------------------------------------------------#
+         #     Build the LU arrays.                                                        #
+         #---------------------------------------------------------------------------------#
+         for (l in 1:nlu){
+            selpa    = lupa    == l
+            if (all(is.na(luconow))){
+               sel      = rep(FALSE,times=length(luconow))
+            }else{
+               sel      = luconow == l
+            }#end if
+            
+            if (any(sel)){
+               lailu    [m,l] = sum( laiconow[sel] * areaconow[sel] )
+               basarealu[m,l] = sum( w.nplant[sel] * baconow  [sel] )
+               agblu [m,l]    = sum( w.nplant[sel] * agbconow [sel] )
+               gpplu [m,l]    = sum( w.nplant[sel] * gppconow [sel] )
+               npplu [m,l]    = sum( w.nplant[sel] * nppconow [sel] )
+            }#end if
+            arealu [m,l]   = arealu [m,l] + sum(areapa[selpa])
+         }#end for
+         #------ Find the total. ----------------------------------------------------------#
+         lailu    [m,nlu+1] = sum(lailu    [m,1:nlu], na.rm=TRUE)
+         basarealu[m,nlu+1] = sum(basarealu[m,1:nlu], na.rm=TRUE)
+         agblu    [m,nlu+1] = sum(agblu    [m,1:nlu], na.rm=TRUE)
+         gpplu    [m,nlu+1] = sum(gpplu    [m,1:nlu], na.rm=TRUE)
+         npplu    [m,nlu+1] = sum(npplu    [m,1:nlu], na.rm=TRUE)
+         arealu   [m,nlu+1] = sum(arealu   [m,1:nlu], na.rm=TRUE)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Build the size (DBH) structure arrays.                                      #
+         #---------------------------------------------------------------------------------#
+         for (d in 1:ndbh){
+            if (all(is.na(dbhfac))){
+               seldbh  = rep(FALSE,times=length(dbhfac))
+            }else{
+               seldbh  = dbhfac == d
+            }#end if
+            for (p in 1:npft){
+               selpft   = pftconow == p
+               sel      = selpft & seldbh
+               if (any(sel)){
+                  #----- Extensive properties. --------------------------------------------#
+                  laipftdbh      [m,d,p] = sum( laiconow    [sel] * areaconow     [sel] )
+                  waipftdbh      [m,d,p] = sum( waiconow    [sel] * areaconow     [sel] )
+                  taipftdbh      [m,d,p] = sum( taiconow    [sel] * areaconow     [sel] )
+                  nplantpftdbh   [m,d,p] = sum( nplantconow [sel] * areaconow     [sel] )
+                  demandpftdbh   [m,d,p] = sum( demandconow [sel] * areaconow     [sel] )
+                  supplypftdbh   [m,d,p] = sum( supplyconow [sel] * areaconow     [sel] )
+                  #----- Intensive properties, use nplant to make them extensive. ---------#
+                  agbpftdbh      [m,d,p] = sum( w.nplant    [sel] * agbconow      [sel] )
+                  gpppftdbh      [m,d,p] = sum( w.nplant    [sel] * gppconow      [sel] )
+                  npppftdbh      [m,d,p] = sum( w.nplant    [sel] * nppconow      [sel] )
+                  mcopftdbh      [m,d,p] = sum( w.nplant    [sel] * mcostconow    [sel] )
+                  cbapftdbh      [m,d,p] = sum( w.nplant    [sel] * cbaconow      [sel] )
+                  cbalightpftdbh [m,d,p] = sum( w.nplant    [sel] * cbalightconow [sel] )
+                  cbamoistpftdbh [m,d,p] = sum( w.nplant    [sel] * cbamoistconow [sel] )
+                  ldrpftdbh      [m,d,p] = sum( w.nplant    [sel] * ldropconow    [sel] )
+                  #----- FSO, use LAI to scale them, we will normalise outside the loop. --#
+                  fsopftdbh      [m,d,p] = sum( laiconow    [sel] * fsoconow      [sel] )
+                  #----- CBAREL, like FSO, but we use nplant to scale them. ---------------#
+                  cbarelpftdbh   [m,d,p] = sum( nplantconow [sel] * cbarelconow   [sel] )
+                  #------------------------------------------------------------------------#
+               }#end if
+
+               #---------------------------------------------------------------------------#
+               #    For mortality and growth, we keep deleting the tiny guys because they  #
+               # skew the rates quite significantly.                                       #
+               #---------------------------------------------------------------------------#
+               sel = sel & recruitconow == 2
+               if (any(sel)){
+                  growthpftdbh [m,d,p] = sum( w.nplant [sel] * growthconow [sel] )
+
+                  #---- This is the number of survivors and living before. ----------------#
+                  survivor               = sum( w.nplant[sel] )
+                  previous               = sum( w.nplant[sel] * exp(mortconow[sel]) )
+                  mortpftdbh[m,d,p]      = 100. * log( previous / survivor )
+
+                  survivor               = sum( w.nplant[sel] )
+                  previous               = sum( w.nplant[sel] * exp(agemortconow[sel]) )
+                  agemortpftdbh  [m,d,p] = 100. * log( previous / survivor )
+
+                  survivor               = sum( w.nplant[sel] )
+                  previous               = sum( w.nplant[sel] * exp(ncbmortconow[sel]) )
+                  ncbmortpftdbh  [m,d,p] = 100. * log( previous / survivor )
+
+                  survivor               = sum( w.nplant[sel] )
+                  previous               = sum( w.nplant[sel] * exp(tfallmortconow[sel]) )
+                  tfallmortpftdbh[m,d,p] = 100. * log( previous / survivor )
+
+                  survivor               = sum( w.nplant[sel] )
+                  previous               = sum( w.nplant[sel] * exp(coldmortconow[sel]) )
+                  coldmortpftdbh [m,d,p] = 100. * log( previous / survivor )
+
+                  survivor               = sum( w.nplant[sel] )
+                  previous               = sum( w.nplant[sel] * exp(distmortconow[sel]) )
+                  distmortpftdbh [m,d,p] = 100. * log( previous / survivor )
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end for PFT
+            #------------------------------------------------------------------------------#
+         }#end for DBH
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Either sum or normalise variables.                                          #
+         #---------------------------------------------------------------------------------#
+         for (p in 1:npft){
+
+            #---- Find the total for this PFT and store at class ndbh + 1... --------------#
+            laipftdbh    [m,ndbh+1,p] = sum(laipftdbh    [m,1:ndbh,p])
+            waipftdbh    [m,ndbh+1,p] = sum(waipftdbh    [m,1:ndbh,p])
+            taipftdbh    [m,ndbh+1,p] = sum(taipftdbh    [m,1:ndbh,p])
+            nplantpftdbh [m,ndbh+1,p] = sum(nplantpftdbh [m,1:ndbh,p])
+            agbpftdbh    [m,ndbh+1,p] = sum(agbpftdbh    [m,1:ndbh,p])
+            gpppftdbh    [m,ndbh+1,p] = sum(gpppftdbh    [m,1:ndbh,p])
+            npppftdbh    [m,ndbh+1,p] = sum(npppftdbh    [m,1:ndbh,p])
+            mcopftdbh    [m,ndbh+1,p] = sum(mcopftdbh    [m,1:ndbh,p])
+            cbapftdbh    [m,ndbh+1,p] = sum(cbapftdbh    [m,1:ndbh,p])
+            ldrpftdbh    [m,ndbh+1,p] = sum(ldrpftdbh    [m,1:ndbh,p])
+            demandpftdbh [m,ndbh+1,p] = sum(demandpftdbh [m,1:ndbh,p])
+            supplypftdbh [m,ndbh+1,p] = sum(supplypftdbh [m,1:ndbh,p])
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the average Fsopen for each DBH class and amongst all classes.      #
+            #------------------------------------------------------------------------------#
+            for (d in 1:ndbh){
+               #---------------------------------------------------------------------------#
+               #      FSopen is scaled by LAI.                                             #
+               #---------------------------------------------------------------------------#
+               if (laipftdbh[m,d,p] != 0){
+                  fsopftdbh[m,d,p] = fsopftdbh[m,d,p] / laipftdbh[m,d,p]
+               }#end if
+            }#end for
+            if (laipftdbh[m,ndbh+1,p] != 0){
+               fsopftdbh[m,ndbh+1,p] = ( sum( fsopftdbh[m,1:ndbh,p]
+                                            * laipftdbh[m,1:ndbh,p] )
+                                       / laipftdbh[m,ndbh+1,p] )
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the average relative carbon balance for each DBH class and amongst  #
+            # all classes.                                                                 #
+            #------------------------------------------------------------------------------#
+            for (d in 1:ndbh){
+               #---------------------------------------------------------------------------#
+               #      CBAREL is scaled by Nplant.                                          #
+               #---------------------------------------------------------------------------#
+               if (nplantpftdbh[m,d,p] != 0){
+                  cbarelpftdbh[m,d,p] = cbarelpftdbh[m,d,p] / nplantpftdbh[m,d,p]
+               }#end if
+            }#end for
+            if (nplantpftdbh[m,ndbh+1,p] != 0){
+               cbarelpftdbh[m,ndbh+1,p] = ( sum( cbarelpftdbh[m,1:ndbh,p]
+                                               * nplantpftdbh[m,1:ndbh,p] )
+                                          / nplantpftdbh[m,ndbh+1,p] )
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            for (d in 2:ndbh){
+               #---------------------------------------------------------------------------#
+               #      Growth rate is scaled by NPlant.                                     #
+               #---------------------------------------------------------------------------#
+               nplant.use = 0.
+               if (nplantpftdbh[m,d,p] != 0){
+                  nplant.use          = nplant.use + nplantpftdbh[m,d,p]
+                  growthpftdbh[m,d,p] = growthpftdbh[m,d,p] / nplantpftdbh[m,d,p]
+               }#end if
+            }#end for
+            if (nplant.use != 0){
+               growthpftdbh[m,ndbh+1,p] = ( sum( growthpftdbh[m,2:ndbh,p]
+                                               * nplantpftdbh[m,2:ndbh,p] )
+                                          / nplant.use )
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the mortality amongst all DBH classes for this PFT.  This will      #
+            # include the small cohorts too.                                               #
+            #------------------------------------------------------------------------------#
+            if (all(is.na(pftconow))){
+               sel = rep(FALSE,times=length(pftconow))
+            }else{
+               sel = pftconow == p & recruitconow == 2
+            }#end if
+            #---- This is the number of survivors and living before. ----------------------#
+            survivor               = sum( w.nplant[sel] )
+            previous               = sum( w.nplant[sel] * exp(mortconow[sel]) )
+            mortpftdbh[m,ndbh+1,p] = 100. * log( previous / survivor)
+
+            survivor                    = sum( w.nplant[sel] )
+            previous                    = sum( w.nplant[sel] * exp(agemortconow[sel]) )
+            agemortpftdbh[m,ndbh+1,p]   = 100. * log( previous / survivor)
+
+            survivor                    = sum( w.nplant[sel] )
+            previous                    = sum( w.nplant[sel] * exp(ncbmortconow[sel]) )
+            ncbmortpftdbh[m,ndbh+1,p]   = 100. * log( previous / survivor)
+
+            survivor                    = sum( w.nplant[sel] )
+            previous                    = sum( w.nplant[sel] * exp(tfallmortconow[sel]) )
+            tfallmortpftdbh[m,ndbh+1,p] = 100. * log( previous / survivor)
+
+            survivor                    = sum( w.nplant[sel] )
+            previous                    = sum( w.nplant[sel] * exp(coldmortconow[sel]) )
+            coldmortpftdbh[m,ndbh+1,p]  = 100. * log( previous / survivor)
+
+            survivor                    = sum( w.nplant[sel] )
+            previous                    = sum( w.nplant[sel] * exp(distmortconow[sel]) )
+            distmortpftdbh[m,ndbh+1,p]  = 100. * log( previous / survivor)
+         }#end for
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #       Build the derived variables.                                              #
+         #---------------------------------------------------------------------------------#
+         npp    = c(npp   ,sum(npppft   [m,1:npft]) )
+         mco    = c(mco   ,sum(mcopft   [m,1:npft]) )
+         cba    = c(cba   ,sum(cbapft   [m,1:npft]) )
+         nplant = c(nplant,sum(nplantpft[m,1:npft]) )
+         lai    = c(lai   ,sum(laipft   [m,1:npft]) )
+         wai    = c(wai   ,sum(waipft   [m,1:npft]) )
+         tai    = c(tai   ,sum(taipft   [m,1:npft]) )
+         agb    = c(agb   ,sum(agbpft   [m,1:npft]) )
+         ldrop  = c(ldrop ,sum(ldroppft [m,1:npft]) )
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Build the cohort-level lists if this is the right month.                   #
+         #---------------------------------------------------------------------------------#
+         if (month %in% sasmonth){
+            cyear  = substring(10000 + year,2,5)
+            cmonth = substring(100+month,2,3)
+            labwhen     = paste("y",cyear,"m",cmonth,sep="")
+            #----- Binding the current cohorts. -------------------------------------------#
+            lightco     [[labwhen]] = lightconow
+            lightbeamco [[labwhen]] = lightbeamconow
+            lightdiffco [[labwhen]] = lightdiffconow
+            parlco      [[labwhen]] = parlconow
+            gppco       [[labwhen]] = gppconow
+            gpplco      [[labwhen]] = gpplconow
+            respco      [[labwhen]] = respconow
+            nppco       [[labwhen]] = nppconow
+            cbaco       [[labwhen]] = cbaconow
+            cbalightco  [[labwhen]] = cbalightconow
+            cbamoistco  [[labwhen]] = cbamoistconow
+            cbarelco    [[labwhen]] = cbarelconow
+            mcostco     [[labwhen]] = mcostconow
+            agbco       [[labwhen]] = agbconow
+            fsoco       [[labwhen]] = fsoconow
+            nplantco    [[labwhen]] = nplantconow * areaconow
+            heightco    [[labwhen]] = heightconow
+            baco        [[labwhen]] = nplantconow * baconow * areaconow
+            pftco       [[labwhen]] = pftconow
+            dbhco       [[labwhen]] = dbhconow
+            laico       [[labwhen]] = laiconow
+            waico       [[labwhen]] = waiconow
+            taico       [[labwhen]] = taiconow
+            ageco       [[labwhen]] = ageconow
+            areaco      [[labwhen]] = areaconow
+            demandco    [[labwhen]] = demandconow
+            supplyco    [[labwhen]] = supplyconow
+            baliveco    [[labwhen]] = baliveconow
+            bdeadco     [[labwhen]] = bdeadconow
+            bleafco     [[labwhen]] = bleafconow
+            brootco     [[labwhen]] = brootconow
+            bswoodco    [[labwhen]] = bswoodconow
+            bstoreco    [[labwhen]] = bstoreconow
+            growthco    [[labwhen]] = growthconow
+            mortco      [[labwhen]] = mortconow
+            agemortco   [[labwhen]] = agemortconow
+            ncbmortco   [[labwhen]] = ncbmortconow
+            tfallmortco [[labwhen]] = tfallmortconow
+            coldmortco  [[labwhen]] = coldmortconow
+            distmortco  [[labwhen]] = distmortconow
+            recruitco   [[labwhen]] = recruitconow
+         } #end if month=sasmonth
+         #---------------------------------------------------------------------------------#
       }# end for, month
    }#end for, year
 
@@ -1189,9 +1597,11 @@ for (place in myplaces){
    mont12mn$root.resp   = tapply(X=root.resp    ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$growth.resp = tapply(X=growth.resp  ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hetresp     = tapply(X=hetresp      ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
+   mont12mn$cwdresp     = tapply(X=cwdresp      ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$cflxca      = tapply(X=cflxca       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$cflxst      = tapply(X=cflxst       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$nee         = tapply(X=nee          ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
+   mont12mn$reco        = tapply(X=reco         ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hflxca      = tapply(X=hflxca       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hflxlc      = tapply(X=hflxlc       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
    mont12mn$hflxwc      = tapply(X=hflxwc       ,INDEX=mfac      ,FUN=mean,na.rm=TRUE)
@@ -1223,6 +1633,7 @@ for (place in myplaces){
    mont12sq$leaf.resp = tapply(X=mmsqu.leaf.resp ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$root.resp = tapply(X=mmsqu.root.resp ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$hetresp   = tapply(X=mmsqu.hetresp   ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
+   mont12sq$cwdresp   = tapply(X=mmsqu.cwdresp   ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$cflxca    = tapply(X=mmsqu.cflxca    ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$cflxst    = tapply(X=mmsqu.cflxst    ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
    mont12sq$hflxca    = tapply(X=mmsqu.hflxca    ,INDEX=mfac     ,FUN=mean,na.rm=TRUE)
@@ -1257,6 +1668,7 @@ for (place in myplaces){
    mont12sd$leaf.resp  = sqrt(mont12sq$leaf.resp  - mont12mn$leaf.resp^2  ) * srnorm1
    mont12sd$root.resp  = sqrt(mont12sq$root.resp  - mont12mn$root.resp^2  ) * srnorm1
    mont12sd$hetresp    = sqrt(mont12sq$hetresp    - mont12mn$hetresp^2    ) * srnorm1
+   mont12sd$cwdresp    = sqrt(mont12sq$cwdresp    - mont12mn$cwdresp^2    ) * srnorm1
    mont12sd$cflxca     = sqrt(mont12sq$cflxca     - mont12mn$cflxca^2     ) * srnorm1
    mont12sd$cflxst     = sqrt(mont12sq$cflxst     - mont12mn$cflxst^2     ) * srnorm1
    mont12sd$hflxca     = sqrt(mont12sq$hflxca     - mont12mn$hflxca^2     ) * srnorm1
@@ -1280,6 +1692,7 @@ for (place in myplaces){
    mont12sd$leaf.resp  [!is.finite(mont12mn$leaf.resp  )] = 0.
    mont12sd$root.resp  [!is.finite(mont12mn$root.resp  )] = 0.
    mont12sd$hetresp    [!is.finite(mont12mn$hetresp    )] = 0.
+   mont12sd$cwdresp    [!is.finite(mont12mn$cwdresp    )] = 0.
    mont12sd$cflxca     [!is.finite(mont12mn$cflxca     )] = 0.
    mont12sd$cflxst     [!is.finite(mont12mn$cflxst     )] = 0.
    mont12sd$hflxca     [!is.finite(mont12mn$hflxca     )] = 0.
@@ -1294,11 +1707,12 @@ for (place in myplaces){
    mont12sd$evap       [!is.finite(mont12mn$evap       )] = 0.
    mont12sd$transp     [!is.finite(mont12mn$transp     )] = 0.
    #---------------------------------------------------------------------------------------#
-   #     Estimate the standard deviation of NPP, NEP, and NEE.                             #
+   #     Estimate the standard deviation of NPP, NEP, NEE, and REco.                       #
    #---------------------------------------------------------------------------------------#
-   mont12sd$npp  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2)
-   mont12sd$nep  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2 + mont12sd$hetresp^2)
-   mont12sd$nee  = sqrt(mont12sd$cflxca^2 + mont12sd$cflxst^2)
+   mont12sd$npp  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2                       )
+   mont12sd$nep  = sqrt(mont12sd$gpp^2    + mont12sd$plresp^2  + mont12sd$hetresp^2 )
+   mont12sd$nee  = sqrt(mont12sd$cflxca^2 + mont12sd$cflxst^2                       )
+   mont12sd$reco = sqrt(mont12sd$plresp^2 + mont12sd$hetresp^2                      )
    #---------------------------------------------------------------------------------------#
 
 
@@ -1314,8 +1728,10 @@ for (place in myplaces){
    dcyc12mn$leaf.resp   =qapply(X=dcycmean$leaf.resp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$root.resp   =qapply(X=dcycmean$root.resp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$hetresp     =qapply(X=dcycmean$hetresp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$cwdresp     =qapply(X=dcycmean$cwdresp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$nep         =qapply(X=dcycmean$nep         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$nee         =qapply(X=dcycmean$nee         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$reco        =qapply(X=dcycmean$reco        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$cflxca      =qapply(X=dcycmean$cflxca      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$cflxst      =qapply(X=dcycmean$cflxst      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$hflxca      =qapply(X=dcycmean$hflxca      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
@@ -1337,6 +1753,9 @@ for (place in myplaces){
    dcyc12mn$atm.shv     =qapply(X=dcycmean$atm.shv     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$can.shv     =qapply(X=dcycmean$can.shv     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$gnd.shv     =qapply(X=dcycmean$gnd.shv     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$atm.vpd     =qapply(X=dcycmean$atm.vpd     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$can.vpd     =qapply(X=dcycmean$can.vpd     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12mn$leaf.vpd    =qapply(X=dcycmean$leaf.vpd    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$atm.co2     =qapply(X=dcycmean$atm.co2     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$can.co2     =qapply(X=dcycmean$can.co2     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12mn$atm.prss    =qapply(X=dcycmean$atm.prss    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
@@ -1365,6 +1784,7 @@ for (place in myplaces){
    dcyc12sq$leaf.resp  = qapply(X=dcycmsqu$leaf.resp ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$root.resp  = qapply(X=dcycmsqu$root.resp ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$hetresp    = qapply(X=dcycmsqu$hetresp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
+   dcyc12sq$cwdresp    = qapply(X=dcycmsqu$cwdresp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$nep        = qapply(X=dcycmsqu$nep       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$cflxca     = qapply(X=dcycmsqu$cflxca    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
    dcyc12sq$cflxst     = qapply(X=dcycmsqu$cflxst    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
@@ -1400,6 +1820,7 @@ for (place in myplaces){
    dcyc12sd$leaf.resp  = sqrt(dcyc12sq$leaf.resp-dcyc12mn$leaf.resp^2       )*srnorm1
    dcyc12sd$root.resp  = sqrt(dcyc12sq$root.resp-dcyc12mn$root.resp^2       )*srnorm1
    dcyc12sd$hetresp    = sqrt(dcyc12sq$hetresp  -dcyc12mn$hetresp^2         )*srnorm1
+   dcyc12sd$cwdresp    = sqrt(dcyc12sq$cwdresp  -dcyc12mn$cwdresp^2         )*srnorm1
    dcyc12sd$nep        = sqrt(dcyc12sq$nep      -dcyc12mn$nep^2             )*srnorm1
    dcyc12sd$cflxca     = sqrt(dcyc12sq$cflxca   -dcyc12mn$cflxca^2          )*srnorm1
    dcyc12sd$cflxst     = sqrt(dcyc12sq$cflxst   -dcyc12mn$cflxst^2          )*srnorm1
@@ -1423,6 +1844,7 @@ for (place in myplaces){
    dcyc12sd$leaf.resp  [!is.finite(dcyc12sd$leaf.resp )] = 0.
    dcyc12sd$root.resp  [!is.finite(dcyc12sd$root.resp )] = 0.
    dcyc12sd$hetresp    [!is.finite(dcyc12sd$hetresp   )] = 0.
+   dcyc12sd$cwdresp    [!is.finite(dcyc12sd$cwdresp   )] = 0.
    dcyc12sd$nep        [!is.finite(dcyc12sd$nep       )] = 0.
    dcyc12sd$cflxca     [!is.finite(dcyc12sd$cflxca    )] = 0.
    dcyc12sd$cflxst     [!is.finite(dcyc12sd$cflxst    )] = 0.
@@ -1439,8 +1861,9 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Estimate NPP and NEE standard deviation.                                         #
    #---------------------------------------------------------------------------------------#
-   dcyc12sd$npp = sqrt(dcyc12sd$gpp^2    + dcyc12sd$plresp^2)
-   dcyc12sd$nee = sqrt(dcyc12sd$cflxca^2 + dcyc12sd$cflxst^2)
+   dcyc12sd$npp  = sqrt(dcyc12sd$gpp^2    + dcyc12sd$plresp^2 )
+   dcyc12sd$nee  = sqrt(dcyc12sd$cflxca^2 + dcyc12sd$cflxst^2 )
+   dcyc12sd$reco = sqrt(dcyc12sd$plresp^2 + dcyc12sd$hetresp^2)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1463,7 +1886,6 @@ for (place in myplaces){
    demandpftdbh   [empty] = NA
    supplypftdbh   [empty] = NA
    nplantpftdbh   [empty] = NA
-   ncbmortpftdbh  [empty] = NA
    #---------------------------------------------------------------------------------------#
 
 
@@ -1545,7 +1967,6 @@ for (place in myplaces){
 
 
 
-
    #---------------------------------------------------------------------------------------#
    #      Time series by PFT.                                                              #
    #---------------------------------------------------------------------------------------#
@@ -1587,7 +2008,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
 
@@ -1630,7 +2054,7 @@ for (place in myplaces){
             cols    = pft$colour[selpft]
             legs    = pft$name  [selpft]
             plot(x=thismonth,y=thisvar[,1],type="n",main=letitre,ylim=ylimit
-                ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7)
+                ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7,log=xylog)
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
 
             if (drought.mark){
@@ -1752,7 +2176,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
@@ -1785,6 +2212,563 @@ for (place in myplaces){
          }#end for (p in pftuse)
       }#end if (tseragbpft)
    } #end for tseries
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the comparison between observations and model.                                 #
+   #---------------------------------------------------------------------------------------#
+   print(paste("    + Comparisons of time series (model vs. observations)..."))
+   for (cc in 1:ncompemean){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      compnow      = compemean[[cc]]
+      vname        = compnow$vnam  
+      description  = compnow$desc  
+      unit         = compnow$unit  
+      lcolours     = compnow$colour
+      llwd         = compnow$lwd
+      llwd         = compnow$lwd
+      ltype        = compnow$type
+      plog         = compnow$plog
+      legpos       = compnow$legpos
+      plotit       = compnow$plt
+
+      #----- Check whether there are observations for this particular site. ---------------#
+      if (iata == "mao" | iata == "bdf"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
+
+      #------------------------------------------------------------------------------------#
+      #     Last check to see if we should plot it or not.                                 #
+      #------------------------------------------------------------------------------------#
+      plotit       = plotit && obsnow %in% ls()
+      if (plotit){
+         thisobs = get(obsnow)
+         obswhen = thisobs$tomonth
+         sel     = thismonth >= min(obswhen) & thismonth <= max(obswhen)
+         plotit  = any(sel)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Enter here only if there is any overlap of time between observations and       #
+      # model.                                                                             #
+      #------------------------------------------------------------------------------------#
+      if (plotit){
+         #---------------------------------------------------------------------------------#
+         #    Copy the observations to a scratch variable.                                 #
+         #---------------------------------------------------------------------------------#
+         mnvar   = paste("emean",vname,sep=".")
+         obsmean = thisobs[[mnvar]]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir   = paste(outpref,"compemean",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         print (paste("      - ",description,"comparison..."))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Define the number of layers. ----------------------------------------------#
+         thiswhen  = thismonth [sel]
+         thismean  = get(vname)[sel]
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #----- Find the plot range. ------------------------------------------------------#
+         ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
+         #----- Expand the upper range in so the legend doesn't hide things. --------------#
+         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
+            ylimit[1] = -1
+            ylimit[2] =  1
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
+            ylimit[2] = (1.0+scalleg) * ylimit[1]
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
+            ylimit[2] = (1.0-scalleg) * ylimit[1]
+         }else{
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the nice scale for time.                                               #
+         #---------------------------------------------------------------------------------#
+         whenplote = pretty.time(obswhen,n=8)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vname,".",outform[o],sep="")
+            if(outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+            }#end if
+
+            #----- Load variable ----------------------------------------------------------#
+            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            plot(x=thiswhen,y=thismean,type="n",main=letitre,xlab="Time"
+                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                ,cex.main=cex.main)
+            axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
+            if (plotgrid){
+               abline(v=whenplote$levels,h=axTicks(side=2),col="gray52",lty="solid")
+            }#end if
+            points(x=thiswhen,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
+                  ,pch=16,cex=1.0)
+            points(x=obswhen,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
+                  ,pch=16,cex=1.0)
+            legend(x=legpos,inset=0.01,legend=c("Model","Observation")
+                  ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+         } #end for outform
+      }#end if plotit
+   }#end for ncompare
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the comparison between observations and model.                                 #
+   #---------------------------------------------------------------------------------------#
+   print(paste("    + Comparisons of monthly means (model vs. observations)..."))
+   for (cc in 1:ncompmmean){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      compnow      = compmmean[[cc]]
+      vname        = compnow$vnam  
+      description  = compnow$desc  
+      unit         = compnow$unit  
+      plotsd       = compnow$plotsd
+      lcolours     = compnow$colour
+      errcolours   = compnow$errcol
+      angle        = compnow$angle
+      dens         = compnow$dens
+      llwd         = compnow$lwd
+      shwd         = compnow$shwd
+      llwd         = compnow$lwd
+      ltype        = compnow$type
+      plog         = compnow$plog
+      legpos       = compnow$legpos
+      plotit       = compnow$plt
+
+      #----- Check whether there are observations for this particular site. ---------------#
+      if (iata == "mao" | iata == "bdf"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
+
+      plotit       = plotit && obsnow %in% ls()
+
+
+
+
+
+      if (plotit){
+         #---------------------------------------------------------------------------------#
+         #    Copy the observations to a scratch variable.                                 #
+         #---------------------------------------------------------------------------------#
+         thisobs = get(obsnow)
+         mnvar   = paste("mmean",vname,sep=".")
+         sdvar   = paste("msdev",vname,sep=".")
+         obsmean = thisobs[[mnvar]]
+         obssdev = thisobs[[sdvar]]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Some observations do not have enough measurements to make a full year.  If #
+         # this is the case, then we must split the observations into smaller intervals so #
+         # the polygon works.  In case no observation is available, make the vectors NULL  #
+         # so we will not plot observations at all.                                        #
+         #---------------------------------------------------------------------------------#
+         if (all(is.na(obsmean+obssdev))){
+            obs.x     = NULL
+            obs.ylow  = NULL
+            obs.yhigh = NULL
+         }else{
+            #------ Find the periods with continous data. ---------------------------------#
+            ok        = is.finite(obsmean+obssdev)
+            obs.x     = montmont[ok]
+            obs.ylow  = obsmean [ok] - obssdev[ok]
+            obs.yhigh = obsmean [ok] + obssdev[ok]
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir   = paste(outpref,"compmmean",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         print (paste("      - ",description,"comparison..."))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------# 
+         #    Define the number of layers.  Some variables have no standard deviation in   #
+         # the model, so Make them 0 if this is the case.                                  #
+         #---------------------------------------------------------------------------------# 
+         thismean  = mont12mn[[vname]]
+         thissdev = mont12sd[[vname]]
+         if (length(mont12sd[[vname]]) == 0){
+            thissdev = 0. * thismean
+         }else{
+            thissdev = mont12sd[[vname]]
+         }#end if
+         mod.x     = montmont
+         mod.ylow  = thismean - thissdev
+         mod.yhigh = thismean + thissdev 
+         #---------------------------------------------------------------------------------# 
+
+
+
+         #----- Find the plot range. ------------------------------------------------------#
+         if (plotsd){
+            ylimit    = range(c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh),na.rm=TRUE)
+         }else{
+            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
+         }#end if
+         #----- Expand the upper range in so the legend doesn't hide things. --------------#
+         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
+            ylimit[1] = -1
+            ylimit[2] =  1
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
+            ylimit[2] = (1.0+scalleg) * ylimit[1]
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
+            ylimit[2] = (1.0-scalleg) * ylimit[1]
+         }else{
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vname,".",outform[o],sep="")
+            if(outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+            }#end if
+
+            #----- Load variable ----------------------------------------------------------#
+            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            plot(x=montmont,y=thismean,type="n",main=letitre,xlab="Time"
+                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                ,cex.main=cex.main)
+            axis(side=1,at=montplot$levels,labels=montplot$labels,padj=montplot$padj)
+            if (plotgrid){ 
+               abline(v=montplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
+            }#end if
+            if (plotsd){
+               if (is.null(obs.x)){
+                  err.x = c(mod.x,rev(mod.x))
+                  err.y = c(mod.ylow,rev(mod.yhigh))
+                  polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1],density=dens[1]
+                         ,lty="solid",lwd=shwd[1])
+               }else{
+                  err.x = c(mod.x,rev(mod.x),NA,obs.x,rev(obs.x))
+                  err.y = c(mod.ylow,rev(mod.yhigh),NA,obs.ylow,rev(obs.yhigh))
+                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
+                         ,lty="solid",lwd=shwd)
+               }#end if
+            }#end if
+            points(x=montmont,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
+                  ,pch=16,cex=1.0)
+            points(x=montmont,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
+                  ,pch=16,cex=1.0)
+            if (plotsd){
+               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
+                     ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
+            }else{
+               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                     ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
+            }#end if
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+         } #end for outform
+      }#end if plotit
+   }#end for ncompare
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the comparison between observations and model.                                 #
+   #---------------------------------------------------------------------------------------#
+   print(paste("      * Comparisons of mean diurnal cycle (model vs. observations)..."))
+   for (cc in 1:ncompdcyc){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      compnow      = compdcyc[[cc]]
+      vname        = compnow$vnam  
+      description  = compnow$desc  
+      unit         = compnow$unit  
+      plotsd       = compnow$plotsd
+      lcolours     = compnow$colour
+      errcolours   = compnow$errcol
+      angle        = compnow$angle
+      dens         = compnow$dens
+      llwd         = compnow$lwd
+      shwd         = compnow$shwd
+      llwd         = compnow$lwd
+      ltype        = compnow$type
+      plog         = compnow$plog
+      legpos       = compnow$legpos
+      plotit       = compnow$plt
+
+      #----- Check whether there are observations for this particular site. ---------------#
+      if (iata == "mao" | iata == "bdf"){
+         obsnow = "obs.m34"
+      }else if(iata == "stm"){
+         obsnow = "obs.s67"
+      }else if(iata == "rao"){
+         obsnow = "obs.pdg"
+      }else if(iata == "jpr"){
+         obsnow = "obs.fns"
+      }else if(iata == "btr"){
+         obsnow = "obs.s77"
+      }else{
+         obsnow = paste("obs.",iata,sep="")
+      }#end if
+      plotit       = plotit && obsnow %in% ls()
+
+      if (plotit){
+         #---------------------------------------------------------------------------------#
+         #    Copy the observations to a scratch variable.                                 #
+         #---------------------------------------------------------------------------------#
+         thisobs = get(obsnow)
+         mnvar   = paste("qmean",vname,sep=".")
+         sdvar   = paste("qsdev",vname,sep=".")
+         obsmean = thisobs[[mnvar]]
+         obssdev = thisobs[[sdvar]]
+         #----- Append 1st hour after the last. -------------------------------------------#
+         obsmean = cbind(obsmean,obsmean[,1])
+         obssdev = cbind(obssdev,obssdev[,1])
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Some observations do not have enough measurements to make a full year.  If #
+         # this is the case, then we must split the observations into smaller intervals so #
+         # the polygon works.  In case no observation is available, make the vectors NULL  #
+         # so we will not plot observations at all.                                        #
+         #---------------------------------------------------------------------------------#
+         obs.ylow  = obsmean - obssdev
+         obs.yhigh = obsmean + obssdev
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir   = paste(outpref,"compdcyc",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         outtheme = paste(outdir,vname,sep="/")
+         if (! file.exists(outtheme)) dir.create(outtheme)
+         print (paste("      +",description,"comparison..."))
+         #---------------------------------------------------------------------------------# 
+
+
+
+
+         #---------------------------------------------------------------------------------# 
+         #    Define the number of layers.  Some variables have no standard deviation in   #
+         # the model, so Make them 0 if this is the case.  We also append the last hour    #
+         # before the first one so 00 UTC appears in the left.                             #
+         #---------------------------------------------------------------------------------# 
+         thismean  = dcyc12mn[[vname]]
+         thismean  = cbind(thismean[,ndcycle],thismean)
+         if (length(dcyc12sd[[vname]]) == 0){
+            thissdev = 0. * thismean
+         }else{
+            thissdev = dcyc12sd[[vname]]
+           thissdev  = cbind(thissdev[,ndcycle],thissdev)
+         }#end if
+         mod.ylow  = thismean - thissdev
+         mod.yhigh = thismean + thissdev 
+         #---------------------------------------------------------------------------------# 
+
+
+         #----- Find the plot range. ------------------------------------------------------#
+         if (plotsd){
+            ylimit    = range(c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh),na.rm=TRUE)
+         }else{
+            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all months.                                                      #
+         #---------------------------------------------------------------------------------#
+         for (pmon in 1:12){
+            cmon    = substring(100+pmon,2,3)
+            namemon = mlist[pmon]
+
+            #------------------------------------------------------------------------------#
+            #     Check if the directory exists.  If not, create it.                       #
+            #------------------------------------------------------------------------------#
+            print (paste("        > ",description," time series - ",namemon,"...",sep=""))
+
+            #----- Loop over formats. -----------------------------------------------------#
+            for (o in 1:nout){
+               fichier = paste(outtheme,"/",vname,"-",cmon,".",outform[o]
+                              ,sep="")
+               if(outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+               }#end if
+
+               #----- Load variable -------------------------------------------------------#
+               letitre = paste(description," - ",lieu,"\n"
+                              ,"Mean diurnal cycle - ",namemon,sep="")
+               plot(x=thisday,y=thismean[pmon,],type="n",main=letitre,xlab="Time"
+                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                   ,cex.main=cex.main)
+               axis(side=1,at=dcycplot$levels,labels=dcycplot$labels,padj=dcycplot$padj)
+               if (plotgrid){ 
+                  abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
+               }#end if
+               if (plotsd){
+                  mod.x.now     = thisday
+                  mod.ylow.now  = mod.ylow [pmon,]
+                  mod.yhigh.now = mod.yhigh[pmon,]
+                  #------ Find the periods with continous data. ---------------------------#
+                  ok        = is.finite(obs.ylow[pmon,]) & is.finite(obs.yhigh[pmon,])
+                  if (any(ok)){
+                     obs.x.now     = thisday       [ok]
+                     obs.ylow.now  = obs.ylow [pmon,ok]
+                     obs.yhigh.now = obs.yhigh[pmon,ok]
+                  }else{
+                     obs.x.now     = NULL
+                     obs.ylow.now  = NULL
+                     obs.yhigh.now = NULL
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+                  if (is.null(obs.x.now)){
+                     err.x = c(mod.x.now,rev(mod.x.now))
+                     err.y = c(mod.ylow.now,rev(mod.yhigh.now))
+                     polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1]
+                            ,density=dens[1],lty="solid",lwd=shwd[1])
+                  }else{
+                     err.x = c(mod.x.now,rev(mod.x.now),NA,obs.x.now,rev(obs.x.now))
+                     err.y = c(mod.ylow.now,rev(mod.yhigh.now),NA
+                              ,obs.ylow.now,rev(obs.yhigh.now))
+                     polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
+                            ,lty="solid",lwd=shwd)
+                  }#end if
+               }#end if
+               points(x=thisday,y=thismean[pmon,],col=lcolours[1]
+                     ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)
+               points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
+                     ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
+               if (plotsd){
+                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
+                        ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
+               }else{
+                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
+                        ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
+               }#end if
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+            } #end for outform
+         }#end for pmon
+      }#end if plotit
+   }#end for ncompare
    #---------------------------------------------------------------------------------------#
 
 
@@ -1831,7 +2815,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
 
@@ -1921,7 +2908,10 @@ for (place in myplaces){
                ,pointsize=ptsz,res=depth)
          }else if(outform[o] == "eps"){
             postscript(file=fichier,width=size$width,height=size$height
-                      ,pointsize=ptsz,paper=paper)
+                      ,pointsize=ptsz,paper=size$paper)
+         }else if(outform[o] == "pdf"){
+            pdf(file=fichier,onefile=FALSE
+               ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
          }#end if
 
          #---------------------------------------------------------------------------------#
@@ -2077,7 +3067,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             #----- Load variable ----------------------------------------------------------#
@@ -2194,7 +3187,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
                #----- Load variable -------------------------------------------------------#
@@ -2228,346 +3224,6 @@ for (place in myplaces){
          }#end for pmon
       }#end if plotit
    }#end for ntser
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #   Plot the comparison between observations and model.                                 #
-   #---------------------------------------------------------------------------------------#
-   print(paste("      * Comparisons of mean diurnal cycle (model vs. observations)..."))
-   for (cc in 1:ncompdcyc){
-
-      #----- Retrieve variable information from the list. ---------------------------------#
-      compnow      = compdcyc[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
-      plotsd       = compnow$plotsd
-      lcolours     = compnow$colour
-      errcolours   = compnow$errcol
-      angle        = compnow$angle
-      dens         = compnow$dens
-      llwd         = compnow$lwd
-      shwd         = compnow$shwd
-      llwd         = compnow$lwd
-      ltype        = compnow$type
-      plog         = compnow$plog
-      legpos       = compnow$legpos
-      plotit       = compnow$plt
-
-      #----- Check whether there are observations for this particular site. ---------------#
-      if (iata == "mao" | iata == "bdf"){
-         obsnow = "obs.m34"
-      }else if(iata == "stm"){
-         obsnow = "obs.s67"
-      }else if(iata == "rao"){
-         obsnow = "obs.pdg"
-      }else if(iata == "jpr"){
-         obsnow = "obs.fns"
-      }else if(iata == "btr"){
-         obsnow = "obs.s77"
-      }else{
-         obsnow = paste("obs.",iata,sep="")
-      }#end if
-      plotit       = plotit && obsnow %in% ls()
-
-      if (plotit){
-         #---------------------------------------------------------------------------------#
-         #    Copy the observations to a scratch variable.                                 #
-         #---------------------------------------------------------------------------------#
-         thisobs = get(obsnow)
-         mnvar   = paste("qmean",vname,sep=".")
-         sdvar   = paste("qsdev",vname,sep=".")
-         obsmean = thisobs[[mnvar]]
-         obssdev = thisobs[[sdvar]]
-         #----- Append 1st hour after the last. -------------------------------------------#
-         obsmean = cbind(obsmean,obsmean[,1])
-         obssdev = cbind(obssdev,obssdev[,1])
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #    Check whether the time series directory exists.  If not, create it.          #
-         #---------------------------------------------------------------------------------#
-         outdir   = paste(outpref,"compdcyc",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         outtheme = paste(outdir,vname,sep="/")
-         if (! file.exists(outtheme)) dir.create(outtheme)
-         print (paste("      +",description,"comparison..."))
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #----- Define the number of layers. ----------------------------------------------#
-         thismean  = dcyc12mn[[vname]]
-         thissdev  = dcyc12sd[[vname]]
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #---------------------------------------------------------------------------------# 
-         #    Some variables have no standard deviation in the model.  Make them 0 if this #
-         # is the case.                                                                    #
-         #---------------------------------------------------------------------------------# 
-         if (length(thissdev) == 0){
-            thissdev = 0. * thismean
-         }#end if
-         #---------------------------------------------------------------------------------# 
-
-
-         #----- Append the last hour before the first one. --------------------------------#
-         thismean  = cbind(thismean[,ndcycle],thismean)
-         thissdev  = cbind(thissdev[,ndcycle],thissdev)
-         #---------------------------------------------------------------------------------# 
-
-
-         #----- Find the plot range. ------------------------------------------------------#
-         if (plotsd){
-            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
-                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
-         }else{
-            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #      Loop over all months.                                                      #
-         #---------------------------------------------------------------------------------#
-         for (pmon in 1:12){
-            cmon    = substring(100+pmon,2,3)
-            namemon = mlist[pmon]
-
-            #------------------------------------------------------------------------------#
-            #     Check if the directory exists.  If not, create it.                       #
-            #------------------------------------------------------------------------------#
-            print (paste("        > ",description," time series - ",namemon,"...",sep=""))
-
-            #----- Loop over formats. -----------------------------------------------------#
-            for (o in 1:nout){
-               fichier = paste(outtheme,"/",vname,"-",cmon,".",outform[o]
-                              ,sep="")
-               if(outform[o] == "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
-               }#end if
-
-               #----- Load variable -------------------------------------------------------#
-               letitre = paste(description," - ",lieu,"\n"
-                              ,"Mean diurnal cycle - ",namemon,sep="")
-               plot(x=thisday,y=thismean[pmon,],type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
-                   ,cex.main=cex.main)
-               axis(side=1,at=dcycplot$levels,labels=dcycplot$labels,padj=dcycplot$padj)
-               if (plotgrid){ 
-                  abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
-               }#end if
-               if (plotsd){
-                  err.x = c(thisday,rev(thisday),NA,thisday,rev(thisday))
-                  err.y = c(thismean[pmon,] + thissdev[pmon,]
-                           ,rev(thismean[pmon,]) - rev(thissdev[pmon,])
-                           ,NA
-                           ,obsmean[pmon,]      + obssdev[pmon,]
-                           ,rev(obsmean[pmon,]) - rev(obssdev[pmon,]))
-                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                         ,lty="solid",lwd=shwd)
-               }#end if
-               points(x=thisday,y=thismean[pmon,],col=lcolours[1]
-                     ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)
-               points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
-                     ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
-               if (plotsd){
-                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                        ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
-               }else{
-                  legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                        ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
-               }#end if
-               if (outform[o] == "x11"){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-            } #end for outform
-         }#end for pmon
-      }#end if plotit
-   }#end for ncompare
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #   Plot the comparison between observations and model.                                 #
-   #---------------------------------------------------------------------------------------#
-   print(paste("    + Comparisons of monthly means (model vs. observations)..."))
-   for (cc in 1:ncompmmean){
-
-      #----- Retrieve variable information from the list. ---------------------------------#
-      compnow      = compmmean[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
-      plotsd       = compnow$plotsd
-      lcolours     = compnow$colour
-      errcolours   = compnow$errcol
-      angle        = compnow$angle
-      dens         = compnow$dens
-      llwd         = compnow$lwd
-      shwd         = compnow$shwd
-      llwd         = compnow$lwd
-      ltype        = compnow$type
-      plog         = compnow$plog
-      legpos       = compnow$legpos
-      plotit       = compnow$plt
-
-      #----- Check whether there are observations for this particular site. ---------------#
-      if (iata == "mao" | iata == "bdf"){
-         obsnow = "obs.m34"
-      }else if(iata == "stm"){
-         obsnow = "obs.s67"
-      }else if(iata == "rao"){
-         obsnow = "obs.pdg"
-      }else if(iata == "jpr"){
-         obsnow = "obs.fns"
-      }else if(iata == "btr"){
-         obsnow = "obs.s77"
-      }else{
-         obsnow = paste("obs.",iata,sep="")
-      }#end if
-
-      plotit       = plotit && obsnow %in% ls()
-
-
-
-
-
-      if (plotit){
-         #---------------------------------------------------------------------------------#
-         #    Copy the observations to a scratch variable.                                 #
-         #---------------------------------------------------------------------------------#
-         thisobs = get(obsnow)
-         mnvar   = paste("mmean",vname,sep=".")
-         sdvar   = paste("msdev",vname,sep=".")
-         obsmean = thisobs[[mnvar]]
-         obssdev = thisobs[[sdvar]]
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #    Check whether the time series directory exists.  If not, create it.          #
-         #---------------------------------------------------------------------------------#
-         outdir   = paste(outpref,"compmmean",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         print (paste("      - ",description,"comparison..."))
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Define the number of layers. ----------------------------------------------#
-         thismean  = mont12mn[[vname]]
-         thissdev  = mont12sd[[vname]]
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #---------------------------------------------------------------------------------# 
-         #    Some variables have no standard deviation in the model.  Make them 0 if this #
-         # is the case.                                                                    #
-         #---------------------------------------------------------------------------------# 
-         if (length(thissdev) == 0){
-            thissdev = 0. * thismean
-         }#end if
-         #---------------------------------------------------------------------------------# 
-
-
-
-         #----- Find the plot range. ------------------------------------------------------#
-         if (plotsd){
-            ylimit    = range(c(thismean + thissdev ,thismean - thissdev
-                               ,obsmean  + obssdev  ,obsmean  - obssdev    ),na.rm=TRUE)
-         }else{
-            ylimit    = range(c(thismean,obsmean),na.rm=TRUE)
-         }#end if
-         #----- Expand the upper range in so the legend doesn't hide things. --------------#
-         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
-            ylimit[1] = -1
-            ylimit[2] =  1
-         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
-            ylimit[2] = (1.0+scalleg) * ylimit[1]
-         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
-            ylimit[2] = (1.0-scalleg) * ylimit[1]
-         }else{
-            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Check if the directory exists.  If not, create it.                          #
-         #---------------------------------------------------------------------------------#
-
-         #----- Loop over formats. --------------------------------------------------------#
-         for (o in 1:nout){
-            fichier = paste(outdir,"/",vname,".",outform[o],sep="")
-            if(outform[o] == "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
-               png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
-            }#end if
-
-            #----- Load variable ----------------------------------------------------------#
-            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
-            plot(x=montmont,y=thismean,type="n",main=letitre,xlab="Time"
-                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
-                ,cex.main=cex.main)
-            axis(side=1,at=montplot$levels,labels=montplot$labels,padj=montplot$padj)
-            if (plotgrid){ 
-               abline(v=montplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
-            }#end if
-            if (plotsd){
-               err.x = c(montmont,rev(montmont),NA,montmont,rev(montmont))
-               err.y = c(thismean + thissdev,rev(thismean) - rev(thissdev),NA
-                        ,obsmean  + obssdev ,rev(obsmean ) - rev(obssdev )   )
-               polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                      ,lty="solid",lwd=shwd)
-            }#end if
-            points(x=montmont,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
-                  ,pch=16,cex=1.0)
-            points(x=montmont,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
-                  ,pch=16,cex=1.0)
-            if (plotsd){
-               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                     ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
-            }else{
-               legend(x=legpos,inset=0.05,legend=c("Model","Observation")
-                     ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
-            }#end if
-            if (outform[o] == "x11"){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-         } #end for outform
-      }#end if plotit
-   }#end for ncompare
    #---------------------------------------------------------------------------------------#
 
 
@@ -2648,7 +3304,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
@@ -2756,7 +3415,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
@@ -2877,7 +3539,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
@@ -2971,7 +3636,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste("Mean diurnal cycle \n ",description," - ",lieu,sep="")
@@ -3035,7 +3703,10 @@ for (place in myplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
             ylimit  = range(thisvar, na.rm=TRUE)
             if (ylimit[1] == ylimit[2] && ylimit[1] == 0){
@@ -3057,6 +3728,162 @@ for (place in myplaces){
          } #end for outform
       }#end if
    }#end for nbox
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Bar plot by DBH class.                                                           #
+   #---------------------------------------------------------------------------------------#
+   print(paste("    + Bar plot by DBH classes..."))
+   monbplot    = which(nummonths(thismonth) %in% sasmonth)
+   nmonbplot   = length(monbplot)
+   pftuse      = which(apply(X=nplantpftdbh,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
+   npftuse     = length(pftuse)
+   pftname.use = pft$name  [pftuse]
+   pftcol.use  = pft$colour[pftuse]
+   for (v in 1:nbarplotdbh){
+      #----- Load settings for this variable.----------------------------------------------#
+      thisbar     = barplotdbh[[v]]
+      vnam        = thisbar$vnam
+      description = thisbar$desc
+      unit        = thisbar$unit
+      stacked     = thisbar$stack
+      plotit      = thisbar$plt
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Check whether to plot this 
+      #------------------------------------------------------------------------------------#
+      if (plotit){
+         print (paste("      - ",description,"..."))
+
+
+         #---------------------------------------------------------------------------------#
+         #     Retrieve the variable, and keep only the part that is usable.               #
+         #---------------------------------------------------------------------------------#
+         thisvnam                  = get(vnam)[monbplot,,]
+         thisvnam                  = thisvnam [,,pftuse]
+         thisvnam                  = thisvnam [,-(ndbh+1),]
+         
+         thisvnam[is.na(thisvnam)] = 0.
+         thiswhen                  = thismonth[monbplot]
+         #---------------------------------------------------------------------------------#
+       
+
+         #---------------------------------------------------------------------------------#
+         #      Find the limits for the plots.  We use the same axis so it is easier to    #
+         # compare different times.                                                        #
+         #---------------------------------------------------------------------------------#
+         if (stacked){
+            ylimit   = c(0,max(apply(X=thisvnam,MARGIN=c(1,2),FUN=sum,na.rm=TRUE)))
+         }else{
+            ylimit   = range(x=thisvnam,na.rm=TRUE)
+         }#end if
+         #----- Expand the upper range in so the legend doesn't hide things. --------------#
+         if (ylimit[1] == ylimit[2]  & ylimit[1] == 0){
+            ylimit[1] = -1
+            ylimit[2] =  1
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] > 0){
+            ylimit[2] = (1.0+scalleg) * ylimit[1]
+         }else if (ylimit[1] == ylimit[2] & ylimit[1] < 0){
+            ylimit[2] = (1.0-scalleg) * ylimit[1]
+         }else{
+            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+         barplotdir = paste(outpref,"barplotdbh",sep="/")
+         if (! file.exists(barplotdir)) dir.create(barplotdir)
+         outdir = paste(barplotdir,vnam,sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all possible months.                                             #
+         #---------------------------------------------------------------------------------#
+         for (m in 1:nmonbplot){
+
+            #----- Find which year we are plotting. ---------------------------------------#
+            cmonth    = sprintf("%2.2i",(nummonths(thiswhen[m])))
+            cyear     = sprintf("%4.4i",(numyears(thiswhen[m])))
+            mm        = as.numeric(cmonth)
+            yy        = as.numeric(cyear)
+            whentitle = paste(mon2mmm(mm,cap1=TRUE),cyear,sep="-")
+            #------------------------------------------------------------------------------#
+
+
+            #----- Loop over output formats. ----------------------------------------------#
+            for (o in 1:nout){
+               #------ Open the plot. -----------------------------------------------------#
+               fichier = paste(outdir,"/",vnam,"-",cyear,"-",cmonth,"-",suffix
+                                         ,".",outform[o],sep="")
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+               #------ Set up the title and axis labels. ----------------------------------#
+               letitre = paste(lieu,"\n",description," - Time : ",whentitle,sep="")
+               lexlab  = "DBH Classes"
+               leylab  = paste(description," [",unit,"]",sep="")
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot all monthly means together. ------------------------------------#
+               barplot(height=t(thisvnam[m,,]),names.arg=dbhnames[1:ndbh],width=1.0
+                      ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
+                      ,beside=(! stacked),col=pftcol.use
+                      ,border="gray23",xpd=FALSE,cex.main=cex.main)
+               if (plotgrid & (! stacked)){
+                  xgrid=0.5+(1:ndbh)*(1+npftuse)
+                  abline(v=xgrid,col="gray46",lty="solid")
+               }#end if
+               box()
+               legend(x="topleft",inset=0.01,legend=pftname.use,fill=pftcol.use
+                     ,ncol=1,title="PFT",cex=1.0,bg="white")
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Close the device.                                                     #
+               #---------------------------------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               #---------------------------------------------------------------------------#
+            } #end for outform
+            #------------------------------------------------------------------------------#
+         }#end for
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for
    #---------------------------------------------------------------------------------------#
 
 
@@ -3182,7 +4009,11 @@ for (place in myplaces){
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
                      postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=paper)
+                               ,pointsize=ptsz,paper=size$paper)
+                  }else if(outform[o] == "pdf"){
+                     pdf(file=fichier,onefile=FALSE
+                        ,width=size$width,height=size$height,pointsize=ptsz
+                        ,paper=size$paper)
                   }#end if
 
                   stcol   = pft$colour[pftww]

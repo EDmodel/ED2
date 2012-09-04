@@ -819,6 +819,7 @@ subroutine update_met_drivers(cgrid)
                                    , press2exner       & ! function
                                    , extemp2theta      & ! function
                                    , thetaeiv          & ! function
+                                   , vpdefil           & ! function
                                    , rehuil            ! ! function
 
    implicit none
@@ -2281,6 +2282,13 @@ subroutine update_met_drivers(cgrid)
                                          ,cgrid%met(ipy)%atm_tmp,rvaux,rvaux)
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !    And the vapour pressure deficit.                                                !
+      !------------------------------------------------------------------------------------!
+      cgrid%met(ipy)%atm_vpdef = vpdefil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp        &
+                                        ,cgrid%met(ipy)%atm_shv,.true.)
+      !------------------------------------------------------------------------------------!
+
 
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
@@ -2344,12 +2352,19 @@ subroutine update_met_drivers(cgrid)
          rvaux                    = cgrid%met(ipy)%atm_shv / (1.0 - cgrid%met(ipy)%atm_shv)
          cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
                                             ,cpoly%met(isi)%atm_tmp,rvaux,rvaux)
+         !---------------------------------------------------------------------------------!
+
+         !----- Find the vapour pressure deficit. -----------------------------------------!
+         cpoly%met(isi)%atm_vpdef = vpdefil (cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp    &
+                                            ,cpoly%met(isi)%atm_shv,.true.)
+         !---------------------------------------------------------------------------------!
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
                                        + cpoly%met(isi)%nir_diffuse
          cpoly%met(isi)%rshort         = cpoly%met(isi)%rshort_diffuse                     &
                                        + cpoly%met(isi)%par_beam + cpoly%met(isi)%nir_beam
+         !---------------------------------------------------------------------------------!
 
 
 

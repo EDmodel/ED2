@@ -272,6 +272,8 @@ module rk4_coms
       real(kind=8),pointer,dimension(:) :: avg_sensible_gg   ! Soil heat flux between layers
       real(kind=8)                      :: avg_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: avg_drainage_heat ! Drainage at the bottom.
+      !----- Water deficit. ---------------------------------------------------------------!
+      real(kind=8) :: water_deficit     ! Step water deficit
       !------------------------------------------------------------------------------------!
       !     Fast time flux variables for each time step.  These variables will be defined  !
       ! only when the user is debugging.                                                   !
@@ -355,6 +357,7 @@ module rk4_coms
       real(kind=8)                    :: atm_tmp
       real(kind=8)                    :: atm_theta
       real(kind=8)                    :: atm_theiv
+      real(kind=8)                    :: atm_vpdef
       real(kind=8)                    :: atm_shv
       real(kind=8)                    :: atm_rhv
       real(kind=8)                    :: atm_co2
@@ -1059,6 +1062,8 @@ module rk4_coms
       y%avg_drainage                   = 0.d0
       y%avg_drainage_heat              = 0.d0
 
+      y%water_deficit                  = 0.d0
+
       y%flx_carbon_ac                  = 0.d0
       y%flx_carbon_st                  = 0.d0
       y%flx_vapor_lc                   = 0.d0
@@ -1520,7 +1525,6 @@ module rk4_coms
       type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
-
       y%flx_carbon_ac                  = 0.d0
       y%flx_vapor_lc                   = 0.d0
       y%flx_vapor_wc                   = 0.d0
@@ -1585,7 +1589,6 @@ module rk4_coms
 
       !----- Find the inverse of the time step. -------------------------------------------!
       hdidi = 1.d0 / hdid
-
 
       y%flx_carbon_ac     = y%flx_carbon_ac     * hdidi
       y%flx_vapor_lc      = y%flx_vapor_lc      * hdidi

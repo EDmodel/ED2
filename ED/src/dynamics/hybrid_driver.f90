@@ -27,7 +27,7 @@ subroutine hybrid_timestep(cgrid)
   use grid_coms             , only : nzg                & ! intent(in)
                                    , nzs                ! ! intent(in)
   use ed_misc_coms          , only : dtlsm              ! ! intent(in)
-
+  use therm_lib             , only : tq2enthalpy        ! ! function
   
   implicit none
   !----- Arguments ----------------------------------------------------------!
@@ -136,19 +136,22 @@ subroutine hybrid_timestep(cgrid)
            old_can_co2      = csite%can_co2(ipa)
            old_can_rhos     = csite%can_rhos(ipa)
            old_can_temp     = csite%can_temp(ipa)
+           old_can_prss     = csite%can_prss (ipa)
+           old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa)                 &
+                                         ,csite%can_shv(ipa),.true.)
            !------------------------------------------------------------------!
            
            !------------------------------------------------------------------!
            !    Copy the meteorological variables to the rk4site structure.   !
            !------------------------------------------------------------------!
            call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)&
-                ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv          &
-                ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2  &
-                ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg  &
-                ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam         &
-                ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse        &
-                ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)      &
-                ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
+                ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv,cmet%atm_vpdef &
+                ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2        &
+                ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg        &
+                ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam               &
+                ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse              &
+                ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)            &
+                ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)                &
                 ,cgrid%lat(ipy),cgrid%cosz(ipy))
            
            
@@ -180,12 +183,12 @@ subroutine hybrid_timestep(cgrid)
            !------------------------------------------------------------------!
            call copy_patch_init_carbon(csite,ipa,initp)
            
-            !------------------------------------------------------------------!
-            !  Perform the forward and backward step.  It is possible this will!
-            !  be done over a series of sub-steps.  1)derivs,2)forward,3)back  !
-            !  4) check stability and error 5) repeat as shorter or continue   !
-            !------------------------------------------------------------------!
-!            call integrate_patch_hybrid(csite,                               &
+           !------------------------------------------------------------------!
+           !  Perform the forward and backward step.  It is possible this will!
+           !  be done over a series of sub-steps.  1)derivs,2)forward,3)back  !
+           !  4) check stability and error 5) repeat as shorter or continue   !
+           !------------------------------------------------------------------!
+!            call integrate_patch_hybrid(csite,                                 &
 !                 integration_buff%yprev,integration_buff%initp,                &
 !                 integration_buff%dinitp,integration_buff%ytemp,               &
 !                 ipa,wcurr_loss2atm,                                           &
@@ -409,9 +412,9 @@ subroutine hybrid_timestep(cgrid)
 
          call leaf_derivs(initp,dinitp,csite,ipa,h)
 
-
          !---------------------------------------------------------------------!
-         ! Error analysis. Two parts. First leaf/air/step then surface         !
+         ! Very simple analysis of derivative.  ie try to reduce drastic
+         ! changes in key state variables.
          !---------------------------------------------------------------------!
          call fb_dy_step_trunc(initp,restart_step,csite,ipa,dinitp,h,htrunc)
 
@@ -443,7 +446,7 @@ subroutine hybrid_timestep(cgrid)
          !   used in the implicit step.                                       !
          !   nsolve = 1 + n_leaf_cohorts + n_wood_cohorts                     !
          !--------------------------------------------------------------------!
-         call copy_fb_patch(initp,ytemp,cpatch,nsolve)
+         call copy_fb_patch(initp,ytemp,cpatch)
 
          !--------------------------------------------------------------------!
          !   Integrate the forward step                                       !
@@ -453,7 +456,7 @@ subroutine hybrid_timestep(cgrid)
          !--------------------------------------------------------------------!
          !   Integrate the implicit/backwards step                            !
          !--------------------------------------------------------------------!
-         call bdf2_solver(cpatch,yprev,initp,ytemp,dinitp,nsolve,h, &
+         call bdf2_solver(cpatch,yprev,initp,ytemp,dinitp,h, &
               dble(csite%hprev(ipa)))
           
          
@@ -674,7 +677,7 @@ subroutine hybrid_timestep(cgrid)
  !=========================================================================================!
 
 
- subroutine copy_fb_patch(sourcep, targetp, cpatch,nsolve)
+ subroutine copy_fb_patch(sourcep, targetp, cpatch)
   
   use rk4_coms      , only : rk4site           & ! intent(in)
                             , rk4patchtype      & ! structure
@@ -697,7 +700,7 @@ subroutine hybrid_timestep(cgrid)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
-  targetp%can_enthalpy     = sourcep%can_enthalpy
+   targetp%can_enthalpy     = sourcep%can_enthalpy
    targetp%can_theta        = sourcep%can_theta
    targetp%can_temp         = sourcep%can_temp
    targetp%can_shv          = sourcep%can_shv
@@ -754,6 +757,9 @@ subroutine hybrid_timestep(cgrid)
    targetp%cwd_rh           = sourcep%cwd_rh
    targetp%rh               = sourcep%rh
 
+   targetp%water_deficit    = sourcep%water_deficit
+
+
    do k=rk4site%lsl,nzg      
       targetp%soil_water            (k) = sourcep%soil_water            (k)
       targetp%soil_energy           (k) = sourcep%soil_energy           (k)
@@ -776,9 +782,8 @@ subroutine hybrid_timestep(cgrid)
 
    do k=1,cpatch%ncohorts
       targetp%leaf_resolvable (k) = sourcep%leaf_resolvable (k)
+      targetp%wood_resolvable (k) = sourcep%wood_resolvable (k)
 
-      if(targetp%leaf_resolvable(k)) nsolve=nsolve+1
-      
       targetp%leaf_energy     (k) = sourcep%leaf_energy     (k)
       targetp%leaf_water      (k) = sourcep%leaf_water      (k)
       targetp%leaf_temp       (k) = sourcep%leaf_temp       (k)
@@ -794,8 +799,6 @@ subroutine hybrid_timestep(cgrid)
       targetp%rlong_l         (k) = sourcep%rlong_l         (k)
 
       targetp%wood_resolvable (k) = sourcep%wood_resolvable (k)
-
-      if(targetp%wood_resolvable(k)) nsolve=nsolve+1
 
       targetp%wood_energy     (k) = sourcep%wood_energy     (k)
       targetp%wood_water      (k) = sourcep%wood_water      (k)
@@ -877,6 +880,7 @@ subroutine hybrid_timestep(cgrid)
       targetp%avg_sensible_ac        = sourcep%avg_sensible_ac
       targetp%avg_drainage           = sourcep%avg_drainage
       targetp%avg_drainage_heat      = sourcep%avg_drainage_heat
+
 
       do k=rk4site%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
@@ -1059,6 +1063,8 @@ subroutine hybrid_timestep(cgrid)
    rkp%qpwp = rkp%qpwp + fac * inc%qpwp
    rkp%cpwp = rkp%cpwp + fac * inc%cpwp
 
+   rkp%water_deficit   = rkp%water_deficit      + fac * inc%water_deficit
+
    do ico = 1,cpatch%ncohorts
       rkp%leaf_water (ico) = rkp%leaf_water (ico) + fac * inc%leaf_water (ico)
       rkp%leaf_energy(ico) = rkp%leaf_energy(ico) + fac * inc%leaf_energy(ico)
@@ -1117,6 +1123,7 @@ subroutine hybrid_timestep(cgrid)
       rkp%avg_qthroughfall   = rkp%avg_qthroughfall   + fac * inc%avg_qthroughfall
       rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac
+
 
       do k=rk4site%lsl,nzg
          rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
@@ -1275,9 +1282,9 @@ subroutine hybrid_timestep(cgrid)
    ! ---------------- Maximum change in canopy Relative Humidity ----------------------!
 
    max_dshv_can = 0.15d0
-   hmin = (max_dshv_can*y%can_shv)/abs(dydx%can_shv)
+   hmin = (max_dshv_can*y%can_shv)/max(abs(dydx%can_shv),1.0d-10)
 
-   if ( h > max_dshv_can/abs(dydx%can_shv) .and. record_err) then
+   if ( h > max_dshv_can/max(abs(dydx%can_shv),1.0d-10) .and. record_err) then
       integ_err(3,1) = integ_err(3,1) + 1_8
    end if
 

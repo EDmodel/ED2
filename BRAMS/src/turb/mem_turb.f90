@@ -329,27 +329,27 @@ module mem_turb
 
       if (associated(turb%sflux_u))                                                        &
          call vtables2(turb%sflux_u,turbm%sflux_u,ng,npts,imean                            &
-                      ,'SFLUX_U :2:anal:mpt3:mpt1')
+                      ,'SFLUX_U :2:anal:mpti:mpt3:mpt1')
 
       if (associated(turb%sflux_v))                                                        &
          call vtables2(turb%sflux_v,turbm%sflux_v,ng,npts,imean                            &
-                      ,'SFLUX_V :2:anal:mpt3:mpt1')
+                      ,'SFLUX_V :2:anal:mpti:mpt3:mpt1')
 
       if (associated(turb%sflux_w))                                                        &
          call vtables2(turb%sflux_w,turbm%sflux_w,ng,npts,imean                            &
-                      ,'SFLUX_W :2:anal:mpt3')
+                      ,'SFLUX_W :2:anal:mpti:mpt3')
 
       if (associated(turb%sflux_t))                                                        &
          call vtables2(turb%sflux_t,turbm%sflux_t,ng,npts,imean                            &
-                      ,'SFLUX_T :2:anal:mpt3')
+                      ,'SFLUX_T :2:anal:mpti:mpt3')
 
       if (associated(turb%sflux_r))                                                        &
          call vtables2(turb%sflux_r,turbm%sflux_r,ng,npts,imean                            &
-                      ,'SFLUX_R :2:anal:mpt3')
+                      ,'SFLUX_R :2:anal:mpti:mpt3')
 
       if (associated(turb%sflux_c))                                                        &
          call vtables2(turb%sflux_c,turbm%sflux_c,ng,npts,imean                            &
-                      ,'SFLUX_C :2:anal:mpt3')
+                      ,'SFLUX_C :2:anal:mpti:mpt3')
 
       if (associated(turb%akscal))                                                         &
          call vtables2(turb%akscal,turbm%akscal,ng,npts,imean                              &

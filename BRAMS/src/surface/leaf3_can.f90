@@ -566,7 +566,8 @@ end subroutine leaf3_canopy
 !      This sub-routine initialises a couple of canopy air space variables for a given     !
 ! patch, before the time step iteration loop.                                              !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,initial)
+subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_vpdef,can_rvap,leaf_class,can_prss    &
+                         ,initial)
    use leaf_coms , only : atm_prss      & ! intent(in)
                         , atm_theta     & ! intent(in)
                         , atm_shv       & ! intent(in)
@@ -593,6 +594,7 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
                         , rslif         & ! function
                         , idealdenssh   & ! function
                         , thetaeiv      & ! function
+                        , vpdefil       & ! function
                         , press2exner   & ! function
                         , extheta2temp  & ! function
                         , extemp2theta  & ! function
@@ -604,6 +606,7 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
    integer, intent(in)      :: ip
    real   , intent(inout)   :: can_theta
    real   , intent(out)     :: can_theiv
+   real   , intent(out)     :: can_vpdef
    real   , intent(in)      :: can_rvap
    real   , intent(in)      :: leaf_class
    real   , intent(inout)   :: can_prss
@@ -703,6 +706,15 @@ subroutine leaf3_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,in
    ! ever switch to foggy canopy air space.                                                !
    !---------------------------------------------------------------------------------------!
    can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the vapour pressure deficit.  This is a diagnostic variable.                 !
+   !---------------------------------------------------------------------------------------!
+   can_vpdef = vpdefil(can_prss,can_temp,can_shv,.true.)
    !---------------------------------------------------------------------------------------!
 
 

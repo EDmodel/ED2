@@ -1,11 +1,35 @@
 !==========================================================================================!
 !==========================================================================================!
 !    Module detailed_coms: this module contains variables used to control some ED detailed !
-!  output, which can be used for debugging.                                                !
+!  output, which can be used for debugging and to control census dynamics.                 !
 !------------------------------------------------------------------------------------------!
 module detailed_coms
 
    implicit none
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Census variables.  This is going to create unique census statuses to cohorts, to  !
+   ! better compare the model with census observations.  In case you don't intend to       !
+   ! compare the model with census data, set up DT_CENSUS to 1., otherwise you may reduce  !
+   ! cohort fusion.                                                                        !
+   ! DT_CENSUS       -- Time between census, in months.  Currently the maximum is 60       !
+   !                     months, to avoid excessive memory allocation.  Every time the     !
+   !                    simulation reaches the census time step, all census tags will be   !
+   !                    reset.                                                             !
+   ! YR1ST_CENSUS    -- In which year was the first census conducted?                      !
+   ! MON1ST_CENSUS   -- In which month was the first census conducted?                     !
+   ! MIN_RECRUIT_DBH -- Minimum DBH that is measured in the census, in cm.                 !
+   !---------------------------------------------------------------------------------------!
+   integer :: dt_census
+   integer :: yr1st_census
+   integer :: mon1st_census
+   real    :: min_recruit_dbh
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !  IDETAILED -- This flag controls the possible detailed outputs, mostly used for       !
