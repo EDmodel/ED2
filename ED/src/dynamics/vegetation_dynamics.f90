@@ -258,10 +258,9 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
       call normalize_ed_dailyNPP_vars(cgrid)
       
       !------------------------------------------------------------------------------------!
-      !     This should be done every day, but after the longer-scale steps.  We update    !
-      ! the carbon and nitrogen pools, and re-set the daily variables.                     !
+      !     This should be done every day, but after the longer-scale steps.  We re-set    !
+      ! the daily variables.                                                               !
       !------------------------------------------------------------------------------------!
-      call update_C_and_N_pools(cgrid)
       call zero_ed_daily_vars(cgrid)
       !------------------------------------------------------------------------------------!
 

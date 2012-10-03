@@ -515,6 +515,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_rshort_gnd       (ip1:ip2) = 0.0
    csite%avg_rlong_gnd        (ip1:ip2) = 0.0
    csite%avg_rlongup          (ip1:ip2) = 0.0
+   csite%avg_parup            (ip1:ip2) = 0.0
+   csite%avg_nirup            (ip1:ip2) = 0.0
+   csite%avg_rshortup         (ip1:ip2) = 0.0
+   csite%avg_rnet             (ip1:ip2) = 0.0
    csite%avg_albedo           (ip1:ip2) = 0.0
    csite%avg_albedo_beam      (ip1:ip2) = 0.0
    csite%avg_albedo_diffuse   (ip1:ip2) = 0.0
@@ -564,8 +568,12 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%albedo               (ip1:ip2) = 0.0
    csite%albedo_beam          (ip1:ip2) = 0.0
    csite%albedo_diffuse       (ip1:ip2) = 0.0
-   csite%rlongup              (ip1:ip2) = 0.0
    csite%rlong_albedo         (ip1:ip2) = 0.0
+   csite%rlongup              (ip1:ip2) = 0.0
+   csite%parup                (ip1:ip2) = 0.0
+   csite%nirup                (ip1:ip2) = 0.0
+   csite%rshortup             (ip1:ip2) = 0.0
+   csite%rnet                 (ip1:ip2) = 0.0
 
    csite%fsc_in                      (ip1:ip2) = 0.0
    csite%ssc_in                      (ip1:ip2) = 0.0
@@ -643,18 +651,51 @@ subroutine init_ed_site_vars(cpoly, lat)
    integer          , external   :: julday
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Size and PFT tables.                                                             !
+   !---------------------------------------------------------------------------------------!
    cpoly%basal_area       (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%agb              (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%pldens           (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%bseeds           (1:n_pft, 1:n_dbh, :) = 0.0
+
    cpoly%basal_area_growth(1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%basal_area_mort  (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%basal_area_cut   (1:n_pft, 1:n_dbh, :) = 0.0
 
-   cpoly%agb              (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_growth       (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_mort         (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_cut          (1:n_pft, 1:n_dbh, :) = 0.0
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Radiation-related variables.                                                     !
+   !---------------------------------------------------------------------------------------!
+   cpoly%cosaoi   (:) = 0.0
+   cpoly%daylight (:) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Hydrology-related variables.                                                     !
+   !---------------------------------------------------------------------------------------!
+   cpoly%runoff   (:) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Phenology variables (green_leaf_factor should be merged with elongf, as they     !
+   ! represent the same thing).                                                            !
+   !---------------------------------------------------------------------------------------!
    cpoly%green_leaf_factor(1:n_pft,:) = 1.0
    cpoly%leaf_aging_factor(1:n_pft,:) = 1.0
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !      Initialise the minimum monthly temperature with a very large value, this is      !
@@ -663,27 +704,26 @@ subroutine init_ed_site_vars(cpoly, lat)
    cpoly%min_monthly_temp(:) = huge(1.)
    !---------------------------------------------------------------------------------------!
 
-   cpoly%lambda_fire       (1:12,:)                           = 0.0
 
+   !---------------------------------------------------------------------------------------!
+   !      Initialise several disturbance- and LU-related variables.                        !
+   !---------------------------------------------------------------------------------------!
+   cpoly%plantation                                       (:) = 0
+   cpoly%agri_stocking_pft                                (:) = agri_stock
+   cpoly%agri_stocking_density                            (:) = 10.0
+   cpoly%plantation_stocking_pft                          (:) = plantation_stock
+   cpoly%plantation_stocking_density                      (:) = 4.0
+   cpoly%primary_harvest_memory                           (:) = 0.0
+   cpoly%secondary_harvest_memory                         (:) = 0.0
+   cpoly%fire_disturbance_rate                            (:) = 0.0
+   cpoly%ignition_rate                                    (:) = 0.0
+   cpoly%lambda_fire                                 (1:12,:) = 0.0
+   cpoly%nat_disturbance_rate                             (:) = 0.0
+   cpoly%nat_dist_type                                    (:) = 0
    cpoly%disturbance_memory(1:n_dist_types, 1:n_dist_types,:) = 0.0
    cpoly%disturbance_rates (1:n_dist_types, 1:n_dist_types,:) = 0.0
-
-   cpoly%agri_stocking_density(:)                             = 10.0
-
    !---------------------------------------------------------------------------------------!
-   ! (KIM)                                                                                 !
-   !     - anyway, this part should be more elaborate for the case                         !
-   !     - that we have different crops/pastures.                                          !
-   !  It's now defined in ED2IN, but it assumes only one PFT. It is probably not the       !
-   !  ideal solution for regional runs...                                                  !
-   !---------------------------------------------------------------------------------------!
-   cpoly%agri_stocking_pft(:)       = agri_stock
-   cpoly%plantation_stocking_pft(:) = plantation_stock
 
-   cpoly%plantation_stocking_density(:) = 4.0
-
-   cpoly%primary_harvest_memory(:)   = 0.0
-   cpoly%secondary_harvest_memory(:) = 0.0
   
    cpoly%rad_avg(:) = 200.0
   

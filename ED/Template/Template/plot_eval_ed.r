@@ -13,6 +13,7 @@ monthbeg       = thismontha
 yearbeg        = thisyeara         # First year to consider
 yearend        = thisyearz         # Maximum year to consider
 myplaces       = c("thispoly")
+use.distrib    = c("mydistrib")
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
@@ -37,10 +38,16 @@ scalleg        = 0.20
 cex.main       = 0.8            # Scale coefficient for the title
 
 hourblock.len  = 3              # Length of the time blocks, in hours
+                                #
+n.quant        = 1024           # Number of quantiles to produce the density function.
+                                #    We strongly advise to choose a number that is a power
+                                #    of two, especially when using EDF (otherwise 
+                                #    distributions will be interpolated).
 #------------------------------------------------------------------------------------------#
 
 reload.data    = TRUE           # Reload data?
 #------------------------------------------------------------------------------------------#
+
 
 
 #------------------------------------------------------------------------------------------#
@@ -66,164 +73,103 @@ compvar       = list()
 compvar[[ 1]] = list( vnam       = "hflxca"
                     , desc       = "Sensible heat flux"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
                     )#end list
 compvar[[ 2]] = list( vnam       = "wflxca"
                     , desc       = "Water vapour flux"
                     , unit       = "[kg/m2/day]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("deepskyblue","royalblue4")
                     , leg.corner = "topleft"
                     )#end list
 compvar[[ 3]] = list( vnam       = "cflxca"
                     , desc       = "Carbon dioxide flux"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse2","darkgreen")
                     , leg.corner = "bottomright"
                     )#end list
 compvar[[ 4]] = list( vnam       = "cflxst"
                     , desc       = "Carbon dioxide storage"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("lightgoldenrod3","darkorange1")
                     , leg.corner = "topleft"
                     )#end list
 compvar[[ 5]] = list( vnam       = "gpp"
                     , desc       = "Gross primary productivity"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("green3","darkgreen")
                     , leg.corner = "topleft"
                     )#end list
 compvar[[ 6]] = list( vnam       = "reco"
                     , desc       = "Ecosystem respiration"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("yellow3","peru")
                     , leg.corner = "topleft"
                     )#end list
 compvar[[ 7]] = list( vnam       = "nep"
                     , desc       = "Net ecosystem productivity"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("olivedrab2","darkolivegreen4")
                     , leg.corner = "topleft"
                     )#end list
 compvar[[ 8]] = list( vnam       = "nee"
                     , desc       = "Net ecosystem exchange"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "bottomright"
                     )#end list
 compvar[[ 9]] = list( vnam       = "ustar"
                     , desc       = "Friction velocity"
                     , unit       = "[m/s]"
-                    , col.obser  = c("gray42","gray21")
+                    , col.obser  = c("grey42","grey21")
                     , col.model  = c("mediumpurple1","purple4")
                     , leg.corner = "topleft"
                     )#end list
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#     Plot-level comparisons.                                                              #
-#------------------------------------------------------------------------------------------#
-plotvar       = list()
-plotvar[[ 1]] = list( vnam.ed    = "recr"
-                    , vnam.obs   = "recr"
-                    , desc       = "Recruitment rate"
-                    , unit       = "[%pop/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "chartreuse4"
+compvar[[10]] = list( vnam       = "rlongup"
+                    , desc       = "Outgoing longwave radiation"
+                    , unit       = "[W/m2]"
+                    , col.obser  = c("grey42","grey21")
+                    , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
-                    , plog       = TRUE
                     )#end list
-plotvar[[ 2]] = list( vnam.ed    = "mort.plot"
-                    , vnam.obs   = "mort.plot"
-                    , desc       = "Total mortality rate"
-                    , unit       = "[%pop/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "purple4"
+compvar[[11]] = list( vnam       = "rnet"
+                    , desc       = "Net radiation"
+                    , unit       = "[W/m2]"
+                    , col.obser  = c("grey42","grey21")
+                    , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
-                    , plog       = TRUE
                     )#end list
-plotvar[[ 3]] = list( vnam.ed    = "ddmort.plot"
-                    , vnam.obs   = "mort.plot"
-                    , desc       = "Density dependent mortality rate"
-                    , unit       = "[%pop/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "mediumpurple1"
+compvar[[12]] = list( vnam       = "albedo"
+                    , desc       = "Albedo"
+                    , unit       = "[--]"
+                    , col.obser  = c("grey42","grey21")
+                    , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
-                    , plog       = TRUE
                     )#end list
-plotvar[[ 4]] = list( vnam.ed    = "dimort.plot"
-                    , vnam.obs   = "mort.plot"
-                    , desc       = "Density independent mortality rate"
-                    , unit       = "[%pop/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "mediumpurple1"
+compvar[[13]] = list( vnam       = "parup"
+                    , desc       = "Outgoing PAR"
+                    , unit       = "[W/m2]"
+                    , col.obser  = c("grey42","grey21")
+                    , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "topleft"
-                    , plog       = TRUE
                     )#end list
-plotvar[[ 5]] = list( vnam.ed    = "growth.plot"
-                    , vnam.obs   = "growth.plot"
-                    , desc       = "Growth rate"
-                    , unit       = "[%DBH/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "royalblue4"
+compvar[[14]] = list( vnam       = "rshortup"
+                    , desc       = "Outgoing SW"
+                    , unit       = "[W/m2]"
+                    , col.obser  = c("grey42","grey21")
+                    , col.model  = c("deepskyblue","royalblue3")
                     , leg.corner = "topleft"
-                    , plog       = TRUE
                     )#end list
 #------------------------------------------------------------------------------------------#
 
-
-
-#------------------------------------------------------------------------------------------#
-#     Plot-level comparisons.                                                              #
-#------------------------------------------------------------------------------------------#
-sizevar       = list()
-sizevar[[ 1]] = list( vnam.ed    = "mort.size"
-                    , vnam.obs   = "mort.size"
-                    , desc       = "Total mortality rate"
-                    , unit       = "[%pop/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "purple4"
-                    , leg.corner = "topleft"
-                    , plog       = TRUE
-                    )#end list
-sizevar[[ 2]] = list( vnam.ed    = "ddmort.size"
-                    , vnam.obs   = "mort.size"
-                    , desc       = "Density dependent mortality rate"
-                    , unit       = "[%pop/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "mediumpurple1"
-                    , leg.corner = "topleft"
-                    , plog       = TRUE
-                    )#end list
-sizevar[[ 3]] = list( vnam.ed    = "dimort.size"
-                    , vnam.obs   = "mort.size"
-                    , desc       = "Density independent mortality rate"
-                    , unit       = "[%pop/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "mediumpurple1"
-                    , leg.corner = "topleft"
-                    , plog       = TRUE
-                    )#end list
-sizevar[[ 4]] = list( vnam.ed    = "growth.size"
-                    , vnam.obs   = "growth.size"
-                    , desc       = "Growth rate"
-                    , unit       = "[%DBH/yr]"
-                    , col.obser  = c("gray42","gray21")
-                    , col.model  = "royalblue4"
-                    , leg.corner = "topleft"
-                    , plog       = TRUE
-                    )#end list
-#------------------------------------------------------------------------------------------#
 
 
 #----- Load some packages. ----------------------------------------------------------------#
@@ -234,7 +180,6 @@ library(lattice)
 library(maps)
 library(mapdata)
 library(akima)
-library(Hmisc)
 library(sn)
 #------------------------------------------------------------------------------------------#
 
@@ -252,8 +197,6 @@ nout = length(outform)
 
 #----- Set how many variables we will compare. --------------------------------------------#
 ncompvar = length(compvar)
-nplotvar = length(plotvar)
-nsizevar = length(sizevar)
 #------------------------------------------------------------------------------------------#
 
 
@@ -272,6 +215,7 @@ source(paste(srcdir,"error.bar.r"       ,sep="/"))
 source(paste(srcdir,"globdims.r"        ,sep="/"))
 source(paste(srcdir,"locations.r"       ,sep="/"))
 source(paste(srcdir,"muitas.r"          ,sep="/"))
+source(paste(srcdir,"numutils.r"        ,sep="/"))
 source(paste(srcdir,"plotsize.r"        ,sep="/"))
 source(paste(srcdir,"pretty.log.r"      ,sep="/"))
 source(paste(srcdir,"pretty.time.r"     ,sep="/"))
@@ -361,7 +305,7 @@ for (place in myplaces){
 
 
       #----- Print a banner to entretain the user. ----------------------------------------#
-      print(paste(" + Evaluating model for ",lieu,"...",sep=""))
+      cat(" + Evaluating model for ",lieu,"...","\n")
 
       #----- Get the observed variables. --------------------------------------------------#
       obser        = get(obs.name)
@@ -370,8 +314,6 @@ for (place in myplaces){
                              ,meanval=TRUE,imetavg=1,nmean=12,na.rm=TRUE)
       obser$hr.idx = period.day(obser$when,dtblock=hourblock.len)
       obser$yr.idx = season(obser$when,add.year=FALSE)
-      #----- Convert the NEE back to umol/m2/s, normal units for eddy flux. ---------------#
-      obser$nee    = obser$nee  * kgCyr.2.umols
       #------------------------------------------------------------------------------------#
 
 
@@ -384,12 +326,12 @@ for (place in myplaces){
       ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
       if (reload.data && file.exists(ed22.rdata)){
          #----- Load the modelled dataset. ------------------------------------------------#
-         print(paste("   - Loading previous session...",sep=""))
+         cat("   - Loading previous session...","\n")
          load(ed22.rdata)
          if ((! "eddy.complete" %in% ls()) && "complete" %in% ls()) eddy.complete = complete
          if ((! "eddy.tresume"  %in% ls()) && "tresume"  %in% ls()) eddy.tresume  = tresume
       }else{
-         print(paste("   - Starting new session...",sep=""))
+         cat("   - Starting new session...","\n")
          eddy.tresume    = 1
          eddy.complete   = FALSE
       }#end if
@@ -420,6 +362,11 @@ for (place in myplaces){
             model$nep      = empty
             model$nee      = empty
             model$ustar    = empty
+            model$rnet     = empty
+            model$rlongup  = empty
+            model$albedo   = empty
+            model$parup    = empty
+            model$rshortup = empty
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -431,7 +378,7 @@ for (place in myplaces){
          last.cday   = "00"
          last.cmonth = sprintf("%4.4i",numyears (model$when[eddy.tresume]))
          last.cyear  = sprintf("%4.4i",numyears (model$when[eddy.tresume]))
-         print(paste("   - Reading in files...",sep=""))
+         cat("   - Reading in files...","\n")
          for (tt in eddy.tresume:ntimes){
             cyear  = sprintf("%4.4i",numyears (model$when[tt]))
             cmonth = sprintf("%2.2i",nummonths(model$when[tt]))
@@ -440,7 +387,7 @@ for (place in myplaces){
             cminu  = sprintf("%2.2i",minutes  (model$when[tt]))
             myfile = paste(inpref,"-I-",cyear,"-",cmonth,"-",cday,"-",chour,cminu
                            ,"00-g01.h5",sep="")
-            if (last.cday != cday) print(paste("     * ",basename(myfile),"...",sep=""))
+            if (last.cday != cday) cat("     * ",basename(myfile),"...","\n")
             last.cday   = cday
             #------------------------------------------------------------------------------#
 
@@ -452,11 +399,11 @@ for (place in myplaces){
             if (! file.exists(myfile)){
                eddy.complete = FALSE
                eddy.tresume  = tt
-               print(paste("   - Simulation not ready yet.  Saving partial ED-2.2 data to "
-                    ,basename(ed22.rdata),"...",sep=""))
+               cat("   - Simulation not ready yet.  Saving partial ED-2.2 data to "
+                  ,basename(ed22.rdata),"...","\n")
                save( list = c("model","eddy.complete","eddy.tresume")
                    , file = ed22.rdata)
-               print("Quitting")
+               cat("Quitting","\n")
                q("no")
             }else{
                myinst = hdf5load(file=myfile,load=FALSE,verbosity=0,tidy=TRUE)
@@ -482,22 +429,26 @@ for (place in myplaces){
             model$nep      [tt] = model$gpp[tt] - model$reco[tt]
             model$nee      [tt] = - model$nep[tt] * kgCyr.2.umols
             model$ustar    [tt] = myinst$AVG.USTAR
+            model$rlongup  [tt] = myinst$AVG.RLONGUP
+            model$albedo   [tt] = myinst$AVG.ALBEDO
+            model$rnet     [tt] = ( (1. - myinst$AVG.ALBEDO) * myinst$AVG.RSHORT
+                                  + myinst$AVG.RLONG - myinst$AVG.RLONGUP )
+            model$parup    [tt] = myinst$AVG.PARUP * Watts.2.Ein * 1.e6
+            model$rshortup [tt] = myinst$AVG.RSHORTUP
 
             if (tt == ntimes){
                eddy.complete = TRUE
                eddy.tresume  = ntimes+1
-               print(paste("   - Saving full ED-2.2 data to ",basename(ed22.rdata)
-                          ,"...",sep=""))
+               cat("   - Saving full ED-2.2 data to ",basename(ed22.rdata),"...","\n")
                save( list = c("model","eddy.complete","eddy.tresume")
                    , file = ed22.rdata)
             }else if (last.cyear != cyear){
                eddy.complete = FALSE
                eddy.tresume  = tt+1
-               print(paste("   - Saving partial ED-2.2 data to ",basename(ed22.rdata)
-                          ,"...",sep=""))
+               cat("   - Saving partial ED-2.2 data to ",basename(ed22.rdata),"...","\n")
                save( list = c("model","eddy.complete","eddy.tresume")
                    , file = ed22.rdata)
-               print("Quitting")
+               cat("Quitting","\n")
                q("no")
             }#end if
 
@@ -513,10 +464,12 @@ for (place in myplaces){
       if (! file.exists(outpref)) dir.create(outpref)
       outboxmain = paste(outpref,"boxplot",sep="/")
       outpdfmain = paste(outpref,"pdfplot",sep="/")
+      outqqpmain = paste(outpref,"qqplot" ,sep="/")
       outlight   = paste(outpref,"light"  ,sep="/")
       if (! file.exists(outboxmain)) dir.create(outboxmain)
       if (! file.exists(outpdfmain)) dir.create(outpdfmain)
-      if (! file.exists(outlight  )) dir.create(outlight)
+      if (! file.exists(outqqpmain)) dir.create(outqqpmain)
+      if (! file.exists(outlight  )) dir.create(outlight  )
       #------------------------------------------------------------------------------------#
 
 
@@ -541,133 +494,155 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       #       Compare the light response curve.                                            #
       #------------------------------------------------------------------------------------#
-      print(paste("   - Comparing the light response curve...",sep=""))
+      cat("   - Comparing the light response curve...","\n")
       for (s in 1:nseasons){
          #---------------------------------------------------------------------------------#
          #     Select the data points for which we have observations, then fit the light   #
          # response curve to both observed and modelled GPP.                               #
          #---------------------------------------------------------------------------------#
          sel         = ( obser$yr.idx == myseasons[s] & is.finite(obser$gpp)
-                       & (is.finite(obser$rshort) & obser$daytime) )
+                       & (is.finite(obser$par) & obser$daytime) )
 
          #---------------------------------------------------------------------------------#
-         #      Observations.                                                              #
+         #      Make sure there are some points.                                           #
          #---------------------------------------------------------------------------------#
-         #----- Select and sort the data. -------------------------------------------------#
-         obser.data  = data.frame( par = obser$par[sel]
-                                 , gpp = obser$gpp[sel]  * kgCyr.2.umols)
-         o = order(obser.data$par)
-         obser.data  = obser.data[o,]
-         #----- Give more weight to light-limited side. -----------------------------------#
-         obser.wgts  = 1.0 / (( obser.data$par * 0.002 + 3.0) )
-         #----- Fit the observations. -----------------------------------------------------#
-         obser.fit   = nls( formula = gpp ~ a1 + a2 * par / (a3 + par)
-                          , data    = obser.data
-                          , weights = obser.wgts
-                          , start   = list(a1 = 1., a2 = -40., a3 = 500.) )
-         #----- Find the light-response curve. --------------------------------------------#
-         obser.pred  = predict(obser.fit)
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #      Model results.                                                             #
-         #-----name----------------------------------------------------------------------------#
-         #----- Select and sort the data. -------------------------------------------------#
-         model.data  = data.frame( par = model$par[sel]
-                                 , gpp = model$gpp[sel]  * kgCyr.2.umols)
-         o = order(model.data$par)
-         model.data  = model.data[o,]
-         #----- Give more weight to light-limited side. -----------------------------------#
-         model.wgts  = 1.0 / (( model.data$par * 0.002 + 3.0) )
-         #----- Fit the modelled results. -------------------------------------------------#
-         model.fit   = nls( formula = gpp ~ a1 + a2 * par / (a3 + par)
-                          , data    = model.data
-                          , weights = model.wgts
-                          , start   = list(a1 = 1., a2 = -40., a3 = 500.) )
-         #----- Find the light-response curve. --------------------------------------------#
-         model.pred  = predict(model.fit)
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #     Find the X and Y limits.                                                    #
-         #---------------------------------------------------------------------------------#
-         xlimit = range(c(obser.data$par,model.data$par))
-         ylimit = range(c(obser.data$gpp,model.data$gpp))
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #     Plot the predicted curves and scatter plot.                                 #
-         #---------------------------------------------------------------------------------#
-         for (o in 1:nout){
-            #----- Make the file name. ----------------------------------------------------#
-            fichier = paste(outlight,"/gpp_light","-",ss.name[s],"-",suffix,"."
-                           ,outform[o],sep="")
-            if (outform[o] == "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
-               png(filename=fichier,width=size$width*depth
-                  ,height=size$height*depth,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
-               pdf(file=fichier,onefile=FALSE
-                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
-            }#end if
-            #------------------------------------------------------------------------------#
-
+         if (sum(sel) > 10){
 
 
             #------------------------------------------------------------------------------#
-            #     Set up the title and axes labels.                                        #
+            #      Observations.                                                           #
             #------------------------------------------------------------------------------#
-            letitre = paste(lieu,"\n Polygon-level light response curve - "
-                                ,ss.title[s],sep="")
-            lex     = paste("Photosynthetically Active Radiation [umol/m2/s]")
-            ley     = paste("Gross Primary Productivity [umol/m2/s]")
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
-            #     Open an empty plotting area.                                             #
-            #------------------------------------------------------------------------------#
-            plot(x=obser.data$par,y=obser.data$gpp,type="n",main=letitre,xlab=lex,ylab=ley
-                ,cex.main=cex.main,ylim=ylimit)
-            grid(col="gray76",lty="solid")
-            #----- Add the observations. --------------------------------------------------#
-            points(x=obser.data$par,y=obser.data$gpp,pch=16,col="gray50")
-            points(x=model.data$par,y=model.data$gpp,pch=16,col="chartreuse")
-            #----- Add the density functions. ---------------------------------------------#
-            lines(x=obser.data$par,y=obser.pred,lwd=3.0,col="gray21")
-            lines(x=model.data$par,y=model.pred,lwd=3.0,col="chartreuse4")
-            #----- Add the legend. --------------------------------------------------------#
-            legend( x      = "topleft"
-                  , inset  = 0.01
-                  , legend = c("Observation","Fit - Observation","Model","Fit - Model")
-                  , pch    = c(16,NA,16,NA)
-                  , lwd    = c(NA, 3,NA, 3)
-                  , col    = c("gray50","gray21","chartreuse","chartreuse4")
-                  , bg     = "white"
-                  , cex    = 1.0)
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
-            #     Close the plotting device.                                               #
-            #------------------------------------------------------------------------------#
-            if (outform[o] == "x11"){
-               locator(n=1)
-               dev.off()
+            #----- Select and sort the data. ----------------------------------------------#
+            obser.data  = data.frame( par = obser$par[sel]
+                                    , gpp = obser$gpp[sel]  * kgCyr.2.umols)
+            o = order(obser.data$par)
+            obser.data  = obser.data[o,]
+            #----- Give more weight to light-limited side. --------------------------------#
+            obser.wgts  = 1.0 / (( obser.data$par * 0.002 + 3.0) )
+            #----- Fit the observations. --------------------------------------------------#
+            obser.fit   = try( expr   = nls( formula = gpp ~ a1 + a2 * par / (a3 + par)
+                                           , data    = obser.data
+                                           , weights = obser.wgts
+                                           , start   = list(a1 = 1., a2 = -40., a3 = 500.)
+                                           )#end nls
+                             , silent = TRUE
+                             )#end try
+            #----- Find the light-response curve. -----------------------------------------#
+            if ("try-error" %in% is(obser.fit)){
+               obser.pred  = rep(NA,times=length(obser.data$par))
             }else{
-               dev.off()
+               obser.pred  = predict(obser.fit,data=obser.data)
             }#end if
             #------------------------------------------------------------------------------#
-         }#end for
+
+
+            #------------------------------------------------------------------------------#
+            #      Model results.                                                          #
+            #------------------------------------------------------------------------------#
+            #----- Select and sort the data. ----------------------------------------------#
+            model.data  = data.frame( par = model$par[sel]
+                                    , gpp = model$gpp[sel]  * kgCyr.2.umols)
+            o = order(model.data$par)
+            model.data  = model.data[o,]
+            #----- Give more weight to light-limited side. --------------------------------#
+            model.wgts  = 1.0 / (( model.data$par * 0.002 + 3.0) )
+            #----- Fit the modelled results. ----------------------------------------------#
+            model.fit   = try( expr   = nls( formula = gpp ~ a1 + a2 * par / (a3 + par)
+                                           , data    = model.data
+                                           , weights = model.wgts
+                                           , start   = list(a1 = 1., a2 = -40., a3 = 500.)
+                                           )#end nls
+                             , silent = TRUE
+                             )#end try
+            #----- Find the light-response curve. -----------------------------------------#
+            if ("try-error" %in% is(model.fit)){
+               model.pred  = rep(NA,times=length(model.data$par))
+            }else{
+               model.pred  = predict(model.fit,data=model.data)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the X and Y limits.                                                 #
+            #------------------------------------------------------------------------------#
+            xlimit = range(c(obser.data$par,model.data$par),na.rm=TRUE)
+            ylimit = range(c(obser.data$gpp,model.data$gpp),na.rm=TRUE)
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot the predicted curves and scatter plot.                              #
+            #------------------------------------------------------------------------------#
+            for (o in 1:nout){
+               #----- Make the file name. -------------------------------------------------#
+               fichier = paste(outlight,"/gpp_light","-",ss.name[s],"-",suffix,"."
+                              ,outform[o],sep="")
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth
+                     ,height=size$height*depth,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Set up the title and axes labels.                                     #
+               #---------------------------------------------------------------------------#
+               letitre = paste(lieu,"\n Polygon-level light response curve - "
+                                   ,ss.title[s],sep="")
+               lex     = paste("Photosynthetically Active Radiation [umol/m2/s]")
+               ley     = paste("Gross Primary Productivity [umol/m2/s]")
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Open an empty plotting area.                                          #
+               #---------------------------------------------------------------------------#
+               plot(x=obser.data$par,y=obser.data$gpp,type="n",main=letitre
+                   ,xlab=lex,ylab=ley,cex.main=cex.main,ylim=ylimit)
+               grid(col="grey76",lty="solid")
+               #----- Add the observations. -----------------------------------------------#
+               points(x=obser.data$par,y=obser.data$gpp,pch=16,col="grey50")
+               points(x=model.data$par,y=model.data$gpp,pch=16,col="chartreuse")
+               #----- Add the density functions. ------------------------------------------#
+               lines(x=obser.data$par,y=obser.pred,lwd=3.0,col="grey21")
+               lines(x=model.data$par,y=model.pred,lwd=3.0,col="chartreuse4")
+               #----- Add the legend. -----------------------------------------------------#
+               legend( x      = "topleft"
+                     , inset  = 0.01
+                     , legend = c("Observation","Fit - Observation","Model","Fit - Model")
+                     , pch    = c(16,NA,16,NA)
+                     , lwd    = c(NA, 3,NA, 3)
+                     , col    = c("grey50","grey21","chartreuse","chartreuse4")
+                     , bg     = "white"
+                     , cex    = 1.0)
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Close the plotting device.                                            #
+               #---------------------------------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end for
+            #------------------------------------------------------------------------------#
+         }#end if
          #---------------------------------------------------------------------------------#
       }#end for
       #------------------------------------------------------------------------------------#
@@ -678,20 +653,59 @@ for (place in myplaces){
       #     Loop over all variables, and hours blocks, and all seasons to determine the    #
       # distribution of the data.                                                          #
       #------------------------------------------------------------------------------------#
-      print(paste("   - Comparing season and diurnal distributions...",sep=""))
+      cat("   - Comparing season and diurnal distributions...","\n")
+      dist.comp = list()
       for (cc in 1:ncompvar){
 
          this.comp  = compvar[[cc]]
          this.vnam  = this.comp$vnam
+         this.meas  = paste("measured",this.vnam,sep=".")
          this.desc  = this.comp$desc
          this.unit  = this.comp$unit
          col.obser  = this.comp$col.obser
          col.model  = this.comp$col.model
          leg.corner = this.comp$leg.corner
-         
-         print(paste("     * ",this.desc,"...",sep=""))
-         this.obser = obser[[this.vnam]]
-         this.model = model[[this.vnam]]
+
+         #---------------------------------------------------------------------------------#
+         #     Grab the variables that we are going to use now.                            #
+         #---------------------------------------------------------------------------------#
+         cat("     * ",this.desc,"...","\n")
+         this.obser    = obser[[this.vnam]]
+         this.measured = obser[[this.meas]]
+         this.model    = model[[this.vnam]]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Initialise the list to keep comparisons between model and observations.     #
+         #---------------------------------------------------------------------------------#
+         comp = list()
+         mat              = matrix( data     = NA
+                                  , nrow     = ndiel+3
+                                  , ncol     = nseasons
+                                  , dimnames = list( c(dl.name,"night","rise.set","day")
+                                                   , ss.name
+                                                   )#end list
+                                  )#end matrix
+         arr              = array ( data     = NA
+                                  , dim      = c(ndiel+3,nseasons,4)
+                                  , dimnames = list( c(dl.name,"night","rise.set","day")
+                                                   , ss.name
+                                                   , c("mean","variance"
+                                                      ,"skewness","kurtosis")
+                                                   )
+                                  )#end array
+         comp$n           = mat
+         comp$bias        = mat
+         comp$rmse        = mat
+         comp$ks.stat     = mat
+         comp$ks.p.value  = mat
+         comp$sn.lnlike   = mat
+         comp$norm.lnlike = mat
+         comp$obs.moment  = arr
+         comp$mod.moment  = arr
+         #---------------------------------------------------------------------------------#
 
 
          #---------------------------------------------------------------------------------#
@@ -699,8 +713,10 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outboxvar = paste(outboxmain,this.vnam,sep="/")
          outpdfvar = paste(outpdfmain,this.vnam,sep="/")
+         outqqpvar = paste(outqqpmain,this.vnam,sep="/")
          if (! file.exists(outboxvar)) dir.create(outboxvar)
          if (! file.exists(outpdfvar)) dir.create(outpdfvar)
+         if (! file.exists(outqqpvar)) dir.create(outqqpvar)
          #---------------------------------------------------------------------------------#
 
 
@@ -709,7 +725,7 @@ for (place in myplaces){
          #     Season block.                                                               #
          #---------------------------------------------------------------------------------#
          for (s in 1:nseasons){
-            print(paste("       # Season: ",ss.name[s],"...",sep=""))
+            cat("       # Season: ",ss.name[s],"...","\n")
             bp.list = list()
             #----- These lists will contain the data for the box plot. --------------------#
             ylimit.bp = NULL
@@ -721,31 +737,43 @@ for (place in myplaces){
                #     Select the period of the day to plot.                                 #
                #---------------------------------------------------------------------------#
                if (d <= ndiel){
-                  print(paste("         ~ Hour: ",dl.name[d]," UTC...",sep=""))
-                  sel        = ( is.finite(this.obser) & obser$yr.idx == myseasons[s]
-                                                       & obser$hr.idx == mydiel   [d] )
+                  cat("         ~ Hour: ",dl.name[d]," UTC...","\n")
+                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
+                                               & obser$hr.idx == mydiel   [d] )
                   diel.label = paste("hr",dl.name[d],sep="_")
                   diel.desc  = paste("Hours: ",dl.name[d]," UTC",sep="")
                }else if (d == ndiel+1){
-                  print(paste("         ~ Night time...",sep=""))
-                  sel        = ( is.finite(this.obser) & obser$yr.idx == myseasons[s]
-                               & (is.finite(obser$rshort) & obser$nighttime ) )
+                  cat("         ~ Night time...","\n")
+                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
+                                               & obser$nighttime              )
                   diel.label = paste("night")
                   diel.desc  = paste("Nighttime",sep="")
                }else if (d == ndiel+2){
-                  print(paste("         ~ Sunrise/sunset time...",sep=""))
-                  sel        = ( is.finite(this.obser) & obser$yr.idx == myseasons[s]
-                               & (is.finite(obser$rshort) & obser$riseset ) )
+                  cat("         ~ Sunrise/sunset time...","\n")
+                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
+                                               & obser$riseset                )
                   diel.label = paste("riseset")
                   diel.desc  = paste("Sunrise/sunset time",sep="")
                }else if (d == ndiel+3){
-                  print(paste("         ~ Day time...",sep=""))
-                  sel        = ( is.finite(this.obser) & obser$yr.idx == myseasons[s]
-                               & (is.finite(obser$rshort) & obser$highsun ) )
+                  cat("         ~ Day time...","\n")
+                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
+                                               & obser$highsun                )
                   diel.label = paste("day")
                   diel.desc  = paste("Daytime",sep="")
                }#end if
+               n.sel = sel
                #---------------------------------------------------------------------------#
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Number of observations that we use to build the comparison metrics.   #
+               #---------------------------------------------------------------------------#
+               n.sel = sel
+               #---------------------------------------------------------------------------#
+
+
 
 
                #---------------------------------------------------------------------------#
@@ -767,26 +795,110 @@ for (place in myplaces){
 
 
                   #----- Find and plot the distribution function for this hour. -----------#
-                  if (sd(this.obser[sel]) >= 1.e-6){
+                  sd.obser = sd(this.obser[sel],na.rm=TRUE)
+                  if (is.finite(sd.obser) && sd.obser > 1.0e-6){
                      #---------------------------------------------------------------------#
-                     #      Skewed-Gaussian statistics.                                    #
+                     #      Find multiple statistics that may be used for finding the      #
+                     # support function.                                                   #
                      #---------------------------------------------------------------------#
-                     o.location  = sn.location(this.obser[sel],na.rm=TRUE)
-                     o.scale     = sn.scale   (this.obser[sel],na.rm=TRUE)
-                     o.shape     = sn.shape   (this.obser[sel],na.rm=TRUE)
-                     m.location  = sn.location(this.model[sel],na.rm=TRUE)
-                     m.scale     = sn.scale   (this.model[sel],na.rm=TRUE)
-                     m.shape     = sn.shape   (this.model[sel],na.rm=TRUE)
+                     o.location = sn.location(this.obser[sel],na.rm=TRUE)
+                     o.scale    = sn.scale   (this.obser[sel],na.rm=TRUE)
+                     o.shape    = sn.shape   (this.obser[sel],na.rm=TRUE)
+                     o.mean     = mean       (this.obser[sel],na.rm=TRUE)
+                     o.vari     = var        (this.obser[sel],na.rm=TRUE)
+                     o.sdev     = sd         (this.obser[sel],na.rm=TRUE)
+                     o.skew     = skew       (this.obser[sel],na.rm=TRUE)
+                     o.kurt     = kurt       (this.obser[sel],na.rm=TRUE)
+                     m.location = sn.location(this.model[sel],na.rm=TRUE)
+                     m.scale    = sn.scale   (this.model[sel],na.rm=TRUE)
+                     m.shape    = sn.shape   (this.model[sel],na.rm=TRUE)
+                     m.mean     = mean       (this.model[sel],na.rm=TRUE)
+                     m.vari     = var        (this.model[sel],na.rm=TRUE)
+                     m.sdev     = sd         (this.model[sel],na.rm=TRUE)
+                     m.skew     = skew       (this.model[sel],na.rm=TRUE)
+                     m.kurt     = kurt       (this.model[sel],na.rm=TRUE)
                      #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Standardise the quantiles for the density function.  Always     #
+                     # choose a power of two for the total length, because it reduces the  #
+                     # amount of interpolation if we go with the empirical density         #
+                     # function.                                                           #
+                     #---------------------------------------------------------------------#
+                     qlimit     = range(c(this.obser[sel],this.model[sel]))
+                     quant      = seq(from=qlimit[1],to=qlimit[2],length.out=n.quant)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Find the distribution curves for model and observations.       #
+                     #---------------------------------------------------------------------#
+                     if ( use.distrib == "sn"){
+                        dfunc.obser = dsn(x=quant,dp=c(o.location,o.scale,o.shape))
+                        dfunc.model = dsn(x=quant,dp=c(m.location,m.scale,m.shape))
+                     }else if (use.distrib == "norm"){
+                        dfunc.obser = dnorm(x=quant,mean=o.mean,sd=o.sdev)
+                        dfunc.model = dnorm(x=quant,mean=m.mean,sd=m.sdev)
+                     }else if (use.distrib == "edf"){
+                        dfunc.obser = density( x    = this.obser[sel], n  = n.quant
+                                             , from = qlimit[1]      , to = qlimit[2])$y
+                        dfunc.model = density( x    = this.model[sel], n  = n.quant
+                                             , from = qlimit[1]      , to = qlimit[2])$y
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Run a Kolgomorov-Smirnov test comparing the two distributions. #
+                     #---------------------------------------------------------------------#
+                     this.ks               = ks.test(x=this.obser[sel],y=this.model[sel])
+                     comp$n          [d,s] = sum(sel)
+                     comp$ks.stat    [d,s] = this.ks$statistic
+                     comp$ks.p.value [d,s] = this.ks$p.value
+                     comp$norm.lnlike[d,s] = sum( x     = dnorm( x         = this.obser[sel]
+                                                               , mean      = m.mean
+                                                               , sd        = m.sdev
+                                                               , log       = TRUE
+                                                               )#end dnorm
+                                                , na.rm = TRUE
+                                                )#end sum
+                     comp$sn.lnlike  [d,s] = sum( x     =  dsn  ( x        = this.obser[sel]
+                                                                , location = m.location
+                                                                , scale    = m.scale
+                                                                , shape    = m.shape
+                                                                , log      = TRUE
+                                                                )#end dnorm
+                                                , na.rm = TRUE
+                                                )#end sum
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Find the mean bias and the root mean square error, and the     #
+                     # four moments of the distribution for both observations and model.   #
+                     #---------------------------------------------------------------------#
+                     comp$bias      [d,s ] = bias( x      = this.model[sel]
+                                                 , xexp   = this.obser[sel]
+                                                 , absval = FALSE
+                                                 )#end bias
+                     comp$rmse      [d,s ] = rmse( x      = this.model[sel]
+                                                 , xexp   = this.obser[sel]
+                                                 , absval = FALSE
+                                                 )#end rmse
+                             comp$obs.moment[d,s,] = c(o.mean,o.vari,o.skew,o.kurt)
+                     comp$mod.moment[d,s,] = c(m.mean,m.vari,m.skew,m.kurt)
+                     #---------------------------------------------------------------------#
+
 
 
                      #---------------------------------------------------------------------#
                      #      Find the range of observations/modelled variables.             #
                      #---------------------------------------------------------------------#
-                     qlimit      = range(c(this.obser[sel],this.model[sel]))
-                     quant       = seq(from=qlimit[1],to=qlimit[2],length.out=1000)
-                     dfunc.obser = dsn(x=quant,dp=c(o.location,o.scale,o.shape))
-                     dfunc.model = dsn(x=quant,dp=c(m.location,m.scale,m.shape))
                      xbreaks     = pretty(qlimit,n=20)
                      freq.obser  = hist(this.obser[sel],breaks=xbreaks,plot=FALSE)$density
                      freq.model  = hist(this.model[sel],breaks=xbreaks,plot=FALSE)$density
@@ -804,7 +916,20 @@ for (place in myplaces){
 
 
                      #---------------------------------------------------------------------#
-                     #     Plot the predicted curves and histograms.                       #
+                     #     Create edges for the histogram rectangles (we use rect instead  #
+                     # of hist for histograms because we cannot control the line width in  #
+                     # hist).                                                              #
+                     #---------------------------------------------------------------------#
+                     xleft   = xbreaks[-length(xbreaks)]
+                     xright  = xbreaks[-1]
+                     ybottom = 0. * xleft
+                     #---------------------------------------------------------------------#
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Plot the histograms and density curves.                         #
                      #---------------------------------------------------------------------#
                      for (o in 1:nout){
                         #----- Make the file name. ----------------------------------------#
@@ -843,12 +968,20 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         plot(x=quant,y=dfunc.obser,type="n",main=letitre,xlab=lex,ylab=ley
                             ,cex.main=cex.main,ylim=ylimit)
-                        grid(col="gray76",lty="solid")
-                        #----- Add the histograms. ----------------------------------------#
-                        hist(this.obser[sel],breaks=xbreaks,freq=FALSE,col=col.obser[1]
-                            ,angle=-45,density=12,add=TRUE)
-                        hist(this.model[sel],breaks=xbreaks,freq=FALSE,col=col.model[1]
-                            ,angle=45,density=12,add=TRUE)
+                        grid(col="grey76",lty="solid")
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #      Plot the histograms using "rect.                            #
+                        #------------------------------------------------------------------#
+                        #----- Observations. ----------------------------------------------#
+                        rect(xleft,ybottom,xright,freq.obser,density=12,angle=-45
+                            ,col=col.obser[1],border=col.obser[1],lwd=1.6)
+                        #----- Model. -----------------------------------------------------#
+                        rect(xleft,ybottom,xright,freq.model,density=12,angle=+45
+                            ,col=col.model[1],border=col.model[1],lwd=1.6)
                         #----- Add the density functions. ---------------------------------#
                         lines(x=quant,y=dfunc.obser,lwd=3.0,col=col.obser[2])
                         lines(x=quant,y=dfunc.model,lwd=3.0,col=col.model[2])
@@ -856,7 +989,7 @@ for (place in myplaces){
                         legend(x="topleft",inset=0.01,legend=c("Observation","Model")
                               ,fill  =c(col.obser[2],col.model[2])
                               ,border=c(col.obser[2],col.model[2])
-                              ,angle=c(-45,45),density=30
+                              ,angle =c(-45,45),density=30
                               ,lwd=2.0,col=c(col.obser[2],col.model[2]),bg="white"
                               ,cex=1.0)
                         #------------------------------------------------------------------#
@@ -873,14 +1006,90 @@ for (place in myplaces){
                            dev.off()
                         }#end if
                         #------------------------------------------------------------------#
-                     }#end for
+                     }#end for (o in 1:nout)
                      #---------------------------------------------------------------------#
-                  }#end if
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Organise the quantiles for plotting.                            #
+                     #---------------------------------------------------------------------#
+                     qq     = qqplot(x=this.obser[sel],y=this.model[sel],plot.it=FALSE)
+                     xlimit = range(qq$x)
+                     ylimit = range(qq$y)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Plot the QQ-Plot of the distributions.                          #
+                     #---------------------------------------------------------------------#
+                     for (o in 1:nout){
+                        #----- Make the file name. ----------------------------------------#
+                        fichier = paste(outqqpvar,"/qqplot_",this.vnam,"-",ss.name[s]    
+                                       ,"-",diel.label,"-",suffix,".",outform[o],sep="")
+                        if (outform[o] == "x11"){
+                           X11(width=size$width,height=size$height,pointsize=ptsz)
+                        }else if(outform[o] == "png"){
+                           png(filename=fichier,width=size$width*depth
+                              ,height=size$height*depth,pointsize=ptsz,res=depth)
+                        }else if(outform[o] == "eps"){
+                           postscript(file=fichier,width=size$width,height=size$height
+                                     ,pointsize=ptsz,paper=size$paper)
+                        }else if(outform[o] == "pdf"){
+                           pdf(file=fichier,onefile=FALSE
+                              ,width=size$width,height=size$height,pointsize=ptsz
+                              ,paper=size$paper)
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Set up the title and axes labels.                            #
+                        #------------------------------------------------------------------#
+                        letitre = paste(lieu,"\n","QQ Plot for ",this.desc
+                                       ," - ",ss.title[s]," - ",diel.desc,sep="")
+                        lex     = paste("Observations",this.unit,sep=" ")
+                        ley     = paste("Model",this.unit,sep=" ")
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Open an empty plotting area.                                 #
+                        #------------------------------------------------------------------#
+                        plot(x=xlimit,y=ylimit,type="n",main=letitre,xlab=lex,ylab=ley
+                            ,cex.main=cex.main)
+                        grid(col="grey76",lty="solid")
+                        lines(x=qq$y,y=qq$y,type="l",col=col.obser[2],lwd=3.0)
+                        points(x=qq$x,y=qq$y,type="p",pch=16,cex=0.8,col=col.model[1])
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Close the plotting device.                                   #
+                        #------------------------------------------------------------------#
+                        if (outform[o] == "x11"){
+                           locator(n=1)
+                           dev.off()
+                        }else{
+                           dev.off()
+                        }#end if
+                        #------------------------------------------------------------------#
+                     }#end for (o in 1:nout)
+                     #---------------------------------------------------------------------#
+
+
+
+                  }#end if (sd(this.obser[sel]) >= 1.e-6)
                   #------------------------------------------------------------------------#
-               }#end if
+               }#end if (any(sel))
                #---------------------------------------------------------------------------#
 
-            }#end for
+            }#end for (d in 1:(ndiel+3))
             #------------------------------------------------------------------------------#
 
 
@@ -941,7 +1150,7 @@ for (place in myplaces){
                   plot(x=xlimit,y=ylimit,type="n",main=letitre,xlab=lex,ylab=ley
                       ,cex.main=cex.main,xaxt="n")
                   axis(side=1,at=xat,labels=dl.name)
-                  abline(h=axTicks(side=2),v=xgrid,col="gray66",lty="solid")
+                  abline(h=axTicks(side=2),v=xgrid,col="grey66",lty="solid")
                   boxplot(x=bp.list,col=bpcolour,notch=TRUE,add=TRUE,show.names=FALSE)
                   legend(x=leg.corner,inset=0.01,legend=c("Observation","Model"),bg="white"
                         ,fill=c(col.obser[1],col.model[1]))
@@ -963,12 +1172,21 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
          }#end for
          #---------------------------------------------------------------------------------#
-      }#end for
+
+
+         #----- Save the comparison list for this variable. -------------------------------#
+         dist.comp[[this.vnam]] = comp
+         #---------------------------------------------------------------------------------#
+      }#end for (c in 1:ncompvar)
       #------------------------------------------------------------------------------------#
    }#end if (obs.name %in% ls())
    #---------------------------------------------------------------------------------------#
 
    dum = write(x = "Finished",file=paste(here,place,"eval_load_complete.txt",sep="/"))
+
+   stat.rdata = paste(path.data,paste("comp-",place,".RData",sep=""),sep="/")
+   cat(" + Saving statistics on model comparison to ",basename(stat.rdata),"...","\n") 
+   dum        = save(dist.comp,file=stat.rdata)
 }#end for places
 #------------------------------------------------------------------------------------------#
 

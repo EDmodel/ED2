@@ -306,6 +306,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: upward_lw_above_incid
    real                                          :: downward_rshort_below_beam
    real                                          :: downward_rshort_below_diffuse
+   real                                          :: upward_rshort_above_beam
+   real                                          :: upward_rshort_above_diffuse
    real                                          :: surface_absorbed_longwave_surf
    real                                          :: surface_absorbed_longwave_incid
    real                                          :: nir_v_beam
@@ -951,6 +953,15 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
 
+            !----- Above-canopy upwelling radiation. --------------------------------------!
+            upward_rshort_above_beam    = upward_par_above_beam                            &
+                                        + upward_nir_above_beam
+            upward_rshort_above_diffuse = upward_par_above_diffuse                         &
+                                        + upward_nir_above_diffuse
+            !------------------------------------------------------------------------------!
+
+
+
             !----- Below-canopy downwelling radiation. ------------------------------------!
             downward_rshort_below_beam    = downward_par_below_beam                        &
                                           + downward_nir_below_beam
@@ -961,37 +972,46 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
             !----- Soil+sfcwater+veg albedo (different for diffuse and beam radiation). ---!
-            csite%albedo_beam(ipa)    = ( upward_par_above_beam                            &
-                                        + upward_nir_above_beam )                          &
+            csite%albedo_beam(ipa)    = upward_rshort_above_beam                           &
                                       / sngloff( par_beam_norm + nir_beam_norm             &
                                                , tiny_offset )
-            csite%albedo_diffuse(ipa) = ( upward_par_above_diffuse                         &
-                                        + upward_nir_above_diffuse )                       &
+            csite%albedo_diffuse(ipa) = upward_rshort_above_diffuse                        &
                                       / sngloff( par_diff_norm + nir_diff_norm             &
                                                , tiny_offset )
-            csite%albedo(ipa) = ( upward_par_above_beam    + upward_nir_above_beam         &
-                                + upward_par_above_diffuse + upward_nir_above_diffuse )
+            csite%albedo(ipa)         = ( upward_rshort_above_beam                         &
+                                        + upward_rshort_above_diffuse )
             !------------------------------------------------------------------------------!
          else
 
             !----- The code expects values for these, even when it is not daytime. --------!
-            downward_par_below_beam       = par_beam_norm
-            downward_par_below_diffuse    = par_diff_norm
-            downward_nir_below_beam       = nir_beam_norm
-            downward_nir_below_diffuse    = nir_diff_norm
-            downward_rshort_below_beam    = par_beam_norm + nir_beam_norm
-            downward_rshort_below_diffuse = par_diff_norm + nir_diff_norm
-            csite%albedo_beam         (ipa) = ( albedo_ground_par * par_beam_norm          &
-                                              + albedo_ground_nir * nir_beam_norm )        &
+            downward_par_below_beam         = par_beam_norm
+            downward_par_below_diffuse      = par_diff_norm
+            downward_nir_below_beam         = nir_beam_norm
+            downward_nir_below_diffuse      = nir_diff_norm
+            downward_rshort_below_beam      = par_beam_norm + nir_beam_norm
+            downward_rshort_below_diffuse   = par_diff_norm + nir_diff_norm
+            upward_par_above_beam           = albedo_ground_par * par_beam_norm
+            upward_par_above_diffuse        = albedo_ground_par * par_diff_norm
+            upward_nir_above_beam           = albedo_ground_nir * nir_beam_norm
+            upward_nir_above_diffuse        = albedo_ground_nir * nir_diff_norm
+            upward_rshort_above_beam        = upward_par_above_beam                        &
+                                            + upward_nir_above_beam
+            upward_rshort_above_diffuse     = upward_par_above_diffuse                     &
+                                            + upward_nir_above_diffuse
+            csite%albedo_beam         (ipa) = ( upward_par_above_beam                      &
+                                              + upward_nir_above_beam )                    &
                                             / ( par_beam_norm + nir_beam_norm )
-            csite%albedo_diffuse      (ipa) = ( albedo_ground_par * par_diff_norm          &
-                                              + albedo_ground_nir * nir_diff_norm )        &
+            csite%albedo_diffuse      (ipa) = ( upward_par_above_diffuse                   &
+                                              + upward_nir_above_diffuse )                 &
                                             / ( par_diff_norm + nir_diff_norm )
-            csite%albedo              (ipa) = albedo_ground_par * par_beam_norm            &
-                                            + albedo_ground_nir * nir_beam_norm            &
-                                            + albedo_ground_par * par_diff_norm            &
-                                            + albedo_ground_nir * nir_diff_norm
+            csite%albedo              (ipa) = ( upward_rshort_above_beam                   &
+                                              + upward_rshort_above_diffuse )
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
          !     Absorption rates of PAR, rshort, and rlong of the vegetation.  Here we      !
@@ -1200,21 +1220,29 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          downward_nir_below_diffuse      = nir_diff_norm
          downward_rshort_below_beam      = par_beam_norm + nir_beam_norm
          downward_rshort_below_diffuse   = par_diff_norm + nir_diff_norm
+
+         upward_par_above_beam           = albedo_ground_par * par_beam_norm
+         upward_par_above_diffuse        = albedo_ground_par * par_diff_norm
+         upward_nir_above_beam           = albedo_ground_nir * nir_beam_norm
+         upward_nir_above_diffuse        = albedo_ground_nir * nir_diff_norm
+         upward_rshort_above_beam        = upward_par_above_beam                           &
+                                         + upward_nir_above_beam
+         upward_rshort_above_diffuse     = upward_par_above_diffuse                        &
+                                         + upward_nir_above_diffuse
+
          surface_absorbed_longwave_surf  = - emissivity * stefan * T_surface**4
          surface_absorbed_longwave_incid = emissivity
-         csite%albedo_beam         (ipa) = ( albedo_ground_par * par_beam_norm             &
-                                           + albedo_ground_nir * nir_beam_norm )           &
+
+         csite%albedo_beam         (ipa) = ( upward_par_above_beam                         &
+                                           + upward_nir_above_beam )                       &
                                          / ( par_beam_norm + nir_beam_norm )
-         csite%albedo_diffuse      (ipa) = ( albedo_ground_par * par_diff_norm             &
-                                           + albedo_ground_nir * nir_diff_norm )           &
+         csite%albedo_diffuse      (ipa) = ( upward_par_above_diffuse                      &
+                                           + upward_nir_above_diffuse )                    &
                                          / ( par_diff_norm + nir_diff_norm )
-         csite%albedo              (ipa) = albedo_ground_par * par_beam_norm               &
-                                         + albedo_ground_nir * nir_beam_norm               &
-                                         + albedo_ground_par * par_diff_norm               &
-                                         + albedo_ground_nir * nir_diff_norm  
+         csite%albedo              (ipa) = ( upward_rshort_above_beam                      &
+                                           + upward_rshort_above_diffuse )
          csite%rlongup             (ipa) = - surface_absorbed_longwave_surf
          csite%rlong_albedo        (ipa) = 1.0 - surface_absorbed_longwave_incid
-      
       end if
       
       !----- Absorption rate of short wave by the soil. -----------------------------------!
@@ -1222,7 +1250,11 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                   + downward_nir_below_beam    * abs_ground_nir
       csite%rshort_g_diffuse(ipa) = downward_par_below_diffuse * abs_ground_par            &
                                   + downward_nir_below_diffuse * abs_ground_nir
-      
+      csite%parup           (ipa) = upward_par_above_beam                                  &
+                                  + upward_par_above_diffuse
+      csite%nirup           (ipa) = upward_nir_above_beam                                  &
+                                  + upward_nir_above_diffuse
+
       !----- Incident radiation at the ground. --------------------------------------------!
       csite%par_b_beam      (ipa) = downward_par_below_beam
       csite%nir_b_beam      (ipa) = downward_nir_below_beam
@@ -1532,11 +1564,15 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
          csite%nir_b_beam      (ipa) = 0.
          csite%nir_b_diffuse   (ipa) = 0.
          csite%nir_b           (ipa) = 0.
+         csite%parup           (ipa) = 0.
+         csite%nirup           (ipa) = 0.
+         csite%rshortup        (ipa) = 0.
+         csite%rnet            (ipa) = 0.
          !----- Absorption rate of short wave by the surface water. -----------------------!
          do k=1,csite%nlev_sfcwater(ipa)
-            csite%rshort_s_beam(k,ipa)    = 0.
+            csite%rshort_s_beam   (k,ipa) = 0.
             csite%rshort_s_diffuse(k,ipa) = 0.
-            csite%rshort_s(k,ipa)         = 0.
+            csite%rshort_s        (k,ipa) = 0.
          end do
          csite%rlong_s_incid(ipa) = 0.
          csite%rlong_g_incid(ipa) = 0.
@@ -1581,23 +1617,31 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
                                          + cpatch%rlong_w_surf(ico)
          end if
       end do
-      csite%par_l_beam_max(ipa)    = csite%par_l_beam_max(ipa)    * rshort
-      csite%par_l_diffuse_max(ipa) = csite%par_l_diffuse_max(ipa) * rshort
-      csite%par_l_max(ipa)         = csite%par_l_beam_max(ipa)                             &
-                                   + csite%par_l_diffuse_max(ipa)
+      csite%par_l_beam_max    (ipa)      = csite%par_l_beam_max    (ipa) * rshort
+      csite%par_l_diffuse_max (ipa)      = csite%par_l_diffuse_max (ipa) * rshort
+      csite%par_l_max         (ipa)      = csite%par_l_beam_max    (ipa)                   &
+                                         + csite%par_l_diffuse_max (ipa)
 
-      csite%rshort_g_beam(ipa)    = csite%rshort_g_beam(ipa)    * rshort
-      csite%rshort_g_diffuse(ipa) = csite%rshort_g_diffuse(ipa) * rshort
-      csite%rshort_g(ipa)         = csite%rshort_g_beam(ipa) + csite%rshort_g_diffuse(ipa)
+      csite%rshort_g_beam     (ipa)      = csite%rshort_g_beam     (ipa) * rshort
+      csite%rshort_g_diffuse  (ipa)      = csite%rshort_g_diffuse  (ipa) * rshort
+      csite%rshort_g          (ipa)      = csite%rshort_g_beam     (ipa)                   &
+                                         + csite%rshort_g_diffuse  (ipa)
 
-      csite%par_b_beam(ipa)    = csite%par_b_beam(ipa)    * rshort
-      csite%par_b_diffuse(ipa) = csite%par_b_diffuse(ipa) * rshort
-      csite%par_b(ipa)         = csite%par_b_beam(ipa) + csite%par_b_diffuse(ipa)
-
-      csite%nir_b_beam(ipa)    = csite%nir_b_beam(ipa)    * rshort
-      csite%nir_b_diffuse(ipa) = csite%nir_b_diffuse(ipa) * rshort
-      csite%nir_b(ipa)         = csite%nir_b_beam(ipa) + csite%nir_b_diffuse(ipa)
-
+      csite%par_b_beam        (ipa)      = csite%par_b_beam        (ipa) * rshort
+      csite%par_b_diffuse     (ipa)      = csite%par_b_diffuse     (ipa) * rshort
+      csite%par_b             (ipa)      = csite%par_b_beam        (ipa)                   &
+                                         + csite%par_b_diffuse     (ipa)
+      csite%nir_b_beam        (ipa)      = csite%nir_b_beam        (ipa) * rshort
+      csite%nir_b_diffuse     (ipa)      = csite%nir_b_diffuse     (ipa) * rshort
+      csite%nir_b             (ipa)      = csite%nir_b_beam        (ipa)                   &
+                                         + csite%nir_b_diffuse     (ipa)
+      csite%parup             (ipa)      = csite%parup             (ipa) * rshort
+      csite%nirup             (ipa)      = csite%nirup             (ipa) * rshort
+      csite%rshortup          (ipa)      = csite%parup             (ipa)                   &
+                                         + csite%nirup             (ipa)
+      csite%rnet              (ipa)      = rshort + rlong                                  &
+                                         - csite%rshortup          (ipa)                   &
+                                         - csite%rlongup           (ipa)
       !----- Absorption rate of short wave by the surface water. --------------------------!
       do k=1,csite%nlev_sfcwater(ipa)
          csite%rshort_s_beam(k,ipa)    = csite%rshort_s_beam   (k,ipa) * rshort

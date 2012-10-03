@@ -341,7 +341,7 @@ subroutine load_ecosystem_state()
    case (4,7)
       continue
    case default
-         call set_site_defprops()
+      call set_site_defprops()
    end select
   
    if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,100,MPI_COMM_WORLD,ierr)

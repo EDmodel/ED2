@@ -619,26 +619,31 @@ subroutine init_can_rad_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Wood reflectance, using CLM parameters.                                          !
+   !      Wood reflectance, using values based on:                                         !
+   !                                                                                       !
+   ! Asner, G., 1998: Biophysical and biochemical sources of variability in canopy         !
+   !     reflectance. Remote Sensing of Environment, 64, 234-253.                          !
+   !                                                                                       !
+   ! Commented values are from CLM, but they were quite high.                              !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   wood_reflect_vis(1)     = 3.60d-1
-   wood_reflect_vis(2:4)   = 1.60d-1
-   wood_reflect_vis(5)     = 3.60d-1
-   wood_reflect_vis(6:11)  = 1.60d-1
-   wood_reflect_vis(12:13) = 3.60d-1
-   wood_reflect_vis(14:15) = 3.60d-1
-   wood_reflect_vis(16)    = 3.60d-1
-   wood_reflect_vis(17)    = 1.60d-2
+   wood_reflect_vis(1)     = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(2:4)   = 1.10d-1  ! 1.60d-1
+   wood_reflect_vis(5)     = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(6:11)  = 1.10d-1  ! 1.60d-1
+   wood_reflect_vis(12:13) = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(14:15) = 1.10d-1  ! 3.10d-1
+   wood_reflect_vis(16)    = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(17)    = 1.10d-1  ! 1.60d-1
    !----- Near infrared. ------------------------------------------------------------------!
-   wood_reflect_nir(1)     = 5.80d-1
-   wood_reflect_nir(2:4)   = 3.90d-1
-   wood_reflect_nir(5)     = 5.80d-1
-   wood_reflect_nir( 6:11) = 3.90d-1
-   wood_reflect_nir(12:13) = 5.80d-1
-   wood_reflect_nir(14:15) = 5.80d-1
-   wood_reflect_nir(16)    = 5.80d-1
-   wood_reflect_nir(17)    = 3.90d-1
+   wood_reflect_nir(1)     = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(2:4)   = 2.50d-1  ! 3.90d-1
+   wood_reflect_nir(5)     = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir( 6:11) = 2.50d-1  ! 3.90d-1
+   wood_reflect_nir(12:13) = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(14:15) = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(16)    = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(17)    = 2.50d-1  ! 3.90d-1
    !---------------------------------------------------------------------------------------!
 
 

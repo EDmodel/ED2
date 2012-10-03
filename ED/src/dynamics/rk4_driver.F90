@@ -502,8 +502,16 @@ module rk4_driver
          !---------------------------------------------------------------------------------!
          !     These variables are integrated here, since they don't change with time.     !
          !---------------------------------------------------------------------------------!
+         csite%avg_parup          (ipa) = csite%avg_parup          (ipa)                   &
+                                        + csite%parup              (ipa) * sngl(hdid)
+         csite%avg_nirup          (ipa) = csite%avg_parup          (ipa)                   &
+                                        + csite%nirup              (ipa) * sngl(hdid)
+         csite%avg_rshortup       (ipa) = csite%avg_rshortup       (ipa)                   &
+                                        + csite%rshortup           (ipa) * sngl(hdid)
          csite%avg_rlongup        (ipa) = csite%avg_rlongup        (ipa)                   &
                                         + csite%rlongup            (ipa) * sngl(hdid)
+         csite%avg_rnet           (ipa) = csite%avg_rnet           (ipa)                   &
+                                        + csite%rnet               (ipa) * sngl(hdid)
          csite%avg_albedo         (ipa) = csite%avg_albedo         (ipa)                   &
                                         + csite%albedo             (ipa) * sngl(hdid)
          csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa)                   &

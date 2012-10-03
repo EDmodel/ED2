@@ -949,10 +949,22 @@ module ed_state_vars
      ! Patch albedo, diffuse component
      real , pointer,dimension(:) :: albedo_diffuse
 
+     ! Net radiation at the top of the canopy (W/m2)
+     real , pointer,dimension(:) :: rnet
+
      ! Upward long wave radiation at the top of the canopy (W/m2)
      real , pointer,dimension(:) :: rlongup
 
-     ! Albedo for long wave radiation
+     ! Upward PAR radiation at the top of the canopy (W/m2)
+     real , pointer,dimension(:) :: parup
+
+     ! Upward NIR radiation at the top of the canopy (W/m2)
+     real , pointer,dimension(:) :: nirup
+
+     ! Upward short wave radiation at the top of the canopy (W/m2)
+     real , pointer,dimension(:) :: rshortup
+
+     ! Albedo for long wave radiation (whatever it means...)
      real , pointer,dimension(:) :: rlong_albedo
 
      ! Total snow depth as calculated in the radiation scheme.  Used for 
@@ -1044,6 +1056,10 @@ module ed_state_vars
      real, pointer, dimension(:)   :: avg_rshort_gnd     ! Absorbed SW rad. of soil + top water/snow layer   [ W/m2]
      real, pointer, dimension(:)   :: avg_rlong_gnd      ! Emitted LW rad. from soil + top water/snow layer  [ W/m2]
      real, pointer, dimension(:)   :: avg_rlongup        ! Emitted LW rad. from soil + top water/snow layer  [ W/m2]
+     real, pointer, dimension(:)   :: avg_parup          ! Reflected PAR at the top of the canopy            [ W/m2]
+     real, pointer, dimension(:)   :: avg_nirup          ! Reflected NIR at the top of the canopy            [ W/m2]
+     real, pointer, dimension(:)   :: avg_rshortup       ! Reflected SW rad. at the top of the canopy        [ W/m2]
+     real, pointer, dimension(:)   :: avg_rnet           ! Net radiation at the top of the canopy            [ W/m2]
      real, pointer, dimension(:)   :: avg_albedo         ! Albedo                                            [ ----]
      real, pointer, dimension(:)   :: avg_albedo_beam    ! Direct Albedo                                     [ ----]
      real, pointer, dimension(:)   :: avg_albedo_diffuse ! Diffuse Albedo                                    [ ----]
@@ -1325,6 +1341,11 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_rlong_albedo
      real,pointer,dimension(:) :: avg_albedo
      real,pointer,dimension(:) :: avg_rlongup
+
+     real,pointer,dimension(:) :: avg_parup
+     real,pointer,dimension(:) :: avg_nirup
+     real,pointer,dimension(:) :: avg_rshortup
+     real,pointer,dimension(:) :: avg_rnet
 
      !----- Length of day light, used to average light levels properly. -------------------!
      real, pointer, dimension(:) :: daylight
@@ -1785,6 +1806,10 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_albedo_diffuse
      real,pointer,dimension(:) :: avg_rlong_albedo
      real,pointer,dimension(:) :: avg_rlongup
+     real,pointer,dimension(:) :: avg_parup
+     real,pointer,dimension(:) :: avg_nirup
+     real,pointer,dimension(:) :: avg_rshortup
+     real,pointer,dimension(:) :: avg_rnet
      real,pointer,dimension(:,:,:) :: avg_lai_ebalvars   ! This diagnostic partitions energy flux
                                                          ! variables into LAI regimes.
                                                          ! The matrix is arranged as follows
@@ -1901,6 +1926,10 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_albedo_diffuse! (npolygons)
      real, pointer, dimension(:)   :: dmean_rlong_albedo  ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rlongup       ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_parup         ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_nirup         ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_rshortup      ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_rnet          ! (npolygons)
 
      real, pointer, dimension(:,:)   :: qmean_pcpg           ! [   kg/m²/s]
      real, pointer, dimension(:,:)   :: qmean_runoff         ! [   kg/m²/s]
@@ -1970,6 +1999,10 @@ module ed_state_vars
      real, pointer, dimension(:,:)   :: qmean_albedo_diffuse ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rlong_albedo   ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rlongup        ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_parup          ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_nirup          ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_rshortup       ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_rnet           ! (ndcycle,npolygons)
 
      !-------------------------------------------------------------------------------------!
      ! These variables have the monthly mean square,  We save this instead of the standard !
@@ -1994,6 +2027,13 @@ module ed_state_vars
      real, pointer, dimension(:,:) :: qmsqu_vapor_lc
      real, pointer, dimension(:,:) :: qmsqu_vapor_wc
      real, pointer, dimension(:,:) :: qmsqu_vapor_gc
+     real, pointer, dimension(:,:) :: qmsqu_ustar
+     real, pointer, dimension(:,:) :: qmsqu_rlongup
+     real, pointer, dimension(:,:) :: qmsqu_parup
+     real, pointer, dimension(:,:) :: qmsqu_nirup
+     real, pointer, dimension(:,:) :: qmsqu_rshortup
+     real, pointer, dimension(:,:) :: qmsqu_rnet
+     real, pointer, dimension(:,:) :: qmsqu_albedo
 
      ! Daily average residuals
      real, pointer, dimension(:) :: dmean_co2_residual    ! [umol_CO2/m2]
@@ -2112,6 +2152,10 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_albedo_diffuse ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rlong_albedo   ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rlongup        ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_parup          ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_nirup          ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_rshortup       ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_rnet           ! (npolygons)
 
      !-------------------------------------------------------------------------------------!
      ! These variables have the monthly mean square,  We save this instead of the standard !
@@ -2136,6 +2180,13 @@ module ed_state_vars
      real, pointer, dimension(:) :: mmsqu_vapor_lc
      real, pointer, dimension(:) :: mmsqu_vapor_wc
      real, pointer, dimension(:) :: mmsqu_vapor_gc
+     real, pointer, dimension(:) :: mmsqu_ustar
+     real, pointer, dimension(:) :: mmsqu_rlongup
+     real, pointer, dimension(:) :: mmsqu_parup
+     real, pointer, dimension(:) :: mmsqu_nirup
+     real, pointer, dimension(:) :: mmsqu_rshortup
+     real, pointer, dimension(:) :: mmsqu_rnet
+     real, pointer, dimension(:) :: mmsqu_albedo
 
 
      !----- Disturbance rates. ----------------------------------------------!
@@ -2527,6 +2578,10 @@ contains
        allocate(cgrid%avg_albedo_diffuse (npolygons))
        allocate(cgrid%avg_rlong_albedo   (npolygons))
        allocate(cgrid%avg_rlongup        (npolygons))
+       allocate(cgrid%avg_parup          (npolygons))
+       allocate(cgrid%avg_nirup          (npolygons))
+       allocate(cgrid%avg_rshortup       (npolygons))
+       allocate(cgrid%avg_rnet           (npolygons))
        
        allocate(cgrid%lai_pft            (n_pft       ,npolygons))
        allocate(cgrid%wai_pft            (n_pft       ,npolygons))
@@ -2617,6 +2672,10 @@ contains
           allocate(cgrid%dmean_albedo_diffuse (             npolygons))
           allocate(cgrid%dmean_rlong_albedo   (             npolygons))
           allocate(cgrid%dmean_rlongup        (             npolygons))
+          allocate(cgrid%dmean_parup          (             npolygons))
+          allocate(cgrid%dmean_nirup          (             npolygons))
+          allocate(cgrid%dmean_rshortup       (             npolygons))
+          allocate(cgrid%dmean_rnet           (             npolygons))
 
           allocate(cgrid%dmean_co2_residual   (             npolygons))
           allocate(cgrid%dmean_energy_residual(             npolygons))
@@ -2710,6 +2769,10 @@ contains
           allocate(cgrid%mmean_albedo_diffuse (             npolygons))
           allocate(cgrid%mmean_rlong_albedo   (             npolygons))
           allocate(cgrid%mmean_rlongup        (             npolygons))
+          allocate(cgrid%mmean_parup          (             npolygons))
+          allocate(cgrid%mmean_nirup          (             npolygons))
+          allocate(cgrid%mmean_rshortup       (             npolygons))
+          allocate(cgrid%mmean_rnet           (             npolygons))
           allocate(cgrid%mmean_atm_shv        (             npolygons))
           allocate(cgrid%mmean_atm_co2        (             npolygons))
           allocate(cgrid%mmean_atm_prss       (             npolygons))
@@ -2739,6 +2802,13 @@ contains
           allocate(cgrid%mmsqu_vapor_lc       (             npolygons))
           allocate(cgrid%mmsqu_vapor_wc       (             npolygons))
           allocate(cgrid%mmsqu_vapor_gc       (             npolygons))
+          allocate(cgrid%mmsqu_ustar          (             npolygons))
+          allocate(cgrid%mmsqu_rlongup        (             npolygons))
+          allocate(cgrid%mmsqu_parup          (             npolygons))
+          allocate(cgrid%mmsqu_nirup          (             npolygons))
+          allocate(cgrid%mmsqu_rshortup       (             npolygons))
+          allocate(cgrid%mmsqu_rnet           (             npolygons))
+          allocate(cgrid%mmsqu_albedo         (             npolygons))
 
           allocate(cgrid%disturbance_rates    (n_dist_types,n_dist_types,npolygons))
 
@@ -2816,6 +2886,10 @@ contains
           allocate(cgrid%qmean_albedo_diffuse (     ndcycle, npolygons))
           allocate(cgrid%qmean_rlong_albedo   (     ndcycle, npolygons))
           allocate(cgrid%qmean_rlongup        (     ndcycle, npolygons))
+          allocate(cgrid%qmean_parup          (     ndcycle, npolygons))
+          allocate(cgrid%qmean_nirup          (     ndcycle, npolygons))
+          allocate(cgrid%qmean_rshortup       (     ndcycle, npolygons))
+          allocate(cgrid%qmean_rnet           (     ndcycle, npolygons))
           allocate(cgrid%qmean_atm_shv        (     ndcycle, npolygons))
           allocate(cgrid%qmean_atm_co2        (     ndcycle, npolygons))
           allocate(cgrid%qmean_atm_prss       (     ndcycle, npolygons))
@@ -2839,6 +2913,13 @@ contains
           allocate(cgrid%qmsqu_vapor_lc       (     ndcycle, npolygons))
           allocate(cgrid%qmsqu_vapor_wc       (     ndcycle, npolygons))
           allocate(cgrid%qmsqu_vapor_gc       (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_ustar          (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_rlongup        (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_parup          (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_nirup          (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_rshortup       (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_rnet           (     ndcycle, npolygons))
+          allocate(cgrid%qmsqu_albedo         (     ndcycle, npolygons))
 
        end if
     end if
@@ -2940,6 +3021,10 @@ contains
     
     allocate(cpoly%avg_albedo(nsites))
     allocate(cpoly%avg_rlongup(nsites))
+    allocate(cpoly%avg_parup(nsites))
+    allocate(cpoly%avg_nirup(nsites))
+    allocate(cpoly%avg_rshortup(nsites))
+    allocate(cpoly%avg_rnet(nsites))
     allocate(cpoly%daylight(nsites))
 
     allocate(cpoly%lai  (nsites)) 
@@ -3197,7 +3282,11 @@ contains
     allocate(csite%albedo(npatches))
     allocate(csite%albedo_beam(npatches))
     allocate(csite%albedo_diffuse(npatches))
+    allocate(csite%rnet(npatches))
     allocate(csite%rlongup(npatches))
+    allocate(csite%parup(npatches))
+    allocate(csite%nirup(npatches))
+    allocate(csite%rshortup(npatches))
     allocate(csite%rlong_albedo(npatches))
     allocate(csite%total_sfcw_depth(npatches))
     allocate(csite%snowfac(npatches))
@@ -3244,6 +3333,10 @@ contains
     allocate(csite%avg_carbon_ac      (npatches))
     allocate(csite%avg_carbon_st      (npatches))
     allocate(csite%avg_rlongup        (npatches))
+    allocate(csite%avg_parup          (npatches))
+    allocate(csite%avg_nirup          (npatches))
+    allocate(csite%avg_rshortup       (npatches))
+    allocate(csite%avg_rnet           (npatches))
     allocate(csite%avg_albedo         (npatches))
     allocate(csite%avg_albedo_beam    (npatches))
     allocate(csite%avg_albedo_diffuse (npatches))
@@ -3807,6 +3900,10 @@ contains
      nullify(cgrid%avg_albedo_diffuse      )
      nullify(cgrid%avg_rlong_albedo        )
      nullify(cgrid%avg_rlongup             )
+     nullify(cgrid%avg_parup               )
+     nullify(cgrid%avg_nirup               )
+     nullify(cgrid%avg_rshortup            )
+     nullify(cgrid%avg_rnet                )
      nullify(cgrid%dmean_pcpg              )
      nullify(cgrid%dmean_runoff            )
      nullify(cgrid%dmean_drainage          )
@@ -3886,6 +3983,10 @@ contains
      nullify(cgrid%dmean_albedo_diffuse    )
      nullify(cgrid%dmean_rlong_albedo      )
      nullify(cgrid%dmean_rlongup           )
+     nullify(cgrid%dmean_parup             )
+     nullify(cgrid%dmean_nirup             )
+     nullify(cgrid%dmean_rshortup          )
+     nullify(cgrid%dmean_rnet              )
      nullify(cgrid%dmean_co2_residual      )
      nullify(cgrid%dmean_energy_residual   )
      nullify(cgrid%dmean_water_residual    )
@@ -3965,6 +4066,10 @@ contains
      nullify(cgrid%mmean_albedo_diffuse    )
      nullify(cgrid%mmean_rlong_albedo      )
      nullify(cgrid%mmean_rlongup           )
+     nullify(cgrid%mmean_parup             )
+     nullify(cgrid%mmean_nirup             )
+     nullify(cgrid%mmean_rshortup          )
+     nullify(cgrid%mmean_rnet              )
      nullify(cgrid%mmean_atm_shv           )
      nullify(cgrid%mmean_atm_co2           )
      nullify(cgrid%mmean_atm_prss          )
@@ -3998,6 +4103,13 @@ contains
      nullify(cgrid%mmsqu_vapor_lc          )
      nullify(cgrid%mmsqu_vapor_wc          )
      nullify(cgrid%mmsqu_vapor_gc          )
+     nullify(cgrid%mmsqu_ustar             )
+     nullify(cgrid%mmsqu_rlongup           )
+     nullify(cgrid%mmsqu_parup             )
+     nullify(cgrid%mmsqu_nirup             )
+     nullify(cgrid%mmsqu_rshortup          )
+     nullify(cgrid%mmsqu_rnet              )
+     nullify(cgrid%mmsqu_albedo            )
 
      nullify(cgrid%disturbance_rates       )
      nullify(cgrid%workload                )
@@ -4065,6 +4177,10 @@ contains
      nullify(cgrid%qmean_albedo_diffuse )
      nullify(cgrid%qmean_rlong_albedo   )
      nullify(cgrid%qmean_rlongup        )
+     nullify(cgrid%qmean_parup          )
+     nullify(cgrid%qmean_nirup          )
+     nullify(cgrid%qmean_rshortup       )
+     nullify(cgrid%qmean_rnet           )
      nullify(cgrid%qmean_atm_shv        )
      nullify(cgrid%qmean_atm_co2        )
      nullify(cgrid%qmean_atm_prss       )
@@ -4088,6 +4204,13 @@ contains
      nullify(cgrid%qmsqu_vapor_lc       )
      nullify(cgrid%qmsqu_vapor_wc       )
      nullify(cgrid%qmsqu_vapor_gc       )
+     nullify(cgrid%qmsqu_ustar          )
+     nullify(cgrid%qmsqu_rlongup        )
+     nullify(cgrid%qmsqu_parup          )
+     nullify(cgrid%qmsqu_nirup          )
+     nullify(cgrid%qmsqu_rshortup       )
+     nullify(cgrid%qmsqu_rnet           )
+     nullify(cgrid%qmsqu_albedo         )
 
     return
   end subroutine nullify_edtype
@@ -4177,6 +4300,10 @@ contains
     nullify(cpoly%avg_albedo_diffuse)
     nullify(cpoly%avg_rlong_albedo)
     nullify(cpoly%avg_rlongup)
+    nullify(cpoly%avg_parup)
+    nullify(cpoly%avg_nirup)
+    nullify(cpoly%avg_rshortup)
+    nullify(cpoly%avg_rnet)
 
     nullify(cpoly%avg_lma    )
     nullify(cpoly%daylight)
@@ -4439,7 +4566,11 @@ contains
     nullify(csite%albedo)
     nullify(csite%albedo_beam)
     nullify(csite%albedo_diffuse)
+    nullify(csite%rnet)
     nullify(csite%rlongup)
+    nullify(csite%parup)
+    nullify(csite%nirup)
+    nullify(csite%rshortup)
     nullify(csite%rlong_albedo)
     nullify(csite%total_sfcw_depth)
     nullify(csite%snowfac)
@@ -4488,6 +4619,10 @@ contains
     nullify(csite%avg_carbon_ac     )
     nullify(csite%avg_carbon_st     )
     nullify(csite%avg_rlongup       )
+    nullify(csite%avg_parup         )
+    nullify(csite%avg_nirup         )
+    nullify(csite%avg_rshortup      )
+    nullify(csite%avg_rnet          )
     nullify(csite%avg_albedo        )
     nullify(csite%avg_albedo_beam   )
     nullify(csite%avg_albedo_diffuse)
@@ -5015,6 +5150,10 @@ contains
        if(associated(cgrid%avg_albedo_diffuse      )) deallocate(cgrid%avg_albedo_diffuse      )
        if(associated(cgrid%avg_rlong_albedo        )) deallocate(cgrid%avg_rlong_albedo        )
        if(associated(cgrid%avg_rlongup             )) deallocate(cgrid%avg_rlongup             )
+       if(associated(cgrid%avg_parup               )) deallocate(cgrid%avg_parup               )
+       if(associated(cgrid%avg_nirup               )) deallocate(cgrid%avg_nirup               )
+       if(associated(cgrid%avg_rshortup            )) deallocate(cgrid%avg_rshortup            )
+       if(associated(cgrid%avg_rnet                )) deallocate(cgrid%avg_rnet                )
 
 
        if(associated(cgrid%runoff                  )) deallocate(cgrid%runoff                  )
@@ -5098,6 +5237,10 @@ contains
        if(associated(cgrid%dmean_albedo_diffuse    )) deallocate(cgrid%dmean_albedo_diffuse    )
        if(associated(cgrid%dmean_rlong_albedo      )) deallocate(cgrid%dmean_rlong_albedo      )
        if(associated(cgrid%dmean_rlongup           )) deallocate(cgrid%dmean_rlongup           )
+       if(associated(cgrid%dmean_nirup             )) deallocate(cgrid%dmean_nirup             )
+       if(associated(cgrid%dmean_parup             )) deallocate(cgrid%dmean_parup             )
+       if(associated(cgrid%dmean_rshortup          )) deallocate(cgrid%dmean_rshortup          )
+       if(associated(cgrid%dmean_rnet              )) deallocate(cgrid%dmean_rnet              )
        if(associated(cgrid%dmean_co2_residual      )) deallocate(cgrid%dmean_co2_residual      )
        if(associated(cgrid%dmean_energy_residual   )) deallocate(cgrid%dmean_energy_residual   )
        if(associated(cgrid%dmean_water_residual    )) deallocate(cgrid%dmean_water_residual    )
@@ -5178,6 +5321,10 @@ contains
        if(associated(cgrid%mmean_albedo_diffuse    )) deallocate(cgrid%mmean_albedo_diffuse    )
        if(associated(cgrid%mmean_rlong_albedo      )) deallocate(cgrid%mmean_rlong_albedo      )
        if(associated(cgrid%mmean_rlongup           )) deallocate(cgrid%mmean_rlongup           )
+       if(associated(cgrid%mmean_nirup             )) deallocate(cgrid%mmean_nirup             )
+       if(associated(cgrid%mmean_parup             )) deallocate(cgrid%mmean_parup             )
+       if(associated(cgrid%mmean_rshortup          )) deallocate(cgrid%mmean_rshortup          )
+       if(associated(cgrid%mmean_rnet              )) deallocate(cgrid%mmean_rnet              )
        if(associated(cgrid%mmean_atm_shv           )) deallocate(cgrid%mmean_atm_shv           )
        if(associated(cgrid%mmean_atm_co2           )) deallocate(cgrid%mmean_atm_co2           )
        if(associated(cgrid%mmean_atm_prss          )) deallocate(cgrid%mmean_atm_prss          )
@@ -5212,6 +5359,13 @@ contains
        if(associated(cgrid%mmsqu_vapor_lc          )) deallocate(cgrid%mmsqu_vapor_lc          )
        if(associated(cgrid%mmsqu_vapor_wc          )) deallocate(cgrid%mmsqu_vapor_wc          )
        if(associated(cgrid%mmsqu_vapor_gc          )) deallocate(cgrid%mmsqu_vapor_gc          )
+       if(associated(cgrid%mmsqu_ustar             )) deallocate(cgrid%mmsqu_ustar             )
+       if(associated(cgrid%mmsqu_rlongup           )) deallocate(cgrid%mmsqu_rlongup           )
+       if(associated(cgrid%mmsqu_parup             )) deallocate(cgrid%mmsqu_parup             )
+       if(associated(cgrid%mmsqu_nirup             )) deallocate(cgrid%mmsqu_nirup             )
+       if(associated(cgrid%mmsqu_rshortup          )) deallocate(cgrid%mmsqu_rshortup          )
+       if(associated(cgrid%mmsqu_rnet              )) deallocate(cgrid%mmsqu_rnet              )
+       if(associated(cgrid%mmsqu_albedo            )) deallocate(cgrid%mmsqu_albedo            )
 
        if(associated(cgrid%disturbance_rates       )) deallocate(cgrid%disturbance_rates       )
        if(associated(cgrid%workload                )) deallocate(cgrid%workload                )
@@ -5279,6 +5433,10 @@ contains
     if(associated(cgrid%qmean_albedo_diffuse )) deallocate(cgrid%qmean_albedo_diffuse )
     if(associated(cgrid%qmean_rlong_albedo   )) deallocate(cgrid%qmean_rlong_albedo   )
     if(associated(cgrid%qmean_rlongup        )) deallocate(cgrid%qmean_rlongup        )
+    if(associated(cgrid%qmean_parup          )) deallocate(cgrid%qmean_parup          )
+    if(associated(cgrid%qmean_nirup          )) deallocate(cgrid%qmean_nirup          )
+    if(associated(cgrid%qmean_rshortup       )) deallocate(cgrid%qmean_rshortup       )
+    if(associated(cgrid%qmean_rnet           )) deallocate(cgrid%qmean_rnet           )
     if(associated(cgrid%qmean_atm_co2        )) deallocate(cgrid%qmean_atm_co2        )
     if(associated(cgrid%qmean_atm_prss       )) deallocate(cgrid%qmean_atm_prss       )
     if(associated(cgrid%qmean_atm_vels       )) deallocate(cgrid%qmean_atm_vels       )
@@ -5301,6 +5459,13 @@ contains
     if(associated(cgrid%qmsqu_vapor_lc       )) deallocate(cgrid%qmsqu_vapor_lc       )
     if(associated(cgrid%qmsqu_vapor_wc       )) deallocate(cgrid%qmsqu_vapor_wc       )
     if(associated(cgrid%qmsqu_vapor_gc       )) deallocate(cgrid%qmsqu_vapor_gc       )
+    if(associated(cgrid%qmsqu_ustar          )) deallocate(cgrid%qmsqu_ustar          )
+    if(associated(cgrid%qmsqu_rlongup        )) deallocate(cgrid%qmsqu_rlongup        )
+    if(associated(cgrid%qmsqu_parup          )) deallocate(cgrid%qmsqu_parup          )
+    if(associated(cgrid%qmsqu_nirup          )) deallocate(cgrid%qmsqu_nirup          )
+    if(associated(cgrid%qmsqu_rshortup       )) deallocate(cgrid%qmsqu_rshortup       )
+    if(associated(cgrid%qmsqu_rnet           )) deallocate(cgrid%qmsqu_rnet           )
+    if(associated(cgrid%qmsqu_albedo         )) deallocate(cgrid%qmsqu_albedo         )
 
     do ipy=1,cgrid%npolygons
        call deallocate_polygontype(cgrid%polygon(ipy))
@@ -5398,6 +5563,10 @@ contains
     if(associated(cpoly%avg_rlong_albedo            )) deallocate(cpoly%avg_rlong_albedo            )
     if(associated(cpoly%avg_albedo                  )) deallocate(cpoly%avg_albedo                  )
     if(associated(cpoly%avg_rlongup                 )) deallocate(cpoly%avg_rlongup                 )
+    if(associated(cpoly%avg_parup                   )) deallocate(cpoly%avg_parup                   )
+    if(associated(cpoly%avg_nirup                   )) deallocate(cpoly%avg_nirup                   )
+    if(associated(cpoly%avg_rshortup                )) deallocate(cpoly%avg_rshortup                )
+    if(associated(cpoly%avg_rnet                    )) deallocate(cpoly%avg_rnet                    )
 
     if(associated(cpoly%daylight                    )) deallocate(cpoly%daylight                    )
     
@@ -5667,7 +5836,11 @@ contains
     if(associated(csite%albedo                       )) deallocate(csite%albedo                       )
     if(associated(csite%albedo_beam                  )) deallocate(csite%albedo_beam                  )
     if(associated(csite%albedo_diffuse               )) deallocate(csite%albedo_diffuse               )
+    if(associated(csite%rnet                         )) deallocate(csite%rnet                         )
     if(associated(csite%rlongup                      )) deallocate(csite%rlongup                      )
+    if(associated(csite%parup                        )) deallocate(csite%parup                        )
+    if(associated(csite%nirup                        )) deallocate(csite%nirup                        )
+    if(associated(csite%rshortup                     )) deallocate(csite%rshortup                     )
     if(associated(csite%rlong_albedo                 )) deallocate(csite%rlong_albedo                 )
     if(associated(csite%total_sfcw_depth             )) deallocate(csite%total_sfcw_depth             )
     if(associated(csite%snowfac                      )) deallocate(csite%snowfac                      )
@@ -5715,6 +5888,10 @@ contains
     if(associated(csite%avg_carbon_ac                )) deallocate(csite%avg_carbon_ac                )
     if(associated(csite%avg_carbon_st                )) deallocate(csite%avg_carbon_st                )
     if(associated(csite%avg_rlongup                  )) deallocate(csite%avg_rlongup                  )
+    if(associated(csite%avg_parup                    )) deallocate(csite%avg_parup                    )
+    if(associated(csite%avg_nirup                    )) deallocate(csite%avg_nirup                    )
+    if(associated(csite%avg_rshortup                 )) deallocate(csite%avg_rshortup                 )
+    if(associated(csite%avg_rnet                     )) deallocate(csite%avg_rnet                     )
     if(associated(csite%avg_albedo                   )) deallocate(csite%avg_albedo                   )
     if(associated(csite%avg_albedo_beam              )) deallocate(csite%avg_albedo_beam              )
     if(associated(csite%avg_albedo_diffuse           )) deallocate(csite%avg_albedo_diffuse           )
@@ -6142,7 +6319,11 @@ contains
          osite%albedo(opa)                      = isite%albedo(ipa)
          osite%albedo_beam(opa)                 = isite%albedo_beam(ipa)
          osite%albedo_diffuse(opa)              = isite%albedo_diffuse(ipa)
+         osite%rnet(opa)                        = isite%rnet(ipa)
          osite%rlongup(opa)                     = isite%rlongup(ipa)
+         osite%parup(opa)                       = isite%parup(ipa)
+         osite%nirup(opa)                       = isite%nirup(ipa)
+         osite%rshortup(opa)                    = isite%rshortup(ipa)
          osite%rlong_albedo(opa)                = isite%rlong_albedo(ipa)
          osite%total_sfcw_depth(opa)            = isite%total_sfcw_depth(ipa)
          osite%snowfac(opa)                     = isite%snowfac(ipa)
@@ -6191,6 +6372,10 @@ contains
          osite%avg_carbon_ac      (opa)         = isite%avg_carbon_ac      (ipa)
          osite%avg_carbon_st      (opa)         = isite%avg_carbon_st      (ipa)
          osite%avg_rlongup        (opa)         = isite%avg_rlongup        (ipa)
+         osite%avg_parup          (opa)         = isite%avg_parup          (ipa)
+         osite%avg_nirup          (opa)         = isite%avg_nirup          (ipa)
+         osite%avg_rshortup       (opa)         = isite%avg_rshortup       (ipa)
+         osite%avg_rnet           (opa)         = isite%avg_rnet           (ipa)
          osite%avg_albedo         (opa)         = isite%avg_albedo         (ipa)
          osite%avg_albedo_beam    (opa)         = isite%avg_albedo_beam    (ipa)
          osite%avg_albedo_diffuse (opa)         = isite%avg_albedo_diffuse (ipa)
@@ -6451,7 +6636,11 @@ contains
     siteout%albedo(1:inc)               = pack(sitein%albedo,logmask)
     siteout%albedo_beam(1:inc)          = pack(sitein%albedo_beam,logmask)
     siteout%albedo_diffuse(1:inc)       = pack(sitein%albedo_diffuse,logmask)
+    siteout%rnet(1:inc)                 = pack(sitein%rnet,logmask)
     siteout%rlongup(1:inc)              = pack(sitein%rlongup,logmask)
+    siteout%parup(1:inc)                = pack(sitein%parup,logmask)
+    siteout%nirup(1:inc)                = pack(sitein%nirup,logmask)
+    siteout%rshortup(1:inc)             = pack(sitein%rshortup,logmask)
     siteout%rlong_albedo(1:inc)         = pack(sitein%rlong_albedo,logmask)
     siteout%total_sfcw_depth(1:inc)     = pack(sitein%total_sfcw_depth,logmask)
     siteout%snowfac(1:inc)              = pack(sitein%snowfac,logmask)
@@ -6500,6 +6689,10 @@ contains
     siteout%avg_carbon_ac      (1:inc)  = pack(sitein%avg_carbon_ac     ,logmask)
     siteout%avg_carbon_st      (1:inc)  = pack(sitein%avg_carbon_st     ,logmask)
     siteout%avg_rlongup        (1:inc)  = pack(sitein%avg_rlongup       ,logmask)
+    siteout%avg_parup          (1:inc)  = pack(sitein%avg_parup         ,logmask)
+    siteout%avg_nirup          (1:inc)  = pack(sitein%avg_nirup         ,logmask)
+    siteout%avg_rshortup       (1:inc)  = pack(sitein%avg_rshortup      ,logmask)
+    siteout%avg_rnet           (1:inc)  = pack(sitein%avg_rnet          ,logmask)
     siteout%avg_albedo         (1:inc)  = pack(sitein%avg_albedo        ,logmask)
     siteout%avg_albedo_beam    (1:inc)  = pack(sitein%avg_albedo_beam   ,logmask)
     siteout%avg_albedo_diffuse (1:inc)  = pack(sitein%avg_albedo_diffuse,logmask)
@@ -8853,6 +9046,34 @@ contains
               var_len,var_len_global,max_ptrs,'AVG_RLONGUP :11:hist:anal') 
          call metadata_edio(nvar,igr,'Polygon Average Upwelling Longwave Radiation','[W/m2]','ipoly') 
       end if
+          
+      if (associated(cgrid%avg_parup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_parup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_PARUP :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average Upwelling PAR','[W/m2]','ipoly') 
+      end if
+          
+      if (associated(cgrid%avg_nirup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_nirup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_NIRUP :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average Upwelling NIR','[W/m2]','ipoly') 
+      end if
+          
+      if (associated(cgrid%avg_rshortup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_rshortup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_RSHORTUP :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average Upwelling Shortwave Radiation','[W/m2]','ipoly') 
+      end if
+          
+      if (associated(cgrid%avg_rnet)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_rnet,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_RNET :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average Net Radiation','[W/m2]','ipoly') 
+      end if
 
       if (associated(cgrid%max_leaf_temp)) then
          nvar=nvar+1
@@ -9582,6 +9803,34 @@ contains
               var_len,var_len_global,max_ptrs,'DMEAN_RLONGUP :11:hist:dail') 
          call metadata_edio(nvar,igr,'Daily mean longwave emission from ground','[---]','ipoly') 
       end if
+      
+      if(associated(cgrid%dmean_parup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_parup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_PARUP :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean upwelling PAR at top of canopy','[---]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_nirup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_nirup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_NIRUP :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean upwelling NIR at top of canopy','[---]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_rshortup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_rshortup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_RSHORTUP :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean upwelling SW radiation at top of canopy','[---]','ipoly') 
+      end if
+      
+      if(associated(cgrid%dmean_rnet)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_rnet,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_RNET :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean net radiation at top of canopy','[---]','ipoly') 
+      end if
 
       if(associated(cgrid%dmean_co2_residual)) then
          nvar=nvar+1
@@ -10059,6 +10308,34 @@ contains
          call metadata_edio(nvar,igr,'Monthly mean longwave emission from ground','[---]','ipoly') 
       end if
       
+      if(associated(cgrid%mmean_parup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_parup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_PARUP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean upwelling PAR at top of canopy','[---]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_nirup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_nirup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_NIRUP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean upwelling NIR at top of canopy','[---]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_rshortup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_rshortup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_RSHORTUP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean upwelling SW Rad. at top of canopy','[---]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_rnet)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_rnet,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_RNET :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean Net Rad. at top of canopy','[---]','ipoly') 
+      end if
+      
       if(associated(cgrid%mmean_atm_temp)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_temp,nvar,igr,init,cgrid%pyglob_id, &
@@ -10271,6 +10548,54 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if(associated(cgrid%mmsqu_ustar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_ustar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_USTAR :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_rlongup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_rlongup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_RLONGUP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_parup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_parup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_PARUP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_nirup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_nirup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_NIRUP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_rshortup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_rshortup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_RSHORTUP :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_rnet)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_rnet,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_RNET :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%mmsqu_albedo)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmsqu_albedo,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMSQU_ALBEDO :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
@@ -10735,6 +11060,34 @@ contains
               var_len,var_len_global,max_ptrs,'QMEAN_RLONGUP :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+      
+      if(associated(cgrid%qmean_parup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_parup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_PARUP :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%qmean_nirup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_nirup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_NIRUP :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%qmean_rshortup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_rshortup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_RSHORTUP :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+      
+      if(associated(cgrid%qmean_rnet)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_rnet,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_RNET :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
 
       if(associated(cgrid%qmean_atm_shv)) then
          nvar=nvar+1
@@ -10894,6 +11247,55 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_vapor_gc,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMSQU_VAPOR_GC :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_ustar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_ustar,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_USTAR :-11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_rlongup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_rlongup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_RLONGUP :-11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_parup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_parup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_PARUP :-11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_nirup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_nirup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_NIRUP :-11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_rshortup)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_rshortup,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_RSHORTUP :-11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_rnet)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_rnet,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_RNET :-11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_albedo)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_albedo,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_ALBEDO :-11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -12989,10 +13391,38 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%rnet)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%rnet,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'RNET :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%rlongup)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%rlongup,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'RLONGUP :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%parup)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%parup,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PARUP :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%nirup)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%nirup,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'NIRUP :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%rshortup)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%rshortup,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'RSHORTUP :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -13247,6 +13677,34 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%avg_rlongup,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'AVG_RLONGUP_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_parup)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_parup,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_PARUP_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_nirup)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_nirup,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_NIRUP_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_rshortup)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_rshortup,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_RSHORTUP_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_rnet)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_rnet,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_RNET_PA :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

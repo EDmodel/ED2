@@ -825,6 +825,26 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        call hdf_getslab_r(cgrid%dmean_rlong       (ipy:ipy) ,'DMEAN_RLONG        '         &
        ,dsetrank,iparallel,.false.,foundvar)
   
+  if (associated(cgrid%dmean_rlongup     ))                                                &
+       call hdf_getslab_r(cgrid%dmean_rlongup     (ipy:ipy) ,'DMEAN_RLONGUP      '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%dmean_parup       ))                                                &
+       call hdf_getslab_r(cgrid%dmean_parup       (ipy:ipy) ,'DMEAN_PARUP        '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%dmean_nirup       ))                                                &
+       call hdf_getslab_r(cgrid%dmean_nirup       (ipy:ipy) ,'DMEAN_NIRUP        '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%dmean_rshortup    ))                                                &
+       call hdf_getslab_r(cgrid%dmean_rshortup    (ipy:ipy) ,'DMEAN_RSHORTUP     '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%dmean_rnet        ))                                                &
+       call hdf_getslab_r(cgrid%dmean_rnet        (ipy:ipy) ,'DMEAN_RNET         '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
   if (associated(cgrid%dmean_rshort_gnd  ))                                                &
        call hdf_getslab_r(cgrid%dmean_rshort_gnd  (ipy:ipy) ,'DMEAN_RSHORT_GND     '       &
        ,dsetrank,iparallel,.false.,foundvar)
@@ -1093,6 +1113,26 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   if (associated(cgrid%mmean_rlong       ))                                                &
        call hdf_getslab_r(cgrid%mmean_rlong       (ipy:ipy) ,'MMEAN_RLONG        '         &
        ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%mmean_rlongup     ))                                                &
+       call hdf_getslab_r(cgrid%mmean_rlongup     (ipy:ipy) ,'MMEAN_RLONGUP      '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%mmean_parup       ))                                                &
+       call hdf_getslab_r(cgrid%mmean_parup       (ipy:ipy) ,'MMEAN_PARUP        '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%mmean_nirup       ))                                                &
+       call hdf_getslab_r(cgrid%mmean_nirup       (ipy:ipy) ,'MMEAN_NIRUP        '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%mmean_rshortup    ))                                                &
+       call hdf_getslab_r(cgrid%mmean_rshortup    (ipy:ipy) ,'MMEAN_RSHORTUP     '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%mmean_rnet        ))                                                &
+       call hdf_getslab_r(cgrid%mmean_rnet        (ipy:ipy) ,'MMEAN_RNET         '         &
+       ,dsetrank,iparallel,.false.,foundvar)
 
   if (associated(cgrid%mmean_rshort_gnd   ))                                               &
        call hdf_getslab_r(cgrid%mmean_rshort_gnd   (ipy:ipy) ,'MMEAN_RSHORT_GND    '       &
@@ -1220,6 +1260,34 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   if (associated(cgrid%mmsqu_vapor_gc     ))                                               &
      call hdf_getslab_r(cgrid%mmsqu_vapor_gc    (ipy:ipy) ,'MMSQU_VAPOR_GC           '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmsqu_ustar        ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_ustar       (ipy:ipy) ,'MMSQU_USTAR              '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmsqu_rlongup      ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_rlongup     (ipy:ipy) ,'MMSQU_RLONGUP            '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmsqu_parup        ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_parup       (ipy:ipy) ,'MMSQU_PARUP              '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmsqu_nirup        ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_nirup       (ipy:ipy) ,'MMSQU_NIRUP              '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmsqu_rshortup     ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_rshortup    (ipy:ipy) ,'MMSQU_RSHORTUP           '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmsqu_rnet         ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_rnet        (ipy:ipy) ,'MMSQU_RNET               '     &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmsqu_albedo       ))                                               &
+     call hdf_getslab_r(cgrid%mmsqu_albedo      (ipy:ipy) ,'MMSQU_ALBEDO             '     &
                        ,dsetrank,iparallel,.false.,foundvar)
 
    ! Variables with 2 dimensions (nzg,npolygons)
@@ -1501,6 +1569,26 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '           &
        ,dsetrank,iparallel,.false.,foundvar)
   
+  if (associated(cgrid%qmean_rlongup     ))                                                &
+     call hdf_getslab_r(cgrid%qmean_rlongup     (:,ipy)   ,'QMEAN_RLONGUP      '           &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%qmean_parup       ))                                                &
+     call hdf_getslab_r(cgrid%qmean_parup       (:,ipy)   ,'QMEAN_PARUP        '           &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%qmean_nirup       ))                                                &
+     call hdf_getslab_r(cgrid%qmean_nirup       (:,ipy)   ,'QMEAN_NIRUP        '           &
+       ,dsetrank,iparallel,.false.,foundvar)
+   
+  if (associated(cgrid%qmean_rshortup    ))                                                &
+     call hdf_getslab_r(cgrid%qmean_rshortup    (:,ipy)   ,'QMEAN_RSHORTUP     '           &
+       ,dsetrank,iparallel,.false.,foundvar)
+   
+  if (associated(cgrid%qmean_rnet        ))                                                &
+     call hdf_getslab_r(cgrid%qmean_rnet        (:,ipy)   ,'QMEAN_RNET         '           &
+       ,dsetrank,iparallel,.false.,foundvar)
+ 
   if (associated(cgrid%qmean_rshort_gnd   ))                                               &
      call hdf_getslab_r(cgrid%qmean_rshort_gnd   (:,ipy)   ,'QMEAN_RSHORT_GND    '         &
        ,dsetrank,iparallel,.false.,foundvar)
@@ -1595,6 +1683,34 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   if (associated(cgrid%qmsqu_vapor_gc))                                                    &
      call hdf_getslab_r(cgrid%qmsqu_vapor_gc       (:,ipy)   ,'QMSQU_VAPOR_GC     '        &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%qmsqu_ustar        ))                                               &
+     call hdf_getslab_r(cgrid%qmsqu_ustar          (:,ipy)   ,'QMSQU_USTAR              '  &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%qmsqu_rlongup      ))                                               &
+     call hdf_getslab_r(cgrid%qmsqu_rlongup        (:,ipy)   ,'QMSQU_RLONGUP            '  &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%qmsqu_parup        ))                                               &
+     call hdf_getslab_r(cgrid%qmsqu_parup          (:,ipy)   ,'QMSQU_PARUP              '  &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%qmsqu_nirup        ))                                               &
+     call hdf_getslab_r(cgrid%qmsqu_nirup          (:,ipy)   ,'QMSQU_NIRUP              '  &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%qmsqu_rshortup     ))                                               &
+     call hdf_getslab_r(cgrid%qmsqu_rshortup       (:,ipy)   ,'QMSQU_RSHORTUP           '  &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%qmsqu_rnet         ))                                               &
+     call hdf_getslab_r(cgrid%qmsqu_rnet           (:,ipy)   ,'QMSQU_RNET               '  &
+                       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%qmsqu_albedo       ))                                               &
+     call hdf_getslab_r(cgrid%qmsqu_albedo         (:,ipy)   ,'QMSQU_ALBEDO             '  &
                        ,dsetrank,iparallel,.false.,foundvar)
 
 
@@ -2236,8 +2352,12 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%albedo,'ALBEDO ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%albedo_beam,'ALBEDO_BEAM ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%albedo_diffuse,'ALBEDO_DIFFUSE ',dsetrank,iparallel,.true.,foundvar)
-   call hdf_getslab_r(csite%rlongup,'RLONGUP ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%rlong_albedo,'RLONG_ALBEDO ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%rlongup,'RLONGUP ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%parup,'PARUP ',dsetrank,iparallel,.false.,foundvar)
+   call hdf_getslab_r(csite%nirup,'NIRUP ',dsetrank,iparallel,.false.,foundvar)
+   call hdf_getslab_r(csite%rshortup,'RSHORTUP ',dsetrank,iparallel,.false.,foundvar)
+   call hdf_getslab_r(csite%rnet,'RNET ',dsetrank,iparallel,.false.,foundvar)
 
    call hdf_getslab_r(csite%total_sfcw_depth,'TOTAL_SFCW_DEPTH ',dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(csite%snowfac,'SNOWFAC ',dsetrank,iparallel,.true.,foundvar)

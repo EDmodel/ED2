@@ -226,6 +226,8 @@ for (place in myplaces){
    censusagbpft    = matrix(data=0,nrow=totmon,ncol=npft+1)
    censusbapft     = matrix(data=0,nrow=totmon,ncol=npft+1)
 
+
+
    #----- LU arrays.   The "+1" column contains the total. --------------------------------#
    agblu           = matrix(data=0,nrow=totmon,ncol=nlu+1)
    lailu           = matrix(data=0,nrow=totmon,ncol=nlu+1)
@@ -1158,33 +1160,33 @@ for (place in myplaces){
                #---- This is the number of survivors. -------------------------------------#
                survivor          = sum(w.nplant[sel.re2])
                previous          = sum(w.nplant[sel.re2] * exp(mortconow[sel.re2]) )
-               mortpft[m,p]      = 100. * log( previous / survivor )
+               mortpft[m,p]      = log( previous / survivor )
 
                survivor          = sum(w.nplant[sel.re2])
                previous          = sum(w.nplant[sel.re2] * exp(agemortconow[sel.re2]) )
-               agemortpft[m,p]   = 100. * log( previous / survivor )
+               agemortpft[m,p]   = log( previous / survivor )
 
                survivor          = sum(w.nplant[sel.re2])
                previous          = sum(w.nplant[sel.re2] * exp(ncbmortconow[sel.re2]) )
-               ncbmortpft[m,p]   = 100. * log( previous / survivor )
+               ncbmortpft[m,p]   = log( previous / survivor )
 
                survivor          = sum(w.nplant[sel.re2])
                previous          = sum(w.nplant[sel.re2] * exp(tfallmortconow[sel.re2]) )
-               tfallmortpft[m,p] = 100. * log( previous / survivor )
+               tfallmortpft[m,p] = log( previous / survivor )
 
                survivor          = sum(w.nplant[sel.re2])
                previous          = sum(w.nplant[sel.re2] * exp(coldmortconow[sel.re2]) )
-               coldmortpft[m,p]  = 100. * log( previous / survivor )
+               coldmortpft[m,p]  = log( previous / survivor )
 
                survivor          = sum(w.nplant[sel.re2])
                previous          = sum(w.nplant[sel.re2] * exp(distmortconow[sel.re2]) )
-               distmortpft[m,p]  = 100. * log( previous / survivor )
+               distmortpft[m,p]  = log( previous / survivor )
             }#end if
             if (any(sel.dbh) & any(sel.re2)){
                #---- This is the number of survivors. -------------------------------------#
                population   = sum(w.nplant[sel.dbh])
                established  = sum(w.nplant[sel.re2])
-               recrpft[m,p] = 100. * log( population / established) / 12.0
+               recrpft[m,p] = log( population / established)
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -1239,34 +1241,34 @@ for (place in myplaces){
             #---- This is the number of survivors. ----------------------------------------#
             survivor               = sum( w.nplant[sel.re2] )
             previous               = sum( w.nplant[sel.re2] * exp(mortconow[sel.re2]))
-            mortpft[m,npft+1]      = 100. * log( previous / survivor )
+            mortpft[m,npft+1]      = log( previous / survivor )
 
             survivor               = sum( w.nplant[sel.re2] )
             previous               = sum( w.nplant[sel.re2] * exp(agemortconow[sel.re2]))
-            agemortpft  [m,npft+1] = 100. * log( previous / survivor )
+            agemortpft  [m,npft+1] = log( previous / survivor )
 
             survivor               = sum( w.nplant[sel.re2] )
             previous               = sum( w.nplant[sel.re2] * exp(ncbmortconow[sel.re2]))
-            ncbmortpft  [m,npft+1] = 100. * log( previous / survivor )
+            ncbmortpft  [m,npft+1] = log( previous / survivor )
 
             survivor               = sum( w.nplant[sel.re2] )
             previous               = sum( w.nplant[sel.re2] * exp(tfallmortconow[sel.re2]))
-            tfallmortpft[m,npft+1] = 100. * log( previous / survivor )
+            tfallmortpft[m,npft+1] = log( previous / survivor )
 
             survivor               = sum( w.nplant[sel.re2] )
             previous               = sum( w.nplant[sel.re2] * exp(coldmortconow[sel.re2]))
-            coldmortpft [m,npft+1] = 100. * log( previous / survivor )
+            coldmortpft [m,npft+1] = log( previous / survivor )
 
             survivor               = sum( w.nplant[sel.re2] )
             previous               = sum( w.nplant[sel.re2] * exp(distmortconow[sel.re2]))
-            distmortpft [m,npft+1] = 100. * log( previous / survivor )
+            distmortpft [m,npft+1] = log( previous / survivor )
          }#end if
 
          if (any(sel.dbh) & any(sel.re2)){
             #---- This is the number of survivors. ----------------------------------------#
             population        = sum( w.nplant[sel.dbh] )
             established       = sum( w.nplant[sel.re2] )
-            recrpft[m,npft+1] = 100. * log( population / established ) / 12.0
+            recrpft[m,npft+1] = log( population / established )
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -1354,27 +1356,27 @@ for (place in myplaces){
                   #---- This is the number of survivors and living before. ----------------#
                   survivor               = sum( w.nplant[sel] )
                   previous               = sum( w.nplant[sel] * exp(mortconow[sel]) )
-                  mortpftdbh[m,d,p]      = 100. * log( previous / survivor )
+                  mortpftdbh[m,d,p]      = log( previous / survivor )
 
                   survivor               = sum( w.nplant[sel] )
                   previous               = sum( w.nplant[sel] * exp(agemortconow[sel]) )
-                  agemortpftdbh  [m,d,p] = 100. * log( previous / survivor )
+                  agemortpftdbh  [m,d,p] = log( previous / survivor )
 
                   survivor               = sum( w.nplant[sel] )
                   previous               = sum( w.nplant[sel] * exp(ncbmortconow[sel]) )
-                  ncbmortpftdbh  [m,d,p] = 100. * log( previous / survivor )
+                  ncbmortpftdbh  [m,d,p] = log( previous / survivor )
 
                   survivor               = sum( w.nplant[sel] )
                   previous               = sum( w.nplant[sel] * exp(tfallmortconow[sel]) )
-                  tfallmortpftdbh[m,d,p] = 100. * log( previous / survivor )
+                  tfallmortpftdbh[m,d,p] = log( previous / survivor )
 
                   survivor               = sum( w.nplant[sel] )
                   previous               = sum( w.nplant[sel] * exp(coldmortconow[sel]) )
-                  coldmortpftdbh [m,d,p] = 100. * log( previous / survivor )
+                  coldmortpftdbh [m,d,p] = log( previous / survivor )
 
                   survivor               = sum( w.nplant[sel] )
                   previous               = sum( w.nplant[sel] * exp(distmortconow[sel]) )
-                  distmortpftdbh [m,d,p] = 100. * log( previous / survivor )
+                  distmortpftdbh [m,d,p] = log( previous / survivor )
                }#end if
                #---------------------------------------------------------------------------#
             }#end for PFT
@@ -1473,29 +1475,29 @@ for (place in myplaces){
                sel = pftconow == p & recruitconow == 2
             }#end if
             #---- This is the number of survivors and living before. ----------------------#
-            survivor               = sum( w.nplant[sel] )
-            previous               = sum( w.nplant[sel] * exp(mortconow[sel]) )
-            mortpftdbh[m,ndbh+1,p] = 100. * log( previous / survivor)
+            survivor                    = sum( w.nplant[sel] )
+            previous                    = sum( w.nplant[sel] * exp(mortconow[sel]) )
+            mortpftdbh[m,ndbh+1,p]      = log( previous / survivor)
 
             survivor                    = sum( w.nplant[sel] )
             previous                    = sum( w.nplant[sel] * exp(agemortconow[sel]) )
-            agemortpftdbh[m,ndbh+1,p]   = 100. * log( previous / survivor)
+            agemortpftdbh[m,ndbh+1,p]   = log( previous / survivor)
 
             survivor                    = sum( w.nplant[sel] )
             previous                    = sum( w.nplant[sel] * exp(ncbmortconow[sel]) )
-            ncbmortpftdbh[m,ndbh+1,p]   = 100. * log( previous / survivor)
+            ncbmortpftdbh[m,ndbh+1,p]   = log( previous / survivor)
 
             survivor                    = sum( w.nplant[sel] )
             previous                    = sum( w.nplant[sel] * exp(tfallmortconow[sel]) )
-            tfallmortpftdbh[m,ndbh+1,p] = 100. * log( previous / survivor)
+            tfallmortpftdbh[m,ndbh+1,p] = log( previous / survivor)
 
             survivor                    = sum( w.nplant[sel] )
             previous                    = sum( w.nplant[sel] * exp(coldmortconow[sel]) )
-            coldmortpftdbh[m,ndbh+1,p]  = 100. * log( previous / survivor)
+            coldmortpftdbh[m,ndbh+1,p]  = log( previous / survivor)
 
             survivor                    = sum( w.nplant[sel] )
             previous                    = sum( w.nplant[sel] * exp(distmortconow[sel]) )
-            distmortpftdbh[m,ndbh+1,p]  = 100. * log( previous / survivor)
+            distmortpftdbh[m,ndbh+1,p]  = log( previous / survivor)
          }#end for
          #---------------------------------------------------------------------------------#
 
@@ -1561,17 +1563,20 @@ for (place in myplaces){
             bswoodco    [[labwhen]] = bswoodconow
             bstoreco    [[labwhen]] = bstoreconow
             growthco    [[labwhen]] = growthconow
-            mortco      [[labwhen]] = mortconow
-            agemortco   [[labwhen]] = agemortconow
-            ncbmortco   [[labwhen]] = ncbmortconow
-            tfallmortco [[labwhen]] = tfallmortconow
-            coldmortco  [[labwhen]] = coldmortconow
-            distmortco  [[labwhen]] = distmortconow
-            recruitco   [[labwhen]] = recruitconow
+            mortco      [[labwhen]] = 100. * (1.0 - exp(-mortconow      ))
+            agemortco   [[labwhen]] = 100. * (1.0 - exp(-agemortconow   ))
+            ncbmortco   [[labwhen]] = 100. * (1.0 - exp(-ncbmortconow   ))
+            tfallmortco [[labwhen]] = 100. * (1.0 - exp(-tfallmortconow ))
+            coldmortco  [[labwhen]] = 100. * (1.0 - exp(-coldmortconow  ))
+            distmortco  [[labwhen]] = 100. * (1.0 - exp(-distmortconow  ))
+            recruitco   [[labwhen]] = 100. * (exp(recruitconow) - 1.0)
          } #end if month=sasmonth
          #---------------------------------------------------------------------------------#
       }# end for, month
+      #------------------------------------------------------------------------------------#
    }#end for, year
+   #---------------------------------------------------------------------------------------#
+
 
 
 
@@ -1888,6 +1893,22 @@ for (place in myplaces){
    nplantpftdbh   [empty] = NA
    #---------------------------------------------------------------------------------------#
 
+   #---------------------------------------------------------------------------------------#
+   #---------------------------------------------------------------------------------------#
+   mortpftdbh      = 100. * (1.0 - exp(- mortpftdbh     ))
+   agemortpftdbh   = 100. * (1.0 - exp(- agemortpftdbh  ))
+   ncbmortpftdbh   = 100. * (1.0 - exp(- ncbmortpftdbh  ))
+   tfallmortpftdbh = 100. * (1.0 - exp(- tfallmortpftdbh))
+   coldmortpftdbh  = 100. * (1.0 - exp(- coldmortpftdbh ))
+   distmortpftdbh  = 100. * (1.0 - exp(- distmortpftdbh ))
+   mortpft         = 100. * (1.0 - exp(- mortpft        ))
+   agemortpft      = 100. * (1.0 - exp(- agemortpft     ))
+   ncbmortpft      = 100. * (1.0 - exp(- ncbmortpft     ))
+   tfallmortpft    = 100. * (1.0 - exp(- tfallmortpft   ))
+   coldmortpft     = 100. * (1.0 - exp(- coldmortpft    ))
+   distmortpft     = 100. * (1.0 - exp(- distmortpft    ))
+   recrpft         = 100. * (exp(  recrpft        ) - 1.0)
+   #---------------------------------------------------------------------------------------#
 
 
    #----- Find which PFTs, land uses and transitions we need to consider ------------------#
@@ -2532,13 +2553,23 @@ for (place in myplaces){
             }#end if
             if (plotsd){
                if (is.null(obs.x)){
-                  err.x = c(mod.x,rev(mod.x))
-                  err.y = c(mod.ylow,rev(mod.yhigh))
+                  mod.x.poly = c(mod.x,rev(mod.x))
+                  mod.y.poly = c(mod.ylow,rev(mod.yhigh))
+                  mod.keep   = is.finite(mod.y.poly)
+                  err.x      = mod.x.poly[mod.keep]
+                  err.y      = mod.y.poly[mod.keep]
                   polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1],density=dens[1]
                          ,lty="solid",lwd=shwd[1])
                }else{
-                  err.x = c(mod.x,rev(mod.x),NA,obs.x,rev(obs.x))
-                  err.y = c(mod.ylow,rev(mod.yhigh),NA,obs.ylow,rev(obs.yhigh))
+                  mod.x.poly = c(mod.x,rev(mod.x))
+                  mod.y.poly = c(mod.ylow,rev(mod.yhigh))
+                  mod.keep   = is.finite(mod.y.poly)
+                  obs.x.poly = c(obs.x,rev(obs.x))
+                  obs.y.poly = c(obs.ylow,rev(obs.yhigh))
+                  obs.keep   = is.finite(obs.y.poly)
+
+                  err.x = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
+                  err.y = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
                   polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
                          ,lty="solid",lwd=shwd)
                }#end if
@@ -2735,14 +2766,22 @@ for (place in myplaces){
                   #------------------------------------------------------------------------#
 
                   if (is.null(obs.x.now)){
-                     err.x = c(mod.x.now,rev(mod.x.now))
-                     err.y = c(mod.ylow.now,rev(mod.yhigh.now))
+                     mod.x.poly = c(mod.x.now,rev(mod.x.now))
+                     mod.y.poly = c(mod.ylow.now,rev(mod.yhigh.now))
+                     mod.keep   = is.finite(mod.y.poly)
+                     err.x      = mod.x.poly[mod.keep]
+                     err.y      = mod.y.poly[mod.keep]
                      polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1]
                             ,density=dens[1],lty="solid",lwd=shwd[1])
                   }else{
-                     err.x = c(mod.x.now,rev(mod.x.now),NA,obs.x.now,rev(obs.x.now))
-                     err.y = c(mod.ylow.now,rev(mod.yhigh.now),NA
-                              ,obs.ylow.now,rev(obs.yhigh.now))
+                     mod.x.poly = c(mod.x.now,rev(mod.x.now))
+                     mod.y.poly = c(mod.ylow.now,rev(mod.yhigh.now))
+                     mod.keep   = is.finite(mod.y.poly)
+                     obs.x.poly = c(obs.x.now,rev(obs.x.now))
+                     obs.y.poly = c(obs.ylow.now,rev(obs.yhigh.now))
+                     obs.keep   = is.finite(obs.y.poly)
+                     err.x = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
+                     err.y = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
                      polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
                             ,lty="solid",lwd=shwd)
                   }#end if
