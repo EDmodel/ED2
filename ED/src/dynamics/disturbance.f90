@@ -56,6 +56,7 @@ module disturbance_utils
       use allometry    , only : area_indices            ! ! function
       use mortality    , only : disturbance_mortality   ! ! subroutine
       use consts_coms  , only : lnexp_max               ! ! intent(in)
+      use budget_utils , only : update_budget           ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid
@@ -1539,6 +1540,7 @@ module disturbance_utils
       logical        , dimension(:)   , allocatable :: mask
       integer                                       :: ico
       integer                                       :: nco
+      integer                                       :: addco
       real                                          :: n_survivors
       real                                          :: survival_fac
       !------------------------------------------------------------------------------------!
@@ -1566,6 +1568,9 @@ module disturbance_utils
             !----- If something survived, make a new cohort. ------------------------------!
             mask(ico) = n_survivors > 0.0
          end do survivalloop
+         addco = count(mask)
+      else
+         addco = 0
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1579,13 +1584,14 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       if (npatch%ncohorts > 0) then
          nco = npatch%ncohorts
-         call allocate_patchtype(tpatch,count(mask) + npatch%ncohorts)
+         call allocate_patchtype(tpatch,addco + npatch%ncohorts)
          call copy_patchtype(npatch,tpatch,1,npatch%ncohorts,1,npatch%ncohorts)
          call deallocate_patchtype(npatch)
       else
          nco = 0
-         call allocate_patchtype(tpatch,count(mask))
+         call allocate_patchtype(tpatch,addco)
       end if
+      !------------------------------------------------------------------------------------!
 
 
       cohortloop: do ico = 1,cpatch%ncohorts

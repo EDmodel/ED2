@@ -1046,8 +1046,9 @@ $ED_NL
    !                   2.  Fire will be triggered with enough biomass and the total soil   !
    !                       water at the top 75 cm falls below a threshold.                 !
    !                   3.  Fire will be triggered with enough biomass and accumulated      !
-   !                       30-day water deficit exceeds the threshold given by SM_FIRE.    !
-   !                       This is soil independent.                                       !
+   !                       water deficit exceeds the threshold given by SM_FIRE times.     !
+   !                       the total precipitation of the past 12 months.  This method     !
+   !                       does not directly depend on soil texture.                       !
    ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
    !                   given the amount of fuel (currently the total above-ground          !
    !                   biomass).                                                           !
@@ -1060,8 +1061,9 @@ $ED_NL
    !                              1m that will prevent fires to happen.  The dry air soil  !
    !                              potential is defined as -3.1 MPa, so make sure SM_FIRE   !
    !                              is greater than this value.                              !
-   !                   When INCLUDE_FIRE = 3, only positive values are allowed.  This is   !
-   !                   the minimum water deficit, in kg/m2/day, to trigger fires.          !
+   !                   When INCLUDE_FIRE = 3, values between 0 and 2 are allowed.  This is !
+   !                   the minimum water deficit relative to the total rainfall, over the  !
+   !                   past 12 months, to trigger fires.                                   !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = myfire
    NL%FIRE_PARAMETER  = myfuel
@@ -1083,12 +1085,14 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! ICANTURB -- This flag controls the canopy roughness.                                  !
-   !             0.  Based on Leuning et al. (1995), wind is computed using the similarity !
-   !                 theory for the top cohort, and they are extinguished with cumulative  !
-   !                 LAI.  If using CROWN_MOD 1 or 2, this will use local LAI and average  !
-   !                 by crown area.                                                        !
-   !             1.  The default ED-2.1 scheme, except that it uses the zero-plane         !
-   !                 displacement height.                                                  !
+   !             0.  Based on Leuning et al. (1995) and LEAF-3 (Walko et al. 2000).        !
+   !                 Roughness and displacement height are found using simple relations    !
+   !                 with vegetation height; wind is computed using the similarity theory  !
+   !                 for the top cohort, then it is assumed that wind extinguishes follow- !
+   !                 ing an exponential decay with "perceived" cumulative LAI (local LAI   !
+   !                 with finite crown area).                                              !
+   !             1.  The default ED-2.1 scheme, similar to option 0, but the wind profile  !
+   !                 is not based on LAI, instead it used the cohort height.               !
    !             2.  This uses the method of Massman (1997) using constant drag and no     !
    !                 sheltering factor.                                                    !
    !             3.  This is also based on Massman (1997), but with the option of varying  !

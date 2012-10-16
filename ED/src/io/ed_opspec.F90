@@ -1897,9 +1897,9 @@ end do
 
    select case (include_fire)
    case(3)
-      if (sm_fire < 0.) then
+      if (sm_fire < 0. .or. sm_fire > 2) then
          write (reason,fmt='(a,1x,a,1x,i4,a,1x,es12.5,a)')                                 &
-                        'Invalid SM_FIRE, it must be non-negative'                         &
+                        'Invalid SM_FIRE, it must be between 0 and 2'                      &
                        ,'when INLCUDE_FIRE is ',include_fire,'.  Your SM_FIRE is set to'   &
                        ,sm_fire,'...'
          call opspec_fatal(reason,'opspec_misc')

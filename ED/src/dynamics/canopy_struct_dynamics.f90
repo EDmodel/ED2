@@ -68,7 +68,7 @@ module canopy_struct_dynamics
    !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
    !        81-107.                                                                        !
    !                                                                                       !
-   ! 4.  This option is almost the same as option 1, except that the ground conductance    !
+   ! 4.  This option is almost the same as option 0, except that the ground conductance    !
    !     beneath a vegetated canopy is found in a similar way as the CLM technical note,   !
    !     equations (5.98-5.100).  The conductance for bare ground is still found the same  !
    !     way as in the similarity theory.                                                  !

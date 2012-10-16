@@ -848,7 +848,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , fast_diagnostics     ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use pft_coms              , only : water_conductance    ! ! intent(in)
-
+   use budget_utils          , only : compute_netrad       ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)     , target      :: csite             ! Current site
@@ -937,7 +937,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: max_dwdt,dwdt     ! Used for capping leaf evap 
    !----- Functions -----------------------------------------------------------------------!
    real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
-   real(kind=4), external           :: compute_netrad    ! Net radiation.
    !---------------------------------------------------------------------------------------!
 
 

@@ -105,7 +105,6 @@ subroutine ed_model()
                                                     !    can find out which node is the 
                                                     !    slow one
    !----- External functions. -------------------------------------------------------------!
-   integer , external :: julday   ! Get the elapsed # of days since ED time origin.
    real    , external :: walltime ! Wall time
    integer , external :: num_days ! Number of days in the current month
    !---------------------------------------------------------------------------------------!

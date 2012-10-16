@@ -3270,6 +3270,7 @@ module fuse_fiss_utils
                                     , idoutput              & ! intent(in)
                                     , imoutput              & ! intent(in)
                                     , ndcycle               ! ! intent(in)
+      use budget_utils       , only : update_budget         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site

@@ -25,8 +25,11 @@ module rk4_driver
       use met_driver_coms        , only : met_driv_state       ! ! structure
       use grid_coms              , only : nzg                  & ! intent(in)
                                         , nzs                  ! ! intent(in)
-      use ed_misc_coms           , only : current_time         ! ! intent(in)
+      use ed_misc_coms           , only : current_time         & ! intent(in)
+                                        , dtlsm                ! ! intent(in)
       use therm_lib              , only : tq2enthalpy          ! ! function
+      use budget_utils           , only : update_budget        & ! function
+                                        , compute_budget       ! ! function
       implicit none
 
       !----------- Use MPI timing calls, need declarations --------------------------------!
@@ -44,6 +47,7 @@ module rk4_driver
       integer                                 :: ipa
       integer                                 :: iun
       integer                                 :: nsteps
+      integer                                 :: imon
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_netrad
       real                                    :: ecurr_loss2atm
@@ -70,6 +74,16 @@ module rk4_driver
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
             cmet  => cpoly%met(isi)
+
+
+            !------------------------------------------------------------------------------!
+            !     Update the monthly rainfall.                                             !
+            !------------------------------------------------------------------------------!
+            imon                             = current_time%month
+            cpoly%avg_monthly_pcpg(imon,isi) = cpoly%avg_monthly_pcpg(imon,isi)            &
+                                             + cmet%pcpg * dtlsm
+            !------------------------------------------------------------------------------!
+
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
@@ -215,9 +229,11 @@ module rk4_driver
                                   ,old_can_prss)
                !---------------------------------------------------------------------------!
             end do patchloop
+            !------------------------------------------------------------------------------!
          end do siteloop
-
+         !---------------------------------------------------------------------------------!
       end do polygonloop
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine rk4_timestep
@@ -502,8 +518,16 @@ module rk4_driver
          !---------------------------------------------------------------------------------!
          !     These variables are integrated here, since they don't change with time.     !
          !---------------------------------------------------------------------------------!
+         csite%avg_parup          (ipa) = csite%avg_parup          (ipa)                   &
+                                        + csite%parup              (ipa) * sngl(hdid)
+         csite%avg_nirup          (ipa) = csite%avg_parup          (ipa)                   &
+                                        + csite%nirup              (ipa) * sngl(hdid)
+         csite%avg_rshortup       (ipa) = csite%avg_rshortup       (ipa)                   &
+                                        + csite%rshortup           (ipa) * sngl(hdid)
          csite%avg_rlongup        (ipa) = csite%avg_rlongup        (ipa)                   &
                                         + csite%rlongup            (ipa) * sngl(hdid)
+         csite%avg_rnet           (ipa) = csite%avg_rnet           (ipa)                   &
+                                        + csite%rnet               (ipa) * sngl(hdid)
          csite%avg_albedo         (ipa) = csite%avg_albedo         (ipa)                   &
                                         + csite%albedo             (ipa) * sngl(hdid)
          csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa)                   &

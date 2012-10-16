@@ -195,6 +195,10 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_rshort_gnd     (ipa) = csite%avg_rshort_gnd     (ipa) * frqsumi
             csite%avg_rlong_gnd      (ipa) = csite%avg_rlong_gnd      (ipa) * frqsumi
             csite%avg_rlongup        (ipa) = csite%avg_rlongup        (ipa) * frqsumi
+            csite%avg_parup          (ipa) = csite%avg_parup          (ipa) * frqsumi
+            csite%avg_nirup          (ipa) = csite%avg_nirup          (ipa) * frqsumi
+            csite%avg_rshortup       (ipa) = csite%avg_rshortup       (ipa) * frqsumi
+            csite%avg_rnet           (ipa) = csite%avg_rnet           (ipa) * frqsumi
             csite%avg_albedo         (ipa) = csite%avg_albedo         (ipa) * frqsumi
             csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa) * frqsumi
             csite%avg_albedo_diffuse (ipa) = csite%avg_albedo_diffuse (ipa) * frqsumi
@@ -352,6 +356,10 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_albedo_diffuse   (ipy) = 0.0
       cgrid%avg_rlong_albedo     (ipy) = 0.0
       cgrid%avg_rlongup          (ipy) = 0.0
+      cgrid%avg_parup            (ipy) = 0.0
+      cgrid%avg_nirup            (ipy) = 0.0
+      cgrid%avg_rshortup         (ipy) = 0.0
+      cgrid%avg_rnet             (ipy) = 0.0
 
       cgrid%avg_leaf_energy      (ipy) = 0.0
       cgrid%avg_leaf_temp        (ipy) = 0.0
@@ -542,6 +550,10 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_rshort_gnd(ipa)       = 0.0
             csite%avg_rlong_gnd(ipa)        = 0.0
             csite%avg_rlongup         (ipa) = 0.0
+            csite%avg_parup           (ipa) = 0.0
+            csite%avg_nirup           (ipa) = 0.0
+            csite%avg_rshortup        (ipa) = 0.0
+            csite%avg_rnet            (ipa) = 0.0
             csite%avg_albedo          (ipa) = 0.0
             csite%avg_albedo_beam     (ipa) = 0.0
             csite%avg_albedo_diffuse  (ipa) = 0.0
@@ -710,9 +722,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
       siteloop: do isi=1, cpoly%nsites
          !---------------------------------------------------------------------------------!
-         !     Determine if there was any beam radiation, and compute the total (I think   !
-         ! rshort is always the total, but not sure.  This is the same test done in the    !
-         ! radiation driver.                                                               !
+         !     Determine if there is any beam radiation, and find the total.  This is the  !
+         ! same test done in the radiation driver.                                         !
          !---------------------------------------------------------------------------------!
          if (cpoly%cosaoi(isi) <= cosz_min) then
             rshort_tot = cpoly%met(isi)%rshort_diffuse
@@ -1428,6 +1439,14 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                     + cgrid%avg_rlong_gnd      (ipy)
       cgrid%dmean_rlongup     (ipy) = cgrid%dmean_rlongup      (ipy)                       &
                                     + cgrid%avg_rlongup        (ipy)
+      cgrid%dmean_parup       (ipy) = cgrid%dmean_parup        (ipy)                       &
+                                    + cgrid%avg_parup          (ipy)
+      cgrid%dmean_nirup       (ipy) = cgrid%dmean_nirup        (ipy)                       &
+                                    + cgrid%avg_nirup          (ipy)
+      cgrid%dmean_rshortup    (ipy) = cgrid%dmean_rshortup     (ipy)                       &
+                                    + cgrid%avg_rshortup       (ipy)
+      cgrid%dmean_rnet        (ipy) = cgrid%dmean_rnet         (ipy)                       &
+                                    + cgrid%avg_rnet           (ipy)
       cgrid%dmean_rlong_albedo(ipy) = cgrid%dmean_rlong_albedo (ipy)                       &
                                     + cgrid%avg_rlong_albedo   (ipy)
       cgrid%dmean_leaf_resp (ipy) = cgrid%dmean_leaf_resp   (ipy)                          &
@@ -1520,6 +1539,14 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                              + cgrid%avg_rlong_gnd                   (ipy)
          cgrid%qmean_rlongup        (it,ipy) = cgrid%qmean_rlongup                (it,ipy) &
                                              + cgrid%avg_rlongup                     (ipy)
+         cgrid%qmean_parup          (it,ipy) = cgrid%qmean_parup                  (it,ipy) &
+                                             + cgrid%avg_parup                       (ipy)
+         cgrid%qmean_nirup          (it,ipy) = cgrid%qmean_nirup                  (it,ipy) &
+                                             + cgrid%avg_nirup                       (ipy)
+         cgrid%qmean_rshortup       (it,ipy) = cgrid%qmean_rshortup               (it,ipy) &
+                                             + cgrid%avg_rshortup                    (ipy)
+         cgrid%qmean_rnet           (it,ipy) = cgrid%qmean_rnet                   (it,ipy) &
+                                             + cgrid%avg_rnet                        (ipy)
          cgrid%qmean_rlong_albedo   (it,ipy) = cgrid%qmean_rlong_albedo           (it,ipy) &
                                              + cgrid%avg_rlong_albedo                (ipy)
          cgrid%qmean_albedo         (it,ipy) = cgrid%qmean_albedo                 (it,ipy) &
@@ -1651,6 +1678,34 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          cgrid%qmsqu_vapor_gc    (it,ipy)     = cgrid%qmsqu_vapor_gc            (it,ipy)   &
                                               + cgrid%avg_vapor_gc                 (ipy)   &
                                               * cgrid%avg_vapor_gc                 (ipy)
+
+         cgrid%qmsqu_ustar       (it,ipy)     = cgrid%qmsqu_ustar               (it,ipy)   &
+                                              + cgrid%avg_ustar                    (ipy)   &
+                                              * cgrid%avg_ustar                    (ipy)
+
+         cgrid%qmsqu_rlongup     (it,ipy)     = cgrid%qmsqu_rlongup             (it,ipy)   &
+                                              + cgrid%avg_rlongup                  (ipy)   &
+                                              * cgrid%avg_rlongup                  (ipy)
+
+         cgrid%qmsqu_parup       (it,ipy)     = cgrid%qmsqu_parup               (it,ipy)   &
+                                              + cgrid%avg_parup                    (ipy)   &
+                                              * cgrid%avg_parup                    (ipy)
+
+         cgrid%qmsqu_nirup       (it,ipy)     = cgrid%qmsqu_nirup               (it,ipy)   &
+                                              + cgrid%avg_nirup                    (ipy)   &
+                                              * cgrid%avg_nirup                    (ipy)
+
+         cgrid%qmsqu_rshortup    (it,ipy)     = cgrid%qmsqu_rshortup            (it,ipy)   &
+                                              + cgrid%avg_rshortup                 (ipy)   &
+                                              * cgrid%avg_rshortup                 (ipy)
+
+         cgrid%qmsqu_rnet        (it,ipy)     = cgrid%qmsqu_rnet                (it,ipy)   &
+                                              + cgrid%avg_rnet                     (ipy)   &
+                                              * cgrid%avg_rnet                     (ipy)
+
+         cgrid%qmsqu_albedo      (it,ipy)     = cgrid%qmsqu_albedo              (it,ipy)   &
+                                              + cgrid%avg_albedo                   (ipy)   &
+                                              * cgrid%avg_albedo                   (ipy)
       end if
       !------------------------------------------------------------------------------------!
    end do polyloop
@@ -2257,6 +2312,10 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_rshort_gnd  (ipy)  = cgrid%dmean_rshort_gnd  (ipy)  * frqsum_o_daysec
       cgrid%dmean_rlong_gnd   (ipy)  = cgrid%dmean_rlong_gnd   (ipy)  * frqsum_o_daysec
       cgrid%dmean_rlongup     (ipy)  = cgrid%dmean_rlongup     (ipy)  * frqsum_o_daysec
+      cgrid%dmean_parup       (ipy)  = cgrid%dmean_parup       (ipy)  * frqsum_o_daysec
+      cgrid%dmean_nirup       (ipy)  = cgrid%dmean_nirup       (ipy)  * frqsum_o_daysec
+      cgrid%dmean_rshortup    (ipy)  = cgrid%dmean_rshortup    (ipy)  * frqsum_o_daysec
+      cgrid%dmean_rnet        (ipy)  = cgrid%dmean_rnet        (ipy)  * frqsum_o_daysec
       cgrid%dmean_rlong_albedo(ipy)  = cgrid%dmean_rlong_albedo(ipy)  * frqsum_o_daysec
 
       !------------------------------------------------------------------------------------!
@@ -2293,8 +2352,13 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          !---------------------------------------------------------------------------------!
          !     Find the average day length.                                                !
          !---------------------------------------------------------------------------------!
-         dtlsm_o_daylight  = dtlsm  / cpoly%daylight(isi)
-         frqsum_o_daylight = frqsum / cpoly%daylight(isi)
+         if (cpoly%daylight(isi) < dtlsm) then
+            dtlsm_o_daylight  = 0.
+            frqsum_o_daylight = 0.
+         else
+            dtlsm_o_daylight  = dtlsm  / cpoly%daylight(isi)
+            frqsum_o_daylight = frqsum / cpoly%daylight(isi)
+         end if
          !---------------------------------------------------------------------------------!
 
          cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)                  &
@@ -2663,6 +2727,10 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_rshort_gnd     (ipy) = 0.
       cgrid%dmean_rlong_gnd      (ipy) = 0.
       cgrid%dmean_rlongup        (ipy) = 0.
+      cgrid%dmean_parup          (ipy) = 0.
+      cgrid%dmean_nirup          (ipy) = 0.
+      cgrid%dmean_rshortup       (ipy) = 0.
+      cgrid%dmean_rnet           (ipy) = 0.
       cgrid%dmean_rlong_albedo   (ipy) = 0.
       cgrid%dmean_albedo         (ipy) = 0.
       cgrid%dmean_albedo_beam    (ipy) = 0.
@@ -2855,6 +2923,14 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_rlong_gnd     (ipy)
       cgrid%mmean_rlongup       (ipy) = cgrid%mmean_rlongup       (ipy)                    &
                                       + cgrid%dmean_rlongup       (ipy)
+      cgrid%mmean_parup         (ipy) = cgrid%mmean_parup         (ipy)                    &
+                                      + cgrid%dmean_parup         (ipy)
+      cgrid%mmean_nirup         (ipy) = cgrid%mmean_nirup         (ipy)                    &
+                                      + cgrid%dmean_nirup         (ipy)
+      cgrid%mmean_rshortup      (ipy) = cgrid%mmean_rshortup      (ipy)                    &
+                                      + cgrid%dmean_rshortup      (ipy)
+      cgrid%mmean_rnet          (ipy) = cgrid%mmean_rnet          (ipy)                    &
+                                      + cgrid%dmean_rnet          (ipy)
       cgrid%mmean_rlong_albedo  (ipy) = cgrid%mmean_rlong_albedo  (ipy)                    &
                                       + cgrid%dmean_rlong_albedo  (ipy)
       cgrid%mmean_albedo        (ipy) = cgrid%mmean_albedo        (ipy)                    &
@@ -3031,6 +3107,27 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmsqu_vapor_gc(ipy)    = cgrid%mmsqu_vapor_gc   (ipy)                          &
                                    + cgrid%dmean_vapor_gc   (ipy)                          &
                                    * cgrid%dmean_vapor_gc   (ipy)
+      cgrid%mmsqu_ustar(ipy)       = cgrid%mmsqu_ustar      (ipy)                          &
+                                   + cgrid%dmean_ustar      (ipy)                          &
+                                   * cgrid%dmean_ustar      (ipy)
+      cgrid%mmsqu_rlongup(ipy)     = cgrid%mmsqu_rlongup    (ipy)                          &
+                                   + cgrid%dmean_rlongup    (ipy)                          &
+                                   * cgrid%dmean_rlongup    (ipy)
+      cgrid%mmsqu_parup(ipy)       = cgrid%mmsqu_parup      (ipy)                          &
+                                   + cgrid%dmean_parup      (ipy)                          &
+                                   * cgrid%dmean_parup      (ipy)
+      cgrid%mmsqu_nirup(ipy)       = cgrid%mmsqu_nirup      (ipy)                          &
+                                   + cgrid%dmean_nirup      (ipy)                          &
+                                   * cgrid%dmean_nirup      (ipy)
+      cgrid%mmsqu_rshortup(ipy)    = cgrid%mmsqu_rshortup   (ipy)                          &
+                                   + cgrid%dmean_rshortup   (ipy)                          &
+                                   * cgrid%dmean_rshortup   (ipy)
+      cgrid%mmsqu_rnet(ipy)        = cgrid%mmsqu_rnet       (ipy)                          &
+                                   + cgrid%dmean_rnet       (ipy)                          &
+                                   * cgrid%dmean_rnet       (ipy)
+      cgrid%mmsqu_albedo(ipy)      = cgrid%mmsqu_albedo     (ipy)                          &
+                                   + cgrid%dmean_albedo     (ipy)                          &
+                                   * cgrid%dmean_albedo     (ipy)
 
       cpoly => cgrid%polygon(ipy)
       site_loop: do isi=1,cpoly%nsites
@@ -3268,6 +3365,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_rshort_gnd     (ipy) = cgrid%mmean_rshort_gnd     (ipy) * ndaysi
       cgrid%mmean_rlong_gnd      (ipy) = cgrid%mmean_rlong_gnd      (ipy) * ndaysi
       cgrid%mmean_rlongup        (ipy) = cgrid%mmean_rlongup        (ipy) * ndaysi
+      cgrid%mmean_parup          (ipy) = cgrid%mmean_parup          (ipy) * ndaysi
+      cgrid%mmean_nirup          (ipy) = cgrid%mmean_nirup          (ipy) * ndaysi
+      cgrid%mmean_rshortup       (ipy) = cgrid%mmean_rshortup       (ipy) * ndaysi
+      cgrid%mmean_rnet           (ipy) = cgrid%mmean_rnet           (ipy) * ndaysi
       cgrid%mmean_rlong_albedo   (ipy) = cgrid%mmean_rlong_albedo   (ipy) * ndaysi
       cgrid%mmean_albedo         (ipy) = cgrid%mmean_albedo         (ipy) * ndaysi
       cgrid%mmean_albedo_beam    (ipy) = cgrid%mmean_albedo_beam    (ipy) * ndaysi
@@ -3358,6 +3459,13 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmsqu_vapor_lc    (ipy) = cgrid%mmsqu_vapor_lc    (ipy) * ndaysi
       cgrid%mmsqu_vapor_wc    (ipy) = cgrid%mmsqu_vapor_wc    (ipy) * ndaysi
       cgrid%mmsqu_vapor_gc    (ipy) = cgrid%mmsqu_vapor_gc    (ipy) * ndaysi
+      cgrid%mmsqu_ustar       (ipy) = cgrid%mmsqu_ustar       (ipy) * ndaysi
+      cgrid%mmsqu_rlongup     (ipy) = cgrid%mmsqu_rlongup     (ipy) * ndaysi
+      cgrid%mmsqu_parup       (ipy) = cgrid%mmsqu_parup       (ipy) * ndaysi
+      cgrid%mmsqu_nirup       (ipy) = cgrid%mmsqu_nirup       (ipy) * ndaysi
+      cgrid%mmsqu_rshortup    (ipy) = cgrid%mmsqu_rshortup    (ipy) * ndaysi
+      cgrid%mmsqu_rnet        (ipy) = cgrid%mmsqu_rnet        (ipy) * ndaysi
+      cgrid%mmsqu_albedo      (ipy) = cgrid%mmsqu_albedo      (ipy) * ndaysi
       !------------------------------------------------------------------------------------!
 
 
@@ -3777,6 +3885,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cgrid%qmean_rshort_gnd    (t,ipy) = cgrid%qmean_rshort_gnd    (t,ipy)  * ndaysi
             cgrid%qmean_rlong_gnd     (t,ipy) = cgrid%qmean_rlong_gnd     (t,ipy)  * ndaysi
             cgrid%qmean_rlongup       (t,ipy) = cgrid%qmean_rlongup       (t,ipy)  * ndaysi
+            cgrid%qmean_parup         (t,ipy) = cgrid%qmean_parup         (t,ipy)  * ndaysi
+            cgrid%qmean_nirup         (t,ipy) = cgrid%qmean_nirup         (t,ipy)  * ndaysi
+            cgrid%qmean_rshortup      (t,ipy) = cgrid%qmean_rshortup      (t,ipy)  * ndaysi
+            cgrid%qmean_rnet          (t,ipy) = cgrid%qmean_rnet          (t,ipy)  * ndaysi
             cgrid%qmean_rlong_albedo  (t,ipy) = cgrid%qmean_rlong_albedo  (t,ipy)  * ndaysi
             cgrid%qmean_albedo        (t,ipy) = cgrid%qmean_albedo        (t,ipy)  * ndaysi
             cgrid%qmean_albedo_beam   (t,ipy) = cgrid%qmean_albedo_beam   (t,ipy)  * ndaysi
@@ -3818,6 +3930,13 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cgrid%qmsqu_vapor_lc      (t,ipy) = cgrid%qmsqu_vapor_lc      (t,ipy)  * ndaysi
             cgrid%qmsqu_vapor_wc      (t,ipy) = cgrid%qmsqu_vapor_wc      (t,ipy)  * ndaysi
             cgrid%qmsqu_vapor_gc      (t,ipy) = cgrid%qmsqu_vapor_gc      (t,ipy)  * ndaysi
+            cgrid%qmsqu_ustar         (t,ipy) = cgrid%qmsqu_ustar         (t,ipy)  * ndaysi
+            cgrid%qmsqu_rlongup       (t,ipy) = cgrid%qmsqu_rlongup       (t,ipy)  * ndaysi
+            cgrid%qmsqu_parup         (t,ipy) = cgrid%qmsqu_parup         (t,ipy)  * ndaysi
+            cgrid%qmsqu_nirup         (t,ipy) = cgrid%qmsqu_nirup         (t,ipy)  * ndaysi
+            cgrid%qmsqu_rshortup      (t,ipy) = cgrid%qmsqu_rshortup      (t,ipy)  * ndaysi
+            cgrid%qmsqu_rnet          (t,ipy) = cgrid%qmsqu_rnet          (t,ipy)  * ndaysi
+            cgrid%qmsqu_albedo        (t,ipy) = cgrid%qmsqu_albedo        (t,ipy)  * ndaysi
 
             !------------------------------------------------------------------------------!
             !     Find the derived average propertiesof the canopy air space.              !
@@ -3914,6 +4033,10 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_rshort_gnd         (ipy) = 0.
       cgrid%mmean_rlong_gnd          (ipy) = 0.
       cgrid%mmean_rlongup            (ipy) = 0.
+      cgrid%mmean_parup              (ipy) = 0.
+      cgrid%mmean_nirup              (ipy) = 0.
+      cgrid%mmean_rshortup           (ipy) = 0.
+      cgrid%mmean_rnet               (ipy) = 0.
       cgrid%mmean_rlong_albedo       (ipy) = 0.
       cgrid%mmean_albedo             (ipy) = 0.
       cgrid%mmean_albedo_beam        (ipy) = 0.
@@ -3992,6 +4115,13 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmsqu_vapor_lc           (ipy) = 0.
       cgrid%mmsqu_vapor_wc           (ipy) = 0.
       cgrid%mmsqu_vapor_gc           (ipy) = 0.
+      cgrid%mmsqu_ustar              (ipy) = 0.
+      cgrid%mmsqu_rlongup            (ipy) = 0.
+      cgrid%mmsqu_parup              (ipy) = 0.
+      cgrid%mmsqu_nirup              (ipy) = 0.
+      cgrid%mmsqu_rshortup           (ipy) = 0.
+      cgrid%mmsqu_rnet               (ipy) = 0.
+      cgrid%mmsqu_albedo             (ipy) = 0.
       cgrid%disturbance_rates    (:,:,ipy) = 0.
 
       cgrid%mmean_co2_residual       (ipy) = 0.
@@ -4128,6 +4258,10 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_rshort_gnd    (:,ipy) = 0.0
          cgrid%qmean_rlong_gnd     (:,ipy) = 0.0
          cgrid%qmean_rlongup       (:,ipy) = 0.0
+         cgrid%qmean_parup         (:,ipy) = 0.0
+         cgrid%qmean_nirup         (:,ipy) = 0.0
+         cgrid%qmean_rshortup      (:,ipy) = 0.0
+         cgrid%qmean_rnet          (:,ipy) = 0.0
          cgrid%qmean_rlong_albedo  (:,ipy) = 0.0
          cgrid%qmean_albedo        (:,ipy) = 0.0
          cgrid%qmean_albedo_beam   (:,ipy) = 0.0
@@ -4169,6 +4303,13 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmsqu_vapor_lc      (:,ipy) = 0.0
          cgrid%qmsqu_vapor_wc      (:,ipy) = 0.0
          cgrid%qmsqu_vapor_gc      (:,ipy) = 0.0
+         cgrid%qmsqu_ustar         (:,ipy) = 0.0
+         cgrid%qmsqu_rlongup       (:,ipy) = 0.0
+         cgrid%qmsqu_parup         (:,ipy) = 0.0
+         cgrid%qmsqu_nirup         (:,ipy) = 0.0
+         cgrid%qmsqu_rshortup      (:,ipy) = 0.0
+         cgrid%qmsqu_rnet          (:,ipy) = 0.0
+         cgrid%qmsqu_albedo        (:,ipy) = 0.0
       end if
       !------------------------------------------------------------------------------------!
       

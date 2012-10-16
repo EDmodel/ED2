@@ -445,6 +445,10 @@ subroutine spatial_averages
             cpoly%avg_rshort_gnd(isi)= sum(csite%avg_rshort_gnd* csite%area ) * site_area_i
             cpoly%avg_rlong_gnd(isi) = sum(csite%avg_rlong_gnd * csite%area ) * site_area_i
             cpoly%avg_rlongup(isi)   = sum(csite%avg_rlongup   * csite%area ) * site_area_i
+            cpoly%avg_parup    (isi) = sum(csite%avg_parup     * csite%area ) * site_area_i
+            cpoly%avg_nirup    (isi) = sum(csite%avg_nirup     * csite%area ) * site_area_i
+            cpoly%avg_rshortup (isi) = sum(csite%avg_rshortup  * csite%area ) * site_area_i
+            cpoly%avg_rnet     (isi) = sum(csite%avg_rnet      * csite%area ) * site_area_i
             cpoly%avg_carbon_ac(isi) = sum(csite%avg_carbon_ac * csite%area ) * site_area_i
             cpoly%avg_carbon_st(isi) = sum(csite%avg_carbon_st * csite%area ) * site_area_i
             cpoly%avg_vapor_lc(isi)  = sum(csite%avg_vapor_lc  * csite%area ) * site_area_i
@@ -1105,6 +1109,10 @@ subroutine spatial_averages
          cgrid%avg_rshort_gnd(ipy)   = sum(cpoly%avg_rshort_gnd   *cpoly%area)*poly_area_i
          cgrid%avg_rlong_gnd(ipy)    = sum(cpoly%avg_rlong_gnd    *cpoly%area)*poly_area_i
          cgrid%avg_rlongup  (ipy)    = sum(cpoly%avg_rlongup      *cpoly%area)*poly_area_i
+         cgrid%avg_parup    (ipy)    = sum(cpoly%avg_parup        *cpoly%area)*poly_area_i
+         cgrid%avg_nirup    (ipy)    = sum(cpoly%avg_nirup        *cpoly%area)*poly_area_i
+         cgrid%avg_rshortup (ipy)    = sum(cpoly%avg_rshortup     *cpoly%area)*poly_area_i
+         cgrid%avg_rnet     (ipy)    = sum(cpoly%avg_rnet         *cpoly%area)*poly_area_i
          cgrid%avg_carbon_ac(ipy)    = sum(cpoly%avg_carbon_ac    *cpoly%area)*poly_area_i
          cgrid%avg_carbon_st(ipy)    = sum(cpoly%avg_carbon_st    *cpoly%area)*poly_area_i
          cgrid%avg_vapor_lc(ipy)     = sum(cpoly%avg_vapor_lc     *cpoly%area)*poly_area_i
