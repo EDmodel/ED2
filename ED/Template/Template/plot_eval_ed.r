@@ -1,29 +1,52 @@
+#==========================================================================================#
+#==========================================================================================#
+#     Leave these commands at the beginning.  They will refresh the session.               #
+#------------------------------------------------------------------------------------------#
 rm(list=ls())
+graphics.off()
+#==========================================================================================#
+#==========================================================================================#
 
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
+
+
+#==========================================================================================#
+#==========================================================================================#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
+
+
+#----- Paths. -----------------------------------------------------------------------------#
+here           = "thispath"                          # Current directory.
+there          = "thatpath"                          # Directory where analyses/history are
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
+outroot        = "thisoutroot"                       # Directory for figures
 #------------------------------------------------------------------------------------------#
-here           = "thispath"    # Current directory.
-there          = "thatpath"    # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
-outroot        = "thisoutroot"
-monthbeg       = thismontha
-yearbeg        = thisyeara         # First year to consider
-yearend        = thisyearz         # Maximum year to consider
+
+
+#----- Time options. ----------------------------------------------------------------------#
+monthbeg       = thismontha   # First month to use
+yearbeg        = thisyeara    # First year to consider
+yearend        = thisyearz    # Maximum year to consider
+reload.data    = TRUE         # Should I reload partially loaded data?
+sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
+sasmonth.long  = 5            # Months for SAS plots (long runs)
+nyears.long    = 25           # Runs longer than this are considered long runs.
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Name of the simulations. -----------------------------------------------------------#
 myplaces       = c("thispoly")
-use.distrib    = c("mydistrib")
-sasmonth.short = c(2,5,8,11)
-sasmonth.long  = 5
-nyears.long    = 25
-outform        = thisoutform          # Formats for output file.  Supported formats are:
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Plot options. ----------------------------------------------------------------------#
+outform        = thisoutform    # Formats for output file.  Supported formats are:
                                 #   - "X11" - for printing on screen
                                 #   - "eps" - for postscript printing
                                 #   - "png" - for PNG printing
                                 #   - "pdf" - for PDF printing
-
-byeold         = TRUE           # Remove old files of the given format?
 
 depth          = 96             # PNG resolution, in pixels per inch
 paper          = "letter"       # Paper size, to define the plot shape
@@ -36,7 +59,16 @@ inset          = 0.01           # inset distance between legend and edge of plot
 legbg          = "white"        # Legend background colour.
 scalleg        = 0.20
 cex.main       = 0.8            # Scale coefficient for the title
+#------------------------------------------------------------------------------------------#
 
+
+
+
+#------ Settings for the model assessment. ------------------------------------------------#
+use.distrib    = "mydistrib"    # Which distribution to use.  Valid options are:
+                                #   - "norm" -- normal distribution
+                                #   - "sn"   -- skewed normal distribution
+                                #   - "edf"  -- empirical distribution function
 hourblock.len  = 3              # Length of the time blocks, in hours
                                 #
 n.quant        = 1024           # Number of quantiles to produce the density function.
@@ -45,24 +77,45 @@ n.quant        = 1024           # Number of quantiles to produce the density fun
                                 #    distributions will be interpolated).
 #------------------------------------------------------------------------------------------#
 
+
+
+#------ Reload the data? ------------------------------------------------------------------#
 reload.data    = TRUE           # Reload data?
 #------------------------------------------------------------------------------------------#
 
 
 
+
+#------ Miscellaneous settings. -----------------------------------------------------------#
+slz.min        = -5.0           # The deepest depth that trees access water.
+idbh.type      = myidbhtype     # Type of DBH class
+                                # 1 -- Every 10 cm until 100cm; > 100cm
+                                # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
 #------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
 #      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+#----- Load some packages and scripts. ----------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
+
+
 
 
 
@@ -76,6 +129,7 @@ compvar[[ 1]] = list( vnam       = "hflxca"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 2]] = list( vnam       = "wflxca"
                     , desc       = "Water vapour flux"
@@ -83,6 +137,7 @@ compvar[[ 2]] = list( vnam       = "wflxca"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("deepskyblue","royalblue4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 3]] = list( vnam       = "cflxca"
                     , desc       = "Carbon dioxide flux"
@@ -90,6 +145,7 @@ compvar[[ 3]] = list( vnam       = "cflxca"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse2","darkgreen")
                     , leg.corner = "bottomright"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 4]] = list( vnam       = "cflxst"
                     , desc       = "Carbon dioxide storage"
@@ -97,6 +153,7 @@ compvar[[ 4]] = list( vnam       = "cflxst"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("lightgoldenrod3","darkorange1")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 5]] = list( vnam       = "gpp"
                     , desc       = "Gross primary productivity"
@@ -104,6 +161,7 @@ compvar[[ 5]] = list( vnam       = "gpp"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("green3","darkgreen")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
 compvar[[ 6]] = list( vnam       = "reco"
                     , desc       = "Ecosystem respiration"
@@ -111,6 +169,7 @@ compvar[[ 6]] = list( vnam       = "reco"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("yellow3","peru")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 7]] = list( vnam       = "nep"
                     , desc       = "Net ecosystem productivity"
@@ -118,6 +177,7 @@ compvar[[ 7]] = list( vnam       = "nep"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("olivedrab2","darkolivegreen4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 8]] = list( vnam       = "nee"
                     , desc       = "Net ecosystem exchange"
@@ -125,6 +185,7 @@ compvar[[ 8]] = list( vnam       = "nee"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "bottomright"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 9]] = list( vnam       = "ustar"
                     , desc       = "Friction velocity"
@@ -132,6 +193,7 @@ compvar[[ 9]] = list( vnam       = "ustar"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("mediumpurple1","purple4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[10]] = list( vnam       = "rlongup"
                     , desc       = "Outgoing longwave radiation"
@@ -139,6 +201,7 @@ compvar[[10]] = list( vnam       = "rlongup"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[11]] = list( vnam       = "rnet"
                     , desc       = "Net radiation"
@@ -146,6 +209,7 @@ compvar[[11]] = list( vnam       = "rnet"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[12]] = list( vnam       = "albedo"
                     , desc       = "Albedo"
@@ -153,6 +217,7 @@ compvar[[12]] = list( vnam       = "albedo"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
 compvar[[13]] = list( vnam       = "parup"
                     , desc       = "Outgoing PAR"
@@ -160,6 +225,7 @@ compvar[[13]] = list( vnam       = "parup"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
 compvar[[14]] = list( vnam       = "rshortup"
                     , desc       = "Outgoing SW"
@@ -167,25 +233,8 @@ compvar[[14]] = list( vnam       = "rshortup"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("deepskyblue","royalblue3")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Load some packages. ----------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-library(sn)
-#------------------------------------------------------------------------------------------#
-
-
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
 #------------------------------------------------------------------------------------------#
 
 
@@ -202,34 +251,6 @@ ncompvar = length(compvar)
 
 #----- Avoid unecessary and extremely annoying beeps. -------------------------------------#
 options(locatorBell=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
-#----- Load some files with functions. ----------------------------------------------------#
-source(paste(srcdir,"atlas.r"           ,sep="/"))
-source(paste(srcdir,"charutils.r"       ,sep="/"))
-source(paste(srcdir,"census.r"          ,sep="/"))
-source(paste(srcdir,"cloudy.r"          ,sep="/"))
-source(paste(srcdir,"epolygon.r"       ,sep="/"))
-source(paste(srcdir,"error.bar.r"       ,sep="/"))
-source(paste(srcdir,"globdims.r"        ,sep="/"))
-source(paste(srcdir,"locations.r"       ,sep="/"))
-source(paste(srcdir,"muitas.r"          ,sep="/"))
-source(paste(srcdir,"numutils.r"        ,sep="/"))
-source(paste(srcdir,"plotsize.r"        ,sep="/"))
-source(paste(srcdir,"pretty.log.r"      ,sep="/"))
-source(paste(srcdir,"pretty.time.r"     ,sep="/"))
-source(paste(srcdir,"qapply.r"          ,sep="/"))
-source(paste(srcdir,"rconstants.r"      ,sep="/"))
-source(paste(srcdir,"skewnorm.stats.r"  ,sep="/"))
-source(paste(srcdir,"soilutils.r"       ,sep="/"))
-source(paste(srcdir,"sombreado.r"       ,sep="/"))
-source(paste(srcdir,"southammap.r"      ,sep="/"))
-source(paste(srcdir,"thermlib.r"        ,sep="/"))
-source(paste(srcdir,"timeutils.r"       ,sep="/"))
-source(paste(srcdir,"zen.r"             ,sep="/"))
-#----- These should be called after the others. -------------------------------------------#
-source(paste(srcdir,"pft.coms.r"        ,sep="/"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -295,7 +316,9 @@ for (place in myplaces){
       obs.name = paste("obs.",iata,sep="")
    }#end if
    #---------------------------------------------------------------------------------------#
-   
+
+
+
 
    #---------------------------------------------------------------------------------------#
    #     We only run this part of the code if there are observations to compare with the   #
@@ -477,10 +500,6 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       #      Find out how many diel and seasonal blocks to create.                         #
       #------------------------------------------------------------------------------------#
-      myseasons = sort(unique(obser$yr.idx))
-      nseasons  = length(myseasons)
-      ss.name   = paste(sprintf("%2.2i",myseasons),season.list[myseasons],sep="-")
-      ss.title  = season.full[myseasons] 
       mydiel    = sort(unique(obser$hr.idx))
       ndiel     = length(mydiel)
       hr.end    = seq(from=hourblock.len,to=day.hr,by=hourblock.len) %% day.hr
@@ -500,11 +519,13 @@ for (place in myplaces){
          #     Select the data points for which we have observations, then fit the light   #
          # response curve to both observed and modelled GPP.                               #
          #---------------------------------------------------------------------------------#
-         sel         = ( obser$yr.idx == myseasons[s] & is.finite(obser$gpp)
-                       & (is.finite(obser$par) & obser$daytime) )
+         s.sel        = obser$yr.idx == s | s == nseasons
+         sel          = s.sel & is.finite(obser$gpp) & is.finite(obser$par) & obser$highsun
+         #---------------------------------------------------------------------------------#
+
 
          #---------------------------------------------------------------------------------#
-         #      Make sure there are some points.                                           #
+         #      Make sure there are at least a few points.                                 #
          #---------------------------------------------------------------------------------#
          if (sum(sel) > 10){
 
@@ -576,7 +597,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             for (o in 1:nout){
                #----- Make the file name. -------------------------------------------------#
-               fichier = paste(outlight,"/gpp_light","-",ss.name[s],"-",suffix,"."
+               fichier = paste(outlight,"/gpp_light","-",season.label[s],"-",suffix,"."
                               ,outform[o],sep="")
                if (outform[o] == "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
@@ -598,7 +619,7 @@ for (place in myplaces){
                #     Set up the title and axes labels.                                     #
                #---------------------------------------------------------------------------#
                letitre = paste(lieu,"\n Polygon-level light response curve - "
-                                   ,ss.title[s],sep="")
+                                   ,season.full[s],sep="")
                lex     = paste("Photosynthetically Active Radiation [umol/m2/s]")
                ley     = paste("Gross Primary Productivity [umol/m2/s]")
                #---------------------------------------------------------------------------#
@@ -665,6 +686,7 @@ for (place in myplaces){
          col.obser  = this.comp$col.obser
          col.model  = this.comp$col.model
          leg.corner = this.comp$leg.corner
+         sunvar     = this.comp$sunvar
 
          #---------------------------------------------------------------------------------#
          #     Grab the variables that we are going to use now.                            #
@@ -682,29 +704,38 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          comp = list()
          mat              = matrix( data     = NA
-                                  , nrow     = ndiel+3
+                                  , nrow     = ndiel+4
                                   , ncol     = nseasons
-                                  , dimnames = list( c(dl.name,"night","rise.set","day")
-                                                   , ss.name
+                                  , dimnames = list( c(dl.name,"night","rise.set","day"
+                                                              ,"all.hrs")
+                                                   , season.label
                                                    )#end list
                                   )#end matrix
          arr              = array ( data     = NA
-                                  , dim      = c(ndiel+3,nseasons,4)
-                                  , dimnames = list( c(dl.name,"night","rise.set","day")
-                                                   , ss.name
+                                  , dim      = c(ndiel+4,nseasons,4)
+                                  , dimnames = list( c(dl.name,"night","rise.set","day"
+                                                              ,"all.hrs")
+                                                   , season.label
                                                    , c("mean","variance"
                                                       ,"skewness","kurtosis")
                                                    )
                                   )#end array
          comp$n           = mat
+         comp$residuals   = rep(NA,times=length(this.obser))
          comp$bias        = mat
          comp$rmse        = mat
+         comp$r.squared   = mat
+         comp$fvue        = mat
+         comp$sw.stat     = mat
+         comp$sw.p.value  = mat
          comp$ks.stat     = mat
          comp$ks.p.value  = mat
+         comp$lsq.lnlike  = mat
          comp$sn.lnlike   = mat
          comp$norm.lnlike = mat
          comp$obs.moment  = arr
          comp$mod.moment  = arr
+         comp$res.moment  = arr
          #---------------------------------------------------------------------------------#
 
 
@@ -725,51 +756,71 @@ for (place in myplaces){
          #     Season block.                                                               #
          #---------------------------------------------------------------------------------#
          for (s in 1:nseasons){
-            cat("       # Season: ",ss.name[s],"...","\n")
+            #------------------------------------------------------------------------------#
+            #     Select the season.                                                       #
+            #------------------------------------------------------------------------------#
+            cat("       # Season: ",season.full[s],"...","\n")
+            sel.season = obser$yr.idx == s | s == nseasons
+            #------------------------------------------------------------------------------#
+
+
             bp.list = list()
             #----- These lists will contain the data for the box plot. --------------------#
             ylimit.bp = NULL
             #------------------------------------------------------------------------------#
             #     Diel block.                                                              #
             #------------------------------------------------------------------------------#
-            for (d in 1:(ndiel+3)){
+            for (d in 1:(ndiel+4)){
                #---------------------------------------------------------------------------#
                #     Select the period of the day to plot.                                 #
                #---------------------------------------------------------------------------#
                if (d <= ndiel){
                   cat("         ~ Hour: ",dl.name[d]," UTC...","\n")
-                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
-                                               & obser$hr.idx == mydiel   [d] )
+                  sel.diel   = obser$hr.idx == mydiel   [d]
                   diel.label = paste("hr",dl.name[d],sep="_")
                   diel.desc  = paste("Hours: ",dl.name[d]," UTC",sep="")
                }else if (d == ndiel+1){
                   cat("         ~ Night time...","\n")
-                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
-                                               & obser$nighttime              )
+                  sel.diel   = obser$nighttime
                   diel.label = paste("night")
                   diel.desc  = paste("Nighttime",sep="")
                }else if (d == ndiel+2){
                   cat("         ~ Sunrise/sunset time...","\n")
-                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
-                                               & obser$riseset                )
+                  sel.diel   = obser$riseset
                   diel.label = paste("riseset")
                   diel.desc  = paste("Sunrise/sunset time",sep="")
                }else if (d == ndiel+3){
                   cat("         ~ Day time...","\n")
-                  sel        = ( this.measured & obser$yr.idx == myseasons[s]
-                                               & obser$highsun                )
+                  sel.diel   = obser$highsun
                   diel.label = paste("day")
                   diel.desc  = paste("Daytime",sep="")
+               }else if (d == ndiel+4){
+                  cat("         ~ 24 hours...","\n")
+                  sel.diel   = rep(TRUE,times=length(obser$hr.idx))
+                  diel.label = paste("allhrs")
+                  diel.desc  = paste("All hours",sep="")
                }#end if
-               n.sel = sel
                #---------------------------------------------------------------------------#
 
+
+
+               #---------------------------------------------------------------------------#
+               #     Correct sel in case this is a "Sun" variable.  We only check Sun      #
+               # variables during daytime.                                                 #
+               #---------------------------------------------------------------------------#
+               if (sunvar){
+                  sel.sun = obser$daytime
+               }else{
+                  sel.sun = rep(TRUE,times=length(obser$daytime))
+               }#end if
+               #---------------------------------------------------------------------------#
 
 
 
                #---------------------------------------------------------------------------#
                #     Number of observations that we use to build the comparison metrics.   #
                #---------------------------------------------------------------------------#
+               sel   = sel.season & sel.diel & sel.sun & this.measured
                n.sel = sel
                #---------------------------------------------------------------------------#
 
@@ -777,7 +828,7 @@ for (place in myplaces){
 
 
                #---------------------------------------------------------------------------#
-               #     Find the skewed normal distribution of the observed quantities.       #
+               #     Find the statistics of the observed quantities.                       #
                #---------------------------------------------------------------------------#
                if (any(sel)){
                   #------------------------------------------------------------------------#
@@ -797,6 +848,12 @@ for (place in myplaces){
                   #----- Find and plot the distribution function for this hour. -----------#
                   sd.obser = sd(this.obser[sel],na.rm=TRUE)
                   if (is.finite(sd.obser) && sd.obser > 1.0e-6){
+                     #----- Find the residuals. -------------------------------------------#
+                     this.resid          = this.obser - this.model
+                     comp$residuals[sel] = this.resid[sel]
+                     #---------------------------------------------------------------------#
+
+
                      #---------------------------------------------------------------------#
                      #      Find multiple statistics that may be used for finding the      #
                      # support function.                                                   #
@@ -817,6 +874,14 @@ for (place in myplaces){
                      m.sdev     = sd         (this.model[sel],na.rm=TRUE)
                      m.skew     = skew       (this.model[sel],na.rm=TRUE)
                      m.kurt     = kurt       (this.model[sel],na.rm=TRUE)
+                     r.location = sn.location(this.resid[sel],na.rm=TRUE)
+                     r.scale    = sn.scale   (this.resid[sel],na.rm=TRUE)
+                     r.shape    = sn.shape   (this.resid[sel],na.rm=TRUE)
+                     r.mean     = mean       (this.resid[sel],na.rm=TRUE)
+                     r.vari     = var        (this.resid[sel],na.rm=TRUE)
+                     r.sdev     = sd         (this.resid[sel],na.rm=TRUE)
+                     r.skew     = skew       (this.resid[sel],na.rm=TRUE)
+                     r.kurt     = kurt       (this.resid[sel],na.rm=TRUE)
                      #---------------------------------------------------------------------#
 
 
@@ -879,19 +944,31 @@ for (place in myplaces){
 
 
                      #---------------------------------------------------------------------#
-                     #      Find the mean bias and the root mean square error, and the     #
-                     # four moments of the distribution for both observations and model.   #
+                     #      Find the mean bias, the root mean square error, the coeffi-    #
+                     # cient of determination, and the fraction of variance unexplained    #
+                     # for this simulation.                                                #
                      #---------------------------------------------------------------------#
-                     comp$bias      [d,s ] = bias( x      = this.model[sel]
-                                                 , xexp   = this.obser[sel]
-                                                 , absval = FALSE
-                                                 )#end bias
-                     comp$rmse      [d,s ] = rmse( x      = this.model[sel]
-                                                 , xexp   = this.obser[sel]
-                                                 , absval = FALSE
-                                                 )#end rmse
-                             comp$obs.moment[d,s,] = c(o.mean,o.vari,o.skew,o.kurt)
+                     goodness = test.goodness ( x.mod        = this.model[sel]
+                                              , x.obs        = this.obser[sel]
+                                              , n.parameters = NULL
+                                              )#end test.goodness
+                     comp$bias      [d,s ] = goodness$bias
+                     comp$rmse      [d,s ] = goodness$rmse
+                     comp$lsq.lnlike[d,s ] = goodness$lsq.lnlike
+                     comp$r.squared [d,s ] = goodness$r.squared
+                     comp$fvue      [d,s ] = goodness$fvue
+                     comp$sw.stat   [d,s ] = goodness$sw.statistic
+                     comp$sw.pvalue [d,s ] = goodness$sw.pvalue
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #      Find the first four moments of the distribution for            #
+                     # observations, model, and residuals.                                 #
+                     #---------------------------------------------------------------------#
+                     comp$obs.moment[d,s,] = c(o.mean,o.vari,o.skew,o.kurt)
                      comp$mod.moment[d,s,] = c(m.mean,m.vari,m.skew,m.kurt)
+                     comp$res.moment[d,s,] = c(r.mean,r.vari,r.skew,r.kurt)
                      #---------------------------------------------------------------------#
 
 
@@ -902,17 +979,10 @@ for (place in myplaces){
                      xbreaks     = pretty(qlimit,n=20)
                      freq.obser  = hist(this.obser[sel],breaks=xbreaks,plot=FALSE)$density
                      freq.model  = hist(this.model[sel],breaks=xbreaks,plot=FALSE)$density
-                     ylimit      = range(c(dfunc.obser,dfunc.model,freq.obser,freq.model))
-                     if ( any(! is.finite(ylimit)) 
-                        || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
-                        ylimit = c(-1,1)
-                     }else if (ylimit[1] == ylimit[2] ){
-                        ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
-                        ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
-                     }else{
-                        ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
-                     }#end if
+                     yrange      = c(dfunc.obser,dfunc.model,freq.obser,freq.model)
+                     ylimit      = pretty.xylim(u=yrange,fracexp=scalleg,is.log=FALSE)
                      #---------------------------------------------------------------------#
+
 
 
                      #---------------------------------------------------------------------#
@@ -933,8 +1003,9 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                      for (o in 1:nout){
                         #----- Make the file name. ----------------------------------------#
-                        fichier = paste(outpdfvar,"/histcomp_",this.vnam,"-",ss.name[s]    
-                                       ,"-",diel.label,"-",suffix,".",outform[o],sep="")
+                        fichier = paste(outpdfvar,"/histcomp_",this.vnam,"-"
+                                       ,season.label[s],"-",diel.label,"-",suffix,"."
+                                       ,outform[o],sep="")
                         if (outform[o] == "x11"){
                            X11(width=size$width,height=size$height,pointsize=ptsz)
                         }else if(outform[o] == "png"){
@@ -955,7 +1026,7 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         #     Set up the title and axes labels.                            #
                         #------------------------------------------------------------------#
-                        letitre = paste(lieu,"\n",this.desc," - ",ss.title[s]
+                        letitre = paste(lieu,"\n",this.desc," - ",season.full[s]
                                        ," - ",diel.desc,sep="")
                         lex     = paste(this.desc,this.unit,sep=" ")
                         ley     = "Density function [ ]"
@@ -1027,7 +1098,7 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                      for (o in 1:nout){
                         #----- Make the file name. ----------------------------------------#
-                        fichier = paste(outqqpvar,"/qqplot_",this.vnam,"-",ss.name[s]    
+                        fichier = paste(outqqpvar,"/qqplot_",this.vnam,"-",season.label[s]
                                        ,"-",diel.label,"-",suffix,".",outform[o],sep="")
                         if (outform[o] == "x11"){
                            X11(width=size$width,height=size$height,pointsize=ptsz)
@@ -1050,7 +1121,7 @@ for (place in myplaces){
                         #     Set up the title and axes labels.                            #
                         #------------------------------------------------------------------#
                         letitre = paste(lieu,"\n","QQ Plot for ",this.desc
-                                       ," - ",ss.title[s]," - ",diel.desc,sep="")
+                                       ," - ",season.full[s]," - ",diel.desc,sep="")
                         lex     = paste("Observations",this.unit,sep=" ")
                         ley     = paste("Model",this.unit,sep=" ")
                         #------------------------------------------------------------------#
@@ -1089,7 +1160,7 @@ for (place in myplaces){
                }#end if (any(sel))
                #---------------------------------------------------------------------------#
 
-            }#end for (d in 1:(ndiel+3))
+            }#end for (d in 1:(ndiel+4))
             #------------------------------------------------------------------------------#
 
 
@@ -1100,8 +1171,8 @@ for (place in myplaces){
             if (length(bp.list) > 0){
                for (o in 1:nout){
                   #----- Make the file name. ----------------------------------------------#
-                  fichier = paste(outboxvar,"/bpcomp_",this.vnam,"-",ss.name[s],"-",suffix
-                                           ,".",outform[o],sep="")
+                  fichier = paste(outboxvar,"/bpcomp_",this.vnam,"-",season.label[s]
+                                           ,"-",suffix,".",outform[o],sep="")
                   if (outform[o] == "x11"){
                      X11(width=size$width,height=size$height,pointsize=ptsz)
                   }else if(outform[o] == "png"){
@@ -1120,16 +1191,7 @@ for (place in myplaces){
 
                   #----- Set up some plot defaults. ---------------------------------------#
                   xlimit   = c(0,2*ndiel)
-                  ylimit   = range(bp.list)
-                  if ( any(! is.finite(ylimit)) 
-                     || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
-                     ylimit = c(-1,1)
-                  }else if (ylimit[1] == ylimit[2] ){
-                     ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * ylnudge)
-                     ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * ylnudge)
-                  }else{
-                     ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
-                  }#end if
+                  ylimit   = pretty.xylim(u=bp.list,fracexp=scalleg,is.log=FALSE)
                   bpcolour = rep(c(col.obser[1],col.model[1]),times=ndiel)
                   xat      = seq(from=1.5,to=2*ndiel-0.5,by=2)
                   xgrid    = seq(from=0.5,to=2*ndiel+0.5,by=2)
@@ -1138,7 +1200,7 @@ for (place in myplaces){
 
 
                   #----- Set up the title and axes labels. --------------------------------#
-                  letitre = paste(lieu,"\n",this.desc," - ",ss.title[s],sep="")
+                  letitre = paste(lieu,"\n",this.desc," - ",season.full[s],sep="")
                   lex     = paste(hourblock.len,"-hour period [UTC]",sep="")
                   ley     = paste(this.desc,this.unit,sep=" ")
                   #------------------------------------------------------------------------#

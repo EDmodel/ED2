@@ -722,9 +722,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
       siteloop: do isi=1, cpoly%nsites
          !---------------------------------------------------------------------------------!
-         !     Determine if there was any beam radiation, and compute the total (I think   !
-         ! rshort is always the total, but not sure.  This is the same test done in the    !
-         ! radiation driver.                                                               !
+         !     Determine if there is any beam radiation, and find the total.  This is the  !
+         ! same test done in the radiation driver.                                         !
          !---------------------------------------------------------------------------------!
          if (cpoly%cosaoi(isi) <= cosz_min) then
             rshort_tot = cpoly%met(isi)%rshort_diffuse
@@ -2353,8 +2352,13 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          !---------------------------------------------------------------------------------!
          !     Find the average day length.                                                !
          !---------------------------------------------------------------------------------!
-         dtlsm_o_daylight  = dtlsm  / cpoly%daylight(isi)
-         frqsum_o_daylight = frqsum / cpoly%daylight(isi)
+         if (cpoly%daylight(isi) < dtlsm) then
+            dtlsm_o_daylight  = 0.
+            frqsum_o_daylight = 0.
+         else
+            dtlsm_o_daylight  = dtlsm  / cpoly%daylight(isi)
+            frqsum_o_daylight = frqsum / cpoly%daylight(isi)
+         end if
          !---------------------------------------------------------------------------------!
 
          cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)                  &

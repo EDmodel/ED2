@@ -2,15 +2,18 @@
 . ${HOME}/.bashrc
 here=`pwd`                            # ! Main path
 diskthere='/n/moorcroftfs2'           # ! Disk where the output files are
-thisqueue='moorcroft2b'               # ! Queue where jobs should be submitted
+thisqueue='moorcroft_6100b'           # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot='/n/moorcroftfs2/mlongo/diary/XXXXXXXXXXX/figures/xxx_XXX/xxxxxxxx'
+outroot='/n/moorcroftfs2/mlongo/diary/final_ed/biophysics/figures/short_term/size+diversity+canturb'
 submit='y'       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-onemetcycle='n'  # Plot only one met cycle only (ignored by plot_eval_ed.r/plot_census.r)
-shiftiata=''     # Places that we must shift the cycle
-shiftcycle=-5    # In case your met driver doesn't match the model simulation
+useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+                 # 'a' -- All period
+                 # 't' -- One eddy flux tower met cycle
+                 # 'u' -- User defined period, defined by the variables below.
+yusera=1972      # First year to use
+yuserz=2011      # Last year to use
 #----- Check whether to use openlava or typical job submission. ---------------------------#
 openlava='n'
 #----- Yearly comparison . ----------------------------------------------------------------#
@@ -27,7 +30,45 @@ outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
+#----- DBH classes. -----------------------------------------------------------------------#
+idbhtype=2                     # Type of DBH class
+                               # 1 -- Every 10 cm until 100cm; > 100cm
+                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
 #------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Which scripts to run.                                                                #
+#                                                                                          #
+#   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
+#   - plot_yearly.r  - This creates plots with year time series.                           #
+#   - plot_ycomp.r   - This creates yearly comparisons based on the monthly mean output.   #
+#   - plot_rk4.r     - This creates plots from the detailed output for Runge-Kutta.        #
+#                      (patch-level only).                                                 #
+#   - plot_photo.r   - This creates plots from the detailed output for Farquhar-Leuning.   #
+#   - plot_rk4pc.r   - This creates plots from the detailed output for Runge-Kutta.        #
+#                      (patch- and cohort-level).                                          #
+#   - plot_budget.r  - This creates plots from the detailed budget for Runge-Kutta.        #
+#                      (patch-level only).                                                 #
+#   - plot_eval_ed.r - This creates plots comparing model with eddy flux observations.     #
+#   - plot_census.r  - This creates plots comparing model with biometric data.             #
+#                                                                                          #
+#   The following scripts should work too, but I haven't tested them.                      #
+#   - plot_daily.r   - This creates plots from the daily mean output.                      #
+#   - plot_fast.r    - This creates plots from the analysis files.                         #
+#   - patchprops.r   - This creates simple plots showing the patch structure.              #
+#   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
+#                      the step to be rejected.                                            #
+#------------------------------------------------------------------------------------------#
+rscripts="plot_yearly.r"
+#rscripts="plot_monthly.r"
+#rscripts="plot_census.r" 
+#rscripts="plot_ycomp.r"
+#rscripts="plot_eval_ed.r"
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------------------------------------------------------------------------------------------#
 #    Tell whether to plot pseudo-drought or not.                                           #
@@ -113,33 +154,9 @@ echo 'Number of polygons: '${npolys}'...'
 
 
 
-#------------------------------------------------------------------------------------------#
-#    List all the R scripts you want to run.                                               #
-#   - plot_yearly.r  - This creates yearly comparisons based on the monthly mean output.   #
-#   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
-#   - plot_rk4.r     - This creates plots from the detailed output for Runge-Kutta.        #
-#                      (patch-level only).                                                 #
-#   - plot_photo.r   - This creates plots from the detailed output for Farquhar-Leuning.   #
-#   - plot_rk4pc.r   - This creates plots from the detailed output for Runge-Kutta.        #
-#                      (patch- and cohort-level).                                          #
-#   - plot_budget.r  - This creates plots from the detailed budget for Runge-Kutta.        #
-#                      (patch-level only).                                                 #
-#   - plot_eval_ed.r - This creates plots comparing model with eddy flux observations.     #
-#   - plot_census.r  - This creates plots comparing model with biometric data.             #
-#                                                                                          #
-#   The following scripts should work too, but I haven't tested them.                      #
-#   - plot_daily.r   - This creates plots from the daily mean output.                      #
-#   - plot_fast.r    - This creates plots from the analysis files.                         #
-#   - patchprops.r   - This creates simple plots showing the patch structure.              #
-#   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
-#                      the step to be rejected.                                            #
-#------------------------------------------------------------------------------------------#
-rscripts="plot_census.r" # plot_monthly.r plot_yearly.r"
-#rscripts="patchprops.r plot_photo.r"
-#rscripts="patchprops.r"
 
 #------------------------------------------------------------------------------------------#
-#     Loop over all polygons.                                                              #
+#      Loop over all polygons.                                                             #
 #------------------------------------------------------------------------------------------#
 ff=0
 while [ ${ff} -lt ${npolys} ]
@@ -261,53 +278,72 @@ do
    metcycz=`grep -i NL%METCYCF ${here}/${polyname}/ED2IN | awk '{print $3}'`
    #---------------------------------------------------------------------------------------#
 
+
+   #---- Find the forest inventory cycle. -------------------------------------------------#
+   case ${polyiata} in
+   gyf|s67)
+      biocyca=2004
+      biocycz=2009
+      subcens=1
+      ;;
+   s67)
+      biocyca=2001
+      biocycz=2011
+      subcens=1
+      ;;
+   *)
+      biocyca=${metcyca}
+      biocycz=${metcycz}
+      subcens=0
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Switch years in case this is a specific drought run.                              #
+   #---------------------------------------------------------------------------------------#
    if [ ${droughtmark} == "TRUE" ]
    then 
       let yeara=${droughtyeara}-1
       let yearz=${droughtyearz}+1
    fi
+   #---------------------------------------------------------------------------------------#
 
+
+   #---------------------------------------------------------------------------------------#
+   #     Loop over all scripts.                                                            #
+   #---------------------------------------------------------------------------------------#
    for script in ${rscripts}
    do
-      if [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
+      #----- Print a banner. --------------------------------------------------------------#
+      if [ ${script} == 'plot_census.r' ] && [ ${subcens} -eq 0 ]
+      then
+         "Skipping submission of ${script} for polygon: ${polyname}..."
+      elif [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
       then
          echo "Submitting script ${script} for polygon: ${polyname}..."
       else
          echo "Copying script ${script} to polygon: ${polyname}..."
       fi
+      #------------------------------------------------------------------------------------#
 
+
+
+      #------------------------------------------------------------------------------------#
+      #     Set up the time and output variables according to the script.                  #
+      #------------------------------------------------------------------------------------#
       case ${script} in
-      plot_yearly.r)
-         if [ ${metdriver} != 'Sheffield' ]
+      plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r)
+         #---------------------------------------------------------------------------------#
+         #     Scripts that are based on monthly means.  The set up is the same, the only  #
+         # difference is in the output names.                                              #
+         #---------------------------------------------------------------------------------#
+         #------ Check which period to use. -----------------------------------------------#
+         if [ ${useperiod} == 't' ]
          then
-            thisyeara=${metcyca}
-            thisyearz=${metcycz}
-            for i in ${shiftiata}
-            do
-               if [ 'x'${i} == 'x'${polyiata} ]
-               then
-                  echo '     -> Shifting met cycle'
-                  let metcycle=${metcycz}-${metcyca}+1
-                  let deltayr=${shiftcycle}*${metcycle}
-                  let thisyeara=${metcyca}+${deltayr}
-                  let thisyearz=${metcycz}+${deltayr}
-               fi # end [ ${i} == ${iata} ]
-            done #end for i in ${shiftiata}
-         else
-            thisyeara=${metcyca}
-            thisyearz=${metcycz}
-         fi # end [ ${metdriver} != 'Sheffield' ]
-         thismontha=${montha}
-         thismonthz=${monthz}
-         thisdatea=${datea}
-         epostout='pyrs_epost.out'
-         epostsh='pyrs_epost.sh'
-         epostlsf='pyrs_epost.lsf'
-         epostjob='eb-pyrs-'${polyname}
-         ;;
-      plot_monthly.r)
-         if [ ${onemetcycle} == 'y' ]
-         then
+            #------ One meteorological cycle.  Check the type of meteorological driver. ---#
             if [ ${metdriver} != 'Sheffield' ]
             then
                thisyeara=${metcyca}
@@ -327,162 +363,302 @@ do
                thisyeara=${metcyca}
                thisyearz=${metcycz}
             fi # end [ ${metdriver} != 'Sheffield' ]
-         else 
-            let thisyeara=${yeara}+0
+            #------------------------------------------------------------------------------#
+
+         elif [ ${useperiod} == 'u' ]
+         then
+            #----- The user said which period to use. -------------------------------------#
+            thisyeara=${yusera}
+            thisyearz=${yuserz}
+            #------------------------------------------------------------------------------#
+         else
+            #----- Grab all years that the simulation is supposed to run. -----------------#
+            thisyeara=${yeara}
             thisyearz=${yearz}
-         fi # end [ ${onemetcycle} == 'y' ]
+            #------------------------------------------------------------------------------#
+         fi # end [ ${useperiod} == 't' ]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Set up months and days. ---------------------------------------------------#
          thismontha=${montha}
          thismonthz=${monthz}
          thisdatea=${datea}
-         epostout='pmon_epost.out'
-         epostsh='pmon_epost.sh'
-         epostlsf='pmon_epost.lsf'
-         epostjob='eb-pmon-'${polyname}
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Define the job name, and the names of the output files.                    #
+         #---------------------------------------------------------------------------------#
+         case ${script} in
+         plot_monthly.r)
+            epostout='pmon_epost.out'
+            epostsh='pmon_epost.sh'
+            epostlsf='pmon_epost.lsf'
+            epostjob='eb-pmon-'${polyname}
+            ;;
+         plot_yearly.r)
+            epostout='pyrs_epost.out'
+            epostsh='pyrs_epost.sh'
+            epostlsf='pyrs_epost.lsf'
+            epostjob='eb-pyrs-'${polyname}
+            ;;
+         plot_ycomp.r)
+            epostout='pycp_epost.out'
+            epostsh='pycp_epost.sh'
+            epostlsf='pycp_epost.lsf'
+            epostjob='eb-pycp-'${polyname}
+            ;;
+         plot_census.r)
+            epostout='pcen_epost.out'
+            epostsh='pcen_epost.sh'
+            epostlsf='pcen_epost.lsf'
+            epostjob='eb-pcen-'${polyname}
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
          ;;
+
+
       plot_eval_ed.r)
-         if [ ${metdriver} != 'Sheffield' ]
-         then
-            thisyeara=${metcyca}
-            thisyearz=${metcycz}
-            for i in ${shiftiata}
-            do
-               if [ 'x'${i} == 'x'${polyiata} ]
-               then
-                  echo '     -> Shifting met cycle'
-                  let metcycle=${metcycz}-${metcyca}+1
-                  let deltayr=${shiftcycle}*${metcycle}
-                  let thisyeara=${metcyca}+${deltayr}
-                  let thisyearz=${metcycz}+${deltayr}
-               fi # end [ ${i} == ${iata} ]
-            done #end for i in ${shiftiata}
+         #---------------------------------------------------------------------------------#
+         #     Cheat by changing metcyca and metcycz in case the meteorological driver is  #
+         # Petrolina (output variables exist only for 2004, so we don't need to process    #
+         # all years).                                                                     #
+         #---------------------------------------------------------------------------------#
+         if [ ${metdriver} == "Petrolina" ]
+         then 
+            thismetcyca=2004
+            thismetcycz=2004
          else
-            thisyeara=${metcyca}
-            thisyearz=${metcycz}
-         fi # end [ ${metdriver} != 'Sheffield' ]
+            thismetcyca=${metcyca}
+            thismetcycz=${metcycz}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     The period should be equivalent to one meteorological driver period, so we  #
+         # compare apples to apples.  The ED2 years don't need to match as long as we pick #
+         # one cycle.                                                                      #
+         #---------------------------------------------------------------------------------#
+         thisyeara=${thismetcyca}
+         thisyearz=${thismetcycz}
+         for i in ${shiftiata}
+         do
+            if [ 'x'${i} == 'x'${polyiata} ]
+            then
+               #----- Always use the true met driver to find the cycle shift. -------------#
+               echo '     -> Shifting met cycle'
+               let metcycle=${metcycz}-${metcyca}+1
+               let deltayr=${shiftcycle}*${metcycle}
+               let thisyeara=${thismetcyca}+${deltayr}
+               let thisyearz=${thismetcycz}+${deltayr}
+               #---------------------------------------------------------------------------#
+            fi # end [ ${i} == ${iata} ]
+         done #end for i in ${shiftiata}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Set up months and days. ---------------------------------------------------#
          thismontha=1
          thismonthz=12
          thisdatea=${datea}
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Define the job name, and the names of the output files. -------------------#
          epostout='peed_epost.out'
          epostsh='peed_epost.sh'
          epostlsf='peed_epost.lsf'
          epostjob='eb-peed-'${polyname}
-         ;;
-      plot_census.r)
-         thismontha=${montha}
-         thismontha=${monthz}
-         let thisyeara=${yeara}+15
-         thisyearz=${yearz}
+         #---------------------------------------------------------------------------------#
 
-         thisdatea=${datea}
-         epostout='pcen_epost.out'
-         epostsh='pcen_epost.sh'
-         epostlsf='pcen_epost.lsf'
-         epostjob='eb-pcen-'${polyname}
          ;;
-      plot_budget.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
+
+      plot_budget.r|plot_rk4.r|plot_rk4pc.r|plot_photo.r|reject_ed.r)
+         #---------------------------------------------------------------------------------#
+         #     Scripts with very high frequency output (dtlsm or shorter).  The first day  #
+         # usually has initialisation problems (for example incoming longwave may be zero  #
+         # at the first time step), so we normally skip the first day.                     #
+         #---------------------------------------------------------------------------------#
+         #----- Check whether to use the user choice of year or the default. --------------#
+         if [ ${useperiod} == 'u' ]
+         then
+            thisyeara=${yusera}
+            thisyearz=${yuserz}
+         else
+            thisyeara=${yeara}
+            thisyearz=${yearz}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Set up months and days. ---------------------------------------------------#
          thismontha=${montha}
          thismonthz=${monthz}
          let thisdatea=${datea}+1
-         epostout='pbdg_epost.out'
-         epostsh='pbdg_epost.sh'
-         epostlsf='pbdg_epost.lsf'
-         epostjob='eb-pbdg-'${polyname}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Define the job name, and the names of the output files. -------------------#
+         case ${script} in 
+         plot_budget)
+            epostout='pbdg_epost.out'
+            epostsh='pbdg_epost.sh'
+            epostlsf='pbdg_epost.lsf'
+            epostjob='eb-pbdg-'${polyname}
+            ;;
+         plot_rk4.r)
+            epostout='prk4_epost.out'
+            epostsh='prk4_epost.sh'
+            epostlsf='prk4_epost.lsf'
+            epostjob='eb-prk4-'${polyname}
+            ;;
+         plot_rk4pc.r)
+            epostout='prpc_epost.out'
+            epostsh='prpc_epost.sh'
+            epostlsf='prpc_epost.lsf'
+            epostjob='eb-prpc-'${polyname}
+            ;;
+         plot_photo.r)
+            epostout='ppht_epost.out'
+            epostsh='ppht_epost.sh'
+            epostlsf='ppht_epost.lsf'
+            epostjob='eb-ppht-'${polyname}
+            ;;
+         reject_ed.r)
+            epostout='prej_epost.out'
+            epostsh='prej_epost.sh'
+            epostlsf='prej_epost.lsf'
+            epostjob='eb-prej-'${polyname}
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
          ;;
-      plot_rk4.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
-         thismontha=${montha}
-         thismonthz=${monthz}
-         let thisdatea=${datea}+1
-         epostout='prk4_epost.out'
-         epostsh='prk4_epost.sh'
-         epostlsf='prk4_epost.lsf'
-         epostjob='eb-prk4-'${polyname}
-         ;;
-      plot_rk4pc.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
-         thismontha=${montha}
-         thismonthz=${monthz}
-         let thisdatea=${datea}+1
-         epostout='prpc_epost.out'
-         epostsh='prpc_epost.sh'
-         epostlsf='prpc_epost.lsf'
-         epostjob='eb-prpc-'${polyname}
-         ;;
-      plot_photo.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
-         thismontha=${montha}
-         thismonthz=${monthz}
-         let thisdatea=${datea}+1
-         epostout='ppht_epost.out'
-         epostsh='ppht_epost.sh'
-         epostlsf='ppht_epost.lsf'
-         epostjob='eb-ppht-'${polyname}
-         ;;
+
+
       patchprops.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
+         #---------------------------------------------------------------------------------#
+         #     Script with time-independent patch properties.  No need to skip anything.   #
+         #---------------------------------------------------------------------------------#
+         #----- Check whether to use the user choice of year or the default. --------------#
+         if [ ${useperiod} == 'u' ]
+         then
+            thisyeara=${yusera}
+            thisyearz=${yuserz}
+         else
+            thisyeara=${yeara}
+            thisyearz=${yearz}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Set up months and days. ---------------------------------------------------#
          thismontha=${montha}
          thismonthz=${monthz}
          thisdatea=${datea}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Define the job name, and the names of the output files. -------------------#
          epostout='ppro_epost.out'
          epostsh='ppro_epost.sh'
          epostlsf='ppro_epost.lsf'
          epostjob='eb-ppro-'${polyname}
+         #---------------------------------------------------------------------------------#
          ;;
       plot_daily.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
+         #---------------------------------------------------------------------------------#
+         #     Script with daily means.  No need to skip anything.                         #
+         #---------------------------------------------------------------------------------#
+         #----- Check whether to use the user choice of year or the default. --------------#
+         if [ ${useperiod} == 'u' ]
+         then
+            thisyeara=${yusera}
+            thisyearz=${yuserz}
+         else
+            thisyeara=${yeara}
+            thisyearz=${yearz}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Set up months and days. ---------------------------------------------------#
          thismontha=${montha}
          thismonthz=${monthz}
          thisdatea=${datea}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Define the job name, and the names of the output files. -------------------#
          epostout='pday_epost.out'
          epostsh='pday_epost.sh'
          epostlsf='pday_epost.lsf'
          epostjob='eb-pday-'${polyname}
+         #---------------------------------------------------------------------------------#
          ;;
+
       plot_fast.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
+         #---------------------------------------------------------------------------------#
+         #     Script with short-term averages (usually hourly).  No need to skip any-     #
+         # thing.                                                                          #
+         #---------------------------------------------------------------------------------#
+         if [ ${useperiod} == 'u' ]
+         then
+            thisyeara=${yusera}
+            thisyearz=${yuserz}
+         else
+            thisyeara=${yeara}
+            thisyearz=${yearz}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Set up months and days. ---------------------------------------------------#
          thismontha=${montha}
          thismonthz=${monthz}
          thisdatea=${datea}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Define the job name, and the names of the output files. -------------------#
          epostout='pfst_epost.out'
          epostsh='pfst_epost.sh'
          epostlsf='pfst_epost.lsf'
          epostjob='eb-pfst-'${polyname}
-         ;;
-      reject_ed.r)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
-         thismontha=${montha}
-         thismonthz=${monthz}
-         thisdatea=${datea}
-         epostout='prej_epost.out'
-         epostsh='prej_epost.sh'
-         epostlsf='prej_epost.lsf'
-         epostjob='eb-prej-'${polyname}
+         #---------------------------------------------------------------------------------#
+
          ;;
       *)
-         thisyeara=${yeara}
-         thisyearz=${yearz}
-         thismontha=${montha}
-         thismonthz=${monthz}
-         thisdatea=${datea}
-         epostout='pidn_epost.out'
-         epostsh='pidn_epost.sh'
-         epostlsf='pidn_epost.lsf'
-         epostjob='eb-pidn-'${polyname}
+         #---------------------------------------------------------------------------------#
+         #     If the script is here, then it could not find the script... And this should #
+         # never happen, crash!                                                            #
+         #---------------------------------------------------------------------------------#
+         echo " Script ${script} is not recognised by epost.sh!"
+         exit 193
+         #---------------------------------------------------------------------------------#
          ;;
       esac
+      #------------------------------------------------------------------------------------#
+
 
 
       #----- Copy the R script from the Template folder to the local path. ----------------#
       cp -f ${here}/Template/${script} ${here}/${polyname}
+      #------------------------------------------------------------------------------------#
+
+
 
       #----- Switch the keywords by the current settings. ---------------------------------#
       sed -i s@thispoly@${polyname}@g             ${here}/${polyname}/${script}
@@ -511,10 +687,19 @@ do
       sed -i s@mydistrib@${usedistrib}@g          ${here}/${polyname}/${script}
       sed -i s@mymetcyca@${metcyca}@g             ${here}/${polyname}/${script}
       sed -i s@mymetcycz@${metcycz}@g             ${here}/${polyname}/${script}
+      sed -i s@mybiocyca@${biocyca}@g             ${here}/${polyname}/${script}
+      sed -i s@mybiocycz@${biocycz}@g             ${here}/${polyname}/${script}
+      sed -i s@myidbhtype@${idbhtype}@g           ${here}/${polyname}/${script}
+      #------------------------------------------------------------------------------------#
+
+
 
       #----- Run R to get the plots. ------------------------------------------------------#
       rbin="R CMD BATCH --no-save --no-restore"
       comm="${rbin} ${here}/${polyname}/${script} ${here}/${polyname}/${epostout}"
+      #------------------------------------------------------------------------------------#
+
+
 
       #------------------------------------------------------------------------------------#
       #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
@@ -542,11 +727,23 @@ do
 
 
 
+      #----- Make sure this is not the census script for a site we don't have census. -----#
+      if [ ${script} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
+      then
+         submitnow='n'
+      else
+         submitnow=${submit}
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
       #------------------------------------------------------------------------------------#
       #     Submit the job according to the style (LSF or openlava).                       #
       #------------------------------------------------------------------------------------#
-      if [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
+      if [ 'x'${submitnow} == 'xy' ] || [ 'x'${submitnow} == 'xY' ]
       then
+         #------ Check whether to use openlava or LSF. ------------------------------------#
          if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
          then
             bsub="iobsub -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
@@ -555,6 +752,7 @@ do
             bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${polyname}/${epostlsf}"
             bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
          fi
+         #---------------------------------------------------------------------------------#
          ${bsub}
       fi
       #------------------------------------------------------------------------------------#

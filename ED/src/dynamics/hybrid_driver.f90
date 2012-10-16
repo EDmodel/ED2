@@ -1,34 +1,34 @@
 !=============================================================================!
 !=============================================================================!
-!     This subroutine is the main driver for the Forward/Backward (FB)
-!     Euler integration scheme.                 !
+!     This subroutine is the main driver for the Forward/Backward (FB)        !
+!     Euler integration scheme.                                               !
 !-----------------------------------------------------------------------------!
 subroutine hybrid_timestep(cgrid)
   use rk4_coms              , only : integration_vars   & ! structure
-                                    , rk4patchtype       & ! structure
-                                    , zero_rk4_patch     & ! subroutine
-                                    , zero_rk4_cohort    & ! subroutine
-                                    , zero_bdf2_patch    &
-                                    , integration_buff   & ! intent(out)
-                                    , rk4site            & ! intent(out)
-                                    , bdf2patchtype      &
-                                    , tbeg               &
-                                    , tend               &
-                                    , dtrk4              &
-                                    , dtrk4i
-  use rk4_driver             , only : initp2modelp
-  
+                                   , rk4patchtype       & ! structure
+                                   , zero_rk4_patch     & ! subroutine
+                                   , zero_rk4_cohort    & ! subroutine
+                                   , zero_bdf2_patch    &
+                                   , integration_buff   & ! intent(out)
+                                   , rk4site            & ! intent(out)
+                                   , bdf2patchtype      &
+                                   , tbeg               &
+                                   , tend               &
+                                   , dtrk4              &
+                                   , dtrk4i
+  use rk4_driver            , only : initp2modelp
   use ed_state_vars         , only : edtype             & ! structure
-                                    , polygontype        & ! structure
-                                    , sitetype           & ! structure
-                                    , patchtype          ! ! structure
-
+                                   , polygontype        & ! structure
+                                   , sitetype           & ! structure
+                                   , patchtype          ! ! structure
   use met_driver_coms       , only : met_driv_state     ! ! structure
   use grid_coms             , only : nzg                & ! intent(in)
                                    , nzs                ! ! intent(in)
-  use ed_misc_coms          , only : dtlsm              ! ! intent(in)
+  use ed_misc_coms          , only : current_time       & ! intent(in)
+                                   , dtlsm              ! ! intent(in)
   use therm_lib             , only : tq2enthalpy        ! ! function
-  
+  use budget_utils          , only : update_budget      & ! function
+                                   , compute_budget     ! ! function
   implicit none
   !----- Arguments ----------------------------------------------------------!
   type(edtype)             , target      :: cgrid
@@ -45,6 +45,7 @@ subroutine hybrid_timestep(cgrid)
   integer                                :: isi
   integer                                :: ipa
   integer                                :: ico
+  integer                                :: imon
   integer                                :: nsteps
   real                                   :: thetaatm
   real                                   :: thetacan
@@ -73,7 +74,6 @@ subroutine hybrid_timestep(cgrid)
   logical                  , save     :: first_time=.true.
 
   !----- External functions. -------------------------------------------------------------!
-  real, external                         :: compute_netrad
   real, external                         :: walltime
   !---------------------------------------------------------------------------------------!
   
@@ -101,7 +101,15 @@ subroutine hybrid_timestep(cgrid)
      siteloop: do isi = 1,cpoly%nsites
         csite => cpoly%site(isi)
         cmet  => cpoly%met(isi)
-        
+
+        !---------------------------------------------------------------------!
+        !     Update the monthly rainfall.                                    !
+        !---------------------------------------------------------------------!
+        imon                             = current_time%month
+        cpoly%avg_monthly_pcpg(imon,isi) = cpoly%avg_monthly_pcpg(imon,isi)   &
+                                         + cmet%pcpg * dtlsm
+        !---------------------------------------------------------------------!
+
         patchloop: do ipa = 1,csite%npatches
            cpatch => csite%patch(ipa)
 
@@ -263,7 +271,9 @@ subroutine hybrid_timestep(cgrid)
                  ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
       
          end do patchloop
+         !-------------------------------------------------------------------!
       end do siteloop
+      !----------------------------------------------------------------------!
 
       cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy)+walltime(wtime0)
 

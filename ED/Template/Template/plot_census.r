@@ -1,60 +1,123 @@
+#==========================================================================================#
+#==========================================================================================#
+#     Leave these commands at the beginning.  They will refresh the session.               #
+#------------------------------------------------------------------------------------------#
 rm(list=ls())
+graphics.off()
+#==========================================================================================#
+#==========================================================================================#
 
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
+
+
+#==========================================================================================#
+#==========================================================================================#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
+
+#----- Paths. -----------------------------------------------------------------------------#
+here           = "thispath"                          # Current directory.
+there          = "thatpath"                          # Directory where analyses/history are 
+srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
+outroot        = "thisoutroot"                       # Directory for figures
 #------------------------------------------------------------------------------------------#
-here           = "thispath"    # Current directory.
-there          = "thatpath"    # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
-outroot        = "thisoutroot"
+
+
+
+
+#----- Time options. ----------------------------------------------------------------------#
 monthbeg       = thismontha
 yearbeg        = thisyeara         # First year to consider
 yearend        = thisyearz         # Maximum year to consider
-metcyca        = mymetcyca         # First year of the met cycle
-metcycz        = mymetcycz         # Last year of the met cycle
+biocyca        = mybiocyca         # First year of the met cycle
+biocycz        = mybiocycz         # Last year of the met cycle
 various.cycles = myvarcycle
-myplaces       = c("thispoly")
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
-outform        = thisoutform         # Formats for output file.  Supported formats are:
-                                #   - "X11" - for printing on screen
-                                #   - "eps" - for postscript printing
-                                #   - "png" - for PNG printing
-                                #   - "pdf" - for PDF printing
-
-byeold         = TRUE           # Remove old files of the given format?
-
-depth          = 96             # PNG resolution, in pixels per inch
-paper          = "letter"       # Paper size, to define the plot shape
-ptsz           = 14             # Font size.
-lwidth         = 2.5            # Line width
-plotgrid       = TRUE           # Should I plot the grid in the background? 
-
-legwhere       = "topleft"      # Where should I place the legend?
-inset          = 0.01           # inset distance between legend and edge of plot region.
-legbg          = "white"        # Legend background colour.
-scalleg        = 0.20
-cex.main       = 0.8            # Scale coefficient for the title
-slz.min        = -5.0           # Find the deepest depth that trees access water.
 #------------------------------------------------------------------------------------------#
 
 
 
+#----- Name of the simulations. -----------------------------------------------------------#
+myplaces       = c("thispoly")
 #------------------------------------------------------------------------------------------#
+
+
+
+#----- Plot options. ----------------------------------------------------------------------#
+outform        = thisoutform            # Formats for output file.  Supported formats are:
+                                        #   - "X11" - for printing on screen
+                                        #   - "eps" - for postscript printing
+                                        #   - "png" - for PNG printing
+                                        #   - "pdf" - for PDF printing
+depth          = 96                     # PNG resolution, in pixels per inch
+paper          = "letter"               # Paper size, to define the plot shape
+ptsz           = 14                     # Font size.
+lwidth         = 2.5                    # Line width
+plotgrid       = TRUE                   # Should I plot the grid in the background? 
+sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
+                                        #    plots? (FALSE will set a suitable scale for
+                                        #    each plot)
+ncolsfc        = 200                    # Target number of colours for filled contour.
+fcgrid         = TRUE                   # Include a grid on the filled contour plots?
+ncolshov       = 200                    # Target number of colours for Hovmoller diagrams.
+hovgrid        = TRUE                   # Include a grid on the Hovmoller plots?
+legwhere       = "topleft"              # Where should I place the legend?
+inset          = 0.01                   # Inset between legend and edge of plot region.
+legbg          = "white"                # Legend background colour.
+scalleg        = 0.40                   # Expand y limits by this relative amount to fit
+                                        #    the legend
+cex.main       = 0.8                    # Scale coefficient for the title
+theta          = 315.                   # Azimuth for perspective projection
+phi            = 30.                    # Vertical angle for perspective projection
+ltheta         = -210.                  # Azimuth angle for light
+shade          = 0.125                  # Shade intensity
+expz           = 0.5                    # Expansion factor for Z axis
+gcol           = c("lightblue","white") # Colours for the fifties style floor
+cexmin         = 0.5                    # Minimum "head" size of the lollipop
+cexmax         = 3.0                    # Maximum "head" size of the lollipop
+ylnudge         = 0.05                  # Nudging factor for ylimit
+ptype          = "l"                    # Type of plot
+ptyped         = "p"                    # Type of plot
+ptypeb         = "o"                    # Type of plot
+mtext.xoff     = -7.00                  # Offset for the x label
+mtext.yoff     = -1.00                  # Offset for the y label
+mtext.xadj     =  0.50                  # Offset for the x label
+mtext.yadj     =  0.65                  # Offset for the y label
+drought.mark   = mydroughtmark          # Put a background to highlight droughts?
+drought.yeara  = mydroughtyeara         # First year that has drought
+drought.yearz  = mydroughtyearz         # Last year that has drought
+months.drought = mymonthsdrought        # Months with drought
 #------------------------------------------------------------------------------------------#
+
+
+#------ Miscellaneous settings. -----------------------------------------------------------#
+slz.min        = -5.0         # The deepest depth that trees access water.
+idbh.type      = myidbhtype   # Type of DBH class
+                              # 1 -- Every 10 cm until 100cm; > 100cm
+                              # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
 #------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
 #      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -354,34 +417,16 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              , log        = FALSE
                              )#end list
                        )#end if
-
-
-#----- Load some packages. ----------------------------------------------------------------#
-isok = require(hdf5         )
-isok = require(chron        )
-isok = require(scatterplot3d)
-isok = require(lattice      )
-isok = require(maps         )
-isok = require(mapdata      )
-isok = require(akima        )
-isok = require(Hmisc        )
-isok = require(sn           )
 #------------------------------------------------------------------------------------------#
 
 
 
-#------------------------------------------------------------------------------------------#
-#  SHADY BUSINESS...  We must unlock grav from package boot and replace by our good        #
-#                     old value from rconstants.r.                                         #
-#------------------------------------------------------------------------------------------#
-envir = as.environment("package:survival")
-unlockBinding("tobin",envir)
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 
 
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
-#------------------------------------------------------------------------------------------#
 
 
 #----- Set how many formats we must output. -----------------------------------------------#
@@ -399,37 +444,6 @@ npratets    = length(pratets   )
 #----- Avoid unecessary and extremely annoying beeps. -------------------------------------#
 options(locatorBell=FALSE)
 #------------------------------------------------------------------------------------------#
-
-
-#----- Load some files with functions. ----------------------------------------------------#
-source(paste(srcdir,"atlas.r"           ,sep="/"))
-source(paste(srcdir,"charutils.r"       ,sep="/"))
-source(paste(srcdir,"census.r"          ,sep="/"))
-source(paste(srcdir,"colourmap.r"       ,sep="/"))
-source(paste(srcdir,"cloudy.r"          ,sep="/"))
-source(paste(srcdir,"demography.rates.r",sep="/"))
-source(paste(srcdir,"epolygon.r"        ,sep="/"))
-source(paste(srcdir,"error.bar.r"       ,sep="/"))
-source(paste(srcdir,"globdims.r"        ,sep="/"))
-source(paste(srcdir,"locations.r"       ,sep="/"))
-source(paste(srcdir,"muitas.r"          ,sep="/"))
-source(paste(srcdir,"numutils.r"        ,sep="/"))
-source(paste(srcdir,"plotsize.r"        ,sep="/"))
-source(paste(srcdir,"pretty.box.r"      ,sep="/"))
-source(paste(srcdir,"pretty.log.r"      ,sep="/"))
-source(paste(srcdir,"pretty.time.r"     ,sep="/"))
-source(paste(srcdir,"qapply.r"          ,sep="/"))
-source(paste(srcdir,"rconstants.r"      ,sep="/"))
-source(paste(srcdir,"skewnorm.stats.r"  ,sep="/"))
-source(paste(srcdir,"soilutils.r"       ,sep="/"))
-source(paste(srcdir,"sombreado.r"       ,sep="/"))
-source(paste(srcdir,"southammap.r"      ,sep="/"))
-source(paste(srcdir,"thermlib.r"        ,sep="/"))
-source(paste(srcdir,"timeutils.r"       ,sep="/"))
-#----- These should be called after the others. -------------------------------------------#
-source(paste(srcdir,"pft.coms.r"        ,sep="/"))
-#------------------------------------------------------------------------------------------#
-
 
 
 #----- Load census data. ------------------------------------------------------------------#
@@ -537,6 +551,8 @@ for (place in myplaces){
       x.dbh       = c(10,sta$dbh.breaks[seq(from=2,to=n.dbh,by=1)])
       dbh.names   = dimnames(sta$mort.size$n$median)[[2]]
       year4       = numyears(sta$when)
+      biocyca     = year4[2]
+      biocycz     = year4[length(year4)]
       dyear       = c(NA,diff(year4))
       census.desc = paste(year4-c(NA,diff(year4)),year4,sep="-")
 
@@ -570,7 +586,7 @@ for (place in myplaces){
       act.census.year     = numyears(sta$when)
       #------------------------------------------------------------------------------------#
 
-      ncyc                = metcycz - metcyca + 1
+      ncyc                = biocycz - biocyca + 1
       if (various.cycles){
          nfullcyc         = 1 + floor( (act.census.yeara - 1 - yeara ) / ncyc )
       }else{
@@ -650,8 +666,8 @@ for (place in myplaces){
             now.month   = (now.month %% 12) + 1
             now.year    = now.year + as.integer(now.month == 1)
             year.use    = year.use + as.integer(now.month == 1)
-            print (paste("ED-2.1: ",paste(mon2mmm(now.month,cap1=T),now.year,sep="-")
-                        ,"; Census: ",paste(act.census.year[census.idx[m]])))
+            cat("ED-2.1: ",paste(mon2mmm(now.month,cap1=T),now.year,sep="-")
+               ,"; Census: ",paste(act.census.year[census.idx[m]]),"\n")
 
             #----- Build the file name. ---------------------------------------------------#
             cmonth = sprintf("%2.2i",now.month)
@@ -681,7 +697,7 @@ for (place in myplaces){
             if (file.exists(myfile)){
 
                #----- Read data and close connection immediately after. -------------------#
-               #print (paste("     * Reading ",basename(myfile),"...",sep=""))
+               #cat("     * Reading ",basename(myfile),"...","\n")
                mymont = hdf5load(file=myfile,load=FALSE,verbosity=0,tidy=TRUE)
                #---------------------------------------------------------------------------#
 
@@ -1037,9 +1053,7 @@ for (place in myplaces){
                }#end for DBH
                #---------------------------------------------------------------------------#
             }else{
-               print (paste("     * ",basename(myfile)," wasn't found, skipping it..."
-                           ,sep=""))
-               
+               cat("     * ",basename(myfile)," wasn't found, skipping it...","\n")
             }#end if
             #------------------------------------------------------------------------------#
          }#end for (m in 1:n.months)
@@ -1055,7 +1069,7 @@ for (place in myplaces){
       #====================================================================================#
       #     Make the parameter space.                                                      #
       #------------------------------------------------------------------------------------#
-      print(paste("   - Creating the parameter space...",sep=""))
+      cat("   - Creating the parameter space...","\n")
          #----- Make the point and legend name sequence. ----------------------------------#
          yeara            = c(qapply(X=ts.census.year,INDEX=census.idx,DIM=1
                                     ,FUN=min,na.rm=TRUE))
@@ -1281,7 +1295,7 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       #     Remove the 4th. dimension for the means.                                       #
       #------------------------------------------------------------------------------------#
-      print(paste("   - Averaging the census intervals...",sep=""))
+      cat("   - Averaging the census intervals...","\n")
       ms.recr.plot = list()
       for (v in 1:nrecr.vars){
          v.now                 = recr.vars[v]
@@ -1385,7 +1399,7 @@ for (place in myplaces){
       # can't switch the factors between observation and statistics because we use         #
       # observations to drive the statistics.                                              #
       #------------------------------------------------------------------------------------#
-      print(paste("   - Finding the average rates...",sep=""))
+      cat("   - Finding the average rates...","\n")
       ed2           = list()
       ed2$when      = sta$when
       ed2$taxon     = sta$taxon
@@ -1410,7 +1424,7 @@ for (place in myplaces){
          sizetoo   = this.rate$sizetoo
          desc.rate = this.rate$desc.rate
          indiv     = this.rate$indiv
-         print(paste(" - Compounding the ",desc.rate," tables..."),sep="")
+         cat(" - Compounding the ",desc.rate," tables...","\n")
          #---------------------------------------------------------------------------------#
 
 
@@ -1447,7 +1461,9 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Plot-level with all cycles.                                              #
             #------------------------------------------------------------------------------#
-            ms.plot = get(paste("ms",ed2.rate,"plot",sep="."))[[v.now]]
+            ms.plot   = get(paste("ms",ed2.rate,"plot",sep="."))[[v.now]]
+            ms.global = array(ms.plot[npft+1,,],dim=dim(ms.plot)[2:3]         )
+            ms.use    = array(ms.plot[mypfts,,],dim=c(npfts,dim(ms.plot)[2:3]))
             #------------------------------------------------------------------------------#
 
 
@@ -1464,36 +1480,36 @@ for (place in myplaces){
             ed2[[ed2.plot]][[v.now]]$q025          = NA * sta[[sta.plot]][[v.now]]$q025
             ed2[[ed2.plot]][[v.now]]$q975          = NA * sta[[sta.plot]][[v.now]]$q975
             #----- Save the global variables. ---------------------------------------------#
-            ed2[[ed2.plot]][[v.now]]$global[4,yyy] = apply( X      = ms.plot[npft+1,,]
+            ed2[[ed2.plot]][[v.now]]$global[4,yyy] = apply( X      = ms.global
                                                           , MARGIN = 1
                                                           , FUN    = median
                                                           , na.rm  = TRUE
                                                           )#end apply
-            ed2[[ed2.plot]][[v.now]]$global[5,yyy] = apply( X      = ms.plot[npft+1,,]
+            ed2[[ed2.plot]][[v.now]]$global[5,yyy] = apply( X      = ms.global
                                                           , MARGIN = 1
                                                           , FUN    = quantile
                                                           , probs  = 0.025
                                                           , na.rm  = TRUE
                                                           )#end apply
-            ed2[[ed2.plot]][[v.now]]$global[6,yyy] = apply( X      = ms.plot[npft+1,,]
+            ed2[[ed2.plot]][[v.now]]$global[6,yyy] = apply( X      = ms.global
                                                           , MARGIN = 1
                                                           , FUN    = quantile
                                                           , probs  = 0.975
                                                           , na.rm  = TRUE
                                                           )#end apply
             #----- Save the PFT statistics. -----------------------------------------------#
-            ed2[[ed2.plot]][[v.now]]$median[ ,yyy] = apply( X      = ms.plot[mypfts,,]
+            ed2[[ed2.plot]][[v.now]]$median[ ,yyy] = apply( X      = ms.use
                                                           , MARGIN = c(1,2)
                                                           , FUN    = median
                                                           , na.rm  = TRUE
                                                           )#end apply
-            ed2[[ed2.plot]][[v.now]]$q025  [ ,yyy] = apply( X      = ms.plot[mypfts,,]
+            ed2[[ed2.plot]][[v.now]]$q025  [ ,yyy] = apply( X      = ms.use
                                                           , MARGIN = c(1,2)
                                                           , FUN    = quantile
                                                           , probs  = 0.025
                                                           , na.rm  = TRUE
                                                           )#end apply
-            ed2[[ed2.plot]][[v.now]]$q975  [ ,yyy] = apply( X      = ms.plot[mypfts,,]
+            ed2[[ed2.plot]][[v.now]]$q975  [ ,yyy] = apply( X      = ms.use
                                                           , MARGIN = c(1,2)
                                                           , FUN    = quantile
                                                           , probs  = 0.975
@@ -1510,7 +1526,9 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Plot-level with all cycles.                                           #
                #---------------------------------------------------------------------------#
-               ms.size = get(paste("ms",ed2.rate,"size",sep="."))[[v.now]]
+               ms.size   = get(paste("ms",ed2.rate,"size",sep="."))[[v.now]]
+               ms.global = array(ms.size[npft+1,,,],dim=dim(ms.size)[2:4]         )
+               ms.use    = array(ms.size[mypfts,,,],dim=c(npfts,dim(ms.size)[2:4]))
                #---------------------------------------------------------------------------#
 
 
@@ -1527,36 +1545,36 @@ for (place in myplaces){
                ed2[[ed2.size]][[v.now]]$q025   = NA * sta[[sta.size]][[v.now]]$q025
                ed2[[ed2.size]][[v.now]]$q975   = NA * sta[[sta.size]][[v.now]]$q975
                #----- Save the global variables. ------------------------------------------#
-               ed2[[ed2.size]][[v.now]]$global[4,,yyy] = apply( X      = ms.size[npft+1,,,]
+               ed2[[ed2.size]][[v.now]]$global[4,,yyy] = apply( X      = ms.global
                                                               , MARGIN = c(1,2)
                                                               , FUN    = median
                                                               , na.rm  = TRUE
                                                               )#end apply
-               ed2[[ed2.size]][[v.now]]$global[5,,yyy] = apply( X      = ms.size[npft+1,,,]
+               ed2[[ed2.size]][[v.now]]$global[5,,yyy] = apply( X      = ms.global
                                                               , MARGIN = c(1,2)
                                                               , FUN    = quantile
                                                               , probs  = 0.025
                                                               , na.rm  = TRUE
                                                               )#end apply
-               ed2[[ed2.size]][[v.now]]$global[6,,yyy] = apply( X      = ms.size[npft+1,,,]
+               ed2[[ed2.size]][[v.now]]$global[6,,yyy] = apply( X      = ms.global
                                                               , MARGIN = c(1,2)
                                                               , FUN    = quantile
                                                               , probs  = 0.975
                                                               , na.rm  = TRUE
                                                               )#end apply
                #----- Save the PFT statistics. --------------------------------------------#
-               ed2[[ed2.size]][[v.now]]$median[ ,,yyy] = apply( X      = ms.size[mypfts,,,]
+               ed2[[ed2.size]][[v.now]]$median[ ,,yyy] = apply( X      = ms.use
                                                               , MARGIN = c(1,2,3)
                                                               , FUN    = median
                                                               , na.rm  = TRUE
                                                               )#end apply
-               ed2[[ed2.size]][[v.now]]$q025  [ ,,yyy] = apply( X      = ms.size[mypfts,,,]
+               ed2[[ed2.size]][[v.now]]$q025  [ ,,yyy] = apply( X      = ms.use
                                                               , MARGIN = c(1,2,3)
                                                               , FUN    = quantile
                                                               , probs  = 0.025
                                                               , na.rm  = TRUE
                                                               )#end apply
-               ed2[[ed2.size]][[v.now]]$q975  [ ,,yyy] = apply( X      = ms.size[mypfts,,,]
+               ed2[[ed2.size]][[v.now]]$q975  [ ,,yyy] = apply( X      = ms.use
                                                               , MARGIN = c(1,2,3)
                                                               , FUN    = quantile
                                                               , probs  = 0.975
@@ -1620,11 +1638,11 @@ for (place in myplaces){
          #    Loop over all possible types of population count.                            #
          #---------------------------------------------------------------------------------#
          for (i in 1:nindiv){
-            print(paste("  - Size level: ",desc.indiv[i],"..."))
+            cat("  - Size level: ",desc.indiv[i],"...","\n")
 
 
             #----- Build the rate name. ---------------------------------------------------#
-            print(paste(" + Plotting size-dependent ",desc.rate,"...",sep=""))
+            cat(" + Plotting size-dependent ",desc.rate,"...","\n")
             ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
             sta.rate = paste(this.plot$sta.rate,"size",sep=".")
             #------------------------------------------------------------------------------#
@@ -1694,27 +1712,41 @@ for (place in myplaces){
                #     Split the window into several smaller windows.                        #
                #---------------------------------------------------------------------------#
                par.orig = par(no.readonly = TRUE)
-               par(oma = c(2,2,3,0))
-               layout(mat=lo.box$mat)
+               par(oma = c(0.2,3,4,0))
+               layout(mat    = rbind(1+lo.box$mat,rep(1,times=lo.box$ncol))
+                     ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
+                     )#end layout
                #---------------------------------------------------------------------------#
 
 
                #---------------------------------------------------------------------------#
                #     Find the plot limit for the y scale.                                  #
                #---------------------------------------------------------------------------#
-               yuse = c(sta.q025,sta.q975,ed2.q025,ed2.q975)
-               if (ylog) yuse = log(yuse)
-               ylimit = range(yuse,na.rm=TRUE)
-               if (  any(! is.finite(ylimit)) 
-                  || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
-                  ylimit    = c(-1,1)
-               }else if (ylimit[1] == ylimit[2] ){
-                  ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * 0.25)
-                  ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * 0.25)
-               }else{
-                  ylimit[2] = ylimit[2] + 0.25 * (ylimit[2] - ylimit[1])
-               }#end if
-               if (ylog) ylimit = exp(ylimit)
+               yuse   = c(sta.q025,sta.q975,ed2.q025,ed2.q975)
+               ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Plot legend. --------------------------------------------------------#
+               par(mar=c(0.1,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.01
+                      , legend  = c("Census","ED-2.2")
+                      , fill    = c(col.sta[2],col.ed2[2])
+                      , border  = c(col.sta[2],col.ed2[2])
+                      , col     = c(col.sta[1],col.ed2[1])
+                      , lwd     = 2.0
+                      , pt.cex  = 1.0
+                      , angle   = c(-45,45)
+                      , density = c( 40,40)
+                      , bg      = "white"
+                      , ncol    = 2
+                      , title   = "(Shaded - 95% C.I.)"
+                      , cex     = 1.0
+                      )#end legend
                #---------------------------------------------------------------------------#
 
 
@@ -1727,9 +1759,7 @@ for (place in myplaces){
                   right   = (k %% lo.box$ncol) == 0
                   top     = k <= lo.box$ncol
                   bottom  = k > (lo.box$nrow - 1) * lo.box$ncol
-                  mar.now = c(3 + 2 * bottom,2 + 2 * left,2 + 2 * top,2 * right) + 0.1
-                  if (bottom) xaxt="s" else xaxt="n"
-                  if (left)   yaxt="s" else yaxt="n"
+                  mar.now = c(1 + 3 * bottom,1 + 1 * left,1 + 2 * top,1 + 1 * right) + 0.1
 
 
 
@@ -1756,34 +1786,17 @@ for (place in myplaces){
                   #----- Plotting window and grid. ----------------------------------------#
                   par(mar=mar.now)
                   plot.new()
-                  plot.window(xlim=xlimit,ylim=ylimit,xaxt=xaxt,yaxt,yaxt,log=plog)
+                  plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                  if (bottom) axis(side=1)
+                  if (left  ) axis(side=2)
                   box()
                   title(main=lesub)
-                  if (plotgrid) grid(col="gray83",lty="solid")
+                  if (plotgrid) grid(col="grey83",lty="solid")
                   #----- Plot the taxon rate with confidence interval. --------------------#
                   epolygon(x=size.poly,col=c(col.sta[2],col.ed2[2]),angle=c(-45,45)
                           ,density=40,lty="solid",lwd=1.0)
                   lines(x=x.dbh,y=sta.median[,y],type="o",col=col.sta[1],pch=16,lwd=2.0)
                   lines(x=x.dbh,y=ed2.median[,y],type="o",col=col.ed2[1],pch=16,lwd=2.0)
-                  #----- Plot legend. -----------------------------------------------------#
-                  if (top && right){
-                     legend ( x       = legpos
-                            , inset   = 0.01
-                            , legend  = c("Census","ED-2.2")
-                            , fill    = c(col.sta[2],col.ed2[2])
-                            , border  = c(col.sta[2],col.ed2[2])
-                            , col     = c(col.sta[1],col.ed2[1])
-                            , lwd     = 2.0
-                            , pt.cex  = 1.0
-                            , angle   = c(-45,45)
-                            , density = c( 40,40)
-                            , bg      = "white"
-                            , ncol    = 2
-                            , title   = "(Shaded - 95% C.I.)"
-                            , cex     = 1.0
-                            )#end legend
-                  }#end if
-                  #------------------------------------------------------------------------#
                }#end for
                #---------------------------------------------------------------------------#
 
@@ -1802,9 +1815,10 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Plot the global title.                                                #
                #---------------------------------------------------------------------------#
-               mtext(text=lex    ,side=1,outer=TRUE)
-               mtext(text=ley    ,side=2,outer=TRUE)
-               mtext(text=letitre,side=3,outer=TRUE,cex=0.8,font=2)
+               par(las=0)
+               mtext(text=lex    ,side=1,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+               mtext(text=ley    ,side=2,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
+               mtext(text=letitre,side=3,outer=TRUE,cex=cex.main,font=2)
                par(par.orig)
                #---------------------------------------------------------------------------#
 
@@ -1853,7 +1867,7 @@ for (place in myplaces){
 
          nindiv     = length(indiv)
 
-         print(paste(" + Plotting time series of ",desc.rate,"...",sep=""))
+         cat(" + Plotting time series of ",desc.rate,"...","\n")
          #---------------------------------------------------------------------------------#
          #    Loop over all possible types of population count.                            #
          #---------------------------------------------------------------------------------#
@@ -1862,7 +1876,7 @@ for (place in myplaces){
             #==============================================================================#
             #     PLOT-LEVEL rates.                                                        #
             #------------------------------------------------------------------------------#
-            print(paste("  - Plot level: ",desc.indiv[i],"..."))
+            cat("  - Plot level: ",desc.indiv[i],"...","\n")
             ed2.rate       = paste(this.plot$ed2.rate,"plot",sep=".")
             sta.rate       = paste(this.plot$sta.rate,"plot",sep=".")
 
@@ -1914,18 +1928,7 @@ for (place in myplaces){
             #     Find the plot limit for the y scale.                                     #
             #------------------------------------------------------------------------------#
             yuse   = c(sta.q025,sta.q975,ed2.q025,ed2.q975)
-            if (ylog) yuse   = log(yuse)
-            ylimit = range(yuse[is.finite(yuse)],na.rm=TRUE)
-            if (  any(! is.finite(ylimit)) 
-               || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
-               ylimit    = c(-1,1)
-            }else if (ylimit[1] == ylimit[2] ){
-               ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * 0.40)
-               ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * 0.40)
-            }else{
-               ylimit[2] = ylimit[2] + 0.40 * (ylimit[2] - ylimit[1])
-            }#end if
-            if (ylog) ylimit = exp(ylimit)
+            ylimit = pretty.xylim(u=yuse,fracexp=scalleg,is.log=ylog)
             #------------------------------------------------------------------------------#
 
 
@@ -1970,7 +1973,7 @@ for (place in myplaces){
                #----- Plotting window and grid. -------------------------------------------#
                plot(x=x.years,y=sta.median,xlim=xlimit,ylim=ylimit,type="n",main=letitre
                    ,xlab=lex,ylab=ley,log=plog,cex.main=0.7)
-               if (plotgrid) grid(col="gray83",lty="solid")
+               if (plotgrid) grid(col="grey83",lty="solid")
                #----- Plot the taxon rate with confidence interval. -----------------------#
                epolygon(x=plot.poly,col=c(col.sta[2],col.ed2[2]),angle=c(-45,45)
                        ,density=40,lty="solid",lwd=1.0)
@@ -2014,7 +2017,7 @@ for (place in myplaces){
             #     DBH-LEVEL rates.                                                         #
             #------------------------------------------------------------------------------#
             if (sizetoo){
-               print(paste("  - DBH classes: ",desc.indiv[i],"..."))
+               cat("  - DBH classes: ",desc.indiv[i],"...","\n")
                ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
                sta.rate = paste(this.plot$sta.rate,"size",sep=".")
 
@@ -2088,8 +2091,33 @@ for (place in myplaces){
                   #     Split the window into several smaller windows.                     #
                   #------------------------------------------------------------------------#
                   par.orig = par(no.readonly = TRUE)
-                  par(oma = c(2,2,3,0))
-                  layout(mat=lo.box$mat)
+                  par(oma = c(0.2,3,4,0))
+                  layout(mat    = rbind(1+lo.box$mat,rep(1,times=lo.box$ncol))
+                        ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
+                        )#end layout
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Plot legend. -----------------------------------------------------#
+                  par(mar=c(0.1,0.1,0.1,0.1))
+                  plot.new()
+                  plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                  legend ( x       = "bottom"
+                         , inset   = 0.01
+                         , legend  = c("Census","ED-2.2")
+                         , fill    = c(col.sta[2],col.ed2[2])
+                         , border  = c(col.sta[2],col.ed2[2])
+                         , col     = c(col.sta[1],col.ed2[1])
+                         , lwd     = 2.0
+                         , pt.cex  = 1.0
+                         , angle   = c(-45,45)
+                         , density = c( 40,40)
+                         , bg      = "white"
+                         , ncol    = 2
+                         , title   = "(Shaded - 95% C.I.)"
+                         , cex     = 1.0
+                         )#end legend
                   #------------------------------------------------------------------------#
 
 
@@ -2109,18 +2137,7 @@ for (place in myplaces){
                      #     Find the plot limit for the y scale.                            #
                      #---------------------------------------------------------------------#
                      yuse   = c(ed2.q025[d,],ed2.q975[d,],sta.q025[d,],sta.q975[d,])
-                     if (ylog) yuse = log(yuse)
-                     ylimit = range(yuse[is.finite(yuse)],na.rm=TRUE)
-                     if (  any(! is.finite(ylimit)) 
-                        || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
-                        ylimit    = c(-1,1)
-                     }else if (ylimit[1] == ylimit[2] ){
-                        ylimit[1] = ylimit[1] * ( 1. - sign(ylimit[1]) * 0.40)
-                        ylimit[2] = ylimit[2] * ( 1. + sign(ylimit[2]) * 0.40)
-                     }else{
-                        ylimit[2] = ylimit[2] + 0.40 * (ylimit[2] - ylimit[1])
-                     }#end if
-                     if (ylog) ylimit = exp(ylimit)
+                     ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
                      #---------------------------------------------------------------------#
 
 
@@ -2145,8 +2162,12 @@ for (place in myplaces){
                      #----- Plot the box plot. --------------------------------------------#
                      par(mar=c(2,2,4,1)+0.1)
                      #----- Plotting window and grid. -------------------------------------#
-                     plot(x=x.years,y=ed2.median[d,],xlim=xlimit,ylim=ylimit,type="n"
-                         ,main=lesub,xlab="",ylab="",log=plog)
+                     plot.new()
+                     plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                     axis(side=1)
+                     axis(side=2)
+                     box()
+                     title(main=lesub,xlab="",ylab="")
                      if (plotgrid) grid(col="grey83",lty="solid")
                      #----- Plot the taxon rate with confidence interval. -----------------#
                      epolygon(x=size.poly,col=c(col.sta[2],col.ed2[2]),angle=c(-45,45)
@@ -2155,24 +2176,6 @@ for (place in myplaces){
                           ,col=col.sta[1])
                      lines(x=x.years,y=ed2.median[d,],type="o",pch=16,lwd=2.0
                           ,col=col.ed2[1])
-                     #----- Plot legend. --------------------------------------------------#
-                     if (top && right){
-                        legend ( x       = legpos
-                               , inset   = 0.01
-                               , legend  = c("Census","ED-2.2")
-                               , fill    = c(col.sta[2],col.ed2[2])
-                               , border  = c(col.sta[2],col.ed2[2])
-                               , col     = c(col.sta[1],col.ed2[1])
-                               , lwd     = 2.0
-                               , pt.cex  = 1.0
-                               , angle   = c(-45,45)
-                               , density = c( 40,40)
-                               , bg      = "white"
-                               , ncol    = 2
-                               , title   = "(Shaded - 95% C.I.)"
-                               , cex     = 1.0
-                               )#end legend
-                     }#end if
                      #---------------------------------------------------------------------#
                   }#end for (d in 1:n.dbh)
                   #------------------------------------------------------------------------#
@@ -2183,8 +2186,8 @@ for (place in myplaces){
                   #     Make the title and axis labels.                                    #
                   #------------------------------------------------------------------------#
                   letitre = paste(desc.rate,": ",lieu,sep="")
-                  ley         = paste(desc.rate," [% ",desc.indiv[i],"]",sep="")
-                  lex         = "Census"
+                  ley     = paste(desc.rate," [% ",desc.indiv[i],"]",sep="")
+                  lex     = "Census"
                   #------------------------------------------------------------------------#
 
 
@@ -2192,9 +2195,10 @@ for (place in myplaces){
                   #------------------------------------------------------------------------#
                   #     Split the plotting window.                                         #
                   #------------------------------------------------------------------------#
-                  mtext(text=lex    ,side=1,outer=TRUE)
-                  mtext(text=ley    ,side=2,outer=TRUE)
-                  mtext(text=letitre,side=3,outer=TRUE,cex=0.8,font=2)
+                  par(las=0)
+                  mtext(text=lex    ,side=1,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+                  mtext(text=ley    ,side=2,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
+                  mtext(text=letitre,side=3,outer=TRUE,cex=cex.main,font=2)
                   par(par.orig)
                   #------------------------------------------------------------------------#
 
@@ -2228,7 +2232,7 @@ for (place in myplaces){
    #=======================================================================================#
    #     Plot the monthly mean variables as functions of other 2 environment variables.    #
    #---------------------------------------------------------------------------------------#
-   print(paste(" + Plotting parameter space...",sep=""))
+   cat(" + Plotting parameter space...",sep="","\n")
 
 
    #----- Sizes. --------------------------------------------------------------------------#
@@ -2260,7 +2264,7 @@ for (place in myplaces){
       yleg    = this.y$leg
       ylog    = this.y$log
       sizetoo = this.y$sizetoo
-      print(paste("     * Y: ",ydesc,"..."))
+      cat("     * Y: ",ydesc,"...","\n")
       #------------------------------------------------------------------------------------#
 
 
@@ -2283,27 +2287,7 @@ for (place in myplaces){
       yvar.plot   = ymult * ( pspace[[yplot.name]] + yadd )
       yvar.size   = ymult * ( pspace[[ysize.name]] + yadd )
       ley         = paste(ydesc," [",yunit,"]",sep="")
-
-      sel                   = is.finite(yvar.plot) & ( yvar.plot > 0 | (! ylog))
-      ylimit.plot           = range(yvar.plot[sel],na.rm=TRUE)
-      if (ylog) ylimit.plot = log(ylimit.plot)
-      ylimit.plot[2]        = ylimit.plot[2] + scalleg * diff(ylimit.plot)
-      if (ylog) ylimit.plot = exp(ylimit.plot)
-
-      if (sizetoo){
-         ylimit.size = matrix(nrow=n.dbh,ncol=2)
-         for (d in 1:n.dbh){
-            sel                       = ( is.finite(yvar.size[d,]) 
-                                        & ( yvar.size[d,] > 0 | (! ylog)) )
-            ylimit.size[d,]           = range(yvar.size[d,sel],na.rm=TRUE)
-            if (ylog) ylimit.size[d,] = log(ylimit.size[d,])
-            ylimit.size[d,2]          = ( ylimit.size[d,2]
-                                        + scalleg * diff(ylimit.size[d,]) )
-            if (ylog) ylimit.size[d,] = exp(ylimit.size[d,])
-         }#end for
-      }else{
-         ylimit.size = ylimit.plot
-      }#end if
+      ylimit.plot = pretty.xylim(u=yvar.plot,fracexp=scalleg,is.log=ylog)
       #------------------------------------------------------------------------------------#
 
 
@@ -2368,7 +2352,7 @@ for (place in myplaces){
             zmult    = this.z$mult
             zcscheme = get(this.z$col.scheme)
             zlog     = this.z$log
-            print(paste("      ~ X:",xdesc,"   Z: ",zdesc,"..."))
+            cat("      ~ X:",xdesc,"   Z: ",zdesc,"...","\n")
             #------------------------------------------------------------------------------#
 
 
@@ -2381,15 +2365,14 @@ for (place in myplaces){
 
 
             #----- Find the range for the scale. ------------------------------------------#
-            sel     = is.finite(zvar) & ( zvar > 0 | (! zlog) )
-            zlimit  = range(zvar[sel],na.rm=TRUE)
+            zlimit  = pretty.xylim(u=zvar,fracexp=0.0,is.log=zlog)
             #------------------------------------------------------------------------------#
 
 
             #----- Title. -----------------------------------------------------------------#
             letitre.plot = paste(lieu,paste(zdesc,"Plot level",sep=" - "),sep="\n")
-            letitre.size = paste(lieu,paste(zdesc," - DBH Class:",dbh.names,sep="")
-                                ,sep="\n")
+            letitre.size = paste(lieu,paste(zdesc,"Size level",sep=" - "),sep="\n")
+            lesub.size   = paste("DBH Class: ",dbh.names,sep="")
             #------------------------------------------------------------------------------#
 
 
@@ -2399,34 +2382,12 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
 
 
-            #------------------------------------------------------------------------------#
-            #     Make the list of commands for plot.axes.                                 #
-            #------------------------------------------------------------------------------#
-            plot.axes      = list()
-            plot.axes[[1]] = list( x.axis = list(side=1)
-                                 , y.axis = list(side=2)
-                                 , grid   = list(col="grey62",lty="solid")
-                                 , legend = list( x      = leg.pos
-                                                , inset  = 0.01
-                                                , legend = pspace$leg.label
-                                                , col    = "black"
-                                                , bg     = "white"
-                                                , pch    = pspace$leg.pch
-                                                , title  = "Census"
-                                                , ncol   = 2
-                                                , pt.cex = 1./0.9
-                                                , cex    = 0.9
-                                                )#end legend
-                                 )#end list
-            #------------------------------------------------------------------------------#
-
-
 
 
             #------------------------------------------------------------------------------#
             #     Plot the plot-level.                                                     #
             #------------------------------------------------------------------------------#
-            print(paste("         > Plot-level..."))
+            cat("         > Plot-level...","\n")
             for (o in 1:nout){
                #----- Open the file. ------------------------------------------------------#
                fichier = paste(outyvar,"/plot_x_",xvname,"_y_",yvname
@@ -2448,14 +2409,36 @@ for (place in myplaces){
 
 
                #----- Plot the parameter space. -------------------------------------------#
-               colourmap(x=xvar.plot,y=yvar.plot,z=zvar
-                        ,xlim=xlimit.plot,ylim=ylimit.plot,zlim=zlimit
-                        ,colour.palette=zcscheme,cex=1.6,pch=this.pch,lwd=3,log=plog
-                        ,plot.title=title(main=letitre.plot,xlab=lex,ylab=ley
-                                         ,cex.main=cex.main)
-                        ,key.title=title(main=lez,cex.main=0.8),key.log=zlog
-                        ,plot.axes=plot.axes
-                        )#end colourmap
+               xyz.plot( x              = xvar.plot
+                       , y              = yvar.plot
+                       , z              = zvar
+                       , fixed.xlim     = TRUE
+                       , fixed.ylim     = TRUE
+                       , xlim           = xlimit.plot
+                       , ylim           = ylimit.plot
+                       , zlim           = zlimit
+                       , colour.palette = zcscheme
+                       , cex            = 1.6
+                       , pch            = this.pch
+                       , xy.log         = plog
+                       , xyz.main       = list(text=letitre.plot,cex=cex.main)
+                       , xyz.xlab       = list(text=lex,adj=mtext.xadj,padj=mtext.xoff)
+                       , xyz.ylab       = list(text=ley,adj=mtext.yadj,padj=mtext.yoff)
+                       , key.title      = list(main=lez,cex.main=0.8)
+                       , key.log        = zlog
+                       , xyz.more       = list(grid=list(col="grey62",lty="solid"))
+                       , xyz.legend     = list( x      = "bottom"
+                                              , inset  = 0.01
+                                              , legend = pspace$leg.label
+                                              , col    = "black"
+                                              , bg     = "white"
+                                              , pch    = pspace$leg.pch
+                                              , title  = "Census"
+                                              , ncol   = 2
+                                              , pt.cex = 1./0.9
+                                              , cex    = 0.9
+                                              )#end legend
+                       )#end xyz.plot
                #---------------------------------------------------------------------------#
 
 
@@ -2479,91 +2462,85 @@ for (place in myplaces){
             #     Plot the parameter space for the dbh classes if it is supposed to do so. #
             #------------------------------------------------------------------------------#
             if (sizetoo){
+               xuse.size = split(x=xvar.size,f=col(xvar.size))
+               yuse.size = split(x=yvar.size,f=col(yvar.size))
+               pch.size  = replicate(n=length(xuse.size),expr=c(this.pch),simplify=FALSE)
+
 
                #---------------------------------------------------------------------------#
-               #    Loop over DBH classes.                                                 #
+               #     Plot the bar plot.                                                    #
                #---------------------------------------------------------------------------#
-               for (d in 1:n.dbh){
-                  print(paste("         > DBH class: ",dbh.names[d],"..."))
-
-                  #------------------------------------------------------------------------#
-                  #     Make the label.                                                    #
-                  #------------------------------------------------------------------------#
-                  if (d == 1){
-                     dbh.low   = sprintf("%3.3i",0)
-                  }else{
-                     dbh.low   = sprintf("%3.3i",sta$dbh.breaks[  d])
+               for (o in 1:nout){
+                  #----- Open the file. ---------------------------------------------------#
+                  fichier = paste(outyvar,"/size_x_",xvname
+                                 ,"_y_",yvname,"_z_",zvname,".",outform[o],sep="")
+                  if(outform[o] == "x11"){
+                     X11(width=size$width,height=size$height,pointsize=ptsz)
+                  }else if(outform[o] == "png"){
+                     png(filename=fichier,width=size$width*depth
+                        ,height=size$height*depth
+                        ,pointsize=ptsz,res=depth)
+                  }else if(outform[o] == "eps"){
+                     postscript(file=fichier,width=size$width,height=size$height
+                               ,pointsize=ptsz,paper=size$paper)
+                  }else if(outform[o] == "pdf"){
+                     pdf(file=fichier,onefile=FALSE
+                        ,width=size$width,height=size$height,pointsize=ptsz
+                        ,paper=size$paper)
                   }#end if
-                  if (d == n.dbh){
-                     dbh.high  = "Inf"
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Plot the parameter space. ----------------------------------------#
+                  xyz.plot( x              = xuse.size
+                          , y              = yuse.size
+                          , z              = zvar
+                          , fixed.xlim     = FALSE
+                          , fixed.ylim     = FALSE
+                          , zlim           = zlimit
+                          , colour.palette = muitas
+                          , cex            = 1.6
+                          , pch            = this.pch
+                          , xy.log         = plog
+                          , xyz.main       = list(text=letitre.size,cex.main=cex.main)
+                          , xyz.xlab       = list(text=lex,adj=mtext.xadj,padj=mtext.xoff)
+                          , xyz.ylab       = list(text=ley,adj=mtext.yadj,padj=mtext.yoff)
+                          , key.title      = list(main=lez,cex.main=0.8)
+                          , key.log        = zlog
+                          , xyz.more       = list(grid=list(col="grey62",lty="solid"))
+                          , xyz.legend     = list( x      = "bottom"
+                                                 , inset  = 0.01
+                                                 , legend = pspace$leg.label
+                                                 , col    = "black"
+                                                 , bg     = "white"
+                                                 , pch    = pspace$leg.pch
+                                                 , title  = "Census"
+                                                 , ncol   = 2
+                                                 , pt.cex = 1./0.9
+                                                 , cex    = 0.9
+                                                 )#end legend
+                          )#end xyz.plot
+                  #------------------------------------------------------------------------#
+
+
+                  #------------------------------------------------------------------------#
+                  #     Close the device.                                                  #
+                  #------------------------------------------------------------------------#
+                  if (outform[o] == "x11"){
+                     locator(n=1)
+                     dev.off()
                   }else{
-                     dbh.high  = sprintf("%3.3i",sta$dbh.breaks[d+1])
+                     dev.off()
                   }#end if
-                  dbh.label = paste(dbh.low,dbh.high,sep="-")
                   #------------------------------------------------------------------------#
-
-
-
-                  #------------------------------------------------------------------------#
-                  #     Plot the bar plot.                                                 #
-                  #------------------------------------------------------------------------#
-                  for (o in 1:nout){
-                     #----- Open the file. ------------------------------------------------#
-                     fichier = paste(outyvar,"/size",dbh.label,"_x_",xvname
-                                    ,"_y_",yvname,"_z_",zvname,".",outform[o],sep="")
-                     if(outform[o] == "x11"){
-                        X11(width=size$width,height=size$height,pointsize=ptsz)
-                     }else if(outform[o] == "png"){
-                        png(filename=fichier,width=size$width*depth
-                           ,height=size$height*depth
-                           ,pointsize=ptsz,res=depth)
-                     }else if(outform[o] == "eps"){
-                        postscript(file=fichier,width=size$width,height=size$height
-                                  ,pointsize=ptsz,paper=size$paper)
-                     }else if(outform[o] == "pdf"){
-                        pdf(file=fichier,onefile=FALSE
-                           ,width=size$width,height=size$height,pointsize=ptsz
-                           ,paper=size$paper)
-                     }#end if
-                     #---------------------------------------------------------------------#
-
-
-
-                     #----- Plot the parameter space. -------------------------------------#
-                     colourmap(x=xvar.size[d,],y=yvar.size[d,],z=zvar
-                              ,xlim=xlimit.size[d,],ylim=ylimit.size[d,],zlim=zlimit
-                              ,colour.palette=muitas,cex=1.6,pch=this.pch,lwd=3,log=plog
-                              ,plot.title=title(main=letitre.size[d],cex.main=cex.main
-                                               ,xlab=lex,ylab=ley)
-                              ,key.title=title(main=lez,cex.main=0.8),key.log=zlog
-                              ,plot.axes=plot.axes
-                              )#end colourmap
-                     #---------------------------------------------------------------------#
-
-
-                     #---------------------------------------------------------------------#
-                     #     Close the device.                                               #
-                     #---------------------------------------------------------------------#
-                     if (outform[o] == "x11"){
-                        locator(n=1)
-                        dev.off()
-                     }else{
-                        dev.off()
-                     }#end if
-                     #---------------------------------------------------------------------#
-                  }#end for outform
-                  #------------------------------------------------------------------------#
-               }#end for
+               }#end for (o in 1:nout)
                #---------------------------------------------------------------------------#
-            }#end if
+            }#end if (sizetoo)
             #------------------------------------------------------------------------------#
-
-         }#end for
+         }#end for (x in 1:nxvar)
          #---------------------------------------------------------------------------------#
-
-
-
-      }#end for
+      }#end for (y in 1:nyvar)
       #------------------------------------------------------------------------------------#
    }#end for
    #---------------------------------------------------------------------------------------#

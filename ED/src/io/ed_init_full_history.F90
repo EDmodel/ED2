@@ -2084,7 +2084,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = int(cpoly%nsites,8)
    memoffs(2)   = 0_8
 
-   call hdf_getslab_r(cpoly%lambda_fire,'LAMBDA_FIRE ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(cpoly%lambda_fire     ,'LAMBDA_FIRE '                                &
+                     ,dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(cpoly%avg_monthly_pcpg,'AVG_MONTHLY_PCPG '                           &
+                     ,dsetrank,iparallel,.true.,foundvar)
 
    dsetrank    = 3_8
    globdims(1:2) = int(n_dist_types,8)

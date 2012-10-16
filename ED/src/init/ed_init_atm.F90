@@ -45,6 +45,7 @@ subroutine ed_init_atm()
                                     , cmtl2uext         ! ! function
    use met_driver_coms       , only : met_driv_state    ! ! structure
    use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
+   use budget_utils          , only : update_budget     ! ! subroutine
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)        , pointer  :: cgrid

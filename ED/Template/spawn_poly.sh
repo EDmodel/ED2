@@ -23,7 +23,7 @@ sitemetdef='/n/moorcroft_data/mlongo/data/ed2_data/site_met_driver'
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with default pseudo past drivers. ---------------------------------------------#
-scenariopathdef='/n/moorcroft_data/mlongo/data/ed2_data/past_met_driver'
+scenariopathdef='/n/moorcroft_data/mlongo/data/ed2_data/scenario_met_driver'
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch='n'
 #------------------------------------------------------------------------------------------#
@@ -82,7 +82,7 @@ execname='ed_2.1-opt'
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
    sitemet='/scratch/mlongo/met_driver/site_met_driver'
-   scenariopath='/scratch/mlongo/met_driver/past_met_driver'
+   scenariopath='/scratch/mlongo/met_driver/scenario_met_driver'
    shefpath='/scratch/mlongo/met_driver/sheffield'
 else
    sitemet=${sitemetdef}
@@ -588,7 +588,7 @@ do
    #  whereas positive means that wet years are picked more often.                         #
    #                                                                                       #
    #---------------------------------------------------------------------------------------#
-   if [ ${iscenario} -ne 0 ]
+   if [ ${iscenario} -eq 0 ]
    then
       #------------------------------------------------------------------------------------#
       #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #

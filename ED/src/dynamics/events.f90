@@ -294,6 +294,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, area_indices, ed_biomass
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
+  use budget_utils     , only : update_budget
   implicit none
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
@@ -457,6 +458,7 @@ subroutine event_planting(pft,density8)
        filltab_alltypes 
   use pft_coms, only:sla,qsw,q,hgt_min
   use disturbance_utils,only: plant_patch
+  use budget_utils     , only : update_budget
   implicit none
   integer(kind=4),intent(in) :: pft
   real(kind=8),intent(in) :: density8
@@ -524,6 +526,7 @@ subroutine event_fertilize(rval8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
   use disturbance_utils,only: plant_patch
+  use budget_utils     , only : update_budget
   real(kind=8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
@@ -579,7 +582,7 @@ subroutine event_fertilize(rval8)
 
   end do
 
-end subroutine
+end subroutine event_fertilize
 
 subroutine event_irrigate(rval8)
   use grid_coms, only : ngrids,nzg
@@ -693,6 +696,7 @@ subroutine event_till(rval8)
   use decomp_coms, only: f_labile
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
+  use budget_utils     , only : update_budget
   implicit none
   real(kind=8),intent(in) :: rval8
 

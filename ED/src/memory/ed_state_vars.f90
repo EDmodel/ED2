@@ -1253,6 +1253,7 @@ module ed_state_vars
      ! or not recruits come up this month.
      real,pointer,dimension(:)  :: min_monthly_temp
 
+
      !-----------------------------------
      ! FORESTRY
      !-----------------------------------
@@ -1296,6 +1297,8 @@ module ed_state_vars
      real,pointer,dimension(:) :: ignition_rate
 
      real,pointer, dimension(:,:) :: lambda_fire ! initialized in create_site !(12,nsites)
+     ! Monthly rainfall [mm/month] for each month over the past 12 months.
+     real,pointer,dimension(:,:)  :: avg_monthly_pcpg
 
      type(prescribed_phen),pointer, dimension(:) :: phen_pars
 
@@ -2991,6 +2994,7 @@ contains
     allocate(cpoly%fire_disturbance_rate(nsites))
     allocate(cpoly%ignition_rate(nsites))
     allocate(cpoly%lambda_fire(12,nsites))
+    allocate(cpoly%avg_monthly_pcpg(12,nsites))
     allocate(cpoly%phen_pars(nsites))!THIS PTR IS ALLOCATED IN PHENOLOGY_INIT
     allocate(cpoly%nat_disturbance_rate(nsites))
     allocate(cpoly%nat_dist_type(nsites))
@@ -4274,6 +4278,7 @@ contains
     nullify(cpoly%fire_disturbance_rate)
     nullify(cpoly%ignition_rate)
     nullify(cpoly%lambda_fire)
+    nullify(cpoly%avg_monthly_pcpg)
     nullify(cpoly%phen_pars)
     nullify(cpoly%nat_disturbance_rate)
     nullify(cpoly%nat_dist_type)
@@ -5537,6 +5542,7 @@ contains
     if(associated(cpoly%fire_disturbance_rate       )) deallocate(cpoly%fire_disturbance_rate       )
     if(associated(cpoly%ignition_rate               )) deallocate(cpoly%ignition_rate               )
     if(associated(cpoly%lambda_fire                 )) deallocate(cpoly%lambda_fire                 )
+    if(associated(cpoly%avg_monthly_pcpg            )) deallocate(cpoly%avg_monthly_pcpg            )
     if(associated(cpoly%phen_pars                   )) deallocate(cpoly%phen_pars                   )
     if(associated(cpoly%nat_disturbance_rate        )) deallocate(cpoly%nat_disturbance_rate        )
     if(associated(cpoly%nat_dist_type               )) deallocate(cpoly%nat_dist_type               )
@@ -12405,8 +12411,15 @@ contains
 
       if (associated(cpoly%lambda_fire)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpoly%lambda_fire,nvar,igr,init,cpoly%siglob_id         &
-                             ,var_len,var_len_global,max_ptrs,'LAMBDA_FIRE :29:hist') 
+         call vtable_edio_r(npts,cpoly%lambda_fire,nvar,igr,init,cpoly%siglob_id           &
+                           ,var_len,var_len_global,max_ptrs,'LAMBDA_FIRE :29:hist')   
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpoly%avg_monthly_pcpg)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%avg_monthly_pcpg,nvar,igr,init,cpoly%siglob_id      &
+                           ,var_len,var_len_global,max_ptrs,'AVG_MONTHLY_PCPG :29:hist')     
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       !------------------------------------------------------------------------------------!

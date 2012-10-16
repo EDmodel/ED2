@@ -37,6 +37,7 @@ subroutine fire_frequency(cgrid)
    integer                        :: isi
    integer                        :: ipa
    integer                        :: ico
+   integer                        :: imon
    integer                        :: k
    integer                        :: nsoil
    real                           :: ndaysi
@@ -49,7 +50,10 @@ subroutine fire_frequency(cgrid)
    real                           :: ignition_rate
    real                           :: fire_scale
    real                           :: mean_fire_intensity
+   real                           :: sum_pcpg
    !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Find the number of days of last month so we can normalise the integrated ground   !
@@ -60,13 +64,31 @@ subroutine fire_frequency(cgrid)
    !---------------------------------------------------------------------------------------!
 
 
+   !----- Current month. ------------------------------------------------------------------!
+   imon = current_time%month
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Loop over polygons and sites. ---------------------------------------------------!
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
 
+
+      !------------------------------------------------------------------------------------!
+      !     Loop over all sites.                                                           !
+      !------------------------------------------------------------------------------------!
       siteloop: do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
+
+         !---------------------------------------------------------------------------------!
+         !     Find the total rainfall of the past year and reset the counter for this     !
+         ! month.                                                                          !
+         !---------------------------------------------------------------------------------!
+         sum_pcpg                         = sum(cpoly%avg_monthly_pcpg(:,isi))
+         cpoly%avg_monthly_pcpg(imon,isi) = 0.
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Initialize ignition rate and the mean fire intensity (site variables). ----!
          ignition_rate       = 0.0
@@ -158,7 +180,7 @@ subroutine fire_frequency(cgrid)
                !     The threshold is independent on soil moisture.  We use climatological !
                ! water deficit instead.                                                    !
                !---------------------------------------------------------------------------!
-               if (csite%avg_monthly_waterdef(ipa) > sm_fire) then
+               if (csite%avg_monthly_waterdef(ipa) >= sm_fire * sum_pcpg) then
                   fire_intensity      = fire_parameter
                   mean_fire_intensity = mean_fire_intensity                                &
                                       + fire_intensity * csite%area(ipa)
@@ -189,7 +211,7 @@ subroutine fire_frequency(cgrid)
 
 
          !----- Calculate fire disturbance rate [1/month]. --------------------------------!
-         cpoly%lambda_fire  (current_time%month,isi) = ignition_rate
+         cpoly%lambda_fire  (imon,isi) = ignition_rate
          if (mean_fire_intensity > 0.) then
             cpoly%ignition_rate (isi) = ignition_rate / mean_fire_intensity
          else

@@ -51,6 +51,7 @@ subroutine reproduction(cgrid, month)
    use grid_coms          , only : nzg                      ! ! intent(in)
    use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
    use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
+   use budget_utils       , only : update_budget            ! ! sub-routine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid

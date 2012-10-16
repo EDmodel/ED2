@@ -39,7 +39,7 @@ module growth_balive
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
       use ed_misc_coms    , only : igrass                 ! ! intent(in)
-
+      use budget_utils    , only : update_budget          ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!

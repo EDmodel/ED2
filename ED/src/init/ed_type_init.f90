@@ -706,6 +706,16 @@ subroutine init_ed_site_vars(cpoly, lat)
 
 
    !---------------------------------------------------------------------------------------!
+   !      Initialise monthly rainfall with some arbitrary but high number.  This will      !
+   ! probably prevent fires to happen at the first year, but all data will be replaced by  !
+   ! actual rainfall after 12 months.  In the future we may initialise with climatological !
+   ! rainfall.                                                                             !
+   !---------------------------------------------------------------------------------------!
+   cpoly%avg_monthly_pcpg(:,:) = 500.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
    !      Initialise several disturbance- and LU-related variables.                        !
    !---------------------------------------------------------------------------------------!
    cpoly%plantation                                       (:) = 0

@@ -27,6 +27,7 @@ subroutine apply_forestry(cpoly, isi, year)
    use grid_coms            , only : nzg                        & ! intent(in)
                                    , nzs                        ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf                   ! ! intent(in)
+   use budget_utils         , only : update_budget              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)             , target      :: cpoly

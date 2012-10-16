@@ -16,11 +16,14 @@ subroutine heun_timestep(cgrid)
    use met_driver_coms       , only : met_driv_state     ! ! structure
    use grid_coms             , only : nzg                & ! intent(in)
                                     , nzs                ! ! intent(in)
-   use ed_misc_coms          , only : dtlsm              ! ! intent(in)
+   use ed_misc_coms          , only : current_time       & ! intent(in)
+                                    , dtlsm              ! ! intent(in)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use soil_coms             , only : soil_rough         & ! intent(in)
                                     , snow_rough         ! ! intent(in)
    use therm_lib             , only : tq2enthalpy        ! ! function
+   use budget_utils          , only : update_budget      & ! function
+                                    , compute_budget     ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)             , target      :: cgrid
@@ -33,6 +36,7 @@ subroutine heun_timestep(cgrid)
    integer                                :: isi
    integer                                :: ipa
    integer                                :: ico
+   integer                                :: imon
    integer                                :: nsteps
    real                                   :: thetaatm
    real                                   :: thetacan
@@ -55,8 +59,6 @@ subroutine heun_timestep(cgrid)
    real                                   :: old_can_temp
    real                                   :: old_can_prss
    real                                   :: fm
-   !----- External functions. -------------------------------------------------------------!
-   real, external                         :: compute_netrad
    !---------------------------------------------------------------------------------------!
 
 
@@ -66,6 +68,14 @@ subroutine heun_timestep(cgrid)
       siteloop: do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
          cmet  => cpoly%met(isi)
+
+         !---------------------------------------------------------------------------------!
+         !     Update the monthly rainfall.                                                !
+         !---------------------------------------------------------------------------------!
+         imon                             = current_time%month
+         cpoly%avg_monthly_pcpg(imon,isi) = cpoly%avg_monthly_pcpg(imon,isi)               &
+                                          + cmet%pcpg * dtlsm
+         !---------------------------------------------------------------------------------!
 
          patchloop: do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
@@ -206,8 +216,11 @@ subroutine heun_timestep(cgrid)
                                ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
             !------------------------------------------------------------------------------!
          end do patchloop
+         !---------------------------------------------------------------------------------!
       end do siteloop
+      !------------------------------------------------------------------------------------!
    end do polyloop
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine heun_timestep
