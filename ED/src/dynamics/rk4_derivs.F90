@@ -1438,6 +1438,19 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
          !---------------------------------------------------------------------------------!
+         !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
+         !---------------------------------------------------------------------------------!
+         if (fast_diagnostics) then
+            dinitp%cav_sensible_lc      (ico)  = hflxlc
+            dinitp%cav_vapor_lc         (ico)  = wflxlc
+            dinitp%cav_transp           (ico)  = transp
+            dinitp%cav_intercepted_al   (ico)  = leaf_intercepted
+            dinitp%cav_wshed_lg         (ico)  = wshed
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
          !    If the detailed output is tracked, then we save the fluxes for this cohort.  !
          !---------------------------------------------------------------------------------!
          if (print_detailed) then
@@ -1481,6 +1494,21 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          dinitp%leaf_water(ico)  = 0.d0
          dinitp%psi_open(ico)    = 0.d0
          dinitp%psi_closed(ico)  = 0.d0
+
+
+         !---------------------------------------------------------------------------------!
+         !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
+         !---------------------------------------------------------------------------------!
+         if (fast_diagnostics) then
+            dinitp%cav_sensible_lc      (ico)  = 0.d0
+            dinitp%cav_vapor_lc         (ico)  = 0.d0
+            dinitp%cav_transp           (ico)  = 0.d0
+            dinitp%cav_intercepted_al   (ico)  = 0.d0
+            dinitp%cav_wshed_lg         (ico)  = 0.d0
+         end if
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !    If the detailed output is tracked, then we save the fluxes for this cohort.  !
@@ -1677,6 +1705,21 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          initp%hflx_wrsti(ico) = initp%rshort_w(ico)+initp%rlong_w(ico) &
                                  -qwshed+wood_qintercepted
 
+
+
+         !---------------------------------------------------------------------------------!
+         !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
+         !---------------------------------------------------------------------------------!
+         if (fast_diagnostics) then
+            dinitp%cav_sensible_wc      (ico)  = hflxwc
+            dinitp%cav_vapor_wc         (ico)  = wflxwc
+            dinitp%cav_intercepted_aw   (ico)  = wood_intercepted
+            dinitp%cav_wshed_wg         (ico)  = wshed
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !    If the detailed output is tracked, then we save the fluxes for this cohort.  !
          !---------------------------------------------------------------------------------!
@@ -1721,6 +1764,18 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          dinitp%wood_water(ico)  = 0.d0
          !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
+         !---------------------------------------------------------------------------------!
+         if (fast_diagnostics) then
+            dinitp%cav_sensible_wc      (ico)  = 0.d0
+            dinitp%cav_vapor_wc         (ico)  = 0.d0
+            dinitp%cav_intercepted_aw   (ico)  = 0.d0
+            dinitp%cav_wshed_wg         (ico)  = 0.d0
+         end if
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -1859,8 +1914,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    if (fast_diagnostics .or. checkbudget .or. print_detailed) then
       !----- Average shortwave radiation. -------------------------------------------------!
       dinitp%avg_rshort_gnd    = dble(csite%rshort_g(ipa))
+      dinitp%avg_par_gnd       = dble(csite%par_g   (ipa))
       do k=1,initp%nlev_sfcwater
          dinitp%avg_rshort_gnd = dinitp%avg_rshort_gnd + dble(csite%rshort_s(k,ipa))
+         dinitp%avg_par_gnd    = dinitp%avg_par_gnd    + dble(csite%par_s   (k,ipa))
       end do
       !------------------------------------------------------------------------------------!
 

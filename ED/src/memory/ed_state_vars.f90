@@ -164,9 +164,9 @@ module ed_state_vars
      real, pointer,dimension(:,:) :: cb_moistmax  !(13,ncohorts)
 
      ! Relative carbon balance:
-     !                                 CB                      CB       
-     !                  cr    = k ------------- + (1 - k) ------------- 
-     !                             CB_lightmax             CB_watermax  
+     !                    1         CB_lightmax             CB_watermax 
+     !                  ----   = k ------------- + (1 - k) -------------
+     !                   CR             CB                      CB      
      ! k is the ddmort_const given on the namelist
      real ,pointer,dimension(:) :: cbr_bar
      
@@ -368,6 +368,7 @@ module ed_state_vars
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort leaves(units are W/m2)
      real ,pointer,dimension(:)   :: par_l
+     real ,pointer,dimension(:)   :: mean_par_l
      real ,pointer,dimension(:)   :: dmean_par_l
      real ,pointer,dimension(:,:) :: qmean_par_l
      real ,pointer,dimension(:)   :: mmean_par_l
@@ -375,6 +376,7 @@ module ed_state_vars
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort leaves (units are W/m2), beam component
      real ,pointer,dimension(:)   :: par_l_beam
+     real ,pointer,dimension(:)   :: mean_par_l_beam
      real ,pointer,dimension(:)   :: dmean_par_l_beam
      real ,pointer,dimension(:,:) :: qmean_par_l_beam
      real ,pointer,dimension(:)   :: mmean_par_l_beam
@@ -382,6 +384,7 @@ module ed_state_vars
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort leaves (units are W/m2), diffuse component
      real ,pointer,dimension(:)   :: par_l_diffuse
+     real ,pointer,dimension(:)   :: mean_par_l_diff
      real ,pointer,dimension(:)   :: dmean_par_l_diff
      real ,pointer,dimension(:,:) :: qmean_par_l_diff
      real ,pointer,dimension(:)   :: mmean_par_l_diff
@@ -521,6 +524,61 @@ module ed_state_vars
      real, pointer, dimension(:) :: llspan
      real, pointer, dimension(:) :: vm_bar
      real, pointer, dimension(:) :: sla
+
+
+     ! Enthalpy and water fluxes at the cohort level, and their means.
+     real, pointer, dimension(:)   :: mean_rshort_l
+     real, pointer, dimension(:)   :: mean_rlong_l
+     real, pointer, dimension(:)   :: mean_sensible_lc
+     real, pointer, dimension(:)   :: mean_vapor_lc
+     real, pointer, dimension(:)   :: mean_transp
+     real, pointer, dimension(:)   :: mean_intercepted_al
+     real, pointer, dimension(:)   :: mean_wshed_lg
+     real, pointer, dimension(:)   :: mean_rshort_w
+     real, pointer, dimension(:)   :: mean_rlong_w
+     real, pointer, dimension(:)   :: mean_sensible_wc
+     real, pointer, dimension(:)   :: mean_vapor_wc
+     real, pointer, dimension(:)   :: mean_intercepted_aw
+     real, pointer, dimension(:)   :: mean_wshed_wg
+     real, pointer, dimension(:)   :: dmean_rshort_l
+     real, pointer, dimension(:)   :: dmean_rlong_l
+     real, pointer, dimension(:)   :: dmean_sensible_lc
+     real, pointer, dimension(:)   :: dmean_vapor_lc
+     real, pointer, dimension(:)   :: dmean_transp
+     real, pointer, dimension(:)   :: dmean_intercepted_al
+     real, pointer, dimension(:)   :: dmean_wshed_lg
+     real, pointer, dimension(:)   :: dmean_rshort_w
+     real, pointer, dimension(:)   :: dmean_rlong_w
+     real, pointer, dimension(:)   :: dmean_sensible_wc
+     real, pointer, dimension(:)   :: dmean_vapor_wc
+     real, pointer, dimension(:)   :: dmean_intercepted_aw
+     real, pointer, dimension(:)   :: dmean_wshed_wg
+     real, pointer, dimension(:,:) :: qmean_rshort_l
+     real, pointer, dimension(:,:) :: qmean_rlong_l
+     real, pointer, dimension(:,:) :: qmean_sensible_lc
+     real, pointer, dimension(:,:) :: qmean_vapor_lc
+     real, pointer, dimension(:,:) :: qmean_transp
+     real, pointer, dimension(:,:) :: qmean_intercepted_al
+     real, pointer, dimension(:,:) :: qmean_wshed_lg
+     real, pointer, dimension(:,:) :: qmean_rshort_w
+     real, pointer, dimension(:,:) :: qmean_rlong_w
+     real, pointer, dimension(:,:) :: qmean_sensible_wc
+     real, pointer, dimension(:,:) :: qmean_vapor_wc
+     real, pointer, dimension(:,:) :: qmean_intercepted_aw
+     real, pointer, dimension(:,:) :: qmean_wshed_wg
+     real, pointer, dimension(:)   :: mmean_rshort_l
+     real, pointer, dimension(:)   :: mmean_rlong_l
+     real, pointer, dimension(:)   :: mmean_sensible_lc
+     real, pointer, dimension(:)   :: mmean_vapor_lc
+     real, pointer, dimension(:)   :: mmean_transp
+     real, pointer, dimension(:)   :: mmean_intercepted_al
+     real, pointer, dimension(:)   :: mmean_wshed_lg
+     real, pointer, dimension(:)   :: mmean_rshort_w
+     real, pointer, dimension(:)   :: mmean_rlong_w
+     real, pointer, dimension(:)   :: mmean_sensible_wc
+     real, pointer, dimension(:)   :: mmean_vapor_wc
+     real, pointer, dimension(:)   :: mmean_intercepted_aw
+     real, pointer, dimension(:)   :: mmean_wshed_wg
 
   end type patchtype
 !============================================================================!
@@ -678,6 +736,17 @@ module ed_state_vars
      ! Short wave radiation absorbed by the surface water, 
      ! diffuse component (W/m2)
      real, pointer,dimension(:,:) :: rshort_s_diffuse
+
+     ! PAR absorbed by the surface water (W/m2)
+     real, pointer,dimension(:,:) :: par_s
+
+     ! PAR absorbed by the surface water, 
+     ! beam component (W/m2)
+     real, pointer,dimension(:,:) :: par_s_beam
+
+     ! PAR absorbed by the surface water, 
+     ! diffuse component (W/m2)
+     real, pointer,dimension(:,:) :: par_s_diffuse
      
      ! Soil internal energy (J/m3)
      real,    pointer,dimension(:,:) :: soil_energy
@@ -900,6 +969,15 @@ module ed_state_vars
      ! Short wave radiation absorbed by the ground, diffuse component (W/m2)
      real , pointer,dimension(:) :: rshort_g_diffuse
 
+     ! PAR absorbed by the ground (W/m2)
+     real , pointer,dimension(:) :: par_g
+     
+     ! PAR absorbed by the ground, beam component (W/m2)
+     real , pointer,dimension(:) :: par_g_beam
+     
+     ! PAR absorbed by the ground, diffuse component (W/m2)
+     real , pointer,dimension(:) :: par_g_diffuse
+
      ! Photosynthetically active radiation incident at the ground(W/m2)
      real , pointer,dimension(:) :: par_b
 
@@ -995,21 +1073,6 @@ module ed_state_vars
      ! Above ground biomass in this patch [kgC/m2]
      real , pointer,dimension(:) :: plant_ag_biomass
 
-     ! Mean water flux from the canopy air to the atmosphere (kg_H2O/m²/s).
-     real, pointer,dimension(:) :: mean_wflux
-
-     ! Mean latent heat flux from the canopy air to the atmosphere (W/m²).
-     real, pointer,dimension(:) :: mean_latflux
-
-     ! Mean sensible heat flux from the canopy air to the atmosphere (W/m²).
-     real, pointer,dimension(:) :: mean_hflux
-     
-     ! Mean runoff (kg_H2O/m²/s).
-     real, pointer,dimension(:) :: mean_runoff
-
-     ! Energy associated with runoff (W/m²), averaged over FRQSTATE
-     real, pointer,dimension(:) :: mean_qrunoff
-
      ! Last time step successfully completed by integrator.
      real, pointer,dimension(:)  :: htry
 
@@ -1054,6 +1117,7 @@ module ed_state_vars
      
      !----- Radiation --------------------------------------------------
      real, pointer, dimension(:)   :: avg_rshort_gnd     ! Absorbed SW rad. of soil + top water/snow layer   [ W/m2]
+     real, pointer, dimension(:)   :: avg_par_gnd        ! Absorbed PAR of soil + top water/snow layer   [ W/m2]
      real, pointer, dimension(:)   :: avg_rlong_gnd      ! Emitted LW rad. from soil + top water/snow layer  [ W/m2]
      real, pointer, dimension(:)   :: avg_rlongup        ! Emitted LW rad. from soil + top water/snow layer  [ W/m2]
      real, pointer, dimension(:)   :: avg_parup          ! Reflected PAR at the top of the canopy            [ W/m2]
@@ -1357,6 +1421,7 @@ module ed_state_vars
      ! Fast time flux diagnostic variables == Polygon Level
      !-------------------------------------------
      real,pointer,dimension(:)   :: avg_rshort_gnd ! Total absorbed radiation at the ground
+     real,pointer,dimension(:)   :: avg_par_gnd    ! Total absorbed PAR at the ground
      real,pointer,dimension(:)   :: avg_rlong_gnd  ! Total absorbed radiation at the ground
      real,pointer,dimension(:)   :: avg_ustar      ! Average u*                              [      m/s]
      real,pointer,dimension(:)   :: avg_tstar      ! Average Theta*                          [        K]
@@ -1646,6 +1711,7 @@ module ed_state_vars
      !-------------------------------------------
      
      real,pointer,dimension(:)   :: avg_rshort_gnd ! Total absorbed radiation at the ground
+     real,pointer,dimension(:)   :: avg_par_gnd    ! Total absorbed PAR at the ground
      real,pointer,dimension(:)   :: avg_rlong_gnd  ! Total absorbed radiation at the ground
      real,pointer,dimension(:)   :: avg_ustar      ! Average u*                              [      m/s]
      real,pointer,dimension(:)   :: avg_tstar      ! Average Theta*                          [        K]
@@ -1786,15 +1852,13 @@ module ed_state_vars
      real,pointer,dimension(:) :: Nnet_min
 
      !----- Meteorologic Conditions ----------------------------------------------------!
-     real,pointer,dimension(:) :: avg_nir_beam
-     real,pointer,dimension(:) :: avg_nir_diffuse
-     real,pointer,dimension(:) :: avg_par_beam
-     real,pointer,dimension(:) :: avg_par_diffuse
      real,pointer,dimension(:) :: avg_atm_tmp
      real,pointer,dimension(:) :: avg_atm_vpdef
      real,pointer,dimension(:) :: avg_atm_shv
      real,pointer,dimension(:) :: avg_rshort
      real,pointer,dimension(:) :: avg_rshort_diffuse
+     real,pointer,dimension(:) :: avg_par
+     real,pointer,dimension(:) :: avg_par_diffuse
      real,pointer,dimension(:) :: avg_rlong
      real,pointer,dimension(:) :: avg_pcpg
      real,pointer,dimension(:) :: avg_qpcpg
@@ -1921,8 +1985,11 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_atm_vels      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rshort        ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rshort_diff   ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_par           ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_par_diff      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rlong         ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rshort_gnd    ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_par_gnd       ! (npolygons)
      real, pointer, dimension(:)   :: dmean_rlong_gnd     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_albedo        ! (npolygons)
      real, pointer, dimension(:)   :: dmean_albedo_beam   ! (npolygons)
@@ -1994,8 +2061,11 @@ module ed_state_vars
      real, pointer, dimension(:,:)   :: qmean_atm_vels       ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rshort         ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rshort_diff    ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_par            ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_par_diff       ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rlong          ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rshort_gnd     ! (ndcycle,npolygons)
+     real, pointer, dimension(:,:)   :: qmean_par_gnd        ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_rlong_gnd      ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_albedo         ! (ndcycle,npolygons)
      real, pointer, dimension(:,:)   :: qmean_albedo_beam    ! (ndcycle,npolygons)
@@ -2143,8 +2213,11 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_atm_vpdef      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rshort         ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rshort_diff    ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_par            ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_par_diff       ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rlong          ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rshort_gnd     ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_par_gnd        ! (npolygons)
      real, pointer, dimension(:)   :: mmean_rlong_gnd      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_shv        ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_co2        ! (npolygons)
@@ -2426,6 +2499,7 @@ contains
        allocate(cgrid%avg_drainage       (npolygons))
        allocate(cgrid%avg_drainage_heat  (npolygons))
        allocate(cgrid%avg_rshort_gnd   (npolygons))
+       allocate(cgrid%avg_par_gnd      (npolygons))
        allocate(cgrid%avg_rlong_gnd    (npolygons))
        allocate(cgrid%avg_ustar        (npolygons))
        allocate(cgrid%avg_tstar        (npolygons))
@@ -2558,15 +2632,13 @@ contains
 
 
        ! Meteorologic conditions (forcing)
-       allocate(cgrid%avg_nir_beam       (npolygons))
-       allocate(cgrid%avg_nir_diffuse    (npolygons))
-       allocate(cgrid%avg_par_beam       (npolygons))
-       allocate(cgrid%avg_par_diffuse    (npolygons))
        allocate(cgrid%avg_atm_tmp        (npolygons))
        allocate(cgrid%avg_atm_vpdef      (npolygons))
        allocate(cgrid%avg_atm_shv        (npolygons))
        allocate(cgrid%avg_rshort         (npolygons))
        allocate(cgrid%avg_rshort_diffuse (npolygons))
+       allocate(cgrid%avg_par            (npolygons))
+       allocate(cgrid%avg_par_diffuse    (npolygons))
        allocate(cgrid%avg_rlong          (npolygons))
        allocate(cgrid%avg_pcpg           (npolygons))
        allocate(cgrid%avg_qpcpg          (npolygons))
@@ -2667,8 +2739,11 @@ contains
           allocate(cgrid%dmean_atm_vels       (             npolygons))
           allocate(cgrid%dmean_rshort         (             npolygons))
           allocate(cgrid%dmean_rshort_diff    (             npolygons))
+          allocate(cgrid%dmean_par            (             npolygons))
+          allocate(cgrid%dmean_par_diff       (             npolygons))
           allocate(cgrid%dmean_rlong          (             npolygons))
           allocate(cgrid%dmean_rshort_gnd     (             npolygons))
+          allocate(cgrid%dmean_par_gnd        (             npolygons))
           allocate(cgrid%dmean_rlong_gnd      (             npolygons))
           allocate(cgrid%dmean_albedo         (             npolygons))
           allocate(cgrid%dmean_albedo_beam    (             npolygons))
@@ -2764,8 +2839,11 @@ contains
           allocate(cgrid%mmean_atm_vpdef      (             npolygons))
           allocate(cgrid%mmean_rshort         (             npolygons))
           allocate(cgrid%mmean_rshort_diff    (             npolygons))
+          allocate(cgrid%mmean_par            (             npolygons))
+          allocate(cgrid%mmean_par_diff       (             npolygons))
           allocate(cgrid%mmean_rlong          (             npolygons))
           allocate(cgrid%mmean_rshort_gnd     (             npolygons))
+          allocate(cgrid%mmean_par_gnd        (             npolygons))
           allocate(cgrid%mmean_rlong_gnd      (             npolygons))
           allocate(cgrid%mmean_albedo         (             npolygons))
           allocate(cgrid%mmean_albedo_beam    (             npolygons))
@@ -2881,8 +2959,11 @@ contains
           allocate(cgrid%qmean_atm_vpdef      (     ndcycle, npolygons))
           allocate(cgrid%qmean_rshort         (     ndcycle, npolygons))
           allocate(cgrid%qmean_rshort_diff    (     ndcycle, npolygons))
+          allocate(cgrid%qmean_par            (     ndcycle, npolygons))
+          allocate(cgrid%qmean_par_diff       (     ndcycle, npolygons))
           allocate(cgrid%qmean_rlong          (     ndcycle, npolygons))
           allocate(cgrid%qmean_rshort_gnd     (     ndcycle, npolygons))
+          allocate(cgrid%qmean_par_gnd        (     ndcycle, npolygons))
           allocate(cgrid%qmean_rlong_gnd      (     ndcycle, npolygons))
           allocate(cgrid%qmean_albedo         (     ndcycle, npolygons))
           allocate(cgrid%qmean_albedo_beam    (     ndcycle, npolygons))
@@ -3052,6 +3133,7 @@ contains
     allocate(cpoly%avg_drainage            (nsites))
     allocate(cpoly%avg_drainage_heat       (nsites))
     allocate(cpoly%avg_rshort_gnd          (nsites))
+    allocate(cpoly%avg_par_gnd             (nsites))
     allocate(cpoly%avg_rlong_gnd           (nsites))
     allocate(cpoly%avg_ustar               (nsites))
     allocate(cpoly%avg_tstar               (nsites))
@@ -3205,6 +3287,9 @@ contains
     allocate(csite%rshort_s(nzs,npatches))
     allocate(csite%rshort_s_beam(nzs,npatches))
     allocate(csite%rshort_s_diffuse(nzs,npatches))
+    allocate(csite%par_s(nzs,npatches))
+    allocate(csite%par_s_beam(nzs,npatches))
+    allocate(csite%par_s_diffuse(nzs,npatches))
     allocate(csite%sfcwater_tempk(nzs,npatches))
     allocate(csite%sfcwater_fracliq(nzs,npatches))
     allocate(csite%nlev_sfcwater(npatches))
@@ -3271,6 +3356,9 @@ contains
     allocate(csite%rshort_g(npatches))
     allocate(csite%rshort_g_beam(npatches))
     allocate(csite%rshort_g_diffuse(npatches))
+    allocate(csite%par_g(npatches))
+    allocate(csite%par_g_beam(npatches))
+    allocate(csite%par_g_diffuse(npatches))
     allocate(csite%par_b(npatches))
     allocate(csite%par_b_beam(npatches))
     allocate(csite%par_b_diffuse(npatches))
@@ -3301,12 +3389,6 @@ contains
     allocate(csite%cumlai_profile(n_pft,ff_nhgt,npatches))
     allocate(csite%plant_ag_biomass(npatches))
 
-    allocate(csite%mean_wflux(npatches))
-    allocate(csite%mean_latflux(npatches))
-    allocate(csite%mean_hflux(npatches))
-    allocate(csite%mean_runoff(npatches))
-    allocate(csite%mean_qrunoff(npatches))
-
     allocate(csite%htry       (npatches))
     allocate(csite%hprev      (npatches))
 
@@ -3329,6 +3411,7 @@ contains
     allocate(csite%wpwp(npatches))
 
     allocate(csite%avg_rshort_gnd     (npatches))
+    allocate(csite%avg_par_gnd        (npatches))
     allocate(csite%avg_rlong_gnd      (npatches))
     allocate(csite%avg_ustar          (npatches))
     allocate(csite%avg_tstar          (npatches))
@@ -3584,6 +3667,26 @@ contains
     allocate(cpatch%vm_bar(ncohorts))
     allocate(cpatch%sla(ncohorts))
 
+    allocate(cpatch%mean_par_l         (ncohorts))
+    allocate(cpatch%mean_par_l_beam    (ncohorts))
+    allocate(cpatch%mean_par_l_diff    (ncohorts))
+
+    allocate(cpatch%mean_rshort_l      (ncohorts))
+    allocate(cpatch%mean_rlong_l       (ncohorts))
+    allocate(cpatch%mean_sensible_lc   (ncohorts))
+    allocate(cpatch%mean_vapor_lc      (ncohorts))
+    allocate(cpatch%mean_transp        (ncohorts))
+    allocate(cpatch%mean_intercepted_al(ncohorts))
+    allocate(cpatch%mean_wshed_lg      (ncohorts))
+    allocate(cpatch%mean_rshort_w      (ncohorts))
+    allocate(cpatch%mean_rlong_w       (ncohorts))
+    allocate(cpatch%mean_sensible_wc   (ncohorts))
+    allocate(cpatch%mean_vapor_wc      (ncohorts))
+    allocate(cpatch%mean_intercepted_aw(ncohorts))
+    allocate(cpatch%mean_wshed_wg      (ncohorts))
+
+
+
     if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
        allocate(cpatch%dmean_par_l(ncohorts))
        allocate(cpatch%dmean_par_l_beam(ncohorts))
@@ -3600,6 +3703,19 @@ contains
        allocate(cpatch%dmean_gpp(ncohorts))
        allocate(cpatch%dmean_leaf_resp(ncohorts))
        allocate(cpatch%dmean_root_resp(ncohorts))
+       allocate(cpatch%dmean_rshort_l      (ncohorts))
+       allocate(cpatch%dmean_rlong_l       (ncohorts))
+       allocate(cpatch%dmean_sensible_lc   (ncohorts))
+       allocate(cpatch%dmean_vapor_lc      (ncohorts))
+       allocate(cpatch%dmean_transp        (ncohorts))
+       allocate(cpatch%dmean_intercepted_al(ncohorts))
+       allocate(cpatch%dmean_wshed_lg      (ncohorts))
+       allocate(cpatch%dmean_rshort_w      (ncohorts))
+       allocate(cpatch%dmean_rlong_w       (ncohorts))
+       allocate(cpatch%dmean_sensible_wc   (ncohorts))
+       allocate(cpatch%dmean_vapor_wc      (ncohorts))
+       allocate(cpatch%dmean_intercepted_aw(ncohorts))
+       allocate(cpatch%dmean_wshed_wg      (ncohorts))
    end if
 
    allocate(cpatch%dmean_nppleaf(ncohorts))
@@ -3636,6 +3752,19 @@ contains
        allocate(cpatch%mmean_storage_resp(ncohorts))
        allocate(cpatch%mmean_vleaf_resp(ncohorts))
        allocate(cpatch%mmean_mort_rate(n_mort,ncohorts))
+       allocate(cpatch%mmean_rshort_l      (ncohorts))
+       allocate(cpatch%mmean_rlong_l       (ncohorts))
+       allocate(cpatch%mmean_sensible_lc   (ncohorts))
+       allocate(cpatch%mmean_vapor_lc      (ncohorts))
+       allocate(cpatch%mmean_transp        (ncohorts))
+       allocate(cpatch%mmean_intercepted_al(ncohorts))
+       allocate(cpatch%mmean_wshed_lg      (ncohorts))
+       allocate(cpatch%mmean_rshort_w      (ncohorts))
+       allocate(cpatch%mmean_rlong_w       (ncohorts))
+       allocate(cpatch%mmean_sensible_wc   (ncohorts))
+       allocate(cpatch%mmean_vapor_wc      (ncohorts))
+       allocate(cpatch%mmean_intercepted_aw(ncohorts))
+       allocate(cpatch%mmean_wshed_wg      (ncohorts))
     end if
 
     allocate(cpatch%mmean_nppleaf(ncohorts))
@@ -3647,18 +3776,31 @@ contains
     allocate(cpatch%mmean_nppdaily(ncohorts))
     
     if (iqoutput > 0) then
-       allocate(cpatch%qmean_par_l       (ndcycle,ncohorts))
-       allocate(cpatch%qmean_par_l_beam  (ndcycle,ncohorts))
-       allocate(cpatch%qmean_par_l_diff  (ndcycle,ncohorts))
-       allocate(cpatch%qmean_fs_open     (ndcycle,ncohorts))
-       allocate(cpatch%qmean_fsw         (ndcycle,ncohorts))
-       allocate(cpatch%qmean_fsn         (ndcycle,ncohorts))
-       allocate(cpatch%qmean_psi_open    (ndcycle,ncohorts))
-       allocate(cpatch%qmean_psi_closed  (ndcycle,ncohorts))
-       allocate(cpatch%qmean_water_supply(ndcycle,ncohorts))
-       allocate(cpatch%qmean_gpp         (ndcycle,ncohorts))
-       allocate(cpatch%qmean_leaf_resp   (ndcycle,ncohorts))
-       allocate(cpatch%qmean_root_resp   (ndcycle,ncohorts))
+       allocate(cpatch%qmean_par_l         (ndcycle,ncohorts))
+       allocate(cpatch%qmean_par_l_beam    (ndcycle,ncohorts))
+       allocate(cpatch%qmean_par_l_diff    (ndcycle,ncohorts))
+       allocate(cpatch%qmean_fs_open       (ndcycle,ncohorts))
+       allocate(cpatch%qmean_fsw           (ndcycle,ncohorts))
+       allocate(cpatch%qmean_fsn           (ndcycle,ncohorts))
+       allocate(cpatch%qmean_psi_open      (ndcycle,ncohorts))
+       allocate(cpatch%qmean_psi_closed    (ndcycle,ncohorts))
+       allocate(cpatch%qmean_water_supply  (ndcycle,ncohorts))
+       allocate(cpatch%qmean_gpp           (ndcycle,ncohorts))
+       allocate(cpatch%qmean_leaf_resp     (ndcycle,ncohorts))
+       allocate(cpatch%qmean_root_resp     (ndcycle,ncohorts))
+       allocate(cpatch%qmean_rshort_l      (ndcycle,ncohorts))
+       allocate(cpatch%qmean_rlong_l       (ndcycle,ncohorts))
+       allocate(cpatch%qmean_sensible_lc   (ndcycle,ncohorts))
+       allocate(cpatch%qmean_vapor_lc      (ndcycle,ncohorts))
+       allocate(cpatch%qmean_transp        (ndcycle,ncohorts))
+       allocate(cpatch%qmean_intercepted_al(ndcycle,ncohorts))
+       allocate(cpatch%qmean_wshed_lg      (ndcycle,ncohorts))
+       allocate(cpatch%qmean_rshort_w      (ndcycle,ncohorts))
+       allocate(cpatch%qmean_rlong_w       (ndcycle,ncohorts))
+       allocate(cpatch%qmean_sensible_wc   (ndcycle,ncohorts))
+       allocate(cpatch%qmean_vapor_wc      (ndcycle,ncohorts))
+       allocate(cpatch%qmean_intercepted_aw(ndcycle,ncohorts))
+       allocate(cpatch%qmean_wshed_wg      (ndcycle,ncohorts))
     end if
 
     return
@@ -3752,6 +3894,7 @@ contains
        nullify(cgrid%avg_drainage            )
        nullify(cgrid%avg_drainage_heat       )
        nullify(cgrid%avg_rshort_gnd          )
+       nullify(cgrid%avg_par_gnd             )
        nullify(cgrid%avg_rlong_gnd           )
        nullify(cgrid%avg_ustar               )
        nullify(cgrid%avg_tstar               )
@@ -3881,15 +4024,13 @@ contains
 
 
      ! Meteorologic conditions (forcing)
-     nullify(cgrid%avg_nir_beam            )
-     nullify(cgrid%avg_nir_diffuse         )
-     nullify(cgrid%avg_par_beam            )
-     nullify(cgrid%avg_par_diffuse         )
      nullify(cgrid%avg_atm_tmp             )
      nullify(cgrid%avg_atm_vpdef           )
      nullify(cgrid%avg_atm_shv             )
      nullify(cgrid%avg_rshort              )
      nullify(cgrid%avg_rshort_diffuse      )
+     nullify(cgrid%avg_par                 )
+     nullify(cgrid%avg_par_diffuse         )
      nullify(cgrid%avg_rlong               )
      nullify(cgrid%avg_pcpg                )
      nullify(cgrid%avg_qpcpg               )
@@ -3979,8 +4120,11 @@ contains
      nullify(cgrid%dmean_atm_vels          )
      nullify(cgrid%dmean_rshort            )
      nullify(cgrid%dmean_rshort_diff       )
+     nullify(cgrid%dmean_par               )
+     nullify(cgrid%dmean_par_diff          )
      nullify(cgrid%dmean_rlong             )
      nullify(cgrid%dmean_rshort_gnd        )
+     nullify(cgrid%dmean_par_gnd           )
      nullify(cgrid%dmean_rlong_gnd         )
      nullify(cgrid%dmean_albedo            )
      nullify(cgrid%dmean_albedo_beam       )
@@ -4062,8 +4206,11 @@ contains
      nullify(cgrid%mmean_atm_vpdef         )
      nullify(cgrid%mmean_rshort            )
      nullify(cgrid%mmean_rshort_diff       )
+     nullify(cgrid%mmean_par               )
+     nullify(cgrid%mmean_par_diff          )
      nullify(cgrid%mmean_rlong             )
      nullify(cgrid%mmean_rshort_gnd        )
+     nullify(cgrid%mmean_par_gnd           )
      nullify(cgrid%mmean_rlong_gnd         )
      nullify(cgrid%mmean_albedo            )
      nullify(cgrid%mmean_albedo_beam       )
@@ -4173,8 +4320,11 @@ contains
      nullify(cgrid%qmean_atm_vpdef      )
      nullify(cgrid%qmean_rshort         )
      nullify(cgrid%qmean_rshort_diff    )
+     nullify(cgrid%qmean_par            )
+     nullify(cgrid%qmean_par_diff       )
      nullify(cgrid%qmean_rlong          )
      nullify(cgrid%qmean_rshort_gnd     )
+     nullify(cgrid%qmean_par_gnd        )
      nullify(cgrid%qmean_rlong_gnd      )
      nullify(cgrid%qmean_albedo         )
      nullify(cgrid%qmean_albedo_beam    )
@@ -4332,6 +4482,7 @@ contains
     nullify(cpoly%avg_drainage  )
     nullify(cpoly%avg_drainage_heat  )
     nullify(cpoly%avg_rshort_gnd   )
+    nullify(cpoly%avg_par_gnd      )
     nullify(cpoly%avg_rlong_gnd    )
     nullify(cpoly%avg_ustar        )
     nullify(cpoly%avg_tstar        )
@@ -4472,6 +4623,9 @@ contains
     nullify(csite%rshort_s)
     nullify(csite%rshort_s_beam)
     nullify(csite%rshort_s_diffuse)
+    nullify(csite%par_s)
+    nullify(csite%par_s_beam)
+    nullify(csite%par_s_diffuse)
     nullify(csite%sfcwater_tempk)
     nullify(csite%sfcwater_fracliq)
     nullify(csite%nlev_sfcwater)
@@ -4556,6 +4710,9 @@ contains
     nullify(csite%rshort_g)
     nullify(csite%rshort_g_beam)
     nullify(csite%rshort_g_diffuse)
+    nullify(csite%par_g)
+    nullify(csite%par_g_beam)
+    nullify(csite%par_g_diffuse)
     nullify(csite%par_b)
     nullify(csite%par_b_beam)
     nullify(csite%par_b_diffuse)
@@ -4586,12 +4743,6 @@ contains
     nullify(csite%cumlai_profile)
     nullify(csite%plant_ag_biomass)
 
-    nullify(csite%mean_wflux)
-    nullify(csite%mean_latflux)
-    nullify(csite%mean_hflux)
-    nullify(csite%mean_runoff)
-    nullify(csite%mean_qrunoff)
-
     nullify(csite%htry)
     nullify(csite%hprev)
     nullify(csite%avg_rk4step)
@@ -4616,6 +4767,7 @@ contains
 
 
     nullify(csite%avg_rshort_gnd    )
+    nullify(csite%avg_par_gnd       )
     nullify(csite%avg_rlong_gnd     )
     nullify(csite%avg_ustar         )
     nullify(csite%avg_tstar         )
@@ -4824,6 +4976,9 @@ contains
     nullify(cpatch%light_level_diff)
     nullify(cpatch%dmean_light_level_diff)
     nullify(cpatch%mmean_light_level_diff)
+    nullify(cpatch%mean_par_l)
+    nullify(cpatch%mean_par_l_beam)
+    nullify(cpatch%mean_par_l_diff)
     nullify(cpatch%dmean_par_l)
     nullify(cpatch%dmean_par_l_beam)
     nullify(cpatch%dmean_par_l_diff)
@@ -4899,6 +5054,60 @@ contains
     nullify(cpatch%qmean_gpp         )
     nullify(cpatch%qmean_leaf_resp   )
     nullify(cpatch%qmean_root_resp   )
+
+
+    nullify(cpatch%mean_rshort_l       )
+    nullify(cpatch%mean_rlong_l        )
+    nullify(cpatch%mean_sensible_lc    )
+    nullify(cpatch%mean_vapor_lc       )
+    nullify(cpatch%mean_transp         )
+    nullify(cpatch%mean_intercepted_al )
+    nullify(cpatch%mean_wshed_lg       )
+    nullify(cpatch%mean_rshort_w       )
+    nullify(cpatch%mean_rlong_w        )
+    nullify(cpatch%mean_sensible_wc    )
+    nullify(cpatch%mean_vapor_wc       )
+    nullify(cpatch%mean_intercepted_aw )
+    nullify(cpatch%mean_wshed_wg       )
+    nullify(cpatch%dmean_rshort_l      )
+    nullify(cpatch%dmean_rlong_l       )
+    nullify(cpatch%dmean_sensible_lc   )
+    nullify(cpatch%dmean_vapor_lc      )
+    nullify(cpatch%dmean_transp        )
+    nullify(cpatch%dmean_intercepted_al)
+    nullify(cpatch%dmean_wshed_lg      )
+    nullify(cpatch%dmean_rshort_w      )
+    nullify(cpatch%dmean_rlong_w       )
+    nullify(cpatch%dmean_sensible_wc   )
+    nullify(cpatch%dmean_vapor_wc      )
+    nullify(cpatch%dmean_intercepted_aw)
+    nullify(cpatch%dmean_wshed_wg      )
+    nullify(cpatch%qmean_rshort_l      )
+    nullify(cpatch%qmean_rlong_l       )
+    nullify(cpatch%qmean_sensible_lc   )
+    nullify(cpatch%qmean_vapor_lc      )
+    nullify(cpatch%qmean_transp        )
+    nullify(cpatch%qmean_intercepted_al)
+    nullify(cpatch%qmean_wshed_lg      )
+    nullify(cpatch%qmean_rshort_w      )
+    nullify(cpatch%qmean_rlong_w       )
+    nullify(cpatch%qmean_sensible_wc   )
+    nullify(cpatch%qmean_vapor_wc      )
+    nullify(cpatch%qmean_intercepted_aw)
+    nullify(cpatch%qmean_wshed_wg      )
+    nullify(cpatch%mmean_rshort_l      )
+    nullify(cpatch%mmean_rlong_l       )
+    nullify(cpatch%mmean_sensible_lc   )
+    nullify(cpatch%mmean_vapor_lc      )
+    nullify(cpatch%mmean_transp        )
+    nullify(cpatch%mmean_intercepted_al)
+    nullify(cpatch%mmean_wshed_lg      )
+    nullify(cpatch%mmean_rshort_w      )
+    nullify(cpatch%mmean_rlong_w       )
+    nullify(cpatch%mmean_sensible_wc   )
+    nullify(cpatch%mmean_vapor_wc      )
+    nullify(cpatch%mmean_intercepted_aw)
+    nullify(cpatch%mmean_wshed_wg      )
 
     return
   end subroutine nullify_patchtype
@@ -4993,6 +5202,7 @@ contains
        if(associated(cgrid%avg_drainage            )) deallocate(cgrid%avg_drainage            )
        if(associated(cgrid%avg_drainage_heat       )) deallocate(cgrid%avg_drainage_heat       )
        if(associated(cgrid%avg_rshort_gnd          )) deallocate(cgrid%avg_rshort_gnd          )
+       if(associated(cgrid%avg_par_gnd             )) deallocate(cgrid%avg_par_gnd             )
        if(associated(cgrid%avg_rlong_gnd           )) deallocate(cgrid%avg_rlong_gnd           )
        if(associated(cgrid%avg_ustar               )) deallocate(cgrid%avg_ustar               )
        if(associated(cgrid%avg_tstar               )) deallocate(cgrid%avg_tstar               )
@@ -5132,15 +5342,13 @@ contains
 
        ! ----------------------------------------------
 
-       if(associated(cgrid%avg_nir_beam            )) deallocate(cgrid%avg_nir_beam            )
-       if(associated(cgrid%avg_nir_diffuse         )) deallocate(cgrid%avg_nir_diffuse         )
-       if(associated(cgrid%avg_par_beam            )) deallocate(cgrid%avg_par_beam            )
-       if(associated(cgrid%avg_par_diffuse         )) deallocate(cgrid%avg_par_diffuse         )
        if(associated(cgrid%avg_atm_tmp             )) deallocate(cgrid%avg_atm_tmp             )
        if(associated(cgrid%avg_atm_vpdef           )) deallocate(cgrid%avg_atm_vpdef           )
        if(associated(cgrid%avg_atm_shv             )) deallocate(cgrid%avg_atm_shv             )
        if(associated(cgrid%avg_rshort              )) deallocate(cgrid%avg_rshort              )
        if(associated(cgrid%avg_rshort_diffuse      )) deallocate(cgrid%avg_rshort_diffuse      )
+       if(associated(cgrid%avg_par                 )) deallocate(cgrid%avg_par                 )
+       if(associated(cgrid%avg_par_diffuse         )) deallocate(cgrid%avg_par_diffuse         )
        if(associated(cgrid%avg_rlong               )) deallocate(cgrid%avg_rlong               )
        if(associated(cgrid%avg_pcpg                )) deallocate(cgrid%avg_pcpg                )
        if(associated(cgrid%avg_qpcpg               )) deallocate(cgrid%avg_qpcpg               )
@@ -5234,8 +5442,11 @@ contains
        if(associated(cgrid%dmean_atm_vels          )) deallocate(cgrid%dmean_atm_vels          )
        if(associated(cgrid%dmean_rshort            )) deallocate(cgrid%dmean_rshort            )
        if(associated(cgrid%dmean_rshort_diff       )) deallocate(cgrid%dmean_rshort_diff       )
+       if(associated(cgrid%dmean_par               )) deallocate(cgrid%dmean_par               )
+       if(associated(cgrid%dmean_par_diff          )) deallocate(cgrid%dmean_par_diff          )
        if(associated(cgrid%dmean_rlong             )) deallocate(cgrid%dmean_rlong             )
        if(associated(cgrid%dmean_rshort_gnd        )) deallocate(cgrid%dmean_rshort_gnd        )
+       if(associated(cgrid%dmean_par_gnd           )) deallocate(cgrid%dmean_par_gnd           )
        if(associated(cgrid%dmean_rlong_gnd         )) deallocate(cgrid%dmean_rlong_gnd         )
        if(associated(cgrid%dmean_albedo            )) deallocate(cgrid%dmean_albedo            )
        if(associated(cgrid%dmean_albedo_beam       )) deallocate(cgrid%dmean_albedo_beam       )
@@ -5318,8 +5529,11 @@ contains
        if(associated(cgrid%mmean_atm_vpdef         )) deallocate(cgrid%mmean_atm_vpdef         )
        if(associated(cgrid%mmean_rshort            )) deallocate(cgrid%mmean_rshort            )
        if(associated(cgrid%mmean_rshort_diff       )) deallocate(cgrid%mmean_rshort_diff       )
+       if(associated(cgrid%mmean_par               )) deallocate(cgrid%mmean_par               )
+       if(associated(cgrid%mmean_par_diff          )) deallocate(cgrid%mmean_par_diff          )
        if(associated(cgrid%mmean_rlong             )) deallocate(cgrid%mmean_rlong             )
        if(associated(cgrid%mmean_rshort_gnd        )) deallocate(cgrid%mmean_rshort_gnd        )
+       if(associated(cgrid%mmean_par_gnd           )) deallocate(cgrid%mmean_par_gnd           )
        if(associated(cgrid%mmean_rlong_gnd         )) deallocate(cgrid%mmean_rlong_gnd         )
        if(associated(cgrid%mmean_albedo            )) deallocate(cgrid%mmean_albedo            )
        if(associated(cgrid%mmean_albedo_beam       )) deallocate(cgrid%mmean_albedo_beam       )
@@ -5430,8 +5644,11 @@ contains
     if(associated(cgrid%qmean_atm_vpdef      )) deallocate(cgrid%qmean_atm_vpdef      )
     if(associated(cgrid%qmean_rshort         )) deallocate(cgrid%qmean_rshort         )
     if(associated(cgrid%qmean_rshort_diff    )) deallocate(cgrid%qmean_rshort_diff    )
+    if(associated(cgrid%qmean_par            )) deallocate(cgrid%qmean_par            )
+    if(associated(cgrid%qmean_par_diff       )) deallocate(cgrid%qmean_par_diff       )
     if(associated(cgrid%qmean_rlong          )) deallocate(cgrid%qmean_rlong          )
     if(associated(cgrid%qmean_rshort_gnd     )) deallocate(cgrid%qmean_rshort_gnd     )
+    if(associated(cgrid%qmean_par_gnd        )) deallocate(cgrid%qmean_par_gnd        )
     if(associated(cgrid%qmean_rlong_gnd      )) deallocate(cgrid%qmean_rlong_gnd      )
     if(associated(cgrid%qmean_albedo         )) deallocate(cgrid%qmean_albedo         )
     if(associated(cgrid%qmean_albedo_beam    )) deallocate(cgrid%qmean_albedo_beam    )
@@ -5597,6 +5814,7 @@ contains
     if(associated(cpoly%avg_drainage                )) deallocate(cpoly%avg_drainage                )
     if(associated(cpoly%avg_drainage_heat           )) deallocate(cpoly%avg_drainage_heat           )
     if(associated(cpoly%avg_rshort_gnd              )) deallocate(cpoly%avg_rshort_gnd              )
+    if(associated(cpoly%avg_par_gnd                 )) deallocate(cpoly%avg_par_gnd                 )
     if(associated(cpoly%avg_rlong_gnd               )) deallocate(cpoly%avg_rlong_gnd               )
     if(associated(cpoly%avg_ustar                   )) deallocate(cpoly%avg_ustar                   )
     if(associated(cpoly%avg_tstar                   )) deallocate(cpoly%avg_tstar                   )
@@ -5742,6 +5960,9 @@ contains
     if(associated(csite%rshort_s                     )) deallocate(csite%rshort_s                     )
     if(associated(csite%rshort_s_beam                )) deallocate(csite%rshort_s_beam                )
     if(associated(csite%rshort_s_diffuse             )) deallocate(csite%rshort_s_diffuse             )
+    if(associated(csite%par_s                        )) deallocate(csite%par_s                        )
+    if(associated(csite%par_s_beam                   )) deallocate(csite%par_s_beam                   )
+    if(associated(csite%par_s_diffuse                )) deallocate(csite%par_s_diffuse                )
     if(associated(csite%sfcwater_tempk               )) deallocate(csite%sfcwater_tempk               )
     if(associated(csite%sfcwater_fracliq             )) deallocate(csite%sfcwater_fracliq             )
     if(associated(csite%nlev_sfcwater                )) deallocate(csite%nlev_sfcwater                )
@@ -5827,6 +6048,9 @@ contains
     if(associated(csite%rshort_g                     )) deallocate(csite%rshort_g                     )
     if(associated(csite%rshort_g_beam                )) deallocate(csite%rshort_g_beam                )
     if(associated(csite%rshort_g_diffuse             )) deallocate(csite%rshort_g_diffuse             )
+    if(associated(csite%par_g                        )) deallocate(csite%par_g                        )
+    if(associated(csite%par_g_beam                   )) deallocate(csite%par_g_beam                   )
+    if(associated(csite%par_g_diffuse                )) deallocate(csite%par_g_diffuse                )
     if(associated(csite%par_b                        )) deallocate(csite%par_b                        )
     if(associated(csite%par_b_beam                   )) deallocate(csite%par_b_beam                   )
     if(associated(csite%par_b_diffuse                )) deallocate(csite%par_b_diffuse                )
@@ -5857,12 +6081,6 @@ contains
     if(associated(csite%cumlai_profile               )) deallocate(csite%cumlai_profile               )
     if(associated(csite%plant_ag_biomass             )) deallocate(csite%plant_ag_biomass             )
 
-    if(associated(csite%mean_wflux                   )) deallocate(csite%mean_wflux                   )
-    if(associated(csite%mean_latflux                 )) deallocate(csite%mean_latflux                 )
-    if(associated(csite%mean_hflux                   )) deallocate(csite%mean_hflux                   )
-    if(associated(csite%mean_runoff                  )) deallocate(csite%mean_runoff                  )
-    if(associated(csite%mean_qrunoff                 )) deallocate(csite%mean_qrunoff                 )
-
     if(associated(csite%htry                         )) deallocate(csite%htry                         )
     if(associated(csite%hprev                        )) deallocate(csite%hprev                        )
     if(associated(csite%avg_rk4step                  )) deallocate(csite%avg_rk4step                  )
@@ -5886,6 +6104,7 @@ contains
     if(associated(csite%wpwp                         )) deallocate(csite%wpwp                         )
 
     if(associated(csite%avg_rshort_gnd               )) deallocate(csite%avg_rshort_gnd               )
+    if(associated(csite%avg_par_gnd                  )) deallocate(csite%avg_par_gnd                  )
     if(associated(csite%avg_rlong_gnd                )) deallocate(csite%avg_rlong_gnd                )
     if(associated(csite%avg_ustar                    )) deallocate(csite%avg_ustar                    )
     if(associated(csite%avg_tstar                    )) deallocate(csite%avg_tstar                    )
@@ -6100,6 +6319,9 @@ contains
     if(associated(cpatch%par_l))                  deallocate(cpatch%par_l)
     if(associated(cpatch%par_l_beam))             deallocate(cpatch%par_l_beam)
     if(associated(cpatch%par_l_diffuse))          deallocate(cpatch%par_l_diffuse)
+    if(associated(cpatch%mean_par_l))             deallocate(cpatch%mean_par_l)
+    if(associated(cpatch%mean_par_l_beam))        deallocate(cpatch%mean_par_l_beam)
+    if(associated(cpatch%mean_par_l_diff))        deallocate(cpatch%mean_par_l_diff)
     if(associated(cpatch%dmean_par_l))            deallocate(cpatch%dmean_par_l)
     if(associated(cpatch%dmean_par_l_beam))       deallocate(cpatch%dmean_par_l_beam)
     if(associated(cpatch%dmean_par_l_diff))       deallocate(cpatch%dmean_par_l_diff)
@@ -6160,18 +6382,70 @@ contains
     if(associated(cpatch%vm_bar))                 deallocate(cpatch%vm_bar)
     if(associated(cpatch%sla))                    deallocate(cpatch%sla)
 
-    if(associated(cpatch%qmean_par_l       )) deallocate(cpatch%qmean_par_l       )
-    if(associated(cpatch%qmean_par_l_beam  )) deallocate(cpatch%qmean_par_l_beam  )
-    if(associated(cpatch%qmean_par_l_diff  )) deallocate(cpatch%qmean_par_l_diff  )
-    if(associated(cpatch%qmean_fs_open     )) deallocate(cpatch%qmean_fs_open     )
-    if(associated(cpatch%qmean_fsw         )) deallocate(cpatch%qmean_fsw         )
-    if(associated(cpatch%qmean_fsn         )) deallocate(cpatch%qmean_fsn         )
-    if(associated(cpatch%qmean_psi_open    )) deallocate(cpatch%qmean_psi_open    )
-    if(associated(cpatch%qmean_psi_closed  )) deallocate(cpatch%qmean_psi_closed  )
-    if(associated(cpatch%qmean_water_supply)) deallocate(cpatch%qmean_water_supply)
-    if(associated(cpatch%qmean_gpp         )) deallocate(cpatch%qmean_gpp         )
-    if(associated(cpatch%qmean_leaf_resp   )) deallocate(cpatch%qmean_leaf_resp   )
-    if(associated(cpatch%qmean_root_resp   )) deallocate(cpatch%qmean_root_resp   )
+    if(associated(cpatch%qmean_par_l         )) deallocate(cpatch%qmean_par_l         )
+    if(associated(cpatch%qmean_par_l_beam    )) deallocate(cpatch%qmean_par_l_beam    )
+    if(associated(cpatch%qmean_par_l_diff    )) deallocate(cpatch%qmean_par_l_diff    )
+    if(associated(cpatch%qmean_fs_open       )) deallocate(cpatch%qmean_fs_open       )
+    if(associated(cpatch%qmean_fsw           )) deallocate(cpatch%qmean_fsw           )
+    if(associated(cpatch%qmean_fsn           )) deallocate(cpatch%qmean_fsn           )
+    if(associated(cpatch%qmean_psi_open      )) deallocate(cpatch%qmean_psi_open      )
+    if(associated(cpatch%qmean_psi_closed    )) deallocate(cpatch%qmean_psi_closed    )
+    if(associated(cpatch%qmean_water_supply  )) deallocate(cpatch%qmean_water_supply  )
+    if(associated(cpatch%qmean_gpp           )) deallocate(cpatch%qmean_gpp           )
+    if(associated(cpatch%qmean_leaf_resp     )) deallocate(cpatch%qmean_leaf_resp     )
+    if(associated(cpatch%qmean_root_resp     )) deallocate(cpatch%qmean_root_resp     )
+    if(associated(cpatch%mean_rshort_l       )) deallocate(cpatch%mean_rshort_l       )
+    if(associated(cpatch%mean_rlong_l        )) deallocate(cpatch%mean_rlong_l        )
+    if(associated(cpatch%mean_sensible_lc    )) deallocate(cpatch%mean_sensible_lc    )
+    if(associated(cpatch%mean_vapor_lc       )) deallocate(cpatch%mean_vapor_lc       )
+    if(associated(cpatch%mean_transp         )) deallocate(cpatch%mean_transp         )
+    if(associated(cpatch%mean_intercepted_al )) deallocate(cpatch%mean_intercepted_al )
+    if(associated(cpatch%mean_wshed_lg       )) deallocate(cpatch%mean_wshed_lg       )
+    if(associated(cpatch%mean_rshort_w       )) deallocate(cpatch%mean_rshort_w       )
+    if(associated(cpatch%mean_rlong_w        )) deallocate(cpatch%mean_rlong_w        )
+    if(associated(cpatch%mean_sensible_wc    )) deallocate(cpatch%mean_sensible_wc    )
+    if(associated(cpatch%mean_vapor_wc       )) deallocate(cpatch%mean_vapor_wc       )
+    if(associated(cpatch%mean_intercepted_aw )) deallocate(cpatch%mean_intercepted_aw )
+    if(associated(cpatch%mean_wshed_wg       )) deallocate(cpatch%mean_wshed_wg       )
+    if(associated(cpatch%dmean_rshort_l      )) deallocate(cpatch%dmean_rshort_l      )
+    if(associated(cpatch%dmean_rlong_l       )) deallocate(cpatch%dmean_rlong_l       )
+    if(associated(cpatch%dmean_sensible_lc   )) deallocate(cpatch%dmean_sensible_lc   )
+    if(associated(cpatch%dmean_vapor_lc      )) deallocate(cpatch%dmean_vapor_lc      )
+    if(associated(cpatch%dmean_transp        )) deallocate(cpatch%dmean_transp        )
+    if(associated(cpatch%dmean_intercepted_al)) deallocate(cpatch%dmean_intercepted_al)
+    if(associated(cpatch%dmean_wshed_lg      )) deallocate(cpatch%dmean_wshed_lg      )
+    if(associated(cpatch%dmean_rshort_w      )) deallocate(cpatch%dmean_rshort_w      )
+    if(associated(cpatch%dmean_rlong_w       )) deallocate(cpatch%dmean_rlong_w       )
+    if(associated(cpatch%dmean_sensible_wc   )) deallocate(cpatch%dmean_sensible_wc   )
+    if(associated(cpatch%dmean_vapor_wc      )) deallocate(cpatch%dmean_vapor_wc      )
+    if(associated(cpatch%dmean_intercepted_aw)) deallocate(cpatch%dmean_intercepted_aw)
+    if(associated(cpatch%dmean_wshed_wg      )) deallocate(cpatch%dmean_wshed_wg      )
+    if(associated(cpatch%qmean_rshort_l      )) deallocate(cpatch%qmean_rshort_l      )
+    if(associated(cpatch%qmean_rlong_l       )) deallocate(cpatch%qmean_rlong_l       )
+    if(associated(cpatch%qmean_sensible_lc   )) deallocate(cpatch%qmean_sensible_lc   )
+    if(associated(cpatch%qmean_vapor_lc      )) deallocate(cpatch%qmean_vapor_lc      )
+    if(associated(cpatch%qmean_transp        )) deallocate(cpatch%qmean_transp        )
+    if(associated(cpatch%qmean_intercepted_al)) deallocate(cpatch%qmean_intercepted_al)
+    if(associated(cpatch%qmean_wshed_lg      )) deallocate(cpatch%qmean_wshed_lg      )
+    if(associated(cpatch%qmean_rshort_w      )) deallocate(cpatch%qmean_rshort_w      )
+    if(associated(cpatch%qmean_rlong_w       )) deallocate(cpatch%qmean_rlong_w       )
+    if(associated(cpatch%qmean_sensible_wc   )) deallocate(cpatch%qmean_sensible_wc   )
+    if(associated(cpatch%qmean_vapor_wc      )) deallocate(cpatch%qmean_vapor_wc      )
+    if(associated(cpatch%qmean_intercepted_aw)) deallocate(cpatch%qmean_intercepted_aw)
+    if(associated(cpatch%qmean_wshed_wg      )) deallocate(cpatch%qmean_wshed_wg      )
+    if(associated(cpatch%mmean_rshort_l      )) deallocate(cpatch%mmean_rshort_l      )
+    if(associated(cpatch%mmean_rlong_l       )) deallocate(cpatch%mmean_rlong_l       )
+    if(associated(cpatch%mmean_sensible_lc   )) deallocate(cpatch%mmean_sensible_lc   )
+    if(associated(cpatch%mmean_vapor_lc      )) deallocate(cpatch%mmean_vapor_lc      )
+    if(associated(cpatch%mmean_transp        )) deallocate(cpatch%mmean_transp        )
+    if(associated(cpatch%mmean_intercepted_al)) deallocate(cpatch%mmean_intercepted_al)
+    if(associated(cpatch%mmean_wshed_lg      )) deallocate(cpatch%mmean_wshed_lg      )
+    if(associated(cpatch%mmean_rshort_w      )) deallocate(cpatch%mmean_rshort_w      )
+    if(associated(cpatch%mmean_rlong_w       )) deallocate(cpatch%mmean_rlong_w       )
+    if(associated(cpatch%mmean_sensible_wc   )) deallocate(cpatch%mmean_sensible_wc   )
+    if(associated(cpatch%mmean_vapor_wc      )) deallocate(cpatch%mmean_vapor_wc      )
+    if(associated(cpatch%mmean_intercepted_aw)) deallocate(cpatch%mmean_intercepted_aw)
+    if(associated(cpatch%mmean_wshed_wg      )) deallocate(cpatch%mmean_wshed_wg      )
 
     return
   end subroutine deallocate_patchtype
@@ -6310,6 +6584,9 @@ contains
          osite%rshort_g(opa)                    = isite%rshort_g(ipa)
          osite%rshort_g_beam(opa)               = isite%rshort_g_beam(ipa)
          osite%rshort_g_diffuse(opa)            = isite%rshort_g_diffuse(ipa)
+         osite%par_g(opa)                       = isite%par_g(ipa)
+         osite%par_g_beam(opa)                  = isite%par_g_beam(ipa)
+         osite%par_g_diffuse(opa)               = isite%par_g_diffuse(ipa)
          osite%par_b(opa)                       = isite%par_b(ipa)
          osite%par_b_beam(opa)                  = isite%par_b_beam(ipa)
          osite%par_b_diffuse(opa)               = isite%par_b_diffuse(ipa)
@@ -6338,12 +6615,7 @@ contains
          osite%rh(opa)                          = isite%rh(ipa)
          osite%cwd_rh(opa)                      = isite%cwd_rh(ipa)
          osite%plant_ag_biomass(opa)            = isite%plant_ag_biomass(ipa)
-         osite%mean_wflux(opa)                  = isite%mean_wflux(ipa)
-         osite%mean_latflux(opa)                = isite%mean_latflux(ipa)
-         osite%mean_hflux(opa)                  = isite%mean_hflux(ipa)
          osite%runoff(opa)                      = isite%runoff(ipa)
-         osite%mean_runoff(opa)                 = isite%mean_runoff(ipa)
-         osite%mean_qrunoff(opa)                = isite%mean_qrunoff(ipa)
          osite%htry(opa)                        = isite%htry(ipa)
          osite%hprev(opa)                       = isite%hprev(ipa)
          osite%avg_rk4step(opa)                 = isite%avg_rk4step(ipa)
@@ -6370,6 +6642,7 @@ contains
          osite%rough(opa)                       = isite%rough(ipa)
 
          osite%avg_rshort_gnd     (opa)         = isite%avg_rshort_gnd     (ipa)
+         osite%avg_par_gnd        (opa)         = isite%avg_par_gnd        (ipa)
          osite%avg_rlong_gnd      (opa)         = isite%avg_rlong_gnd      (ipa)
          osite%avg_ustar          (opa)         = isite%avg_ustar          (ipa)
          osite%avg_tstar          (opa)         = isite%avg_tstar          (ipa)
@@ -6430,6 +6703,9 @@ contains
             osite%rshort_s(k,opa)               = isite%rshort_s(k,ipa)
             osite%rshort_s_beam(k,opa)          = isite%rshort_s_beam(k,ipa)
             osite%rshort_s_diffuse(k,opa)       = isite%rshort_s_diffuse(k,ipa)
+            osite%par_s(k,opa)                  = isite%par_s(k,ipa)
+            osite%par_s_beam(k,opa)             = isite%par_s_beam(k,ipa)
+            osite%par_s_diffuse(k,opa)          = isite%par_s_diffuse(k,ipa)
             osite%sfcwater_tempk(k,opa)         = isite%sfcwater_tempk(k,ipa)
             osite%sfcwater_fracliq(k,opa)       = isite%sfcwater_fracliq(k,ipa)
          end do
@@ -6627,6 +6903,9 @@ contains
     siteout%rshort_g(1:inc)             = pack(sitein%rshort_g,logmask)
     siteout%rshort_g_beam(1:inc)        = pack(sitein%rshort_g_beam,logmask)
     siteout%rshort_g_diffuse(1:inc)     = pack(sitein%rshort_g_diffuse,logmask)
+    siteout%par_g(1:inc)                = pack(sitein%par_g,logmask)
+    siteout%par_g_beam(1:inc)           = pack(sitein%par_g_beam,logmask)
+    siteout%par_g_diffuse(1:inc)        = pack(sitein%par_g_diffuse,logmask)
     siteout%par_b(1:inc)                = pack(sitein%par_b,logmask)
     siteout%par_b_beam(1:inc)           = pack(sitein%par_b_beam,logmask)
     siteout%par_b_diffuse(1:inc)        = pack(sitein%par_b_diffuse,logmask)
@@ -6655,12 +6934,7 @@ contains
     siteout%rh(1:inc)                   = pack(sitein%rh,logmask)
     siteout%cwd_rh(1:inc)               = pack(sitein%cwd_rh,logmask)
     siteout%plant_ag_biomass(1:inc)     = pack(sitein%plant_ag_biomass,logmask)
-    siteout%mean_wflux(1:inc)           = pack(sitein%mean_wflux,logmask)
-    siteout%mean_latflux(1:inc)         = pack(sitein%mean_latflux,logmask)
-    siteout%mean_hflux(1:inc)           = pack(sitein%mean_hflux,logmask)
     siteout%runoff(1:inc)               = pack(sitein%runoff,logmask)
-    siteout%mean_runoff(1:inc)          = pack(sitein%mean_runoff,logmask)
-    siteout%mean_qrunoff(1:inc)         = pack(sitein%mean_qrunoff,logmask)
     siteout%htry(1:inc)                 = pack(sitein%htry,logmask)
     siteout%hprev(1:inc)                = pack(sitein%hprev,logmask)
     siteout%avg_rk4step(1:inc)          = pack(sitein%avg_rk4step,logmask)
@@ -6687,6 +6961,7 @@ contains
     siteout%rough(1:inc)                = pack(sitein%rough,logmask)
 
     siteout%avg_rshort_gnd     (1:inc)  = pack(sitein%avg_rshort_gnd    ,logmask)
+    siteout%avg_par_gnd        (1:inc)  = pack(sitein%avg_par_gnd       ,logmask)
     siteout%avg_rlong_gnd      (1:inc)  = pack(sitein%avg_rlong_gnd     ,logmask)
     siteout%avg_ustar          (1:inc)  = pack(sitein%avg_ustar         ,logmask)
     siteout%avg_tstar          (1:inc)  = pack(sitein%avg_tstar         ,logmask)
@@ -6748,6 +7023,9 @@ contains
        siteout%rshort_s(k,1:inc)         = pack(sitein%rshort_s(k,:),logmask)
        siteout%rshort_s_beam(k,1:inc)    = pack(sitein%rshort_s_beam(k,:),logmask)
        siteout%rshort_s_diffuse(k,1:inc) = pack(sitein%rshort_s_diffuse(k,:),logmask)
+       siteout%par_s(k,1:inc)            = pack(sitein%par_s(k,:),logmask)
+       siteout%par_s_beam(k,1:inc)       = pack(sitein%par_s_beam(k,:),logmask)
+       siteout%par_s_diffuse(k,1:inc)    = pack(sitein%par_s_diffuse(k,:),logmask)
        siteout%sfcwater_tempk(k,1:inc)   = pack(sitein%sfcwater_tempk(k,:),logmask)
        siteout%sfcwater_fracliq(k,1:inc) = pack(sitein%sfcwater_fracliq(k,:),logmask)
     end do
@@ -6995,6 +7273,28 @@ contains
     patchout%vm_bar(1:inc)           = pack(patchin%vm_bar,mask)
     patchout%sla(1:inc)              = pack(patchin%sla,mask)    
 
+
+    patchout%mean_par_l          (1:inc) = pack(patchin%mean_par_l          ,mask)
+    patchout%mean_par_l_beam     (1:inc) = pack(patchin%mean_par_l_beam     ,mask)
+    patchout%mean_par_l_diff     (1:inc) = pack(patchin%mean_par_l_diff     ,mask)
+    patchout%mean_rshort_l       (1:inc) = pack(patchin%mean_rshort_l       ,mask)
+    patchout%mean_rlong_l        (1:inc) = pack(patchin%mean_rlong_l        ,mask)
+    patchout%mean_sensible_lc    (1:inc) = pack(patchin%mean_sensible_lc    ,mask)
+    patchout%mean_vapor_lc       (1:inc) = pack(patchin%mean_vapor_lc       ,mask)
+    patchout%mean_transp         (1:inc) = pack(patchin%mean_transp         ,mask)
+    patchout%mean_intercepted_al (1:inc) = pack(patchin%mean_intercepted_al ,mask)
+    patchout%mean_wshed_lg       (1:inc) = pack(patchin%mean_wshed_lg       ,mask)
+    patchout%mean_rshort_w       (1:inc) = pack(patchin%mean_rshort_w       ,mask)
+    patchout%mean_rlong_w        (1:inc) = pack(patchin%mean_rlong_w        ,mask)
+    patchout%mean_sensible_wc    (1:inc) = pack(patchin%mean_sensible_wc    ,mask)
+    patchout%mean_vapor_wc       (1:inc) = pack(patchin%mean_vapor_wc       ,mask)
+    patchout%mean_intercepted_aw (1:inc) = pack(patchin%mean_intercepted_aw ,mask)
+    patchout%mean_wshed_wg       (1:inc) = pack(patchin%mean_wshed_wg       ,mask)
+
+
+
+
+
     do m=1,inc
        k=incmask(m)
        do i = 1,13
@@ -7032,6 +7332,19 @@ contains
        patchout%dmean_par_l           (1:inc) = pack(patchin%dmean_par_l           ,mask)
        patchout%dmean_par_l_beam      (1:inc) = pack(patchin%dmean_par_l_beam      ,mask)
        patchout%dmean_par_l_diff      (1:inc) = pack(patchin%dmean_par_l_diff      ,mask)
+       patchout%dmean_rshort_l        (1:inc) = pack(patchin%dmean_rshort_l        ,mask)
+       patchout%dmean_rlong_l         (1:inc) = pack(patchin%dmean_rlong_l         ,mask)
+       patchout%dmean_sensible_lc     (1:inc) = pack(patchin%dmean_sensible_lc     ,mask)
+       patchout%dmean_vapor_lc        (1:inc) = pack(patchin%dmean_vapor_lc        ,mask)
+       patchout%dmean_transp          (1:inc) = pack(patchin%dmean_transp          ,mask)
+       patchout%dmean_intercepted_al  (1:inc) = pack(patchin%dmean_intercepted_al  ,mask)
+       patchout%dmean_wshed_lg        (1:inc) = pack(patchin%dmean_wshed_lg        ,mask)
+       patchout%dmean_rshort_w        (1:inc) = pack(patchin%dmean_rshort_w        ,mask)
+       patchout%dmean_rlong_w         (1:inc) = pack(patchin%dmean_rlong_w         ,mask)
+       patchout%dmean_sensible_wc     (1:inc) = pack(patchin%dmean_sensible_wc     ,mask)
+       patchout%dmean_vapor_wc        (1:inc) = pack(patchin%dmean_vapor_wc        ,mask)
+       patchout%dmean_intercepted_aw  (1:inc) = pack(patchin%dmean_intercepted_aw  ,mask)
+       patchout%dmean_wshed_wg        (1:inc) = pack(patchin%dmean_wshed_wg        ,mask)
     end if
     if (imoutput > 0 .or. iqoutput > 0) then
        patchout%mmean_fs_open         (1:inc) = pack(patchin%mmean_fs_open         ,mask)
@@ -7063,6 +7376,19 @@ contains
        patchout%mmean_par_l           (1:inc) = pack(patchin%mmean_par_l           ,mask)
        patchout%mmean_par_l_beam      (1:inc) = pack(patchin%mmean_par_l_beam      ,mask)
        patchout%mmean_par_l_diff      (1:inc) = pack(patchin%mmean_par_l_diff      ,mask)
+       patchout%mmean_rshort_l        (1:inc) = pack(patchin%mmean_rshort_l        ,mask)
+       patchout%mmean_rlong_l         (1:inc) = pack(patchin%mmean_rlong_l         ,mask)
+       patchout%mmean_sensible_lc     (1:inc) = pack(patchin%mmean_sensible_lc     ,mask)
+       patchout%mmean_vapor_lc        (1:inc) = pack(patchin%mmean_vapor_lc        ,mask)
+       patchout%mmean_transp          (1:inc) = pack(patchin%mmean_transp          ,mask)
+       patchout%mmean_intercepted_al  (1:inc) = pack(patchin%mmean_intercepted_al  ,mask)
+       patchout%mmean_wshed_lg        (1:inc) = pack(patchin%mmean_wshed_lg        ,mask)
+       patchout%mmean_rshort_w        (1:inc) = pack(patchin%mmean_rshort_w        ,mask)
+       patchout%mmean_rlong_w         (1:inc) = pack(patchin%mmean_rlong_w         ,mask)
+       patchout%mmean_sensible_wc     (1:inc) = pack(patchin%mmean_sensible_wc     ,mask)
+       patchout%mmean_vapor_wc        (1:inc) = pack(patchin%mmean_vapor_wc        ,mask)
+       patchout%mmean_intercepted_aw  (1:inc) = pack(patchin%mmean_intercepted_aw  ,mask)
+       patchout%mmean_wshed_wg        (1:inc) = pack(patchin%mmean_wshed_wg        ,mask)
 
        do m=1,inc
          k=incmask(m)
@@ -7074,21 +7400,33 @@ contains
 
     if (iqoutput > 0) then
        do m=1,ndcycle
-          patchout%qmean_par_l       (m,1:inc) = pack(patchin%qmean_par_l       (m,:),mask)
-          patchout%qmean_par_l_beam  (m,1:inc) = pack(patchin%qmean_par_l_beam  (m,:),mask)
-          patchout%qmean_par_l_diff  (m,1:inc) = pack(patchin%qmean_par_l_diff  (m,:),mask)
-          patchout%qmean_fs_open     (m,1:inc) = pack(patchin%qmean_fs_open     (m,:),mask)
-          patchout%qmean_fsw         (m,1:inc) = pack(patchin%qmean_fsw         (m,:),mask)
-          patchout%qmean_fsn         (m,1:inc) = pack(patchin%qmean_fsn         (m,:),mask)
-          patchout%qmean_psi_open    (m,1:inc) = pack(patchin%qmean_psi_open    (m,:),mask)
-          patchout%qmean_psi_closed  (m,1:inc) = pack(patchin%qmean_psi_closed  (m,:),mask)
-          patchout%qmean_water_supply(m,1:inc) = pack(patchin%qmean_water_supply(m,:),mask)
-          patchout%qmean_gpp         (m,1:inc) = pack(patchin%qmean_gpp         (m,:),mask)
-          patchout%qmean_leaf_resp   (m,1:inc) = pack(patchin%qmean_leaf_resp   (m,:),mask)
-          patchout%qmean_root_resp   (m,1:inc) = pack(patchin%qmean_root_resp   (m,:),mask)
+          patchout%qmean_par_l         (m,1:inc) = pack(patchin%qmean_par_l         (m,:),mask)
+          patchout%qmean_par_l_beam    (m,1:inc) = pack(patchin%qmean_par_l_beam    (m,:),mask)
+          patchout%qmean_par_l_diff    (m,1:inc) = pack(patchin%qmean_par_l_diff    (m,:),mask)
+          patchout%qmean_fs_open       (m,1:inc) = pack(patchin%qmean_fs_open       (m,:),mask)
+          patchout%qmean_fsw           (m,1:inc) = pack(patchin%qmean_fsw           (m,:),mask)
+          patchout%qmean_fsn           (m,1:inc) = pack(patchin%qmean_fsn           (m,:),mask)
+          patchout%qmean_psi_open      (m,1:inc) = pack(patchin%qmean_psi_open      (m,:),mask)
+          patchout%qmean_psi_closed    (m,1:inc) = pack(patchin%qmean_psi_closed    (m,:),mask)
+          patchout%qmean_water_supply  (m,1:inc) = pack(patchin%qmean_water_supply  (m,:),mask)
+          patchout%qmean_gpp           (m,1:inc) = pack(patchin%qmean_gpp           (m,:),mask)
+          patchout%qmean_leaf_resp     (m,1:inc) = pack(patchin%qmean_leaf_resp     (m,:),mask)
+          patchout%qmean_root_resp     (m,1:inc) = pack(patchin%qmean_root_resp     (m,:),mask)
+          patchout%qmean_rshort_l      (m,1:inc) = pack(patchin%qmean_rshort_l      (m,:),mask)
+          patchout%qmean_rlong_l       (m,1:inc) = pack(patchin%qmean_rlong_l       (m,:),mask)
+          patchout%qmean_sensible_lc   (m,1:inc) = pack(patchin%qmean_sensible_lc   (m,:),mask) 
+          patchout%qmean_vapor_lc      (m,1:inc) = pack(patchin%qmean_vapor_lc      (m,:),mask) 
+          patchout%qmean_transp        (m,1:inc) = pack(patchin%qmean_transp        (m,:),mask) 
+          patchout%qmean_intercepted_al(m,1:inc) = pack(patchin%qmean_intercepted_al(m,:),mask) 
+          patchout%qmean_wshed_lg      (m,1:inc) = pack(patchin%qmean_wshed_lg      (m,:),mask) 
+          patchout%qmean_rshort_w      (m,1:inc) = pack(patchin%qmean_rshort_w      (m,:),mask)
+          patchout%qmean_rlong_w       (m,1:inc) = pack(patchin%qmean_rlong_w       (m,:),mask)
+          patchout%qmean_sensible_wc   (m,1:inc) = pack(patchin%qmean_sensible_wc   (m,:),mask) 
+          patchout%qmean_vapor_wc      (m,1:inc) = pack(patchin%qmean_vapor_wc      (m,:),mask) 
+          patchout%qmean_intercepted_aw(m,1:inc) = pack(patchin%qmean_intercepted_aw(m,:),mask) 
+          patchout%qmean_wshed_wg      (m,1:inc) = pack(patchin%qmean_wshed_wg      (m,:),mask) 
        end do
     end if
-
     return
   end subroutine copy_patchtype_mask
 !============================================================================!
@@ -7249,6 +7587,25 @@ contains
        patchout%vm_bar(iout)           = patchin%vm_bar(iin)
        patchout%sla(iout)              = patchin%sla(iin)
 
+       patchout%mean_par_l           (iout) = patchin%mean_par_l           (iin)
+       patchout%mean_par_l_beam      (iout) = patchin%mean_par_l_beam      (iin)
+       patchout%mean_par_l_diff      (iout) = patchin%mean_par_l_diff      (iin)
+
+       patchout%mean_rshort_l        (iout) = patchin%mean_rshort_l        (iin)
+       patchout%mean_rlong_l         (iout) = patchin%mean_rlong_l         (iin)
+       patchout%mean_sensible_lc     (iout) = patchin%mean_sensible_lc     (iin)
+       patchout%mean_vapor_lc        (iout) = patchin%mean_vapor_lc        (iin)
+       patchout%mean_transp          (iout) = patchin%mean_transp          (iin)
+       patchout%mean_intercepted_al  (iout) = patchin%mean_intercepted_al  (iin)
+       patchout%mean_wshed_lg        (iout) = patchin%mean_wshed_lg        (iin)
+       patchout%mean_rshort_w        (iout) = patchin%mean_rshort_w        (iin)
+       patchout%mean_rlong_w         (iout) = patchin%mean_rlong_w         (iin)
+       patchout%mean_sensible_wc     (iout) = patchin%mean_sensible_wc     (iin)
+       patchout%mean_vapor_wc        (iout) = patchin%mean_vapor_wc        (iin)
+       patchout%mean_intercepted_aw  (iout) = patchin%mean_intercepted_aw  (iin)
+       patchout%mean_wshed_wg        (iout) = patchin%mean_wshed_wg        (iin)
+
+
        if (imoutput > 0 .or. idoutput > 0 .or. iqoutput > 0) then
           patchout%dmean_fs_open           (iout) = patchin%dmean_fs_open           (iin)
           patchout%dmean_fsw               (iout) = patchin%dmean_fsw               (iin)
@@ -7272,6 +7629,19 @@ contains
           patchout%dmean_par_l             (iout) = patchin%dmean_par_l             (iin)
           patchout%dmean_par_l_beam        (iout) = patchin%dmean_par_l_beam        (iin)
           patchout%dmean_par_l_diff        (iout) = patchin%dmean_par_l_diff        (iin)
+          patchout%dmean_rshort_l          (iout) = patchin%dmean_rshort_l          (iin)
+          patchout%dmean_rlong_l           (iout) = patchin%dmean_rlong_l           (iin)
+          patchout%dmean_sensible_lc       (iout) = patchin%dmean_sensible_lc       (iin)
+          patchout%dmean_vapor_lc          (iout) = patchin%dmean_vapor_lc          (iin)
+          patchout%dmean_transp            (iout) = patchin%dmean_transp            (iin)
+          patchout%dmean_intercepted_al    (iout) = patchin%dmean_intercepted_al    (iin)
+          patchout%dmean_wshed_lg          (iout) = patchin%dmean_wshed_lg          (iin)
+          patchout%dmean_rshort_w          (iout) = patchin%dmean_rshort_w          (iin)
+          patchout%dmean_rlong_w           (iout) = patchin%dmean_rlong_w           (iin)
+          patchout%dmean_sensible_wc       (iout) = patchin%dmean_sensible_wc       (iin)
+          patchout%dmean_vapor_wc          (iout) = patchin%dmean_vapor_wc          (iin)
+          patchout%dmean_intercepted_aw    (iout) = patchin%dmean_intercepted_aw    (iin)
+          patchout%dmean_wshed_wg          (iout) = patchin%dmean_wshed_wg          (iin)
        end if
        if (imoutput > 0 .or. iqoutput > 0) then
           patchout%mmean_fs_open           (iout) = patchin%mmean_fs_open           (iin)
@@ -7304,21 +7674,47 @@ contains
           patchout%mmean_par_l             (iout) = patchin%mmean_par_l             (iin)
           patchout%mmean_par_l_beam        (iout) = patchin%mmean_par_l_beam        (iin)
           patchout%mmean_par_l_diff        (iout) = patchin%mmean_par_l_diff        (iin)
+          patchout%mmean_rshort_l          (iout) = patchin%mmean_rshort_l          (iin)
+          patchout%mmean_rlong_l           (iout) = patchin%mmean_rlong_l           (iin)
+          patchout%mmean_sensible_lc       (iout) = patchin%mmean_sensible_lc       (iin)
+          patchout%mmean_vapor_lc          (iout) = patchin%mmean_vapor_lc          (iin)
+          patchout%mmean_transp            (iout) = patchin%mmean_transp            (iin)
+          patchout%mmean_intercepted_al    (iout) = patchin%mmean_intercepted_al    (iin)
+          patchout%mmean_wshed_lg          (iout) = patchin%mmean_wshed_lg          (iin)
+          patchout%mmean_rshort_w          (iout) = patchin%mmean_rshort_w          (iin)
+          patchout%mmean_rlong_w           (iout) = patchin%mmean_rlong_w           (iin)
+          patchout%mmean_sensible_wc       (iout) = patchin%mmean_sensible_wc       (iin)
+          patchout%mmean_vapor_wc          (iout) = patchin%mmean_vapor_wc          (iin)
+          patchout%mmean_intercepted_aw    (iout) = patchin%mmean_intercepted_aw    (iin)
+          patchout%mmean_wshed_wg          (iout) = patchin%mmean_wshed_wg          (iin)
        end if
 
        if (iqoutput > 0) then
-          patchout%qmean_par_l        (:,iout) = patchin%qmean_par_l        (:,iin)
-          patchout%qmean_par_l_beam   (:,iout) = patchin%qmean_par_l_beam   (:,iin)
-          patchout%qmean_par_l_diff   (:,iout) = patchin%qmean_par_l_diff   (:,iin)
-          patchout%qmean_fs_open      (:,iout) = patchin%qmean_fs_open      (:,iin)
-          patchout%qmean_fsw          (:,iout) = patchin%qmean_fsw          (:,iin)
-          patchout%qmean_fsn          (:,iout) = patchin%qmean_fsn          (:,iin)
-          patchout%qmean_psi_open     (:,iout) = patchin%qmean_psi_open     (:,iin)
-          patchout%qmean_psi_closed   (:,iout) = patchin%qmean_psi_closed   (:,iin)
-          patchout%qmean_water_supply (:,iout) = patchin%qmean_water_supply (:,iin)
-          patchout%qmean_gpp          (:,iout) = patchin%qmean_gpp          (:,iin)
-          patchout%qmean_leaf_resp    (:,iout) = patchin%qmean_leaf_resp    (:,iin)
-          patchout%qmean_root_resp    (:,iout) = patchin%qmean_root_resp    (:,iin)
+          patchout%qmean_par_l          (:,iout) = patchin%qmean_par_l          (:,iin)
+          patchout%qmean_par_l_beam     (:,iout) = patchin%qmean_par_l_beam     (:,iin)
+          patchout%qmean_par_l_diff     (:,iout) = patchin%qmean_par_l_diff     (:,iin)
+          patchout%qmean_fs_open        (:,iout) = patchin%qmean_fs_open        (:,iin)
+          patchout%qmean_fsw            (:,iout) = patchin%qmean_fsw            (:,iin)
+          patchout%qmean_fsn            (:,iout) = patchin%qmean_fsn            (:,iin)
+          patchout%qmean_psi_open       (:,iout) = patchin%qmean_psi_open       (:,iin)
+          patchout%qmean_psi_closed     (:,iout) = patchin%qmean_psi_closed     (:,iin)
+          patchout%qmean_water_supply   (:,iout) = patchin%qmean_water_supply   (:,iin)
+          patchout%qmean_gpp            (:,iout) = patchin%qmean_gpp            (:,iin)
+          patchout%qmean_leaf_resp      (:,iout) = patchin%qmean_leaf_resp      (:,iin)
+          patchout%qmean_root_resp      (:,iout) = patchin%qmean_root_resp      (:,iin)
+          patchout%qmean_rshort_l       (:,iout) = patchin%qmean_rshort_l       (:,iin)
+          patchout%qmean_rlong_l        (:,iout) = patchin%qmean_rlong_l        (:,iin)
+          patchout%qmean_sensible_lc    (:,iout) = patchin%qmean_sensible_lc    (:,iin)
+          patchout%qmean_vapor_lc       (:,iout) = patchin%qmean_vapor_lc       (:,iin)
+          patchout%qmean_transp         (:,iout) = patchin%qmean_transp         (:,iin)
+          patchout%qmean_intercepted_al (:,iout) = patchin%qmean_intercepted_al (:,iin)
+          patchout%qmean_wshed_lg       (:,iout) = patchin%qmean_wshed_lg       (:,iin)
+          patchout%qmean_rshort_w       (:,iout) = patchin%qmean_rshort_w       (:,iin)
+          patchout%qmean_rlong_w        (:,iout) = patchin%qmean_rlong_w        (:,iin)
+          patchout%qmean_sensible_wc    (:,iout) = patchin%qmean_sensible_wc    (:,iin)
+          patchout%qmean_vapor_wc       (:,iout) = patchin%qmean_vapor_wc       (:,iin)
+          patchout%qmean_intercepted_aw (:,iout) = patchin%qmean_intercepted_aw (:,iin)
+          patchout%qmean_wshed_wg       (:,iout) = patchin%qmean_wshed_wg       (:,iin)
        end if
 
        iin = iin + 1
@@ -7329,6 +7725,284 @@ contains
   end subroutine copy_patchtype
 !============================================================================!
 !============================================================================!
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine duplicates a cohort.  Because this must be updated whenever any   !
+   ! variable is added/removed, we moved it to here (it used to be in fuse_fiss_utils.f90) !
+   !---------------------------------------------------------------------------------------!
+   subroutine clone_cohort(cpatch,donc,recc)
+      implicit none
+      !------ Arguments. ------------------------------------------------------------------!
+      type(patchtype), target     :: cpatch
+      integer        , intent(in) :: donc
+      integer        , intent(in) :: recc
+      !------------------------------------------------------------------------------------!
+
+      cpatch%pft                   (recc) = cpatch%pft                   (donc)
+      cpatch%nplant                (recc) = cpatch%nplant                (donc)
+      cpatch%hite                  (recc) = cpatch%hite                  (donc)
+      cpatch%agb                   (recc) = cpatch%agb                   (donc)
+      cpatch%basarea               (recc) = cpatch%basarea               (donc)
+      cpatch%dagb_dt               (recc) = cpatch%dagb_dt               (donc)
+      cpatch%dlnagb_dt             (recc) = cpatch%dlnagb_dt             (donc)
+      cpatch%dba_dt                (recc) = cpatch%dba_dt                (donc)
+      cpatch%dlnba_dt              (recc) = cpatch%dlnba_dt              (donc)
+      cpatch%ddbh_dt               (recc) = cpatch%ddbh_dt               (donc)
+      cpatch%dlndbh_dt             (recc) = cpatch%dlndbh_dt             (donc)
+      cpatch%dbh                   (recc) = cpatch%dbh                   (donc)
+      cpatch%bdead                 (recc) = cpatch%bdead                 (donc)
+      cpatch%bleaf                 (recc) = cpatch%bleaf                 (donc)
+      cpatch%phenology_status      (recc) = cpatch%phenology_status      (donc)
+      cpatch%recruit_dbh           (recc) = cpatch%recruit_dbh           (donc)
+      cpatch%census_status         (recc) = cpatch%census_status         (donc)
+      cpatch%balive                (recc) = cpatch%balive                (donc)
+      cpatch%broot                 (recc) = cpatch%broot                 (donc)
+      cpatch%bsapwooda             (recc) = cpatch%bsapwooda             (donc)
+      cpatch%bsapwoodb             (recc) = cpatch%bsapwoodb             (donc)
+      cpatch%lai                   (recc) = cpatch%lai                   (donc)
+      cpatch%wai                   (recc) = cpatch%wai                   (donc)
+      cpatch%crown_area            (recc) = cpatch%crown_area            (donc)
+      cpatch%leaf_resolvable       (recc) = cpatch%leaf_resolvable       (donc)
+      cpatch%wood_resolvable       (recc) = cpatch%wood_resolvable       (donc)
+      cpatch%bstorage              (recc) = cpatch%bstorage              (donc)
+      cpatch%cb                  (:,recc) = cpatch%cb                  (:,donc)
+      cpatch%cb_lightmax         (:,recc) = cpatch%cb_lightmax         (:,donc)
+      cpatch%cb_moistmax         (:,recc) = cpatch%cb_moistmax         (:,donc)
+      cpatch%cbr_bar               (recc) = cpatch%cbr_bar               (donc)
+      cpatch%leaf_energy           (recc) = cpatch%leaf_energy           (donc)
+      cpatch%leaf_hcap             (recc) = cpatch%leaf_hcap             (donc)
+      cpatch%leaf_temp             (recc) = cpatch%leaf_temp             (donc)
+      cpatch%leaf_vpdef            (recc) = cpatch%leaf_vpdef            (donc)
+      cpatch%leaf_temp_pv          (recc) = cpatch%leaf_temp_pv          (donc)
+      cpatch%leaf_fliq             (recc) = cpatch%leaf_fliq             (donc)
+      cpatch%leaf_water            (recc) = cpatch%leaf_water            (donc)
+      cpatch%wood_energy           (recc) = cpatch%wood_energy           (donc)
+      cpatch%wood_hcap             (recc) = cpatch%wood_hcap             (donc)
+      cpatch%wood_temp             (recc) = cpatch%wood_temp             (donc)
+      cpatch%wood_temp_pv          (recc) = cpatch%wood_temp_pv          (donc)
+      cpatch%wood_fliq             (recc) = cpatch%wood_fliq             (donc)
+      cpatch%wood_water            (recc) = cpatch%wood_water            (donc)
+      cpatch%veg_wind              (recc) = cpatch%veg_wind              (donc)
+      cpatch%lsfc_shv_open         (recc) = cpatch%lsfc_shv_open         (donc)
+      cpatch%lsfc_shv_closed       (recc) = cpatch%lsfc_shv_closed       (donc)
+      cpatch%lsfc_co2_open         (recc) = cpatch%lsfc_co2_open         (donc)
+      cpatch%lsfc_co2_closed       (recc) = cpatch%lsfc_co2_closed       (donc)
+      cpatch%lint_shv              (recc) = cpatch%lint_shv              (donc)
+      cpatch%lint_co2_open         (recc) = cpatch%lint_co2_open         (donc)
+      cpatch%lint_co2_closed       (recc) = cpatch%lint_co2_closed       (donc)
+      cpatch%mean_gpp              (recc) = cpatch%mean_gpp              (donc)
+      cpatch%mean_leaf_resp        (recc) = cpatch%mean_leaf_resp        (donc)
+      cpatch%mean_root_resp        (recc) = cpatch%mean_root_resp        (donc)
+      cpatch%mean_growth_resp      (recc) = cpatch%mean_growth_resp      (donc)
+      cpatch%mean_storage_resp     (recc) = cpatch%mean_storage_resp     (donc)
+      cpatch%mean_vleaf_resp       (recc) = cpatch%mean_vleaf_resp       (donc)
+      cpatch%today_leaf_resp       (recc) = cpatch%today_leaf_resp       (donc)
+      cpatch%today_root_resp       (recc) = cpatch%today_root_resp       (donc)
+      cpatch%today_gpp             (recc) = cpatch%today_gpp             (donc)
+      cpatch%today_nppleaf         (recc) = cpatch%today_nppleaf         (donc)
+      cpatch%today_nppfroot        (recc) = cpatch%today_nppfroot        (donc)
+      cpatch%today_nppsapwood      (recc) = cpatch%today_nppsapwood      (donc)
+      cpatch%today_nppcroot        (recc) = cpatch%today_nppcroot        (donc)
+      cpatch%today_nppseeds        (recc) = cpatch%today_nppseeds        (donc)
+      cpatch%today_nppwood         (recc) = cpatch%today_nppwood         (donc)
+      cpatch%today_nppdaily        (recc) = cpatch%today_nppdaily        (donc)
+      cpatch%today_gpp_pot         (recc) = cpatch%today_gpp_pot         (donc)
+      cpatch%today_gpp_lightmax    (recc) = cpatch%today_gpp_lightmax    (donc)
+      cpatch%today_gpp_moistmax    (recc) = cpatch%today_gpp_moistmax    (donc)
+      cpatch%growth_respiration    (recc) = cpatch%growth_respiration    (donc)
+      cpatch%storage_respiration   (recc) = cpatch%storage_respiration   (donc)
+      cpatch%vleaf_respiration     (recc) = cpatch%vleaf_respiration     (donc)
+      cpatch%fsn                   (recc) = cpatch%fsn                   (donc)
+      cpatch%monthly_dndt          (recc) = cpatch%monthly_dndt          (donc)
+      cpatch%monthly_dlnndt        (recc) = cpatch%monthly_dlnndt        (donc)
+      cpatch%mort_rate           (:,recc) = cpatch%mort_rate           (:,donc)
+     
+      cpatch%Psi_open              (recc) = cpatch%Psi_open              (donc)
+      cpatch%krdepth               (recc) = cpatch%krdepth               (donc)
+      cpatch%first_census          (recc) = cpatch%first_census          (donc)
+      cpatch%new_recruit_flag      (recc) = cpatch%new_recruit_flag      (donc)
+      cpatch%light_level           (recc) = cpatch%light_level           (donc)
+      cpatch%light_level_beam      (recc) = cpatch%light_level_beam      (donc)
+      cpatch%light_level_diff      (recc) = cpatch%light_level_diff      (donc)
+      cpatch%par_l                 (recc) = cpatch%par_l                 (donc)
+      cpatch%par_l_beam            (recc) = cpatch%par_l_beam            (donc)
+      cpatch%par_l_diffuse         (recc) = cpatch%par_l_diffuse         (donc)
+      cpatch%rshort_l              (recc) = cpatch%rshort_l              (donc)
+      cpatch%rshort_l_beam         (recc) = cpatch%rshort_l_beam         (donc)
+      cpatch%rshort_l_diffuse      (recc) = cpatch%rshort_l_diffuse      (donc)
+      cpatch%rlong_l               (recc) = cpatch%rlong_l               (donc)
+      cpatch%rlong_l_surf          (recc) = cpatch%rlong_l_surf          (donc)
+      cpatch%rlong_l_incid         (recc) = cpatch%rlong_l_incid         (donc)
+      cpatch%rshort_w              (recc) = cpatch%rshort_w              (donc)
+      cpatch%rshort_w_beam         (recc) = cpatch%rshort_w_beam         (donc)
+      cpatch%rshort_w_diffuse      (recc) = cpatch%rshort_w_diffuse      (donc)
+      cpatch%rlong_w               (recc) = cpatch%rlong_w               (donc)
+      cpatch%rlong_w_surf          (recc) = cpatch%rlong_w_surf          (donc)
+      cpatch%rlong_w_incid         (recc) = cpatch%rlong_w_incid         (donc)
+      cpatch%leaf_gbh              (recc) = cpatch%leaf_gbh              (donc)
+      cpatch%leaf_gbw              (recc) = cpatch%leaf_gbw              (donc)
+      cpatch%wood_gbh              (recc) = cpatch%wood_gbh              (donc)
+      cpatch%wood_gbw              (recc) = cpatch%wood_gbw              (donc)
+      cpatch%A_open                (recc) = cpatch%A_open                (donc)
+      cpatch%A_closed              (recc) = cpatch%A_closed              (donc)
+      cpatch%Psi_closed            (recc) = cpatch%Psi_closed            (donc)
+      cpatch%gsw_open              (recc) = cpatch%gsw_open              (donc)
+      cpatch%gsw_closed            (recc) = cpatch%gsw_closed            (donc)
+      cpatch%fsw                   (recc) = cpatch%fsw                   (donc)
+      cpatch%fs_open               (recc) = cpatch%fs_open               (donc)
+      cpatch%water_supply          (recc) = cpatch%water_supply          (donc)
+      cpatch%stomatal_conductance  (recc) = cpatch%stomatal_conductance  (donc)
+      cpatch%leaf_maintenance      (recc) = cpatch%leaf_maintenance      (donc)
+      cpatch%root_maintenance      (recc) = cpatch%root_maintenance      (donc)
+      cpatch%leaf_drop             (recc) = cpatch%leaf_drop             (donc)
+      cpatch%bseeds                (recc) = cpatch%bseeds                (donc)
+      cpatch%leaf_respiration      (recc) = cpatch%leaf_respiration      (donc)
+      cpatch%root_respiration      (recc) = cpatch%root_respiration      (donc)
+      cpatch%gpp                   (recc) = cpatch%gpp                   (donc)
+      cpatch%paw_avg               (recc) = cpatch%paw_avg               (donc)
+      cpatch%elongf                (recc) = cpatch%elongf                (donc)
+      cpatch%turnover_amp          (recc) = cpatch%turnover_amp          (donc)
+      cpatch%llspan                (recc) = cpatch%llspan                (donc)
+      cpatch%vm_bar                (recc) = cpatch%vm_bar                (donc)
+      cpatch%sla                   (recc) = cpatch%sla                   (donc)
+      cpatch%mean_par_l            (recc) = cpatch%mean_par_l            (donc)
+      cpatch%mean_par_l_beam       (recc) = cpatch%mean_par_l_beam       (donc)
+      cpatch%mean_par_l_diff       (recc) = cpatch%mean_par_l_diff       (donc)
+      cpatch%mean_rshort_l         (recc) = cpatch%mean_rshort_l         (donc)
+      cpatch%mean_rlong_l          (recc) = cpatch%mean_rlong_l          (donc)
+      cpatch%mean_sensible_lc      (recc) = cpatch%mean_sensible_lc      (donc)
+      cpatch%mean_vapor_lc         (recc) = cpatch%mean_vapor_lc         (donc)
+      cpatch%mean_transp           (recc) = cpatch%mean_transp           (donc)
+      cpatch%mean_intercepted_al   (recc) = cpatch%mean_intercepted_al   (donc)
+      cpatch%mean_wshed_lg         (recc) = cpatch%mean_wshed_lg         (donc)
+      cpatch%mean_rshort_w         (recc) = cpatch%mean_rshort_w         (donc)
+      cpatch%mean_rlong_w          (recc) = cpatch%mean_rlong_w          (donc)
+      cpatch%mean_sensible_wc      (recc) = cpatch%mean_sensible_wc      (donc)
+      cpatch%mean_vapor_wc         (recc) = cpatch%mean_vapor_wc         (donc)
+      cpatch%mean_intercepted_aw   (recc) = cpatch%mean_intercepted_aw   (donc)
+      cpatch%mean_wshed_wg         (recc) = cpatch%mean_wshed_wg         (donc)
+
+
+      if (imoutput > 0 .or. idoutput > 0 .or. iqoutput > 0) then
+         cpatch%dmean_fs_open           (recc) = cpatch%dmean_fs_open           (donc)
+         cpatch%dmean_fsw               (recc) = cpatch%dmean_fsw               (donc)
+         cpatch%dmean_fsn               (recc) = cpatch%dmean_fsn               (donc)
+         cpatch%dmean_psi_open          (recc) = cpatch%dmean_psi_open          (donc)
+         cpatch%dmean_psi_closed        (recc) = cpatch%dmean_psi_closed        (donc)
+         cpatch%dmean_water_supply      (recc) = cpatch%dmean_water_supply      (donc)
+         cpatch%dmean_light_level       (recc) = cpatch%dmean_light_level       (donc)
+         cpatch%dmean_light_level_beam  (recc) = cpatch%dmean_light_level_beam  (donc)
+         cpatch%dmean_light_level_diff  (recc) = cpatch%dmean_light_level_diff  (donc)
+         cpatch%dmean_gpp               (recc) = cpatch%dmean_gpp               (donc)
+         cpatch%dmean_nppleaf           (recc) = cpatch%dmean_nppleaf           (donc)
+         cpatch%dmean_nppfroot          (recc) = cpatch%dmean_nppfroot          (donc)
+         cpatch%dmean_nppsapwood        (recc) = cpatch%dmean_nppsapwood        (donc)
+         cpatch%dmean_nppcroot          (recc) = cpatch%dmean_nppcroot          (donc)
+         cpatch%dmean_nppseeds          (recc) = cpatch%dmean_nppseeds          (donc)
+         cpatch%dmean_nppwood           (recc) = cpatch%dmean_nppwood           (donc)
+         cpatch%dmean_nppdaily          (recc) = cpatch%dmean_nppdaily          (donc)  
+         cpatch%dmean_leaf_resp         (recc) = cpatch%dmean_leaf_resp         (donc)
+         cpatch%dmean_root_resp         (recc) = cpatch%dmean_root_resp         (donc)
+         cpatch%dmean_par_l             (recc) = cpatch%dmean_par_l             (donc)
+         cpatch%dmean_par_l_beam        (recc) = cpatch%dmean_par_l_beam        (donc)
+         cpatch%dmean_par_l_diff        (recc) = cpatch%dmean_par_l_diff        (donc)
+         cpatch%dmean_rshort_l          (recc) = cpatch%dmean_rshort_l          (donc)
+         cpatch%dmean_rlong_l           (recc) = cpatch%dmean_rlong_l           (donc)
+         cpatch%dmean_sensible_lc       (recc) = cpatch%dmean_sensible_lc       (donc)
+         cpatch%dmean_vapor_lc          (recc) = cpatch%dmean_vapor_lc          (donc)
+         cpatch%dmean_transp            (recc) = cpatch%dmean_transp            (donc)
+         cpatch%dmean_intercepted_al    (recc) = cpatch%dmean_intercepted_al    (donc)
+         cpatch%dmean_wshed_lg          (recc) = cpatch%dmean_wshed_lg          (donc)
+         cpatch%dmean_rshort_w          (recc) = cpatch%dmean_rshort_w          (donc)
+         cpatch%dmean_rlong_w           (recc) = cpatch%dmean_rlong_w           (donc)
+         cpatch%dmean_sensible_wc       (recc) = cpatch%dmean_sensible_wc       (donc)
+         cpatch%dmean_vapor_wc          (recc) = cpatch%dmean_vapor_wc          (donc)
+         cpatch%dmean_intercepted_aw    (recc) = cpatch%dmean_intercepted_aw    (donc)
+         cpatch%dmean_wshed_wg          (recc) = cpatch%dmean_wshed_wg          (donc)
+      end if
+      if (imoutput > 0 .or. iqoutput > 0) then
+         cpatch%mmean_fs_open           (recc) = cpatch%mmean_fs_open           (donc)
+         cpatch%mmean_fsw               (recc) = cpatch%mmean_fsw               (donc)
+         cpatch%mmean_fsn               (recc) = cpatch%mmean_fsn               (donc)
+         cpatch%mmean_psi_open          (recc) = cpatch%mmean_psi_open          (donc)
+         cpatch%mmean_psi_closed        (recc) = cpatch%mmean_psi_closed        (donc)
+         cpatch%mmean_water_supply      (recc) = cpatch%mmean_water_supply      (donc)
+         cpatch%mmean_leaf_maintenance  (recc) = cpatch%mmean_leaf_maintenance  (donc)
+         cpatch%mmean_root_maintenance  (recc) = cpatch%mmean_root_maintenance  (donc)
+         cpatch%mmean_leaf_drop         (recc) = cpatch%mmean_leaf_drop         (donc)
+         cpatch%mmean_cb                (recc) = cpatch%mmean_cb                (donc)
+         cpatch%mmean_light_level       (recc) = cpatch%mmean_light_level       (donc)
+         cpatch%mmean_light_level_beam  (recc) = cpatch%mmean_light_level_beam  (donc)
+         cpatch%mmean_light_level_diff  (recc) = cpatch%mmean_light_level_diff  (donc)
+         cpatch%mmean_gpp               (recc) = cpatch%mmean_gpp               (donc)
+         cpatch%mmean_nppleaf           (recc) = cpatch%mmean_nppleaf           (donc)
+         cpatch%mmean_nppfroot          (recc) = cpatch%mmean_nppfroot          (donc)
+         cpatch%mmean_nppsapwood        (recc) = cpatch%mmean_nppsapwood        (donc)
+         cpatch%mmean_nppcroot          (recc) = cpatch%mmean_nppcroot          (donc)
+         cpatch%mmean_nppseeds          (recc) = cpatch%mmean_nppseeds          (donc)
+         cpatch%mmean_nppwood           (recc) = cpatch%mmean_nppwood           (donc)
+         cpatch%mmean_nppdaily          (recc) = cpatch%mmean_nppdaily          (donc)  
+         cpatch%mmean_leaf_resp         (recc) = cpatch%mmean_leaf_resp         (donc)
+         cpatch%mmean_root_resp         (recc) = cpatch%mmean_root_resp         (donc)
+         cpatch%mmean_growth_resp       (recc) = cpatch%mmean_growth_resp       (donc)
+         cpatch%mmean_storage_resp      (recc) = cpatch%mmean_storage_resp      (donc)
+         cpatch%mmean_vleaf_resp        (recc) = cpatch%mmean_vleaf_resp        (donc)
+         cpatch%mmean_mort_rate       (:,recc) = cpatch%mmean_mort_rate       (:,donc)
+         cpatch%mmean_par_l             (recc) = cpatch%mmean_par_l             (donc)
+         cpatch%mmean_par_l_beam        (recc) = cpatch%mmean_par_l_beam        (donc)
+         cpatch%mmean_par_l_diff        (recc) = cpatch%mmean_par_l_diff        (donc)
+         cpatch%mmean_rshort_l          (recc) = cpatch%mmean_rshort_l          (donc)
+         cpatch%mmean_rlong_l           (recc) = cpatch%mmean_rlong_l           (donc)
+         cpatch%mmean_sensible_lc       (recc) = cpatch%mmean_sensible_lc       (donc)
+         cpatch%mmean_vapor_lc          (recc) = cpatch%mmean_vapor_lc          (donc)
+         cpatch%mmean_transp            (recc) = cpatch%mmean_transp            (donc)
+         cpatch%mmean_intercepted_al    (recc) = cpatch%mmean_intercepted_al    (donc)
+         cpatch%mmean_wshed_lg          (recc) = cpatch%mmean_wshed_lg          (donc)
+         cpatch%mmean_rshort_w          (recc) = cpatch%mmean_rshort_w          (donc)
+         cpatch%mmean_rlong_w           (recc) = cpatch%mmean_rlong_w           (donc)
+         cpatch%mmean_sensible_wc       (recc) = cpatch%mmean_sensible_wc       (donc)
+         cpatch%mmean_vapor_wc          (recc) = cpatch%mmean_vapor_wc          (donc)
+         cpatch%mmean_intercepted_aw    (recc) = cpatch%mmean_intercepted_aw    (donc)
+         cpatch%mmean_wshed_wg          (recc) = cpatch%mmean_wshed_wg          (donc)
+      end if
+
+      if (iqoutput > 0) then
+         cpatch%qmean_par_l          (:,recc) = cpatch%qmean_par_l          (:,donc)
+         cpatch%qmean_par_l_beam     (:,recc) = cpatch%qmean_par_l_beam     (:,donc)
+         cpatch%qmean_par_l_diff     (:,recc) = cpatch%qmean_par_l_diff     (:,donc)
+         cpatch%qmean_fs_open        (:,recc) = cpatch%qmean_fs_open        (:,donc)
+         cpatch%qmean_fsw            (:,recc) = cpatch%qmean_fsw            (:,donc)
+         cpatch%qmean_fsn            (:,recc) = cpatch%qmean_fsn            (:,donc)
+         cpatch%qmean_psi_open       (:,recc) = cpatch%qmean_psi_open       (:,donc)
+         cpatch%qmean_psi_closed     (:,recc) = cpatch%qmean_psi_closed     (:,donc)
+         cpatch%qmean_water_supply   (:,recc) = cpatch%qmean_water_supply   (:,donc)
+         cpatch%qmean_gpp            (:,recc) = cpatch%qmean_gpp            (:,donc)
+         cpatch%qmean_leaf_resp      (:,recc) = cpatch%qmean_leaf_resp      (:,donc)
+         cpatch%qmean_root_resp      (:,recc) = cpatch%qmean_root_resp      (:,donc)
+         cpatch%qmean_rshort_l       (:,recc) = cpatch%qmean_rshort_l       (:,donc)
+         cpatch%qmean_rlong_l        (:,recc) = cpatch%qmean_rlong_l        (:,donc)
+         cpatch%qmean_sensible_lc    (:,recc) = cpatch%qmean_sensible_lc    (:,donc)
+         cpatch%qmean_vapor_lc       (:,recc) = cpatch%qmean_vapor_lc       (:,donc)
+         cpatch%qmean_transp         (:,recc) = cpatch%qmean_transp         (:,donc)
+         cpatch%qmean_intercepted_al (:,recc) = cpatch%qmean_intercepted_al (:,donc)
+         cpatch%qmean_wshed_lg       (:,recc) = cpatch%qmean_wshed_lg       (:,donc)
+         cpatch%qmean_rshort_w       (:,recc) = cpatch%qmean_rshort_w       (:,donc)
+         cpatch%qmean_rlong_w        (:,recc) = cpatch%qmean_rlong_w        (:,donc)
+         cpatch%qmean_sensible_wc    (:,recc) = cpatch%qmean_sensible_wc    (:,donc)
+         cpatch%qmean_vapor_wc       (:,recc) = cpatch%qmean_vapor_wc       (:,donc)
+         cpatch%qmean_intercepted_aw (:,recc) = cpatch%qmean_intercepted_aw (:,donc)
+         cpatch%qmean_wshed_wg       (:,recc) = cpatch%qmean_wshed_wg       (:,donc)
+      end if
+
+      return
+   end subroutine clone_cohort
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
@@ -8321,6 +8995,13 @@ contains
          call metadata_edio(nvar,igr,'Polygon averaged ground absorbed SW radiation','[W/m2]','ipoly') 
       end if
 
+      if (associated(cgrid%avg_par_gnd)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_par_gnd,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_PAR_GND :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon averaged ground absorbed PAR','[W/m2]','ipoly') 
+      end if
+
       if (associated(cgrid%avg_rlong_gnd)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%avg_rlong_gnd,nvar,igr,init,cgrid%pyglob_id, &
@@ -8891,35 +9572,6 @@ contains
       end if
 
       ! ----------------------------------------------
-      
-      if (associated(cgrid%avg_nir_beam)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%avg_nir_beam,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AVG_NIR_BEAM:11:hist:anal') 
-         call metadata_edio(nvar,igr,'Polygon Averaged Incident Near Infrared Beam Radiation','[W/m2]','ipoly') 
-      end if
-      
-      if (associated(cgrid%avg_nir_diffuse)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%avg_nir_diffuse,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AVG_NIR_DIFFUSE :11:hist:anal') 
-         call metadata_edio(nvar,igr,'Polygon Averaged Incident Near Infrared Diffuse Radiation','[W/m2]','ipoly') 
-      end if
-      
-      if (associated(cgrid%avg_par_beam)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%avg_par_beam,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AVG_PAR_BEAM :11:hist:opti:anal') 
-         call metadata_edio(nvar,igr,'Polygon Averaged Incident Beam Photosynthetically Active Radiation','[W/m2]','ipoly') 
-      end if
-      
-      if (associated(cgrid%avg_par_diffuse)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%avg_par_diffuse,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AVG_PAR_DIFFUSE :11:hist:opti:anal') 
-         call metadata_edio(nvar,igr,'Polygon Averaged Incident Diffuse Photosynthetically Active Radiation','[W/m2]','ipoly') 
-      end if
-      
       if (associated(cgrid%avg_atm_tmp)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%avg_atm_tmp,nvar,igr,init,cgrid%pyglob_id, &
@@ -8953,6 +9605,20 @@ contains
          call vtable_edio_r(npts,cgrid%avg_rshort_diffuse,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'AVG_RSHORT_DIFFUSE :11:hist:anal') 
          call metadata_edio(nvar,igr,'Polygon Average Diffuse Incident Shortwave Radiation','[W/m2]','ipoly') 
+      end if
+      
+      if (associated(cgrid%avg_par)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_par,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_PAR :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average Total Incident PAR','[W/m2]','ipoly') 
+      end if
+      
+      if (associated(cgrid%avg_par_diffuse)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_par_diffuse,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_PAR_DIFFUSE :11:hist:anal') 
+         call metadata_edio(nvar,igr,'Polygon Average Diffuse Incident PAR','[W/m2]','ipoly') 
       end if
       
       if (associated(cgrid%avg_rlong)) then
@@ -9753,6 +10419,20 @@ contains
               var_len,var_len_global,max_ptrs,'DMEAN_RSHORT_DIFF :11:hist:dail') 
          call metadata_edio(nvar,igr,'Daily mean diffuse shortwave radiation','[w/m2]','ipoly') 
       end if
+
+      if(associated(cgrid%dmean_par)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_par,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_PAR :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean PAR','[w/m2]','ipoly') 
+      end if
+
+      if(associated(cgrid%dmean_par_diff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_par_diff,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_PAR_DIFF :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean diffuse PAR','[w/m2]','ipoly') 
+      end if
       
       if(associated(cgrid%dmean_rlong)) then
          nvar=nvar+1
@@ -9766,6 +10446,13 @@ contains
          call vtable_edio_r(npts,cgrid%dmean_rshort_gnd,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'DMEAN_RSHORT_GND :11:hist:dail') 
          call metadata_edio(nvar,igr,'Daily mean ground abs. shortwave radiation','[w/m2]','ipoly') 
+      end if
+
+      if(associated(cgrid%dmean_par_gnd)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_par_gnd,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'DMEAN_PAR_GND :11:hist:dail') 
+         call metadata_edio(nvar,igr,'Daily mean ground abs. PAR','[w/m2]','ipoly') 
       end if
       
       if(associated(cgrid%dmean_rlong_gnd)) then
@@ -10257,6 +10944,20 @@ contains
               var_len,var_len_global,max_ptrs,'MMEAN_RSHORT_DIFF :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Monthly mean incoming diffuse solar radiation','[w/m2]','ipoly') 
       end if
+
+      if(associated(cgrid%mmean_par)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_par,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_PAR :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean downwelling PAR','[w/m2]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_par_diff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_par_diff,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_PAR_DIFF :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean incoming diffuse PAR','[w/m2]','ipoly') 
+      end if
       
       if(associated(cgrid%mmean_rlong)) then
          nvar=nvar+1
@@ -10270,6 +10971,13 @@ contains
          call vtable_edio_r(npts,cgrid%mmean_rshort_gnd,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'MMEAN_RSHORT_GND :11:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Monthly mean ground abs. solar radiation','[w/m2]','ipoly') 
+      end if
+      
+      if(associated(cgrid%mmean_par_gnd)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_par_gnd,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'MMEAN_PAR_GND :11:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Monthly mean ground abs. PAR','[w/m2]','ipoly') 
       end if
       
       if(associated(cgrid%mmean_rlong_gnd)) then
@@ -11011,6 +11719,20 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if(associated(cgrid%qmean_par)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_par,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_PAR :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_par_diff)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_par_diff,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_PAR_DIFF :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if(associated(cgrid%qmean_rlong)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rlong,nvar,igr,init,cgrid%pyglob_id, &
@@ -11022,6 +11744,13 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rshort_gnd,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMEAN_RSHORT_GND :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmean_par_gnd)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_par_gnd,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_PAR_GND :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -13299,6 +14028,27 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(csite%par_g)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_g,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_G :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_g_beam)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_g_beam,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_G_BEAM :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_g_diffuse)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_g_diffuse,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_G_DIFFUSE :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(csite%par_b)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%par_b,nvar,igr,init,csite%paglob_id, &
@@ -13495,41 +14245,6 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       
-      if (associated(csite%mean_wflux)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mean_wflux,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_WFLUX :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%mean_latflux)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mean_latflux,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_LATFLUX :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%mean_hflux)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mean_hflux,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_HFLUX :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%mean_runoff)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mean_runoff,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_RUNOFF :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
-      if (associated(csite%mean_qrunoff)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,csite%mean_qrunoff,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_QRUNOFF :31:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-      
       if (associated(csite%htry)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%htry,nvar,igr,init,csite%paglob_id, &
@@ -13676,6 +14391,13 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%avg_rshort_gnd,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'AVG_RSHORT_GND_PA :31:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%avg_par_gnd)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%avg_par_gnd,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'AVG_PAR_GND_PA :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -13988,6 +14710,27 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%rshort_s_diffuse,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'RSHORT_S_DIFFUSE :33:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_s)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_s,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_S :33:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_s_beam)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_s_beam,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_S_BEAM :33:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(csite%par_s_diffuse)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%par_s_diffuse,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_S_DIFFUSE :33:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -14566,21 +15309,21 @@ contains
       if (associated(cpatch%mean_gpp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%mean_gpp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist') 
+           var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%mean_leaf_resp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%mean_leaf_resp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist') 
+           var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%mean_root_resp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%mean_root_resp,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist') 
+           var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -14678,21 +15421,21 @@ contains
       if (associated(cpatch%growth_respiration)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%growth_respiration,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'GROWTH_RESPIRATION :41:hist') 
+           var_len,var_len_global,max_ptrs,'GROWTH_RESPIRATION :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%storage_respiration)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%storage_respiration,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'STORAGE_RESPIRATION :41:hist') 
+           var_len,var_len_global,max_ptrs,'STORAGE_RESPIRATION :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%vleaf_respiration)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%vleaf_respiration,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'VLEAF_RESPIRATION :41:hist') 
+           var_len,var_len_global,max_ptrs,'VLEAF_RESPIRATION :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if  
 
@@ -14969,6 +15712,27 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%par_l_diffuse,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'PAR_L_DIFFUSE :41:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%mean_par_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_par_l,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'MEAN_PAR_L :41:hist:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%mean_par_l_beam)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_par_l_beam,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'MEAN_PAR_L_BEAM :41:hist:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%mean_par_l_diff)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_par_l_diff,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'MEAN_PAR_L_DIFF :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -15385,6 +16149,317 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpatch%mean_rshort_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_rshort_l,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_RSHORT_L :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_rlong_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_rlong_l,nvar,igr,init                       &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_RLONG_L :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_sensible_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_sensible_lc,nvar,igr,init                   &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_SENSIBLE_LC :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Leaf->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_vapor_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_vapor_lc,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_VAPOR_LC :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Vapour flux (Leaf sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_transp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_transp,nvar,igr,init                        &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_TRANSP :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Leaf transpiration','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_intercepted_al)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_intercepted_al,nvar,igr,init                &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_INTERCEPTED_AL :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Leaf interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_wshed_lg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_wshed_lg,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_WSHED_LG :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Leaf water shedding','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_rshort_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_rshort_w,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_RSHORT_W :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_rlong_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_rlong_w,nvar,igr,init                       &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_RLONG_W :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_sensible_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_sensible_wc,nvar,igr,init                   &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_SENSIBLE_WC :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Wood->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_vapor_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_vapor_wc,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_VAPOR_WC :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Vapour flux (Wood sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_intercepted_aw)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_intercepted_aw,nvar,igr,init                &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_INTERCEPTED_AW :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Wood interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mean_wshed_wg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mean_wshed_lg,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MEAN_WSHED_WG :41:hist:anal') 
+         call metadata_edio(nvar,igr,'Wood water shedding','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_rshort_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_rshort_l,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_RSHORT_L :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_rlong_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_rlong_l,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_RLONG_L :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_sensible_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_sensible_lc,nvar,igr,init                  &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_SENSIBLE_LC_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Leaf->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_vapor_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_vapor_lc,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_VAPOR_LC_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Vapour flux (Leaf sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_transp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_transp,nvar,igr,init                       &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_TRANSP_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Leaf transpiration','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_intercepted_al)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_intercepted_al,nvar,igr,init               &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_INTERCEPTED_AL_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Leaf interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_wshed_lg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_wshed_lg,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_WSHED_LG_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Leaf water shedding','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_rshort_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_rshort_w,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_RSHORT_W :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_rlong_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_rlong_w,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_RLONG_W :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_sensible_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_sensible_wc,nvar,igr,init                  &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_SENSIBLE_WC_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Wood->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_vapor_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_vapor_wc,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_VAPOR_WC_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Vapour flux (Wood sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_intercepted_aw)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_intercepted_aw,nvar,igr,init               &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_INTERCEPTED_AW_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Wood interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%dmean_wshed_wg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%dmean_wshed_lg,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'DMEAN_WSHED_WG_CO :41:hist:dail') 
+         call metadata_edio(nvar,igr,'Wood water shedding','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_rshort_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_rshort_l,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_RSHORT_L :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_rlong_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_rlong_l,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_RLONG_L :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_sensible_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_sensible_lc,nvar,igr,init                  &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_SENSIBLE_LC_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Leaf->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_vapor_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_vapor_lc,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_VAPOR_LC_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Vapour flux (Leaf sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_transp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_transp,nvar,igr,init                       &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_TRANSP_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf transpiration','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_intercepted_al)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_intercepted_al,nvar,igr,init               &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_INTERCEPTED_AL_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_wshed_lg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_wshed_lg,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_WSHED_LG_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf water shedding','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_rshort_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_rshort_w,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_RSHORT_W :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_rlong_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_rlong_w,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_RLONG_W :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_sensible_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_sensible_wc,nvar,igr,init                  &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_SENSIBLE_WC_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Wood->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_vapor_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_vapor_wc,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_VAPOR_WC_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Vapour flux (Wood sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_intercepted_aw)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_intercepted_aw,nvar,igr,init               &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_INTERCEPTED_AW_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Wood interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%mmean_wshed_wg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%mmean_wshed_lg,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'MMEAN_WSHED_WG_CO :41:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Wood water shedding','[kg/m2/s]','icohort') 
+      end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
@@ -15484,6 +16559,109 @@ contains
          call metadata_edio(nvar,igr,'No metadata avaialable','[NA]','NA') 
       end if
 
+      if (associated(cpatch%qmean_rshort_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_rshort_l,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_RSHORT_L :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_rlong_l)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_rlong_l,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_RLONG_L :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Leaf)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_sensible_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_sensible_lc,nvar,igr,init                  &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_SENSIBLE_LC_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Leaf->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_vapor_lc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_vapor_lc,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_VAPOR_LC_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Vapour flux (Leaf sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_transp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_transp,nvar,igr,init                       &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_TRANSP_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf transpiration','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_intercepted_al)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_intercepted_al,nvar,igr,init               &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_INTERCEPTED_AL_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_wshed_lg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_wshed_lg,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_WSHED_LG_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf water shedding','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_rshort_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_rshort_w,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_RSHORT_L :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed SW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_rlong_w)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_rlong_w,nvar,igr,init                      &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_RLONG_W :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Absorbed LW radiation (Wood)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_sensible_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_sensible_wc,nvar,igr,init                  &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_SENSIBLE_WC_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Sensible heat flux (Wood->CAS)','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_vapor_wc)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_vapor_wc,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_VAPOR_WC_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Vapour flux (Wood sfc->CAS)','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_intercepted_aw)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_intercepted_aw,nvar,igr,init               &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_INTERCEPTED_AW_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Wood interception','[kg/m2/s]','icohort') 
+      end if
+
+      if (associated(cpatch%qmean_wshed_wg)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%qmean_wshed_lg,nvar,igr,init                     &
+                             ,cpatch%coglob_id,var_len,var_len_global,max_ptrs             &
+                             ,'QMEAN_WSHED_WG_CO :-41:hist:dcyc') 
+         call metadata_edio(nvar,igr,'Wood water shedding','[kg/m2/s]','icohort') 
+      end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 

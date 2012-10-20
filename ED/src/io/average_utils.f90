@@ -49,22 +49,6 @@ subroutine int_met_avg(cgrid)
                                        + cpoly%met(isi)%prss           * tfact
 
          !----- Now the polygon-level averages. -------------------------------------------!
-         cgrid%avg_nir_beam(ipy)       = cgrid%avg_nir_beam(ipy)                           &
-                                       + cpoly%met(isi)%nir_beam * cpoly%area(isi)         &
-                                       * tfact * polygon_area_i
-
-         cgrid%avg_nir_diffuse(ipy)    = cgrid%avg_nir_diffuse(ipy)                        &
-                                       + cpoly%met(isi)%nir_diffuse * cpoly%area(isi)      &
-                                       * tfact * polygon_area_i
-
-         cgrid%avg_par_beam(ipy)       = cgrid%avg_par_beam(ipy)                           &
-                                       + cpoly%met(isi)%par_beam * cpoly%area(isi)         &
-                                       * tfact * polygon_area_i
-
-         cgrid%avg_par_diffuse(ipy)    = cgrid%avg_par_diffuse(ipy)                        &
-                                       + cpoly%met(isi)%par_diffuse * cpoly%area(isi)      &
-                                       * tfact * polygon_area_i
-
          cgrid%avg_atm_tmp(ipy)        = cgrid%avg_atm_tmp(ipy)                            &
                                        + cpoly%met(isi)%atm_tmp * cpoly%area(isi)          &
                                        * tfact * polygon_area_i
@@ -83,6 +67,15 @@ subroutine int_met_avg(cgrid)
 
          cgrid%avg_rshort_diffuse(ipy) = cgrid%avg_rshort_diffuse(ipy)                     &
                                        + cpoly%met(isi)%rshort_diffuse * cpoly%area(isi)   &
+                                       * tfact * polygon_area_i
+
+         cgrid%avg_par(ipy)            = cgrid%avg_par(ipy)                                &
+                                       + ( cpoly%met(isi)%par_beam                         &
+                                         + cpoly%met(isi)%par_diffuse )                    &
+                                       * cpoly%area(isi) * tfact * polygon_area_i
+
+         cgrid%avg_par_diffuse(ipy)    = cgrid%avg_par_diffuse(ipy)                        &
+                                       + cpoly%met(isi)%par_diffuse * cpoly%area(isi)      &
                                        * tfact * polygon_area_i
 
          cgrid%avg_rlong(ipy)          = cgrid%avg_rlong(ipy)                              &
@@ -193,6 +186,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             ! the total time.                                                              !
             !------------------------------------------------------------------------------!
             csite%avg_rshort_gnd     (ipa) = csite%avg_rshort_gnd     (ipa) * frqsumi
+            csite%avg_par_gnd        (ipa) = csite%avg_par_gnd        (ipa) * frqsumi
             csite%avg_rlong_gnd      (ipa) = csite%avg_rlong_gnd      (ipa) * frqsumi
             csite%avg_rlongup        (ipa) = csite%avg_rlongup        (ipa) * frqsumi
             csite%avg_parup          (ipa) = csite%avg_parup          (ipa) * frqsumi
@@ -257,6 +251,38 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
                cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico) * tfact
                cpatch%mean_growth_resp(ico)  = cpatch%mean_growth_resp(ico)  * tfact
                cpatch%mean_vleaf_resp(ico)   = cpatch%mean_vleaf_resp(ico)   * tfact
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !    Radiation was updated every step.  Use tfact to convert them to W/m2.  !
+               !---------------------------------------------------------------------------!
+               cpatch%mean_par_l          (ico) = cpatch%mean_par_l          (ico) * tfact
+               cpatch%mean_par_l_beam     (ico) = cpatch%mean_par_l_beam     (ico) * tfact
+               cpatch%mean_par_l_diff     (ico) = cpatch%mean_par_l_diff     (ico) * tfact
+               cpatch%mean_rshort_l       (ico) = cpatch%mean_rshort_l       (ico) * tfact
+               cpatch%mean_rlong_l        (ico) = cpatch%mean_rlong_l        (ico) * tfact
+               cpatch%mean_rshort_w       (ico) = cpatch%mean_rshort_w       (ico) * tfact
+               cpatch%mean_rlong_w        (ico) = cpatch%mean_rlong_w        (ico) * tfact
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !    Energy and water fluxes were integrated over the past frqsum           !
+               ! interval.   Use frqsumi to normalise them.  Energy fluxes will become     !
+               ! W/m², and water fluxes will become kg/m²/s.                               !
+               !---------------------------------------------------------------------------!
+               cpatch%mean_sensible_lc   (ico) = cpatch%mean_sensible_lc   (ico) * frqsumi
+               cpatch%mean_vapor_lc      (ico) = cpatch%mean_vapor_lc      (ico) * frqsumi
+               cpatch%mean_transp        (ico) = cpatch%mean_transp        (ico) * frqsumi
+               cpatch%mean_intercepted_al(ico) = cpatch%mean_intercepted_al(ico) * frqsumi
+               cpatch%mean_wshed_lg      (ico) = cpatch%mean_wshed_lg      (ico) * frqsumi
+               cpatch%mean_sensible_wc   (ico) = cpatch%mean_sensible_wc   (ico) * frqsumi
+               cpatch%mean_vapor_wc      (ico) = cpatch%mean_vapor_wc      (ico) * frqsumi
+               cpatch%mean_intercepted_aw(ico) = cpatch%mean_intercepted_aw(ico) * frqsumi
+               cpatch%mean_wshed_wg      (ico) = cpatch%mean_wshed_wg      (ico) * frqsumi
+               !---------------------------------------------------------------------------!
             end do
 
             !------------------------------------------------------------------------------!
@@ -266,7 +292,9 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             !------------------------------------------------------------------------------!
             csite%mean_rh    (ipa)           = csite%mean_rh    (ipa)        * tfact
             csite%mean_cwd_rh(ipa)           = csite%mean_cwd_rh(ipa)        * tfact
-            
+            !------------------------------------------------------------------------------!
+
+
             !------------------------------------------------------------------------------!
             !      Budget variables.  They contain integral values, so we must divide by   !
             ! the elapsed time to get them in flux units.                                  !
@@ -333,15 +361,13 @@ subroutine reset_averaged_vars(cgrid)
    polyloop: do ipy = 1,cgrid%npolygons
 
       cgrid%cbudget_nep          (ipy) = 0.0
-      cgrid%avg_nir_beam         (ipy) = 0.0
-      cgrid%avg_nir_diffuse      (ipy) = 0.0
-      cgrid%avg_par_beam         (ipy) = 0.0
-      cgrid%avg_par_diffuse      (ipy) = 0.0
       cgrid%avg_atm_tmp          (ipy) = 0.0
       cgrid%avg_atm_vpdef        (ipy) = 0.0
       cgrid%avg_atm_shv          (ipy) = 0.0
       cgrid%avg_rshort           (ipy) = 0.0
       cgrid%avg_rshort_diffuse   (ipy) = 0.0
+      cgrid%avg_par              (ipy) = 0.0
+      cgrid%avg_par_diffuse      (ipy) = 0.0
       cgrid%avg_rlong            (ipy) = 0.0
       cgrid%avg_pcpg             (ipy) = 0.0
       cgrid%avg_qpcpg            (ipy) = 0.0
@@ -499,95 +525,112 @@ subroutine reset_averaged_vars(cgrid)
             !----------------------------------------------------------------!
             ! Zeroing CO2 budget variables.                                  !
             !----------------------------------------------------------------!
-            csite%co2budget_gpp(ipa)            = 0.0
-            csite%co2budget_gpp_dbh(:,ipa)      = 0.0
-            csite%co2budget_rh(ipa)             = 0.0
-            csite%co2budget_cwd_rh(ipa)         = 0.0
-            csite%co2budget_plresp(ipa)         = 0.0
-            csite%co2budget_residual(ipa)       = 0.0
-            csite%co2budget_loss2atm(ipa)       = 0.0
-            csite%co2budget_denseffect(ipa)     = 0.0
+            csite%co2budget_gpp                 (ipa) = 0.0
+            csite%co2budget_gpp_dbh           (:,ipa) = 0.0
+            csite%co2budget_rh                  (ipa) = 0.0
+            csite%co2budget_cwd_rh              (ipa) = 0.0
+            csite%co2budget_plresp              (ipa) = 0.0
+            csite%co2budget_residual            (ipa) = 0.0
+            csite%co2budget_loss2atm            (ipa) = 0.0
+            csite%co2budget_denseffect          (ipa) = 0.0
 
             !----------------------------------------------------------------!
             ! Zeroing water budget variables.                                !
             !----------------------------------------------------------------!
-            csite%wbudget_precipgain(ipa)       = 0.0
-            csite%wbudget_loss2atm(ipa)         = 0.0
-            csite%wbudget_loss2runoff(ipa)      = 0.0
-            csite%wbudget_loss2drainage(ipa)    = 0.0
-            csite%wbudget_denseffect(ipa)       = 0.0
-            csite%wbudget_residual(ipa)         = 0.0
+            csite%wbudget_precipgain           (ipa) = 0.0
+            csite%wbudget_loss2atm             (ipa) = 0.0
+            csite%wbudget_loss2runoff          (ipa) = 0.0
+            csite%wbudget_loss2drainage        (ipa) = 0.0
+            csite%wbudget_denseffect           (ipa) = 0.0
+            csite%wbudget_residual             (ipa) = 0.0
 
 
             !----------------------------------------------------------------!
             ! Zeroing energy budget variables.                               !
             !----------------------------------------------------------------!
-            csite%ebudget_precipgain(ipa)       = 0.0
-            csite%ebudget_netrad(ipa)           = 0.0
-            csite%ebudget_loss2atm(ipa)         = 0.0
-            csite%ebudget_loss2runoff(ipa)      = 0.0
-            csite%ebudget_loss2drainage(ipa)    = 0.0
-            csite%ebudget_denseffect(ipa)       = 0.0
-            csite%ebudget_prsseffect(ipa)       = 0.0
-            csite%ebudget_residual(ipa)         = 0.0
+            csite%ebudget_precipgain           (ipa) = 0.0
+            csite%ebudget_netrad               (ipa) = 0.0
+            csite%ebudget_loss2atm             (ipa) = 0.0
+            csite%ebudget_loss2runoff          (ipa) = 0.0
+            csite%ebudget_loss2drainage        (ipa) = 0.0
+            csite%ebudget_denseffect           (ipa) = 0.0
+            csite%ebudget_prsseffect           (ipa) = 0.0
+            csite%ebudget_residual             (ipa) = 0.0
             !----------------------------------------------------------------!
 
-            csite%avg_ustar    (ipa)        = 0.0
-            csite%avg_tstar    (ipa)        = 0.0
-            csite%avg_qstar    (ipa)        = 0.0
-            csite%avg_cstar    (ipa)        = 0.0
-            csite%avg_carbon_ac(ipa)        = 0.0
-            csite%avg_carbon_st(ipa)        = 0.0
-            csite%avg_vapor_lc(ipa)         = 0.0
-            csite%avg_vapor_wc(ipa)         = 0.0
-            csite%avg_vapor_gc(ipa)         = 0.0
-            csite%avg_wshed_vg(ipa)         = 0.0
-            csite%avg_intercepted(ipa)      = 0.0
-            csite%avg_throughfall(ipa)      = 0.0
-            csite%avg_vapor_ac(ipa)         = 0.0
-            csite%avg_transp(ipa)           = 0.0
-            csite%avg_evap(ipa)             = 0.0
-            csite%avg_rshort_gnd(ipa)       = 0.0
-            csite%avg_rlong_gnd(ipa)        = 0.0
-            csite%avg_rlongup         (ipa) = 0.0
-            csite%avg_parup           (ipa) = 0.0
-            csite%avg_nirup           (ipa) = 0.0
-            csite%avg_rshortup        (ipa) = 0.0
-            csite%avg_rnet            (ipa) = 0.0
-            csite%avg_albedo          (ipa) = 0.0
-            csite%avg_albedo_beam     (ipa) = 0.0
-            csite%avg_albedo_diffuse  (ipa) = 0.0
-            csite%avg_rlong_albedo    (ipa) = 0.0
-            csite%avg_smoist_gg(:,ipa)      = 0.0
-            csite%avg_transloss(:,ipa)      = 0.0
-            csite%avg_runoff(ipa)           = 0.0
-            csite%avg_runoff_heat(ipa)      = 0.0
-            csite%avg_drainage(ipa)         = 0.0
-            csite%avg_drainage_heat(ipa)    = 0.0
-            csite%avg_sensible_lc(ipa)      = 0.0
-            csite%avg_sensible_wc(ipa)      = 0.0
-            csite%avg_qwshed_vg(ipa)        = 0.0
-            csite%avg_qintercepted(ipa)     = 0.0
-            csite%avg_qthroughfall(ipa)     = 0.0
-            csite%avg_sensible_gc(ipa)      = 0.0
-            csite%avg_sensible_ac(ipa)      = 0.0
-            csite%avg_sensible_gg(:,ipa)    = 0.0
-            csite%avg_runoff_heat(ipa)      = 0.0
-            csite%avg_rk4step(ipa)          = 0.0
-            csite%avg_available_water(ipa)  = 0.0
-            csite%mean_rh(ipa)              = 0.0
-            csite%mean_cwd_rh(ipa)          = 0.0
+            csite%avg_ustar                    (ipa) = 0.0
+            csite%avg_tstar                    (ipa) = 0.0
+            csite%avg_qstar                    (ipa) = 0.0
+            csite%avg_cstar                    (ipa) = 0.0
+            csite%avg_carbon_ac                (ipa) = 0.0
+            csite%avg_carbon_st                (ipa) = 0.0
+            csite%avg_vapor_lc                 (ipa) = 0.0
+            csite%avg_vapor_wc                 (ipa) = 0.0
+            csite%avg_vapor_gc                 (ipa) = 0.0
+            csite%avg_wshed_vg                 (ipa) = 0.0
+            csite%avg_intercepted              (ipa) = 0.0
+            csite%avg_throughfall              (ipa) = 0.0
+            csite%avg_vapor_ac                 (ipa) = 0.0
+            csite%avg_transp                   (ipa) = 0.0
+            csite%avg_evap                     (ipa) = 0.0
+            csite%avg_rshort_gnd               (ipa) = 0.0
+            csite%avg_par_gnd                  (ipa) = 0.0
+            csite%avg_rlong_gnd                (ipa) = 0.0
+            csite%avg_rlongup                  (ipa) = 0.0
+            csite%avg_parup                    (ipa) = 0.0
+            csite%avg_nirup                    (ipa) = 0.0
+            csite%avg_rshortup                 (ipa) = 0.0
+            csite%avg_rnet                     (ipa) = 0.0
+            csite%avg_albedo                   (ipa) = 0.0
+            csite%avg_albedo_beam              (ipa) = 0.0
+            csite%avg_albedo_diffuse           (ipa) = 0.0
+            csite%avg_rlong_albedo             (ipa) = 0.0
+            csite%avg_smoist_gg              (:,ipa) = 0.0
+            csite%avg_transloss              (:,ipa) = 0.0
+            csite%avg_runoff                   (ipa) = 0.0
+            csite%avg_runoff_heat              (ipa) = 0.0
+            csite%avg_drainage                 (ipa) = 0.0
+            csite%avg_drainage_heat            (ipa) = 0.0
+            csite%avg_sensible_lc              (ipa) = 0.0
+            csite%avg_sensible_wc              (ipa) = 0.0
+            csite%avg_qwshed_vg                (ipa) = 0.0
+            csite%avg_qintercepted             (ipa) = 0.0
+            csite%avg_qthroughfall             (ipa) = 0.0
+            csite%avg_sensible_gc              (ipa) = 0.0
+            csite%avg_sensible_ac              (ipa) = 0.0
+            csite%avg_sensible_gg            (:,ipa) = 0.0
+            csite%avg_runoff_heat              (ipa) = 0.0
+            csite%avg_rk4step                  (ipa) = 0.0
+            csite%avg_available_water          (ipa) = 0.0
+            csite%mean_rh                      (ipa) = 0.0
+            csite%mean_cwd_rh                  (ipa) = 0.0
          
             cohortloop: do ico=1,cpatch%ncohorts
-               cpatch%leaf_respiration(ico)      = 0.0
-               cpatch%root_respiration(ico)      = 0.0
-               cpatch%gpp(ico)                   = 0.0
-               cpatch%mean_leaf_resp(ico)        = 0.0
-               cpatch%mean_root_resp(ico)        = 0.0
-               cpatch%mean_gpp(ico)              = 0.0
-               cpatch%mean_storage_resp(ico)     = 0.0 
-               cpatch%mean_growth_resp(ico)      = 0.0
-               cpatch%mean_vleaf_resp(ico)       = 0.0
+               cpatch%leaf_respiration    (ico) = 0.0
+               cpatch%root_respiration    (ico) = 0.0
+               cpatch%gpp                 (ico) = 0.0
+               cpatch%mean_leaf_resp      (ico) = 0.0
+               cpatch%mean_root_resp      (ico) = 0.0
+               cpatch%mean_gpp            (ico) = 0.0
+               cpatch%mean_storage_resp   (ico) = 0.0
+               cpatch%mean_growth_resp    (ico) = 0.0
+               cpatch%mean_vleaf_resp     (ico) = 0.0
+               cpatch%mean_par_l          (ico) = 0.0
+               cpatch%mean_par_l_beam     (ico) = 0.0
+               cpatch%mean_par_l_diff     (ico) = 0.0
+               cpatch%mean_rshort_l       (ico) = 0.0
+               cpatch%mean_rlong_l        (ico) = 0.0
+               cpatch%mean_sensible_lc    (ico) = 0.0
+               cpatch%mean_vapor_lc       (ico) = 0.0
+               cpatch%mean_transp         (ico) = 0.0
+               cpatch%mean_intercepted_al (ico) = 0.0
+               cpatch%mean_wshed_lg       (ico) = 0.0
+               cpatch%mean_rshort_w       (ico) = 0.0
+               cpatch%mean_rlong_w        (ico) = 0.0
+               cpatch%mean_sensible_wc    (ico) = 0.0
+               cpatch%mean_vapor_wc       (ico) = 0.0
+               cpatch%mean_intercepted_aw (ico) = 0.0
+               cpatch%mean_wshed_wg       (ico) = 0.0
             end do cohortloop
          end do patchloop
       end do siteloop
@@ -646,7 +689,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
    integer                     :: isi
    integer                     :: ipa
    integer                     :: ico
-   integer                     :: it
+   integer                     :: t
    real                        :: poly_area_i
    real                        :: site_area_i
    real                        :: forest_site
@@ -690,8 +733,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
    !     Find the index corresponding to this time of the day for the mean diurnal cycle   !
    ! averages.                                                                             !
    !---------------------------------------------------------------------------------------!
-   it = ceiling(mod(current_time%time,day_sec)/frqfast)
-   if (it == 0) it = nint(day_sec/frqfast)
+   t = ceiling(mod(current_time%time,day_sec)/frqfast)
+   if (t == 0) t = nint(day_sec/frqfast)
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy=1,cgrid%npolygons
@@ -783,12 +826,32 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
             do ico=1,cpatch%ncohorts
                if (cpatch%leaf_resolvable(ico)) then
-                  cpatch%dmean_par_l       (ico) = cpatch%dmean_par_l       (ico)          &
-                                                 + cpatch%par_l             (ico)
-                  cpatch%dmean_par_l_beam  (ico) = cpatch%dmean_par_l_beam  (ico)          &
-                                                 + cpatch%par_l_beam        (ico)
-                  cpatch%dmean_par_l_diff  (ico) = cpatch%dmean_par_l_diff  (ico)          &
-                                                 + cpatch%par_l_diffuse     (ico)
+                  !------------------------------------------------------------------------!
+                  !    Energy and water fluxes.                                            !
+                  !------------------------------------------------------------------------!
+                  cpatch%dmean_par_l          (ico) = cpatch%dmean_par_l          (ico)    &
+                                                    + cpatch%mean_par_l           (ico)
+                  cpatch%dmean_par_l_beam     (ico) = cpatch%dmean_par_l_beam     (ico)    &
+                                                    + cpatch%mean_par_l_beam      (ico)
+                  cpatch%dmean_par_l_diff     (ico) = cpatch%dmean_par_l_diff     (ico)    &
+                                                    + cpatch%mean_par_l_diff      (ico)
+                  cpatch%dmean_rshort_l       (ico) = cpatch%dmean_rshort_l       (ico)    &
+                                                    + cpatch%mean_rshort_l        (ico)
+                  cpatch%dmean_rlong_l        (ico) = cpatch%dmean_rlong_l        (ico)    &
+                                                    + cpatch%mean_rlong_l         (ico)
+                  cpatch%dmean_sensible_lc    (ico) = cpatch%dmean_sensible_lc    (ico)    &
+                                                    + cpatch%mean_sensible_lc     (ico)
+                  cpatch%dmean_vapor_lc       (ico) = cpatch%dmean_vapor_lc       (ico)    &
+                                                    + cpatch%mean_vapor_lc        (ico)
+                  cpatch%dmean_transp         (ico) = cpatch%dmean_transp         (ico)    &
+                                                    + cpatch%mean_transp          (ico)
+                  cpatch%dmean_intercepted_al (ico) = cpatch%dmean_intercepted_al (ico)    &
+                                                    + cpatch%mean_intercepted_al  (ico)
+                  cpatch%dmean_wshed_lg       (ico) = cpatch%dmean_wshed_lg       (ico)    &
+                                                    + cpatch%mean_wshed_lg        (ico)
+                  !------------------------------------------------------------------------!
+
+
 
                   !------------------------------------------------------------------------!
                   !    Integrate the photosynthesis-related variables and the light level  !
@@ -825,27 +888,73 @@ subroutine integrate_ed_daily_output_state(cgrid)
                   ! the day may vary.                                                      !
                   !------------------------------------------------------------------------!
                   if (iqoutput > 0) then
-                     cpatch%qmean_par_l       (it,ico) = cpatch%qmean_par_l       (it,ico) &
-                                                       + cpatch%par_l                (ico)
-                     cpatch%qmean_par_l_beam  (it,ico) = cpatch%qmean_par_l_beam  (it,ico) &
-                                                       + cpatch%par_l_beam           (ico)
-                     cpatch%qmean_par_l_diff  (it,ico) = cpatch%qmean_par_l_diff  (it,ico) &
-                                                       + cpatch%par_l_diffuse        (ico)
-                     cpatch%qmean_fs_open     (it,ico) = cpatch%qmean_fs_open     (it,ico) &
-                                                       + cpatch%fs_open              (ico)
-                     cpatch%qmean_fsw         (it,ico) = cpatch%qmean_fsw         (it,ico) &
-                                                       + cpatch%fsw                  (ico)
-                     cpatch%qmean_fsn         (it,ico) = cpatch%qmean_fsn         (it,ico) &
-                                                       + cpatch%fsn                  (ico)
-                     cpatch%qmean_psi_open    (it,ico) = cpatch%qmean_psi_open    (it,ico) &
-                                                       + cpatch%psi_open             (ico)
-                     cpatch%qmean_psi_closed  (it,ico) = cpatch%qmean_psi_closed  (it,ico) &
-                                                       + cpatch%psi_closed           (ico)
-                     cpatch%qmean_water_supply(it,ico) = cpatch%qmean_water_supply(it,ico) &
-                                                       + cpatch%water_supply         (ico)
+                     cpatch%qmean_fs_open       (t,ico)=cpatch%qmean_fs_open       (t,ico) &
+                                                       +cpatch%fs_open               (ico)
+                     cpatch%qmean_fsw           (t,ico)=cpatch%qmean_fsw           (t,ico) &
+                                                       +cpatch%fsw                   (ico)
+                     cpatch%qmean_fsn           (t,ico)=cpatch%qmean_fsn           (t,ico) &
+                                                       +cpatch%fsn                   (ico)
+                     cpatch%qmean_psi_open      (t,ico)=cpatch%qmean_psi_open      (t,ico) &
+                                                       +cpatch%psi_open              (ico)
+                     cpatch%qmean_psi_closed    (t,ico)=cpatch%qmean_psi_closed    (t,ico) &
+                                                       +cpatch%psi_closed            (ico)
+                     cpatch%qmean_water_supply  (t,ico)=cpatch%qmean_water_supply  (t,ico) &
+                                                       +cpatch%water_supply          (ico)
+                     cpatch%qmean_par_l         (t,ico)=cpatch%qmean_par_l         (t,ico) &
+                                                       +cpatch%mean_par_l            (ico)
+                     cpatch%qmean_par_l_beam    (t,ico)=cpatch%qmean_par_l_beam    (t,ico) &
+                                                       +cpatch%mean_par_l_beam       (ico)
+                     cpatch%qmean_par_l_diff    (t,ico)=cpatch%qmean_par_l_diff    (t,ico) &
+                                                       +cpatch%mean_par_l_diff       (ico)
+                     cpatch%qmean_rshort_l      (t,ico)=cpatch%qmean_rshort_l      (t,ico) &
+                                                       +cpatch%mean_rshort_l         (ico)
+                     cpatch%qmean_rlong_l       (t,ico)=cpatch%qmean_rlong_l       (t,ico) &
+                                                       +cpatch%mean_rlong_l          (ico)
+                     cpatch%qmean_sensible_lc   (t,ico)=cpatch%qmean_sensible_lc   (t,ico) &
+                                                       +cpatch%mean_sensible_lc      (ico)
+                     cpatch%qmean_vapor_lc      (t,ico)=cpatch%qmean_vapor_lc      (t,ico) &
+                                                       +cpatch%mean_vapor_lc         (ico)
+                     cpatch%qmean_transp        (t,ico)=cpatch%qmean_transp        (t,ico) &
+                                                       +cpatch%mean_transp           (ico)
+                     cpatch%qmean_intercepted_al(t,ico)=cpatch%qmean_intercepted_al(t,ico) &
+                                                       +cpatch%mean_intercepted_al   (ico)
+                     cpatch%qmean_wshed_lg      (t,ico)=cpatch%qmean_wshed_lg      (t,ico) &
+                                                       +cpatch%mean_wshed_lg         (ico)
+                     cpatch%qmean_rshort_w      (t,ico)=cpatch%qmean_rshort_w      (t,ico) &
+                                                       +cpatch%mean_rshort_w         (ico)
+                     cpatch%qmean_rlong_w       (t,ico)=cpatch%qmean_rlong_w       (t,ico) &
+                                                       +cpatch%mean_rlong_w          (ico)
+                     cpatch%qmean_sensible_wc   (t,ico)=cpatch%qmean_sensible_wc   (t,ico) &
+                                                       +cpatch%mean_sensible_wc      (ico)
+                     cpatch%qmean_vapor_wc      (t,ico)=cpatch%qmean_vapor_wc      (t,ico) &
+                                                       +cpatch%mean_vapor_wc         (ico)
+                     cpatch%qmean_intercepted_aw(t,ico)=cpatch%qmean_intercepted_aw(t,ico) &
+                                                       +cpatch%mean_intercepted_aw   (ico)
+                     cpatch%qmean_wshed_wg      (t,ico)=cpatch%qmean_wshed_wg      (t,ico) &
+                                                       +cpatch%mean_wshed_wg         (ico)
+
                   end if
                   !------------------------------------------------------------------------!
 
+               end if
+
+               if (cpatch%wood_resolvable(ico)) then
+                  !------------------------------------------------------------------------!
+                  !    Energy and water fluxes.                                            !
+                  !------------------------------------------------------------------------!
+                  cpatch%dmean_rshort_w       (ico) = cpatch%dmean_rshort_w       (ico)    &
+                                                    + cpatch%mean_rshort_w        (ico)
+                  cpatch%dmean_rlong_w        (ico) = cpatch%dmean_rlong_w        (ico)    &
+                                                    + cpatch%mean_rlong_w         (ico)
+                  cpatch%dmean_sensible_wc    (ico) = cpatch%dmean_sensible_wc    (ico)    &
+                                                    + cpatch%mean_sensible_wc     (ico)
+                  cpatch%dmean_vapor_wc       (ico) = cpatch%dmean_vapor_wc       (ico)    &
+                                                    + cpatch%mean_vapor_wc        (ico)
+                  cpatch%dmean_intercepted_aw (ico) = cpatch%dmean_intercepted_aw (ico)    &
+                                                    + cpatch%mean_intercepted_aw  (ico)
+                  cpatch%dmean_wshed_wg       (ico) = cpatch%dmean_wshed_wg       (ico)    &
+                                                    + cpatch%mean_wshed_wg        (ico)
+                  !------------------------------------------------------------------------!
                end if
             end do
          end do patchloop
@@ -948,6 +1057,13 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                         + ( cpoly%met(isi)%nir_diffuse                     &
                                           + cpoly%met(isi)%par_diffuse )                   &
                                         * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_par(ipy)           = cgrid%dmean_par(ipy)                             &
+                                        + ( cpoly%met(isi)%par_beam                        &
+                                          + cpoly%met(isi)%par_diffuse )                   &
+                                        * cpoly%area(isi) * poly_area_i
+         cgrid%dmean_par_diff(ipy)      = cgrid%dmean_par_diff(ipy)                        &
+                                        + cpoly%met(isi)%par_diffuse                       &
+                                        * cpoly%area(isi) * poly_area_i
          cgrid%dmean_rlong(ipy)         = cgrid%dmean_rlong(ipy)                           &
                                         + cpoly%met(isi)%rlong                             &
                                         * cpoly%area(isi) * poly_area_i
@@ -975,35 +1091,35 @@ subroutine integrate_ed_daily_output_state(cgrid)
       !     If we are integrating the mean diurnal cycle, sum them too.                    !
       !------------------------------------------------------------------------------------!
       if (iqoutput > 0) then
-         cgrid%qmean_leaf_energy   (it,ipy) = cgrid%qmean_leaf_energy             (it,ipy) &
+         cgrid%qmean_leaf_energy    (t,ipy) = cgrid%qmean_leaf_energy              (t,ipy) &
                                             + sss_leaf_energy * poly_area_i
-         cgrid%qmean_leaf_water    (it,ipy) = cgrid%qmean_leaf_water              (it,ipy) &
+         cgrid%qmean_leaf_water     (t,ipy) = cgrid%qmean_leaf_water               (t,ipy) &
                                             + sss_leaf_water * poly_area_i
-         cgrid%qmean_leaf_hcap     (it,ipy) = cgrid%qmean_leaf_hcap               (it,ipy) &
+         cgrid%qmean_leaf_hcap      (t,ipy) = cgrid%qmean_leaf_hcap                (t,ipy) &
                                             + sss_leaf_hcap  * poly_area_i
-         cgrid%qmean_leaf_vpdef    (it,ipy) = cgrid%qmean_leaf_vpdef              (it,ipy) &
+         cgrid%qmean_leaf_vpdef     (t,ipy) = cgrid%qmean_leaf_vpdef               (t,ipy) &
                                             + sss_leaf_vpdef * poly_area_i
-         cgrid%qmean_wood_energy   (it,ipy) = cgrid%qmean_wood_energy             (it,ipy) &
+         cgrid%qmean_wood_energy    (t,ipy) = cgrid%qmean_wood_energy              (t,ipy) &
                                             + sss_wood_energy * poly_area_i
-         cgrid%qmean_wood_water    (it,ipy) = cgrid%qmean_wood_water              (it,ipy) &
+         cgrid%qmean_wood_water     (t,ipy) = cgrid%qmean_wood_water               (t,ipy) &
                                             + sss_wood_water * poly_area_i
-         cgrid%qmean_wood_hcap     (it,ipy) = cgrid%qmean_wood_hcap               (it,ipy) &
+         cgrid%qmean_wood_hcap      (t,ipy) = cgrid%qmean_wood_hcap                (t,ipy) &
                                             + sss_wood_hcap  * poly_area_i
-         cgrid%qmean_can_theta     (it,ipy) = cgrid%qmean_can_theta               (it,ipy) &
+         cgrid%qmean_can_theta      (t,ipy) = cgrid%qmean_can_theta                (t,ipy) &
                                             + sss_can_theta * poly_area_i
-         cgrid%qmean_can_theiv     (it,ipy) = cgrid%qmean_can_theiv               (it,ipy) &
+         cgrid%qmean_can_theiv      (t,ipy) = cgrid%qmean_can_theiv                (t,ipy) &
                                             + sss_can_theiv * poly_area_i
-         cgrid%qmean_can_vpdef     (it,ipy) = cgrid%qmean_can_vpdef               (it,ipy) &
+         cgrid%qmean_can_vpdef      (t,ipy) = cgrid%qmean_can_vpdef                (t,ipy) &
                                             + sss_can_vpdef * poly_area_i
-         cgrid%qmean_can_shv       (it,ipy) = cgrid%qmean_can_shv                 (it,ipy) &
+         cgrid%qmean_can_shv        (t,ipy) = cgrid%qmean_can_shv                  (t,ipy) &
                                             + sss_can_shv   * poly_area_i
-         cgrid%qmean_can_co2       (it,ipy) = cgrid%qmean_can_co2                 (it,ipy) &
+         cgrid%qmean_can_co2        (t,ipy) = cgrid%qmean_can_co2                  (t,ipy) &
                                             + sss_can_co2   * poly_area_i
-         cgrid%qmean_can_prss      (it,ipy) = cgrid%qmean_can_prss                (it,ipy) &
+         cgrid%qmean_can_prss       (t,ipy) = cgrid%qmean_can_prss                 (t,ipy) &
                                             + sss_can_prss  * poly_area_i
-         cgrid%qmean_gnd_temp      (it,ipy) = cgrid%qmean_gnd_temp                (it,ipy) &
+         cgrid%qmean_gnd_temp       (t,ipy) = cgrid%qmean_gnd_temp                 (t,ipy) &
                                             + sss_gnd_temp  * poly_area_i
-         cgrid%qmean_gnd_shv       (it,ipy) = cgrid%qmean_gnd_shv                 (it,ipy) &
+         cgrid%qmean_gnd_shv        (t,ipy) = cgrid%qmean_gnd_shv                  (t,ipy) &
                                             + sss_gnd_shv   * poly_area_i
          !---------------------------------------------------------------------------------!
          !    Meteorological forcing variables:  even though we read in at polygon level,  !
@@ -1011,35 +1127,42 @@ subroutine integrate_ed_daily_output_state(cgrid)
          ! uses.                                                                           !
          !---------------------------------------------------------------------------------!
          do isi=1,cpoly%nsites
-            cgrid%qmean_atm_temp      (it,ipy) = cgrid%qmean_atm_temp             (it,ipy) &
+            cgrid%qmean_atm_temp       (t,ipy) = cgrid%qmean_atm_temp              (t,ipy) &
                                                + cpoly%met(isi)%atm_tmp                    &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_atm_vpdef     (it,ipy) = cgrid%qmean_atm_vpdef            (it,ipy) &
+            cgrid%qmean_atm_vpdef      (t,ipy) = cgrid%qmean_atm_vpdef             (t,ipy) &
                                                + cpoly%met(isi)%atm_vpdef                  &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_rshort        (it,ipy) = cgrid%qmean_rshort               (it,ipy) &
+            cgrid%qmean_rshort         (t,ipy) = cgrid%qmean_rshort                (t,ipy) &
                                                + ( cpoly%met(isi)%nir_beam                 &
                                                  + cpoly%met(isi)%nir_diffuse              &
                                                  + cpoly%met(isi)%par_beam                 &
                                                  + cpoly%met(isi)%par_diffuse )            &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_rshort_diff   (it,ipy) = cgrid%qmean_rshort_diff          (it,ipy) &
+            cgrid%qmean_rshort_diff    (t,ipy) = cgrid%qmean_rshort_diff           (t,ipy) &
                                                + ( cpoly%met(isi)%nir_diffuse              &
                                                  + cpoly%met(isi)%par_diffuse )            &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_rlong         (it,ipy) = cgrid%qmean_rlong                (it,ipy) &
+            cgrid%qmean_par            (t,ipy) = cgrid%qmean_par                   (t,ipy) &
+                                               + ( cpoly%met(isi)%par_beam                 &
+                                                 + cpoly%met(isi)%par_diffuse )            &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_par_diff       (t,ipy) = cgrid%qmean_par_diff              (t,ipy) &
+                                               + cpoly%met(isi)%par_diffuse                &
+                                               * cpoly%area(isi) * poly_area_i
+            cgrid%qmean_rlong          (t,ipy) = cgrid%qmean_rlong                 (t,ipy) &
                                                + cpoly%met(isi)%rlong                      &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_atm_shv       (it,ipy) = cgrid%qmean_atm_shv              (it,ipy) &
+            cgrid%qmean_atm_shv        (t,ipy) = cgrid%qmean_atm_shv               (t,ipy) &
                                                + cpoly%met(isi)%atm_shv                    &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_atm_co2       (it,ipy) = cgrid%qmean_atm_co2              (it,ipy) &
+            cgrid%qmean_atm_co2        (t,ipy) = cgrid%qmean_atm_co2               (t,ipy) &
                                                + cpoly%met(isi)%atm_co2                    &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_atm_prss      (it,ipy) = cgrid%qmean_atm_prss             (it,ipy) &
+            cgrid%qmean_atm_prss       (t,ipy) = cgrid%qmean_atm_prss              (t,ipy) &
                                                + cpoly%met(isi)%prss                       &
                                                * cpoly%area(isi) * poly_area_i
-            cgrid%qmean_atm_vels      (it,ipy) = cgrid%qmean_atm_vels             (it,ipy) &
+            cgrid%qmean_atm_vels       (t,ipy) = cgrid%qmean_atm_vels              (t,ipy) &
                                                + cpoly%met(isi)%vels                       &
                                                * cpoly%area(isi) * poly_area_i
          end do
@@ -1098,7 +1221,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    integer                       :: k
    integer                       :: ilu
    integer                       :: idbh
-   integer                       :: it
+   integer                       :: t
    real                          :: poly_area_i
    real                          :: site_area_i
    real                          :: forest_site
@@ -1135,8 +1258,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    !     Find the index corresponding to this time of the day for the mean diurnal cycle   !
    ! averages.                                                                             !
    !---------------------------------------------------------------------------------------!
-   it = ceiling(mod(current_time%time,day_sec)/frqfast)
-   if (it == 0) it = nint(day_sec/frqfast)
+   t = ceiling(mod(current_time%time,day_sec)/frqfast)
+   if (t == 0) t = nint(day_sec/frqfast)
    !---------------------------------------------------------------------------------------!
 
 
@@ -1244,15 +1367,15 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                if (iqoutput > 0) then
                   do ico=1,cpatch%ncohorts
                      if (cpatch%leaf_resolvable(ico)) then
-                        cpatch%qmean_gpp      (it,ico) = cpatch%qmean_gpp         (it,ico) &
+                        cpatch%qmean_gpp       (t,ico) = cpatch%qmean_gpp          (t,ico) &
                                                        + cpatch%mean_gpp             (ico) &
                                                        * umols_2_kgCyr                     &
                                                        / cpatch%nplant(ico)
-                        cpatch%qmean_leaf_resp(it,ico) = cpatch%qmean_leaf_resp   (it,ico) &
+                        cpatch%qmean_leaf_resp (t,ico) = cpatch%qmean_leaf_resp    (t,ico) &
                                                        + cpatch%mean_leaf_resp       (ico) &
                                                        * umols_2_kgCyr                     &
                                                        / cpatch%nplant(ico)
-                        cpatch%qmean_root_resp(it,ico) = cpatch%qmean_root_resp   (it,ico) &
+                        cpatch%qmean_root_resp (t,ico) = cpatch%qmean_root_resp    (t,ico) &
                                                        + cpatch%mean_root_resp       (ico) &
                                                        * umols_2_kgCyr                     &
                                                        / cpatch%nplant(ico)
@@ -1285,17 +1408,17 @@ subroutine integrate_ed_daily_output_flux(cgrid)
             csite%dmean_rk4step           (ipa) = csite%dmean_rk4step             (ipa)    &
                                                 + csite%avg_rk4step               (ipa)
             if (iqoutput > 0) then
-               csite%qmean_rh            (it,ipa)  = csite%qmean_rh            (it,ipa)    &
+               csite%qmean_rh             (t,ipa)  = csite%qmean_rh             (t,ipa)    &
                                                    + csite%co2budget_rh           (ipa)    &
                                                    * umols_2_kgCyr
-               csite%qmean_cwd_rh        (it,ipa)  = csite%qmean_cwd_rh        (it,ipa)    &
+               csite%qmean_cwd_rh         (t,ipa)  = csite%qmean_cwd_rh         (t,ipa)    &
                                                    + csite%co2budget_cwd_rh       (ipa)    &
                                                    * umols_2_kgCyr
-               csite%qmean_albedo        (it,ipa)  = csite%qmean_albedo        (it,ipa)    &
+               csite%qmean_albedo         (t,ipa)  = csite%qmean_albedo         (t,ipa)    &
                                                    + csite%avg_albedo             (ipa)
-               csite%qmean_albedo_beam   (it,ipa)  = csite%qmean_albedo_beam   (it,ipa)    &
+               csite%qmean_albedo_beam    (t,ipa)  = csite%qmean_albedo_beam    (t,ipa)    &
                                                    + csite%avg_albedo_beam        (ipa)
-               csite%qmean_albedo_diffuse(it,ipa)  = csite%qmean_albedo_diffuse(it,ipa)    &
+               csite%qmean_albedo_diffuse (t,ipa)  = csite%qmean_albedo_diffuse (t,ipa)    &
                                                    + csite%avg_albedo_diffuse     (ipa)
             end if
             
@@ -1435,6 +1558,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
       cgrid%dmean_rshort_gnd  (ipy) = cgrid%dmean_rshort_gnd   (ipy)                       &
                                     + cgrid%avg_rshort_gnd     (ipy)
+      cgrid%dmean_par_gnd     (ipy) = cgrid%dmean_par_gnd      (ipy)                       &
+                                    + cgrid%avg_par_gnd        (ipy)
       cgrid%dmean_rlong_gnd   (ipy) = cgrid%dmean_rlong_gnd    (ipy)                       &
                                     + cgrid%avg_rlong_gnd      (ipy)
       cgrid%dmean_rlongup     (ipy) = cgrid%dmean_rlongup      (ipy)                       &
@@ -1482,19 +1607,19 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       !------------------------------------------------------------------------------------!
       if (iqoutput > 0) then
          !------ Use the local site sum to integrate the following variables. -------------!
-         cgrid%qmean_gpp            (it,ipy) = cgrid%qmean_gpp                   (it,ipy)  &
+         cgrid%qmean_gpp             (t,ipy) = cgrid%qmean_gpp                    (t,ipy)  &
                                              + cgrid%avg_gpp                        (ipy)  &
                                              * umols_2_kgCyr
-         cgrid%qmean_leaf_resp      (it,ipy) = cgrid%qmean_leaf_resp             (it,ipy)  &
+         cgrid%qmean_leaf_resp       (t,ipy) = cgrid%qmean_leaf_resp              (t,ipy)  &
                                              + cgrid%avg_leaf_resp                  (ipy)  &
                                              * umols_2_kgCyr
-         cgrid%qmean_root_resp      (it,ipy) = cgrid%qmean_root_resp             (it,ipy)  &
+         cgrid%qmean_root_resp       (t,ipy) = cgrid%qmean_root_resp              (t,ipy)  &
                                              + cgrid%avg_root_resp                  (ipy)  &
                                              * umols_2_kgCyr
-         cgrid%qmean_plresp         (it,ipy) = cgrid%qmean_plresp                (it,ipy)  &
+         cgrid%qmean_plresp          (t,ipy) = cgrid%qmean_plresp                 (t,ipy)  &
                                              + cgrid%avg_plant_resp                 (ipy)  &
                                              * umols_2_kgCyr
-         cgrid%qmean_nep            (it,ipy) = cgrid%qmean_nep                   (it,ipy)  &
+         cgrid%qmean_nep             (t,ipy) = cgrid%qmean_nep                    (t,ipy)  &
                                              + ( cgrid%avg_gpp                      (ipy)  &
                                                - cgrid%avg_leaf_resp                (ipy)  &
                                                - cgrid%avg_root_resp                (ipy)  &
@@ -1503,108 +1628,110 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                                - cgrid%avg_vleaf_resp               (ipy)  &
                                                - cgrid%avg_htroph_resp              (ipy)) &
                                              * umols_2_kgCyr
-         cgrid%qmean_rh             (it,ipy) = cgrid%qmean_rh                    (it,ipy)  &
+         cgrid%qmean_rh              (t,ipy) = cgrid%qmean_rh                     (t,ipy)  &
                                              + cgrid%avg_htroph_resp                (ipy)  &
                                              * umols_2_kgCyr
-         cgrid%qmean_cwd_rh         (it,ipy) = cgrid%qmean_cwd_rh                (it,ipy)  &
+         cgrid%qmean_cwd_rh          (t,ipy) = cgrid%qmean_cwd_rh                 (t,ipy)  &
                                              + cgrid%avg_cwd_resp                   (ipy)  &
                                              * umols_2_kgCyr
 
-         cgrid%qmean_ustar          (it,ipy) = cgrid%qmean_ustar                  (it,ipy) &
+         cgrid%qmean_ustar           (t,ipy) = cgrid%qmean_ustar                   (t,ipy) &
                                              + cgrid%avg_ustar                       (ipy)
-         cgrid%qmean_tstar          (it,ipy) = cgrid%qmean_tstar                  (it,ipy) &
+         cgrid%qmean_tstar           (t,ipy) = cgrid%qmean_tstar                   (t,ipy) &
                                              + cgrid%avg_tstar                       (ipy)
-         cgrid%qmean_qstar          (it,ipy) = cgrid%qmean_qstar                  (it,ipy) &
+         cgrid%qmean_qstar           (t,ipy) = cgrid%qmean_qstar                   (t,ipy) &
                                              + cgrid%avg_qstar                       (ipy)
-         cgrid%qmean_cstar          (it,ipy) = cgrid%qmean_cstar                  (it,ipy) &
+         cgrid%qmean_cstar           (t,ipy) = cgrid%qmean_cstar                   (t,ipy) &
                                              + cgrid%avg_cstar                       (ipy)
 
-         cgrid%qmean_carbon_ac      (it,ipy) = cgrid%qmean_carbon_ac              (it,ipy) &
+         cgrid%qmean_carbon_ac       (t,ipy) = cgrid%qmean_carbon_ac               (t,ipy) &
                                              + cgrid%avg_carbon_ac                   (ipy)
-         cgrid%qmean_carbon_st      (it,ipy) = cgrid%qmean_carbon_st              (it,ipy) &
+         cgrid%qmean_carbon_st       (t,ipy) = cgrid%qmean_carbon_st               (t,ipy) &
                                              + cgrid%avg_carbon_st                   (ipy)
 
          !----- Variables that were previously integrated to this time step. --------------!
-         cgrid%qmean_sensible_lc    (it,ipy) = cgrid%qmean_sensible_lc            (it,ipy) &
+         cgrid%qmean_sensible_lc     (t,ipy) = cgrid%qmean_sensible_lc             (t,ipy) &
                                              + cgrid%avg_sensible_lc                 (ipy)
-         cgrid%qmean_sensible_wc    (it,ipy) = cgrid%qmean_sensible_wc            (it,ipy) &
+         cgrid%qmean_sensible_wc     (t,ipy) = cgrid%qmean_sensible_wc             (t,ipy) &
                                              + cgrid%avg_sensible_wc                 (ipy)
-         cgrid%qmean_sensible_gc    (it,ipy) = cgrid%qmean_sensible_gc            (it,ipy) &
+         cgrid%qmean_sensible_gc     (t,ipy) = cgrid%qmean_sensible_gc             (t,ipy) &
                                              + cgrid%avg_sensible_gc                 (ipy)
-         cgrid%qmean_sensible_ac    (it,ipy) = cgrid%qmean_sensible_ac            (it,ipy) &
+         cgrid%qmean_sensible_ac     (t,ipy) = cgrid%qmean_sensible_ac             (t,ipy) &
                                              + cgrid%avg_sensible_ac                 (ipy)
-         cgrid%qmean_rshort_gnd     (it,ipy) = cgrid%qmean_rshort_gnd             (it,ipy) &
+         cgrid%qmean_rshort_gnd      (t,ipy) = cgrid%qmean_rshort_gnd              (t,ipy) &
                                              + cgrid%avg_rshort_gnd                  (ipy)
-         cgrid%qmean_rlong_gnd      (it,ipy) = cgrid%qmean_rlong_gnd              (it,ipy) &
+         cgrid%qmean_par_gnd         (t,ipy) = cgrid%qmean_par_gnd                 (t,ipy) &
+                                             + cgrid%avg_par_gnd                     (ipy)
+         cgrid%qmean_rlong_gnd       (t,ipy) = cgrid%qmean_rlong_gnd               (t,ipy) &
                                              + cgrid%avg_rlong_gnd                   (ipy)
-         cgrid%qmean_rlongup        (it,ipy) = cgrid%qmean_rlongup                (it,ipy) &
+         cgrid%qmean_rlongup         (t,ipy) = cgrid%qmean_rlongup                 (t,ipy) &
                                              + cgrid%avg_rlongup                     (ipy)
-         cgrid%qmean_parup          (it,ipy) = cgrid%qmean_parup                  (it,ipy) &
+         cgrid%qmean_parup           (t,ipy) = cgrid%qmean_parup                   (t,ipy) &
                                              + cgrid%avg_parup                       (ipy)
-         cgrid%qmean_nirup          (it,ipy) = cgrid%qmean_nirup                  (it,ipy) &
+         cgrid%qmean_nirup           (t,ipy) = cgrid%qmean_nirup                   (t,ipy) &
                                              + cgrid%avg_nirup                       (ipy)
-         cgrid%qmean_rshortup       (it,ipy) = cgrid%qmean_rshortup               (it,ipy) &
+         cgrid%qmean_rshortup        (t,ipy) = cgrid%qmean_rshortup                (t,ipy) &
                                              + cgrid%avg_rshortup                    (ipy)
-         cgrid%qmean_rnet           (it,ipy) = cgrid%qmean_rnet                   (it,ipy) &
+         cgrid%qmean_rnet            (t,ipy) = cgrid%qmean_rnet                    (t,ipy) &
                                              + cgrid%avg_rnet                        (ipy)
-         cgrid%qmean_rlong_albedo   (it,ipy) = cgrid%qmean_rlong_albedo           (it,ipy) &
+         cgrid%qmean_rlong_albedo    (t,ipy) = cgrid%qmean_rlong_albedo            (t,ipy) &
                                              + cgrid%avg_rlong_albedo                (ipy)
-         cgrid%qmean_albedo         (it,ipy) = cgrid%qmean_albedo                 (it,ipy) &
+         cgrid%qmean_albedo          (t,ipy) = cgrid%qmean_albedo                  (t,ipy) &
                                              + cgrid%avg_albedo                      (ipy)
-         cgrid%qmean_albedo_beam    (it,ipy) = cgrid%qmean_albedo_beam            (it,ipy) &
+         cgrid%qmean_albedo_beam     (t,ipy) = cgrid%qmean_albedo_beam             (t,ipy) &
                                              + cgrid%avg_albedo_beam                 (ipy)
-         cgrid%qmean_albedo_diffuse (it,ipy) = cgrid%qmean_albedo_diffuse         (it,ipy) &
+         cgrid%qmean_albedo_diffuse  (t,ipy) = cgrid%qmean_albedo_diffuse          (t,ipy) &
                                              + cgrid%avg_albedo_diffuse              (ipy)
-         cgrid%qmean_pcpg           (it,ipy) = cgrid%qmean_pcpg                   (it,ipy) &
+         cgrid%qmean_pcpg            (t,ipy) = cgrid%qmean_pcpg                    (t,ipy) &
                                              + cgrid%avg_pcpg                        (ipy)
-         cgrid%qmean_evap           (it,ipy) = cgrid%qmean_evap                   (it,ipy) &
+         cgrid%qmean_evap            (t,ipy) = cgrid%qmean_evap                    (t,ipy) &
                                              + cgrid%avg_evap                        (ipy)
-         cgrid%qmean_transp         (it,ipy) = cgrid%qmean_transp                 (it,ipy) &
+         cgrid%qmean_transp          (t,ipy) = cgrid%qmean_transp                  (t,ipy) &
                                              + cgrid%avg_transp                      (ipy)
-         cgrid%qmean_runoff         (it,ipy) = cgrid%qmean_runoff                 (it,ipy) &
+         cgrid%qmean_runoff          (t,ipy) = cgrid%qmean_runoff                  (t,ipy) &
                                              + cgrid%avg_runoff                      (ipy)
-         cgrid%qmean_drainage       (it,ipy) = cgrid%qmean_drainage               (it,ipy) &
+         cgrid%qmean_drainage        (t,ipy) = cgrid%qmean_drainage                (t,ipy) &
                                              + cgrid%avg_drainage                    (ipy)
-         cgrid%qmean_vapor_lc       (it,ipy) = cgrid%qmean_vapor_lc               (it,ipy) &
+         cgrid%qmean_vapor_lc        (t,ipy) = cgrid%qmean_vapor_lc                (t,ipy) &
                                              + cgrid%avg_vapor_lc                    (ipy)
-         cgrid%qmean_vapor_wc       (it,ipy) = cgrid%qmean_vapor_wc               (it,ipy) &
+         cgrid%qmean_vapor_wc        (t,ipy) = cgrid%qmean_vapor_wc                (t,ipy) &
                                              + cgrid%avg_vapor_wc                    (ipy)
-         cgrid%qmean_vapor_gc       (it,ipy) = cgrid%qmean_vapor_gc               (it,ipy) &
+         cgrid%qmean_vapor_gc        (t,ipy) = cgrid%qmean_vapor_gc                (t,ipy) &
                                              + cgrid%avg_vapor_gc                    (ipy)
-         cgrid%qmean_vapor_ac       (it,ipy) = cgrid%qmean_vapor_ac               (it,ipy) &
+         cgrid%qmean_vapor_ac        (t,ipy) = cgrid%qmean_vapor_ac                (t,ipy) &
                                              + cgrid%avg_vapor_ac                    (ipy)
          !----- These variables are already averaged at gridtype, just add them up. -------!
          do k=1,nzg
-            cgrid%qmean_soil_temp (k,it,ipy)  = cgrid%qmean_soil_temp           (k,it,ipy) &
+            cgrid%qmean_soil_temp  (k,t,ipy)  = cgrid%qmean_soil_temp            (k,t,ipy) &
                                               + cgrid%avg_soil_temp                (k,ipy)
-            cgrid%qmean_soil_water(k,it,ipy)  = cgrid%qmean_soil_water          (k,it,ipy) &
+            cgrid%qmean_soil_water (k,t,ipy)  = cgrid%qmean_soil_water           (k,t,ipy) &
                                               + cgrid%avg_soil_water               (k,ipy)
-            cgrid%qmean_soil_mstpot(k,it,ipy) = cgrid%qmean_soil_mstpot         (k,it,ipy) &
+            cgrid%qmean_soil_mstpot (k,t,ipy) = cgrid%qmean_soil_mstpot          (k,t,ipy) &
                                               + cgrid%avg_soil_mstpot              (k,ipy)
          end do
 
          !----- Integrate the mean sum of squares. ----------------------------------------!
-         cgrid%qmsqu_gpp            (it,ipy)  = cgrid%qmsqu_gpp                 (it,ipy)   &
+         cgrid%qmsqu_gpp             (t,ipy)  = cgrid%qmsqu_gpp                  (t,ipy)   &
                                               + cgrid%avg_gpp                      (ipy)   &
                                               * cgrid%avg_gpp                      (ipy)   &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_leaf_resp      (it,ipy)  = cgrid%qmsqu_leaf_resp            (it,ipy)  &
+         cgrid%qmsqu_leaf_resp       (t,ipy)  = cgrid%qmsqu_leaf_resp             (t,ipy)  &
                                               + cgrid%avg_leaf_resp                 (ipy)  &
                                               * cgrid%avg_leaf_resp                 (ipy)  &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_root_resp      (it,ipy)  = cgrid%qmsqu_root_resp            (it,ipy)  &
+         cgrid%qmsqu_root_resp       (t,ipy)  = cgrid%qmsqu_root_resp             (t,ipy)  &
                                               + cgrid%avg_root_resp                 (ipy)  &
                                               * cgrid%avg_root_resp                 (ipy)  &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_plresp         (it,ipy)  = cgrid%qmsqu_plresp               (it,ipy)  &
+         cgrid%qmsqu_plresp          (t,ipy)  = cgrid%qmsqu_plresp                (t,ipy)  &
                                               + cgrid%avg_plant_resp                (ipy)  &
                                               * cgrid%avg_plant_resp                (ipy)  &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_nep            (it,ipy)  = cgrid%qmsqu_nep                  (it,ipy)  &
+         cgrid%qmsqu_nep             (t,ipy)  = cgrid%qmsqu_nep                   (t,ipy)  &
                                               + ( cgrid%avg_gpp                     (ipy)  &
                                                 - cgrid%avg_leaf_resp               (ipy)  &
                                                 - cgrid%avg_root_resp               (ipy)  &
@@ -1621,89 +1748,89 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                                 - cgrid%avg_htroph_resp             (ipy)) &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_rh             (it,ipy)  = cgrid%qmsqu_rh                   (it,ipy)  &
+         cgrid%qmsqu_rh              (t,ipy)  = cgrid%qmsqu_rh                    (t,ipy)  &
                                               + cgrid%avg_htroph_resp               (ipy)  &
                                               * cgrid%avg_htroph_resp               (ipy)  &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_cwd_rh         (it,ipy)  = cgrid%qmsqu_cwd_rh               (it,ipy)  &
+         cgrid%qmsqu_cwd_rh          (t,ipy)  = cgrid%qmsqu_cwd_rh                (t,ipy)  &
                                               + cgrid%avg_cwd_resp                  (ipy)  &
                                               * cgrid%avg_cwd_resp                  (ipy)  &
                                               * umols_2_kgCyr * umols_2_kgCyr
 
-         cgrid%qmsqu_carbon_ac      (it,ipy)  = cgrid%qmsqu_carbon_ac           (it,ipy)   &
+         cgrid%qmsqu_carbon_ac       (t,ipy)  = cgrid%qmsqu_carbon_ac            (t,ipy)   &
                                               + cgrid%avg_carbon_ac                (ipy)   &
                                               * cgrid%avg_carbon_ac                (ipy)
 
-         cgrid%qmsqu_carbon_st      (it,ipy)  = cgrid%qmsqu_carbon_st           (it,ipy)   &
+         cgrid%qmsqu_carbon_st       (t,ipy)  = cgrid%qmsqu_carbon_st            (t,ipy)   &
                                               + cgrid%avg_carbon_st                (ipy)   &
                                               * cgrid%avg_carbon_st                (ipy)
 
-         cgrid%qmsqu_sensible_ac    (it,ipy)  = cgrid%qmsqu_sensible_ac         (it,ipy)   &
+         cgrid%qmsqu_sensible_ac     (t,ipy)  = cgrid%qmsqu_sensible_ac          (t,ipy)   &
                                               + cgrid%avg_sensible_ac              (ipy)   &
                                               * cgrid%avg_sensible_ac              (ipy)
 
-         cgrid%qmsqu_sensible_lc    (it,ipy)  = cgrid%qmsqu_sensible_lc         (it,ipy)   &
+         cgrid%qmsqu_sensible_lc     (t,ipy)  = cgrid%qmsqu_sensible_lc          (t,ipy)   &
                                               + cgrid%avg_sensible_lc              (ipy)   &
                                               * cgrid%avg_sensible_lc              (ipy)
 
-         cgrid%qmsqu_sensible_wc    (it,ipy)  = cgrid%qmsqu_sensible_wc         (it,ipy)   &
+         cgrid%qmsqu_sensible_wc     (t,ipy)  = cgrid%qmsqu_sensible_wc          (t,ipy)   &
                                               + cgrid%avg_sensible_wc              (ipy)   &
                                               * cgrid%avg_sensible_wc              (ipy)
 
-         cgrid%qmsqu_sensible_gc    (it,ipy)  = cgrid%qmsqu_sensible_gc         (it,ipy)   &
+         cgrid%qmsqu_sensible_gc     (t,ipy)  = cgrid%qmsqu_sensible_gc          (t,ipy)   &
                                               + cgrid%avg_sensible_gc              (ipy)   &
                                               * cgrid%avg_sensible_gc              (ipy)
 
-         cgrid%qmsqu_evap           (it,ipy)  = cgrid%qmsqu_evap                (it,ipy)   &
+         cgrid%qmsqu_evap            (t,ipy)  = cgrid%qmsqu_evap                 (t,ipy)   &
                                               + cgrid%avg_evap                     (ipy)   &
                                               * cgrid%avg_evap                     (ipy)
 
-         cgrid%qmsqu_transp         (it,ipy)  = cgrid%qmsqu_transp              (it,ipy)   &
+         cgrid%qmsqu_transp          (t,ipy)  = cgrid%qmsqu_transp               (t,ipy)   &
                                               + cgrid%avg_transp                   (ipy)   &
                                               * cgrid%avg_transp                   (ipy)
 
-         cgrid%qmsqu_vapor_ac    (it,ipy)     = cgrid%qmsqu_vapor_ac            (it,ipy)   &
+         cgrid%qmsqu_vapor_ac     (t,ipy)     = cgrid%qmsqu_vapor_ac             (t,ipy)   &
                                               + cgrid%avg_vapor_ac                 (ipy)   &
                                               * cgrid%avg_vapor_ac                 (ipy)
 
-         cgrid%qmsqu_vapor_lc    (it,ipy)     = cgrid%qmsqu_vapor_lc            (it,ipy)   &
+         cgrid%qmsqu_vapor_lc     (t,ipy)     = cgrid%qmsqu_vapor_lc             (t,ipy)   &
                                               + cgrid%avg_vapor_lc                 (ipy)   &
                                               * cgrid%avg_vapor_lc                 (ipy)
 
-         cgrid%qmsqu_vapor_wc    (it,ipy)     = cgrid%qmsqu_vapor_wc            (it,ipy)   &
+         cgrid%qmsqu_vapor_wc     (t,ipy)     = cgrid%qmsqu_vapor_wc             (t,ipy)   &
                                               + cgrid%avg_vapor_wc                 (ipy)   &
                                               * cgrid%avg_vapor_wc                 (ipy)
 
-         cgrid%qmsqu_vapor_gc    (it,ipy)     = cgrid%qmsqu_vapor_gc            (it,ipy)   &
+         cgrid%qmsqu_vapor_gc     (t,ipy)     = cgrid%qmsqu_vapor_gc             (t,ipy)   &
                                               + cgrid%avg_vapor_gc                 (ipy)   &
                                               * cgrid%avg_vapor_gc                 (ipy)
 
-         cgrid%qmsqu_ustar       (it,ipy)     = cgrid%qmsqu_ustar               (it,ipy)   &
+         cgrid%qmsqu_ustar        (t,ipy)     = cgrid%qmsqu_ustar                (t,ipy)   &
                                               + cgrid%avg_ustar                    (ipy)   &
                                               * cgrid%avg_ustar                    (ipy)
 
-         cgrid%qmsqu_rlongup     (it,ipy)     = cgrid%qmsqu_rlongup             (it,ipy)   &
+         cgrid%qmsqu_rlongup      (t,ipy)     = cgrid%qmsqu_rlongup              (t,ipy)   &
                                               + cgrid%avg_rlongup                  (ipy)   &
                                               * cgrid%avg_rlongup                  (ipy)
 
-         cgrid%qmsqu_parup       (it,ipy)     = cgrid%qmsqu_parup               (it,ipy)   &
+         cgrid%qmsqu_parup        (t,ipy)     = cgrid%qmsqu_parup                (t,ipy)   &
                                               + cgrid%avg_parup                    (ipy)   &
                                               * cgrid%avg_parup                    (ipy)
 
-         cgrid%qmsqu_nirup       (it,ipy)     = cgrid%qmsqu_nirup               (it,ipy)   &
+         cgrid%qmsqu_nirup        (t,ipy)     = cgrid%qmsqu_nirup                (t,ipy)   &
                                               + cgrid%avg_nirup                    (ipy)   &
                                               * cgrid%avg_nirup                    (ipy)
 
-         cgrid%qmsqu_rshortup    (it,ipy)     = cgrid%qmsqu_rshortup            (it,ipy)   &
+         cgrid%qmsqu_rshortup     (t,ipy)     = cgrid%qmsqu_rshortup             (t,ipy)   &
                                               + cgrid%avg_rshortup                 (ipy)   &
                                               * cgrid%avg_rshortup                 (ipy)
 
-         cgrid%qmsqu_rnet        (it,ipy)     = cgrid%qmsqu_rnet                (it,ipy)   &
+         cgrid%qmsqu_rnet         (t,ipy)     = cgrid%qmsqu_rnet                 (t,ipy)   &
                                               + cgrid%avg_rnet                     (ipy)   &
                                               * cgrid%avg_rnet                     (ipy)
 
-         cgrid%qmsqu_albedo      (it,ipy)     = cgrid%qmsqu_albedo              (it,ipy)   &
+         cgrid%qmsqu_albedo       (t,ipy)     = cgrid%qmsqu_albedo               (t,ipy)   &
                                               + cgrid%avg_albedo                   (ipy)   &
                                               * cgrid%avg_albedo                   (ipy)
       end if
@@ -2228,6 +2355,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_atm_vpdef(ipy)    = cgrid%dmean_atm_vpdef(ipy)    * dtlsm_o_daysec
       cgrid%dmean_rshort(ipy)       = cgrid%dmean_rshort(ipy)       * dtlsm_o_daysec
       cgrid%dmean_rshort_diff(ipy)  = cgrid%dmean_rshort_diff(ipy)  * dtlsm_o_daysec
+      cgrid%dmean_par(ipy)          = cgrid%dmean_par(ipy)          * dtlsm_o_daysec
+      cgrid%dmean_par_diff(ipy)     = cgrid%dmean_par_diff(ipy)     * dtlsm_o_daysec
       cgrid%dmean_rlong(ipy)        = cgrid%dmean_rlong(ipy)        * dtlsm_o_daysec
       cgrid%dmean_atm_shv(ipy)      = cgrid%dmean_atm_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_atm_co2(ipy)      = cgrid%dmean_atm_co2(ipy)      * dtlsm_o_daysec
@@ -2310,6 +2439,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_gc (ipy)  = cgrid%dmean_sensible_gc (ipy)  * frqsum_o_daysec
       cgrid%dmean_sensible_ac (ipy)  = cgrid%dmean_sensible_ac (ipy)  * frqsum_o_daysec
       cgrid%dmean_rshort_gnd  (ipy)  = cgrid%dmean_rshort_gnd  (ipy)  * frqsum_o_daysec
+      cgrid%dmean_par_gnd     (ipy)  = cgrid%dmean_par_gnd     (ipy)  * frqsum_o_daysec
       cgrid%dmean_rlong_gnd   (ipy)  = cgrid%dmean_rlong_gnd   (ipy)  * frqsum_o_daysec
       cgrid%dmean_rlongup     (ipy)  = cgrid%dmean_rlongup     (ipy)  * frqsum_o_daysec
       cgrid%dmean_parup       (ipy)  = cgrid%dmean_parup       (ipy)  * frqsum_o_daysec
@@ -2405,12 +2535,38 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                !---------------------------------------------------------------------------!
                !     These variables must be scaled.  They are updated every time step.    !
                !---------------------------------------------------------------------------!
-               cpatch%dmean_par_l       (ico) = cpatch%dmean_par_l       (ico)             &
-                                              * dtlsm_o_daysec
-               cpatch%dmean_par_l_beam  (ico) = cpatch%dmean_par_l_beam  (ico)             &
-                                              * dtlsm_o_daysec
-               cpatch%dmean_par_l_diff  (ico) = cpatch%dmean_par_l_diff  (ico)             &
-                                              * dtlsm_o_daysec
+               cpatch%dmean_par_l          (ico) = cpatch%dmean_par_l          (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_par_l_beam     (ico) = cpatch%dmean_par_l_beam     (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_par_l_diff     (ico) = cpatch%dmean_par_l_diff     (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_rshort_l       (ico) = cpatch%dmean_rshort_l       (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_rlong_l        (ico) = cpatch%dmean_rlong_l        (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_sensible_lc    (ico) = cpatch%dmean_sensible_lc    (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_vapor_lc       (ico) = cpatch%dmean_vapor_lc       (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_transp         (ico) = cpatch%dmean_transp         (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_intercepted_al (ico) = cpatch%dmean_intercepted_al (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_wshed_lg       (ico) = cpatch%dmean_wshed_lg       (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_rshort_w       (ico) = cpatch%dmean_rshort_w       (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_rlong_w        (ico) = cpatch%dmean_rlong_w        (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_sensible_wc    (ico) = cpatch%dmean_sensible_wc    (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_vapor_wc       (ico) = cpatch%dmean_vapor_wc       (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_intercepted_aw (ico) = cpatch%dmean_intercepted_aw (ico)       &
+                                                 * dtlsm_o_daysec
+               cpatch%dmean_wshed_wg       (ico) = cpatch%dmean_wshed_wg       (ico)       &
+                                                 * dtlsm_o_daysec
                !---------------------------------------------------------------------------!
 
 
@@ -2725,6 +2881,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_gc    (ipy) = 0.
       cgrid%dmean_sensible_ac    (ipy) = 0.
       cgrid%dmean_rshort_gnd     (ipy) = 0.
+      cgrid%dmean_par_gnd        (ipy) = 0.
       cgrid%dmean_rlong_gnd      (ipy) = 0.
       cgrid%dmean_rlongup        (ipy) = 0.
       cgrid%dmean_parup          (ipy) = 0.
@@ -2783,6 +2940,8 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_atm_vpdef      (ipy) = 0.
       cgrid%dmean_rshort         (ipy) = 0.
       cgrid%dmean_rshort_diff    (ipy) = 0.
+      cgrid%dmean_par            (ipy) = 0.
+      cgrid%dmean_par_diff       (ipy) = 0.
       cgrid%dmean_rlong          (ipy) = 0.
       cgrid%dmean_atm_shv        (ipy) = 0.
       cgrid%dmean_atm_co2        (ipy) = 0.
@@ -2830,9 +2989,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_nppdaily(ico)         = 0.
                cpatch%dmean_leaf_resp(ico)        = 0.
                cpatch%dmean_root_resp(ico)        = 0.
-               cpatch%dmean_par_l(ico)            = 0.
-               cpatch%dmean_par_l_beam(ico)       = 0.
-               cpatch%dmean_par_l_diff(ico)       = 0.
                cpatch%dmean_fs_open(ico)          = 0.
                cpatch%dmean_fsw(ico)              = 0.
                cpatch%dmean_fsn(ico)              = 0.
@@ -2842,6 +2998,22 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_light_level(ico)      = 0.
                cpatch%dmean_light_level_beam(ico) = 0.
                cpatch%dmean_light_level_diff(ico) = 0.
+               cpatch%dmean_par_l          (ico)  = 0.
+               cpatch%dmean_par_l_beam     (ico)  = 0.
+               cpatch%dmean_par_l_diff     (ico)  = 0.
+               cpatch%dmean_rshort_l       (ico)  = 0.
+               cpatch%dmean_rlong_l        (ico)  = 0.
+               cpatch%dmean_sensible_lc    (ico)  = 0.
+               cpatch%dmean_vapor_lc       (ico)  = 0.
+               cpatch%dmean_transp         (ico)  = 0.
+               cpatch%dmean_intercepted_al (ico)  = 0.
+               cpatch%dmean_wshed_lg       (ico)  = 0.
+               cpatch%dmean_rshort_w       (ico)  = 0.
+               cpatch%dmean_rlong_w        (ico)  = 0.
+               cpatch%dmean_sensible_wc    (ico)  = 0.
+               cpatch%dmean_vapor_wc       (ico)  = 0.
+               cpatch%dmean_intercepted_aw (ico)  = 0.
+               cpatch%dmean_wshed_wg       (ico)  = 0.
             end do
          end do
       end do
@@ -2919,6 +3091,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_sensible_wc   (ipy)
       cgrid%mmean_rshort_gnd    (ipy) = cgrid%mmean_rshort_gnd    (ipy)                    &
                                       + cgrid%dmean_rshort_gnd    (ipy)
+      cgrid%mmean_par_gnd       (ipy) = cgrid%mmean_par_gnd       (ipy)                    &
+                                      + cgrid%dmean_par_gnd       (ipy)
       cgrid%mmean_rlong_gnd     (ipy) = cgrid%mmean_rlong_gnd     (ipy)                    &
                                       + cgrid%dmean_rlong_gnd     (ipy)
       cgrid%mmean_rlongup       (ipy) = cgrid%mmean_rlongup       (ipy)                    &
@@ -3020,6 +3194,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_rshort        (ipy)
       cgrid%mmean_rshort_diff   (ipy) = cgrid%mmean_rshort_diff   (ipy)                    &
                                       + cgrid%dmean_rshort_diff   (ipy)
+      cgrid%mmean_par           (ipy) = cgrid%mmean_par           (ipy)                    &
+                                      + cgrid%dmean_par           (ipy)
+      cgrid%mmean_par_diff      (ipy) = cgrid%mmean_par_diff      (ipy)                    &
+                                      + cgrid%dmean_par_diff      (ipy)
       cgrid%mmean_rlong         (ipy) = cgrid%mmean_rlong         (ipy)                    &
                                       + cgrid%dmean_rlong         (ipy)
 
@@ -3163,24 +3341,52 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 
             cpatch => csite%patch(ipa)
             cohort_loop: do ico=1,cpatch%ncohorts
-               cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico)             &
-                                              + cpatch%dmean_fs_open     (ico)
-               cpatch%mmean_fsw         (ico) = cpatch%mmean_fsw         (ico)             &
-                                              + cpatch%dmean_fsw         (ico)
-               cpatch%mmean_fsn         (ico) = cpatch%mmean_fsn         (ico)             &
-                                              + cpatch%dmean_fsn         (ico)
-               cpatch%mmean_psi_open    (ico) = cpatch%mmean_psi_open    (ico)             &
-                                              + cpatch%dmean_psi_open    (ico)
-               cpatch%mmean_psi_closed  (ico) = cpatch%mmean_psi_closed  (ico)             &
-                                              + cpatch%dmean_psi_closed  (ico)
-               cpatch%mmean_water_supply(ico) = cpatch%mmean_water_supply(ico)             &
-                                              + cpatch%dmean_water_supply(ico)
-               cpatch%mmean_par_l       (ico) = cpatch%mmean_par_l       (ico)             &
-                                              + cpatch%dmean_par_l       (ico)
-               cpatch%mmean_par_l_beam  (ico) = cpatch%mmean_par_l_beam  (ico)             &
-                                              + cpatch%dmean_par_l_beam  (ico)
-               cpatch%mmean_par_l_diff  (ico) = cpatch%mmean_par_l_diff  (ico)             &
-                                              + cpatch%dmean_par_l_diff  (ico)
+               cpatch%mmean_fs_open        (ico) = cpatch%mmean_fs_open        (ico)       &
+                                                 + cpatch%dmean_fs_open        (ico)
+               cpatch%mmean_fsw            (ico) = cpatch%mmean_fsw            (ico)       &
+                                                 + cpatch%dmean_fsw            (ico)
+               cpatch%mmean_fsn            (ico) = cpatch%mmean_fsn            (ico)       &
+                                                 + cpatch%dmean_fsn            (ico)
+               cpatch%mmean_psi_open       (ico) = cpatch%mmean_psi_open       (ico)       &
+                                                 + cpatch%dmean_psi_open       (ico)
+               cpatch%mmean_psi_closed     (ico) = cpatch%mmean_psi_closed     (ico)       &
+                                                 + cpatch%dmean_psi_closed     (ico)
+               cpatch%mmean_water_supply   (ico) = cpatch%mmean_water_supply   (ico)       &
+                                                 + cpatch%dmean_water_supply   (ico)
+               cpatch%mmean_par_l          (ico) = cpatch%mmean_par_l          (ico)       &
+                                                 + cpatch%dmean_par_l          (ico)
+               cpatch%mmean_par_l_beam     (ico) = cpatch%mmean_par_l_beam     (ico)       &
+                                                 + cpatch%dmean_par_l_beam     (ico)
+               cpatch%mmean_par_l_diff     (ico) = cpatch%mmean_par_l_diff     (ico)       &
+                                                 + cpatch%dmean_par_l_diff     (ico)
+               cpatch%mmean_rshort_l       (ico) = cpatch%mmean_rshort_l       (ico)       &
+                                                 + cpatch%dmean_rshort_l       (ico)
+               cpatch%mmean_rlong_l        (ico) = cpatch%mmean_rlong_l        (ico)       &
+                                                 + cpatch%dmean_rlong_l        (ico)
+               cpatch%mmean_sensible_lc    (ico) = cpatch%mmean_sensible_lc    (ico)       &
+                                                 + cpatch%dmean_sensible_lc    (ico)
+               cpatch%mmean_vapor_lc       (ico) = cpatch%mmean_vapor_lc       (ico)       &
+                                                 + cpatch%dmean_vapor_lc       (ico)
+               cpatch%mmean_transp         (ico) = cpatch%mmean_transp         (ico)       &
+                                                 + cpatch%dmean_transp         (ico)
+               cpatch%mmean_intercepted_al (ico) = cpatch%mmean_intercepted_al (ico)       &
+                                                 + cpatch%dmean_intercepted_al (ico)
+               cpatch%mmean_wshed_lg       (ico) = cpatch%mmean_wshed_lg       (ico)       &
+                                                 + cpatch%dmean_wshed_lg       (ico)
+               cpatch%mmean_rshort_w       (ico) = cpatch%mmean_rshort_w       (ico)       &
+                                                 + cpatch%dmean_rshort_w       (ico)
+               cpatch%mmean_rlong_w        (ico) = cpatch%mmean_rlong_w        (ico)       &
+                                                 + cpatch%dmean_rlong_w        (ico)
+               cpatch%mmean_sensible_wc    (ico) = cpatch%mmean_sensible_wc    (ico)       &
+                                                 + cpatch%dmean_sensible_wc    (ico)
+               cpatch%mmean_vapor_wc       (ico) = cpatch%mmean_vapor_wc       (ico)       &
+                                                 + cpatch%dmean_vapor_wc       (ico)
+               cpatch%mmean_intercepted_aw (ico) = cpatch%mmean_intercepted_aw (ico)       &
+                                                 + cpatch%dmean_intercepted_aw (ico)
+               cpatch%mmean_wshed_wg       (ico) = cpatch%mmean_wshed_wg       (ico)       &
+                                                 + cpatch%dmean_wshed_wg       (ico)
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !     The following variables are all converted to kgC/plant/yr.            !
@@ -3363,6 +3569,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_lc    (ipy) = cgrid%mmean_sensible_lc    (ipy) * ndaysi
       cgrid%mmean_sensible_wc    (ipy) = cgrid%mmean_sensible_wc    (ipy) * ndaysi
       cgrid%mmean_rshort_gnd     (ipy) = cgrid%mmean_rshort_gnd     (ipy) * ndaysi
+      cgrid%mmean_par_gnd        (ipy) = cgrid%mmean_par_gnd        (ipy) * ndaysi
       cgrid%mmean_rlong_gnd      (ipy) = cgrid%mmean_rlong_gnd      (ipy) * ndaysi
       cgrid%mmean_rlongup        (ipy) = cgrid%mmean_rlongup        (ipy) * ndaysi
       cgrid%mmean_parup          (ipy) = cgrid%mmean_parup          (ipy) * ndaysi
@@ -3412,6 +3619,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_atm_vpdef      (ipy) = cgrid%mmean_atm_vpdef      (ipy) * ndaysi
       cgrid%mmean_rshort         (ipy) = cgrid%mmean_rshort         (ipy) * ndaysi
       cgrid%mmean_rshort_diff    (ipy) = cgrid%mmean_rshort_diff    (ipy) * ndaysi
+      cgrid%mmean_par            (ipy) = cgrid%mmean_par            (ipy) * ndaysi
+      cgrid%mmean_par_diff       (ipy) = cgrid%mmean_par_diff       (ipy) * ndaysi
       cgrid%mmean_rlong          (ipy) = cgrid%mmean_rlong          (ipy) * ndaysi
       cgrid%mmean_atm_shv        (ipy) = cgrid%mmean_atm_shv        (ipy) * ndaysi
       cgrid%mmean_atm_co2        (ipy) = cgrid%mmean_atm_co2        (ipy) * ndaysi
@@ -3595,28 +3804,76 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cpatch => csite%patch(ipa)
             cohortloop: do ico = 1, cpatch%ncohorts
                !----- Find the carbon fluxes. ---------------------------------------------!
-               cpatch%mmean_gpp         (ico) = cpatch%mmean_gpp         (ico) * ndaysi
-               cpatch%mmean_nppleaf     (ico) = cpatch%mmean_nppleaf     (ico) * ndaysi
-               cpatch%mmean_nppfroot    (ico) = cpatch%mmean_nppfroot    (ico) * ndaysi
-               cpatch%mmean_nppsapwood  (ico) = cpatch%mmean_nppsapwood  (ico) * ndaysi
-               cpatch%mmean_nppcroot    (ico) = cpatch%mmean_nppcroot    (ico) * ndaysi
-               cpatch%mmean_nppseeds    (ico) = cpatch%mmean_nppseeds    (ico) * ndaysi
-               cpatch%mmean_nppwood     (ico) = cpatch%mmean_nppwood     (ico) * ndaysi
-               cpatch%mmean_nppdaily    (ico) = cpatch%mmean_nppdaily    (ico) * ndaysi
-               cpatch%mmean_leaf_resp   (ico) = cpatch%mmean_leaf_resp   (ico) * ndaysi
-               cpatch%mmean_root_resp   (ico) = cpatch%mmean_root_resp   (ico) * ndaysi
-               cpatch%mmean_growth_resp (ico) = cpatch%mmean_growth_resp (ico) * ndaysi
-               cpatch%mmean_storage_resp(ico) = cpatch%mmean_storage_resp(ico) * ndaysi
-               cpatch%mmean_vleaf_resp  (ico) = cpatch%mmean_vleaf_resp  (ico) * ndaysi
-               cpatch%mmean_fsw         (ico) = cpatch%mmean_fsw         (ico) * ndaysi
-               cpatch%mmean_fsn         (ico) = cpatch%mmean_fsn         (ico) * ndaysi
-               cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico) * ndaysi
-               cpatch%mmean_psi_open    (ico) = cpatch%mmean_psi_open    (ico) * ndaysi
-               cpatch%mmean_psi_closed  (ico) = cpatch%mmean_psi_closed  (ico) * ndaysi
-               cpatch%mmean_water_supply(ico) = cpatch%mmean_water_supply(ico) * ndaysi
-               cpatch%mmean_par_l       (ico) = cpatch%mmean_par_l       (ico) * ndaysi
-               cpatch%mmean_par_l_beam  (ico) = cpatch%mmean_par_l_beam  (ico) * ndaysi
-               cpatch%mmean_par_l_diff  (ico) = cpatch%mmean_par_l_diff  (ico) * ndaysi
+               cpatch%mmean_gpp              (ico) = cpatch%mmean_gpp             (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_nppleaf          (ico) = cpatch%mmean_nppleaf         (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_nppfroot         (ico) = cpatch%mmean_nppfroot        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_nppsapwood       (ico) = cpatch%mmean_nppsapwood      (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_nppcroot         (ico) = cpatch%mmean_nppcroot        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_nppseeds         (ico) = cpatch%mmean_nppseeds        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_nppwood          (ico) = cpatch%mmean_nppwood         (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_nppdaily         (ico) = cpatch%mmean_nppdaily        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_leaf_resp        (ico) = cpatch%mmean_leaf_resp       (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_root_resp        (ico) = cpatch%mmean_root_resp       (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_growth_resp      (ico) = cpatch%mmean_growth_resp     (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_storage_resp     (ico) = cpatch%mmean_storage_resp    (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_vleaf_resp       (ico) = cpatch%mmean_vleaf_resp      (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_fsw              (ico) = cpatch%mmean_fsw             (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_fsn              (ico) = cpatch%mmean_fsn             (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_fs_open          (ico) = cpatch%mmean_fs_open         (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_psi_open         (ico) = cpatch%mmean_psi_open        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_psi_closed       (ico) = cpatch%mmean_psi_closed      (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_water_supply     (ico) = cpatch%mmean_water_supply    (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_par_l            (ico) = cpatch%mmean_par_l           (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_par_l_beam       (ico) = cpatch%mmean_par_l_beam      (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_par_l_diff       (ico) = cpatch%mmean_par_l_diff      (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_rshort_l         (ico) = cpatch%mmean_rshort_l        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_rlong_l          (ico) = cpatch%mmean_rlong_l         (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_sensible_lc      (ico) = cpatch%mmean_sensible_lc     (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_vapor_lc         (ico) = cpatch%mmean_vapor_lc        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_transp           (ico) = cpatch%mmean_transp          (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_intercepted_al   (ico) = cpatch%mmean_intercepted_al  (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_wshed_lg         (ico) = cpatch%mmean_wshed_lg        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_rshort_w         (ico) = cpatch%mmean_rshort_w        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_rlong_w          (ico) = cpatch%mmean_rlong_w         (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_sensible_wc      (ico) = cpatch%mmean_sensible_wc     (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_vapor_wc         (ico) = cpatch%mmean_vapor_wc        (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_intercepted_aw   (ico) = cpatch%mmean_intercepted_aw  (ico)    &
+                                                   * ndaysi
+               cpatch%mmean_wshed_wg         (ico) = cpatch%mmean_wshed_wg        (ico)    &
+                                                   * ndaysi
                cpatch%mmean_leaf_maintenance (ico) = cpatch%mmean_leaf_maintenance(ico)    &
                                                    * ndaysi
                cpatch%mmean_root_maintenance (ico) = cpatch%mmean_root_maintenance(ico)    &
@@ -3741,30 +3998,56 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
 
                   do ico=1,cpatch%ncohorts
                      !----- Convert GPP and plant respiration to kgC/plant/year. ----------!
-                     cpatch%qmean_gpp         (t,ico) = cpatch%qmean_gpp           (t,ico) &
-                                                      * ndaysi
-                     cpatch%qmean_leaf_resp   (t,ico) = cpatch%qmean_leaf_resp     (t,ico) &
-                                                      * ndaysi
-                     cpatch%qmean_root_resp   (t,ico) = cpatch%qmean_root_resp     (t,ico) &
-                                                      * ndaysi
-                     cpatch%qmean_par_l       (t,ico) = cpatch%qmean_par_l         (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_par_l_beam  (t,ico) = cpatch%qmean_par_l_beam    (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_par_l_diff  (t,ico) = cpatch%qmean_par_l_diff    (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_fs_open     (t,ico) = cpatch%qmean_fs_open       (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_fsw         (t,ico) = cpatch%qmean_fsw           (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_fsn         (t,ico) = cpatch%qmean_fsn           (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_psi_open    (t,ico) = cpatch%qmean_psi_open      (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_psi_closed  (t,ico) = cpatch%qmean_psi_closed    (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
-                     cpatch%qmean_water_supply(t,ico) = cpatch%qmean_water_supply  (t,ico) &
-                                                      * ndaysi * dtlsm_o_frqfast
+                     cpatch%qmean_gpp           (t,ico)=cpatch%qmean_gpp           (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_leaf_resp     (t,ico)=cpatch%qmean_leaf_resp     (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_root_resp     (t,ico)=cpatch%qmean_root_resp     (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_fs_open       (t,ico)=cpatch%qmean_fs_open       (t,ico) &
+                                                       *ndaysi * dtlsm_o_frqfast
+                     cpatch%qmean_fsw           (t,ico)=cpatch%qmean_fsw           (t,ico) &
+                                                       *ndaysi * dtlsm_o_frqfast
+                     cpatch%qmean_fsn           (t,ico)=cpatch%qmean_fsn           (t,ico) &
+                                                       *ndaysi * dtlsm_o_frqfast
+                     cpatch%qmean_psi_open      (t,ico)=cpatch%qmean_psi_open      (t,ico) &
+                                                       *ndaysi * dtlsm_o_frqfast
+                     cpatch%qmean_psi_closed    (t,ico)=cpatch%qmean_psi_closed    (t,ico) &
+                                                       *ndaysi * dtlsm_o_frqfast
+                     cpatch%qmean_water_supply  (t,ico)=cpatch%qmean_water_supply  (t,ico) &
+                                                       *ndaysi * dtlsm_o_frqfast
+                     cpatch%qmean_par_l         (t,ico)=cpatch%qmean_par_l         (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_par_l_beam    (t,ico)=cpatch%qmean_par_l_beam    (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_par_l_diff    (t,ico)=cpatch%qmean_par_l_diff    (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_rshort_l      (t,ico)=cpatch%qmean_rshort_l      (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_rlong_l       (t,ico)=cpatch%qmean_rlong_l       (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_sensible_lc   (t,ico)=cpatch%qmean_sensible_lc   (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_vapor_lc      (t,ico)=cpatch%qmean_vapor_lc      (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_transp        (t,ico)=cpatch%qmean_transp        (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_intercepted_al(t,ico)=cpatch%qmean_intercepted_al(t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_wshed_lg      (t,ico)=cpatch%qmean_wshed_lg      (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_rshort_w      (t,ico)=cpatch%qmean_rshort_w      (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_rlong_w       (t,ico)=cpatch%qmean_rlong_w       (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_sensible_wc   (t,ico)=cpatch%qmean_sensible_wc   (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_vapor_wc      (t,ico)=cpatch%qmean_vapor_wc      (t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_intercepted_aw(t,ico)=cpatch%qmean_intercepted_aw(t,ico) &
+                                                       *ndaysi
+                     cpatch%qmean_wshed_wg      (t,ico)=cpatch%qmean_wshed_wg      (t,ico) &
+                                                       *ndaysi
                   end do
 
                   !------------------------------------------------------------------------!
@@ -3861,6 +4144,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                               * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_rshort_diff   (t,ipy) = cgrid%qmean_rshort_diff   (t,ipy)          &
                                               * ndaysi * dtlsm_o_frqfast
+            cgrid%qmean_par           (t,ipy) = cgrid%qmean_par           (t,ipy)          &
+                                              * ndaysi * dtlsm_o_frqfast
+            cgrid%qmean_par_diff      (t,ipy) = cgrid%qmean_par_diff      (t,ipy)          &
+                                              * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_rlong         (t,ipy) = cgrid%qmean_rlong         (t,ipy)          &
                                               * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_atm_shv       (t,ipy) = cgrid%qmean_atm_shv       (t,ipy)          &
@@ -3883,6 +4170,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cgrid%qmean_sensible_gc   (t,ipy) = cgrid%qmean_sensible_gc   (t,ipy)  * ndaysi
             cgrid%qmean_sensible_ac   (t,ipy) = cgrid%qmean_sensible_ac   (t,ipy)  * ndaysi
             cgrid%qmean_rshort_gnd    (t,ipy) = cgrid%qmean_rshort_gnd    (t,ipy)  * ndaysi
+            cgrid%qmean_par_gnd       (t,ipy) = cgrid%qmean_par_gnd       (t,ipy)  * ndaysi
             cgrid%qmean_rlong_gnd     (t,ipy) = cgrid%qmean_rlong_gnd     (t,ipy)  * ndaysi
             cgrid%qmean_rlongup       (t,ipy) = cgrid%qmean_rlongup       (t,ipy)  * ndaysi
             cgrid%qmean_parup         (t,ipy) = cgrid%qmean_parup         (t,ipy)  * ndaysi
@@ -4031,6 +4319,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_lc        (ipy) = 0.
       cgrid%mmean_sensible_wc        (ipy) = 0.
       cgrid%mmean_rshort_gnd         (ipy) = 0.
+      cgrid%mmean_par_gnd            (ipy) = 0.
       cgrid%mmean_rlong_gnd          (ipy) = 0.
       cgrid%mmean_rlongup            (ipy) = 0.
       cgrid%mmean_parup              (ipy) = 0.
@@ -4084,6 +4373,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_atm_vpdef          (ipy) = 0.
       cgrid%mmean_rshort             (ipy) = 0.
       cgrid%mmean_rshort_diff        (ipy) = 0.
+      cgrid%mmean_par                (ipy) = 0.
+      cgrid%mmean_par_diff           (ipy) = 0.
       cgrid%mmean_rlong              (ipy) = 0.
       cgrid%mmean_atm_shv            (ipy) = 0.
       cgrid%mmean_atm_co2            (ipy) = 0.
@@ -4154,6 +4445,19 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_par_l             (ico) = 0.
                cpatch%mmean_par_l_beam        (ico) = 0.
                cpatch%mmean_par_l_diff        (ico) = 0.
+               cpatch%mmean_rshort_l          (ico) = 0.
+               cpatch%mmean_rlong_l           (ico) = 0.
+               cpatch%mmean_sensible_lc       (ico) = 0.
+               cpatch%mmean_vapor_lc          (ico) = 0.
+               cpatch%mmean_transp            (ico) = 0.
+               cpatch%mmean_intercepted_al    (ico) = 0.
+               cpatch%mmean_wshed_lg          (ico) = 0.
+               cpatch%mmean_rshort_w          (ico) = 0.
+               cpatch%mmean_rlong_w           (ico) = 0.
+               cpatch%mmean_sensible_wc       (ico) = 0.
+               cpatch%mmean_vapor_wc          (ico) = 0.
+               cpatch%mmean_intercepted_aw    (ico) = 0.
+               cpatch%mmean_wshed_wg          (ico) = 0.
                cpatch%mmean_fs_open           (ico) = 0.
                cpatch%mmean_fsw               (ico) = 0.
                cpatch%mmean_fsn               (ico) = 0.
@@ -4195,18 +4499,31 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch => csite%patch(ipa)
                do ico=1,cpatch%ncohorts
                   !----- Convert GPP and plant respiration to kgC/plant/year. -------------!
-                  cpatch%qmean_gpp         (:,ico) = 0.0
-                  cpatch%qmean_leaf_resp   (:,ico) = 0.0
-                  cpatch%qmean_root_resp   (:,ico) = 0.0
-                  cpatch%qmean_par_l       (:,ico) = 0.0
-                  cpatch%qmean_par_l_beam  (:,ico) = 0.0
-                  cpatch%qmean_par_l_diff  (:,ico) = 0.0
-                  cpatch%qmean_fs_open     (:,ico) = 0.0
-                  cpatch%qmean_fsw         (:,ico) = 0.0
-                  cpatch%qmean_fsn         (:,ico) = 0.0
-                  cpatch%qmean_psi_open    (:,ico) = 0.0
-                  cpatch%qmean_psi_closed  (:,ico) = 0.0
-                  cpatch%qmean_water_supply(:,ico) = 0.0
+                  cpatch%qmean_gpp            (:,ico) = 0.0
+                  cpatch%qmean_leaf_resp      (:,ico) = 0.0
+                  cpatch%qmean_root_resp      (:,ico) = 0.0
+                  cpatch%qmean_fs_open        (:,ico) = 0.0
+                  cpatch%qmean_fsw            (:,ico) = 0.0
+                  cpatch%qmean_fsn            (:,ico) = 0.0
+                  cpatch%qmean_psi_open       (:,ico) = 0.0
+                  cpatch%qmean_psi_closed     (:,ico) = 0.0
+                  cpatch%qmean_water_supply   (:,ico) = 0.0
+                  cpatch%qmean_par_l          (:,ico) = 0.0
+                  cpatch%qmean_par_l_beam     (:,ico) = 0.0
+                  cpatch%qmean_par_l_diff     (:,ico) = 0.0
+                  cpatch%qmean_rshort_l       (:,ico) = 0.0
+                  cpatch%qmean_rlong_l        (:,ico) = 0.0
+                  cpatch%qmean_sensible_lc    (:,ico) = 0.0
+                  cpatch%qmean_vapor_lc       (:,ico) = 0.0
+                  cpatch%qmean_transp         (:,ico) = 0.0
+                  cpatch%qmean_intercepted_al (:,ico) = 0.0
+                  cpatch%qmean_wshed_lg       (:,ico) = 0.0
+                  cpatch%qmean_rshort_w       (:,ico) = 0.0
+                  cpatch%qmean_rlong_w        (:,ico) = 0.0
+                  cpatch%qmean_sensible_wc    (:,ico) = 0.0
+                  cpatch%qmean_vapor_wc       (:,ico) = 0.0
+                  cpatch%qmean_intercepted_aw (:,ico) = 0.0
+                  cpatch%qmean_wshed_wg       (:,ico) = 0.0
                end do
 
                csite%qmean_rh              (:,ipa) = 0.0
@@ -4239,6 +4556,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_atm_vpdef     (:,ipy) = 0.0
          cgrid%qmean_rshort        (:,ipy) = 0.0
          cgrid%qmean_rshort_diff   (:,ipy) = 0.0
+         cgrid%qmean_par           (:,ipy) = 0.0
+         cgrid%qmean_par_diff      (:,ipy) = 0.0
          cgrid%qmean_rlong         (:,ipy) = 0.0
          cgrid%qmean_atm_shv       (:,ipy) = 0.0
          cgrid%qmean_atm_co2       (:,ipy) = 0.0
@@ -4256,6 +4575,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
          cgrid%qmean_sensible_gc   (:,ipy) = 0.0
          cgrid%qmean_sensible_ac   (:,ipy) = 0.0
          cgrid%qmean_rshort_gnd    (:,ipy) = 0.0
+         cgrid%qmean_par_gnd       (:,ipy) = 0.0
          cgrid%qmean_rlong_gnd     (:,ipy) = 0.0
          cgrid%qmean_rlongup       (:,ipy) = 0.0
          cgrid%qmean_parup         (:,ipy) = 0.0

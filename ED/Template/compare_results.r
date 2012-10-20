@@ -16,24 +16,24 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 here    = getwd()                                #   Current directory
 srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"    #   Script directory
-outroot = paste(here,"sizepft_comp",sep="/")     #   Output directory
+outroot = paste(here,"twostream_comp",sep="/")   #   Output directory
 
 sites      = c("gyf","cax","m34","s67","s77","s83","ban","pnz","rja","fns","pdg")
 simul      = list()
-simul[[1]] = list( name   = "pft02_canrad01_sas"
-                 , desc   = "2 PFTs + SAS"
+simul[[1]] = list( name   = "pft00_canrad00_sas"
+                 , desc   = "Medvigy + SAS"
                  , colour = "chartreuse"
                  )#end list
 simul[[2]] = list( name   = "pft00_canrad01_sas"
-                 , desc   = "5 PFTs + SAS"
+                 , desc   = "Zhao-Qualls + SAS"
                  , colour = "chartreuse4"
                  )#end list
-simul[[3]] = list( name   = "pft02_canrad01_ble"
-                 , desc   = "2 PFTs + Big Leaf"
+simul[[3]] = list( name   = "pft00_canrad00_ble"
+                 , desc   = "Medvigy + Big Leaf"
                  , colour = "darkorange"
                  )#end list
 simul[[4]] = list( name   = "pft00_canrad01_ble"
-                 , desc   = "5 PFTs + Big Leaf"
+                 , desc   = "Zhao-Qualls + Big Leaf"
                  , colour = "firebrick"
                  )#end list
 #------------------------------------------------------------------------------------------#
@@ -93,6 +93,7 @@ compvar[[ 1]] = list( vnam       = "hflxca"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 2]] = list( vnam       = "wflxca"
                     , desc       = "Water vapour flux"
@@ -100,6 +101,7 @@ compvar[[ 2]] = list( vnam       = "wflxca"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("deepskyblue","royalblue4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 3]] = list( vnam       = "cflxca"
                     , desc       = "Carbon dioxide flux"
@@ -107,6 +109,7 @@ compvar[[ 3]] = list( vnam       = "cflxca"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse2","darkgreen")
                     , leg.corner = "bottomright"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 4]] = list( vnam       = "cflxst"
                     , desc       = "Carbon dioxide storage"
@@ -114,6 +117,7 @@ compvar[[ 4]] = list( vnam       = "cflxst"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("lightgoldenrod3","darkorange1")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 5]] = list( vnam       = "gpp"
                     , desc       = "Gross primary productivity"
@@ -121,6 +125,7 @@ compvar[[ 5]] = list( vnam       = "gpp"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("green3","darkgreen")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
 compvar[[ 6]] = list( vnam       = "reco"
                     , desc       = "Ecosystem respiration"
@@ -128,6 +133,7 @@ compvar[[ 6]] = list( vnam       = "reco"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("yellow3","peru")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 7]] = list( vnam       = "nep"
                     , desc       = "Net ecosystem productivity"
@@ -135,6 +141,7 @@ compvar[[ 7]] = list( vnam       = "nep"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("olivedrab2","darkolivegreen4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 8]] = list( vnam       = "nee"
                     , desc       = "Net ecosystem exchange"
@@ -142,6 +149,7 @@ compvar[[ 8]] = list( vnam       = "nee"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "bottomright"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[ 9]] = list( vnam       = "ustar"
                     , desc       = "Friction velocity"
@@ -149,6 +157,7 @@ compvar[[ 9]] = list( vnam       = "ustar"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("mediumpurple1","purple4")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[10]] = list( vnam       = "rlongup"
                     , desc       = "Outgoing longwave radiation"
@@ -156,6 +165,7 @@ compvar[[10]] = list( vnam       = "rlongup"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[11]] = list( vnam       = "rnet"
                     , desc       = "Net radiation"
@@ -163,6 +173,7 @@ compvar[[11]] = list( vnam       = "rnet"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 compvar[[12]] = list( vnam       = "albedo"
                     , desc       = "Albedo"
@@ -170,6 +181,7 @@ compvar[[12]] = list( vnam       = "albedo"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
 compvar[[13]] = list( vnam       = "parup"
                     , desc       = "Outgoing PAR"
@@ -177,6 +189,7 @@ compvar[[13]] = list( vnam       = "parup"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("chartreuse4","darkolivegreen1")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
 compvar[[14]] = list( vnam       = "rshortup"
                     , desc       = "Outgoing shortwave radiation"
@@ -184,6 +197,7 @@ compvar[[14]] = list( vnam       = "rshortup"
                     , col.obser  = c("grey42","grey21")
                     , col.model  = c("royalblue4","deepskyblue")
                     , leg.corner = "topleft"
+                    , sunvar     = TRUE
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -254,22 +268,19 @@ good[[ 3]] = list( vnam = "r.squared"
 good[[ 4]] = list( vnam = "fvue"
                  , desc = "Fraction of variability unexplained"
                  )#end list
-good[[ 5]] = list( vnam = "sw.p.value"
-                 , desc = "Shapiro-Wilk p-value"
-                 )#end list
-good[[ 6]] = list( vnam = "sw.stat"
+good[[ 5]] = list( vnam = "sw.stat"
                  , desc = "Shapiro-Wilk statistic"
                  )#end list
-good[[ 7]] = list( vnam = "ks.stat"
+good[[ 6]] = list( vnam = "ks.stat"
                  , desc = "Kolmogorov-Smirnov statistic"
                  )#end list
-good[[ 8]] = list( vnam = "lsq.lnlike"
+good[[ 7]] = list( vnam = "lsq.lnlike"
                  , desc = "Scaled support based on least squares"
                  )#end list
-good[[ 9]] = list( vnam = "sn.lnlike"
+good[[ 8]] = list( vnam = "sn.lnlike"
                  , desc = "Scaled support based on skew normal distribution"
                  )#end list
-good[[10]] = list( vnam = "norm.lnlike"
+good[[ 9]] = list( vnam = "norm.lnlike"
                  , desc = "Scaled support based on normal distribution"
                  )#end list
 #------------------------------------------------------------------------------------------#
@@ -402,9 +413,11 @@ performance = array( data     = NA
                    )#end array
 for (v in 1:ncompvar){
    #----- Copy the variable information. --------------------------------------------------#
-   this.vnam = compvar[[v]]$vnam
-   this.desc = compvar[[v]]$desc
-   this.unit = compvar[[v]]$unit
+   this.vnam     = compvar[[v]]$vnam
+   this.desc     = compvar[[v]]$desc
+   this.unit     = compvar[[v]]$unit
+   this.sun      = compvar[[v]]$sunvar
+   this.measured = paste("measured",this.vnam,sep=".")
    cat("   - ",this.desc,"...","\n")
    #---------------------------------------------------------------------------------------#
 
@@ -430,14 +443,14 @@ for (v in 1:ncompvar){
 
 
       #----- Create some variables to describe season and time of the day. ----------------#
-      if (! "season" %in% names(obs)) obs$season = season(obs$when)
+      if (! "season" %in% names(obs)) obs$season = season(obs$when,add.year=FALSE)
       if (! "diel" %in% names(obs))   obs$diel   = (! obs$nighttime) + obs$highsun
       #------------------------------------------------------------------------------------#
 
 
 
-      #----- Find out when this output variable is finite. --------------------------------#
-      p.sel      = is.finite(obs[[this.vnam]])
+      #----- Find out when this output variable is finite and measured. -------------------#
+      p.sel = is.finite(obs[[this.vnam]]) & obs[[this.measured]]
       #------------------------------------------------------------------------------------#
 
 
@@ -456,7 +469,9 @@ for (v in 1:ncompvar){
          for (d in 1:ndiel){
             #----- Select this diel (or everything for all day). --------------------------#
             d.sel = obs$diel == (d-1) | d == ndiel
+            d.sel = d.sel & ((! this.sun) | obs$highsun)
             #------------------------------------------------------------------------------#
+
 
             #------------------------------------------------------------------------------#
             #      Combine the selections.                                                 #
@@ -491,9 +506,9 @@ for (v in 1:ncompvar){
             input.score[d,e,ncontrol,p] = mean(input.score[d,e,1:(ncontrol-1),p],na.rm=TRUE)
             output.nobs[d,e,p]          = sum(sel,na.rm=TRUE)
             #------------------------------------------------------------------------------#
-         }#end for
+         }#end for (d in 1:ndiel)
          #---------------------------------------------------------------------------------#
-      }#end for
+      }#end for (e in 1:nseason)
       #------------------------------------------------------------------------------------#
    }#end for (p in 1:nsites)
    #---------------------------------------------------------------------------------------#
@@ -524,6 +539,9 @@ for (v in 1:ncompvar){
    #      Loop over all sites and simulations, and grab the data.                          #
    #---------------------------------------------------------------------------------------#
    for (g in 1:ngood){
+      nobs.good = output.nobs
+
+
       this.good = good[[g]]$vnam
       desc.good = good[[g]]$desc
       cat ("     * ",desc.good,"\n")
@@ -548,19 +566,15 @@ for (v in 1:ncompvar){
          for (s in 1:nsimul){
             colstat[s,p]   = simul[[s]]$colour
             this           = res[[iata]]$sim[[s]][[this.vnam]][[this.good]]
-            for (e in 1:nseason){
-               use.season = paste(sprintf("%2.2i",e),season.key[e],sep="-")
-               for (d in 1:ndiel){
-                  if (is.finite(this[diel.key[d],use.season])){
-                     stat[d,e,s,p] = this[diel.key[d],use.season]
-                  }#end if                  
-               }#end for
-               #---------------------------------------------------------------------------#
-            }#end for
-            #------------------------------------------------------------------------------#
+
+            use.season  = paste(sprintf("%2.2i",sequence(nseason)),season.key,sep="-")
+            stat[,,s,p] = this[diel.key,use.season]
          }#end for
          #---------------------------------------------------------------------------------#
       }#end for
+      bye            = apply(X=(! is.finite(stat)),MARGIN=c(1,2,4),FUN=sum,na.rm=TRUE)
+      bye            = bye != 0
+      nobs.good[bye] = -1
       #------------------------------------------------------------------------------------#
 
 
@@ -575,6 +589,10 @@ for (v in 1:ncompvar){
          for (s in 1:nsimul){
            stat[,,s,] = 100. * ( (stat.orig[,,s,] - stat.max)/ (stat.max - stat.min) )
          }#end for
+      }else if(this.good %in% "r.squared"){
+         orig.stat  = stat
+         sel        = is.finite(stat) & stat < -1
+         stat[sel]  = -1
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -593,8 +611,9 @@ for (v in 1:ncompvar){
          xat     = seq(from=0,to=(nsites-1)*(nsimul+1),by=nsimul+1)+1+0.5*nsimul
          xlines  = seq(from=0,to=nsites*(nsimul+1),by=nsimul+1)+0.5
          if (this.good %in% c("r.squared")){
-            y.nobs = 0.90
-            ylimit = c(-1,1)
+            y.nobs =  1.10
+            y.r2   = -1.10
+            ylimit = c(-1.2,1.2)
          }else{
             ylimit  = range(stat[d,,,],na.rm=TRUE)
             if (  any(! is.finite(ylimit)) || (ylimit[1] == ylimit[2] && ylimit[1] == 0)){
@@ -644,10 +663,9 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
-            par(oma = c(0,3,3,0))
-            h = 0.4 * par("csi") * 2.54
+            par(oma = c(0.2,3,4,0))
             layout(mat    = rbind(1+lo.box$mat,rep(1,times=lo.box$ncol))
-                  ,height = c(rep(1,times=lo.box$nrow),h)
+                  ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
                   )#end layout
             #------------------------------------------------------------------------------#
 
@@ -692,8 +710,7 @@ for (v in 1:ncompvar){
                #---------------------------------------------------------------------------#
                #     Order the sites by amount of information.                             #
                #---------------------------------------------------------------------------#
-               nobs = output.nobs[d,e,]
-               op   = order(nobs)
+               op   = order(nobs.good[d,e,],na.last=FALSE)
                #---------------------------------------------------------------------------#
 
 
@@ -714,9 +731,14 @@ for (v in 1:ncompvar){
                #---------------------------------------------------------------------------#
                #     Add the bar plot.                                                     #
                #---------------------------------------------------------------------------#
-               barplot(height=stat[d,e,,op],col=colstat,beside=TRUE,border="grey22"
-                      ,add=TRUE,axes=FALSE,axisnames=FALSE,xpd=FALSE)
-               text   (x=xat,y=y.nobs,labels=nobs[op],cex=0.7)
+               xbp = barplot(height=stat[d,e,,op],col=colstat,beside=TRUE,border="grey22"
+                            ,add=TRUE,axes=FALSE,axisnames=FALSE,xpd=FALSE)
+               text   (x=xat,y=y.nobs,labels=nobs.good[d,e,op],cex=0.7)
+               if (this.good %in% c("r.squared")){
+                  ybp = y.r2 - 100 * ( orig.stat[d,e,,op] >= -1.0)
+                  text(x=xbp,y=ybp,labels=rep("*",times=length(ybp))
+                      ,font=2,col="saddlebrown")
+               }#end if
                #---------------------------------------------------------------------------#
             }#end for
 
@@ -773,8 +795,8 @@ for (v in 1:ncompvar){
          }#end if
          lex     = "Sites"
          #-----  Order the sites by amount of information. --------------------------------#
-         nobs = output.nobs[d,nseason,]
-         op   = order(nobs)
+         nobs = nobs.good[d,nseason,]
+         op   = order(nobs,na.last=FALSE)
          #----- Loop over all formats. ----------------------------------------------------#
          for (o in 1:nout){
             #----- Make the file name. ----------------------------------------------------#
@@ -802,14 +824,13 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
-            h = 0.4 * par("csi") * 2.54
-            layout(mat = rbind(2,1), height = c(1,h))
+            layout(mat = rbind(2,1), height = c(5,1))
             #------------------------------------------------------------------------------#
 
 
 
             #----- Plot legend. -----------------------------------------------------------#
-            par(mar=c(1.1,4.1,0.1,4.1))
+            par(mar=c(0.1,4.1,0.1,4.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
             legend ( x       = "top"
@@ -849,7 +870,11 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             barplot(height=stat[d,nseason,,op],col=colstat,beside=TRUE,border="grey22"
                    ,add=TRUE,axes=FALSE,axisnames=FALSE,xpd=FALSE)
-            text(x=xat,y=y.nobs,labels=nobs[op])
+            text(x=xat,y=y.nobs,labels=nobs.good[d,nseason,op],cex=0.9,col="grey22")
+            if (this.good %in% c("r.squared")){
+               ybp = y.r2 - 100 * ( orig.stat[d,nseason,,op] >= -1.0)
+               text(x=xbp,y=ybp,labels=rep("*",times=length(ybp)),font=2,col="saddlebrown")
+            }#end if
             #------------------------------------------------------------------------------#
 
 
@@ -945,10 +970,9 @@ for (v in 1:ncompvar){
                #---------------------------------------------------------------------------#
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
-               par(oma = c(0,3,3,0))
-               h = 0.4 * par("csi") * 2.54
+               par(oma = c(0.2,3,4,0))
                layout(mat    = rbind(1+lo.box$mat,rep(1,times=lo.box$ncol))
-                     ,height = c(rep(1,times=lo.box$nrow),h)
+                     ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
                      )#end layout
                #---------------------------------------------------------------------------#
 
@@ -1097,14 +1121,13 @@ for (v in 1:ncompvar){
                #---------------------------------------------------------------------------#
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
-               h = 0.4 * par("csi") * 2.54
-               layout(mat=rbind(2,1),height=c(1,h))
+               layout(mat=rbind(2,1),height=c(5,1))
                #---------------------------------------------------------------------------#
 
 
 
                #----- Plot legend. --------------------------------------------------------#
-               par(mar=c(1.1,4.1,0.1,4.1))
+               par(mar=c(0.1,4.1,0.1,4.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                legend ( x       = "top"
@@ -1115,7 +1138,7 @@ for (v in 1:ncompvar){
                       , bg      = "white"
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
-                      , cex     = 0.7
+                      , cex     = 1.0
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -1174,7 +1197,7 @@ for (v in 1:ncompvar){
       for (s in 1:nsimul){
          performance[v,g,s] = weighted.mean( x = stat       [,,s       ,]
                                            , w = input.score[,,ncontrol,] 
-                                               * output.nobs[,,         ]
+                                               * nobs.good  [,,         ]
                                            , na.rm = TRUE
                                            )#end weighted.mean
       }#end for

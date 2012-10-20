@@ -201,6 +201,27 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !    Energy and water fluxes.                                                           !
+   !---------------------------------------------------------------------------------------!
+   cpatch%mean_par_l          (ico) = 0.0
+   cpatch%mean_par_l_beam     (ico) = 0.0
+   cpatch%mean_par_l_diff     (ico) = 0.0
+   cpatch%mean_rshort_l       (ico) = 0.0
+   cpatch%mean_rlong_l        (ico) = 0.0
+   cpatch%mean_sensible_lc    (ico) = 0.0
+   cpatch%mean_vapor_lc       (ico) = 0.0
+   cpatch%mean_transp         (ico) = 0.0
+   cpatch%mean_intercepted_al (ico) = 0.0
+   cpatch%mean_wshed_lg       (ico) = 0.0
+   cpatch%mean_rshort_w       (ico) = 0.0
+   cpatch%mean_rlong_w        (ico) = 0.0
+   cpatch%mean_sensible_wc    (ico) = 0.0
+   cpatch%mean_vapor_wc       (ico) = 0.0
+   cpatch%mean_intercepted_aw (ico) = 0.0
+   cpatch%mean_wshed_wg       (ico) = 0.0
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     The monthly means are allocated only when the user wants the monthly output or    !
@@ -210,6 +231,19 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_par_l            (ico) = 0.0
       cpatch%mmean_par_l_beam       (ico) = 0.0
       cpatch%mmean_par_l_diff       (ico) = 0.0
+      cpatch%mmean_rshort_l         (ico) = 0.0
+      cpatch%mmean_rlong_l          (ico) = 0.0
+      cpatch%mmean_sensible_lc      (ico) = 0.0
+      cpatch%mmean_vapor_lc         (ico) = 0.0
+      cpatch%mmean_transp           (ico) = 0.0
+      cpatch%mmean_intercepted_al   (ico) = 0.0
+      cpatch%mmean_wshed_lg         (ico) = 0.0
+      cpatch%mmean_rshort_w         (ico) = 0.0
+      cpatch%mmean_rlong_w          (ico) = 0.0
+      cpatch%mmean_sensible_wc      (ico) = 0.0
+      cpatch%mmean_vapor_wc         (ico) = 0.0
+      cpatch%mmean_intercepted_aw   (ico) = 0.0
+      cpatch%mmean_wshed_wg         (ico) = 0.0
       cpatch%mmean_gpp              (ico) = 0.0
       cpatch%mmean_nppleaf          (ico) = 0.0
       cpatch%mmean_nppfroot         (ico) = 0.0
@@ -250,6 +284,19 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_par_l            (ico) = 0.0
       cpatch%dmean_par_l_beam       (ico) = 0.0
       cpatch%dmean_par_l_diff       (ico) = 0.0
+      cpatch%dmean_rshort_l         (ico) = 0.0
+      cpatch%dmean_rlong_l          (ico) = 0.0
+      cpatch%dmean_sensible_lc      (ico) = 0.0
+      cpatch%dmean_vapor_lc         (ico) = 0.0
+      cpatch%dmean_transp           (ico) = 0.0
+      cpatch%dmean_intercepted_al   (ico) = 0.0
+      cpatch%dmean_wshed_lg         (ico) = 0.0
+      cpatch%dmean_rshort_w         (ico) = 0.0
+      cpatch%dmean_rlong_w          (ico) = 0.0
+      cpatch%dmean_sensible_wc      (ico) = 0.0
+      cpatch%dmean_vapor_wc         (ico) = 0.0
+      cpatch%dmean_intercepted_aw   (ico) = 0.0
+      cpatch%dmean_wshed_wg         (ico) = 0.0
       cpatch%dmean_gpp              (ico) = 0.0
       cpatch%dmean_nppleaf          (ico) = 0.0
       cpatch%dmean_nppfroot         (ico) = 0.0
@@ -281,6 +328,19 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%qmean_par_l            (:,ico) = 0.0
       cpatch%qmean_par_l_beam       (:,ico) = 0.0
       cpatch%qmean_par_l_diff       (:,ico) = 0.0
+      cpatch%qmean_rshort_l         (:,ico) = 0.0
+      cpatch%qmean_rlong_l          (:,ico) = 0.0
+      cpatch%qmean_sensible_lc      (:,ico) = 0.0
+      cpatch%qmean_vapor_lc         (:,ico) = 0.0
+      cpatch%qmean_transp           (:,ico) = 0.0
+      cpatch%qmean_intercepted_al   (:,ico) = 0.0
+      cpatch%qmean_wshed_lg         (:,ico) = 0.0
+      cpatch%qmean_rshort_w         (:,ico) = 0.0
+      cpatch%qmean_rlong_w          (:,ico) = 0.0
+      cpatch%qmean_sensible_wc      (:,ico) = 0.0
+      cpatch%qmean_vapor_wc         (:,ico) = 0.0
+      cpatch%qmean_intercepted_aw   (:,ico) = 0.0
+      cpatch%qmean_wshed_wg         (:,ico) = 0.0
       cpatch%qmean_gpp              (:,ico) = 0.0
       cpatch%qmean_leaf_resp        (:,ico) = 0.0
       cpatch%qmean_root_resp        (:,ico) = 0.0
@@ -368,65 +428,75 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
 
    !------ Initialise soil state variables. -----------------------------------------------!
-   if (ied_init_mode.ne.7)then
-      csite%soil_water(1:nzg,ip1:ip2)     = 0.0
+   if (ied_init_mode /= 7)then
+      csite%soil_water              (1:nzg,ip1:ip2) = 0.0
    end if
-   csite%soil_energy(1:nzg,ip1:ip2)   = 0.0
-   csite%soil_tempk(1:nzg,ip1:ip2)    = 0.0
-   csite%soil_fracliq(1:nzg,ip1:ip2)  = 0.0
-   csite%rootdense(1:nzg,ip1:ip2)  = 0.0
+   csite%soil_energy                (1:nzg,ip1:ip2) = 0.0
+   csite%soil_tempk                 (1:nzg,ip1:ip2) = 0.0
+   csite%soil_fracliq               (1:nzg,ip1:ip2) = 0.0
+   csite%rootdense                  (1:nzg,ip1:ip2) = 0.0
+   !---------------------------------------------------------------------------------------!
+
 
 
    !------ Initialize sfcwater state variables. -------------------------------------------!
-   csite%sfcwater_mass(1:nzs,ip1:ip2)     = 0.0
-   csite%sfcwater_energy(1:nzs,ip1:ip2)   = 0.0
-   csite%sfcwater_depth(1:nzs,ip1:ip2)    = 0.0
-   csite%sfcwater_tempk(1:nzs,ip1:ip2)    = 0.0
-   csite%sfcwater_fracliq(1:nzs,ip1:ip2)  = 0.0
-   csite%total_sfcw_depth(ip1:ip2)        = 0.0
-   csite%snowfac(ip1:ip2)                 = 0.0
-   csite%runoff(ip1:ip2)                  = 0.0
+   csite%sfcwater_mass              (1:nzs,ip1:ip2) = 0.0
+   csite%sfcwater_energy            (1:nzs,ip1:ip2) = 0.0
+   csite%sfcwater_depth             (1:nzs,ip1:ip2) = 0.0
+   csite%sfcwater_tempk             (1:nzs,ip1:ip2) = 0.0
+   csite%sfcwater_fracliq           (1:nzs,ip1:ip2) = 0.0
+   csite%total_sfcw_depth                 (ip1:ip2) = 0.0
+   csite%snowfac                          (ip1:ip2) = 0.0
+   csite%runoff                           (ip1:ip2) = 0.0
+   csite%rshort_s                       (:,ip1:ip2) = 0.0
+   csite%rshort_s_beam                  (:,ip1:ip2) = 0.0
+   csite%rshort_s_diffuse               (:,ip1:ip2) = 0.0
+   csite%par_s                          (:,ip1:ip2) = 0.0
+   csite%par_s_beam                     (:,ip1:ip2) = 0.0
+   csite%par_s_diffuse                  (:,ip1:ip2) = 0.0
+   csite%rlong_s                          (ip1:ip2) = 0.0
+   !------ Number of pounding/snow layers. This is an integer... --------------------------!
+   csite%nlev_sfcwater                    (ip1:ip2) = 0
+   !---------------------------------------------------------------------------------------!
 
-   csite%rshort_s(:,ip1:ip2) = 0.0
-   csite%rshort_s_beam(:,ip1:ip2) = 0.0
-   csite%rshort_s_diffuse(:,ip1:ip2) = 0.0
-   csite%nlev_sfcwater(ip1:ip2) = 0
-   
-   csite%rlong_s(ip1:ip2) = 0.0
-   
-   csite%avg_daily_temp      (ip1:ip2) = 0.0
-   csite%avg_monthly_gndwater(ip1:ip2) = 0.0
-   csite%avg_monthly_waterdef(ip1:ip2) = 0.0
 
-   csite%mean_rh(ip1:ip2) = 0.0
-   csite%mean_cwd_rh(ip1:ip2) = 0.0
-   csite%mean_nep(ip1:ip2) = 0.0
-     
-   csite%A_decomp(ip1:ip2)             = 0.0
-   csite%f_decomp(ip1:ip2)             = 0.0
-   csite%rh(ip1:ip2)                   = 0.0
-   csite%cwd_rh(ip1:ip2)               = 0.0
-   csite%plant_ag_biomass(ip1:ip2)     = 0.0
 
-   csite%mean_runoff(ip1:ip2) = 0.0
-   csite%mean_wflux(ip1:ip2) = 0.0
-   csite%mean_latflux(ip1:ip2) = 0.0
-   csite%mean_qrunoff(ip1:ip2) = 0.0
-   csite%mean_hflux(ip1:ip2) = 0.0
-   
-   csite%today_A_decomp(ip1:ip2) = 0.0
-   csite%today_Af_decomp(ip1:ip2) = 0.0
+   !------ Decomposition rates... ---------------------------------------------------------!
+   csite%A_decomp                        (ip1:ip2) = 0.0
+   csite%f_decomp                        (ip1:ip2) = 0.0
+   csite%rh                              (ip1:ip2) = 0.0
+   csite%cwd_rh                          (ip1:ip2) = 0.0
+   csite%mean_rh                         (ip1:ip2) = 0.0
+   csite%mean_cwd_rh                     (ip1:ip2) = 0.0
+   csite%mean_nep                        (ip1:ip2) = 0.0
+   csite%today_A_decomp                  (ip1:ip2) = 0.0
+   csite%today_Af_decomp                 (ip1:ip2) = 0.0
+   !---------------------------------------------------------------------------------------!
 
-   csite%par_l_max        (ip1:ip2) = 0.0
-   csite%par_l_beam_max   (ip1:ip2) = 0.0
-   csite%par_l_diffuse_max(ip1:ip2) = 0.0
 
-   csite%repro(1:n_pft,ip1:ip2) = 0.0
-   csite%A_o_max(1:n_pft,ip1:ip2) = 0.0
-   csite%A_c_max(1:n_pft,ip1:ip2) = 0.0
+   !------ Miscellaneous variables. -------------------------------------------------------!
+   csite%repro                   (1:n_pft,ip1:ip2) = 0.0
+   csite%avg_daily_temp                  (ip1:ip2) = 0.0
+   csite%avg_monthly_gndwater            (ip1:ip2) = 0.0
+   csite%avg_monthly_waterdef            (ip1:ip2) = 0.0
+   csite%plant_ag_biomass                (ip1:ip2) = 0.0
+   !---------------------------------------------------------------------------------------!
 
-   csite%htry(ip1:ip2)  = 1.0
-   csite%hprev(ip1:ip2) = 0.1
+
+   !----- Maximum light variables. --------------------------------------------------------!
+   csite%A_o_max                 (1:n_pft,ip1:ip2) = 0.0
+   csite%A_c_max                 (1:n_pft,ip1:ip2) = 0.0
+   csite%par_l_max                       (ip1:ip2) = 0.0
+   csite%par_l_beam_max                  (ip1:ip2) = 0.0
+   csite%par_l_diffuse_max               (ip1:ip2) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Current and previous time steps.  They cannot be set to zero... -----------------!
+   csite%htry                      (ip1:ip2) = 1.0
+   csite%hprev                     (ip1:ip2) = 0.1
+   !---------------------------------------------------------------------------------------!
 
    csite%co2budget_gpp             (ip1:ip2) = 0.0
    csite%co2budget_gpp_dbh       (:,ip1:ip2) = 0.0
@@ -513,6 +583,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_transp           (ip1:ip2) = 0.0
    csite%avg_evap             (ip1:ip2) = 0.0
    csite%avg_rshort_gnd       (ip1:ip2) = 0.0
+   csite%avg_par_gnd          (ip1:ip2) = 0.0
    csite%avg_rlong_gnd        (ip1:ip2) = 0.0
    csite%avg_rlongup          (ip1:ip2) = 0.0
    csite%avg_parup            (ip1:ip2) = 0.0
@@ -553,6 +624,9 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%rshort_g             (ip1:ip2) = 0.0
    csite%rshort_g_beam        (ip1:ip2) = 0.0
    csite%rshort_g_diffuse     (ip1:ip2) = 0.0
+   csite%par_g                (ip1:ip2) = 0.0
+   csite%par_g_beam           (ip1:ip2) = 0.0
+   csite%par_g_diffuse        (ip1:ip2) = 0.0
    csite%par_b                (ip1:ip2) = 0.0
    csite%par_b_beam           (ip1:ip2) = 0.0
    csite%par_b_diffuse        (ip1:ip2) = 0.0

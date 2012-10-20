@@ -138,6 +138,7 @@ subroutine ed_init_atm()
 
                !----- Initialise the ground radiation parameters. -------------------------!
                csite%rshort_g(ipa) = 0.
+               csite%par_g   (ipa) = 0.
                csite%rlong_g (ipa) = 0.
 
                csite%rough(ipa) = soil_rough

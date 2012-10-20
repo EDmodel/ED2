@@ -880,6 +880,7 @@ subroutine hybrid_timestep(cgrid)
       targetp%avg_transp             = sourcep%avg_transp
       targetp%avg_evap               = sourcep%avg_evap
       targetp%avg_rshort_gnd         = sourcep%avg_rshort_gnd
+      targetp%avg_par_gnd            = sourcep%avg_par_gnd
       targetp%avg_rlong_gnd          = sourcep%avg_rlong_gnd
       targetp%avg_sensible_lc        = sourcep%avg_sensible_lc
       targetp%avg_sensible_wc        = sourcep%avg_sensible_wc
@@ -897,6 +898,19 @@ subroutine hybrid_timestep(cgrid)
          targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)
          targetp%avg_transloss(k)   = sourcep%avg_transloss(k)
       end do
+
+
+      do k=1,cpatch%ncohorts
+         targetp%cav_sensible_lc    (k) = sourcep%cav_sensible_lc   (k)
+         targetp%cav_sensible_wc    (k) = sourcep%cav_sensible_wc   (k)
+         targetp%cav_vapor_lc       (k) = sourcep%cav_vapor_lc      (k)
+         targetp%cav_vapor_wc       (k) = sourcep%cav_vapor_wc      (k)
+         targetp%cav_transp         (k) = sourcep%cav_transp        (k)
+         targetp%cav_intercepted_al (k) = sourcep%cav_intercepted_al(k)
+         targetp%cav_intercepted_aw (k) = sourcep%cav_intercepted_aw(k)
+         targetp%cav_wshed_lg       (k) = sourcep%cav_wshed_lg      (k)
+         targetp%cav_wshed_wg       (k) = sourcep%cav_wshed_wg      (k)
+      end do
    end if
 
    if (print_detailed) then
@@ -912,6 +926,7 @@ subroutine hybrid_timestep(cgrid)
       targetp%flx_transp             = sourcep%flx_transp
       targetp%flx_evap               = sourcep%flx_evap
       targetp%flx_rshort_gnd         = sourcep%flx_rshort_gnd
+      targetp%flx_par_gnd            = sourcep%flx_par_gnd
       targetp%flx_rlong_gnd          = sourcep%flx_rlong_gnd
       targetp%flx_sensible_lc        = sourcep%flx_sensible_lc
       targetp%flx_sensible_wc        = sourcep%flx_sensible_wc
@@ -1125,6 +1140,7 @@ subroutine hybrid_timestep(cgrid)
       rkp%avg_drainage       = rkp%avg_drainage       + fac * inc%avg_drainage
       rkp%avg_drainage_heat  = rkp%avg_drainage_heat  + fac * inc%avg_drainage_heat
       rkp%avg_rshort_gnd     = rkp%avg_rshort_gnd     + fac * inc%avg_rshort_gnd
+      rkp%avg_par_gnd        = rkp%avg_par_gnd        + fac * inc%avg_par_gnd
       rkp%avg_rlong_gnd      = rkp%avg_rlong_gnd      + fac * inc%avg_rlong_gnd
       rkp%avg_sensible_lc    = rkp%avg_sensible_lc    + fac * inc%avg_sensible_lc
       rkp%avg_sensible_wc    = rkp%avg_sensible_wc    + fac * inc%avg_sensible_wc
@@ -1139,6 +1155,28 @@ subroutine hybrid_timestep(cgrid)
          rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
          rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
          rkp%avg_transloss(k)    = rkp%avg_transloss(k)    + fac * inc%avg_transloss(k)  
+      end do
+
+
+      do k=1,cpatch%ncohorts
+         rkp%cav_sensible_lc   (k) =       rkp%cav_sensible_lc   (k)                       &
+                                   + fac * inc%cav_sensible_lc   (k)
+         rkp%cav_sensible_wc   (k) =       rkp%cav_sensible_wc   (k)                       &
+                                   + fac * inc%cav_sensible_wc   (k)
+         rkp%cav_vapor_lc      (k) =       rkp%cav_vapor_lc      (k)                       &
+                                   + fac * inc%cav_vapor_lc      (k)
+         rkp%cav_vapor_wc      (k) =       rkp%cav_vapor_wc      (k)                       &
+                                   + fac * inc%cav_vapor_wc      (k)
+         rkp%cav_transp        (k) =       rkp%cav_transp        (k)                       &
+                                   + fac * inc%cav_transp        (k)
+         rkp%cav_intercepted_al(k) =       rkp%cav_intercepted_al(k)                       &
+                                   + fac * inc%cav_intercepted_al(k)
+         rkp%cav_intercepted_aw(k) =       rkp%cav_intercepted_aw(k)                       &
+                                   + fac * inc%cav_intercepted_aw(k)
+         rkp%cav_wshed_lg      (k) =       rkp%cav_wshed_lg      (k)                       &
+                                   + fac * inc%cav_wshed_lg      (k)
+         rkp%cav_wshed_wg      (k) =       rkp%cav_wshed_wg      (k)                       &
+                                   + fac * inc%cav_wshed_wg      (k)
       end do
 
    end if
@@ -1164,6 +1202,7 @@ subroutine hybrid_timestep(cgrid)
       rkp%flx_drainage       = rkp%flx_drainage       + fac * inc%avg_drainage
       rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
       rkp%flx_rshort_gnd     = rkp%flx_rshort_gnd     + fac * inc%avg_rshort_gnd
+      rkp%flx_par_gnd        = rkp%flx_par_gnd        + fac * inc%avg_par_gnd
       rkp%flx_rlong_gnd      = rkp%flx_rlong_gnd      + fac * inc%avg_rlong_gnd
       rkp%flx_sensible_lc    = rkp%flx_sensible_lc    + fac * inc%avg_sensible_lc
       rkp%flx_sensible_wc    = rkp%flx_sensible_wc    + fac * inc%avg_sensible_wc

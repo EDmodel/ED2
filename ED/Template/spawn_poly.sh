@@ -703,12 +703,12 @@ do
          whichscen='unif'
       elif [ ${iscenario} -gt 1 ]
       then
-         let wetter=100+${iscenario}
-         whichscen='wet'`echo ${wetter} | awk '{print substr($1,2,2)}'`
+         let wetter=1000+${iscenario}
+         whichscen='w'`echo ${wetter} | awk '{print substr($1,2,3)}'`
       elif [ ${iscenario} -lt -1 ]
       then
-         let drier=100-${iscenario}
-         whichscen='dry'`echo ${drier} | awk '{print substr($1,2,2)}'`
+         let drier=1000-${iscenario}
+         whichscen='d'`echo ${drier} | awk '{print substr($1,2,3)}'`
       fi
       fullscen="${scenariopath}/${whichscen}"
       #------------------------------------------------------------------------------------#

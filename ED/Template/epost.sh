@@ -5,7 +5,7 @@ diskthere='/n/moorcroftfs2'           # ! Disk where the output files are
 thisqueue='moorcroft_6100b'           # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot='/n/moorcroftfs2/mlongo/diary/final_ed/biophysics/figures/short_term/size+diversity+canturb'
+outroot='/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX'
 submit='y'       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
 useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)

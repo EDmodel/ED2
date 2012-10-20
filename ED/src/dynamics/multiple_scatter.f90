@@ -200,9 +200,10 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
    r         (0) = 1.d0
    r    (ncoh+1) = 0.d0
    epsil     (0) = grnd_emis
-   omr(:)      = 1.d0 - r    (:)
-   omt(:)      = 1.d0 - tau  (:)
-   ome(:)      = 1.d0 - epsil(:)
+   epsil(ncoh+1) = 0.d0
+   omr(:)        = 1.d0 - r    (:)
+   omt(:)        = 1.d0 - tau  (:)
+   ome(:)        = 1.d0 - epsil(:)
    !---------------------------------------------------------------------------------------!
 
 

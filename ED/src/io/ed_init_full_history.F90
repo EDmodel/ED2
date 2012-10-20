@@ -821,6 +821,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        call hdf_getslab_r(cgrid%dmean_rshort_diff  (ipy:ipy) ,'DMEAN_RSHORT_DIFF   '       &
        ,dsetrank,iparallel,.false.,foundvar)
   
+  if (associated(cgrid%dmean_par          ))                                               &
+       call hdf_getslab_r(cgrid%dmean_par          (ipy:ipy) ,'DMEAN_PAR           '       &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%dmean_par_diff     ))                                               &
+       call hdf_getslab_r(cgrid%dmean_par_diff     (ipy:ipy) ,'DMEAN_PAR_DIFF      '       &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
   if (associated(cgrid%dmean_rlong       ))                                                &
        call hdf_getslab_r(cgrid%dmean_rlong       (ipy:ipy) ,'DMEAN_RLONG        '         &
        ,dsetrank,iparallel,.false.,foundvar)
@@ -847,6 +855,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   
   if (associated(cgrid%dmean_rshort_gnd  ))                                                &
        call hdf_getslab_r(cgrid%dmean_rshort_gnd  (ipy:ipy) ,'DMEAN_RSHORT_GND     '       &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%dmean_par_gnd     ))                                                &
+       call hdf_getslab_r(cgrid%dmean_par_gnd     (ipy:ipy) ,'DMEAN_PAR_GND        '       &
        ,dsetrank,iparallel,.false.,foundvar)
   
   if (associated(cgrid%dmean_rlong_gnd   ))                                                &
@@ -1110,6 +1122,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
        call hdf_getslab_r(cgrid%mmean_rshort_diff  (ipy:ipy) ,'MMEAN_RSHORT_DIFF   '       &
        ,dsetrank,iparallel,.false.,foundvar)
 
+  if (associated(cgrid%mmean_par          ))                                               &
+       call hdf_getslab_r(cgrid%mmean_par          (ipy:ipy) ,'MMEAN_PAR           '       &
+       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmean_par_diff  ))                                                  &
+       call hdf_getslab_r(cgrid%mmean_par_diff     (ipy:ipy) ,'MMEAN_PAR_DIFF      '       &
+       ,dsetrank,iparallel,.false.,foundvar)
+
   if (associated(cgrid%mmean_rlong       ))                                                &
        call hdf_getslab_r(cgrid%mmean_rlong       (ipy:ipy) ,'MMEAN_RLONG        '         &
        ,dsetrank,iparallel,.false.,foundvar)
@@ -1136,6 +1156,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
   if (associated(cgrid%mmean_rshort_gnd   ))                                               &
        call hdf_getslab_r(cgrid%mmean_rshort_gnd   (ipy:ipy) ,'MMEAN_RSHORT_GND    '       &
+       ,dsetrank,iparallel,.false.,foundvar)
+
+  if (associated(cgrid%mmean_par_gnd      ))                                               &
+       call hdf_getslab_r(cgrid%mmean_par_gnd      (ipy:ipy) ,'MMEAN_PAR_GND       '       &
        ,dsetrank,iparallel,.false.,foundvar)
   
   if (associated(cgrid%mmean_rlong_gnd   ))                                                &
@@ -1565,6 +1589,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%qmean_rshort_diff  (:,ipy)   ,'QMEAN_RSHORT_DIFF   '         &
        ,dsetrank,iparallel,.false.,foundvar)
   
+  if (associated(cgrid%qmean_par          ))                                               &
+     call hdf_getslab_r(cgrid%qmean_par          (:,ipy)   ,'QMEAN_PAR           '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
+  if (associated(cgrid%qmean_par_diff     ))                                               &
+     call hdf_getslab_r(cgrid%qmean_par_diff     (:,ipy)   ,'QMEAN_PAR_DIFF      '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+  
   if (associated(cgrid%qmean_rlong       ))                                                &
      call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '           &
        ,dsetrank,iparallel,.false.,foundvar)
@@ -1591,6 +1623,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
  
   if (associated(cgrid%qmean_rshort_gnd   ))                                               &
      call hdf_getslab_r(cgrid%qmean_rshort_gnd   (:,ipy)   ,'QMEAN_RSHORT_GND    '         &
+       ,dsetrank,iparallel,.false.,foundvar)
+ 
+  if (associated(cgrid%qmean_par_gnd      ))                                               &
+     call hdf_getslab_r(cgrid%qmean_par_gnd      (:,ipy)   ,'QMEAN_PAR_GND       '         &
        ,dsetrank,iparallel,.false.,foundvar)
   
   if (associated(cgrid%qmean_rlong_gnd   ))                                                &
@@ -2339,6 +2375,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rshort_g,'RSHORT_G ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%rshort_g_beam,'RSHORT_G_BEAM ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%rshort_g_diffuse,'RSHORT_G_DIFFUSE ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%par_g,'PAR_G ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%par_g_beam,'PAR_G_BEAM ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%par_g_diffuse,'PAR_G_DIFFUSE ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%par_b,'PAR_B ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%par_b_beam,'PAR_B_BEAM ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%par_b_diffuse,'PAR_B_DIFFUSE ',dsetrank,iparallel,.true.,foundvar)
@@ -2369,11 +2408,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rh,'RH ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%cwd_rh,'CWD_RH ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%plant_ag_biomass,'PLANT_AG_BIOMASS ',dsetrank,iparallel,.true.,foundvar)
-   call hdf_getslab_r(csite%mean_wflux,'MEAN_WFLUX ',dsetrank,iparallel,.true.,foundvar)
-   call hdf_getslab_r(csite%mean_latflux,'MEAN_LATFLUX ',dsetrank,iparallel,.true.,foundvar)
-   call hdf_getslab_r(csite%mean_hflux,'MEAN_HFLUX ',dsetrank,iparallel,.true.,foundvar)
-   call hdf_getslab_r(csite%mean_runoff,'MEAN_RUNOFF ',dsetrank,iparallel,.true.,foundvar)
-   call hdf_getslab_r(csite%mean_qrunoff,'MEAN_QRUNOFF ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%htry,'HTRY ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%hprev,'HPREV ',dsetrank,iparallel,.false.,foundvar)
 
@@ -2539,6 +2573,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rshort_s,'RSHORT_S ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%rshort_s_beam,'RSHORT_S_BEAM ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%rshort_s_diffuse,'RSHORT_S_DIFFUSE ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%par_s,'PAR_S ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%par_s_beam,'PAR_S_BEAM ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(csite%par_s_diffuse,'PAR_S_DIFFUSE ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%sfcwater_tempk,'SFCWATER_TEMPK ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(csite%sfcwater_fracliq,'SFCWATER_FRACLIQ ',dsetrank,iparallel,.true.,foundvar)
    
@@ -2809,7 +2846,42 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%today_leaf_resp,'TODAY_LEAF_RESP ',dsetrank,iparallel,.true.,foundvar)
      call hdf_getslab_r(cpatch%today_root_resp,'TODAY_ROOT_RESP ',dsetrank,iparallel,.true.,foundvar)
      call hdf_getslab_r(cpatch%today_gpp,'TODAY_GPP ',dsetrank,iparallel,.true.,foundvar)
-     
+
+
+     call hdf_getslab_r(cpatch%mean_par_l         ,'MEAN_PAR_L '                           &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_par_l_beam    ,'MEAN_PAR_L_BEAM '                      &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_par_l_diff    ,'MEAN_PAR_L_DIFF '                      &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_rshort_l      ,'MEAN_RSHORT_L '                        &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_rlong_l       ,'MEAN_RLONG_L '                         &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_sensible_lc   ,'MEAN_SENSIBLE_LC '                     &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_vapor_lc      ,'MEAN_VAPOR_LC '                        &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_transp        ,'MEAN_TRANSP '                          &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_intercepted_al,'MEAN_INTERCEPTED_AL '                  &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_wshed_lg      ,'MEAN_WSHED_LG '                        &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_rshort_w      ,'MEAN_RSHORT_W '                        &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_rlong_w       ,'MEAN_RLONG_W '                         &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_sensible_wc   ,'MEAN_SENSIBLE_WC '                     &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_vapor_wc      ,'MEAN_VAPOR_WC '                        &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_intercepted_aw,'MEAN_INTERCEPTED_AW '                  &
+                       ,dsetrank,iparallel,.true.,foundvar)
+     call hdf_getslab_r(cpatch%mean_wshed_wg      ,'MEAN_WSHED_WG '                        &
+                       ,dsetrank,iparallel,.true.,foundvar)
+
+
      if (associated(cpatch%today_nppleaf            ))                                          &
          call hdf_getslab_r(cpatch%today_nppleaf ,'TODAY_NPPLEAF ',dsetrank,iparallel,.false.,foundvar)
      if (associated(cpatch%today_nppfroot           ))                                          &
@@ -2949,19 +3021,105 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%dmean_light_level_diff,'DMEAN_LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.false.,foundvar)
      if (associated(cpatch%mmean_light_level_diff       )) &
      call hdf_getslab_r(cpatch%mmean_light_level_diff,'MMEAN_LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.false.,foundvar)
-     if (associated(cpatch%dmean_par_l       )) &
-     call hdf_getslab_r(cpatch%dmean_par_l,'DMEAN_PAR_L ',dsetrank,iparallel,.false.,foundvar)
 
-     if (associated(cpatch%dmean_par_l_beam       )) &
-     call hdf_getslab_r(cpatch%dmean_par_l_beam,'DMEAN_PAR_L_BEAM ',dsetrank,iparallel,.false.,foundvar)
-     if (associated(cpatch%dmean_par_l_diff       )) &
-     call hdf_getslab_r(cpatch%dmean_par_l_diff,'DMEAN_PAR_L_DIFF ',dsetrank,iparallel,.false.,foundvar)
-     if (associated(cpatch%mmean_par_l       )) &
-     call hdf_getslab_r(cpatch%mmean_par_l,'MMEAN_PAR_L ',dsetrank,iparallel,.false.,foundvar)
-     if (associated(cpatch%mmean_par_l_beam       )) &
-     call hdf_getslab_r(cpatch%mmean_par_l_beam,'MMEAN_PAR_L_BEAM ',dsetrank,iparallel,.false.,foundvar)
-     if (associated(cpatch%mmean_par_l_diff       )) &
-     call hdf_getslab_r(cpatch%mmean_par_l_diff,'MMEAN_PAR_L_DIFF ',dsetrank,iparallel,.false.,foundvar)
+
+     if (associated(cpatch%dmean_par_l         ))                                          &
+        call hdf_getslab_r(cpatch%dmean_par_l         ,'DMEAN_PAR_L '                      &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_par_l_beam    ))                                          &
+        call hdf_getslab_r(cpatch%dmean_par_l_beam    ,'DMEAN_PAR_L_BEAM '                 &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_par_l_diff    ))                                          &
+        call hdf_getslab_r(cpatch%dmean_par_l_diff    ,'DMEAN_PAR_L_DIFF '                 &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_rshort_l      ))                                          &
+        call hdf_getslab_r(cpatch%dmean_rshort_l      ,'DMEAN_RSHORT_L '                   &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_rlong_l       ))                                          &
+        call hdf_getslab_r(cpatch%dmean_rlong_l       ,'DMEAN_RLONG_L '                    &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_sensible_lc   ))                                          &
+        call hdf_getslab_r(cpatch%dmean_sensible_lc   ,'DMEAN_SENSIBLE_LC_CO '             &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_vapor_lc      ))                                          &
+        call hdf_getslab_r(cpatch%dmean_vapor_lc      ,'DMEAN_VAPOR_LC_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_transp        ))                                          &
+        call hdf_getslab_r(cpatch%dmean_transp        ,'DMEAN_TRANSP_CO '                  &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_intercepted_al))                                          &
+        call hdf_getslab_r(cpatch%dmean_intercepted_al,'DMEAN_INTERCEPTED_AL_CO '          &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_wshed_lg      ))                                          &
+        call hdf_getslab_r(cpatch%dmean_wshed_lg      ,'DMEAN_WSHED_LG_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_rshort_w      ))                                          &
+        call hdf_getslab_r(cpatch%dmean_rshort_w      ,'DMEAN_RSHORT_W '                   &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_rlong_w       ))                                          &
+        call hdf_getslab_r(cpatch%dmean_rlong_w       ,'DMEAN_RLONG_W '                    &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_sensible_wc   ))                                          &
+        call hdf_getslab_r(cpatch%dmean_sensible_wc   ,'DMEAN_SENSIBLE_WC_CO '             &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_vapor_wc      ))                                          &
+        call hdf_getslab_r(cpatch%dmean_vapor_wc      ,'DMEAN_VAPOR_WC_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_intercepted_aw))                                          &
+        call hdf_getslab_r(cpatch%dmean_intercepted_aw,'DMEAN_INTERCEPTED_AW_CO '          &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%dmean_wshed_wg      ))                                          &
+        call hdf_getslab_r(cpatch%dmean_wshed_wg      ,'DMEAN_WSHED_WG_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_par_l         ))                                          &
+        call hdf_getslab_r(cpatch%mmean_par_l         ,'MMEAN_PAR_L '                      &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_par_l_beam    ))                                          &
+        call hdf_getslab_r(cpatch%mmean_par_l_beam    ,'MMEAN_PAR_L_BEAM '                 &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_par_l_diff    ))                                          &
+        call hdf_getslab_r(cpatch%mmean_par_l_diff    ,'MMEAN_PAR_L_DIFF '                 &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_rshort_l      ))                                          &
+        call hdf_getslab_r(cpatch%mmean_rshort_l      ,'MMEAN_RSHORT_L '                   &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_rlong_l       ))                                          &
+        call hdf_getslab_r(cpatch%mmean_rlong_l       ,'MMEAN_RLONG_L '                    &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_sensible_lc   ))                                          &
+        call hdf_getslab_r(cpatch%mmean_sensible_lc   ,'MMEAN_SENSIBLE_LC_CO '             &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_vapor_lc      ))                                          &
+        call hdf_getslab_r(cpatch%mmean_vapor_lc      ,'MMEAN_VAPOR_LC_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_transp        ))                                          &
+        call hdf_getslab_r(cpatch%mmean_transp        ,'MMEAN_TRANSP_CO '                  &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_intercepted_al))                                          &
+        call hdf_getslab_r(cpatch%mmean_intercepted_al,'MMEAN_INTERCEPTED_AL_CO '          &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_wshed_lg      ))                                          &
+        call hdf_getslab_r(cpatch%mmean_wshed_lg      ,'MMEAN_WSHED_LG_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_rshort_w      ))                                          &
+        call hdf_getslab_r(cpatch%mmean_rshort_w      ,'MMEAN_RSHORT_W '                   &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_rlong_w       ))                                          &
+        call hdf_getslab_r(cpatch%mmean_rlong_w       ,'MMEAN_RLONG_W '                    &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_sensible_wc   ))                                          &
+        call hdf_getslab_r(cpatch%mmean_sensible_wc   ,'MMEAN_SENSIBLE_WC_CO '             &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_vapor_wc      ))                                          &
+        call hdf_getslab_r(cpatch%mmean_vapor_wc      ,'MMEAN_VAPOR_WC_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_intercepted_aw))                                          &
+        call hdf_getslab_r(cpatch%mmean_intercepted_aw,'MMEAN_INTERCEPTED_AW_CO '          &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%mmean_wshed_wg      ))                                          &
+        call hdf_getslab_r(cpatch%mmean_wshed_wg      ,'MMEAN_WSHED_WG_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+
      call hdf_getslab_r(cpatch%Psi_open,'PSI_OPEN ',dsetrank,iparallel,.true.,foundvar)
      call hdf_getslab_i(cpatch%krdepth,'KRDEPTH ',dsetrank,iparallel,.true.,foundvar)
      call hdf_getslab_i(cpatch%first_census,'FIRST_CENSUS ',dsetrank,iparallel,.true.,foundvar)
@@ -3137,8 +3295,55 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      if (associated(cpatch%qmean_water_supply))                                            &
         call hdf_getslab_r(cpatch%qmean_water_supply,'QMEAN_WATER_SUPPLY_CO '              &
                           ,dsetrank,iparallel,.true.,foundvar)
-
-endif
+     if (associated(cpatch%qmean_par_l         ))                                          &
+        call hdf_getslab_r(cpatch%qmean_par_l         ,'QMEAN_PAR_L '                      &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_par_l_beam    ))                                          &
+        call hdf_getslab_r(cpatch%qmean_par_l_beam    ,'QMEAN_PAR_L_BEAM '                 &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_par_l_diff    ))                                          &
+        call hdf_getslab_r(cpatch%qmean_par_l_diff    ,'QMEAN_PAR_L_DIFF '                 &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_rshort_l      ))                                          &
+        call hdf_getslab_r(cpatch%qmean_rshort_l      ,'QMEAN_RSHORT_L '                   &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_rlong_l       ))                                          &
+        call hdf_getslab_r(cpatch%qmean_rlong_l       ,'QMEAN_RLONG_L '                    &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_sensible_lc   ))                                          &
+        call hdf_getslab_r(cpatch%qmean_sensible_lc   ,'QMEAN_SENSIBLE_LC_CO '             &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_vapor_lc      ))                                          &
+        call hdf_getslab_r(cpatch%qmean_vapor_lc      ,'QMEAN_VAPOR_LC_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_transp        ))                                          &
+        call hdf_getslab_r(cpatch%qmean_transp        ,'QMEAN_TRANSP_CO '                  &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_intercepted_al))                                          &
+        call hdf_getslab_r(cpatch%qmean_intercepted_al,'QMEAN_INTERCEPTED_AL_CO '          &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_wshed_lg      ))                                          &
+        call hdf_getslab_r(cpatch%qmean_wshed_lg      ,'QMEAN_WSHED_LG_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_rshort_w      ))                                          &
+        call hdf_getslab_r(cpatch%qmean_rshort_w      ,'QMEAN_RSHORT_W '                   &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_rlong_w       ))                                          &
+        call hdf_getslab_r(cpatch%qmean_rlong_w       ,'QMEAN_RLONG_W '                    &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_sensible_wc   ))                                          &
+        call hdf_getslab_r(cpatch%qmean_sensible_wc   ,'QMEAN_SENSIBLE_WC_CO '             &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_vapor_wc      ))                                          &
+        call hdf_getslab_r(cpatch%qmean_vapor_wc      ,'QMEAN_VAPOR_WC_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_intercepted_aw))                                          &
+        call hdf_getslab_r(cpatch%qmean_intercepted_aw,'QMEAN_INTERCEPTED_AW_CO '          &
+                          ,dsetrank,iparallel,.false.,foundvar)
+     if (associated(cpatch%qmean_wshed_wg      ))                                          &
+        call hdf_getslab_r(cpatch%qmean_wshed_wg      ,'QMEAN_WSHED_WG_CO '                &
+                          ,dsetrank,iparallel,.false.,foundvar)
+  end if
 
 
   return
