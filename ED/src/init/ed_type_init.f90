@@ -37,28 +37,29 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
 
 
-   cpatch%mean_gpp(ico)          = 0.0
-   cpatch%mean_leaf_resp(ico)    = 0.0
-   cpatch%mean_root_resp(ico)    = 0.0
-   cpatch%mean_growth_resp(ico)  = 0.0
-   cpatch%mean_storage_resp(ico) = 0.0
-   cpatch%mean_vleaf_resp(ico)   = 0.0
-   cpatch%today_leaf_resp(ico)   = 0.0
-   cpatch%today_root_resp(ico)   = 0.0
-   cpatch%today_gpp(ico)         = 0.0
-   cpatch%today_nppleaf(ico)     = 0.0
-   cpatch%today_nppfroot(ico)    = 0.0
-   cpatch%today_nppsapwood(ico)  = 0.0
-   cpatch%today_nppcroot(ico)    = 0.0
-   cpatch%today_nppseeds(ico)    = 0.0
-   cpatch%today_nppwood(ico)     = 0.0
-   cpatch%today_nppdaily(ico)    = 0.0
-   cpatch%today_gpp_pot(ico)     = 0.0
-   cpatch%today_gpp_max(ico)     = 0.0
+   cpatch%mean_gpp           (ico) = 0.0
+   cpatch%mean_leaf_resp     (ico) = 0.0
+   cpatch%mean_root_resp     (ico) = 0.0
+   cpatch%mean_growth_resp   (ico) = 0.0
+   cpatch%mean_storage_resp  (ico) = 0.0
+   cpatch%mean_vleaf_resp    (ico) = 0.0
+   cpatch%today_leaf_resp    (ico) = 0.0
+   cpatch%today_root_resp    (ico) = 0.0
+   cpatch%today_gpp          (ico) = 0.0
+   cpatch%today_nppleaf      (ico) = 0.0
+   cpatch%today_nppfroot     (ico) = 0.0
+   cpatch%today_nppsapwood   (ico) = 0.0
+   cpatch%today_nppcroot     (ico) = 0.0
+   cpatch%today_nppseeds     (ico) = 0.0
+   cpatch%today_nppwood      (ico) = 0.0
+   cpatch%today_nppdaily     (ico) = 0.0
+   cpatch%today_gpp_pot      (ico) = 0.0
+   cpatch%today_gpp_lightmax (ico) = 0.0
+   cpatch%today_gpp_moistmax (ico) = 0.0
 
-   cpatch%light_level     (ico)  = 0.0
-   cpatch%light_level_beam(ico)  = 0.0
-   cpatch%light_level_diff(ico)  = 0.0
+   cpatch%light_level        (ico) = 0.0
+   cpatch%light_level_beam   (ico) = 0.0
+   cpatch%light_level_diff   (ico) = 0.0
 
    cpatch%gpp(ico)                 = 0.0
    cpatch%leaf_respiration(ico)    = 0.0
@@ -78,49 +79,53 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
 
 
-   cpatch%monthly_dndt(ico)     = 0.0
-   cpatch%mort_rate(:,ico)      = 0.0
+   cpatch%monthly_dndt          (ico) = 0.0
+   cpatch%monthly_dlnndt        (ico) = 0.0
+   cpatch%mort_rate           (:,ico) = 0.0
 
-   cpatch%dagb_dt(ico)          = 0.0
-   cpatch%dba_dt(ico)           = 0.0
-   cpatch%ddbh_dt(ico)          = 0.0
+   cpatch%dagb_dt               (ico) = 0.0
+   cpatch%dlnagb_dt             (ico) = 0.0
+   cpatch%dba_dt                (ico) = 0.0
+   cpatch%dlnba_dt              (ico) = 0.0
+   cpatch%ddbh_dt               (ico) = 0.0
+   cpatch%dlndbh_dt             (ico) = 0.0
 
 
-   cpatch%par_l(ico)            = 0.0
-   cpatch%par_l_beam(ico)       = 0.0
-   cpatch%par_l_diffuse(ico)    = 0.0
-   cpatch%rshort_l(ico)         = 0.0
-   cpatch%rshort_l_beam(ico)    = 0.0
-   cpatch%rshort_l_diffuse(ico) = 0.0
-   cpatch%rlong_l(ico)          = 0.0
-   cpatch%rlong_l_surf(ico)     = 0.0
-   cpatch%rlong_l_incid(ico)    = 0.0
-   cpatch%rshort_w(ico)         = 0.0
-   cpatch%rshort_w_beam(ico)    = 0.0
-   cpatch%rshort_w_diffuse(ico) = 0.0
-   cpatch%rlong_w(ico)          = 0.0
-   cpatch%rlong_w_surf(ico)     = 0.0
-   cpatch%rlong_w_incid(ico)    = 0.0
+   cpatch%par_l                 (ico) = 0.0
+   cpatch%par_l_beam            (ico) = 0.0
+   cpatch%par_l_diffuse         (ico) = 0.0
+   cpatch%rshort_l              (ico) = 0.0
+   cpatch%rshort_l_beam         (ico) = 0.0
+   cpatch%rshort_l_diffuse      (ico) = 0.0
+   cpatch%rlong_l               (ico) = 0.0
+   cpatch%rlong_l_surf          (ico) = 0.0
+   cpatch%rlong_l_incid         (ico) = 0.0
+   cpatch%rshort_w              (ico) = 0.0
+   cpatch%rshort_w_beam         (ico) = 0.0
+   cpatch%rshort_w_diffuse      (ico) = 0.0
+   cpatch%rlong_w               (ico) = 0.0
+   cpatch%rlong_w_surf          (ico) = 0.0
+   cpatch%rlong_w_incid         (ico) = 0.0
 
-   cpatch%leaf_gbh(ico)             = 0.0
-   cpatch%leaf_gbw(ico)             = 0.0
-   cpatch%wood_gbh(ico)             = 0.0
-   cpatch%wood_gbw(ico)             = 0.0
-   cpatch%A_open(ico)               = 0.0
-   cpatch%A_closed(ico)             = 0.0
-   cpatch%psi_open(ico)             = 0.0
-   cpatch%psi_closed(ico)           = 0.0
-   cpatch%water_supply(ico)         = 0.0
-   cpatch%gsw_open(ico)             = 0.0
-   cpatch%gsw_closed(ico)           = 0.0
-   cpatch%stomatal_conductance(ico) = 0.0
+   cpatch%leaf_gbh              (ico) = 0.0
+   cpatch%leaf_gbw              (ico) = 0.0
+   cpatch%wood_gbh              (ico) = 0.0
+   cpatch%wood_gbw              (ico) = 0.0
+   cpatch%A_open                (ico) = 0.0
+   cpatch%A_closed              (ico) = 0.0
+   cpatch%psi_open              (ico) = 0.0
+   cpatch%psi_closed            (ico) = 0.0
+   cpatch%water_supply          (ico) = 0.0
+   cpatch%gsw_open              (ico) = 0.0
+   cpatch%gsw_closed            (ico) = 0.0
+   cpatch%stomatal_conductance  (ico) = 0.0
        
        
-   cpatch%leaf_maintenance   (ico) = 0.0
-   cpatch%root_maintenance   (ico) = 0.0
-   cpatch%leaf_drop          (ico) = 0.0
-   cpatch%paw_avg            (ico) = 0.0
-   cpatch%elongf             (ico) = 0.0
+   cpatch%leaf_maintenance      (ico) = 0.0
+   cpatch%root_maintenance      (ico) = 0.0
+   cpatch%leaf_drop             (ico) = 0.0
+   cpatch%paw_avg               (ico) = 0.0
+   cpatch%elongf                (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -130,11 +135,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! element (current month integration) must be set to 0, though, otherwise the first     !
    ! month carbon balance will be incorrect.                                               !
    !---------------------------------------------------------------------------------------!
-   cpatch%cb(1:12,ico)     = 1.0
-   cpatch%cb_max(1:12,ico) = 1.0
-   cpatch%cbr_bar(ico)     = 1.0
-   cpatch%cb(13,ico)       = 0.0
-   cpatch%cb_max(13,ico)   = 0.0
+   cpatch%cb               (1:12,ico) = 1.0
+   cpatch%cb_lightmax      (1:12,ico) = 1.0
+   cpatch%cb_moistmax      (1:12,ico) = 1.0
+   cpatch%cbr_bar               (ico) = 1.0
+   cpatch%cb                 (13,ico) = 0.0
+   cpatch%cb_lightmax        (13,ico) = 0.0
+   cpatch%cb_moistmax        (13,ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -149,9 +156,14 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
 
    !---------------------------------------------------------------------------------------!
-   !       First census must be 1.  Not sure what this variable does, though.              !
+   !       First census must be 1.  Not sure what this variable does, though.  Recruit_dbh !
+   ! is a diagnostic variable that tells the cohort status regarding DBH recruitment, and  !
+   ! census_status is similar to recruit_dbh, except that is updated only when there is a  !
+   ! census.                                                                               !
    !---------------------------------------------------------------------------------------!
-   cpatch%first_census(ico) = 1
+   cpatch%first_census  (ico) = 1
+   cpatch%recruit_dbh   (ico) = 0
+   cpatch%census_status (ico) = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -163,6 +175,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%leaf_hcap(ico)        = 0.
    cpatch%leaf_temp(ico)        = 0.
    cpatch%leaf_temp_pv(ico)     = 0.
+   cpatch%leaf_vpdef(ico)       = 0.
    cpatch%leaf_water(ico)       = 0.
    cpatch%leaf_fliq(ico)        = 0.
    cpatch%wood_energy(ico)      = 0.
@@ -339,7 +352,8 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
                              , minimum_canopy_depth ! ! intent(in)
    use ed_misc_coms   , only : imoutput             & ! intent(in)
                              , idoutput             & ! intent(in)
-                             , iqoutput             ! ! intent(in)
+                             , iqoutput             & ! intent(in)
+                             , ied_init_mode   
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)   , target     :: csite
@@ -354,7 +368,9 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
 
    !------ Initialise soil state variables. -----------------------------------------------!
-   csite%soil_water(1:nzg,ip1:ip2)     = 0.0
+   if (ied_init_mode.ne.7)then
+      csite%soil_water(1:nzg,ip1:ip2)     = 0.0
+   end if
    csite%soil_energy(1:nzg,ip1:ip2)   = 0.0
    csite%soil_tempk(1:nzg,ip1:ip2)    = 0.0
    csite%soil_fracliq(1:nzg,ip1:ip2)  = 0.0
@@ -380,8 +396,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    
    csite%avg_daily_temp      (ip1:ip2) = 0.0
    csite%avg_monthly_gndwater(ip1:ip2) = 0.0
+   csite%avg_monthly_waterdef(ip1:ip2) = 0.0
 
    csite%mean_rh(ip1:ip2) = 0.0
+   csite%mean_cwd_rh(ip1:ip2) = 0.0
    csite%mean_nep(ip1:ip2) = 0.0
      
    csite%A_decomp(ip1:ip2)             = 0.0
@@ -413,6 +431,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%co2budget_gpp             (ip1:ip2) = 0.0
    csite%co2budget_gpp_dbh       (:,ip1:ip2) = 0.0
    csite%co2budget_rh              (ip1:ip2) = 0.0
+   csite%co2budget_cwd_rh          (ip1:ip2) = 0.0
    csite%co2budget_plresp          (ip1:ip2) = 0.0
    csite%co2budget_initialstorage  (ip1:ip2) = 0.0
    csite%co2budget_loss2atm        (ip1:ip2) = 0.0
@@ -441,6 +460,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%dmean_A_decomp        (ip1:ip2) = 0.0
       csite%dmean_Af_decomp       (ip1:ip2) = 0.0
       csite%dmean_rh              (ip1:ip2) = 0.0
+      csite%dmean_cwd_rh          (ip1:ip2) = 0.0
       csite%dmean_co2_residual    (ip1:ip2) = 0.0
       csite%dmean_energy_residual (ip1:ip2) = 0.0
       csite%dmean_water_residual  (ip1:ip2) = 0.0
@@ -454,6 +474,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
       csite%mmean_A_decomp        (ip1:ip2) = 0.0
       csite%mmean_Af_decomp       (ip1:ip2) = 0.0
       csite%mmean_rh              (ip1:ip2) = 0.0
+      csite%mmean_cwd_rh          (ip1:ip2) = 0.0
       csite%mmean_co2_residual    (ip1:ip2) = 0.0
       csite%mmean_energy_residual (ip1:ip2) = 0.0
       csite%mmean_water_residual  (ip1:ip2) = 0.0
@@ -465,6 +486,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
    if (iqoutput > 0) then
       csite%qmean_rh              (:,ip1:ip2) = 0.0
+      csite%qmean_cwd_rh          (:,ip1:ip2) = 0.0
       csite%qmean_albedo          (:,ip1:ip2) = 0.0
       csite%qmean_albedo_beam     (:,ip1:ip2) = 0.0
       csite%qmean_albedo_diffuse  (:,ip1:ip2) = 0.0
@@ -493,6 +515,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_rshort_gnd       (ip1:ip2) = 0.0
    csite%avg_rlong_gnd        (ip1:ip2) = 0.0
    csite%avg_rlongup          (ip1:ip2) = 0.0
+   csite%avg_parup            (ip1:ip2) = 0.0
+   csite%avg_nirup            (ip1:ip2) = 0.0
+   csite%avg_rshortup         (ip1:ip2) = 0.0
+   csite%avg_rnet             (ip1:ip2) = 0.0
    csite%avg_albedo           (ip1:ip2) = 0.0
    csite%avg_albedo_beam      (ip1:ip2) = 0.0
    csite%avg_albedo_diffuse   (ip1:ip2) = 0.0
@@ -514,6 +540,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%avg_available_water  (ip1:ip2) = 0.0
    csite%avg_leaf_energy      (ip1:ip2) = 0.0 
    csite%avg_leaf_temp        (ip1:ip2) = 0.0 
+   csite%avg_leaf_vpdef       (ip1:ip2) = 0.0 
    csite%avg_leaf_hcap        (ip1:ip2) = 0.0 
    csite%avg_leaf_fliq        (ip1:ip2) = 0.0 
    csite%avg_leaf_water       (ip1:ip2) = 0.0 
@@ -541,8 +568,12 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%albedo               (ip1:ip2) = 0.0
    csite%albedo_beam          (ip1:ip2) = 0.0
    csite%albedo_diffuse       (ip1:ip2) = 0.0
-   csite%rlongup              (ip1:ip2) = 0.0
    csite%rlong_albedo         (ip1:ip2) = 0.0
+   csite%rlongup              (ip1:ip2) = 0.0
+   csite%parup                (ip1:ip2) = 0.0
+   csite%nirup                (ip1:ip2) = 0.0
+   csite%rshortup             (ip1:ip2) = 0.0
+   csite%rnet                 (ip1:ip2) = 0.0
 
    csite%fsc_in                      (ip1:ip2) = 0.0
    csite%ssc_in                      (ip1:ip2) = 0.0
@@ -552,7 +583,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%mineralized_N_loss          (ip1:ip2) = 0.0
    csite%mineralized_N_input         (ip1:ip2) = 0.0
    
-   csite%watertable(ip1:ip2)                  = slz(lsl)
+   csite%watertable(ip1:ip2) = slz(lsl)
    csite%ustar (ip1:ip2) = 0.0
    csite%tstar (ip1:ip2) = 0.0
    csite%qstar (ip1:ip2) = 0.0
@@ -566,6 +597,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    csite%wpwp  (ip1:ip2) = 0.0
 
    csite%can_theiv   (ip1:ip2) = 0.0
+   csite%can_vpdef   (ip1:ip2) = 0.0
    csite%can_temp    (ip1:ip2) = 0.0
    csite%can_temp_pv (ip1:ip2) = 0.0
    csite%can_rhos    (ip1:ip2) = 0.0
@@ -619,18 +651,51 @@ subroutine init_ed_site_vars(cpoly, lat)
    integer          , external   :: julday
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Size and PFT tables.                                                             !
+   !---------------------------------------------------------------------------------------!
    cpoly%basal_area       (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%agb              (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%pldens           (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%bseeds           (1:n_pft, 1:n_dbh, :) = 0.0
+
    cpoly%basal_area_growth(1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%basal_area_mort  (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%basal_area_cut   (1:n_pft, 1:n_dbh, :) = 0.0
 
-   cpoly%agb              (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_growth       (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_mort         (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_cut          (1:n_pft, 1:n_dbh, :) = 0.0
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Radiation-related variables.                                                     !
+   !---------------------------------------------------------------------------------------!
+   cpoly%cosaoi   (:) = 0.0
+   cpoly%daylight (:) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Hydrology-related variables.                                                     !
+   !---------------------------------------------------------------------------------------!
+   cpoly%runoff   (:) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Phenology variables (green_leaf_factor should be merged with elongf, as they     !
+   ! represent the same thing).                                                            !
+   !---------------------------------------------------------------------------------------!
    cpoly%green_leaf_factor(1:n_pft,:) = 1.0
    cpoly%leaf_aging_factor(1:n_pft,:) = 1.0
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !      Initialise the minimum monthly temperature with a very large value, this is      !
@@ -639,27 +704,36 @@ subroutine init_ed_site_vars(cpoly, lat)
    cpoly%min_monthly_temp(:) = huge(1.)
    !---------------------------------------------------------------------------------------!
 
-   cpoly%lambda_fire       (1:12,:)                           = 0.0
 
+   !---------------------------------------------------------------------------------------!
+   !      Initialise monthly rainfall with some arbitrary but high number.  This will      !
+   ! probably prevent fires to happen at the first year, but all data will be replaced by  !
+   ! actual rainfall after 12 months.  In the future we may initialise with climatological !
+   ! rainfall.                                                                             !
+   !---------------------------------------------------------------------------------------!
+   cpoly%avg_monthly_pcpg(:,:) = 500.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Initialise several disturbance- and LU-related variables.                        !
+   !---------------------------------------------------------------------------------------!
+   cpoly%plantation                                       (:) = 0
+   cpoly%agri_stocking_pft                                (:) = agri_stock
+   cpoly%agri_stocking_density                            (:) = 10.0
+   cpoly%plantation_stocking_pft                          (:) = plantation_stock
+   cpoly%plantation_stocking_density                      (:) = 4.0
+   cpoly%primary_harvest_memory                           (:) = 0.0
+   cpoly%secondary_harvest_memory                         (:) = 0.0
+   cpoly%fire_disturbance_rate                            (:) = 0.0
+   cpoly%ignition_rate                                    (:) = 0.0
+   cpoly%lambda_fire                                 (1:12,:) = 0.0
+   cpoly%nat_disturbance_rate                             (:) = 0.0
+   cpoly%nat_dist_type                                    (:) = 0
    cpoly%disturbance_memory(1:n_dist_types, 1:n_dist_types,:) = 0.0
    cpoly%disturbance_rates (1:n_dist_types, 1:n_dist_types,:) = 0.0
-
-   cpoly%agri_stocking_density(:)                             = 10.0
-
    !---------------------------------------------------------------------------------------!
-   ! (KIM)                                                                                 !
-   !     - anyway, this part should be more elaborate for the case                         !
-   !     - that we have different crops/pastures.                                          !
-   !  It's now defined in ED2IN, but it assumes only one PFT. It is probably not the       !
-   !  ideal solution for regional runs...                                                  !
-   !---------------------------------------------------------------------------------------!
-   cpoly%agri_stocking_pft(:)       = agri_stock
-   cpoly%plantation_stocking_pft(:) = plantation_stock
 
-   cpoly%plantation_stocking_density(:) = 4.0
-
-   cpoly%primary_harvest_memory(:)   = 0.0
-   cpoly%secondary_harvest_memory(:) = 0.0
   
    cpoly%rad_avg(:) = 200.0
   

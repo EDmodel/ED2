@@ -60,6 +60,7 @@ subroutine copy_nl(copy_type)
                                    , isoilstateinit            & ! intent(out)
                                    , isoildepthflg             & ! intent(out)
                                    , isoilbc                   & ! intent(out)
+                                   , sldrain                   & ! intent(out)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
@@ -91,6 +92,8 @@ subroutine copy_nl(copy_type)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : iphysiol                  & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
+                                   , iddmort_scheme            & ! intent(out)
+                                   , ddmort_const              & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact_c3                 & ! intent(out)
                                    , vmfact_c4                 & ! intent(out)
@@ -116,7 +119,6 @@ subroutine copy_nl(copy_type)
                                    , lwidth_nltree             & ! intent(out)
                                    , q10_c3                    & ! intent(out)
                                    , q10_c4                    & ! intent(out)
-                                   , lturnover_grass           & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -129,7 +131,7 @@ subroutine copy_nl(copy_type)
                                    , radslp                    & ! intent(out)
                                    , thetacrit                 ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
-                                   , LloydTaylor               ! ! intent(out)
+                                   , decomp_scheme             ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
                                    , fire_parameter            & ! intent(out)
                                    , ianth_disturb             & ! intent(out)
@@ -239,7 +241,11 @@ subroutine copy_nl(copy_type)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
-   use detailed_coms        , only : idetailed                 & ! intent(out)
+   use detailed_coms        , only : dt_census                 & ! intent(out)
+                                   , yr1st_census              & ! intent(out)
+                                   , mon1st_census             & ! intent(out)
+                                   , min_recruit_dbh           & ! intent(out)
+                                   , idetailed                 & ! intent(out)
                                    , patch_keep                ! ! intent(out)
    use consts_coms          , only : vonk                      & ! intent(in)
                                    , day_sec                   & ! intent(in)
@@ -324,6 +330,7 @@ subroutine copy_nl(copy_type)
       isoilstateinit            = nl%isoilstateinit
       isoildepthflg             = nl%isoildepthflg
       isoilbc                   = nl%isoilbc
+      sldrain                   = nl%sldrain
 
       n_poi                     = nl%n_poi
       n_ed_region               = nl%n_ed_region
@@ -359,6 +366,8 @@ subroutine copy_nl(copy_type)
       clump_tree                = nl%clump_tree
       clump_grass               = nl%clump_grass
       h2o_plant_lim             = nl%h2o_plant_lim
+      iddmort_scheme            = nl%iddmort_scheme
+      ddmort_const              = nl%ddmort_const
       vmfact_c3                 = nl%vmfact_c3
       vmfact_c4                 = nl%vmfact_c4
       mphoto_trc3               = nl%mphoto_trc3
@@ -383,7 +392,6 @@ subroutine copy_nl(copy_type)
       lwidth_nltree             = nl%lwidth_nltree
       q10_c3                    = nl%q10_c3
       q10_c4                    = nl%q10_c4
-      lturnover_grass           = nl%lturnover_grass
       thetacrit                 = nl%thetacrit
       quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint
@@ -394,10 +402,8 @@ subroutine copy_nl(copy_type)
       fire_parameter            = nl%fire_parameter
       sm_fire                   = nl%sm_fire
       ianth_disturb             = nl%ianth_disturb
+      decomp_scheme             = nl%decomp_scheme
 
-      !----- Decomp_scheme is not a true ED variable, we save it in LloydTaylor instead. --!
-      LloydTaylor               = nl%decomp_scheme == 1
-      
       icanturb                  = nl%icanturb
       isfclyrm                  = nl%isfclyrm
       ied_grndvap               = nl%ied_grndvap
@@ -452,6 +458,10 @@ subroutine copy_nl(copy_type)
       ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
 
+      dt_census                 = nl%dt_census
+      yr1st_census              = nl%yr1st_census
+      mon1st_census             = nl%mon1st_census
+      min_recruit_dbh           = nl%min_recruit_dbh
       idetailed                 = nl%idetailed
       patch_keep                = nl%patch_keep
 

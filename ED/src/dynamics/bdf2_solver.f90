@@ -20,11 +20,11 @@
 !
 !==============================================================================
 
-subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
+subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
   use grid_coms,only         : nzg,nzs
   use rk4_coms,only          : effarea_evap,effarea_heat,effarea_transp, &
-       rk4site,rk4patchtype,bdf2patchtype,checkbudget,hcapcan
+       rk4site,rk4patchtype,bdf2patchtype,checkbudget,hcapcan,ibranch_thermo
   use ed_misc_coms,only   : fast_diagnostics
   use ed_state_vars,only   : patchtype
   use therm_lib8,only      : reducedpress8,idealdenssh8
@@ -32,27 +32,24 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   use consts_coms,only     : cpdry8,p00i8,rdry8, &
        rocv8,cpocv8,cliq8,cice8,rocp8,cpocv,epim1,   &
        alli8,t3ple8,alvi38,wdns8,cph2o8,tsupercool_liq8,pi18
-  use therm_lib8,only      : uint2tl8,uextcm2tl8,tq2enthalpy8, tl2uint8
+  use therm_lib8,only      : uint2tl8,uextcm2tl8,tq2enthalpy8, tl2uint8, cmtl2uext8
   use soil_coms, only      : soil8,dslz8
 
   implicit none
   
   ! define the previous,current and next patch states
-  integer,intent(in)                         :: nstate
-  real(kind=8),dimension(nstate)             :: Y
-  real(kind=8),dimension(nstate)             :: Yf
-  real(kind=8),dimension(nstate,nstate)      :: A
-  real(kind=8),dimension(nstate)             :: B
-  real,dimension(nstate,nstate)              :: IA
+  integer                                    :: nstate
+  real(kind=8),pointer,dimension(:)          :: Y
+  real(kind=8),pointer,dimension(:)          :: Yf
+  real(kind=8),pointer,dimension(:,:)        :: A
+  real(kind=8),pointer,dimension(:)          :: B
   type(patchtype),target                     :: cpatch
   type(bdf2patchtype), target                :: yprev
   type(rk4patchtype), target                 :: ycurr
   type(rk4patchtype), target                 :: ynext
   type(rk4patchtype), target                 :: dydt
-  integer,dimension(nstate)                  :: indx
   real(kind=8),intent(in)                    :: dtf        ! dt for n -> n+1
   real(kind=8),intent(in)                    :: dtb        ! dt for n -> n-1
-!  real(kind=8),intent(in)                   :: can_depth
 
   integer :: id_tcan,id_tveg,ico
   integer :: k,ksn
@@ -71,15 +68,18 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   real(kind=8)                  :: xc    ! lumped term (canopy)    [-]
   real(kind=8)                  :: href  ! reference spec. enth.   [J/kg]
   real(kind=8)                  :: gv    ! veg-canopy conductivity [m/s]
-  real(kind=8)                  :: hfa   ! effective area of heat flux [m2/m2]
-  real(kind=8)                  :: mlc   ! mass flux leaf->can      [kg/m2/s]
-  real(kind=8)                  :: mwc   ! mass flux wood->can
-  real(kind=8)                  :: mtr   ! mass flux transp veg->can [kg/m2/s]
-  real(kind=8)                  :: fliq  ! liquid fraction leaf surf [kg/kg]
-  real(kind=8)                  :: qv    ! water mass on vegetation  [kg/m2]
-  real(kind=8)                  :: dqvdt ! time partial of qv  [kg/m2/s]
-  real(kind=8)                  :: xv    ! lumped term (vegetation)
+  real(kind=8),dimension(300)   :: gv_hfa   ! effective area of heat times g
+  real(kind=8),dimension(300)   :: mlc   ! mass flux leaf->can      [kg/m2/s]
+  real(kind=8),dimension(300)   :: mwc   ! mass flux wood->can
+  real(kind=8),dimension(300)   :: mtr   ! mass flux transp veg->can [kg/m2/s]
+  real(kind=8),dimension(300)   :: fliq  ! liquid fraction leaf surf [kg/kg]
+  real(kind=8),dimension(300)   :: qv    ! water mass on vegetation  [kg/m2]
+  real(kind=8),dimension(300)   :: dqvdt ! time partial of qv  [kg/m2/s]
+  real(kind=8),dimension(300)   :: xv    ! lumped term (vegetation)
+  real(kind=8),dimension(300)   :: hflx  ! enth flux from bunch of stuff
+  logical,dimension(300)        :: resolve ! self-explanatory
 
+  real(kind=8)  :: veg_temp,leaf_temp,wood_temp
   real(kind=8)  :: eflxac
   real(kind=8)  :: qwflxgc
   real(kind=8)  :: qwflxac
@@ -123,10 +123,10 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   ! or moist/dry soil                                                        !
   !--------------------------------------------------------------------------!
   
-!  ksn=0
-!  do k=1,ycurr%nlev_sfcwater
-!     if(ycurr%sfcwater_mass(k)>1.d-5)ksn=k
-!  end do
+!!  ksn=0
+!!  do k=1,ycurr%nlev_sfcwater
+!!     if(ycurr%sfcwater_mass(k)>1.d-5)ksn=k
+!!  end do
   
   shctop = soil8(rk4site%ntext_soil(nzg))%slcpd
   call uextcm2tl8(ynext%soil_energy(nzg),ynext%soil_water(nzg)*wdns8,shctop &
@@ -146,18 +146,117 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
        ,ycurr%sfcwater_fracliq(k),ycurr%can_prss,ynext%can_shv            &
        ,ynext%ground_shv,ynext%ground_ssh,ynext%ground_temp               &
        ,ynext%ground_fliq,ynext%ggsoil)
+  
 
+  !===========================================================================!
+  ! Determine the leaf-branch thermodynamics scheme to be used.
+  ! Set some temporary variables.
+  ! Calculate the number of elements.
+  !===========================================================================!
+
+
+  resolve(:)=.false.
+  id_tveg = 1
+  select case(ibranch_thermo)
+  case(0,2)
+     do ico=1,cpatch%ncohorts
+        if (ycurr%leaf_resolvable(ico)) then
+           gv_hfa(ico) = ycurr%leaf_gbh(ico)/(ycurr%can_rhos*cpdry8) &
+                *effarea_heat*ycurr%lai(ico)
+           mlc(ico)  = ycurr%wflxlc(ico)
+           mtr(ico)  = ycurr%wflxtr(ico)
+           fliq(ico) = ycurr%leaf_fliq(ico)
+           qv(ico)   = ynext%leaf_water(ico)
+           dqvdt(ico)= dydt%leaf_water(ico)
+           xv(ico)   = ycurr%leaf_fliq(ico)*cliq8*qv(ico) + &
+                       (1.d0-fliq(ico))*cice8*qv(ico)     + &
+                       ycurr%leaf_hcap(ico)
+           hflx(ico) = ycurr%hflx_lrsti(ico)
+           resolve(ico) = .true.
+           id_tveg   = id_tveg + 1
+        end if
+     end do
+     
+     if(ibranch_thermo.eq.2)then
+        do ico=1,cpatch%ncohorts
+           if (ycurr%wood_resolvable(ico)) then
+              id_tveg   = id_tveg + 1
+           end if
+        end do
+     end if
+
+  case(1)
+     do ico=1,cpatch%ncohorts
+        gv_hfa(ico) = 0.0
+        mlc(ico)    = 0.0
+        mtr(ico)    = 0.0
+        fliq(ico)   = -1.0
+        qv(ico)     = 0.0
+        dqvdt(ico)  = 0.0
+        hflx(ico)   = 0.0
+        if (ycurr%leaf_resolvable(ico) .or. ycurr%wood_resolvable(ico))then
+           id_tveg = id_tveg+1
+           resolve(ico) = .true.
+        end if
+
+        if (ycurr%leaf_resolvable(ico)) then
+           gv_hfa(ico) = ycurr%leaf_gbh(ico)/(ycurr%can_rhos*cpdry8) &
+                *effarea_heat*ycurr%lai(ico)
+           mlc(ico)  = ycurr%wflxlc(ico)
+           mtr(ico)  = ycurr%wflxtr(ico)
+           fliq(ico) = ycurr%leaf_fliq(ico)
+           qv(ico)   = ynext%leaf_water(ico)
+           dqvdt(ico)= dydt%leaf_water(ico)
+           hflx(ico) = ycurr%hflx_lrsti(ico)
+        end if
+        if (ycurr%wood_resolvable(ico)) then
+           gv_hfa(ico) = gv_hfa(ico)+(ycurr%wood_gbh(ico)/(ycurr%can_rhos*cpdry8) &
+                *effarea_heat*ycurr%wai(ico))
+           mlc(ico)  = mlc(ico)+ycurr%wflxwc(ico)
+           if(fliq(ico)>-0.99)then
+              fliq(ico) = (fliq(ico)+ycurr%wood_fliq(ico))/2.0
+           else
+              fliq(ico) = ycurr%wood_fliq(ico)
+           end if
+           
+           qv(ico)   = qv(ico)+ynext%wood_water(ico)
+           dqvdt(ico)= dqvdt(ico)+dydt%wood_water(ico)
+           hflx(ico) = hflx(ico)+ycurr%hflx_wrsti(ico)
+        end if
+
+        ! We use the wood and the leaf heat capacities regardless 
+        ! of their ability to be solved.
+        ! ---------------------------------------------------------
+
+        xv(ico)   = ycurr%leaf_fliq(ico)*cliq8*ynext%leaf_water(ico)        + &
+                    (1.d0-ycurr%leaf_fliq(ico))*cice8*ynext%leaf_water(ico) + &
+                    ycurr%leaf_hcap(ico)                                    + &
+                    ycurr%wood_fliq(ico)*cliq8*ynext%wood_water(ico)        + &
+                    (1.d0-ycurr%wood_fliq(ico))*cice8*ynext%wood_water(ico) + &
+                    ycurr%wood_hcap(ico)
+
+     end do
+
+  end select
+
+  nstate = id_tveg
+
+  !------ Allocate the matrices used for the linear operations --------------!
   
-  
+  allocate(Y(nstate))
+  allocate(Yf(nstate))
+  allocate(A(nstate,nstate))
+  allocate(B(nstate))
 
   !----- Initialize the matrices used for the linear operations -------------!
 
   A = 0.d0
   B = 0.d0
   Y = 0.d0
+  Yf= 0.d0
 
 
-  !----- Set temporary variables used for readability -----------------------!
+  !----- Set temporary canopy level variables used for readability ----------!
   
   rhoc  = ycurr%can_rhos
   dc    = ycurr%can_depth
@@ -217,10 +316,11 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
 
 
 
-  Y(id_tcan) = (3.d0+(dtf/dtb))*ycurr%can_temp -            &
+  Y(id_tcan) = (3.d0+(dtf/dtb))*ycurr%can_temp -        &
        (dtf/dtb)*yprev%can_temp + 2.d0*B(id_tcan)*dtf
-  
-  
+
+
+
   !===========================================================================!
   ! Derivatives associated with vegetation <-> canopy-air fluxes
   !===========================================================================!
@@ -229,51 +329,36 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
 
   do ico=1,cpatch%ncohorts
 
-     if (ycurr%leaf_resolvable(ico)) then
+     if (resolve(ico))then
         
         id_tveg = id_tveg+1
 
-        gv   = ycurr%leaf_gbh(ico)/(ycurr%can_rhos*cpdry8)
-        hfa  = effarea_heat*ycurr%lai(ico)
-        mlc  = ycurr%wflxlc(ico)
-        mtr  = ycurr%wflxtr(ico)
-        fliq = ycurr%leaf_fliq(ico)
-        qv   = ynext%leaf_water(ico)
-        dqvdt= dydt%leaf_water(ico)
-
-        xv  = fliq*cliq8*qv + (1.d0-fliq)*cice8*qv + ycurr%leaf_hcap(ico)
-
-
-
         ! dTc/dt ~ Tc)
-        A(id_tcan,id_tcan) = A(id_tcan,id_tcan) - gv*hfa*rhoc*cpdry8/xc
+        A(id_tcan,id_tcan) = A(id_tcan,id_tcan) - gv_hfa(ico)*rhoc*cpdry8/xc
         
         ! A(dTc/dt ~ Tv)
         A(id_tcan,id_tveg) = A(id_tcan,id_tveg)  &
-             + (1.d0/xc)*(gv*hfa*rhoc*cpdry8 + mlc*cph2o8 + mtr*cph2o8)
+             + (1.d0/xc)*(gv_hfa(ico)*rhoc*cpdry8 + mlc(ico)*cph2o8 + mtr(ico)*cph2o8)
         
-        
-        ! Note hflx_lrsti is rshort+rlong+Htrans(soil)+Hint-Hshed
-
         ! B(dTv/dt)
-        B(id_tveg) = (1.d0/xv)*           &
-             (ycurr%hflx_lrsti(ico)       &
-             - href*mlc                   &
-             - href*mtr                   &
-             + (fliq*cliq8*t3ple8 - fliq*cice8*t3ple8 - fliq*alli8)*dqvdt)
+        B(id_tveg) = (1.d0/xv(ico))*           &
+             ( hflx(ico)                       &
+             - href*mlc(ico)                   &
+             - href*mtr(ico)                   &
+             + (fliq(ico)*cliq8*t3ple8 - fliq(ico)*cice8*t3ple8 - fliq(ico)*alli8)*dqvdt(ico))
         
 
         ! A(dTv/dt ~ Tc)
         A(id_tveg,id_tcan) = A(id_tveg,id_tcan) + &
-             (hfa*gv*rhoc*cpdry8)/xv
+             (gv_hfa(ico)*rhoc*cpdry8)/xv(ico)
 
 
         ! A(dTv/dt ~ Tv)
         A(id_tveg,id_tveg) = A(id_tveg,id_tveg) + &
-             (1.d0/xv)*( (fliq*cice8 - fliq*cliq8 - cice8)*dqvdt &
-             - hfa*rhoc*gv*cpdry8 - (mlc+mtr)*cph2o8)
+             (1.d0/xv(ico))*( (fliq(ico)*cice8 - fliq(ico)*cliq8 - cice8)*dqvdt(ico) &
+             - gv_hfa(ico)*rhoc*cpdry8 - (mlc(ico)+mtr(ico))*cph2o8)
 
-        
+
         Y(id_tveg) = (3.d0+dtf/dtb)*ycurr%leaf_temp(ico) - &
              (dtf/dtb)*yprev%leaf_temp(ico) + &
              2.d0*B(id_tveg)*dtf
@@ -283,64 +368,63 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
         
   end do
 
-  ! =======================  WOOD ==========================!
-  ! If we have yet to do wood temps, do another loop
-  ! ========================================================!
-  
-  if( id_tveg < nstate) then
+  ! ============================================================!
+  ! If this is a thermo case where wood is separate, do another
+  ! ============================================================!
+  if(ibranch_thermo.eq.2)then
 
      do ico=1,cpatch%ncohorts
-        
         if (ycurr%wood_resolvable(ico)) then
-           
+           gv_hfa(ico) = ycurr%wood_gbh(ico)/(ycurr%can_rhos*cpdry8) &
+                *effarea_heat*ycurr%wai(ico)
+           mlc(ico)  = ycurr%wflxwc(ico)
+           mtr(ico)  = 0.0
+           fliq(ico) = ycurr%wood_fliq(ico)
+           qv(ico)   = ynext%wood_water(ico)
+           dqvdt(ico)= dydt%wood_water(ico)
+           xv(ico)   = ycurr%wood_fliq(ico)*cliq8*qv(ico) + &
+                (1.d0-fliq(ico))*cice8*qv(ico) +          &
+                ycurr%wood_hcap(ico)
+           hflx(ico) = ycurr%hflx_wrsti(ico)
+        end if
+     end do
+     
+     do ico=1,cpatch%ncohorts
+        if (ycurr%wood_resolvable(ico)) then
+
            id_tveg = id_tveg+1
 
-           gv   = ycurr%wood_gbh(ico)/(ycurr%can_rhos*cpdry8)
-           hfa  = pi18*ycurr%wai(ico)
-           mlc  = ycurr%wflxwc(ico)
-           mtr  = 0.d0
-           fliq = ycurr%wood_fliq(ico)
-           qv   = ynext%wood_water(ico)
-           dqvdt= dydt%wood_water(ico)
-           
-           xv  = fliq*cliq8*qv + (1.d0-fliq)*cice8*qv + ycurr%wood_hcap(ico)
-
            ! dTc/dt ~ Tc)
-           A(id_tcan,id_tcan) = A(id_tcan,id_tcan) - gv*hfa*rhoc*cpdry8/xc
-           
+           A(id_tcan,id_tcan) = A(id_tcan,id_tcan) - gv_hfa(ico)*rhoc*cpdry8/xc
+        
            ! A(dTc/dt ~ Tv)
            A(id_tcan,id_tveg) = A(id_tcan,id_tveg)  &
-                + (1.d0/xc)*(gv*hfa*rhoc*cpdry8 + mlc*cph2o8 + mtr*cph2o8)
-           
-           
-           ! Note hflx_wrsti is rshort+rlong+Hint-Hshed
+                + (1.d0/xc)*(gv_hfa(ico)*rhoc*cpdry8 + mlc(ico)*cph2o8 + mtr(ico)*cph2o8)
            
            ! B(dTv/dt)
-           B(id_tveg) = (1.d0/xv)*           &
-                (ycurr%hflx_wrsti(ico)       &
-                - href*mlc                   &
-                - href*mtr                   &
-                + (fliq*cliq8*t3ple8 - fliq*cice8*t3ple8 - fliq*alli8)*dqvdt)
-           
+           B(id_tveg) = (1.d0/xv(ico))*           &
+                ( hflx(ico)                       &
+                - href*mlc(ico)                   &
+                - href*mtr(ico)                   &
+                + (fliq(ico)*cliq8*t3ple8 - fliq(ico)*cice8*t3ple8 &
+                - fliq(ico)*alli8)*dqvdt(ico))
+        
            
            ! A(dTv/dt ~ Tc)
            A(id_tveg,id_tcan) = A(id_tveg,id_tcan) + &
-                (hfa*gv*rhoc*cpdry8)/xv
+                (gv_hfa(ico)*rhoc*cpdry8)/xv(ico)
            
            
            ! A(dTv/dt ~ Tv)
            A(id_tveg,id_tveg) = A(id_tveg,id_tveg) + &
-                (1.d0/xv)*( (fliq*cice8 - fliq*cliq8 - cice8)*dqvdt &
-                - hfa*rhoc*gv*cpdry8 - (mlc+mtr)*cph2o8)
-           
-           
-           Y(id_tveg) = (3.d0+dtf/dtb)*ycurr%leaf_temp(ico) - &
+                (1.d0/xv(ico))*( (fliq(ico)*cice8 - fliq(ico)*cliq8 - cice8)*dqvdt(ico) &
+                - gv_hfa(ico)*rhoc*cpdry8 - (mlc(ico)+mtr(ico))*cph2o8)
+
+           Y(id_tveg) = (3.d0+dtf/dtb)*ycurr%wood_temp(ico) - &
                 (dtf/dtb)*yprev%wood_temp(ico) + &
                 2.d0*B(id_tveg)*dtf
            
         end if
-        
-        
      end do
   end if
 
@@ -374,7 +458,6 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   ynext%can_temp = Y(1)
   ynext%can_enthalpy = (1.d0-qc)*cpdry8*Y(1) + qc*(href + cph2o8*Y(1))
 
-
   ! ------------------------------------------------------------------------!
   ! Note: Significant assumption being made here.  The partial derivative   !
   ! of the leaf and wood temperature assumed that phase was constant.       !
@@ -391,97 +474,168 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   ! ------------------------------------------------------------------------!
 
   qwflxlc_tot = 0.d0
+  qwflxwc_tot = 0.d0
   qtransp_tot = 0.d0
   hflxlc_tot  = 0.d0
+  hflxwc_tot  = 0.d0
   
 
   id_tveg=1
-  do ico=1,cpatch%ncohorts
-     if (ycurr%leaf_resolvable(ico)) then
-
-        id_tveg=id_tveg+1
-
-        ynext%leaf_temp(ico) = Y(id_tveg)
-        if(ynext%leaf_temp(ico) < t3ple8) then
-           ynext%leaf_fliq(ico) = 0.d0
-           ynext%leaf_energy(ico) = &
-                ynext%leaf_water(ico)*cice8*ynext%leaf_temp(ico) +&
-                ynext%leaf_temp(ico)*ycurr%leaf_hcap(ico)
-        else
-           ynext%leaf_fliq(ico) = 1.d0
-           ynext%leaf_energy(ico) = ynext%leaf_temp(ico)*              &
-           (ycurr%leaf_hcap(ico)+ynext%leaf_water(ico)*cliq8) - &
-           ynext%leaf_water(ico)*cliq8*tsupercool_liq8
-        end if
-
-        ! Back calculate the latent and sensible heat fluxes of leaves
-        ! ========================================================================
-        
-        ! First calculate the effective qflxlc
-        qwflxlc = ycurr%wflxlc(ico)*tq2enthalpy8(ycurr%leaf_temp(ico),1.d0,.true.)        
-        
-        ! Then effective transpiraiton
-        qtransp = ycurr%wflxtr(ico)*tq2enthalpy8(ycurr%leaf_temp(ico),1.d0,.true.)
-
-        ! Use the resulting change in leaf energy to back-caculate what heat
-        ! flux would had been
-        hflxlc  = ycurr%hflx_lrsti(ico) - qwflxlc - qtransp - &
-             (ynext%leaf_energy(ico)-ycurr%leaf_energy(ico))/dtf
-
-        qwflxlc_tot = qwflxlc_tot + qwflxlc
-        qtransp_tot = qtransp_tot + qtransp
-        hflxlc_tot  = hflxlc_tot  + hflxlc
-        
-     end if
-  end do
   
-  if( id_tveg < nstate) then
+  select case(ibranch_thermo)
+  case(0,2)
      do ico=1,cpatch%ncohorts
-        if (ycurr%wood_resolvable(ico)) then
-
+        if (resolve(ico)) then
            id_tveg=id_tveg+1
+           ynext%leaf_temp(ico) = Y(id_tveg)
            
-           ynext%wood_temp(ico) = Y(id_tveg)
-           if(ynext%wood_temp(ico) < t3ple8) then
-              ynext%wood_fliq(ico) = 0.d0
-              ynext%wood_energy(ico) = &
-                   ynext%wood_water(ico)*cice8*ynext%wood_temp(ico) +&
-                   ynext%wood_temp(ico)*ycurr%wood_hcap(ico)
+           if(ynext%leaf_temp(ico) < t3ple8) then
+              ynext%leaf_fliq(ico) = 0.d0
+              ynext%leaf_energy(ico) = &
+                   ynext%leaf_water(ico)*cice8*ynext%leaf_temp(ico) +&
+                   ynext%leaf_temp(ico)*ycurr%leaf_hcap(ico)
            else
-              ynext%wood_fliq(ico) = 1.d0
-              ynext%wood_energy(ico) = ynext%wood_temp(ico)*              &
-                   (ycurr%wood_hcap(ico)+ynext%wood_water(ico)*cliq8) - &
-                   ynext%wood_water(ico)*cliq8*tsupercool_liq8
+              ynext%leaf_fliq(ico) = 1.d0
+              ynext%leaf_energy(ico) = ynext%leaf_temp(ico)*              &
+                   (ycurr%leaf_hcap(ico)+ynext%leaf_water(ico)*cliq8) - &
+                   ynext%leaf_water(ico)*cliq8*tsupercool_liq8
            end if
-
-
+           
            ! Back calculate the latent and sensible heat fluxes of leaves
            ! ========================================================================
            
-           ! First calculate the effective qflxwc
-           qwflxwc = ycurr%wflxwc(ico)*tq2enthalpy8(ycurr%wood_temp(ico),1.d0,.true.)        
+           ! First calculate the effective qflxlc
+           qwflxlc = ycurr%wflxlc(ico)*tq2enthalpy8(ycurr%leaf_temp(ico),1.d0,.true.)        
            
-           ! Use the resulting change in wood energy to back-caculate what heat
+           ! Then effective transpiraiton
+           qtransp = ycurr%wflxtr(ico)*tq2enthalpy8(ycurr%leaf_temp(ico),1.d0,.true.)
+           
+           ! Use the resulting change in leaf energy to back-caculate what heat
            ! flux would had been
-           hflxwc  = ycurr%hflx_wrsti(ico) - qwflxwc - &
-                (ynext%wood_energy(ico)-ycurr%wood_energy(ico))/dtf
+           hflxlc  = ycurr%hflx_lrsti(ico) - qwflxlc - qtransp - &
+                (ynext%leaf_energy(ico)-ycurr%leaf_energy(ico))/dtf
+           
+           qwflxlc_tot = qwflxlc_tot + qwflxlc
+           qtransp_tot = qtransp_tot + qtransp
+           hflxlc_tot  = hflxlc_tot  + hflxlc
+           
+        end if
+     end do
+     
+     if(ibranch_thermo.eq.2) then
+        do ico=1,cpatch%ncohorts
+           if (ycurr%wood_resolvable(ico)) then
+              id_tveg=id_tveg+1
+              ynext%wood_temp(ico) = Y(id_tveg)
+              if(ynext%wood_temp(ico) < t3ple8) then
+                 ynext%wood_fliq(ico) = 0.d0
+                 ynext%wood_energy(ico) = &
+                      ynext%wood_water(ico)*cice8*ynext%wood_temp(ico) +&
+                      ynext%wood_temp(ico)*ycurr%wood_hcap(ico)
+              else
+                 ynext%wood_fliq(ico) = 1.d0
+                 
+                 ynext%wood_energy(ico) = ynext%wood_temp(ico)*              &
+                      (ycurr%wood_hcap(ico)+ynext%wood_water(ico)*cliq8) - &
+                      ynext%wood_water(ico)*cliq8*tsupercool_liq8
+              end if
+              
+              ! Back calculate the latent and sensible heat fluxes of wood
+              ! ========================================================================
+              qwflxwc = ycurr%wflxwc(ico)*tq2enthalpy8(ycurr%wood_temp(ico),1.d0,.true.)
+              
+              hflxwc  = ycurr%hflx_wrsti(ico) - qwflxwc - &
+                   (ynext%wood_energy(ico)-ycurr%wood_energy(ico))/dtf
+              
+              qwflxwc_tot = qwflxwc_tot + qwflxwc
+              hflxwc_tot  = hflxwc_tot  + hflxwc
+           end if  !(if(wood_resolvable))
+        end do
+     end if
+     
+  case(1)  !select(ibranch_thermo)
+     
+!     print*,""
 
-           qwflxwc_tot = qwflxwc_tot + qwflxwc
-           hflxwc_tot  = hflxwc_tot  + hflxwc
+     do ico=1,cpatch%ncohorts
+        if (resolve(ico)) then
+           
+           id_tveg=id_tveg+1
 
+           ! Update with the new temperature
+           ynext%leaf_temp(ico) = Y(id_tveg)
+           ynext%wood_temp(ico) = Y(id_tveg)
+           
+           if(ynext%leaf_temp(ico) < t3ple8) then
+              ynext%leaf_fliq(ico) = 0.d0
+              ynext%wood_fliq(ico) = 0.d0
+           else
+              ynext%leaf_fliq(ico) = 1.d0
+              ynext%wood_fliq(ico) = 1.d0
+           end if
+
+           ! Back calculate the latent and sensible heat fluxes of leaves
+           ! ========================================================================
+
+           ynext%veg_energy(ico)  = 0.0
+           ynext%wood_energy(ico) = 0.0
+           ynext%leaf_energy(ico) = 0.0
+
+           if (ycurr%leaf_resolvable(ico) .or. ycurr%wood_resolvable(ico)) then
+
+              ynext%leaf_energy(ico) = cmtl2uext8(     &
+                ycurr%leaf_hcap (ico),              &
+                ynext%leaf_water(ico),              &
+                ynext%leaf_temp (ico),              &
+                ynext%leaf_fliq (ico) )
+              
+              ynext%veg_energy(ico)=ynext%leaf_energy(ico)
+
+              qwflxlc = ycurr%wflxlc(ico) * &
+                   tq2enthalpy8(ycurr%leaf_temp(ico),1.d0,.true.)        
+              
+              hflxlc  = ycurr%hflx_lrsti(ico) - qwflxlc - &
+                   (ynext%leaf_energy(ico)-ycurr%leaf_energy(ico))/dtf
+              
+              qwflxlc_tot = qwflxlc_tot + qwflxlc
+              hflxlc_tot  = hflxlc_tot  + hflxlc
+
+              ynext%wood_energy(ico) = cmtl2uext8(     &
+                   ycurr%wood_hcap (ico),              &
+                   ynext%wood_water(ico),              &
+                   ynext%wood_temp (ico),              &
+                   ynext%wood_fliq (ico) )   
+
+              ynext%veg_energy(ico) = ynext%veg_energy(ico)+ &
+                   ynext%wood_energy(ico)
+              
+              qwflxwc = ycurr%wflxwc(ico) * &
+                   tq2enthalpy8(ycurr%wood_temp(ico),1.d0,.true.)        
+              
+              hflxwc  = ycurr%hflx_wrsti(ico) - qwflxwc - &
+                   (ynext%wood_energy(ico)-ycurr%wood_energy(ico))/dtf
+              
+              qwflxwc_tot = qwflxwc_tot + qwflxwc
+              hflxwc_tot  = hflxwc_tot  + hflxwc
+           end if
+
+           ! How does the temperature of the vegetation derived from
+           ! its energy compare?
+
+
+           call uextcm2tl8(ynext%veg_energy(ico),ynext%veg_water(ico)  &
+                ,ycurr%veg_hcap(ico),veg_temp,fliq(ico))
+
+           if(abs(veg_temp-ynext%leaf_temp(ico))>1d-10)then
+              print*,"ISSUE IN ENERGY CONSERVATION,BDF2"
+              stop
+           end if
+              
 
 
         end if
      end do
-  end if
-  
-
-  !!!! ===========================================================
-  !!!! THIS SCHEME IS NOT UPDATING PRINT DETAILED FLUXES BETWEEN
-  !!!! LEAVES/WOOD WITH CANOPY AIR
-  !!!! ===========================================================
-
-
+  end select
 
 
   ! Update eulerian based budget fluxes
@@ -493,19 +647,18 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   eflxac = hcapcan*(ynext%can_enthalpy-ycurr%can_enthalpy)/dtf  - &
        (dydt%avg_sensible_gc + qwflxgc                          + &
        hflxlc_tot + qwflxlc_tot + qtransp_tot + hflxwc_tot + qwflxwc_tot)
-  
+
+!  print*,hflxlc_tot,qwflxlc_tot,qtransp_tot,hflxwc_tot,qwflxwc_tot
   
   qwflxac = ycurr%wflxac * tq2enthalpy8(0.5*(ycurr%can_temp+Ta),1.d0,.true.)
   
   hflxac  = eflxac-qwflxac
-  
 
   if(checkbudget)then 
      
      ! Remove the previous integration
      ynext%ebudget_loss2atm   = ynext%ebudget_loss2atm            - &
           dydt%ebudget_loss2atm*dtf
-     
      
      ! Add the new integration
      dydt%ebudget_loss2atm    = -eflxac
@@ -518,7 +671,6 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
      ! Update the sensible heat flux diagnostic
      ynext%avg_sensible_ac = ynext%avg_sensible_ac - dydt%avg_sensible_ac*dtf
      ynext%avg_sensible_ac = ynext%avg_sensible_ac + (hflxac)*dtf
-
 
   end if
 
@@ -539,6 +691,8 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,nstate,dtf,dtb)
   ynext%tpwp = ynext%tpwp -(hflxac/(rhoc*ycurr%can_exner))*dtf
   
 
+  ! Free memory
+  deallocate(Y,Yf,A,B)
 
 
   return

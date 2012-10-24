@@ -261,7 +261,8 @@ subroutine rams_mem_alloc(proc_type)
          icoic = 13
          icoic_sh = 4
       case default 
-         icoic_sh = 1
+         icoic    = 0
+         icoic_sh = 0
       end select
    end if
 

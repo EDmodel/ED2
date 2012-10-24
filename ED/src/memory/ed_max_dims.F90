@@ -189,14 +189,11 @@ module ed_max_dims
    ! 2. Negative carbon balance;                                                           !
    ! 3. Treefall mortality;                                                                !
    ! 4. Mortality due to cold weather.                                                     !
+   ! 5. Disturbance mortality.  This is not directly applied to the cohort population,     !
+   !    because this mortality is associated with the creation of a new patch, but it is   !
+   !    saved here for posterior analysis.                                                 !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_mort = 4 
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Maximum number of model variables. ----------------------------------------------!
-   integer, parameter :: maxvars = 250
+   integer, parameter :: n_mort = 5
    !---------------------------------------------------------------------------------------!
 
 
@@ -217,7 +214,7 @@ module ed_max_dims
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
    integer, parameter :: huge_patch   = 3600
-   integer, parameter :: huge_cohort  = 36000
+   integer, parameter :: huge_cohort  = 50000
    integer, parameter :: max_water    = 100
    !---------------------------------------------------------------------------------------!
 
@@ -239,7 +236,7 @@ module ed_max_dims
 #if defined(COUPLED)
    integer, parameter :: maxfiles = brams_maxfiles
 #else
-   integer, parameter :: maxfiles = 36000
+   integer, parameter :: maxfiles = 50000
 #endif
    !---------------------------------------------------------------------------------------!
 

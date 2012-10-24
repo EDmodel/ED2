@@ -16,11 +16,14 @@ subroutine euler_timestep(cgrid)
    use met_driver_coms       , only : met_driv_state     ! ! structure
    use grid_coms             , only : nzg                & ! intent(in)
                                     , nzs                ! ! intent(in)
-   use ed_misc_coms          , only : dtlsm              ! ! intent(in)
+   use ed_misc_coms          , only : current_time       & ! intent(in)
+                                    , dtlsm              ! ! intent(in)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use soil_coms             , only : soil_rough         & ! intent(in)
                                     , snow_rough         ! ! intent(in)
    use therm_lib             , only : tq2enthalpy        ! ! function
+   use budget_utils          , only : update_budget      & ! function
+                                    , compute_budget     ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)             , target      :: cgrid
@@ -34,6 +37,7 @@ subroutine euler_timestep(cgrid)
    integer                                :: ipa
    integer                                :: ico
    integer                                :: nsteps
+   integer                                :: imon
    real                                   :: thetaatm
    real                                   :: thetacan
    real                                   :: rasveg
@@ -55,8 +59,6 @@ subroutine euler_timestep(cgrid)
    real                                   :: old_can_temp
    real                                   :: old_can_prss
    real                                   :: fm
-   !----- External functions. -------------------------------------------------------------!
-   real, external                         :: compute_netrad
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -65,6 +67,14 @@ subroutine euler_timestep(cgrid)
       siteloop: do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
          cmet  => cpoly%met(isi)
+
+         !---------------------------------------------------------------------------------!
+         !     Update the monthly rainfall.                                                !
+         !---------------------------------------------------------------------------------!
+         imon                             = current_time%month
+         cpoly%avg_monthly_pcpg(imon,isi) = cpoly%avg_monthly_pcpg(imon,isi)               &
+                                          + cmet%pcpg * dtlsm
+         !---------------------------------------------------------------------------------!
 
          patchloop: do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
@@ -119,11 +129,12 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
             call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)            &
                                    ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv          &
-                                   ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2  &
-                                   ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg  &
-                                   ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam         &
-                                   ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse        &
-                                   ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)      &
+                                   ,cmet%atm_vpdef,cmet%atm_theta,cmet%atm_tmp             &
+                                   ,cmet%atm_shv,cmet%atm_co2,cmet%geoht,cmet%exner        &
+                                   ,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss,cmet%rshort  &
+                                   ,cmet%rlong,cmet%par_beam,cmet%par_diffuse              &
+                                   ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht              &
+                                   ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)                 &
                                    ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
                                    ,cgrid%lat(ipy),cgrid%cosz(ipy))
             !------------------------------------------------------------------------------!
@@ -206,8 +217,11 @@ subroutine euler_timestep(cgrid)
                                ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
             !------------------------------------------------------------------------------!
          end do patchloop
+         !---------------------------------------------------------------------------------!
       end do siteloop
+      !------------------------------------------------------------------------------------!
    end do polyloop
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine euler_timestep

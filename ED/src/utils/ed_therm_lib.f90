@@ -367,6 +367,8 @@ module ed_therm_lib
          !----- Compute the saturation specific humidity at ground temperature. -----------!
          ground_ssh  = qslif(can_prss,ground_temp)
          !----- Determine alpha. ----------------------------------------------------------!
+
+
          slpotvn      = soil(nsoil)%slpots                                                 &
                       / (topsoil_water / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
          lnalpha     = gorh2o * slpotvn / ground_temp

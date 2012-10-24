@@ -13,10 +13,10 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough           &
                       ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp       &
                       ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
-                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc  &
-                      ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u     &
-                      ,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd   &
-                      ,rlong_gnd)
+                      ,can_vpdef,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc        &
+                      ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic       &
+                      ,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt    &
+                      ,rlongup,rshort_gnd,rlong_gnd)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -68,6 +68,7 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    real, dimension(    m2,m3,npat), intent(inout) :: veg_hcap
    real, dimension(    m2,m3,npat), intent(inout) :: can_prss
    real, dimension(    m2,m3,npat), intent(inout) :: can_theiv
+   real, dimension(    m2,m3,npat), intent(inout) :: can_vpdef
    real, dimension(    m2,m3,npat), intent(inout) :: can_theta
    real, dimension(    m2,m3,npat), intent(inout) :: can_rvap
    real, dimension(    m2,m3,npat), intent(inout) :: can_co2
@@ -108,10 +109,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
-                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
-                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
-                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
-                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
+                         ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
+                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
+                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
+                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
+                         ,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -130,10 +132,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
-                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
-                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
-                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
-                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
+                         ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
+                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
+                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
+                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
+                         ,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -151,10 +154,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
-                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
-                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
-                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
-                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
+                         ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
+                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
+                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
+                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
+                         ,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -172,10 +176,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind      &
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
-                         ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2         &
-                         ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp        &
-                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w    &
-                         ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
+                         ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
+                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
+                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
+                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
+                         ,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -192,10 +197,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
-                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
-                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
-                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
-                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
+                      ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
+                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
+                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
+                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
+                      ,rlong_gnd)                                                         
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -211,10 +217,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
-                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
-                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
-                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
-                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
+                      ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
+                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
+                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
+                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
+                      ,rlong_gnd)                                                         
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -230,10 +237,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
-                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
-                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
-                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
-                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
+                      ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
+                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
+                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
+                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
+                      ,rlong_gnd)                                                         
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -249,10 +257,11 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,veg_height,veg_displace,patch_area,patch_rough,patch_wetind         &
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
-                      ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2            &
-                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp           &
-                      ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w       &
-                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)       
+                      ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
+                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
+                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
+                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
+                      ,rlong_gnd)                                                         
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -277,10 +286,10 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
                       ,veg_displace,patch_area,patch_rough,patch_wetind,leaf_class         &
                       ,soil_rough,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap        &
                       ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss      &
-                      ,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc        &
-                      ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic       &
-                      ,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt    &
-                      ,rlongup,rshort_gnd,rlong_gnd)
+                      ,can_theiv,can_vpdef,can_theta,can_rvap,can_co2,sensible_gc          &
+                      ,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip     &
+                      ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c &
+                      ,albedt,rlongup,rshort_gnd,rlong_gnd)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                        , intent(in)    :: m2
@@ -329,6 +338,7 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
    real, dimension(    m2,m3,npat), intent(inout) :: veg_hcap
    real, dimension(    m2,m3,npat), intent(inout) :: can_prss
    real, dimension(    m2,m3,npat), intent(inout) :: can_theiv
+   real, dimension(    m2,m3,npat), intent(inout) :: can_vpdef
    real, dimension(    m2,m3,npat), intent(inout) :: can_theta
    real, dimension(    m2,m3,npat), intent(inout) :: can_rvap
    real, dimension(    m2,m3,npat), intent(inout) :: can_co2
@@ -401,6 +411,7 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
       veg_energy     (idest,jdest,ipat) = veg_energy       (isrc,jsrc,ipat)
       can_prss       (idest,jdest,ipat) = can_prss         (isrc,jsrc,ipat)
       can_theiv      (idest,jdest,ipat) = can_theiv        (isrc,jsrc,ipat)
+      can_vpdef      (idest,jdest,ipat) = can_vpdef        (isrc,jsrc,ipat)
       can_theta      (idest,jdest,ipat) = can_theta        (isrc,jsrc,ipat)
       can_rvap       (idest,jdest,ipat) = can_rvap         (isrc,jsrc,ipat)
       can_co2        (idest,jdest,ipat) = can_co2          (isrc,jsrc,ipat)

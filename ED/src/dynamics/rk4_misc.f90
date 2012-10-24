@@ -429,6 +429,12 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%wbudget_loss2drainage = 0.d0
       targetp%wbudget_loss2runoff   = 0.d0
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Water deficit, always start with zero. ------------------------------------------!
+   targetp%water_deficit = 0.d0
+   !---------------------------------------------------------------------------------------!
 
 
    if (print_detailed) call reset_rk4_fluxes(targetp)
@@ -1877,8 +1883,10 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          wmass_free  = 0.d0
          energy_free = 0.d0
          depth_free  = 0.d0
+         !---------------------------------------------------------------------------------!
 
       end if
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -3431,13 +3439,13 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Wood information (only the resolvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','         WAI','         DBH','       BDEAD'   &
-                            ,'    BSAPWOODA','    BSAPWOODB',' WOOD_ENERGY','   WOOD_TEMP' &
+                            ,'   BSAPWOODA','   BSAPWOODB',' WOOD_ENERGY','   WOOD_TEMP'   &
                             ,'  WOOD_WATER'
    do ico = 1,cpatch%ncohorts
       if (cpatch%wood_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%wai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
               ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico),cpatch%wood_energy(ico)         &
               ,cpatch%wood_temp(ico),cpatch%wood_water(ico)
@@ -3466,11 +3474,13 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(6(a12,1x))')  '   CAN_THEIV','    CAN_TEMP','     CAN_SHV'          &
-                                    ,'    CAN_PRSS','     CAN_CO2','       GGNET'
-   write (unit=*,fmt='(6(es12.4,1x))') csite%can_theiv(ipa),csite%can_temp(ipa)            &
-                                      ,csite%can_shv(ipa)  ,csite%can_prss(ipa)            &
-                                      ,csite%can_co2(ipa)  ,csite%ggnet   (ipa)
+   write (unit=*,fmt='(7(a12,1x))')  '   CAN_THEIV','    CAN_TEMP','     CAN_SHV'          &
+                                    ,'    CAN_PRSS','     CAN_CO2','   CAN_VPDEF'          &
+                                    ,'       GGNET'
+   write (unit=*,fmt='(7(es12.4,1x))')  csite%can_theiv (ipa),csite%can_temp  (ipa)        &
+                                      , csite%can_shv   (ipa),csite%can_prss  (ipa)        &
+                                      , csite%can_co2   (ipa),csite%can_vpdef (ipa)        &
+                                      , csite%ggnet     (ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -3540,7 +3550,8 @@ subroutine print_rk4patch(y,csite,ipa)
                                     , nzs                   ! ! intent(in)
    use ed_misc_coms          , only : current_time          ! ! intent(in)
    use consts_coms           , only : pio1808               ! ! intent(in)
-   use therm_lib8            , only : thetaeiv8             ! ! function
+   use therm_lib8            , only : thetaeiv8             & ! function
+                                    , vpdefil8              ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: y
@@ -3552,11 +3563,16 @@ subroutine print_rk4patch(y,csite,ipa)
    integer                         :: ico
    real(kind=8)                    :: y_can_rvap
    real(kind=8)                    :: y_can_theiv
+   real(kind=8)                    :: y_can_vpdef
    !---------------------------------------------------------------------------------------!
 
-   !----- Find the ice-vapour equivalent potential temperature (output only). -------------!
+   !---------------------------------------------------------------------------------------!
+   !      Find the ice-vapour equivalent potential temperature and vapour pressure deficit !
+   ! (output only).                                                                        !
+   !---------------------------------------------------------------------------------------!
    y_can_rvap  = y%can_shv / (1.d0 - y%can_shv)
    y_can_theiv = thetaeiv8(y%can_theta,y%can_prss,y%can_temp,y_can_rvap,y_can_rvap)
+   y_can_vpdef = vpdefil8 (y%can_prss,y%can_temp,y%can_shv,.true.)
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
@@ -3584,6 +3600,7 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp.        : ',rk4site%atm_theta
    write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv              : ',rk4site%atm_theiv
    write (unit=*,fmt='(a,1x,es12.4)') ' Air sp. enthalpy (can.hgt.): ',rk4site%atm_enthalpy
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air vapour pres. deficit   : ',rk4site%atm_vpdef
    write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio          : ',rk4site%atm_shv
    write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio          : ',rk4site%atm_co2
    write (unit=*,fmt='(a,1x,es12.4)') ' Pressure                   : ',rk4site%atm_prss
@@ -3675,12 +3692,12 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Wood information (only those resolvable are shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),5(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH','       BDEAD'   &
                             ,'    BSAPWOODA','    BSAPWOODB'
    do ico = 1,cpatch%ncohorts
       if (cpatch%wood_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),5(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)       &
               ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)
       end if
@@ -3732,14 +3749,16 @@ subroutine print_rk4patch(y,csite,ipa)
                                       ,csite%lai(ipa),y%can_depth,y%can_co2,y%can_prss     &
                                       ,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(9(a12,1x))')  '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
+   write (unit=*,fmt='(10(a12,1x))') '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
                                     ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'          &
-                                    ,'    CAN_RVAP','     CAN_RHV','CAN_ENTHALPY'
+                                    ,'    CAN_RVAP','   CAN_VPDEF','     CAN_RHV'          &
+                                    ,'CAN_ENTHALPY'
                                      
                                      
-   write (unit=*,fmt='(9(es12.4,1x))')   y%can_rhos     , y_can_theiv    , y%can_theta     &
+   write (unit=*,fmt='(10(es12.4,1x))')  y%can_rhos     , y_can_theiv    , y%can_theta     &
                                        , y%can_temp     , y%can_shv      , y%can_ssh       &
-                                       , y_can_rvap     , y%can_rhv      , y%can_enthalpy
+                                       , y_can_rvap     , y_can_vpdef    , y%can_rhv       &
+                                       , y%can_enthalpy
                                        
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -3827,7 +3846,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                            , rk4site       & ! intent(in)
                            , detail_pref   ! ! intent(in)
    use therm_lib8   , only : uextcm2tl8    & ! sub-routine
-                           , thetaeiv8     ! ! function
+                           , thetaeiv8     & ! function
+                           , vpdefil8      ! ! function
    use soil_coms    , only : soil8         ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -3873,9 +3893,10 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)                       :: elapsec
    real(kind=8)                       :: can_rvap
    real(kind=8)                       :: can_theiv
+   real(kind=8)                       :: can_vpdef
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: phfmt='(83(a,1x))'
-   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),73(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(85(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),75(es13.6,1x))'
    character(len=10), parameter :: chfmt='(57(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
@@ -3971,6 +3992,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    can_rvap   = initp%can_shv / (1.d0 - initp%can_shv)
    can_theiv  = thetaeiv8( initp%can_theta , initp%can_prss  , initp%can_temp              &
                          , can_rvap        , can_rvap        )
+   can_vpdef  = vpdefil8 ( initp%can_prss  , initp%can_temp  , initp%can_shv , .true. )
    !---------------------------------------------------------------------------------------!
 
    par_b_beam = dble(csite%par_b_beam   (ipa))
@@ -4051,27 +4073,28 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , '      ATM.SHV' , '      ATM.CO2', '     ATM.VELS'        &
                                , '    ATM.PRATE' , '   ATM.HEIGHT', '     ATM.RHOS'        &
                                , '   ATM.RELHUM' , '    ATM.THETA', '    ATM.THEIV'        &
-                               , '   MET.RSHORT' , '    MET.RLONG', '     CAN.PRSS'        &
-                               , '     CAN.TEMP' , '      CAN.SHV', '      CAN.CO2'        &
-                               , '    CAN.DEPTH' , '     CAN.RHOS', '   CAN.RELHUM'        &
-                               , '    CAN.THETA' , '    CAN.THEIV', ' CAN.ENTHALPY'        &
-                               , '     SFC.TEMP', '      SFC.SHV' , '    LEAF.TEMP'        &
-                               , '   LEAF.WATER', '    WOOD.TEMP' , '   WOOD.WATER'        &
-                               , '       GGBARE', '        GGVEG' , '        GGNET'        &
-                               , '      OPENCAN', '    SOIL.TEMP' , '   SOIL.WATER'        &
-                               , '       SOILCP', '       SOILWP' , '       SOILFC'        &
-                               , '       SLMSTS', '        USTAR' , '        TSTAR'        &
-                               , '        QSTAR', '        CSTAR' , '         ZETA'        &
-                               , '      RI.BULK', '   GND.RSHORT' , '    GND.RLONG'        &
-                               , '       WFLXLC', '       WFLXWC' , '       WFLXGC'        &
-                               , '       WFLXAC', '       TRANSP' , '        WSHED'        &
-                               , '    INTERCEPT', '  THROUGHFALL' , '       HFLXGC'        &
-                               , '       HFLXLC', '       HFLXWC' , '       HFLXAC'        &
-                               , '       CFLXAC', '       CFLXST' , '        CWDRH'        &
-                               , '       SOILRH', '          GPP' , '       PLRESP'        &
-                               , ' PAR.BEAM.TOP', ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP'        &
-                               , ' NIR.DIFF.TOP', ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT'        &
-                               , ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
+                               , '    ATM.VPDEF' , '   MET.RSHORT', '    MET.RLONG'        &
+                               , '     CAN.PRSS' , '     CAN.TEMP', '      CAN.SHV'        &
+                               , '      CAN.CO2' , '    CAN.DEPTH', '     CAN.RHOS'        &
+                               , '   CAN.RELHUM' , '    CAN.THETA', '    CAN.THEIV'        &
+                               , ' CAN.ENTHALPY' , '     SFC.TEMP', '      SFC.SHV'        &
+                               , '    LEAF.TEMP' , '   LEAF.WATER', '    WOOD.TEMP'        &
+                               , '   WOOD.WATER' , '       GGBARE', '        GGVEG'        &
+                               , '        GGNET' , '      OPENCAN', '    SOIL.TEMP'        &
+                               , '   SOIL.WATER' , '       SOILCP', '       SOILWP'        &
+                               , '       SOILFC' , '       SLMSTS', '        USTAR'        &
+                               , '        TSTAR' , '        QSTAR', '        CSTAR'        &
+                               , '         ZETA' , '      RI.BULK', '   GND.RSHORT'        &
+                               , '    GND.RLONG' , '       WFLXLC', '       WFLXWC'        &
+                               , '       WFLXGC' , '       WFLXAC', '       TRANSP'        &
+                               , '        WSHED' , '    INTERCEPT', '  THROUGHFALL'        &
+                               , '       HFLXGC' , '       HFLXLC', '       HFLXWC'        &
+                               , '       HFLXAC' , '       CFLXAC', '       CFLXST'        &
+                               , '        CWDRH' , '       SOILRH', '          GPP'        &
+                               , '       PLRESP' , ' PAR.BEAM.TOP', ' PAR.DIFF.TOP'        &
+                               , ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP', ' PAR.BEAM.BOT'        &
+                               , ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
+                               
                                
                                
                                
@@ -4095,27 +4118,28 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , rk4site%atm_shv       , rk4site%atm_co2       , rk4site%vels          &
                    , rk4site%pcpg          , rk4site%geoht         , rk4site%atm_rhos      &
                    , rk4site%atm_rhv       , rk4site%atm_theta     , rk4site%atm_theiv     &
-                   , rk4site%rshort        , rk4site%rlong         , initp%can_prss        &
-                   , initp%can_temp        , initp%can_shv         , initp%can_co2         &
-                   , initp%can_depth       , initp%can_rhos        , initp%can_rhv         &
-                   , initp%can_theta       , can_theiv             , initp%can_enthalpy    &
-                   , initp%ground_temp     , initp%ground_shv      , avg_leaf_temp         &
-                   , sum_leaf_water        , avg_wood_temp         , sum_wood_water        &
-                   , initp%ggbare          , initp%ggveg           , initp%ggnet           &
-                   , initp%opencan_frac    , initp%soil_tempk(nzg) , initp%soil_water(nzg) &
-                   , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  &
-                   , soil8(nsoil)%slmsts   , initp%ustar           , initp%tstar           &
-                   , initp%qstar           , initp%cstar           , initp%zeta            &
-                   , initp%ribulk          , fluxp%flx_rshort_gnd  , fluxp%flx_rlong_gnd   &
-                   , fluxp%flx_vapor_lc    , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    &
-                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
-                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
-                   , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
-                   , fluxp%flx_carbon_ac   , fluxp%flx_carbon_st   , initp%cwd_rh          &
-                   , soil_rh               , sum_gpp               , sum_plresp            &
-                   , rk4site%par_beam      , rk4site%par_diffuse   , rk4site%nir_beam      &
-                   , rk4site%nir_diffuse   , par_b_beam            , par_b_diff            &
-                   , nir_b_beam            , nir_b_diff
+                   , rk4site%atm_vpdef     , rk4site%rshort        , rk4site%rlong         &
+                   , initp%can_prss        , initp%can_temp        , initp%can_shv         &
+                   , initp%can_co2         , initp%can_depth       , initp%can_rhos        &
+                   , initp%can_rhv         , initp%can_theta       , can_theiv             &
+                   , initp%can_enthalpy    , initp%ground_temp     , initp%ground_shv      &
+                   , avg_leaf_temp         , sum_leaf_water        , avg_wood_temp         &
+                   , sum_wood_water        , initp%ggbare          , initp%ggveg           &
+                   , initp%ggnet           , initp%opencan_frac    , initp%soil_tempk(nzg) &
+                   , initp%soil_water(nzg) , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   &
+                   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   , initp%ustar           &
+                   , initp%tstar           , initp%qstar           , initp%cstar           &
+                   , initp%zeta            , initp%ribulk          , fluxp%flx_rshort_gnd  &
+                   , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    , fluxp%flx_vapor_wc    &
+                   , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    , fluxp%flx_transp      &
+                   , fluxp%flx_wshed_vg    , fluxp%flx_intercepted , fluxp%flx_throughfall &
+                   , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc &
+                   , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   , fluxp%flx_carbon_st   &
+                   , initp%cwd_rh          , soil_rh               , sum_gpp               &
+                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
+                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
+                   , par_b_diff            , nir_b_beam            , nir_b_diff            
+                   
 
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!

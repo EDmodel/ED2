@@ -2070,6 +2070,196 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function computes the vapour pressure deficit based on pressure, temper-     !
+   ! ature, and vapour mixing ratio (or specific humidity).                                !
+   !                                                                                       !
+   ! IMPORTANT: IT ALWAYS ASSUMES THAT VAPOUR PRESSURE DEFICIT IS WITH RESPECT TO THE      !
+   !            LIQUID PHASE.  If you would like it to switch between ice and liquid, then !
+   !            use vpdefil instead.                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function vpdefl(pres,temp,humi,is_shv)
+      use rconstants , only : ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in) :: pres    ! Air pressure                           [    Pa]
+      real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
+      real(kind=4), intent(in) :: humi    ! Humidity                               [ kg/kg]
+      logical     , intent(in) :: is_shv  ! Input humidity is specific humidity    [   T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=4)             :: shv     ! Specific humidity                      [ kg/kg]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: psat    ! Saturation vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
+      else
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      psat = eslf(temp)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      vpdefl = max(0.0 , psat - pvap)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function vpdefl
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the vapour pressure deficit based on pressure, temper-     !
+   ! ature, and vapour mixing ratio (or specific humidity).                                !
+   !                                                                                       !
+   ! IMPORTANT: IT ALWAYS ASSUMES THAT VAPOUR PRESSURE DEFICIT IS WITH RESPECT TO THE      !
+   !            ICE PHASE.  If you would like it to switch between ice and liquid, then    !
+   !            use vpdefil instead.                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function vpdefi(pres,temp,humi,is_shv)
+      use rconstants , only : ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in) :: pres    ! Air pressure                           [    Pa]
+      real(kind=4), intent(in) :: temp    ! Temperature                            [     K]
+      real(kind=4), intent(in) :: humi    ! Humidity                               [ kg/kg]
+      logical     , intent(in) :: is_shv  ! Input humidity is specific humidity    [   T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=4)             :: shv     ! Specific humidity                      [ kg/kg]
+      real(kind=4)             :: pvap    ! Vapour pressure                        [    Pa]
+      real(kind=4)             :: psat    ! Saturation vapour pressure             [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
+      else
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      psat = esif(temp)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      vpdefi = max(0.0 , psat - pvap)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function vpdefi
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the vapour pressure deficit based on pressure, temper-     !
+   ! ature, and vapour mixing ratio (or specific humidity).                                !
+   !                                                                                       !
+   ! IMPORTANT: This fucntion may consider whether the temperature is above or below the   !
+   !            freezing point to choose which saturation to use. It is possible to        !
+   !            explicitly force not to use ice in case level is 2 or if you have reasons  !
+   !            not to use ice (e.g. reading data that did not consider ice).              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function vpdefil(pres,temp,humi,is_shv,useice)
+      use rconstants , only : t3ple  & ! intent(in)
+                            , ep     & ! intent(in)
+                            , toodry ! ! intent(in)
+      implicit none
+      !----- Required arguments. ----------------------------------------------------------!
+      real(kind=4), intent(in)           :: pres    ! Air pressure                 [    Pa]
+      real(kind=4), intent(in)           :: temp    ! Temperature                  [     K]
+      real(kind=4), intent(in)           :: humi    ! Humidity                     [ kg/kg]
+      logical     , intent(in)           :: is_shv  ! Input is specific humidity   [   T|F]
+       !----- Optional arguments. ----------------------------------------------------------!
+      logical     , intent(in), optional :: useice  ! May use ice thermodynamics   [   T|F]
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=4)                       :: shv     ! Specific humidity            [ kg/kg]
+      real(kind=4)                       :: pvap    ! Vapour pressure              [    Pa]
+      real(kind=4)                       :: psat    ! Saturation vapour pressure   [    Pa]
+      logical                            :: frozen  ! Will use ice saturation now  [   T|F]
+      !------------------------------------------------------------------------------------!
+      
+      !------------------------------------------------------------------------------------!
+      !    Check whether we should use ice or liquid saturation.                           !
+      !------------------------------------------------------------------------------------!
+      if (present(useice)) then
+         frozen = useice  .and. temp < t3ple
+      else 
+         frozen = bulk_on .and. temp < t3ple
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Make sure that we have specific humidity. -------------------------------------!
+      if (is_shv) then
+         shv = max(toodry,humi)
+      else
+         shv = max(toodry,humi) / ( 1.0 + max(toodry,humi) )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !------------------------------------------------------------------------------------!
+      pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
+      if (frozen) then
+         psat = esif(temp)
+      else
+         psat = esif(temp)
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Find the relative humidity.                                                    !
+      !------------------------------------------------------------------------------------!
+      vpdefil = max(0.0 , psat - pvap)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function vpdefil
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This function finds the actual temperature based on the virtual temperature and   !
    ! mixing ratio. Two notes:                                                              !
    ! 1. It will use the condensation effect in case the total mixing ratio is provided.    !
@@ -3543,6 +3733,8 @@ module therm_lib
       logical                            :: converged ! Convergence handle
       logical                            :: zside     ! Side checker for Regula Falsi
       logical                            :: frozen    ! Will use ice thermodynamics
+      !----- Local constants. -------------------------------------------------------------!
+      logical     , parameter            :: debug = .false.
       !------------------------------------------------------------------------------------!
 
 
@@ -3564,9 +3756,11 @@ module therm_lib
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write (unit=36,fmt='(a)') '----------------------------------------------------------'
-      !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x))')                                  &
-      !   'INPUT : it=',-1,'theiv=',theiv,'pres=',0.01*pres,'rtot=',rtot*1000.
+      if (debug) then
+         write (unit=36,fmt='(a)') '------------------------------------------------------'
+         write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x))')                               &
+            'INPUT : it=',-1,'theiv=',theiv,'pres=',0.01*pres,'rtot=',rtot*1000.
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -3583,8 +3777,11 @@ module therm_lib
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')                &
-      !   'NEWTON: it=',0,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow,'deriv=',deriv
+      if (debug) then
+         write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
+             'NEWTON: it=',0,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow            &
+            ,'deriv=',deriv
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -3614,9 +3811,11 @@ module therm_lib
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
-         !   'NEWTON: it=',itn,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow           &
-         !          ,'deriv=',deriv
+         if (debug) then
+            write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')          &
+               'NEWTON: it=',itn,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow        &
+                      ,'deriv=',deriv
+         end if
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
@@ -3652,9 +3851,11 @@ module therm_lib
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')          &
-            !   '2NGGSS: tt=',0,'tlclz=',tlclz-t00,'tlcla=',tlcla-t00,'pvap=',0.01*pvap     &
-            !           ,'funa=',funa,'funz=',funnow,'delta=',delta
+            if (debug) then
+               write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')       &
+                  '2NGGSS: tt=',0,'tlclz=',tlclz-t00,'tlcla=',tlcla-t00,'pvap=',0.01*pvap  &
+                          ,'funa=',funa,'funz=',funnow,'delta=',delta
+            end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
             zside = .false.
@@ -3667,9 +3868,11 @@ module therm_lib
 
                !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-               !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')       &
-               !   '2NGGSS: tt=',itb,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funz       &
-               !           ,'delta=',delta
+               if (debug) then
+                  write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')    &
+                     '2NGGSS: tt=',itb,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funz    &
+                             ,'delta=',delta
+               end if
                !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
@@ -3701,8 +3904,10 @@ module therm_lib
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),1(a,1x,es11.4,1x))')          &
-            !   'REGFAL: it=',itb,'tlcl =',tlcl -t00,'pvap=',0.01*pvap,'fun=',funnow
+            if (debug) then
+               write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),1(a,1x,es11.4,1x))')       &
+                  'REGFAL: it=',itb,'tlcl =',tlcl -t00,'pvap=',0.01*pvap,'fun=',funnow
+            end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -3735,11 +3940,13 @@ module therm_lib
          thetaeiv2thil  = theiv * exp (- alvl(tlcl) * rtot / (cpdry * tlcl) )
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
-         !   'ANSWER: itb=',itn,'tlcl=',tlcl-t00,'eslcl=',0.01*pvap                         &
-         !          ,'thil=',thetaeiv2thil,'funa=',funa,'funz=',funz
-         !write (unit=36,fmt='(a)') '-------------------------------------------------------'
-         !write (unit=36,fmt='(a)') ' '
+         if (debug) then
+            write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')          &
+               'ANSWER: itb=',itn,'tlcl=',tlcl-t00,'eslcl=',0.01*pvap                      &
+                      ,'thil=',thetaeiv2thil,'funa=',funa,'funz=',funz
+            write (unit=36,fmt='(a)') '---------------------------------------------------'
+            write (unit=36,fmt='(a)') ' '
+         end if
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
@@ -4373,6 +4580,8 @@ module therm_lib
       logical                     :: zside     ! Aux. Flag, for two purposes:
                                                ! 1. Found a 2nd guess for regula falsi.
                                                ! 2. I retained the "zside" (T/F)
+      !----- Local constants. -------------------------------------------------------------!
+      logical     , parameter     :: debug = .false.
       !------------------------------------------------------------------------------------!
 
       t1stguess = temp
@@ -4422,7 +4631,12 @@ module therm_lib
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write (unit=46,fmt='(a)') '--------------------------------------------------------'
+      if (debug) then
+         write (unit=46,fmt='(a)') '------------------------------------------------------'
+         write (unit=46,fmt='(a,1x,i5,1x,5(a,1x,f11.4,1x))')                               &
+            'INPUT: it=',-1,'thil=',thil,'exner=',exner,'press=',0.01*pres                 &
+           ,'rtot=',1000.*rtot,'t1st=',temp-t00
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -4441,9 +4655,11 @@ module therm_lib
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')                  &
-      !   'NEWTON: it=',0,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq          &
-      !  ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
+      if (debug) then
+         write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')                &
+            'NEWTON: it=',0,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq        &
+           ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -4486,9 +4702,11 @@ module therm_lib
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')               &
-         !   'NEWTON: it=',itn,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq     &
-         !  ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
+         if (debug) then
+            write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')             &
+               'NEWTON: it=',itn,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq   &
+              ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
+         end if
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          
@@ -4545,9 +4763,9 @@ module therm_lib
          !---------------------------------------------------------------------------------!
          else
             if (abs(funnow-funa) < 100.*toler*tempa) then
-               delta = 100.*toler*tempa
+               delta = 0.5
             else
-               delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),100.*toler*tempa)
+               delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),0.5)
             end if
             tempz = tempa + delta
             funz  = funa
@@ -4622,10 +4840,12 @@ module therm_lib
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            !write (unit=46,fmt='(a,1x,i5,1x,10(a,1x,f11.4,1x))')                          &
-            !   'REGFAL: it=',itb,'temp=',temp-t00,'tempa=',tempa-t00,'tempz=',tempz-t00   &
-            !  ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice                   &
-            !  ,'rvap=',1000.*rvap,'fun=',funnow,'funa=',funa,'funz=',funz
+            if (debug) then
+               write (unit=46,fmt='(a,1x,i5,1x,10(a,1x,f11.4,1x))')                        &
+                  'REGFAL: it=',itb,'temp=',temp-t00,'tempa=',tempa-t00,'tempz=',tempz-t00 &
+                 ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice                 &
+                 ,'rvap=',1000.*rvap,'fun=',funnow,'funa=',funa,'funz=',funz
+            end if
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -4719,10 +4939,13 @@ module therm_lib
       end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x))')                                 &
-      !   'ANSWER: it=',itb,'funf=',funnow,'temp=',temp-t00                                &
-      !  ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice,'rvap=',1000.*rvap
-      !write (unit=46,fmt='(a)') '----------------------------------------------------------'
+      if (debug) then
+         write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x))')                               &
+            'ANSWER: it=',itb,'temp=',temp-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq       &
+                             ,'rice=',1000.*rice,'rvap=',1000.*rvap,'funf=',funnow
+         write (unit=46,fmt='(a)') '------------------------------------------------------'
+         write (unit=46,fmt='(a)') ''
+      end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       return

@@ -310,6 +310,7 @@ subroutine initial_thermo_grell(m1,mgmzp,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,d
       qice0(k)  = max(0.,rice(kr))
       qvap0(k)  = max(toodry,qtot0(k)-qice0(k)-qliq0(k))
       t0(k)     = extheta2temp(exner0(k),theta(kr))
+      call grell_sanity_thil2tqall(k,z(k),thil0(k),exner0(k),p0(k),qtot0(k),'thermo_zero')
 
       !------ 4. Finding the ice-vapour equivalent potential temperature ------------------!
       theiv0(k) = thetaeiv(thil0(k),p0(k),t0(k),qvap0(k),qtot0(k))
@@ -348,6 +349,7 @@ subroutine initial_thermo_grell(m1,mgmzp,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,d
       qtot(k)  = max(toodry,rtp(kr)   + dqtotdt(k) * dtime)
       !------ 5. Find the equilibrium state. Temperature 1st guess is simply t0. ----------!
       t(k)     = t0(k)
+      call grell_sanity_thil2tqall(k,z(k),thil(k),exner(k),p(k),qtot(k),'thermo_extrap')
       call thil2tqall(thil(k),exner(k),p(k),qtot(k),qliq(k),qice(k),t(k),qvap(k),qsat)
       !------ 6. Finding the ice-vapour equivalent potential temperature ------------------!
       theiv(k) = thetaeiv(thil(k),p(k),t(k),qvap(k),qtot(k))
@@ -405,6 +407,7 @@ subroutine initial_thermo_grell(m1,mgmzp,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,d
    !----- 10. Air density -----------------------------------------------------------------!
    rhosur      = idealdens(psur,tsur,qvapsur,qtotsur)
    rho1(1)     = rhosur
+   call grell_sanity_thil2tqall(1,z1(1),thil1(1),exner1(1),p1(1),qtot1(1),'thermo_surface')
    !---------------------------------------------------------------------------------------!
    !]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]!
 
@@ -648,7 +651,8 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
                               ,maxens_cap,inv_ensdim,closure_type,ierr_cap,upmf_ens        &
                               ,sgrell1_3d,sgrell2_3d)
 
-   use rconstants  , only : hr_sec
+   use rconstants  , only : hr_sec        & ! intent(in)
+                          , onethird      ! ! intent(in)
    use mem_ensemble, only : ensemble_vars ! ! type
    use mem_scratch_grell, only: &
            kgoff                & ! intent(in) - BRAMS grid offset
@@ -767,34 +771,33 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
       do icap=1,maxens_cap
          upmf_ave_cap5(icap)= sum(upmf_ens(1,:,:,icap)) * maxens_efflsf_i
       end do
-   case ('nc','en')
+   case ('nc','en','qi')
       !------------------------------------------------------------------------------------!
       !  This became quite out of order after I changed the order in which each closure    !
       ! is called. I will keep "disorganized" for back compability.                        !
-      ! 1-3: Grell            (upmf_ave_cap1)                                              !
+      ! 1-3: Kain-Fritsch     (upmf_ave_cap4)                                              !
       ! 4-7: Arakawa-Schubert (upmf_ave_cap5)                                              !
-      ! 8-10: Kain-Fritsch    (upmf_ave_cap4)                                              !
+      ! 8-10: Grell           (upmf_ave_cap1)                                              !
       ! 11-13: Krishnamurti   (upmf_ave_cap3)                                              !
       ! 14-16: Frank-Cohen    (upmf_ave_cap2)                                              !
       !------------------------------------------------------------------------------------!
       do icap=1,maxens_cap
-         upmf_ave_cap1(icap) = sum(upmf_ens(1:3,:,:,icap))*0.3333333333*maxens_efflsf_i
+         upmf_ave_cap4(icap) = sum(upmf_ens(1:3,:,:,icap)) * onethird * maxens_efflsf_i
       end do
       do icap=1,maxens_cap
          upmf_ave_cap5(icap) = sum(upmf_ens(4:7,:,:,icap))*0.250*maxens_efflsf_i
       end do
-      do icap=1,maxens_cap
-         upmf_ave_cap4(icap) = sum(upmf_ens(8:10,:,:,icap))                                &
-                             * 0.3333333333 * maxens_efflsf_i
-      end do
+      if (closure_type == 'nc' .or. closure_type == 'en') then
+         do icap=1,maxens_cap
+            upmf_ave_cap1(icap) = sum(upmf_ens(8:10,:,:,icap)) * onethird * maxens_efflsf_i
+         end do
+      end if
       if (closure_type == 'en') then
          do icap=1,maxens_cap
-            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap))                            &
-                                * 0.3333333333*maxens_efflsf_i
+            upmf_ave_cap3(icap) = sum(upmf_ens(11:13,:,:,icap)) * onethird*maxens_efflsf_i
          end do
          do imbp=1,maxens_lsf
-            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap))                            &
-                                * 0.3333333333*maxens_efflsf_i
+            upmf_ave_cap2(icap) = sum(upmf_ens(14:16,:,:,icap)) * onethird*maxens_efflsf_i
          end do
       end if
    end select
@@ -889,13 +892,15 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
          sgrell1_3d(8)  = 0.
          sgrell1_3d(9)  = 0.
          sgrell1_3d(10) = upmf_ave(1)
-      case ('nc','en')
-         sgrell1_3d(6)  = .3333333 * sum(upmf_ave(1:3))
-         sgrell1_3d(9)  = .3333333 * sum(upmf_ave(8:10))
+      case ('nc','en','qi')
+         sgrell1_3d(9)  = onethird * sum(upmf_ave(1:3))
          sgrell1_3d(10) = .25      * sum(upmf_ave(4:7))
+         if (closure_type == 'nc' .or. closure_type == 'en') then
+            sgrell1_3d(6)  = onethird * sum(upmf_ave(8:10))
+         end if
          if (closure_type == 'en') then
-            sgrell1_3d(7) = .3333333 * sum(upmf_ave(14:16))
-            sgrell1_3d(8) = .3333333 * sum(upmf_ave(11:13))
+            sgrell1_3d(7) = onethird * sum(upmf_ave(14:16))
+            sgrell1_3d(8) = onethird * sum(upmf_ave(11:13))
          else
             sgrell1_3d(7) = 0.
             sgrell1_3d(8) = 0.
@@ -953,13 +958,15 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
          sgrell1_3d(13) = 0.
          sgrell1_3d(14) = 0.
          sgrell1_3d(15) = upmf_ave(1)*hr_sec
-      case ('nc','en')
-         sgrell1_3d(11) = .3333333 * sum(upmf_ave(1:3))*hr_sec
-         sgrell1_3d(14) = .3333333 * sum(upmf_ave(8:10))*hr_sec
-         sgrell1_3d(15) = .25      * sum(upmf_ave(4:7))*hr_sec
+      case ('nc','en','qi')
+         sgrell1_3d(14) = onethird * sum(upmf_ave(1:3)) *hr_sec
+         sgrell1_3d(15) = .25      * sum(upmf_ave(4:7)) *hr_sec
+         if (closure_type == 'nc' .or. closure_type == 'en') then
+            sgrell1_3d(11) = onethird * sum(upmf_ave(8:10))*hr_sec
+         end if
          if (closure_type == 'en') then
-            sgrell1_3d(12)= .3333333 * sum(upmf_ave(14:16))*hr_sec
-            sgrell1_3d(13)= .3333333 * sum(upmf_ave(11:13))*hr_sec
+            sgrell1_3d(12)= onethird * sum(upmf_ave(14:16))*hr_sec
+            sgrell1_3d(13)= onethird * sum(upmf_ave(11:13))*hr_sec
          else
             sgrell1_3d(12)= 0.
             sgrell1_3d(13)= 0.
@@ -1012,10 +1019,12 @@ subroutine grell_massflx_stats(m1,icld,itest,dti,maxens_dyn,maxens_lsf,maxens_ef
          sgrell1_3d(21) = 0.
          sgrell1_3d(22) = upmf_ave(1)
          sgrell1_3d(23) = 0.
-      case ('nc')
-         sgrell1_3d(21) = .3333333 * sum(upmf_ave(1:3))*hr_sec
+      case ('nc','qi')
+         sgrell1_3d(23) = onethird * sum(upmf_ave(1:3))*hr_sec
          sgrell1_3d(22) = .25      * sum(upmf_ave(4:7))*hr_sec
-         sgrell1_3d(23) = .3333333 * sum(upmf_ave(8:10))*hr_sec
+         if (closure_type == 'nc') then
+            sgrell1_3d(21) = onethird * sum(upmf_ave(8:10))*hr_sec
+         end if
       end select
    end if
    return
@@ -1085,7 +1094,7 @@ subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qli
    integer :: m               ! Counter                                          [      --]
    !---------------------------------------------------------------------------------------!
 
-
+   
 
    !---------------------------------------------------------------------------------------!
    !      Let's be optimistic and assume that everything is fine.                          !
@@ -1101,12 +1110,12 @@ subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qli
       !     Find derived bounds.                                                           !
       !------------------------------------------------------------------------------------!
       !----- Temperature. -----------------------------------------------------------------!
-      grellmin_t      = grellmin_t0 - gocp            * z(k)
+      grellmin_t      = max(t00-120.,grellmin_t0 - gocp * z(k))
       grellmax_t      = grellmax_t0 - grell_lapse_wet * z(k)
       everything_fine = t(k) >= grellmin_t .and. t(k) <= grellmax_t
       !----- Vapour pressure. -------------------------------------------------------------!
       grellmin_pvap   = grellmin_rhv * eslif(grellmin_t)
-      grellmin_pvap   = grellmax_rhv * eslif(grellmax_t)
+      grellmax_pvap   = grellmax_rhv * eslif(grellmax_t)
       !----- Vapour mixing ratio. ---------------------------------------------------------!
       grellmin_qvap   = ep * grellmin_pvap / (press(k) - grellmin_pvap)
       grellmax_qvap   = ep * grellmax_pvap / (press(k) - grellmax_pvap)
@@ -1133,10 +1142,10 @@ subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qli
          ! disappointed... But hey, don't hate me messenger, I'm just going to print       !
          ! this so you can work towards a better model.                                    !
          !---------------------------------------------------------------------------------!
-         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(169a)'    ) ('-',m=1,169)
          write (unit=*,fmt='(3(a,1x))' ) ' -> Event: ',trim(which)                         &
                                         ,' has unrealistic thermodynamics...'
-         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(169a)'    ) ('-',m=1,169)
          write (unit=*,fmt='(a)'       ) ' BOUNDS'
          write (unit=*,fmt='(a)'       ) ''
          write (unit=*,fmt='(a,es12.5)') ' Min TEMP  [    degC]: ',grellmin_t     - t00
@@ -1154,7 +1163,7 @@ subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qli
          write (unit=*,fmt='(a,es12.5)') ' Min CO2   [umol/mol]: ',grellmin_co2
          write (unit=*,fmt='(a,es12.5)') ' Max CO2   [umol/mol]: ',grellmax_co2
          write (unit=*,fmt='(a)'       ) ''
-         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(169a)'    ) ('-',m=1,169)
          write (unit=*,fmt='(13(a,1x))') '       LAYER','      HEIGHT','    PRESSURE'      &
                                         ,'       EXNER','        TEMP','    THETA_IL'      &
                                         ,'  THETAT_EIV','        QVAP','        QLIQ'      &
@@ -1165,14 +1174,14 @@ subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qli
                                         ,'           K','        g/kg','        g/kg'      &
                                         ,'        g/kg','        g/kg','       kg/m3'      &
                                         ,'    umol/mol'
-         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(169a)'    ) ('-',m=1,169)
           do l=mkx,1,-1
             write (unit=*,fmt='(i12,1x,12(f12.2))')                                        &
                                          l,z(l),press(l)*0.01,exner(l),t(l)-t00,thil(l)    &
                                         ,theiv(l),qvap(l)*1000.,qliq(l)*1000.              &
                                         ,qice(l)*1000.,qtot(l)*1000.,rho(l),co2(l)
          end do
-         write (unit=*,fmt='(150a)'    ) ('-',m=1,169)
+         write (unit=*,fmt='(169a)'    ) ('-',m=1,169)
          write (unit=*,fmt='(a)'       ) ''
          call brams_fail_whale()
          call abort_run('Unreasonable thermodynamic variables','grell_sanity_check'        &
@@ -1185,5 +1194,129 @@ subroutine grell_sanity_check(mkx,mgmzp,z,press,exner,theiv,thil,t,qtot,qvap,qli
 
    return
 end subroutine grell_sanity_check
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine checks whether the partial results in the cumulus parametrisation   !
+! make sense or not.                                                                       !
+!------------------------------------------------------------------------------------------!
+subroutine grell_sanity_thil2tqall(k,z,thil,exner,press,qtot,which)
+   use grell_coms, only : grellmax_zcheck & ! intent(in)
+                        , grell_lapse_wet & ! intent(in)
+                        , grellmin_t0     & ! intent(in)
+                        , grellmax_t0     & ! intent(in)
+                        , grellmin_rhv    & ! intent(in)
+                        , grellmax_rhv    & ! intent(in)
+                        , grellmin_co2    & ! intent(in)
+                        , grellmax_co2    ! ! intent(in)
+   use therm_lib , only : extemp2theta    & ! intent(in)
+                        , eslif           & ! intent(in)
+                        , thetaeivs       ! ! intent(in)
+   use rconstants, only : ep              & ! intent(in)
+                        , t00             & ! intent(in)
+                        , gocp            ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer         , intent(in) :: k     ! Counter                               [      --]
+   real            , intent(in) :: z     ! Height                                [       m]
+   real            , intent(in) :: thil  ! I.L. Pot. temp.                       [       K]
+   real            , intent(in) :: exner ! Exner function                        [  J/kg/K]
+   real            , intent(in) :: press ! Pressure                              [      Pa]
+   real            , intent(in) :: qtot  ! Total mixing ratio                    [   kg/kg]
+   character(len=*), intent(in) :: which ! Which call?
+   !----- Local variables. ----------------------------------------------------------------!
+   real    :: grellmin_t      ! Minimum temperature                              [       K]
+   real    :: grellmax_t      ! Maximum temperature                              [       K]
+   real    :: grellmin_thil   ! Minimum ice-liquid potential temperature         [       K]
+   real    :: grellmax_thil   ! Maximum ice-liquid potential temperature         [       K]
+   real    :: grellmin_pvap   ! Minimum vapour pressure                          [      Pa]
+   real    :: grellmax_pvap   ! Maximum vapour pressure                          [      Pa]
+   real    :: grellmin_qvap   ! Minimum vapour mixing ratio                      [   kg/kg]
+   real    :: grellmax_qvap   ! Maximum vapour mixing ratio                      [   kg/kg]
+   real    :: grellmin_qtot   ! Minimum total mixing ratio                       [   kg/kg]
+   real    :: grellmax_qtot   ! Maximum total mixing ratio                       [   kg/kg]
+   logical :: everything_fine ! This will become false if anything looks wrong   [     T|F]
+   integer :: m               ! Counter 
+   !---------------------------------------------------------------------------------------!
+
+   
+
+   !---------------------------------------------------------------------------------------!
+   !      Let's be optimistic and assume that everything is fine.                          !
+   !---------------------------------------------------------------------------------------!
+   everything_fine = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find derived bounds.                                                              !
+   !---------------------------------------------------------------------------------------!
+   !----- Temperature. --------------------------------------------------------------------!
+   grellmin_t      = max(t00-120.,grellmin_t0 - gocp * z)
+   grellmax_t      = grellmax_t0 - grell_lapse_wet * z
+   !----- Vapour pressure. ----------------------------------------------------------------!
+   grellmin_pvap   = grellmin_rhv * eslif(grellmin_t)
+   grellmax_pvap   = grellmax_rhv * eslif(grellmax_t)
+   !----- Vapour mixing ratio. ------------------------------------------------------------!
+   grellmin_qvap   = ep * grellmin_pvap / (press - grellmin_pvap)
+   grellmax_qvap   = ep * grellmax_pvap / (press - grellmax_pvap)
+   !----- Total mixing ratio.  Minimum is unsaturated, maximum assumed to 2*qvap... -------!
+   grellmin_qtot   = grellmin_qvap
+   grellmax_qtot   = grellmax_qvap * 2.0
+   everything_fine = qtot >= grellmin_qtot .and. qtot <= grellmax_qtot
+   !----- Ice-liquid potential temperature. -----------------------------------------------!
+   grellmin_thil   = extemp2theta(exner,grellmin_t)
+   grellmax_thil   = extemp2theta(exner,grellmax_t)
+   everything_fine = thil >= grellmin_thil .and. thil <= grellmax_thil
+   !---------------------------------------------------------------------------------------!
+
+   if (.not. everything_fine) then
+      !------------------------------------------------------------------------------------!
+      !      This is the problem of being optimistic: more often than not you may be       !
+      ! disappointed... But hey, don't hate me messenger, I'm just going to print          !
+      ! this so you can work towards a better model.                                       !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(92a)'       ) ('-',m=1,92)
+      write (unit=*,fmt='(3(a,1x))'   ) ' -> Event: ',trim(which)                          &
+                                       ,' has unrealistic thermodynamics...'
+      write (unit=*,fmt='(92a)'       ) ('-',m=1,92)
+      write (unit=*,fmt='(a)'         ) ' BOUNDS'
+      write (unit=*,fmt='(a)'         ) ''
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Min TEMP  [    degC]: ',grellmin_t     - t00
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Max TEMP  [    degC]: ',grellmax_t     - t00
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Min THIL  [       K]: ',grellmin_thil
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Max THIL  [       K]: ',grellmax_thil
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Min PVAP  [     hPa]: ',grellmin_pvap  * 0.01
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Max PVAP  [     hPa]: ',grellmax_pvap  * 0.01
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Min QVAP  [    g/kg]: ',grellmin_qvap  * 1000.
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Max QVAP  [    g/kg]: ',grellmax_qvap  * 1000.
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Min QTOT  [    g/kg]: ',grellmin_qtot  * 1000.
+      write (unit=*,fmt='(a,es12.5)'  ) '  - Max QTOT  [    g/kg]: ',grellmax_qtot  * 1000.
+      write (unit=*,fmt='(a)'         ) ''
+      write (unit=*,fmt='(a)'         ) ' VALUES'
+      write (unit=*,fmt='(a)'         ) ''
+      write (unit=*,fmt='(a,1x,i6)'   ) '  - K                   : ',k
+      write (unit=*,fmt='(a,1x,f12.2)') '  - THIL      [       K]: ',thil
+      write (unit=*,fmt='(a,1x,f12.2)') '  - EXNER     [  J/Kg/K]: ',exner
+      write (unit=*,fmt='(a,1x,f12.2)') '  - PRESS     [     hPa]: ',press * 0.01
+      write (unit=*,fmt='(a,1x,f12.2)') '  - QTOT      [    g/kg]: ',qtot  * 1000.
+      write (unit=*,fmt='(92a)'       ) ('-',m=1,92)
+      write (unit=*,fmt='(a)'         ) ''
+      call brams_fail_whale()
+      call abort_run('Unreasonable thermodynamic variables','grell_sanity_thil2tqall'      &
+                    ,'grell_cupar_aux.f90')
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine grell_sanity_thil2tqall
 !==========================================================================================!
 !==========================================================================================!

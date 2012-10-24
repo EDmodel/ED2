@@ -42,7 +42,7 @@ module mortality
 
 
       !----- Assume happy end, all plants survive... --------------------------------------!
-      cpatch%mort_rate(:,ico) = 0.0
+      cpatch%mort_rate(1:4,ico) = 0.0
       ipft = cpatch%pft(ico)
 
       !------------------------------------------------------------------------------------!
@@ -87,9 +87,141 @@ module mortality
       else
          cpatch%mort_rate(4,ico) = 0.
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 5. Disturbance rate mortality.  This is not used by the cohort dynamics, instead   !
+      !    this is just to account for the lost density due to the patch creation.  This   !
+      !    mortality will be determined by the disturbance_mortality subroutine, not here. !
+      !------------------------------------------------------------------------------------!
+      !cpatch%mort_rate(5,ico) = TBD
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine mortality_rates
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine determines the mortality rates associated with the current        !
+   ! disturbance.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   subroutine disturbance_mortality(csite,ipa,disturbance_rate,dest_type,poly_dest_type    &
+                                   ,mindbh_harvest)
+      use ed_state_vars, only : sitetype  & ! structure
+                              , patchtype ! ! structure
+      use ed_max_dims  , only : n_pft     ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                   , target     :: csite
+      integer                          , intent(in) :: ipa
+      real                             , intent(in) :: disturbance_rate
+      integer                          , intent(in) :: dest_type
+      integer                          , intent(in) :: poly_dest_type
+      real           , dimension(n_pft), intent(in) :: mindbh_harvest
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                  , pointer    :: cpatch
+      integer                                       :: ico
+      real                                          :: f_survival
+      !------------------------------------------------------------------------------------!
+
+      cpatch => csite%patch(ipa)
+      do ico=1,cpatch%ncohorts
+         f_survival = survivorship(dest_type,poly_dest_type,mindbh_harvest,csite,ipa,ico)
+         cpatch%mort_rate(5,ico) = cpatch%mort_rate(5,ico)                                 &
+                                 - log( f_survival                                         &
+                                      + (1.0 - f_survival) * exp(- disturbance_rate) )
+      end do
+      return
+   end subroutine disturbance_mortality
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the survivorship rate after some disturbance happens.      !
+   !---------------------------------------------------------------------------------------!
+   real function survivorship(dest_type,poly_dest_type,mindbh_harvest,csite,ipa,ico)
+      use ed_state_vars, only : patchtype                & ! structure
+                              , sitetype                 ! ! structure
+      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
+      use pft_coms     , only : treefall_s_ltht          & ! intent(in)
+                              , treefall_s_gtht          ! ! intent(in)
+      use ed_max_dims  , only : n_pft                    ! ! intent(in)
+      
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                  , target     :: csite
+      real          , dimension(n_pft), intent(in) :: mindbh_harvest
+      integer                         , intent(in) :: ico
+      integer                         , intent(in) :: ipa
+      integer                         , intent(in) :: dest_type
+      integer                         , intent(in) :: poly_dest_type
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                 , pointer    :: cpatch
+      integer                                      :: ipft
+      !------------------------------------------------------------------------------------!
+
+
+      cpatch => csite%patch(ipa)
+      ipft = cpatch%pft(ico)
+
+      !----- Base the survivorship rates on the destination type. -------------------------!
+      select case(dest_type)
+      case (1) !----- Agriculture/cropland. -----------------------------------------------!
+         survivorship = 0.0
+
+      case (2) !----- Secondary land or forest plantation. --------------------------------!
+
+         !----- Decide the fate based on the type of secondary disturbance. ---------------!
+         select case (poly_dest_type)
+         case (0) !----- Land abandonment, assume this is the last harvest. ---------------!
+            survivorship = 0.0
+         case (1) !----- Biomass logging, assume that nothing stays. ----------------------!
+            survivorship = 0.0
+         case (2) !----- Selective logging. -----------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !     If the PFT DBH exceeds the minimum PFT for harvesting, the survivorship  !
+            ! should be zero, otherwise, we assume survivorship similar to the treefall    !
+            ! disturbance rate for short trees.                                            ! 
+            !------------------------------------------------------------------------------!
+            if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
+               survivorship = 0.0
+            else
+               survivorship = treefall_s_ltht(ipft)
+            end if
+         end select
+
+      case (3) !----- Primary land. -------------------------------------------------------!
+
+         !----- Decide the fate based on the type of natural disturbance. -----------------!
+         select case (poly_dest_type)
+         case (0) !----- Treefall, we must check the cohort height. -----------------------!
+            if (cpatch%hite(ico) < treefall_hite_threshold) then
+               survivorship =  treefall_s_ltht(ipft)
+            else
+               survivorship = treefall_s_gtht(ipft)
+            end if
+
+         case (1) !----- Fire, no survival. -----------------------------------------------!
+            survivorship = 0.0
+         end select
+      end select
+
+      return
+   end function survivorship
    !=======================================================================================!
    !=======================================================================================!
 end module mortality

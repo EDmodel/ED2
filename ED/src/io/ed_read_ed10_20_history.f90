@@ -44,9 +44,7 @@ subroutine read_ed10_ed20_history_file
    use grid_coms      , only : ngrids              ! ! intent(in)
    use allometry      , only : bd2dbh              & ! function
                              , dbh2h               & ! function
-                             , h2dbh               & ! function
                              , dbh2bd              & ! function
-                             , dbh2bl              & ! function
                              , size2bl             & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
@@ -541,7 +539,7 @@ subroutine read_ed10_ed20_history_file
 
                !----- No carbon balance information.  Assign 1. ---------------------------!
                cb(1:12,ic)     = 1.0
-               cb_max(1:12,ic) = 1.0           
+               cb_max(1:12,ic) = 1.0
             end select
 
             !------------------------------------------------------------------------------!
@@ -729,11 +727,18 @@ subroutine read_ed10_ed20_history_file
                                          ,cpatch%lai(ic2), cpatch%wai(ic2)                 &
                                          ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2))
 
-                        !----- Initialise the carbon balance. -----------------------------!
-                        cpatch%cb    (1:12,ic2) = cb(1:12,ic)
-                        cpatch%cb_max(1:12,ic2) = cb_max(1:12,ic)
-                        cpatch%cb    (  13,ic2) = 0.0
-                        cpatch%cb_max(  13,ic2) = 0.0
+                        !------------------------------------------------------------------!
+                        !     Initialise the carbon balance.  We ignore the carbon balance !
+                        ! even for ED-1.0, the models are so different that there is no    !
+                        ! reason to use the stored value.                                  !
+                        !------------------------------------------------------------------!
+                        cpatch%cb         (1:12,ic2) = 1.0
+                        cpatch%cb_lightmax(1:12,ic2) = 1.0
+                        cpatch%cb_moistmax(1:12,ic2) = 1.0
+                        cpatch%cb         (  13,ic2) = 0.0
+                        cpatch%cb_lightmax(  13,ic2) = 0.0
+                        cpatch%cb_moistmax(  13,ic2) = 0.0
+                        !------------------------------------------------------------------!
 
                         !----- Above ground biomass, use the allometry. -------------------!
                         cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%bleaf(ic2)   &
@@ -741,9 +746,12 @@ subroutine read_ed10_ed20_history_file
                         cpatch%basarea(ic2)  = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
 
                         !----- Growth rates, start with zero. -----------------------------!
-                        cpatch%dagb_dt(ic2)  = 0.
-                        cpatch%dba_dt(ic2)   = 0.
-                        cpatch%ddbh_dt(ic2)  = 0.
+                        cpatch%dagb_dt  (ic2)  = 0.
+                        cpatch%dlnagb_dt(ic2)  = 0.
+                        cpatch%dba_dt   (ic2)  = 0.
+                        cpatch%dlnba_dt (ic2)  = 0.
+                        cpatch%ddbh_dt  (ic2)  = 0.
+                        cpatch%dlndbh_dt(ic2)  = 0.
                         
                         !------------------------------------------------------------------!
                         !      Initialise other cohort variables.  Some of them won't be   !

@@ -3,10 +3,11 @@ here           = "thispath" # Current directory.
 srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
 outroot        = "thisoutroot"
 myplaces       = c("thispoly")
-outform        = "png"          # Formats for output file.  Supported formats are:
+outform        = "thisoutform"          # Formats for output file.  Supported formats are:
                                 #   - "X11" - for printing on screen
                                 #   - "eps" - for postscript printing
                                 #   - "png" - for PNG printing
+                                #   - "pdf" - for PDF printing
 
 ntopoffe       =  6             # Number of top "offenders" that go to the plot.
 coloffe        = c("firebrick","goldenrod","chartreuse"
@@ -411,7 +412,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
                ylimit  = range(thisvar, na.rm=TRUE)
                
@@ -524,7 +528,10 @@ for (place in myplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
                letitre = paste(description," - ",lieu,sep="")
@@ -617,7 +624,10 @@ for (place in myplaces){
                ,pointsize=ptsz,res=depth)
          }else if(outform[o] == "eps"){
             postscript(file=fichier,width=size$width,height=size$height
-                      ,pointsize=ptsz,paper=paper)
+                      ,pointsize=ptsz,paper=size$paper)
+         }else if(outform[o] == "pdf"){
+            pdf(file=fichier,onefile=FALSE
+               ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
          }#end if
 
          letitre = paste("Mean annual cycle - ",lieu,sep="")

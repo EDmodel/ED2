@@ -92,10 +92,10 @@ $MODEL_GRIDS
    !           a lot, leave this set to 1.  One value for all grids.                       ! 
    !---------------------------------------------------------------------------------------!
    NGRIDS   =    1,
-   NNXP     =  132,  68, 230,
-   NNYP     =  114,  56, 161,
+   NNXP     =  177,  68, 230,
+   NNYP     =   98,  56, 161,
    NNZP     =   44,  44,  44,
-   NZG      =   10,
+   NZG      =   16,
    NZS      =    1,
    !---------------------------------------------------------------------------------------!
 
@@ -154,8 +154,8 @@ $MODEL_GRIDS
    ! DZMAX  -- maximum grid spacing in metres.                                             !
    ! ZZ     -- discrete layers in case you set DELTAZ to zero.                             !
    !---------------------------------------------------------------------------------------!
-   DELTAX   =    21000.,
-   DELTAY   =    21000.,
+   DELTAX   =    25000.,
+   DELTAY   =    25000.,
    DELTAZ   =      100.,
    DZRAT    =      1.08,
    DZMAX    =     1000.,
@@ -185,7 +185,7 @@ $MODEL_GRIDS
    !                  vary as needed.  It is useful for a first  guess of DTLONG, but not  !
    !                  a good option for actual runs because NACOUST tends to be too small. !
    !---------------------------------------------------------------------------------------!
-   DTLONG   = 40.,
+   DTLONG   = 30.,
    NACOUST  =   4,
    IDELTAT  =   0,
    !---------------------------------------------------------------------------------------!
@@ -232,10 +232,10 @@ $MODEL_GRIDS
    ! CENTLAT -- Latitude of the central point.  One value for each grid.                   !
    ! CENTLON -- Longitude of the central point.  One value for each grid.                  !
    !---------------------------------------------------------------------------------------!
-   POLELAT  =  -3.8,
-   POLELON  = -56.5,
-   CENTLAT  =  -3.8,
-   CENTLON  = -56.5,
+   POLELAT  =  -4.00,
+   POLELON  = -53.00,
+   CENTLAT  =  -4.00,
+   CENTLON  = -53.00,
    !---------------------------------------------------------------------------------------!
 
 
@@ -417,10 +417,10 @@ $END
    ! WT_NUDGE_CO2  -- Relative weight for CO2 mixing ratio.                                !
    !---------------------------------------------------------------------------------------!
    NUDLAT        =      5 ,
-   TNUDLAT       =   1200.,
-   TNUDCENT      =  64800.,
+   TNUDLAT       =   3600.,
+   TNUDCENT      =  43200.,
    TNUDTOP       =  10800.,
-   ZNUDTOP       =  16000.,
+   ZNUDTOP       =  18000.,
    WT_NUDGE_GRID =      1., 0.80,
    WT_NUDGE_UV  =       1.,
    WT_NUDGE_TH  =       1.,
@@ -617,7 +617,7 @@ $END
    ICLOBBER =  1,
    IHISTDEL =  0,
    FRQHIS   = 86400.,
-   FRQANL   =  3600.,
+   FRQANL   = 10800.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -788,7 +788,7 @@ $END
    !---------------------------------------------------------------------------------------!
    ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
    ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/W',
-   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
+   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_defsce/bau2002/BAU-2002_',
    ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_brams406/RADAM+Quesada+IGBP/RADAM+Quesada+IGBP_',
     NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/lai-modis/2001LAI',
    !---------------------------------------------------------------------------------------!
@@ -889,7 +889,7 @@ $CUPARM_OPTIONS
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-   NCLOUDS  = 4,
+   NCLOUDS  = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -917,8 +917,8 @@ $CUPARM_OPTIONS
    ! CONFRQ: how often should the cumulus parametrisation be updated?                      !
    ! CPTIME: when I should start computing the cumulus parametrisation.                    !
    !---------------------------------------------------------------------------------------!
-   CONFRQ =  720.,
-   CPTIME =    0.,
+   CONFRQ =   900.,
+   CPTIME =     0.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -945,8 +945,8 @@ $CUPARM_OPTIONS
    !             (grell_coms.f90).  Default min_down_radius is 900.                        !
    ! DEPTH_MIN - Minimum depth that the cloud must have [m].                               !
    !---------------------------------------------------------------------------------------!
-   RADIUS    = 12000., 4800., 1800., 600.,
-   DEPTH_MIN =  6000., 2400.,  900., 200.,
+   RADIUS    =  8000., 800.,
+   DEPTH_MIN =  8000., 800.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -971,11 +971,11 @@ $CUPARM_OPTIONS
    !---------------------------------------------------------------------------------------!
    !     The following variables are scalars.                                              !
    !---------------------------------------------------------------------------------------!
-   CLD2PREC = 0.002,  ! Ratio of conversion of condensates to precipitation.       [   ---]
+   CLD2PREC = -0.03,  ! Ratio of conversion of condensates to precipitation.       [   ---]
    ZKBMAX   = 4000.,  ! Maximum AGL height in which updrafts can originate.        [     m]
    ZCUTDOWN = 3000.,  ! Maximum AGL height in which downdrafts can originate.      [     m]
    Z_DETR   = 1250.,  ! Top of the downdraft detrainment layer                     [     m]
-   MAX_HEAT =  250.,  ! Maximum heating rate allowed for feedback                  [ K/day]
+   MAX_HEAT =  400.,  ! Maximum heating rate allowed for feedback                  [ K/day]
    !---------------------------------------------------------------------------------------!
 
 
@@ -990,6 +990,7 @@ $CUPARM_OPTIONS
    !  !------+--------------------------------+------+------+----------------------------! !
    !  ! EN   | Ensemble (all closures)        | yes  |  no  | Grell and Dévényi, 2002    ! !
    !  ! NC   | Ensemble, excluding LO and MC  | yes  | yes  | Grell and Dévényi, 2002    ! !
+   !  ! QI   | Ensemble, with AS and KF only  | yes  | yes  | Grell and Dévényi, 2002    ! !
    !  ! GR   | Modified quasi-equilibrium ABE | yes  | yes  | Grell, 1993                ! !
    !  ! LO   | Low level omega                | yes  |  no  | Frank and Cohen, 1987      ! !
    !  ! MC   | moisture convergence           | yes  |  no  | Krishnamurti et al., 1983  ! !
@@ -998,7 +999,7 @@ $CUPARM_OPTIONS
    !  !----------------------------------------------------------------------------------! !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   CLOSURE_TYPE = 'NC',
+   CLOSURE_TYPE = 'KF',
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1055,7 +1056,7 @@ $MODEL_OPTIONS
 
    !---------------------------------------------------------------------------------------!
    ! IADVEC -- 1 - Original advection scheme                                               !
-   !           2 - Monotic advection scheme, as in Freitas et al. (2001, in press JAMES).  !
+   !           2 - Monotic advection scheme, as in Freitas et al. (2012, in press JAMES).  !
    !---------------------------------------------------------------------------------------!
    IADVEC   = 2,
    !---------------------------------------------------------------------------------------!
@@ -1172,9 +1173,9 @@ $MODEL_OPTIONS
    !             1 -- yes.  That's the standard for most runs.                             !
    !---------------------------------------------------------------------------------------!
    ISWRTYP  = 3,
-   ILWRTYP  = 4,
+   ILWRTYP  = 1,
    ICUMFDBK = 1,
-   RADFRQ   = 600.,
+   RADFRQ   = 300.,
    LONRAD   = 1,
    !---------------------------------------------------------------------------------------!
 
@@ -1392,32 +1393,34 @@ $MODEL_OPTIONS
 
 
 
+
+
+
       !------------------------------------------------------------------------------------!
-      ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when       !
-      !             ISOILFLG is set to 2.  Soil classes are from 1 to 20 (1 = lightest;    !
-      !             20 = darkest).  The values are the same as CLM-4.0.  The table is the  !
-      !             albedo for visible and near infra-red.                                 !
+      ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes.  Soil classes are from 1 to 20    !
+      !             (1 = lightest; 20 = darkest).  The values are the same as CLM-4.0.     !
+      !             The table is the albedo for visible and near infra-red.                !
       !------------------------------------------------------------------------------------!
       !                                                                                    !
-      !      |-----------------------------------------------------------------------|     !
-      !      |       |   Dry soil  |  Saturated  |       |   Dry soil  |  Saturated  |     !
-      !      | Class |-------------+-------------| Class +-------------+-------------|     !
-      !      |       |  VIS |  NIR |  VIS |  NIR |       |  VIS |  NIR |  VIS |  NIR |     !
-      !      |-------+------+------+------+------+-------+------+------+------+------|     !
-      !      |     1 | 0.36 | 0.61 | 0.25 | 0.50 |    11 | 0.24 | 0.37 | 0.13 | 0.26 |     !
-      !      |     2 | 0.34 | 0.57 | 0.23 | 0.46 |    12 | 0.23 | 0.35 | 0.12 | 0.24 |     !
-      !      |     3 | 0.32 | 0.53 | 0.21 | 0.42 |    13 | 0.22 | 0.33 | 0.11 | 0.22 |     !
-      !      |     4 | 0.31 | 0.51 | 0.20 | 0.40 |    14 | 0.20 | 0.31 | 0.10 | 0.20 |     !
-      !      |     5 | 0.30 | 0.49 | 0.19 | 0.38 |    15 | 0.18 | 0.29 | 0.09 | 0.18 |     !
-      !      |     6 | 0.29 | 0.48 | 0.18 | 0.36 |    16 | 0.16 | 0.27 | 0.08 | 0.16 |     !
-      !      |     7 | 0.28 | 0.45 | 0.17 | 0.34 |    17 | 0.14 | 0.25 | 0.07 | 0.14 |     !
-      !      |     8 | 0.27 | 0.43 | 0.16 | 0.32 |    18 | 0.12 | 0.23 | 0.06 | 0.12 |     !
-      !      |     9 | 0.26 | 0.41 | 0.15 | 0.30 |    19 | 0.10 | 0.21 | 0.05 | 0.10 |     !
-      !      |    10 | 0.25 | 0.39 | 0.14 | 0.28 |    20 | 0.08 | 0.16 | 0.04 | 0.08 |     !
-      !      |-----------------------------------------------------------------------|     !
+      !       |-----------------------------------------------------------------------|    !
+      !       |       |   Dry soil  |  Saturated  |       |   Dry soil  |  Saturated  |    !
+      !       | Class |-------------+-------------| Class +-------------+-------------|    !
+      !       |       |  VIS |  NIR |  VIS |  NIR |       |  VIS |  NIR |  VIS |  NIR |    !
+      !       |-------+------+------+------+------+-------+------+------+------+------|    !
+      !       |     1 | 0.36 | 0.61 | 0.25 | 0.50 |    11 | 0.24 | 0.37 | 0.13 | 0.26 |    !
+      !       |     2 | 0.34 | 0.57 | 0.23 | 0.46 |    12 | 0.23 | 0.35 | 0.12 | 0.24 |    !
+      !       |     3 | 0.32 | 0.53 | 0.21 | 0.42 |    13 | 0.22 | 0.33 | 0.11 | 0.22 |    !
+      !       |     4 | 0.31 | 0.51 | 0.20 | 0.40 |    14 | 0.20 | 0.31 | 0.10 | 0.20 |    !
+      !       |     5 | 0.30 | 0.49 | 0.19 | 0.38 |    15 | 0.18 | 0.29 | 0.09 | 0.18 |    !
+      !       |     6 | 0.29 | 0.48 | 0.18 | 0.36 |    16 | 0.16 | 0.27 | 0.08 | 0.16 |    !
+      !       |     7 | 0.28 | 0.45 | 0.17 | 0.34 |    17 | 0.14 | 0.25 | 0.07 | 0.14 |    !
+      !       |     8 | 0.27 | 0.43 | 0.16 | 0.32 |    18 | 0.12 | 0.23 | 0.06 | 0.12 |    !
+      !       |     9 | 0.26 | 0.41 | 0.15 | 0.30 |    19 | 0.10 | 0.21 | 0.05 | 0.10 |    !
+      !       |    10 | 0.25 | 0.39 | 0.14 | 0.28 |    20 | 0.08 | 0.16 | 0.04 | 0.08 |    !
+      !       |-----------------------------------------------------------------------|    !
       !                                                                                    !
       !   Soil type 21 is a special case in which we use the albedo method that used to be !
-      ! the default in BRAMS-4.0.6 and ED-2.1.                                             !
+      ! the default in ED-2.1.                                                             !
       !------------------------------------------------------------------------------------!
       ISOILCOL  = 2,
       !------------------------------------------------------------------------------------!
@@ -1501,32 +1504,45 @@ $MODEL_OPTIONS
       !               2 = porosity (saturation)                                            !
       ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset) !
       !------------------------------------------------------------------------------------!
-      SLZ    = -6.000, -4.662, -3.452, -2.480, -1.693,
-               -1.078, -0.620, -0.304, -0.111, -0.020,
-      SLMSTR =   1.00,   1.00,   1.00,   1.00,   1.00,
-                 1.00,   1.00,   1.00,   1.00,   1.00,
-      STGOFF =   0.00,   0.00,   0.00,   0.00,   0.00,
-                 0.00,   0.00,   0.00,   0.00,   0.00,
+      SLZ     =   -6.000,-5.254,-4.559,-3.914,-3.320,-2.776,-2.282,-1.837,-1.442,-1.095,
+                  -0.798,-0.548,-0.346,-0.192,-0.083,-0.020,
+      SLMSTR  =    1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+                   1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+      STGOFF  =    0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
+                   0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
       !------------------------------------------------------------------------------------!
 
 
 
 
       !------------------------------------------------------------------------------------!
-      ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.  Both !
-      !            ED and BRAMS use it.  If unsure, use 0 for short-term simulations       !
-      !            (couple of days), and 1 for long-term simulations (months to years).    !
-      !            0.  Bedrock.  Flux from the bottom of the bottommost layer is set to 0. !
-      !            1.  Gravitational flow.  The flux from the bottom of the bottommost     !
-      !                layer is due to gradient of height only.                            !
-      !            2.  Super drainage.  Soil moisture of the ficticious layer beneath the  !
-      !                bottom is always at dry air soil moisture.                          !
-      !            3.  Half-way.  Assume that the fictious layer beneath the bottom is     !
-      !                always at field capacity.                                           !
-      !            4.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom  !
+      ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.       !
+      !            For regional runs, it is wise to use options 1 or 2, especially for     !
+      !            long runs.                                                              !
+      !            0.  Flat bedrock.  Flux from the bottom of the bottommost layer is 0.   !
+      !            1.  Gravitational flow (free drainage).  The flux from the bottom of    !
+      !                the bottommost layer is due to gradient of height only.             !
+      !            2.  Lateral drainage.  Similar to free drainage, but the gradient is    !
+      !                reduced by the slope not being completely vertical.  The reduction  !
+      !                is controlled by variable SLDRAIN.  In the future options 0, 1, and !
+      !                2 may be combined into a single option.                             !
+      !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom  !
       !                is always at saturation.                                            !
       !------------------------------------------------------------------------------------!
       ISOILBC  =   1,
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! SLDRAIN -- This is used only when ISOILBC is set to 2.  In this case SLDRAIN is    !
+      !            the equivalent slope that will slow down drainage.  If this is set to   !
+      !            zero, then lateral drainage reduces to flat bedrock, and if this is set !
+      !            to 90, then lateral drainage becomes free drainage.  SLDRAIN must be    !
+      !            between 0 and 90.                                                       !
+      !------------------------------------------------------------------------------------!
+      SLDRAIN        = 10.,
       !------------------------------------------------------------------------------------!
 
 
@@ -1777,7 +1793,7 @@ $MODEL_OPTIONS
       !          is set to 5, CPARM represents the concentration of CCN.  Otherwise, the   !
       !          value is ignored if the IXXXX variable is set to 5.                       !
       !------------------------------------------------------------------------------------!
-      CPARM   =  1.3e9, ! cloud droplets, or less frequently, CCN
+      CPARM   =  3.e8,  ! cloud droplets, or less frequently, CCN
       RPARM   =  1e-3,  ! rain drops
       PPARM   =  0.,    ! pristine ice (ignored as IPRIS must be 5)
       SPARM   =  1e-3,  ! snow
@@ -1829,7 +1845,7 @@ $ED2_INFO
    !          If time is a problem, i.e., the runs are too slow, then try making it        !
    !          larger, but not much larger so to avoid problems...                          !
    !---------------------------------------------------------------------------------------!
-   DTLSM  = 240.0,
+   DTLSM  = 120.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1974,7 +1990,7 @@ $ED2_INFO
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   SFILIN   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/sa2.2008/BAU',
+   SFILIN   = '/n/moorcroft_data/data/ed2_data/restarts_sci_006/potveg/PVE_',
    !---------------------------------------------------------------------------------------!
 
 
@@ -2000,8 +2016,8 @@ $ED2_INFO
    !  THSUMS_DATABASE - input directory for chd and dgd (not sure for what this is used).  !
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
-   SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
-   LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu-3.3.1+sa1/half/glu-3.3.1+sa1-',
+   SOIL_DATABASE     = '/n/moorcroft_data/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
+   LU_DATABASE       = '/n/moorcroft_data/mlongo/scenarios/glu-3.3.1+sb1/one/glu-3.3.1+sb1-',
    PLANTATION_FILE   = '',
    LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2038.txt',
    THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
@@ -2080,7 +2096,7 @@ $ED2_INFO
    !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
    !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
-   INTEGRATION_SCHEME = 1,
+   INTEGRATION_SCHEME = 3,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2157,7 +2173,20 @@ $ED2_INFO
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
-   IALLOM          = 1,
+   IALLOM          = 2,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !
+   !           grass scheme is now available where bdead = 0, height is a function of bleaf!
+   !           and growth happens daily.  ALS (3/3/12)                                     !
+   ! 0: grasses behave like trees as in ED2.1 (old scheme)                                 !
+   !                                                                                       !
+   ! 1: new grass scheme as described above                                                !
+   !---------------------------------------------------------------------------------------!
+   IGRASS          = 0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2302,9 +2331,16 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    ! DECOMP_SCHEME -- This specifies the dependence of soil decomposition on temperature.  !
-   !                  0.  ED-2.0 default, the original exponential                         !
+   !                  0.  ED-2.1 default, the original exponential (low temperature        !
+   !                      limitation only).                                                !
    !                  1.  Lloyd and Taylor (1994) model                                    !
    !                      [[option 1 requires parameters to be set in xml]]                !
+   !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
+   !                      reaches a maximum at around 38C (using the default parameters),  !
+   !                      then quickly falls to zero at around 50C.  It applies a similar  !
+   !                      function for soil moisture, which allows higher decomposition    !
+   !                      rates when it is close to the optimal, plumetting when it is     !
+   !                      almost saturated.                                                !
    !---------------------------------------------------------------------------------------!
    DECOMP_SCHEME   = 0,
    !---------------------------------------------------------------------------------------!
@@ -2327,9 +2363,36 @@ $ED2_INFO
    !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
    !                      where psi is the matric potentital at layer k, z is the layer    !
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
-   !                      matric potentials at wilting point and field capacity.  This is  !
+   !                      matric potentials at wilting point and field capacity.           !
    !---------------------------------------------------------------------------------------!
    H2O_PLANT_LIM   = 2,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  IDDMORT_SCHEME -- This flag determines whether storage should be accounted in the    !
+   !                    carbon balance.                                                    !
+   !                    0 -- Carbon balance is done in terms of fluxes only.  This is the  !
+   !                         default in ED-2.1                                             !
+   !                    1 -- Carbon balance is offset by the storage pool.  Plants will be !
+   !                         in negative carbon balance only when they run out of storage  !
+   !                         and are still losing more carbon than gaining.                !
+   !                                                                                       !
+   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !                    and soil moisture to the density-dependent mortality rate.  Values !
+   !                    range from 0 (soil moisture only) to 1 (light only).               !
+   !                                                                                       !
+   !                                    mort1                                              !
+   !                  mu_DD = -------------------------                                    !
+   !                            1 + exp [ mort2 * cr ]                                     !
+   !                                                                                       !
+   !                                 CB                      CB                            !
+   !                  cr    = k ------------- + (1 - k) -------------                      !
+   !                             CB_lightmax             CB_watermax                       !
+   !---------------------------------------------------------------------------------------!
+   IDDMORT_SCHEME  = 0,
+   DDMORT_CONST    = 1.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2376,25 +2439,25 @@ $ED2_INFO
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   VMFACT_C3       =   1.00,
-   VMFACT_C4       =   1.00,
-   MPHOTO_TRC3     =    9.0,
-   MPHOTO_TEC3     =    7.2,
-   MPHOTO_C4       =    5.2,
+   VMFACT_C3       = 1.00,
+   VMFACT_C4       = 1.00,
+   MPHOTO_TRC3     = 9.0,
+   MPHOTO_TEC3     = 7.2,
+   MPHOTO_C4       = 5.2,
    BPHOTO_BLC3     = 10000.,
    BPHOTO_NLC3     = 1000.,
    BPHOTO_C4       = 10000.,
-   KW_GRASS        =   600.,
-   KW_TREE         =   450.,
-   GAMMA_C3        =  0.015,
-   GAMMA_C4        =  0.040,
-   D0_GRASS        =  0.016,
-   D0_TREE         =  0.016,
-   ALPHA_C3        =  0.080,
-   ALPHA_C4        =  0.055,
-   KLOWCO2IN       =  4000.,
-   RRFFACT         =  1.000,
-   GROWTHRESP      =  0.33333333333,
+   KW_GRASS        = 900.,
+   KW_TREE         = 600.,
+   GAMMA_C3        = 0.015,
+   GAMMA_C4        = 0.040,
+   D0_GRASS        = 0.016,
+   D0_TREE         = 0.016,
+   ALPHA_C3        = 0.080,
+   ALPHA_C4        = 0.055,
+   KLOWCO2IN       = 4000.,
+   RRFFACT         = 1.000,
+   GROWTHRESP      = 0.333,
    LWIDTH_GRASS    = 0.05,
    LWIDTH_BLTREE   = 0.10,
    LWIDTH_NLTREE   = 0.05,
@@ -2414,7 +2477,7 @@ $ED2_INFO
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   THETACRIT       = -1.15,
+   THETACRIT       = -1.20,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2462,20 +2525,29 @@ $ED2_INFO
    !                       often  will never allow fires.                                  !
    !                   2.  Fire will be triggered with enough biomass and the total soil   !
    !                       water at the top 75 cm falls below a threshold.                 !
+   !                   3.  Fire will be triggered with enough biomass and accumulated      !
+   !                       water deficit exceeds the threshold given by SM_FIRE times.     !
+   !                       the total precipitation of the past 12 months.  This method     !
+   !                       does not directly depend on soil texture.                       !
    ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
    !                   given the amount of fuel (currently the total above-ground          !
    !                   biomass).                                                           !
-   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.    !
-   !                   >= 0. - Minimum relative soil moisture above dry air of the top 1m  !
-   !                           that will prevent fires to happen.                          !
-   !                   <  0. - Minimum mean soil moisture potential in MPa of the top 1m   !
-   !                           that will prevent fires to happen.  The dry air soil        !
-   !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
-   !                           greater than this value.                                    !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2 or 3, and it has different  !
+   !                   meanings.  The sign here matters.                                   !
+   !                   When INCLUDE_FIRE = 2:                                              !
+   !                      >= 0. - Minimum relative soil moisture above dry air of the top  !
+   !                              1m that will prevent fires to happen.                    !
+   !                      <  0. - Minimum mean soil moisture potential in MPa of the top   !
+   !                              1m that will prevent fires to happen.  The dry air soil  !
+   !                              potential is defined as -3.1 MPa, so make sure SM_FIRE   !
+   !                              is greater than this value.                              !
+   !                   When INCLUDE_FIRE = 3, values between 0 and 2 are allowed.  This is !
+   !                   the minimum water deficit relative to the total rainfall, over the  !
+   !                   past 12 months, to trigger fires.                                   !
    !---------------------------------------------------------------------------------------!
    INCLUDE_FIRE    =     2,
-   FIRE_PARAMETER  =   0.1,
-   SM_FIRE         = -1.45,
+   FIRE_PARAMETER  =   0.5,
+   SM_FIRE         = -1.40,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2486,19 +2558,21 @@ $ED2_INFO
    !                   0.  no anthropogenic disturbance.                                   !
    !                   1.  use anthropogenic disturbance dataset.                          !
    !---------------------------------------------------------------------------------------!
-   IANTH_DISTURB   = 1,
+   IANTH_DISTURB   = 0,
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
    ! ICANTURB -- This flag controls the canopy roughness.                                  !
-   !             0.  Based on Leuning et al. (1995), wind is computed using the similarity !
-   !                 theory for the top cohort, and they are extinguished with cumulative  !
-   !                 LAI.  If using CROWN_MOD 1 or 2, this will use local LAI and average  !
-   !                 by crown area.                                                        !
-   !             1.  The default ED-2.1 scheme, except that it uses the zero-plane         !
-   !                 displacement height.                                                  !
+   !             0.  Based on Leuning et al. (1995) and LEAF-3 (Walko et al. 2000).        !
+   !                 Roughness and displacement height are found using simple relations    !
+   !                 with vegetation height; wind is computed using the similarity theory  !
+   !                 for the top cohort, then it is assumed that wind extinguishes follow- !
+   !                 ing an exponential decay with "perceived" cumulative LAI (local LAI   !
+   !                 with finite crown area).                                              !
+   !             1.  The default ED-2.1 scheme, similar to option 0, but the wind profile  !
+   !                 is not based on LAI, instead it used the cohort height.               !
    !             2.  This uses the method of Massman (1997) using constant drag and no     !
    !                 sheltering factor.                                                    !
    !             3.  This is also based on Massman (1997), but with the option of varying  !
@@ -2532,7 +2606,7 @@ $ED2_INFO
    ! 7 - southern pines                   | 17 - "Araucaria" (non-optimised                !
    ! 8 - late conifers                    |      Southern Pines).                          !
    !---------------------------------------------------------------------------------------!
-   INCLUDE_THESE_PFT = 1,2,3,4,16,17,
+   INCLUDE_THESE_PFT = 1,2,3,4,16,
    AGRI_STOCK        = 1,
    PLANTATION_STOCK  = 3,
    !---------------------------------------------------------------------------------------!
@@ -2569,8 +2643,8 @@ $ED2_INFO
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
-   MAXPATCH       =    10,
-   MAXCOHORT      =    60,
+   MAXPATCH       =    20,
+   MAXCOHORT      =    80,
    MIN_PATCH_AREA = 0.005,
    !---------------------------------------------------------------------------------------!
 
@@ -2637,7 +2711,7 @@ $ED2_INFO
    ! between direct and diffuse is done by the Harrington scheme, and we just do a split   !
    ! between NIR and PAR using some standard factors.                                      !
    !---------------------------------------------------------------------------------------!
-   IMETRAD      = 0,
+   IMETRAD      = 2,
    !---------------------------------------------------------------------------------------!
 
 

@@ -43,7 +43,6 @@ subroutine simple_lake_model()
                                      , rk4max_can_co2    ! ! intent(in)
    use therm_lib              , only : rhovsil           & ! function
                                      , reducedpress      & ! function
-                                     , thetaeiv          & ! function
                                      , idealdenssh       ! ! function
    use canopy_struct_dynamics , only : ed_stars          & ! subroutine
                                      , vertical_vel_flux ! ! function
@@ -578,6 +577,7 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
                                     , lakemet      & ! intent(in)
                                     , tiny_lakeoff ! ! intent(in)
    use therm_lib             , only : thetaeiv     & ! function
+                                    , vpdefil      & ! function
                                     , press2exner  & ! function
                                     , extheta2temp ! ! function
    use therm_lib8            , only : alvl8        & ! function
@@ -671,6 +671,10 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
                                              , can_temp                                    &
                                              , leaf_g(ifm)%can_rvap(i,j,1)                 &
                                              , leaf_g(ifm)%can_rvap(i,j,1)                 )
+   leaf_g(ifm)%can_vpdef(i,j,1)    = vpdefil ( leaf_g(ifm)%can_prss(i,j,1)                 &
+                                             , can_temp                                    &
+                                             , leaf_g(ifm)%can_rvap(i,j,1)                 &
+                                             , .false.                                     )
    !---------------------------------------------------------------------------------------!
 
 

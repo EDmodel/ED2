@@ -190,7 +190,8 @@ subroutine init_ed_misc_coms
                            , vary_rad            & ! intent(out)
                            , max_thsums_dist     & ! intent(out)
                            , max_poihist_dist    & ! intent(out)
-                           , max_poi99_dist      ! ! intent(out)
+                           , max_poi99_dist      & ! intent(out)
+                           , suppress_h5_warnings
    implicit none
 
 
@@ -271,6 +272,13 @@ subroutine init_ed_misc_coms
    !---------------------------------------------------------------------------------------!
    max_poihist_dist   = 250.
    !---------------------------------------------------------------------------------------!
+
+   ! If you dont want to read a million warnings about certain initialization
+   ! variables not being available in the history input file, set this to 
+   ! true.  Its better for new users to see what is missing though.
+   
+   suppress_h5_warnings = .false.
+
 
    return
 end subroutine init_ed_misc_coms
@@ -406,6 +414,7 @@ subroutine init_lapse_params()
    lapse%atm_tmp      = 0.0
    lapse%atm_theta    = 0.0
    lapse%atm_theiv    = 0.0
+   lapse%atm_vpdef    = 0.0
    lapse%atm_shv      = 0.0
    lapse%prss         = 0.0
    lapse%pcpg         = 0.0
@@ -610,26 +619,31 @@ subroutine init_can_rad_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Wood reflectance, using CLM parameters.                                          !
+   !      Wood reflectance, using values based on:                                         !
+   !                                                                                       !
+   ! Asner, G., 1998: Biophysical and biochemical sources of variability in canopy         !
+   !     reflectance. Remote Sensing of Environment, 64, 234-253.                          !
+   !                                                                                       !
+   ! Commented values are from CLM, but they were quite high.                              !
    !---------------------------------------------------------------------------------------!
    !----- Visible (PAR). ------------------------------------------------------------------!
-   wood_reflect_vis(1)     = 3.60d-1
-   wood_reflect_vis(2:4)   = 1.60d-1
-   wood_reflect_vis(5)     = 3.60d-1
-   wood_reflect_vis(6:11)  = 1.60d-1
-   wood_reflect_vis(12:13) = 3.60d-1
-   wood_reflect_vis(14:15) = 3.60d-1
-   wood_reflect_vis(16)    = 3.60d-1
-   wood_reflect_vis(17)    = 1.60d-2
+   wood_reflect_vis(1)     = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(2:4)   = 1.10d-1  ! 1.60d-1
+   wood_reflect_vis(5)     = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(6:11)  = 1.10d-1  ! 1.60d-1
+   wood_reflect_vis(12:13) = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(14:15) = 1.10d-1  ! 3.10d-1
+   wood_reflect_vis(16)    = 1.60d-1  ! 3.10d-1
+   wood_reflect_vis(17)    = 1.10d-1  ! 1.60d-1
    !----- Near infrared. ------------------------------------------------------------------!
-   wood_reflect_nir(1)     = 5.80d-1
-   wood_reflect_nir(2:4)   = 3.90d-1
-   wood_reflect_nir(5)     = 5.80d-1
-   wood_reflect_nir( 6:11) = 3.90d-1
-   wood_reflect_nir(12:13) = 5.80d-1
-   wood_reflect_nir(14:15) = 5.80d-1
-   wood_reflect_nir(16)    = 5.80d-1
-   wood_reflect_nir(17)    = 3.90d-1
+   wood_reflect_nir(1)     = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(2:4)   = 2.50d-1  ! 3.90d-1
+   wood_reflect_nir(5)     = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir( 6:11) = 2.50d-1  ! 3.90d-1
+   wood_reflect_nir(12:13) = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(14:15) = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(16)    = 2.50d-1  ! 5.30d-1
+   wood_reflect_nir(17)    = 2.50d-1  ! 3.90d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -1419,6 +1433,8 @@ end subroutine init_can_lyr_params
 subroutine init_pft_photo_params()
 
    use ed_max_dims    , only : n_pft                   ! ! intent(in)
+   use ed_misc_coms   , only : ibigleaf                & ! intent(in)
+                             , iallom                  ! ! intent(in)
    use pft_coms       , only : D0                      & ! intent(out)
                              , Vm_low_temp             & ! intent(out)
                              , Vm_high_temp            & ! intent(out)
@@ -1468,6 +1484,11 @@ subroutine init_pft_photo_params()
                              , q10_c3                  & ! intent(in)
                              , q10_c4                  ! ! intent(in)
    implicit none
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4) :: ssfact
    !---------------------------------------------------------------------------------------!
 
    D0(1)                     = d0_grass
@@ -1529,22 +1550,39 @@ subroutine init_pft_photo_params()
 
 
 
-   !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.500000 * vmfact_c4
-   Vm0(2)                    = 18.750000 * vmfact_c3
-   Vm0(3)                    = 12.500000 * vmfact_c3
-   Vm0(4)                    =  6.250000 * vmfact_c3
-   Vm0(5)                    = 18.300000 * vmfact_c3
-   Vm0(6)                    = 11.350000 * vmfact_c3
-   Vm0(7)                    = 11.350000 * vmfact_c3
-   Vm0(8)                    =  4.540000 * vmfact_c3
-   Vm0(9)                    = 20.387075 * vmfact_c3
-   Vm0(10)                   = 17.454687 * vmfact_c3
-   Vm0(11)                   =  6.981875 * vmfact_c3
-   Vm0(12:13)                = 18.300000 * vmfact_c3
-   Vm0(14:15)                = 12.500000 * vmfact_c4
-   Vm0(16)                   = 21.875000 * vmfact_c3
-   Vm0(17)                   = 15.625000 * vmfact_c3
+   !---------------------------------------------------------------------------------------!
+   !     Vm0 is the maximum photosynthesis capacity in µmol/m2/s.  Notice that depending   !
+   ! on the size structure (SAS or Big Leaf), there is an addition factor multiplied.      !
+   !---------------------------------------------------------------------------------------!
+   !----- Find the additional factor to multiply Vm0. -------------------------------------!
+   select case (ibigleaf)
+   case (0)
+      !----- SAS, use only the modification from the namelist. ----------------------------!
+      ssfact = 1.0
+   case (1)
+      select case (iallom)
+      case (0,1)
+         ssfact = 3.0
+      case (2)
+         ssfact = 3.0
+      end select
+   end select
+   !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
+   Vm0(1)                    = 12.500000 * ssfact * vmfact_c4
+   Vm0(2)                    = 18.750000 * ssfact * vmfact_c3
+   Vm0(3)                    = 12.500000 * ssfact * vmfact_c3
+   Vm0(4)                    =  6.250000 * ssfact * vmfact_c3
+   Vm0(5)                    = 18.300000 * ssfact * vmfact_c3
+   Vm0(6)                    = 11.350000 * ssfact * vmfact_c3
+   Vm0(7)                    = 11.350000 * ssfact * vmfact_c3
+   Vm0(8)                    =  4.540000 * ssfact * vmfact_c3
+   Vm0(9)                    = 20.387075 * ssfact * vmfact_c3
+   Vm0(10)                   = 17.454687 * ssfact * vmfact_c3
+   Vm0(11)                   =  6.981875 * ssfact * vmfact_c3
+   Vm0(12:13)                = 18.300000 * ssfact * vmfact_c3
+   Vm0(14:15)                = 12.500000 * ssfact * vmfact_c4
+   Vm0(16)                   = 20.833333 * ssfact * vmfact_c3
+   Vm0(17)                   = 15.625000 * ssfact * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
 
@@ -1578,10 +1616,10 @@ subroutine init_pft_photo_params()
    dark_respiration_factor(11)    = gamma_c3
    dark_respiration_factor(12)    = gamma_c3
    dark_respiration_factor(13)    = gamma_c3
-   dark_respiration_factor(14)    = gamma_c3 ! why are these not c4?
-   dark_respiration_factor(15)    = gamma_c3 ! why are these not c4?
+   dark_respiration_factor(14)    = gamma_c4
+   dark_respiration_factor(15)    = gamma_c4
    dark_respiration_factor(16)    = gamma_c3
-   dark_respiration_factor(17)    = gamma_c3 * 1.2
+   dark_respiration_factor(17)    = gamma_c3
    !---------------------------------------------------------------------------------------!
 
 
@@ -1726,19 +1764,37 @@ end subroutine init_pft_photo_params
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_decomp_params()
-   use consts_coms , only : yr_day                      ! ! intent(in)
-   use decomp_coms , only : resp_opt_water              & ! intent(in)
-                          , resp_water_below_opt        & ! intent(in)
-                          , resp_water_above_opt        & ! intent(in)
-                          , resp_temperature_increase   & ! intent(in)
-                          , N_immobil_supply_scale      & ! intent(in)
-                          , cwd_frac                    & ! intent(in)
-                          , r_fsc                       & ! intent(in)
-                          , r_stsc                      & ! intent(in)
-                          , r_ssc                       & ! intent(in)
-                          , K1                          & ! intent(in)
-                          , K2                          & ! intent(in)
-                          , K3                          ! ! intent(in)
+   use soil_coms   , only : slz                         ! ! intent(in)
+   use grid_coms   , only : nzg                         ! ! intent(in)
+   use consts_coms , only : yr_day                      & ! intent(in)
+                          , t00                         ! ! intent(in)
+   use decomp_coms , only : n_decomp_lim                & ! intent(in)
+                          , decomp_scheme               & ! intent(in)
+                          , resp_opt_water              & ! intent(out)
+                          , resp_water_below_opt        & ! intent(out)
+                          , resp_water_above_opt        & ! intent(out)
+                          , resp_temperature_increase   & ! intent(out)
+                          , N_immobil_supply_scale      & ! intent(out)
+                          , cwd_frac                    & ! intent(out)
+                          , r_fsc                       & ! intent(out)
+                          , r_stsc                      & ! intent(out)
+                          , r_ssc                       & ! intent(out)
+                          , decay_rate_stsc             & ! intent(out)
+                          , decay_rate_fsc              & ! intent(out)
+                          , decay_rate_ssc              & ! intent(out)
+                          , rh_lloyd_1                  & ! intent(out)
+                          , rh_lloyd_2                  & ! intent(out)
+                          , rh_lloyd_3                  & ! intent(out)
+                          , rh_decay_low                & ! intent(out)
+                          , rh_decay_high               & ! intent(out)
+                          , rh_low_temp                 & ! intent(out)
+                          , rh_high_temp                & ! intent(out)
+                          , rh_decay_dry                & ! intent(out)
+                          , rh_decay_wet                & ! intent(out)
+                          , rh_dry_smoist               & ! intent(out)
+                          , rh_wet_smoist               & ! intent(out)
+                          , rh_active_depth             & ! intent(out)
+                          , k_rh_active                 ! ! intent(out)
 
    resp_opt_water            = 0.8938
    resp_water_below_opt      = 5.0786
@@ -1749,9 +1805,70 @@ subroutine init_decomp_params()
    r_fsc                     = 1.0
    r_stsc                    = 0.3
    r_ssc                     = 1.0
-   K1                        = 4.5   / yr_day
-   K2                        = 11.0  / yr_day
-   K3                        = 100.2 / yr_day
+   !---------------------------------------------------------------------------------------!
+   ! MLO.  After talking to Paul, it seems the decay rate for the slow carbon pool is      !
+   !       artificially high for when nitrogen limitation is turned on.  If it is turned   !
+   !       off, however, then the slow carbon will disappear very quickly.  I don't want   !
+   !       to mess other people's results, so I will change the rate only when             !
+   !       decomp_scheme is 2, and only when nitrogen limitation is off.  I think this     !
+   !       should be applied to all schemes, but I will let the users of these schemes to  !
+   !       decide.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   select case (decomp_scheme)
+   case (0,1)
+      decay_rate_fsc  =  11.0 / yr_day    ! former K2
+      decay_rate_stsc =   4.5 / yr_day    ! former K1
+      decay_rate_ssc  = 100.2 / yr_day    ! former K3
+   case (2)
+      decay_rate_fsc  =  11.0 / yr_day    ! former K2
+      decay_rate_stsc =   4.5 / yr_day    ! former K1
+      select case (n_decomp_lim)
+      case (0)
+         decay_rate_ssc  =   0.2 / yr_day ! former K3
+      case (1)
+         decay_rate_ssc  = 100.2 / yr_day ! former K3
+      end select
+   end select
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters used for the Lloyd and Taylor (1994) temperature dependence.          !
+   !---------------------------------------------------------------------------------------!
+   rh_lloyd_1 = 308.56
+   rh_lloyd_2 = 1./56.02
+   rh_lloyd_3 = 227.15
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters used for the ED-1.0/CENTURY based functions of temperature and soil   !
+   ! moisture.                                                                             !
+   !---------------------------------------------------------------------------------------!
+   rh_decay_low   = 0.24
+   rh_decay_high  = 0.60
+   rh_low_temp    = 18.0 + t00
+   rh_high_temp   = 45.0 + t00
+   rh_decay_dry   = 12.0
+   rh_decay_wet   = 36.0
+   rh_dry_smoist  = 0.48
+   rh_wet_smoist  = 0.98
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Determine the top layer to consider for fires in case include_fire is 2 or 3. ---!
+   select case (decomp_scheme)
+   case (0,1)
+      rh_active_depth = slz(nzg)
+      k_rh_active     = nzg
+   case (2)
+      rh_active_depth = -0.20
+      k_rh_loop: do k_rh_active=nzg-1,1,-1
+        if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
+      end do k_rh_loop
+      k_rh_active = k_rh_active + 1
+   end select
+   !---------------------------------------------------------------------------------------!
 
    return
 
@@ -1809,7 +1926,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = 3.0
+   leaf_turnover_rate(1)          = 2.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = onethird
@@ -1822,9 +1939,9 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(11)         = 0.0
    leaf_turnover_rate(12)         = 2.0
    leaf_turnover_rate(13)         = 2.0
-   leaf_turnover_rate(14)         = 3.0
-   leaf_turnover_rate(15)         = 3.0
-   leaf_turnover_rate(16)         = 3.0
+   leaf_turnover_rate(14)         = 2.0
+   leaf_turnover_rate(15)         = 2.0
+   leaf_turnover_rate(16)         = 2.0
    leaf_turnover_rate(17)         = onesixth
 
    !----- Root turnover rate.  ------------------------------------------------------------!
@@ -1846,11 +1963,11 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = leaf_turnover_rate(16)
    root_turnover_rate(17)         = leaf_turnover_rate(17)
 
-   storage_turnover_rate(1)       = 0.00 ! 0.25
-   storage_turnover_rate(2)       = 0.00 ! 0.25
-   storage_turnover_rate(3)       = 0.00 ! 0.25
-   storage_turnover_rate(4)       = 0.00 ! 0.25
-   storage_turnover_rate(5)       = 0.00 ! 0.25
+   storage_turnover_rate(1)       = onethird
+   storage_turnover_rate(2)       = onesixth
+   storage_turnover_rate(3)       = onesixth
+   storage_turnover_rate(4)       = onesixth
+   storage_turnover_rate(5)       = 0.00
    storage_turnover_rate(6)       = 0.00 ! 0.25
    storage_turnover_rate(7)       = 0.00 ! 0.25
    storage_turnover_rate(8)       = 0.00 ! 0.25
@@ -1859,10 +1976,10 @@ subroutine init_pft_resp_params()
    storage_turnover_rate(11)      = 0.6243
    storage_turnover_rate(12)      = 0.00 ! 0.25
    storage_turnover_rate(13)      = 0.00 ! 0.25
-   storage_turnover_rate(14)      = 0.00 ! 0.25
-   storage_turnover_rate(15)      = 0.00 ! 0.25
-   storage_turnover_rate(16)      = 0.00 ! 0.25
-   storage_turnover_rate(17)      = 0.00 ! 0.25
+   storage_turnover_rate(14)      = onethird
+   storage_turnover_rate(15)      = onethird
+   storage_turnover_rate(16)      = onethird
+   storage_turnover_rate(17)      = onesixth
 
    f_labile(1:5)                  = 1.0
    f_labile(6:11)                 = 0.79
@@ -1937,6 +2054,7 @@ subroutine init_pft_mort_params()
    use pft_coms    , only : mort1                      & ! intent(out)
                           , mort2                      & ! intent(out)
                           , mort3                      & ! intent(out)
+                          , cbr_severe_stress          & ! intent(out)
                           , rho                        & ! intent(out)
                           , seedling_mortality         & ! intent(out)
                           , treefall_s_gtht            & ! intent(out)
@@ -1945,8 +2063,10 @@ subroutine init_pft_mort_params()
                           , frost_mort                 ! ! intent(out)
    use consts_coms , only : t00                        & ! intent(in)
                           , lnexp_max                  & ! intent(in)
+                          , onethird                   & ! intent(in)
                           , twothirds                  ! ! intent(in)
-   use ed_misc_coms, only : ibigleaf                   ! ! intent(in)
+   use ed_misc_coms, only : ibigleaf                   & ! intent(in)
+                          , iallom                     ! ! intent(in)
    use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
                           , time2canopy                ! ! intent(in)
 
@@ -1973,10 +2093,13 @@ subroutine init_pft_mort_params()
    frost_mort(16:17) = 3.0
 
 
-   mort1(1)  = 10.0
-   mort1(2)  = 10.0
-   mort1(3)  = 10.0
-   mort1(4)  = 10.0
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the density-dependent mortality rates.            !
+   !---------------------------------------------------------------------------------------!
+   mort1(1)  = 5.0 ! 10.0
+   mort1(2)  = 5.0 ! 10.0
+   mort1(3)  = 5.0 ! 10.0
+   mort1(4)  = 5.0 ! 10.0
    mort1(5)  = 1.0
    mort1(6)  = 1.0
    mort1(7)  = 1.0
@@ -1986,15 +2109,15 @@ subroutine init_pft_mort_params()
    mort1(11) = 1.0
    mort1(12) = 1.0
    mort1(13) = 1.0
-   mort1(14) = 10.0
-   mort1(15) = 10.0
-   mort1(16) = 10.0
-   mort1(17) = 10.0
+   mort1(14) = 5.0 ! 10.0
+   mort1(15) = 5.0 ! 10.0
+   mort1(16) = 5.0 ! 10.0
+   mort1(17) = 5.0 ! 10.0
 
-   mort2(1)  = 20.0
-   mort2(2)  = 20.0
-   mort2(3)  = 20.0
-   mort2(4)  = 20.0
+   mort2(1)  = 10.0 ! 20.0
+   mort2(2)  = 10.0 ! 20.0
+   mort2(3)  = 10.0 ! 20.0
+   mort2(4)  = 10.0 ! 20.0
    mort2(5)  = 20.0
    mort2(6)  = 20.0
    mort2(7)  = 20.0
@@ -2004,29 +2127,63 @@ subroutine init_pft_mort_params()
    mort2(11) = 20.0
    mort2(12) = 20.0
    mort2(13) = 20.0
-   mort2(14) = 20.0
-   mort2(15) = 20.0
-   mort2(16) = 20.0
-   mort2(17) = 20.0
+   mort2(14) = 10.0 ! 20.0
+   mort2(15) = 10.0 ! 20.0
+   mort2(16) = 10.0 ! 20.0
+   mort2(17) = 10.0 ! 20.0
 
-   mort3(1)  = 0.15 * (1. - rho(1) / rho(4)) 
-   mort3(2)  = 0.15 * (1. - rho(2) / rho(4))  
-   mort3(3)  = 0.15 * (1. - rho(3) / rho(4))
-   mort3(4)  = 0.0
-   mort3(5)  = 0.066
-   mort3(6)  = 0.0033928
-   mort3(7)  = 0.0043
-   mort3(8)  = 0.0023568
-   mort3(9)  = 0.006144
-   mort3(10) = 0.003808
-   mort3(11) = 0.00428
-   mort3(12) = 0.066
-   mort3(13) = 0.066
-   mort3(14) = 0.15 * (1. - rho(14) / rho(4))
-   mort3(15) = 0.15 * (1. - rho(15) / rho(4))
-   mort3(16) = 0.15 * (1. - rho(16) / rho(4))
-   mort3(17) = 0.0043 ! Same as pines
+   !---------------------------------------------------------------------------------------!
+   !     This variable controls the density-independent mortality rate due to ageing.      !
+   ! This value is a constant in units of [fraction/year].                                 !
+   !---------------------------------------------------------------------------------------!
+   if (treefall_disturbance_rate > 0.) then
+      mort3(1)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(1) / rho(4)) ) / 0.014
+      mort3(2)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(2) / rho(4)) ) / 0.014
+      mort3(3)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(3) / rho(4)) ) / 0.014
+      mort3(4)  = 0.0
+      mort3(5)  = 0.066
+      mort3(6)  = 0.0033928
+      mort3(7)  = 0.0043
+      mort3(8)  = 0.0023568
+      mort3(9)  = 0.006144
+      mort3(10) = 0.003808
+      mort3(11) = 0.00428
+      mort3(12) = 0.066
+      mort3(13) = 0.066
+      mort3(14) = treefall_disturbance_rate * ( 0.15 * (1. - rho(14) / rho(4)) ) / 0.014
+      mort3(15) = treefall_disturbance_rate * ( 0.15 * (1. - rho(15) / rho(4)) ) / 0.014
+      mort3(16) = treefall_disturbance_rate * ( 0.15 * (1. - rho(16) / rho(4)) ) / 0.014
+      mort3(17) = 0.0043 ! Same as pines
+   else
+      mort3(1)  = 0.15 * (1. - rho(1) / rho(4))
+      mort3(2)  = 0.15 * (1. - rho(2) / rho(4))
+      mort3(3)  = 0.15 * (1. - rho(3) / rho(4))
+      mort3(4)  = 0.0
+      mort3(5)  = 0.066
+      mort3(6)  = 0.0033928
+      mort3(7)  = 0.0043
+      mort3(8)  = 0.0023568
+      mort3(9)  = 0.006144
+      mort3(10) = 0.003808
+      mort3(11) = 0.00428
+      mort3(12) = 0.066
+      mort3(13) = 0.066
+      mort3(14) = 0.15 * (1. - rho(14) / rho(4))
+      mort3(15) = 0.15 * (1. - rho(15) / rho(4))
+      mort3(16) = 0.15 * (1. - rho(16) / rho(4))
+      mort3(17) = 0.0043 ! Same as pines
+   end if
+   !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !      This is the default mortality for when the maximum carbon balance is negative.   !
+   !  Default in ED-1.0 and ED-2.0 was to assume zero, an alternative is to assume maximum !
+   !  mortality.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   !cbr_severe_stress(1:17) = 0.0
+   cbr_severe_stress(1:17) = log(epsilon(1.0)) / mort2(1:17)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -2106,12 +2263,35 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
 
 
-   seedling_mortality(1)    = 0.95
-   seedling_mortality(2:4)  = 0.95
-   seedling_mortality(5)    = 0.95
-   seedling_mortality(6:15) = 0.95
-   seedling_mortality(16)   = 0.95
-   seedling_mortality(17)   = 0.95
+   
+   select case (ibigleaf)
+   case (0)
+      seedling_mortality(1)    = 0.95
+      seedling_mortality(2:4)  = 0.95
+      seedling_mortality(5)    = 0.95
+      seedling_mortality(6:15) = 0.95
+      seedling_mortality(16)   = 0.95
+      seedling_mortality(17)   = 0.95
+   case (1)
+      select case (iallom)
+      case (0,1)
+         seedling_mortality(1)     = 0.9500
+         seedling_mortality(2:4)   = onethird
+         seedling_mortality(5)     = 0.9500
+         seedling_mortality(6:8)   = onethird
+         seedling_mortality(9:11)  = onethird
+         seedling_mortality(12:16) = 0.9500
+         seedling_mortality(17)    = onethird
+      case (2)
+         seedling_mortality(1)     = 0.9500
+         seedling_mortality(2:4)   = 0.4000
+         seedling_mortality(5)     = 0.9500
+         seedling_mortality(6:8)   = 0.4000
+         seedling_mortality(9:11)  = 0.4000
+         seedling_mortality(12:16) = 0.9500
+         seedling_mortality(17)    = 0.4000
+      end select
+   end select
 
    treefall_s_gtht(1:17)    = 0.0
 
@@ -2165,6 +2345,7 @@ subroutine init_pft_alloc_params()
                            , hgt_max               & ! intent(out)
                            , min_dbh               & ! intent(out)
                            , dbh_crit              & ! intent(out)
+                           , dbh_bigleaf           & ! intent(out)
                            , min_bdead             & ! intent(out)
                            , bdead_crit            & ! intent(out)
                            , b1Ht                  & ! intent(out)
@@ -2190,8 +2371,9 @@ subroutine init_pft_alloc_params()
                            , sapwood_ratio         ! ! intent(out)
    use allometry    , only : h2dbh                 & ! function
                            , dbh2bd                & ! function
-                           , dbh2bl                ! ! function
-   use consts_coms  , only : twothirds             & ! intent(in)
+                           , size2bl               ! ! function
+   use consts_coms  , only : onethird              & ! intent(in)
+                           , twothirds             & ! intent(in)
                            , huge_num              & ! intent(in)
                            , pi1                   ! ! intent(in)
    use ed_max_dims  , only : n_pft                 & ! intent(in)
@@ -2335,8 +2517,8 @@ subroutine init_pft_alloc_params()
    SLA(11) = 60.0
    SLA(12) = 22.0
    SLA(13) = 22.0
-   SLA(14) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
-   SLA(15) = 21.0 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
+   SLA(14) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
+   SLA(15) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
    SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
    SLA(17) = 10.0
 
@@ -2400,11 +2582,10 @@ subroutine init_pft_alloc_params()
    !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
    !---------------------------------------------------------------------------------------!
    if (igrass==1) then
-       init_density_grass = 1.
+      init_density_grass = 1.
    else
-       init_density_grass = 0.1
+      init_density_grass = 0.1
    end if
-   
    init_density(1)     = init_density_grass
    init_density(2:4)   = 0.1
    init_density(5)     = 0.1
@@ -2543,19 +2724,68 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------! 
-   !   MIN_DBH  -- minimum DBH allowed for the PFT.                                        !
-   !   DBH_CRIT -- minimum DBH that brings the PFT to its tallest possible height.         !
+   !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
+   !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      min_dbh (ipft) = h2dbh(hgt_min(ipft),ipft)
-      dbh_crit(ipft) = h2dbh(hgt_max(ipft),ipft)
+      min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
+      dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
    end do
    !---------------------------------------------------------------------------------------!
 
 
+
    !---------------------------------------------------------------------------------------!
-   !     DBH-leaf allometry.  Assign temperate PFTs outside the loop, and the tropical     !
-   ! ones inside the loop.                                                                 !
+   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
+   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
+   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
+   ! guess is about 1/3 of the critical DBH for trees.                                     !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (0,1)
+      dbh_bigleaf( 1) = dbh_crit( 1)
+      dbh_bigleaf( 2) = dbh_crit( 2)
+      dbh_bigleaf( 3) = dbh_crit( 3)
+      dbh_bigleaf( 4) = dbh_crit( 4)
+      dbh_bigleaf( 5) = dbh_crit( 5)
+      dbh_bigleaf( 6) = dbh_crit( 6)
+      dbh_bigleaf( 7) = dbh_crit( 7)
+      dbh_bigleaf( 8) = dbh_crit( 8)
+      dbh_bigleaf( 9) = dbh_crit( 9)
+      dbh_bigleaf(10) = dbh_crit(10)
+      dbh_bigleaf(11) = dbh_crit(11)
+      dbh_bigleaf(12) = dbh_crit(12)
+      dbh_bigleaf(13) = dbh_crit(13)
+      dbh_bigleaf(14) = dbh_crit(14)
+      dbh_bigleaf(15) = dbh_crit(15)
+      dbh_bigleaf(16) = dbh_crit(16)
+      dbh_bigleaf(17) = dbh_crit(17)
+   case (2)
+      dbh_bigleaf( 1) = dbh_crit( 1)
+      dbh_bigleaf( 2) = 29.69716
+      dbh_bigleaf( 3) = 31.41038
+      dbh_bigleaf( 4) = 16.67251
+      dbh_bigleaf( 5) = dbh_crit( 5)
+      dbh_bigleaf( 6) = dbh_crit( 6) * onethird
+      dbh_bigleaf( 7) = dbh_crit( 7) * onethird
+      dbh_bigleaf( 8) = dbh_crit( 8) * onethird
+      dbh_bigleaf( 9) = dbh_crit( 9) * onethird
+      dbh_bigleaf(10) = dbh_crit(10) * onethird
+      dbh_bigleaf(11) = dbh_crit(11) * onethird
+      dbh_bigleaf(12) = dbh_crit(12)
+      dbh_bigleaf(13) = dbh_crit(13)
+      dbh_bigleaf(14) = dbh_crit(14)
+      dbh_bigleaf(15) = dbh_crit(15)
+      dbh_bigleaf(16) = dbh_crit(16)
+      dbh_bigleaf(17) = 30.0
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-leaf and dead biomass allometries.  We first define them for the default,     !
+   ! size-and-age structure case, but we may overwrite them depending on the allometry.    !
    !---------------------------------------------------------------------------------------!
    !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
    b1Bl(1:4)   = 0.0
@@ -2602,15 +2832,6 @@ subroutine init_pft_alloc_params()
          end select
       end if
    end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     DBH-stem allometry.  Assign temperate PFTs outside the loop, and the tropical     !
-   ! ones inside the loop.                                                                 !
-   !---------------------------------------------------------------------------------------!
    !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] -------------!
    b1Bs_small(1:4)   = 0.0 
    b1Bs_small(5)     = 1.0e-5
@@ -2638,8 +2859,8 @@ subroutine init_pft_alloc_params()
    b2Bs_small(16)    = 0.0
    b2Bs_small(17)    = 0.0
    !---------------------------------------------------------------------------------------!
-   !     The temperate PFTs use the same b1Bs and b2Bs for small and big trees, copy the   !
-   ! values.                                                                               !
+   !     The temperate PFTs use the same b1Bs and b2Bs for small and big trees, copy       !
+   ! the values.                                                                           !
    !---------------------------------------------------------------------------------------!
    b1Bs_large(:) = b1Bs_small(:)
    b2Bs_large(:) = b2Bs_small(:)
@@ -2677,9 +2898,55 @@ subroutine init_pft_alloc_params()
          end select
       end if
       !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
 
 
 
+   !---------------------------------------------------------------------------------------!
+   !     In case we run big leaf model with IALLOM set to 0 or 1, we must change some of   !
+   ! the allometric parameters.                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (ibigleaf == 1 .and. (iallom == 0 .or. iallom == 1)) then
+      b1Bl      (    1)  = 0.04538826
+      b1Bl      (    2)  = 0.07322115
+      b1Bl      (    3)  = 0.07583497
+      b1Bl      (    4)  = 0.08915847
+      b1Bl      (14:16)  = 0.04538826
+      b1Bl      (   17)  = 0.07322115
+      
+      b2Bl      (    1)  = 1.316338
+      b2Bl      (    2)  = 1.509083
+      b2Bl      (    3)  = 1.646576
+      b2Bl      (    4)  = 1.663773
+      b2Bl      (14:16)  = 1.316338
+      b2Bl      (   17)  = 1.509083
+      
+      b1Bs_small(    1)  = 0.05291854
+      b1Bs_small(    2)  = 0.15940854
+      b1Bs_small(    3)  = 0.21445616
+      b1Bs_small(    4)  = 0.26890751
+      b1Bs_small(14:16)  = 0.05291854
+      b1Bs_small(   17)  = 0.15940854
+      
+      b2Bs_small(    1)  = 3.706955
+      b2Bs_small(    2)  = 2.342587
+      b2Bs_small(    3)  = 2.370640
+      b2Bs_small(    4)  = 2.254336
+      b2Bs_small(14:16)  = 3.706955
+      b2Bs_small(   17)  = 2.342587
+      
+      b1Bs_large    (:)  = b1Bs_small(:)
+      b2Bs_large    (:)  = b2Bs_small(:)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fill in variables tha are derived from bdead allometry.                           !
+   !---------------------------------------------------------------------------------------!
+   do ipft = 1, n_pft
       !------------------------------------------------------------------------------------!
       ! -- MIN_BDEAD is the minimum structural biomass possible.  This is used in the      !
       !    initialisation only, to prevent cohorts to be less than the minimum size due to !
@@ -2828,68 +3095,68 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    select case (ibigleaf)
    case (0)
-       !----- Size and age structure. -----------------------------------------------------!
-       select case (iallom)
-       case (0,1)
-          init_density(1)     = 1.0
-          init_density(2:4)   = 1.0
-          init_density(5)     = 0.1
-          init_density(6:8)   = 0.1
-          init_density(9:11)  = 0.1
-          init_density(12:13) = 0.1
-          init_density(14:15) = 0.1
-          init_density(16)    = 1.0
-          init_density(17)    = 1.0
-       case (2)
-          init_density(1)     = 0.1
-          init_density(2:4)   = 0.1
-          init_density(5)     = 0.1
-          init_density(6:8)   = 0.1
-          init_density(9:11)  = 0.1
-          init_density(12:13) = 0.1
-          init_density(14:15) = 0.1
-          init_density(16)    = 0.1
-          init_density(17)    = 0.1
-       end select
+      !----- Size and age structure. ------------------------------------------------------!
+      select case (iallom)
+      case (0,1)
+         init_density(1)     = 1.0
+         init_density(2:4)   = 1.0
+         init_density(5)     = 0.1
+         init_density(6:8)   = 0.1
+         init_density(9:11)  = 0.1
+         init_density(12:13) = 0.1
+         init_density(14:15) = 0.1
+         init_density(16)    = 1.0
+         init_density(17)    = 1.0
+      case (2)
+         init_density(1)     = 0.1
+         init_density(2:4)   = 0.1
+         init_density(5)     = 0.1
+         init_density(6:8)   = 0.1
+         init_density(9:11)  = 0.1
+         init_density(12:13) = 0.1
+         init_density(14:15) = 0.1
+         init_density(16)    = 0.1
+         init_density(17)    = 0.1
+      end select
 
-       !----- Define a non-sense number. --------------------------------------------------!
-       init_laimax(1:17)   = huge_num
+      !----- Define a non-sense number. ---------------------------------------------------!
+      init_laimax(1:17)   = huge_num
 
-    case(1)
-       !----- Big leaf. 1st we set the maximum initial LAI for each PFT. ------------------!
-       init_laimax(1:17)   = 0.1
-       do ipft=1,n_pft
-          init_bleaf = dbh2bl(dbh_crit(ipft),ipft)
-          init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
-       end do
-       !-----------------------------------------------------------------------------------!
+   case(1)
+      !----- Big leaf. 1st we set the maximum initial LAI for each PFT. -------------------!
+      init_laimax(1:17)   = 0.1
+      do ipft=1,n_pft
+         init_bleaf = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
+         init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
+      end do
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
 
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(299a)') ('-',n=1,299)
-      write(unit=18,fmt='(23(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(312a)') ('-',n=1,312)
+      write(unit=18,fmt='(24(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','        b1Bl','        b2Bl'         &
                                      ,'  b1Bs_Small','  b2Bs_Small','  b1Bs_Large'         &
                                      ,'  b1Bs_Large','        b1Ca','        b2Ca'         &
                                      ,'     Hgt_min','     Hgt_max','     Min_DBH'         &
-                                     ,'    DBH_Crit','  Bdead_Crit','   Init_dens'         &
-                                     ,' Init_LAImax','         SLA'
+                                     ,'    DBH_Crit',' DBH_BigLeaf','  Bdead_Crit'         &
+                                     ,'   Init_dens',' Init_LAImax','         SLA'
 
-      write(unit=18,fmt='(299a)') ('-',n=1,299)
+      write(unit=18,fmt='(312a)') ('-',n=1,312)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),20(1x,es12.5))')                             &
+         write (unit=18,fmt='(8x,i5,2(12x,l1),21(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
                        ,b2Ht(ipft),hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)    &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
                        ,b2Ca(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
-                       ,dbh_crit(ipft),bdead_crit(ipft),init_density(ipft)                 &
-                       ,init_laimax(ipft),sla(ipft)
+                       ,dbh_crit(ipft),dbh_bigleaf(ipft),bdead_crit(ipft)                  &
+                       ,init_density(ipft),init_laimax(ipft),sla(ipft)
       end do
-      write(unit=18,fmt='(299a)') ('-',n=1,299)
+      write(unit=18,fmt='(312a)') ('-',n=1,312)
       close(unit=18,status='keep')
    end if
 
@@ -2949,6 +3216,7 @@ end subroutine init_pft_nitro_params
 !   This subroutine sets up some PFT and leaf dependent properties.                        !
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_leaf_params()
+   use ed_misc_coms   , only : igrass               ! ! intent(in)
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , b1Cl                 & ! intent(out)
@@ -2958,44 +3226,92 @@ subroutine init_pft_leaf_params()
                              , wat_dry_ratio_grn    & ! intent(out)
                              , wat_dry_ratio_ngrn   & ! intent(out)
                              , delta_c              ! ! intent(out)
-   use consts_coms    , only : t3ple                ! ! intent(out) 
+   use consts_coms    , only : t3ple                ! ! intent(out)
    use phenology_coms , only :iphen_scheme
 
    implicit none
 
-   select case (iphen_scheme)
-   case (-1)
-      phenology(1:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:17) = 0
-   case (0,1)
-      phenology(1)     = 1
-      phenology(2:4)   = 1
-      phenology(5)     = 1
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 1
-      phenology(16)    = 1
-      phenology(17)    = 0
-   case (2)
-      phenology(1)     = 0
-      phenology(2:4)   = 4
-      phenology(5)     = 0
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 4
-      phenology(16)    = 0
-      phenology(17)    = 0
-   case (3)
-      phenology(1)     = 4
-      phenology(2:4)   = 3
-      phenology(5)     = 4
-      phenology(6:8)   = 0
-      phenology(9:11)  = 2
-      phenology(12:15) = 4
-      phenology(16)    = 4
-      phenology(17)    = 0
+   !---------------------------------------------------------------------------------------!
+   !     Tree phenology is the same for both cases, but in the new grass allometry they    !
+   ! must be evergreens.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   select case (igrass)
+   case (0)
+      !----- Bonsai grasses. --------------------------------------------------------------!
+      select case (iphen_scheme)
+      case (-1)
+         phenology(1:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:17) = 0
+      case (0,1)
+         phenology(1)     = 1
+         phenology(2:4)   = 1
+         phenology(5)     = 1
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 1
+         phenology(16)    = 1
+         phenology(17)    = 0
+      case (2)
+         phenology(1)     = 4
+         phenology(2:4)   = 4
+         phenology(5)     = 4
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 4
+         phenology(16)    = 4
+         phenology(17)    = 0
+      case (3)
+         phenology(1)     = 4
+         phenology(2:4)   = 3
+         phenology(5)     = 4
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 4
+         phenology(16)    = 4
+         phenology(17)    = 0
+      end select
+      !------------------------------------------------------------------------------------!
+   case (1)
+      !----- New grasses. -----------------------------------------------------------------!
+      select case (iphen_scheme)
+      case (-1)
+         phenology(1:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:17) = 0
+      case (0,1)
+         phenology(1)     = 0
+         phenology(2:4)   = 1
+         phenology(5)     = 0
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 1
+         phenology(16)    = 0
+         phenology(17)    = 0
+      case (2)
+         phenology(1)     = 0
+         phenology(2:4)   = 4
+         phenology(5)     = 0
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 0
+         phenology(16)    = 0
+         phenology(17)    = 0
+      case (3)
+         phenology(1)     = 0
+         phenology(2:4)   = 3
+         phenology(5)     = 0
+         phenology(6:8)   = 0
+         phenology(9:11)  = 2
+         phenology(12:15) = 0
+         phenology(16)    = 0
+         phenology(17)    = 0
+      end select
+      !------------------------------------------------------------------------------------!
    end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters are second sources found in Gu et al. (2007)            !
@@ -3122,6 +3438,7 @@ end subroutine init_pft_repro_params
 subroutine init_pft_derived_params()
    use decomp_coms          , only : f_labile             ! ! intent(in)
    use detailed_coms        , only : idetailed            ! ! intent(in)
+   use ed_misc_coms         , only : ibigleaf             ! ! intent(in)
    use ed_max_dims          , only : n_pft                & ! intent(in)
                                    , str_len              ! ! intent(in)
    use consts_coms          , only : onesixth             & ! intent(in)
@@ -3139,16 +3456,17 @@ subroutine init_pft_derived_params()
                                    , pft_name16           & ! intent(in)
                                    , hgt_max              & ! intent(in)
                                    , dbh_crit             & ! intent(in)
+                                   , dbh_bigleaf          & ! intent(in)
                                    , one_plant_c          & ! intent(out)
                                    , min_recruit_size     & ! intent(out)
                                    , min_cohort_size      & ! intent(out)
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
                                    , veg_hcap_min         ! ! intent(out)
-   use phenology_coms       , only : elongf_min           ! ! intent(in)
+   use phenology_coms       , only : elongf_min           & ! intent(in)
+                                   , elongf_flush         ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
-                                   , dbh2bl               & ! function
                                    , size2bl              & ! function
                                    , dbh2bd               ! ! function
    use ed_therm_lib         , only : calc_veg_hcap        ! ! function
@@ -3168,6 +3486,11 @@ subroutine init_pft_derived_params()
    real                              :: bsapwood_max
    real                              :: balive_max
    real                              :: bdead_max
+   real                              :: bleaf_bl
+   real                              :: broot_bl
+   real                              :: bsapwood_bl
+   real                              :: balive_bl
+   real                              :: bdead_bl
    real                              :: leaf_hcap_min
    real                              :: wood_hcap_min
    real                              :: lai_min
@@ -3189,18 +3512,21 @@ subroutine init_pft_derived_params()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(24(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(29(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BROOT_MIN'               &
                                               ,'BSAPWOOD_MIN','  BALIVE_MIN'               &
-                                              ,'   BDEAD_MIN','   BLEAF_MAX'               &
-                                              ,'   BROOT_MAX','BSAPWOOD_MAX'               &
-                                              ,'  BALIVE_MAX','   BDEAD_MAX'               &
-                                              ,'   INIT_DENS','MIN_REC_SIZE'               &
-                                              ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
-                                              ,'         SLA','VEG_HCAP_MIN'               &
-                                              ,'     LAI_MIN','     HGT_MAX'               &
-                                              ,'    DBH_CRIT',' ONE_PLANT_C'
+                                              ,'   BDEAD_MIN','    BLEAF_BL'               &
+                                              ,'    BROOT_BL',' BSAPWOOD_BL'               &
+                                              ,'   BALIVE_BL','    BDEAD_BL'               &
+                                              ,'   BLEAF_MAX','   BROOT_MAX'               &
+                                              ,'BSAPWOOD_MAX','  BALIVE_MAX'               &
+                                              ,'   BDEAD_MAX','   INIT_DENS'               &
+                                              ,'MIN_REC_SIZE','MIN_COH_SIZE'               &
+                                              ,' NEGL_NPLANT','         SLA'               &
+                                              ,'VEG_HCAP_MIN','     LAI_MIN'               &
+                                              ,'     HGT_MAX','    DBH_CRIT'               &
+                                              ,' ONE_PLANT_C'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
@@ -3214,6 +3540,7 @@ subroutine init_pft_derived_params()
       bdead_min    = dbh2bd(dbh,ipft)
       !------------------------------------------------------------------------------------!
 
+
       !------------------------------------------------------------------------------------!
       !   Find the maximum bleaf and bdead supported.  This is to find the negligible      !
       ! nplant so we ensure that the cohort is always terminated if its mortality rate is  !
@@ -3221,7 +3548,7 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       huge_dbh     = 3. * dbh_crit(ipft)
       huge_height  = dbh2h(ipft, dbh_crit(ipft))
-      bleaf_max    = dbh2bl(huge_dbh,ipft)
+      bleaf_max    = size2bl(huge_dbh,huge_height,ipft)
       broot_max    = bleaf_max * q(ipft)
       bsapwood_max = bleaf_max * qsw(ipft) * huge_height
       balive_max   = bleaf_max + broot_max + bsapwood_max
@@ -3232,7 +3559,25 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       !    Biomass of one individual plant at recruitment.                                 !
       !------------------------------------------------------------------------------------!
-      one_plant_c(ipft)      =  bdead_min + balive_min
+      bleaf_bl          = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),ipft) 
+      broot_bl          = bleaf_bl * q(ipft)
+      bsapwood_bl       = bleaf_bl * qsw(ipft) * hgt_max(ipft)
+      balive_bl         = bleaf_bl + broot_bl + bsapwood_bl
+      bdead_bl          = dbh2bd(dbh_bigleaf(ipft),ipft)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the carbon value for one plant.  If SAS approximation, we define it as    !
+      ! the carbon of a seedling, and for the big leaf case we assume the typical big leaf !
+      ! plant size.                                                                        !
+      !------------------------------------------------------------------------------------!
+      select case (ibigleaf)
+      case (0)
+         one_plant_c(ipft) = bdead_min + balive_min
+      case (1)
+         one_plant_c(ipft) = bdead_bl  + balive_bl
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -3244,13 +3589,6 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       min_recruit_size(ipft) = min_plant_dens * one_plant_c(ipft)
       !------------------------------------------------------------------------------------!
-
-      write (unit=*,fmt='(a,1x,es12.4)') ' - min_recruit_size:    ',min_recruit_size(ipft)
-      write (unit=*,fmt='(a,1x,es12.4)') ' - min_plant_den:       ',min_plant_dens
-      write (unit=*,fmt='(a,1x,es12.4)') ' - balive_min:          ',balive_min
-      write (unit=*,fmt='(a,1x,es12.4)') ' - bdead_min:           ',bdead_min
-      write (unit=*,fmt='(a,1x,es12.4)') ' - dbh:                 ',dbh
-      write (unit=*,fmt='(a,1x,es12.4)') ' - bleaf_min:           ',bleaf_min
 
 
       !------------------------------------------------------------------------------------!
@@ -3296,12 +3634,14 @@ subroutine init_pft_derived_params()
 
 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,22(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,27(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,broot_min,bsapwood_min  &
-                                                    ,balive_min,bdead_min,bleaf_max        &
-                                                    ,broot_max,bsapwood_max,balive_max     &
-                                                    ,bdead_max,init_density(ipft)          &
+                                                    ,balive_min,bdead_min,bleaf_bl         &
+                                                    ,broot_bl,bsapwood_bl,balive_bl        &
+                                                    ,bdead_bl,bleaf_max,broot_max          &
+                                                    ,bsapwood_max,balive_max,bdead_max     &
+                                                    ,init_density(ipft)                    &
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &
@@ -3822,14 +4162,20 @@ subroutine init_soil_coms
                              , soil_rough8           & ! intent(out)
                              , snow_rough8           & ! intent(out)
                              , freezecoef            & ! intent(out)
-                             , freezecoef8           ! ! intent(out)
+                             , freezecoef8           & ! intent(out)
+                             , sldrain               & ! intent(out)
+                             , sldrain8              & ! intent(out)
+                             , sin_sldrain           & ! intent(out)
+                             , sin_sldrain8          ! ! intent(out)
    use phenology_coms , only : thetacrit             ! ! intent(in)
    use disturb_coms   , only : sm_fire               ! ! intent(in)
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
                              , wdns                  & ! intent(in)
                              , hr_sec                & ! intent(in)
-                             , day_sec               ! ! intent(in)
+                             , day_sec               & ! intent(in)
+                             , pio180                & ! intent(in)
+                             , pio1808               ! ! intent(in)
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -4235,6 +4581,16 @@ subroutine init_soil_coms
    soil_rough8 = dble(soil_rough)
    snow_rough8 = dble(snow_rough)
    freezecoef8 = dble(freezecoef)
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the double precision version of the drainage slope, and find and save the    !
+   ! sine of it.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   sldrain8     = dble(sldrain)
+   sin_sldrain  = sin(sldrain  * pio180 )
+   sin_sldrain8 = sin(sldrain8 * pio1808)
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine init_soil_coms
 !==========================================================================================!
@@ -4255,6 +4611,7 @@ subroutine init_phen_coms
                             , thetacrit                & ! intent(in)
                             , retained_carbon_fraction & ! intent(out)
                             , elongf_min               & ! intent(out)
+                            , elongf_flush             & ! intent(out)
                             , spot_phen                & ! intent(out)
                             , dl_tr                    & ! intent(out)
                             , st_tr1                   & ! intent(out)
@@ -4297,6 +4654,15 @@ subroutine init_phen_coms
    ! ing leaves.                                                                           !
    !---------------------------------------------------------------------------------------!
    elongf_min               = 0.05
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum elongation factor that allows plants to start flushing out new leaves if !
+   ! they are drought deciduous and have been losing leaves.                               !
+   !---------------------------------------------------------------------------------------!
+   elongf_flush             = 0.25
    !---------------------------------------------------------------------------------------!
 
 

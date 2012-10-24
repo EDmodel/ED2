@@ -19,7 +19,8 @@ numcore=60                                       # Number of cores
 
 
 
-#----- Getting the number of nodes from prompt if given... --------------------------------#
+
+#----- Get the number of nodes from prompt if given... ------------------------------------#
 if [ 'x'${1} != 'x' ]
 then
  numcore=${1}
@@ -30,7 +31,8 @@ fi
 
 
 #------------------------------------------------------------------------------------------#
-#    Define the number of hosts.  This is to avoid dumping 8 jobs on moorcrofth...         #
+#    Check whether to spread cores to as few nodes as possible or go for first come first  #
+# serve...                                                                                 #
 #------------------------------------------------------------------------------------------#
 if [ ${nodespread} == 'yes' ]
 then
@@ -72,7 +74,7 @@ fi
 
 
 
-#----- Erasing old logfiles and joblogs ---------------------------------------------------#
+#----- Erase old logfiles and joblogs -----------------------------------------------------#
 if [ -s ${joblog} ]
 then
   rm -fv ${joblog}
@@ -82,7 +84,7 @@ fi
 
 
 
-#----- Checking whether this is a MAKEVFILE/MAKESFC run or an actual run ------------------#
+#----- Check whether this is a MAKEVFILE/MAKESFC run or an actual run ---------------------#
 makevfile=`grep "'MAKEVFILE'," ${namelist} | wc -l`
 makesfc=`grep "'MAKESFC'," ${namelist}   | wc -l`
 preponly=`expr ${makevfile} + ${makesfc}`
@@ -109,7 +111,7 @@ fi
 
 
 
-#----- Changing the output filename to change for different processors --------------------#
+#----- Change the output filename to change for different processors. ---------------------#
 if [ ${numcore} -lt 10 ]
 then
   joblog=`dirname ${joblog}`'/00'${numcore}'_'`basename ${joblog}` 
