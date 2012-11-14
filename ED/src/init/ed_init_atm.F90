@@ -17,7 +17,8 @@ subroutine ed_init_atm()
                                     , soil              & ! intent(in)
                                     , slmstr            & ! intent(in)
                                     , stgoff            & ! intent(in)
-                                    , ed_soil_idx2water ! ! intent(in)
+                                    , ed_soil_idx2water & ! function
+                                    , matric_potential  ! ! function
    use consts_coms           , only : wdns              & ! intent(in)
                                     , t3ple             ! ! intent(in)
    use grid_coms             , only : nzs               & ! intent(in)
@@ -283,12 +284,14 @@ subroutine ed_init_atm()
                      !    Initialise soil moisture and internal energy.                    !
                      !---------------------------------------------------------------------!
                      if (ied_init_mode /= 7) then
-                        csite%soil_water(k,ipa)   = ed_soil_idx2water(slmstr(k),nsoil)
+                        csite%soil_water(k,ipa) = ed_soil_idx2water(slmstr(k),nsoil)
                      end if
-                     csite%soil_energy(k,ipa)  = cmtl2uext( soil(nsoil)%slcpd              &
-                                                          , csite%soil_water(k,ipa)*wdns   &
-                                                          , csite%soil_tempk(k,ipa)        &
-                                                          , csite%soil_fracliq(k,ipa)      )
+                     csite%soil_energy  (k,ipa) = cmtl2uext( soil(nsoil)%slcpd             &
+                                                           , csite%soil_water(k,ipa)*wdns  &
+                                                           , csite%soil_tempk(k,ipa)       &
+                                                           , csite%soil_fracliq(k,ipa)     )
+                     csite%soil_mstpot  (k,ipa) = matric_potential(nsoil                   &
+                                                                 ,csite%soil_water(k,ipa)  )
                      !---------------------------------------------------------------------!
                   end do groundloop2
 

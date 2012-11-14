@@ -1575,7 +1575,8 @@ subroutine copy_avgvars_to_leaf(ifm)
    use mem_grid      , only : nzg                & ! intent(in)
                             , nzs                ! ! intent(in)
    use rconstants    , only : t3ple              & ! intent(in)
-                            , wdns               ! ! intent(in)
+                            , wdns               & ! intent(in)
+                            , kgCyr_2_umols      & ! intent(in)
    use therm_lib     , only : alvl               & ! intent(in)
                             , alvi               & ! intent(in)
                             , uint2tl            & ! intent(in)
@@ -1608,10 +1609,15 @@ subroutine copy_avgvars_to_leaf(ifm)
    integer                    :: ipft
    integer                    :: nsoil
    real                       :: site_area_i
+   real                       :: patch_wgt
    real                       :: ground_temp
    real                       :: ground_fliq
+   real                       :: veg_energy
+   real                       :: veg_water
+   real                       :: veg_hcap
    real                       :: veg_temp
    real                       :: veg_fliq
+   real                       :: can_shv
    real                       :: can_temp
    real                       :: can_exner
    !---------------------------------------------------------------------------------------!
@@ -1634,6 +1640,10 @@ subroutine copy_avgvars_to_leaf(ifm)
       !------------------------------------------------------------------------------------!
 
 
+      !----- Find the total polygon area. -------------------------------------------------!
+      poly_area_i = 1. / sum(cpoly%area)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !      Copy the ED site-level averages to leaf_g structure "patches".                !
@@ -1650,157 +1660,265 @@ subroutine copy_avgvars_to_leaf(ifm)
          !---------------------------------------------------------------------------------!
 
 
+         !----- Set LEAF-3 "patch" properties (equivalent to ED-2 sites). -----------------!
+         leaf_g(ifm)%soil_text  (:,ix,iy,ilp) = real(cpoly%ntext_soil(:,isi))
+         leaf_g(ifm)%psibar_10d(ix,iy,ilp)    = 1.0
+         leaf_g(ifm)%soil_color(ix,iy,ilp)    = real(cpoly%ncol_soil(isi))
          !---------------------------------------------------------------------------------!
-         !     Copy the soil information.                                                  !
-         !---------------------------------------------------------------------------------!
-         do k=1,nzg
-            leaf_g(ifm)%soil_text  (k,ix,iy,ilp) = real(cpoly%ntext_soil(k,isi))
-            leaf_g(ifm)%soil_energy(k,ix,iy,ilp) = cpoly%avg_soil_energy(k,isi)
-            leaf_g(ifm)%soil_water (k,ix,iy,ilp) = cpoly%avg_soil_water (k,isi)
-         end do
-         leaf_g(ifm)%psibar_10d (ix,iy,ilp) = 1.0
-         leaf_g(ifm)%soil_color(ix,iy,ilp)  = real(cpoly%ncol_soil(isi))
+
+
+         !----- Initialise site-level variables that must be aggregated. ------------------!
+         leaf_g(ifm)%soil_energy    (:,ix,iy,ilp) = 0.0
+         leaf_g(ifm)%soil_water     (:,ix,iy,ilp) = 0.0
+         leaf_g(ifm)%sfcwater_energy(:,ix,iy,ilp) = 0.0
+         leaf_g(ifm)%sfcwater_mass  (:,ix,iy,ilp) = 0.0
+         leaf_g(ifm)%sfcwater_depth (:,ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_water        (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_hcap         (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_energy       (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_lai          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_tai          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_water        (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_hcap         (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_energy       (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_lai          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_tai          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%veg_agb          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%can_theta        (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%can_theiv        (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%can_vpdef        (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%can_co2          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%can_prss         (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%sensible_gc      (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%sensible_vc      (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%evap_gc          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%evap_vc          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%transp           (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%gpp              (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%plresp           (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%resphet          (ix,iy,ilp) = 0.0
+         can_shv                                  = 0.0
          !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
-         !    Site-level Surface water properties are always merged into one layer, 1,     !
-         ! so we copy all the information that may exist to the first layer and make the   !
-         ! others zero.  In case there is nothing to copy, make it empty.                  !
+         !     Loop over the patches.                                                      !
          !---------------------------------------------------------------------------------!
-         if (cgrid%avg_sfcw_mass  (isi) > tiny_sfcwater_mass) then
-            leaf_g(ifm)%sfcwater_nlev     (ix,iy,ilp) = 1.
-            leaf_g(ifm)%sfcwater_energy (1,ix,iy,ilp) = cgrid%avg_sfcw_energy(isi)
-            leaf_g(ifm)%sfcwater_mass   (1,ix,iy,ilp) = cgrid%avg_sfcw_mass  (isi)
-            leaf_g(ifm)%sfcwater_depth  (1,ix,iy,ilp) = cgrid%avg_sfcw_depth (isi)
+         patchloop: do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+
+
+            !----- Find the weights. ------------------------------------------------------!
+            patch_wgt = csite%area(ipa) * site_area_i
+            !------------------------------------------------------------------------------!
+
+
+            !----- Aggregate soil layers. -------------------------------------------------!
+            soilloop: do k=1,nzg
+               leaf_g(ifm)%soil_energy(k,ix,iy,ilp) = leaf_g(ifm)%soil_energy(k,ix,iy,ilp) &
+                                                    + csite%fmean_soil_energy(k,ipa)       &
+                                                    * patch_wgt
+               leaf_g(ifm)%soil_water (k,ix,iy,ilp) = leaf_g(ifm)%soil_water (k,ix,iy,ilp) &
+                                                    + csite%fmean_soil_water (k,ipa)       &
+                                                    * patch_wgt
+            end do soilloop
+            !------------------------------------------------------------------------------!
+
+
+            !----- Temporary surface water: squeeze everything into one layer. ------------!
+            leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp) =                                     &
+                         leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp)                          &
+                       + csite%fmean_sfcw_energy(ipa) *  csite%fmean_sfcw_water(ipa)       &
+                       * patch_wgt
+            leaf_g(ifm)%sfcwater_mass  (1,ix,iy,ilp) =                                     &
+                         leaf_g(ifm)%sfcwater_mass  (1,ix,iy,ilp)                          &
+                       + csite%fmean_sfcw_water(ipa) * patch_wgt
+            leaf_g(ifm)%sfcwater_depth (1,ix,iy,ilp) =                                     &
+                         leaf_g(ifm)%sfcwater_depth (1,ix,iy,ilp)                          &
+                       + csite%fmean_sfcw_depth (ipa) * patch_wgt
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Update canopy air properties.                                           !
+            !------------------------------------------------------------------------------!
+            leaf_g(ifm)%can_theta(ix,iy,ilp) = leaf_g(ifm)%can_theta(ix,iy,ilp)            &
+                                             + csite%fmean_can_theta(ipa) * patch_wgt
+            leaf_g(ifm)%can_theiv(ix,iy,ilp) = leaf_g(ifm)%can_theiv(ix,iy,ilp)            &
+                                             + csite%fmean_can_theiv(ipa) * patch_wgt
+            leaf_g(ifm)%can_vpdef(ix,iy,ilp) = leaf_g(ifm)%can_vpdef(ix,iy,ilp)            &
+                                             + csite%fmean_can_vpdef(ipa) * patch_wgt
+            leaf_g(ifm)%can_co2  (ix,iy,ilp) = leaf_g(ifm)%can_co2  (ix,iy,ilp)            &
+                                             + csite%fmean_can_co2  (ipa) * patch_wgt
+            leaf_g(ifm)%can_prss (ix,iy,ilp) = leaf_g(ifm)%can_prss (ix,iy,ilp)            &
+                                             + csite%fmean_can_prss (ipa) * patch_wgt
+            can_shv                          = can_shv                                     &
+                                             + csite%fmean_can_shv  (ipa) * patch_wgt
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Find the ground temperature, we need it to transform water flux into     !
+            ! energy.                                                                      !
+            !------------------------------------------------------------------------------!
+            if (csite%fmean_sfcw_mass(ipa) > tiny_sfcwater_mass) then
+               !------ There is a temporary surface water.  Use average temperature. ------!
+               call uint2tl(csite%fmean_sfcw_energy(ipa),ground_temp,ground_fliq)
+               !---------------------------------------------------------------------------!
+            else
+               !------ There is no temporary surface water.  Use top soil temperature. ----!
+               nsoil = cpoly%ntext_soil(nzg,isi)
+               call uextcm2tl(csite%fmean_soil_energy(nzg,ipa)                             &
+                             ,csite%fmean_soil_water (nzg,ipa) * wdns,soil(nsoil)%slcpd    &
+                             ,ground_temp,ground_fliq)
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Copy the fluxes, which will be used for output only.  We must convert    !
+            ! the water flux to energy-equivalent.                                         !
+            !------------------------------------------------------------------------------!
+            leaf_g(ifm)%sensible_gc(ix,iy,ilp) = leaf_g(ifm)%sensible_gc(ix,iy,ilp)        &
+                                               + csite%fmean_sensible_gc(ipa) * patch_wgt
+            leaf_g(ifm)%evap_gc    (ix,iy,ilp) = leaf_g(ifm)%evap_gc    (ix,iy,ilp)        &
+                                               + csite%fmean_vapor_gc   (ipa)              &
+                                               * (       ground_fliq  * alvl(ground_temp)  &
+                                                 + (1. - ground_fliq) * alvi(ground_temp)) &
+                                               * patch_wgt
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Heterotrophic respiration.  Make units umol/m2/s. ----------------------!
+            leaf_g(ifm)%resphet(ix,iy,ilp) = leaf_g(ifm)%resphet(ix,iy,ilp)                &
+                                           + csite%fmean_rh     (ico)                      &
+                                           * patch_wgt * kgCyr_2_umols
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Find CAS temperature, in case there are unresolvable cohorts. ----------!
+            can_exner = press2exner(csite%fmean_can_prss(ipa))
+            can_temp  = extheta2temp(can_exner,csite%fmean_can_theta(ipa))
+            !------------------------------------------------------------------------------!
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Loop over cohorts.                                                       !
+            !------------------------------------------------------------------------------!
+            cohortloop: do ico=1,cpatch%ncohorts
+               !----- Find the vegetation temperature and fraction of liquid water. -------!
+               veg_water  = cpatch%fmean_leaf_water (ico) + cpatch%fmean_wood_water (ico)
+               veg_energy = cpatch%fmean_leaf_energy(ico) + cpatch%fmean_wood_energy(ico)
+               veg_hcap   = cpatch%fmean_leaf_hcap  (ico) + cpatch%fmean_wood_hcap  (ico)
+               if (veg_hcap > 0.) then
+                  !----- There are plants.  Use standard thermodynamics. ------------------!
+                  call uextcm2tcl(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+               else
+                  !----- No plant biomass. Use CAS temperature instead. -------------------!
+                  veg_temp  = can_temp
+                  if (veg_temp == t3ple) then
+                     veg_fliq = 0.5
+                  elseif (veg_temp > t3ple) then
+                     veg_fliq = 1.0
+                  else
+                     veg_fliq = 0.0
+                  end if
+               end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !------ Integrate state variables. -----------------------------------------!
+               leaf_g(ifm)%veg_water (ix,iy,ilp) = leaf_g(ifm)%veg_water (ix,iy,ilp)       &
+                                                 + veg_water  * patch_wgt
+               leaf_g(ifm)%veg_hcap  (ix,iy,ilp) = leaf_g(ifm)%veg_hcap  (ix,iy,ilp)       &
+                                                 + veg_hcap   * patch_wgt
+               leaf_g(ifm)%veg_energy(ix,iy,ilp) = leaf_g(ifm)%veg_energy(ix,iy,ilp)       &
+                                                 + veg_energy * patch_wgt
+               leaf_g(ifm)%veg_lai   (ix,iy,ilp) = leaf_g(ifm)%veg_lai   (ix,iy,ilp)       &
+                                                 + cpatch%lai(ico) * patch_wgt
+               leaf_g(ifm)%veg_tai   (ix,iy,ilp) = leaf_g(ifm)%veg_tai   (ix,iy,ilp)       &
+                                                 + ( cpatch%lai(ico) + cgrid%wai(ico) )    &
+                                                 * patch_wgt
+               leaf_g(ifm)%veg_agb   (ix,iy,ilp) = leaf_g(ifm)%veg_agb   (ix,iy,ilp)       &
+                                                 + (cpatch%nplant(ico) * cpatch%agb(ico))  &
+                                                 * patch_wgt
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Integrate the fluxes.                                                 !
+               !---------------------------------------------------------------------------!
+               leaf_g(ifm)%sensible_vc(ix,iy,ilp) = leaf_g(ifm)%sensible_vc(ix,iy,ilp)     &
+                                                  + ( cpatch%fmean_sensible_lc(ico)        &
+                                                    + cpatch%fmean_sensible_wc(ico) )      &
+                                                  * patch_wgt
+               leaf_g(ifm)%evap_vc    (ix,iy,ilp) = leaf_g(ifm)%evap_vc    (ix,iy,ilp)     &
+                                                  + ( cpatch%fmean_vapor_lc(ico)           &
+                                                    + cpatch%fmean_vapor_wc(ico) )         &
+                                                  * (        veg_fliq  * alvl(veg_temp)    &
+                                                    + (1.0 - veg_fliq) * alvi(veg_temp) )  &
+                                                  * patch_wgt
+               !----- Transpiration only happens from liquid phase to vapour. -------------!
+               leaf_g(ifm)%transp     (ix,iy,ilp) = leaf_g(ifm)%transp     (ix,iy,ilp)     &
+                                                  + cpatch%fmean_transp(ico)               &
+                                                  * alvl(veg_temp) * patch_wgt
+               !---------------------------------------------------------------------------!
+
+
+
+               !------ Carbon fluxes.  Switch units to umol/m2/s. -------------------------!
+               leaf_g(ifm)%gpp    (ix,iy,ilp) = leaf_g(ifm)%gpp    (ix,iy,ilp)             &
+                                              + cpatch%fmean_gpp   (ico)                   &
+                                              * cpatch%nplant      (ico)                   &
+                                              * patch_wgt * kgCyr_2_umols
+               leaf_g(ifm)%plresp (ix,iy,ilp) = leaf_g(ifm)%plresp (ix,iy,ilp)             &
+                                              + cpatch%fmean_plresp(ico)                   &
+                                              * cpatch%nplant      (ico)                   &
+                                              * patch_wgt * kgCyr_2_umols
+               !---------------------------------------------------------------------------!
+            end do cohortloop
+            !------------------------------------------------------------------------------!
+         end do patchloop
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Check whether there was some mass in the temporary pounding/snow layer.  In  !
+         ! case there isn't, force all properties to be zero.                              !
+         !---------------------------------------------------------------------------------!
+         if (leaf_g(ifm)%sfcwater_mass > tiny_sfcwater_mass) then
+            leaf_g(ifm)%sfcwater_nlev    (ix,iy,ilp) = 1.
+            leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp) =                                     &
+                                                  leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp) &
+                                                / leaf_g(ifm)%sfcwater_water (1,ix,iy,ilp)
          else
             leaf_g(ifm)%sfcwater_nlev     (ix,iy,ilp) = 0.
             leaf_g(ifm)%sfcwater_energy (1,ix,iy,ilp) = 0.
             leaf_g(ifm)%sfcwater_mass   (1,ix,iy,ilp) = 0.
             leaf_g(ifm)%sfcwater_depth  (1,ix,iy,ilp) = 0.
          end if
-         do k=2,nzs
-            leaf_g(ifm)%sfcwater_energy (k,ix,iy,ilp) = 0.
-            leaf_g(ifm)%sfcwater_mass   (k,ix,iy,ilp) = 0.
-            leaf_g(ifm)%sfcwater_depth  (k,ix,iy,ilp) = 0.
-         end do
          !---------------------------------------------------------------------------------!
 
 
-
          !---------------------------------------------------------------------------------!
-         !      Update vegetation properties.                                              !
+         !      Canopy air: convert specific humidity to mixing ratio, add the offset  to  !
+         ! CO2 if wanted by the user, and ensure that CO2 is bounded.                      !
          !---------------------------------------------------------------------------------!
-         leaf_g(ifm)%veg_water   (ix,iy,ilp)   = cpoly%avg_leaf_water  (isi)               &
-                                               + cpoly%avg_wood_water  (isi)
-         leaf_g(ifm)%veg_hcap    (ix,iy,ilp)   = cpoly%avg_leaf_hcap   (isi)               &
-                                               + cpoly%avg_wood_hcap   (isi)
-         leaf_g(ifm)%veg_energy  (ix,iy,ilp)   = cpoly%avg_leaf_energy (isi)               &
-                                               + cpoly%avg_wood_energy (isi)
-         leaf_g(ifm)%veg_lai     (ix,iy,ilp)   = cpoly%lai(isi)
-         leaf_g(ifm)%veg_tai     (ix,iy,ilp)   = cpoly%lai(isi) + cgrid%wai(isi)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !----- Fill above ground biomass by integrating all PFTs and DBH classes. --------!
-         leaf_g(ifm)%veg_agb(ix,iy,ilp)       = 0.
-         do idbh=1,n_dbh
-            do ipft=1,n_pft
-               leaf_g(ifm)%veg_agb(ix,iy,ilp) = leaf_g(ifm)%veg_agb(ix,iy,ilp)             &
-                                              + cpoly%agb(ipft,idbh,isi)
-            end do
-         end do
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !      Update canopy air properties.                                              !
-         !---------------------------------------------------------------------------------!
-         leaf_g(ifm)%can_theta  (ix,iy,ilp) = cpoly%avg_can_theta(isi)
-         leaf_g(ifm)%can_theiv  (ix,iy,ilp) = cpoly%avg_can_theiv(isi)
-         leaf_g(ifm)%can_vpdef  (ix,iy,ilp) = cpoly%avg_can_vpdef(isi)
-         leaf_g(ifm)%can_co2    (ix,iy,ilp) = max( atm_co2_min                             &
-                                                 , cpoly%avg_can_co2(isi) - co2_offset)
-         leaf_g(ifm)%can_prss   (ix,iy,ilp) = cpoly%avg_can_prss(isi)
-         !----- ED uses specific humidity, converting it to mixing ratio. -----------------!
-         leaf_g(ifm)%can_rvap   (ix,iy,ilp) = cpoly%avg_can_shv(isi)                       &
-                                            / (1.-cpoly%avg_can_shv(isi))
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Temperature and liquid fraction of surfaces.  We need them to find the      !
-         ! mean latent heat of vapourisation between leaves/ground and the canopy air      !
-         ! space.                                                                          !
-         !---------------------------------------------------------------------------------!
-         !----- Ground temperature. -------------------------------------------------------!
-         if (leaf_g(ifm)%sfcwater_nlev(ix,iy,ilp) == 0.) then
-            !------ There is no temporary surface water.  Use top soil temperature. -------!
-            nsoil = cpoly%ntext_soil(nzg,isi)
-            call uextcm2tl(cgrid%avg_soil_energy(nzg,isi)                                  &
-                          ,cgrid%avg_soil_water(nzg,isi) * wdns,soil(nsoil)%slcpd          &
-                          ,ground_temp,ground_fliq )
-            !------------------------------------------------------------------------------!
-         else
-            !------ There is a temporary surface water.  Use average temperature. ---------!
-            call uint2tl(cgrid%avg_sfcw_energy(isi),ground_temp,ground_fliq)
-            !------------------------------------------------------------------------------!
-         end if
-         !----- Vegetation temperature.  Here we must check if there are plants. ----------!
-         if (leaf_g(ifm)%veg_hcap(ix,iy,ilp) > 0.) then
-            !----- There is some plant here. ----------------------------------------------!
-            call uextcm2tl(leaf_g(ifm)%veg_energy(ix,iy,ilp)                               &
-                          ,leaf_g(ifm)%veg_water (ix,iy,ilp)                               &
-                          ,leaf_g(ifm)%veg_hcap  (ix,iy,ilp)                               &
-                          ,veg_temp,veg_fliq )
-            !------------------------------------------------------------------------------!
-         else
-            !----- Site is empty.  Use canopy air space instead. --------------------------!
-            can_exner = press2exner(cpoly%avg_can_prss(isi))
-            can_temp  = extheta2temp(can_exner,leaf_g(ifm)%can_theta(ix,iy,ilp))
-            veg_temp  = can_temp
-            if (veg_temp == t3ple) then
-               veg_fliq = 0.5
-            elseif (veg_temp > t3ple) then
-               veg_fliq = 1.0
-            else
-               veg_fliq = 0.0
-            end if
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Copy the fluxes, which will be used for output only.                        !
-         !---------------------------------------------------------------------------------!
-         leaf_g(ifm)%sensible_gc(ix,iy,ilp) = cpoly%avg_sensible_gc(isi)
-         leaf_g(ifm)%sensible_vc(ix,iy,ilp) = ( cpoly%avg_sensible_lc(isi)                 &
-                                              + cpoly%avg_sensible_wc(isi) )
-         leaf_g(ifm)%evap_gc    (ix,iy,ilp) = cpoly%avg_vapor_gc(isi)                      &
-                                            * ( ground_fliq * alvl(ground_temp)            &
-                                              + (1.0 - ground_fliq) * alvi(ground_temp) )
-         leaf_g(ifm)%evap_vc    (ix,iy,ilp) = ( cpoly%avg_vapor_lc(isi)                    &
-                                              + cpoly%avg_vapor_wc(isi) )                  &
-                                            * ( veg_fliq * alvl(veg_temp)                  &
-                                              + (1.0 - veg_fliq) * alvi(veg_temp) )
-         !----- Transpiration only happens from liquid phase to vapour. -------------------!
-         leaf_g(ifm)%transp     (ix,iy,ilp) = cpoly%avg_transp(isi) * alvl(veg_temp)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !------ Carbon fluxes don't have polygon level, compute the average here. --------!
-         leaf_g(ifm)%gpp        (ix,iy,ilp) = sum(csite%area * csite%co2budget_gpp     )   &
-                                            * site_area_i
-         leaf_g(ifm)%plresp     (ix,iy,ilp) = sum(csite%area * csite%co2budget_plresp  )   &
-                                            * site_area_i
-         leaf_g(ifm)%resphet    (ix,iy,ilp) = sum(csite%area * csite%co2budget_rh      )   &
-                                            * site_area_i
+         leaf_g(ifm)%can_rvap (ix,iy,ilp) = can_shv / (1.0 - can_shv)
+         leaf_g(ifm)%can_co2  (ix,iy,ilp) = max( atm_co2_min                               &
+                                               , leaf_g(ifm)%can_co2  (ix,iy,ilp)          &
+                                               - co2_offset )
          !---------------------------------------------------------------------------------!
       end do siteloop
       !------------------------------------------------------------------------------------!

@@ -180,10 +180,10 @@ subroutine heun_timestep(cgrid)
             !     This is the step in which the derivatives are computed, we a structure   !
             ! that is very similar to the Runge-Kutta, though a simpler one.               !
             !------------------------------------------------------------------------------!
-            call integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm &
-                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
-                                     ,ecurr_loss2drainage,wcurr_loss2runoff                &
-                                     ,ecurr_loss2runoff,nsteps)
+            call integrate_patch_heun(csite,ipa,cpoly%nighttime(isi),wcurr_loss2atm        &
+                                     ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm         &
+                                     ,wcurr_loss2drainage,ecurr_loss2drainage              &
+                                     ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
             !------------------------------------------------------------------------------!
 
 
@@ -237,9 +237,10 @@ end subroutine heun_timestep
 !     This subroutine will drive the integration process using the Heun method.  Notice    !
 ! that most of the Heun method utilises the subroutines from Runge-Kutta.                  !
 !------------------------------------------------------------------------------------------!
-subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm       &
-                               ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
-                               ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+subroutine integrate_patch_heun(csite,ipa,nighttime,wcurr_loss2atm,ecurr_netrad            &
+                               ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage        &
+                               ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff    &
+                               ,nsteps)
    use ed_state_vars   , only : sitetype             & ! structure
                               , patchtype            ! ! structure
    use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -261,6 +262,7 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target      :: csite
    integer               , intent(in)  :: ipa
+   logical               , intent(in)  :: nighttime
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_netrad
    real                  , intent(out) :: ecurr_loss2atm
@@ -322,7 +324,7 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_netrad,ecurr_loss
    !---------------------------------------------------------------------------------------!
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
-   call initp2modelp(tend-tbeg,integration_buff%initp,csite,ipa,wcurr_loss2atm             &
+   call initp2modelp(tend-tbeg,integration_buff%initp,csite,ipa,nighttime,wcurr_loss2atm   &
                     ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage      &
                     ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
 
@@ -664,12 +666,12 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
-                  csite%runoff(ipa) = csite%runoff(ipa)                                    &
-                                    + sngloff(wfreeb * dtrk4i,tiny_offset)
-                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa)                            &
-                                        + sngloff(wfreeb * dtrk4i,tiny_offset)
-                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
-                                             + sngloff(qwfree * dtrk4i,tiny_offset)
+                  csite%runoff       (ipa) = csite%runoff(ipa)                             &
+                                           + sngloff(wfreeb * dtrk4i,tiny_offset)
+                  csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                       &
+                                           + sngloff(wfreeb * dtrk4i,tiny_offset)
+                  csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                      &
+                                           + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
                   integration_buff%y%wbudget_loss2runoff = wfreeb                          &
@@ -694,8 +696,8 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
          !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed    !
          ! because we will divide this by the time between t0 and t0+frqsum.               !
          !---------------------------------------------------------------------------------!
-         csite%avg_rk4step(ipa) = csite%avg_rk4step(ipa)                                   &
-                                + sngl((tend-tbeg)*(tend-tbeg))/real(i)
+         csite%fmean_rk4step(ipa) = csite%fmean_rk4step(ipa)                               &
+                                  + sngl((tend-tbeg)*(tend-tbeg))/real(i)
          nsteps = i
          return
       end if

@@ -40,6 +40,9 @@ idbhtype=2                     # Type of DBH class
 #------------------------------------------------------------------------------------------#
 #     Which scripts to run.                                                                #
 #                                                                                          #
+#   - read_monthly.r - This reads the monthly mean files (results can then be used for     #
+#                      plot_monthly.r, plot_yearly.r, and others, but it doesn't plot any- #
+#                      thing.)                                                             #
 #   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
 #   - plot_yearly.r  - This creates plots with year time series.                           #
 #   - plot_ycomp.r   - This creates yearly comparisons based on the monthly mean output.   #
@@ -335,7 +338,7 @@ do
       #     Set up the time and output variables according to the script.                  #
       #------------------------------------------------------------------------------------#
       case ${script} in
-      plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r)
+      read_monthly.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r)
          #---------------------------------------------------------------------------------#
          #     Scripts that are based on monthly means.  The set up is the same, the only  #
          # difference is in the output names.                                              #
@@ -392,6 +395,12 @@ do
          #      Define the job name, and the names of the output files.                    #
          #---------------------------------------------------------------------------------#
          case ${script} in
+         read_monthly.r)
+            epostout='rmon_epost.out'
+            epostsh='rmon_epost.sh'
+            epostlsf='rmon_epost.lsf'
+            epostjob='eb-rmon-'${polyname}
+            ;;
          plot_monthly.r)
             epostout='pmon_epost.out'
             epostsh='pmon_epost.sh'

@@ -64,7 +64,14 @@ subroutine masterput_ednl(mainnum)
                                    , idateh                     & ! intent(in)
                                    , iallom                     & ! intent(in)
                                    , igrass                     & ! intent(in)
-                                   , min_site_area              ! ! intent(in)
+                                   , min_site_area              & ! intent(in)
+                                   , fast_diagnostics           & ! intent(in)
+                                   , writing_dail               & ! intent(in)
+                                   , writing_mont               & ! intent(in)
+                                   , writing_dcyc               & ! intent(in)
+                                   , writing_year               & ! intent(in)
+                                   , writing_long               & ! intent(in) 
+                                   , writing_eorq               ! ! intent(in)
    use grid_coms            , only : nzg                        & ! intent(in)
                                    , nzs                        & ! intent(in)
                                    , ngrids                     & ! intent(in)
@@ -405,6 +412,21 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are useful to check for which output types to allocate.           !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Bcast(writing_dail    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_mont    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_dcyc    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_year    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_long    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_eorq    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(fast_diagnostics,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
+
+
+
    return
 end subroutine masterput_ednl
 !==========================================================================================!
@@ -479,7 +501,14 @@ subroutine nodeget_ednl(master_num)
                                    , idateh                     & ! intent(out)
                                    , iallom                     & ! intent(out)
                                    , igrass                     & ! intent(out)
-                                   , min_site_area              ! ! intent(out)
+                                   , min_site_area              & ! intent(out)
+                                   , fast_diagnostics           & ! intent(out)
+                                   , writing_dail               & ! intent(out)
+                                   , writing_mont               & ! intent(out)
+                                   , writing_dcyc               & ! intent(out)
+                                   , writing_year               & ! intent(out)
+                                   , writing_long               & ! intent(out) 
+                                   , writing_eorq               ! ! intent(out)
    use grid_coms            , only : nzg                        & ! intent(out)
                                    , nzs                        & ! intent(out)
                                    , ngrids                     & ! intent(out)
@@ -820,6 +849,19 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(min_recruit_dbh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are useful to check for which output types to allocate.           !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Bcast(writing_dail    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_mont    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_dcyc    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_year    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_long    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_eorq    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(fast_diagnostics,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine nodeget_ednl

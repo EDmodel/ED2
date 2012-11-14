@@ -137,8 +137,6 @@ subroutine read_ed10_ed20_history_file
    real                                                   :: dummy
    real                                                   :: area_tot
    real                                                   :: area_sum
-   real                                                   :: poly_lai
-   real                                                   :: site_lai
    real(kind=8)         , dimension(max_water)            :: dwater
    real(kind=8)                                           :: dage
    real(kind=8)                                           :: darea
@@ -194,13 +192,12 @@ subroutine read_ed10_ed20_history_file
          ! test.                                                                           !
          !---------------------------------------------------------------------------------!
          if (harvard_override) then
-            cpoly%lsl(1)   = 1
-            cgrid%lsl(ipy) = 1
-            cgrid%ntext_soil(1,ipy) = 2
-            cgrid%ntext_soil(2,ipy) = 2
-            cgrid%ntext_soil(3,ipy) = 3
-            cgrid%ntext_soil(4,ipy) = 3
-            cgrid%ncol_soil(ipy)    = 10
+            cpoly%lsl(1)            = 1
+            cpoly%ntext_soil(1,isi) = 2
+            cpoly%ntext_soil(2,isi) = 2
+            cpoly%ntext_soil(3,isi) = 3
+            cpoly%ntext_soil(4,isi) = 3
+            cpoly%ncol_soil(isi)    = 10
          end if
 
 
@@ -776,7 +773,6 @@ subroutine read_ed10_ed20_history_file
          do isi = 1,cpoly%nsites
             
             area_sum = 0.0
-            site_lai = 0.0
             ncohorts = 0
 
 
@@ -788,16 +784,11 @@ subroutine read_ed10_ed20_history_file
             !----- Find the patch-level LAI, WAI, and CAI. --------------------------------!
             do ipa=1,csite%npatches
                area_sum        = area_sum + csite%area(ipa)
-               csite%lai(ipa)  = 0.0
-               csite%wai(ipa)  = 0.0
-               
+
                cpatch => csite%patch(ipa)
                do ico = 1,cpatch%ncohorts
-                  csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-                  csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                   ncohorts        = ncohorts + 1
                end do
-               site_lai = site_lai + csite%area(ipa) * csite%lai(ipa)
             end do
 
             !----- Initialise the cohort variables, then sort them by size. ---------------!
@@ -823,7 +814,6 @@ subroutine read_ed10_ed20_history_file
 
 
          !----- Get a diagnostic on the polygon's vegetation. -----------------------------!
-         poly_lai = 0.0
          ncohorts = 0
 
          do isi = 1,cpoly%nsites
@@ -831,19 +821,13 @@ subroutine read_ed10_ed20_history_file
             csite => cpoly%site(isi)
 
             do ipa = 1,csite%npatches
-               csite%lai(ipa)  = 0.0
-               csite%wai(ipa)  = 0.0
                npatchco        = 0
 
                cpatch => csite%patch(ipa)
                do ico = 1,cpatch%ncohorts
                   ncohorts        = ncohorts+1
                   npatchco        = npatchco+1
-                  csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-                  csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
                end do
-
-               poly_lai = poly_lai + cpoly%area(isi) * csite%area(ipa) * csite%lai(ipa)
                csite%cohort_count(ipa) = npatchco
                nsitepat                = nsitepat + 1
             end do

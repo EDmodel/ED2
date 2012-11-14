@@ -95,7 +95,9 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                    , ss                    & ! intent(in)
                                    , isoilbc               & ! intent(in)
                                    , sin_sldrain8          & ! intent(in)
-                                   , freezecoef8           ! ! intent(in)
+                                   , freezecoef8           & ! intent(in)
+                                   , matric_potential8     & ! function
+                                   , hydr_conduct8         ! ! function
    use ed_misc_coms         , only : dtlsm                 & ! intent(in)
                                    , current_time          & ! intent(in)
                                    , fast_diagnostics      ! ! intent(in)
@@ -265,15 +267,9 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       ! scaled by the liquid fraction.                                                     !
       !------------------------------------------------------------------------------------!
       do k = mzg, klsl, -1
-         nsoil   = rk4site%ntext_soil(k)
-
-         wgpfrac = min(initp%soil_water(k)/soil8(nsoil)%slmsts, 1.d0)
-
-         rk4aux%hydcond      (k) = slcons18(k,nsoil)                                       &
-                                 * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-
-         rk4aux%psiplusz     (k) = slzt8(k) + soil8(nsoil)%slpots                          &
-                                            / wgpfrac ** soil8(nsoil)%slbs
+         nsoil                   = rk4site%ntext_soil(k)
+         rk4aux%hydcond      (k) = hydr_conduct8(k,nsoil,initp%soil_water(k))
+         rk4aux%psiplusz     (k) = slzt8(k) + initp%soil_mstpot(k)
          rk4aux%drysoil      (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)             &
                                  * initp%soil_fracliq(k)                        <= 0.d0
          rk4aux%satsoil      (k) = initp%soil_water(k) >= soil8(nsoil)%slmsts
@@ -297,17 +293,9 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       ! ing, scaled by the wilting factor, defined as a function of soil potential.        !
       !------------------------------------------------------------------------------------!
       do k = mzg, klsl, -1
-         nsoil   = rk4site%ntext_soil(k)
-
-         wgpfrac = min(initp%soil_water(k)/soil8(nsoil)%slmsts, 1.d0)
-
-         rk4aux%hydcond      (k) = slcons18(k,nsoil)                                       &
-                                 * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-
-         rk4aux%psiplusz     (k) = slzt8(k) + soil8(nsoil)%slpots                          &
-                                            / wgpfrac ** soil8(nsoil)%slbs
-
-
+         nsoil                   = rk4site%ntext_soil(k)
+         rk4aux%hydcond      (k) = hydr_conduct8(k,nsoil,initp%soil_water(k))
+         rk4aux%psiplusz     (k) = slzt8(k) + initp%soil_mstpot(k)
          rk4aux%drysoil      (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)             &
                                  * initp%soil_fracliq(k)                        <= 0.d0
          rk4aux%satsoil      (k) = initp%soil_water(k) >= soil8(nsoil)%slmsts
@@ -348,6 +336,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       ! will be zero.                                                                      !
       !------------------------------------------------------------------------------------!
       initp%soil_water   (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
       initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
       rk4aux%hydcond     (kben) = rk4aux%hydcond     (klsl)
       rk4aux%psiplusz    (kben) = rk4aux%psiplusz    (klsl)
@@ -361,12 +350,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       ! same soil moisture as the bottom layer.                                            !
       !------------------------------------------------------------------------------------!
       initp%soil_water   (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
       initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-
-      wgpfrac                   = min(initp%soil_water(kben)/soil8(nsoil)%slmsts, 1.d0)
       rk4aux%hydcond     (kben) = rk4aux%hydcond     (klsl)
-      rk4aux%psiplusz    (kben) = slzt8(kben) + soil8(nsoil)%slpots                        &
-                                              / wgpfrac ** soil8(nsoil)%slbs
+      rk4aux%psiplusz    (kben) = slzt8(kben) + initp%soil_mstpot(kben)
       rk4aux%drysoil     (kben) = .false.
       rk4aux%satsoil     (kben) = .false.
       !------------------------------------------------------------------------------------!
@@ -380,12 +367,13 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       ! then it becomes free drainage.                                                     !
       !------------------------------------------------------------------------------------!
       initp%soil_water   (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
       initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
 
       wgpfrac                   = min(initp%soil_water(kben)/soil8(nsoil)%slmsts, 1.d0)
       rk4aux%hydcond     (kben) = rk4aux%hydcond     (klsl)
       rk4aux%psiplusz    (kben) = slzt8(klsl) - dslzt8(klsl) * sin_sldrain8                &
-                                + soil8(nsoil)%slpots / wgpfrac ** soil8(nsoil)%slbs
+                                + initp%soil_mstpot(kben)
       rk4aux%drysoil     (kben) = .false.
       rk4aux%satsoil     (kben) = .false.
       !------------------------------------------------------------------------------------!
@@ -395,13 +383,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
       !------------------------------------------------------------------------------------!
       initp%soil_water   (kben) = soil8(nsoil)%slmsts
+      initp%soil_mstpot  (kben) = soil8(nsoil)%slpots
       initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-
-      wgpfrac                   = min(initp%soil_water(kben)/soil8(nsoil)%slmsts, 1.d0)
-      rk4aux%hydcond     (kben) = slcons18(kben,nsoil)                                     &
-                                * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-      rk4aux%psiplusz    (kben) = slzt8(kben) + soil8(nsoil)%slpots                        &
-                                              / wgpfrac ** soil8(nsoil)%slbs
+      rk4aux%hydcond     (kben) = slcons18(kben,nsoil)
+      rk4aux%psiplusz    (kben) = slzt8(kben) + initp%soil_mstpot(kben)
       rk4aux%drysoil     (kben) = .false.
       rk4aux%satsoil     (kben) = .false.
 
@@ -584,11 +569,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
       if (initp%virtual_water /= 0.d0) then  !!process "virtural water" pool
          nsoil = rk4site%ntext_soil(mzg)
          if (nsoil /= 13) then
-            infilt = -dslzi8(mzg)* 5.d-1 * slcons18(mzg,nsoil)                             &
-                   * (initp%soil_water(mzg) / soil8(nsoil)%slmsts)                         &
-                     **(2.d0 * soil8(nsoil)%slbs + 3.d0)                                   &
-                   * (rk4aux%psiplusz(mzg)-initp%virtual_water/2.d3) & !diff. in pot.
-                   * 5.d-1 * (initp%soil_fracliq(mzg)+ initp%virtual_fracliq) ! mean liquid fraction
+            infilt = - dslzi8(mzg) * 5.d-1                                                 &
+                     * hydr_conduct8(mzg,nsoil,initp%soil_water(mzg))                      &
+                     * (rk4aux%psiplusz(mzg)-initp%virtual_water/2.d3)     & !diff. in pot.
+                     * 5.d-1 * (initp%soil_fracliq(mzg)+ initp%virtual_fracliq) ! mean liquid fraction
             qinfilt = infilt * wdns8 * tl2uint8(initp%virtual_tempk,1.d0)
             !----- Adjust other rates accordingly -----------------------------------------!
             rk4aux%w_flux(mzg+1)  = rk4aux%w_flux(mzg+1) + infilt
@@ -602,11 +586,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
          nsoil = rk4site%ntext_soil(mzg)
          if (nsoil /= 13) then
             !----- Calculate infiltration rate (m/s) --------------------------------------!
-            infilt = -dslzi8(mzg) * 5.d-1 * slcons18(mzg,nsoil)                            &
-                   * (initp%soil_water(mzg) / soil8(nsoil)%slmsts)                         &
-                     **(2.d0 * soil8(nsoil)%slbs + 3.d0)                                   &
-                   * (rk4aux%psiplusz(mzg) - surface_water/2.d0) & !difference in potentials
-                   * 5.d-1 * (initp%soil_fracliq(mzg) + initp%sfcwater_fracliq(1))
+            infilt = - dslzi8(mzg) * 5.d-1                                                 &
+                     * hydr_conduct8(mzg,nsoil,initp%soil_water(mzg))                      &
+                     * (rk4aux%psiplusz(mzg) - surface_water/2.d0) & !difference in potentials
+                     * 5.d-1 * (initp%soil_fracliq(mzg) + initp%sfcwater_fracliq(1))
             qinfilt = infilt * wdns8 * tl2uint8(initp%sfcwater_tempk(1),1.d0)
             !----- Adjust other rates accordingly -----------------------------------------!
             rk4aux%w_flux(mzg+1)      = rk4aux%w_flux(mzg+1)      + infilt
@@ -679,15 +662,15 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
    ! age, but that shouldn't affect the budget in any way (except that we are adding water !
    ! to the system).                                                                       !
    !---------------------------------------------------------------------------------------!
-   dinitp%avg_drainage      = - rk4aux%w_flux(klsl) * wdns8
-   dinitp%avg_drainage_heat = - rk4aux%qw_flux(klsl)
+   dinitp%avg_drainage  = - rk4aux%w_flux (klsl) * wdns8
+   dinitp%avg_qdrainage = - rk4aux%qw_flux(klsl)
    !----- Copy the variables to the budget arrays. ----------------------------------------!
    if (checkbudget) then
       dinitp%wbudget_loss2drainage = dinitp%avg_drainage
-      dinitp%ebudget_loss2drainage = dinitp%avg_drainage_heat
+      dinitp%ebudget_loss2drainage = dinitp%avg_qdrainage
 
       dinitp%wbudget_storage = dinitp%wbudget_storage - dinitp%avg_drainage
-      dinitp%ebudget_storage = dinitp%ebudget_storage - dinitp%avg_drainage_heat
+      dinitp%ebudget_storage = dinitp%ebudget_storage - dinitp%avg_qdrainage
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1441,11 +1424,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
          !---------------------------------------------------------------------------------!
          if (fast_diagnostics) then
-            dinitp%cav_sensible_lc      (ico)  = hflxlc
-            dinitp%cav_vapor_lc         (ico)  = wflxlc
-            dinitp%cav_transp           (ico)  = transp
-            dinitp%cav_intercepted_al   (ico)  = leaf_intercepted
-            dinitp%cav_wshed_lg         (ico)  = wshed
+            dinitp%avg_sensible_lc      (ico)  = hflxlc
+            dinitp%avg_vapor_lc         (ico)  = wflxlc
+            dinitp%avg_transp           (ico)  = transp
+            dinitp%avg_intercepted_al   (ico)  = leaf_intercepted
+            dinitp%avg_wshed_lg         (ico)  = wshed
          end if
          !---------------------------------------------------------------------------------!
 
@@ -1500,11 +1483,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
          !---------------------------------------------------------------------------------!
          if (fast_diagnostics) then
-            dinitp%cav_sensible_lc      (ico)  = 0.d0
-            dinitp%cav_vapor_lc         (ico)  = 0.d0
-            dinitp%cav_transp           (ico)  = 0.d0
-            dinitp%cav_intercepted_al   (ico)  = 0.d0
-            dinitp%cav_wshed_lg         (ico)  = 0.d0
+            dinitp%avg_sensible_lc      (ico)  = 0.d0
+            dinitp%avg_vapor_lc         (ico)  = 0.d0
+            dinitp%avg_transp           (ico)  = 0.d0
+            dinitp%avg_intercepted_al   (ico)  = 0.d0
+            dinitp%avg_wshed_lg         (ico)  = 0.d0
          end if
          !---------------------------------------------------------------------------------!
 
@@ -1711,10 +1694,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
          !---------------------------------------------------------------------------------!
          if (fast_diagnostics) then
-            dinitp%cav_sensible_wc      (ico)  = hflxwc
-            dinitp%cav_vapor_wc         (ico)  = wflxwc
-            dinitp%cav_intercepted_aw   (ico)  = wood_intercepted
-            dinitp%cav_wshed_wg         (ico)  = wshed
+            dinitp%avg_sensible_wc      (ico)  = hflxwc
+            dinitp%avg_vapor_wc         (ico)  = wflxwc
+            dinitp%avg_intercepted_aw   (ico)  = wood_intercepted
+            dinitp%avg_wshed_wg         (ico)  = wshed
          end if
          !---------------------------------------------------------------------------------!
 
@@ -1770,10 +1753,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !    If we are saving fast diagnostics, then we save the fluxes for this cohort.  !
          !---------------------------------------------------------------------------------!
          if (fast_diagnostics) then
-            dinitp%cav_sensible_wc      (ico)  = 0.d0
-            dinitp%cav_vapor_wc         (ico)  = 0.d0
-            dinitp%cav_intercepted_aw   (ico)  = 0.d0
-            dinitp%cav_wshed_wg         (ico)  = 0.d0
+            dinitp%avg_sensible_wc      (ico)  = 0.d0
+            dinitp%avg_vapor_wc         (ico)  = 0.d0
+            dinitp%avg_intercepted_aw   (ico)  = 0.d0
+            dinitp%avg_wshed_wg         (ico)  = 0.d0
          end if
          !---------------------------------------------------------------------------------!
 
@@ -1873,24 +1856,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%avg_sensible_ac  = hflxac                       ! Sens. heat,  Atmo->Canopy
       dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
-      dinitp%avg_sensible_lc  = hflxlc_tot                   ! Sens. heat,  Leaf->Canopy
-      dinitp%avg_vapor_lc     = wflxlc_tot                   ! Lat.  heat,  Leaf->Canopy
-
-      dinitp%avg_sensible_wc  = hflxwc_tot                   ! Sens. heat,  Wood->Canopy
-      dinitp%avg_vapor_wc     = wflxwc_tot                   ! Lat.  heat,  Wood->Canopy
-
       dinitp%avg_sensible_gc  = hflxgc                       ! Sens. heat,  Grnd->Canopy
-      dinitp%avg_transp       = transp_tot                   ! Transpiration
       dinitp%avg_vapor_gc     = wflxgc - dewgndflx           ! Lat.  heat,  Canopy->Grnd
 
-      !----- Total evaporation to the canopy air space. -----------------------------------!
-      dinitp%avg_evap         = wflxgc - dewgndflx + wflxlc_tot + wflxwc_tot
-
-
-      dinitp%avg_wshed_vg     = wshed_tot                   ! Water shedding,Leaf->Grnd
-      dinitp%avg_qwshed_vg    = qwshed_tot                  ! Water shedding,Leaf->Grnd
-      dinitp%avg_intercepted  = intercepted_tot             ! Intercepted,   Atmo->Leaf
-      dinitp%avg_qintercepted = qintercepted_tot            ! Intercepted,   Atmo->Lead
       dinitp%avg_throughfall  = throughfall_tot             ! Throughfall,   Atmo->Grnd
       dinitp%avg_qthroughfall = qthroughfall_tot            ! Throughfall,   Atmo->Grnd
       !------------------------------------------------------------------------------------!
@@ -1902,28 +1870,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%avg_cstar = initp%cstar
       !------------------------------------------------------------------------------------!
 
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Update the absorbed shortwave radiation and the net radiation.                   !
-   !---------------------------------------------------------------------------------------!
-   if (fast_diagnostics .or. checkbudget .or. print_detailed) then
-      !----- Average shortwave radiation. -------------------------------------------------!
-      dinitp%avg_rshort_gnd    = dble(csite%rshort_g(ipa))
-      dinitp%avg_par_gnd       = dble(csite%par_g   (ipa))
-      do k=1,initp%nlev_sfcwater
-         dinitp%avg_rshort_gnd = dinitp%avg_rshort_gnd + dble(csite%rshort_s(k,ipa))
-         dinitp%avg_par_gnd    = dinitp%avg_par_gnd    + dble(csite%par_s   (k,ipa))
-      end do
-      !------------------------------------------------------------------------------------!
-
-      !----- Average longwave radiation. --------------------------------------------------!
-      dinitp%avg_rlong_gnd = dble(csite%rlong_g(ipa)) + dble(csite%rlong_s(ipa))
-      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 

@@ -63,16 +63,6 @@ subroutine ed_coup_driver()
    wtime_start = walltime(0.)
    wtime1      = walltime(wtime_start)
 
-   !---------------------------------------------------------------------------------------!
-   !     Check whether the user has indicated a need for any of the fast flux diagnostic   !
-   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions. !
-   ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
-   !---------------------------------------------------------------------------------------!
-   fast_diagnostics = checkbudget   .or. ifoutput /= 0 .or. idoutput /= 0 .or.             &
-                      iqoutput /= 0 .or. imoutput /= 0 .or. ioutput  /= 0 .or.             &
-                      iyoutput /= 0
-   !---------------------------------------------------------------------------------------!
-
 
 
 
@@ -81,6 +71,14 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
    call load_ed_ecosystem_params()
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If we are running EDBRAMS then we must make sure that fast diagnostic averages    !
+   ! are found when ioutput is requested.                                                  !
+   !---------------------------------------------------------------------------------------!
+   fast_diagnostics = fast_diagnostics .or. ioutput  /= 0
    !---------------------------------------------------------------------------------------!
 
 

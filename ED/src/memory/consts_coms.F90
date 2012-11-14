@@ -159,7 +159,17 @@ Module consts_coms
                         , b_lnexp_min      => lnexp_min      & ! intent(in)
                         , b_lnexp_max      => lnexp_max      & ! intent(in)
                         , b_huge_num       => huge_num       & ! intent(in)
-                        , b_tiny_num       => tiny_num       ! ! intent(in)
+                        , b_tiny_num       => tiny_num       & ! intent(in)
+                        , b_mol_2_umol     => mol_2_umol     & ! intent(in)
+                        , b_umol_2_mol     => umol_2_mol     & ! intent(in)
+                        , b_umol_2_kgC     => umol_2_kgC     & ! intent(in)
+                        , b_Watts_2_Ein    => Watts_2_Ein    & ! intent(in)
+                        , b_Ein_2_Watts    => Ein_2_Watts    & ! intent(in)
+                        , b_kgC_2_umol     => kgC_2_umol     & ! intent(in)
+                        , b_kgom2_2_tonoha => kgom2_2_tonoha & ! intent(in)
+                        , b_tonoha_2_kgom2 => tonoha_2_kgom2 & ! intent(in)
+                        , b_umols_2_kgCyr  => umols_2_kgCyr  & ! intent(in)
+                        , b_kgCday_2_umols => kgCday_2_umols ! ! intent(in)
 
    implicit none
    !----- Copy the variables from BRAMS. --------------------------------------------------!
@@ -317,6 +327,16 @@ Module consts_coms
    real, parameter :: lnexp_max      = b_lnexp_max
    real, parameter :: huge_num       = b_huge_num
    real, parameter :: tiny_num       = b_tiny_num
+   real, parameter :: mol_2_umol     = b_mol_2_umol
+   real, parameter :: umol_2_mol     = b_umol_2_mol
+   real, parameter :: umol_2_kgC     = b_umol_2_kgC
+   real, parameter :: Watts_2_Ein    = b_Watts_2_Ein
+   real, parameter :: Ein_2_Watts    = b_Ein_2_Watts
+   real, parameter :: kgC_2_umol     = b_kgC_2_umol
+   real, parameter :: kgom2_2_tonoha = b_kgom2_2_tonoha
+   real, parameter :: tonoha_2_kgom2 = b_tonoha_2_kgom2
+   real, parameter :: umols_2_kgCyr  = b_umols_2_kgCyr
+   real, parameter :: kgCday_2_umols = b_kgCday_2_umols
    !---------------------------------------------------------------------------------------!
 
 #else
@@ -603,10 +623,10 @@ Module consts_coms
    real, parameter :: tiny_num  = 1.e-19
    !---------------------------------------------------------------------------------------!
 
-#endif
+
 
    !---------------------------------------------------------------------------------------!
-   ! Unit conversion, it must be defined locally even for coupled runs.                    !
+   !     Carbon-related unit conversions.                                                  !
    !---------------------------------------------------------------------------------------!
    real, parameter :: mol_2_umol     = 1.e6                 ! mol         => µmol
    real, parameter :: umol_2_mol     = 1.e-6                ! µmol        => mol
@@ -619,6 +639,8 @@ Module consts_coms
    real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec  ! µmol(CO2)/s => kg(C)/yr
    real, parameter :: kgCday_2_umols = kgC_2_umol / day_sec ! kg(C)/day   => µmol(CO2)/s
    !---------------------------------------------------------------------------------------!
+
+#endif
 
 
    !---------------------------------------------------------------------------------------!

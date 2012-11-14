@@ -197,7 +197,14 @@ subroutine copy_nl(copy_type)
                                    , event_file                & ! intent(out)
                                    , iallom                    & ! intent(out)
                                    , igrass                    & ! intent(out)
-                                   , min_site_area             ! ! intent(out)
+                                   , min_site_area             & ! intent(out)
+                                   , fast_diagnostics          & ! intent(out)
+                                   , writing_dail              & ! intent(out)
+                                   , writing_mont              & ! intent(out)
+                                   , writing_dcyc              & ! intent(out)
+                                   , writing_year              & ! intent(out)
+                                   , writing_long              & ! intent(out) 
+                                   , writing_eorq              ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
                                    , centlat                   & ! intent(out)
@@ -629,6 +636,17 @@ subroutine copy_nl(copy_type)
    !---------------------------------------------------------------------------------------!
 
 
+
+   !----- Define some useful variables that control the output. ---------------------------!
+   writing_dail     = idoutput > 0
+   writing_mont     = imoutput > 0
+   writing_dcyc     = iqoutput > 0
+   writing_year     = iyoutput > 0
+   writing_long     = writing_dail .or. writing_mont .or. writing_dcyc
+   writing_eorq     = writing_mont .or. writing_dcyc
+   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or.                                &
+                      imoutput /= 0 .or. iqoutput /= 0 .or. itoutput /= 0
+   !---------------------------------------------------------------------------------------!
 
 
    return

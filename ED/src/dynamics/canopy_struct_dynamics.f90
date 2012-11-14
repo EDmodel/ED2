@@ -106,8 +106,6 @@ module canopy_struct_dynamics
                                   , nu_mw99              & ! intent(in)
                                   , cs_dense0            & ! intent(in)
                                   , gamma_clm4           & ! intent(in)
-                                  , rb_inter             & ! intent(in)
-                                  , rb_slope             & ! intent(in)
                                   , tprandtl             & ! intent(in)
                                   , zoobukhov            ! ! function
       use canopy_layer_coms, only : ncanlyr              & ! intent(in)
@@ -190,7 +188,6 @@ module canopy_struct_dynamics
       real           :: factv        ! Wind-dependent term for old rasveg
       real           :: aux          ! Aux. variable
       real           :: estar        ! Equivalent potential temperature         [        K]
-      real           :: gbhmos_min   ! Minimum boundary layer heat conductance. [      m/s]
       real           :: wcapcan      ! Canopy air space water capacity          [    kg/m2]
       real           :: hcapcan      ! Canopy air space enthalpy capacity       [     J/m2]
       real           :: ccapcan      ! Canopy air space CO2 capacity            [   mol/m2]
@@ -324,17 +321,6 @@ module canopy_struct_dynamics
                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
          !---------------------------------------------------------------------------------!
          return
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !---- Find the minimum leaf boundary layer heat conductance. ------------------------!
-      if (any(cpatch%leaf_resolvable .or. cpatch%wood_resolvable)) then
-         gbhmos_min = 1. / (rb_inter + rb_slope * (csite%lai(ipa) + csite%wai(ipa)))
-      else
-         gbhmos_min = 0.
       end if
       !------------------------------------------------------------------------------------!
 
@@ -498,7 +484,6 @@ module canopy_struct_dynamics
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
                                                  ,can_cp                                   &
-                                                 ,gbhmos_min                               &
                                                  ,cpatch%leaf_gbh(ico)                     &
                                                  ,cpatch%leaf_gbw(ico))
                !---------------------------------------------------------------------------!
@@ -518,7 +503,6 @@ module canopy_struct_dynamics
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
                                                  ,can_cp                                   &
-                                                 ,gbhmos_min                               &
                                                  ,cpatch%wood_gbh(ico)                     &
                                                  ,cpatch%wood_gbw(ico))
                !---------------------------------------------------------------------------!
@@ -667,7 +651,6 @@ module canopy_struct_dynamics
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
                                                  ,can_cp                                   &
-                                                 ,gbhmos_min                               &
                                                  ,cpatch%leaf_gbh(ico)                     &
                                                  ,cpatch%leaf_gbw(ico))
                !---------------------------------------------------------------------------!
@@ -687,7 +670,6 @@ module canopy_struct_dynamics
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
                                                  ,can_cp                                   &
-                                                 ,gbhmos_min                               &
                                                  ,cpatch%wood_gbh(ico)                     &
                                                  ,cpatch%wood_gbw(ico))
                !---------------------------------------------------------------------------!
@@ -1050,7 +1032,6 @@ module canopy_struct_dynamics
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
                                                  ,can_cp                                   &
-                                                 ,gbhmos_min                               &
                                                  ,cpatch%leaf_gbh(ico)                     &
                                                  ,cpatch%leaf_gbw(ico))
                !---------------------------------------------------------------------------!
@@ -1070,7 +1051,6 @@ module canopy_struct_dynamics
                                                  ,csite%can_shv(ipa)                       &
                                                  ,csite%can_rhos(ipa)                      &
                                                  ,can_cp                                   &
-                                                 ,gbhmos_min                               &
                                                  ,cpatch%wood_gbh(ico)                     &
                                                  ,cpatch%wood_gbw(ico))
                !---------------------------------------------------------------------------!
@@ -1368,8 +1348,6 @@ module canopy_struct_dynamics
                                   , infunc_8             & ! intent(in)
                                   , gamma_mw99_8         & ! intent(in)
                                   , nu_mw99_8            & ! intent(in)
-                                  , rb_inter             & ! intent(in)
-                                  , rb_slope             & ! intent(in)
                                   , cs_dense08           & ! intent(in)
                                   , gamma_clm48          & ! intent(in)
                                   , tprandtl8            & ! intent(in)
@@ -1440,7 +1418,6 @@ module canopy_struct_dynamics
       real(kind=8)   :: uh           ! Wind speed at the canopy top (z=h)       [      m/s]
       real(kind=8)   :: factv        ! Wind-dependent term for old rasveg
       real(kind=8)   :: aux          ! Aux. variable
-      real(kind=8)   :: gbhmos_min   ! Minimum leaf boundary layer heat condct. [      m/s]
       real(kind=8)   :: ustarouh     ! The ratio of ustar over u(h)             [      ---]
       real(kind=8)   :: nn           ! In-canopy wind attenuation scal. param.  [      ---]
       real(kind=8)   :: waiuse       ! Wood area index                          [    m2/m2]
@@ -1534,16 +1511,6 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          
          return
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !---- Find the minimum boundary layer heat conductance. -----------------------------!
-      if (any(initp%leaf_resolvable .or. initp%wood_resolvable)) then
-         gbhmos_min = 1.d0 / ( dble(rb_inter) + dble(rb_slope)                             &
-                             * (dble(csite%lai(ipa)) + dble(csite%wai(ipa))))
-      else
-         gbhmos_min = 0.d0
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1685,7 +1652,7 @@ module canopy_struct_dynamics
                call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
                                                   ,initp%leaf_temp(ico),initp%can_temp     &
                                                   ,initp%can_shv,initp%can_rhos            &
-                                                  ,initp%can_cp,gbhmos_min                 &
+                                                  ,initp%can_cp                            &
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
@@ -1714,7 +1681,7 @@ module canopy_struct_dynamics
                                                   ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
                                                   ,initp%can_shv,initp%can_rhos            &
-                                                  ,initp%can_cp,gbhmos_min                 &
+                                                  ,initp%can_cp                            &
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
@@ -1848,7 +1815,7 @@ module canopy_struct_dynamics
                call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
                                                   ,initp%leaf_temp(ico),initp%can_temp     &
                                                   ,initp%can_shv,initp%can_rhos            &
-                                                  ,initp%can_cp,gbhmos_min                 &
+                                                  ,initp%can_cp                            &
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
@@ -1877,7 +1844,7 @@ module canopy_struct_dynamics
                                                   ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
                                                   ,initp%can_shv,initp%can_rhos            &
-                                                  ,initp%can_cp,gbhmos_min                 &
+                                                  ,initp%can_cp                            &
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
@@ -2231,7 +2198,7 @@ module canopy_struct_dynamics
                call leaf_aerodynamic_conductances8(ipft,initp%veg_wind(ico)                &
                                                   ,initp%leaf_temp(ico),initp%can_temp     &
                                                   ,initp%can_shv,initp%can_rhos            &
-                                                  ,initp%can_cp,gbhmos_min                 &
+                                                  ,initp%can_cp                            &
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
@@ -2260,7 +2227,7 @@ module canopy_struct_dynamics
                                                   ,initp%veg_wind(ico)                     &
                                                   ,initp%wood_temp(ico),initp%can_temp     &
                                                   ,initp%can_shv,initp%can_rhos            &
-                                                  ,initp%can_cp,gbhmos_min                 &
+                                                  ,initp%can_cp                            &
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
@@ -3565,7 +3532,7 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine leaf_aerodynamic_conductances(ipft,veg_wind,leaf_temp,can_temp,can_shv       &
-                                           ,can_rhos,can_cp,gbhmos_min,leaf_gbh,leaf_gbw)
+                                           ,can_rhos,can_cp,leaf_gbh,leaf_gbw)
       use pft_coms       , only : leaf_width ! ! intent(in)
       use canopy_air_coms, only : aflat_lami & ! intent(in)
                                 , nflat_lami & ! intent(in)
@@ -3574,7 +3541,8 @@ module canopy_struct_dynamics
                                 , bflat_lami & ! intent(in)
                                 , mflat_lami & ! intent(in)
                                 , bflat_turb & ! intent(in)
-                                , mflat_turb ! ! intent(in)
+                                , mflat_turb & ! intent(in)
+                                , gbhmos_min ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
                                 , th_diff    ! ! intent(in)
@@ -3588,7 +3556,6 @@ module canopy_struct_dynamics
       real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
       real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=4)   , intent(in)  :: gbhmos_min      ! Min. Heat  conductance  [      m/s]
       real(kind=4)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=4)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
       !----- Local variables. -------------------------------------------------------------!
@@ -3680,8 +3647,8 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine leaf_aerodynamic_conductances8(ipft,veg_wind,leaf_temp,can_temp,can_shv      &
-                                            ,can_rhos,can_cp,gbhmos_min,leaf_gbh,leaf_gbw  &
-                                            ,reynolds,grashof,nusselt_free,nusselt_forced)
+                                            ,can_rhos,can_cp,leaf_gbh,leaf_gbw,reynolds    &
+                                            ,grashof,nusselt_free,nusselt_forced)
       use pft_coms       , only : leaf_width  ! ! intent(in)
       use canopy_air_coms, only : aflat_lami8 & ! intent(in)
                                 , nflat_lami8 & ! intent(in)
@@ -3690,7 +3657,8 @@ module canopy_struct_dynamics
                                 , bflat_lami8 & ! intent(in)
                                 , mflat_lami8 & ! intent(in)
                                 , bflat_turb8 & ! intent(in)
-                                , mflat_turb8 ! ! intent(in)
+                                , mflat_turb8 & ! intent(in)
+                                , gbhmos_min8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
                                 , th_diff8    ! ! intent(in)
@@ -3704,7 +3672,6 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
       real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=8)   , intent(in)  :: gbhmos_min      ! Min. heat  conductance  [      m/s]
       real(kind=8)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
@@ -3765,7 +3732,7 @@ module canopy_struct_dynamics
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
-      gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
+      gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
       leaf_gbh =              gbh_mos * can_rhos * can_cp
       leaf_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
@@ -3796,8 +3763,7 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine wood_aerodynamic_conductances(ipft,dbh,height,veg_wind,wood_temp,can_temp    &
-                                           ,can_shv,can_rhos,can_cp,gbhmos_min,wood_gbh    &
-                                           ,wood_gbw)
+                                           ,can_shv,can_rhos,can_cp,wood_gbh,wood_gbw)
       use allometry      , only : dbh2vol    ! ! intent(in)
       use canopy_air_coms, only : acyli_lami & ! intent(in)
                                 , ocyli_lami & ! intent(in)
@@ -3808,7 +3774,8 @@ module canopy_struct_dynamics
                                 , bcyli_lami & ! intent(in)
                                 , mcyli_lami & ! intent(in)
                                 , bcyli_turb & ! intent(in)
-                                , mcyli_turb ! ! intent(in)
+                                , mcyli_turb & ! intent(in)
+                                , gbhmos_min ! ! intent(in)
       use consts_coms    , only : gr_coeff   & ! intent(in)
                                 , th_diffi   & ! intent(in)
                                 , th_diff    ! ! intent(in)
@@ -3824,7 +3791,6 @@ module canopy_struct_dynamics
       real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
       real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=4)   , intent(in)  :: gbhmos_min      ! Min. Heat  conductance  [      m/s]
       real(kind=4)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=4)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
       !----- Local variables. -------------------------------------------------------------!
@@ -3923,9 +3889,8 @@ module canopy_struct_dynamics
    ! - gbw is in kg_H2O/m2/s.                                                              !
    !---------------------------------------------------------------------------------------!
    subroutine wood_aerodynamic_conductances8(ipft,dbh,height,veg_wind,wood_temp,can_temp   &
-                                            ,can_shv,can_rhos,can_cp,gbhmos_min,wood_gbh   &
-                                            ,wood_gbw,reynolds,grashof,nusselt_free        &
-                                            ,nusselt_forced)
+                                            ,can_shv,can_rhos,can_cp,wood_gbh,wood_gbw     &
+                                            ,reynolds,grashof,nusselt_free,nusselt_forced)
       use allometry      , only : dbh2vol     ! ! intent(in)
       use canopy_air_coms, only : ocyli_lami8 & ! intent(in)
                                 , acyli_lami8 & ! intent(in)
@@ -3936,7 +3901,8 @@ module canopy_struct_dynamics
                                 , bcyli_lami8 & ! intent(in)
                                 , mcyli_lami8 & ! intent(in)
                                 , bcyli_turb8 & ! intent(in)
-                                , mcyli_turb8 ! ! intent(in)
+                                , mcyli_turb8 & ! intent(in)
+                                , gbhmos_min8 ! ! intent(in)
       use consts_coms    , only : gr_coeff8   & ! intent(in)
                                 , th_diffi8   & ! intent(in)
                                 , th_diff8    ! ! intent(in)
@@ -3952,7 +3918,6 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
       real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
       real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=8)   , intent(in)  :: gbhmos_min      ! Min. heat  conductance  [      m/s]
       real(kind=8)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
       real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
@@ -4020,7 +3985,7 @@ module canopy_struct_dynamics
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
       ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
-      gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
+      gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
       wood_gbh =              gbh_mos * can_rhos * can_cp
       wood_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!

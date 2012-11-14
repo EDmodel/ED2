@@ -182,10 +182,11 @@ subroutine euler_timestep(cgrid)
             call integrate_patch_euler(csite,integration_buff%initp                        &
                                       ,integration_buff%dinitp,integration_buff%ytemp      &
                                       ,integration_buff%yscal,integration_buff%yerr        &
-                                      ,integration_buff%dydx,ipa,wcurr_loss2atm            &
-                                      ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm        &
-                                      ,wcurr_loss2drainage,ecurr_loss2drainage             &
-                                      ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                                      ,integration_buff%dydx,ipa,cpoly%nighttime(isi)      &
+                                      ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm          &
+                                      ,co2curr_loss2atm,wcurr_loss2drainage                &
+                                      ,ecurr_loss2drainage,wcurr_loss2runoff               &
+                                      ,ecurr_loss2runoff,nsteps)
             !------------------------------------------------------------------------------!
 
 
@@ -238,7 +239,7 @@ end subroutine euler_timestep
 !     This subroutine will drive the integration process using the Euler method.  Notice   !
 ! that most of the Euler method utilises the subroutines from Runge-Kutta.                 !
 !------------------------------------------------------------------------------------------!
-subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa              &
+subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nighttime    &
                                 ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                &
                                 ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage  &
                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
@@ -269,6 +270,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    type(rk4patchtype)    , target      :: yerr
    type(rk4patchtype)    , target      :: dydx
    integer               , intent(in)  :: ipa
+   logical               , intent(in)  :: nighttime
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_netrad
    real                  , intent(out) :: ecurr_loss2atm
@@ -325,7 +327,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    !---------------------------------------------------------------------------------------!
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
-   call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_netrad                 &
+   call initp2modelp(tend-tbeg,initp,csite,ipa,nighttime,wcurr_loss2atm,ecurr_netrad       &
                     ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                   &
                     ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
 
@@ -643,12 +645,12 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
-                  csite%runoff(ipa) = csite%runoff(ipa)                                    &
-                                    + sngloff(wfreeb * dtrk4i,tiny_offset)
-                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa)                            &
-                                        + sngloff(wfreeb * dtrk4i,tiny_offset)
-                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
-                                             + sngloff(qwfree * dtrk4i,tiny_offset)
+                  csite%runoff       (ipa) = csite%runoff(ipa)                             &
+                                           + sngloff(wfreeb * dtrk4i,tiny_offset)
+                  csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                       &
+                                           + sngloff(wfreeb * dtrk4i,tiny_offset)
+                  csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                      &
+                                           + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
                   initp%wbudget_loss2runoff = initp%wbudget_loss2runoff + wfreeb
@@ -665,8 +667,8 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed    !
          ! because we will divide this by the time between t0 and t0+frqsum.               !
          !---------------------------------------------------------------------------------!
-         csite%avg_rk4step(ipa) = csite%avg_rk4step(ipa)                                   &
-                                + sngl((tend-tbeg)*(tend-tbeg))/real(i)
+         csite%fmean_rk4step(ipa) = csite%fmean_rk4step(ipa)                               &
+                                  + sngl((tend-tbeg)*(tend-tbeg))/real(i)
          nsteps = i
          return
       end if

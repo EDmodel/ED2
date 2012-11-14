@@ -71,16 +71,9 @@ subroutine read_site_file(cgrid,igr)
          ! the swap polygon
          
          call allocate_polygontype(cpoly,1)
+         call soil_default_fill(cgrid,igr,ipy)
 
-         cpoly%lsl(1)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
          cpoly%area(1) = 1.0             ! Initialize the area to all
-
-         ! Copy the soils information from the polygon to the site
-         do k=1,nzg
-            cpoly%ntext_soil(k,1) = cgrid%ntext_soil(k,ipy)
-         enddo
-
-         cpoly%ncol_soil(1) = cgrid%ncol_soil(ipy)
 
          ! Set soil moisture decay function, based on second layer's K value
          ! use the second layer instead of the top in case top is organic/peat
@@ -115,6 +108,7 @@ subroutine read_site_file(cgrid,igr)
 !         print*,"reading",nsites,"sites using file format",fformat
 
          call allocate_polygontype(cpoly,nsites)
+         call soil_default_fill(cgrid,igr,ipy)
      
          if(fformat <=0 .or. fformat > 3) then
             print*,""
@@ -197,16 +191,7 @@ subroutine read_site_file(cgrid,igr)
                if(ierr == 0) then
                   !/*create data object for each new site */
 !                  print*,sitenum, area, TCI, elevation,slope,aspect,soilclass(1:nsc)
-                  
-                  cpoly%lsl(isi)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
                   cpoly%area(isi) = area            ! Initialize the area to all
-                  
-                  ! Copy the soils information from the polygon to the site
-                  do k=1,nzg
-                     cpoly%ntext_soil(k,isi) = cgrid%ntext_soil(k,ipy)
-                  enddo
-                  
-                  cpoly%ncol_soil(isi) = cgrid%ncol_soil(ipy)
 
                   area_sum = area_sum + dble(area)
                   cpoly%sitenum(isi)      = sitenum

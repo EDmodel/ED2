@@ -10,8 +10,11 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
                            , dslz                     & ! intent(in)
                            , slz                      ! ! intent(in)
    use decomp_coms  , only : k_rh_active              ! ! intent(in)
-   use consts_coms  , only : wdns                     ! ! intent(in)
+   use consts_coms  , only : wdns                     & ! intent(in)
+                           , umols_2_kgCyr            ! ! intent(in)
    use therm_lib    , only : uextcm2tl                ! ! function
+   use ed_misc_coms , only : dtlsm                    & ! intent(in)
+                           , frqsum                   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)                , target     :: csite
@@ -37,6 +40,17 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    !----- External functions. -------------------------------------------------------------!
    real                          , external   :: het_resp_weight
    real                          , external   :: root_resp_norm
+   !----- Locally saved variables. --------------------------------------------------------!
+   real                          , save       :: dtlsm_o_frqsum
+   logical                       , save       :: first_time = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Assign the constant scaling factor. ---------------------------------------------!
+   if (first_time) then
+      first_time     = .false.
+      dtlsm_o_frqsum = dtlsm / frqsum
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -73,11 +87,20 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
       !------------------------------------------------------------------------------------!
 
 
-      !----- Add this time step to the mean and daily mean root respiration. --------------!
-      cpatch%mean_root_resp(ico)   = cpatch%mean_root_resp(ico)                            &
-                                   + cpatch%root_respiration(ico)
+      !----- Add this time step to the daily mean root respiration. -----------------------!
       cpatch%today_root_resp(ico)  = cpatch%today_root_resp(ico)                           &
                                    + cpatch%root_respiration(ico)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     The following is for output only, we switch the units to kgC/plant/yr.         !
+      !------------------------------------------------------------------------------------!
+      cpatch%fmean_root_resp(ico)   = cpatch%fmean_root_resp (ico)                         &
+                                    + cpatch%root_respiration(ico)                         &
+                                    * umols_2_kgCyr * dtlsm_o_frqsum                       &
+                                    / cpatch%nplant          (ico)
       !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
@@ -141,8 +164,14 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    csite%today_A_decomp (ipa) = csite%today_A_decomp (ipa) + csite%A_decomp(ipa)
    csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa)                                 &
                               + csite%A_decomp       (ipa) * csite%f_decomp(ipa)
-   csite%mean_rh        (ipa) = csite%mean_rh        (ipa) + csite%rh      (ipa)
-   csite%mean_cwd_rh    (ipa) = csite%mean_cwd_rh    (ipa) + csite%cwd_rh  (ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- The output is converted to kgC/m2/yr. -------------------------------------------!
+   csite%fmean_rh    (ipa) = csite%fmean_rh    (ipa)                                       &
+                           + csite%rh          (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
+   csite%fmean_cwd_rh(ipa) = csite%fmean_cwd_rh(ipa)                                       &
+                           + csite%cwd_rh      (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
    !---------------------------------------------------------------------------------------!
 
    return

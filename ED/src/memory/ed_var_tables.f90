@@ -10,7 +10,7 @@
 !     ! -11  : rank 2 : ndcycle                             !                              !
 !     !  12  : rank 2 : s-layer                             !                              !
 !     !  120 : rank 2 : s-layer, integer                    !                              !
-!     ! -12  : rank 3 : ndcycle,s-layer                     !                              !
+!     ! -12  : rank 3 : s-layer,ndcycle                     !                              !
 !     !  13  : rank 2 : w-layer                             !                              !
 !     !  14  : rank 2 : pft                                 !                              !
 !     !  146 : rank 3 : npft,ndbh                           !                              !
@@ -43,6 +43,7 @@
 !     !  31  : rank 1 : real                                !                              !
 !     ! -31  : rank 2 : ndcycle                             !                              !
 !     !  32  : rank 2 : s-layer                             !                              !
+!     ! -32  : rank 3 : s-layer, ndcycle                    !                              !
 !     !  320 : rank 2 : s-layer, integer                    !                              !
 !     !  33  : rank 2 : w-layer                             !                              !
 !     !  34  : rank 2 : pft                                 !                              !
@@ -76,7 +77,7 @@ module ed_var_tables
    !---------------------------------------------------------------------------------------!
    !    Define data type for main variable table                                           !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: maxvars = 1100
+   integer, parameter :: maxvars = 1600
    !---------------------------------------------------------------------------------------!
 
 

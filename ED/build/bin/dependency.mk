@@ -95,9 +95,9 @@ rk4_misc.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
 rk4_misc.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod grid_coms.mod
 rk4_misc.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
 rk4_stepper.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
-soil_respiration.o: consts_coms.mod decomp_coms.mod ed_state_vars.mod
-soil_respiration.o: farq_leuning.mod pft_coms.mod physiology_coms.mod
-soil_respiration.o: rk4_coms.mod soil_coms.mod therm_lib.mod
+soil_respiration.o: consts_coms.mod decomp_coms.mod ed_misc_coms.mod
+soil_respiration.o: ed_state_vars.mod farq_leuning.mod pft_coms.mod
+soil_respiration.o: physiology_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: detailed_coms.mod ed_max_dims.mod ed_misc_coms.mod
 structural_growth.o: ed_state_vars.mod ed_therm_lib.mod pft_coms.mod
@@ -136,9 +136,9 @@ landuse_init.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod
 landuse_init.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 phenology_startup.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 phenology_startup.o: grid_coms.mod phenology_aux.mod phenology_coms.mod
-average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
-average_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-average_utils.o: grid_coms.mod pft_coms.mod therm_lib.mod
+average_utils.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
+average_utils.o: ed_state_vars.mod grid_coms.mod met_driver_coms.mod
+average_utils.o: soil_coms.mod therm_lib.mod
 ed_init_full_history.o: allometry.mod ed_max_dims.mod ed_misc_coms.mod
 ed_init_full_history.o: ed_node_coms.mod ed_state_vars.mod
 ed_init_full_history.o: fusion_fission_coms.mod grid_coms.mod 
@@ -171,7 +171,7 @@ ed_xml_config.o: grid_coms.mod hydrology_coms.mod met_driver_coms.mod
 ed_xml_config.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
 ed_xml_config.o: rk4_coms.mod soil_coms.mod
 edio.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
-edio.o: ed_state_vars.mod grid_coms.mod pft_coms.mod soil_coms.mod therm_lib.mod
+edio.o: ed_state_vars.mod grid_coms.mod soil_coms.mod therm_lib.mod
 h5_output.o: an_header.mod ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
 h5_output.o: ed_state_vars.mod ed_var_tables.mod fusion_fission_coms.mod
 h5_output.o: grid_coms.mod  hdf5_coms.mod
@@ -231,10 +231,10 @@ ed_therm_lib.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
 ed_therm_lib.o: rk4_coms.mod soil_coms.mod therm_lib.mod therm_lib8.mod
 fatal_error.o: ed_node_coms.mod
 fuse_fiss_utils.o: allometry.mod budget_utils.mod canopy_layer_coms.mod
-fuse_fiss_utils.o: decomp_coms.mod disturb_coms.mod ed_max_dims.mod
-fuse_fiss_utils.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
-fuse_fiss_utils.o: fusion_fission_coms.mod grid_coms.mod mem_polygons.mod
-fuse_fiss_utils.o: pft_coms.mod soil_coms.mod therm_lib.mod
+fuse_fiss_utils.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
+fuse_fiss_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
+fuse_fiss_utils.o: ed_state_vars.mod fusion_fission_coms.mod grid_coms.mod
+fuse_fiss_utils.o: mem_polygons.mod pft_coms.mod soil_coms.mod therm_lib.mod
 great_circle.o: consts_coms.mod
 hdf5_utils.o: hdf5_coms.mod
 invmondays.o: ed_misc_coms.mod
@@ -247,9 +247,9 @@ stable_cohorts.o: phenology_coms.mod
 therm_lib.o: consts_coms.mod
 therm_lib8.o: consts_coms.mod therm_lib.mod
 update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
-update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
-update_derived_props.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
-update_derived_props.o: therm_lib.mod
+update_derived_props.o: decomp_coms.mod ed_max_dims.mod ed_misc_coms.mod
+update_derived_props.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
+update_derived_props.o: grid_coms.mod pft_coms.mod soil_coms.mod therm_lib.mod
 utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o

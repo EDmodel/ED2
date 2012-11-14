@@ -143,6 +143,12 @@ subroutine ed_coup_model(ifm)
                            , iqoutput           & ! intent(in)
                            , itoutput           & ! intent(in)
                            , iyoutput           & ! intent(in)
+                           , writing_dail       & ! intent(in)
+                           , writing_mont       & ! intent(in)
+                           , writing_dcyc       & ! intent(in)
+                           , writing_year       & ! intent(in)
+                           , writing_eorq       & ! intent(in)
+                           , writing_long       & ! intent(in)
                            , frqsum             & ! intent(inout)
                            , unitfast           & ! intent(in)
                            , unitstate          & ! intent(in)
@@ -194,10 +200,6 @@ subroutine ed_coup_model(ifm)
    integer                    , external :: num_days
    !----- Locally saved variables. --------------------------------------------------------!
    logical                    , save     :: first_time = .true.
-   logical                    , save     :: writing_dail
-   logical                    , save     :: writing_mont
-   logical                    , save     :: writing_dcyc
-   logical                    , save     :: writing_year
    logical, dimension(maxgrds), save     :: calledgrid
    !---------------------------------------------------------------------------------------!
 
@@ -207,10 +209,6 @@ subroutine ed_coup_model(ifm)
    ! in a coupled model.  The test can be done only once.                                  !
    !---------------------------------------------------------------------------------------!
    if (first_time) then
-      writing_dail      = idoutput > 0
-      writing_mont      = imoutput > 0
-      writing_dcyc      = iqoutput > 0
-      writing_year      = iyoutput > 0
       filltables        = .false.
       record_err        = .false.
       print_detailed    = .false.
@@ -234,7 +232,17 @@ subroutine ed_coup_model(ifm)
 
    !----- Radiation scheme. ---------------------------------------------------------------!
    call radiate_driver(edgrid_g(ifm))
-   
+
+
+   !---------------------------------------------------------------------------------------!
+   !     At this point, all meteorologic driver data for the land surface model has been   !
+   ! updated for the current timestep.  Perform the time space average for the output      !
+   ! diagnostic.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   call integrate_ed_fmean_met_vars(edgrid_g(ifm))
+   !---------------------------------------------------------------------------------------!
+
+
    !----- Solve the enthalpy, water, and carbon budgets. ----------------------------------!
    select case (integration_scheme)
    case (0)
@@ -246,13 +254,6 @@ subroutine ed_coup_model(ifm)
    case (3)
       call hybrid_timestep(edgrid_g(ifm))
    end select
-
-   !---------------------------------------------------------------------------------------!
-   !     Update the daily averages if daily or monthly analysis are needed.                !
-   !---------------------------------------------------------------------------------------!
-   if (writing_dail .or. writing_mont .or. writing_dcyc) then
-      call integrate_ed_daily_output_state(edgrid_g(ifm))
-   end if
 
 
    !---------------------------------------------------------------------------------------!
@@ -331,8 +332,7 @@ subroutine ed_coup_model(ifm)
       !     Call the model output driver.                                                  !
       !------------------------------------------------------------------------------------!
       call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,writing_dail,writing_mont,writing_dcyc,history_time       &
-                    ,dcycle_time,the_end)
+                    ,annual_time,history_time,dcycle_time,the_end)
       !------------------------------------------------------------------------------------!
 
 
@@ -357,7 +357,7 @@ subroutine ed_coup_model(ifm)
       !------------------------------------------------------------------------------------!
       if (reset_time) then
          do jfm=1,ngrids
-            call reset_averaged_vars(edgrid_g(jfm))
+            call zero_ed_fmean_vars(edgrid_g(jfm))
          end do
       end if
 

@@ -134,7 +134,14 @@ subroutine ed_masterput_nl(par_run)
                                    , iallom                    & ! intent(in)
                                    , igrass                    & ! intent(in)
                                    , min_site_area             & ! intent(in)
-                                   , attach_metadata           ! ! intent(in)
+                                   , attach_metadata           & ! intent(in)
+                                   , fast_diagnostics          & ! intent(in)
+                                   , writing_dail              & ! intent(in)
+                                   , writing_mont              & ! intent(in)
+                                   , writing_dcyc              & ! intent(in)
+                                   , writing_year              & ! intent(in)
+                                   , writing_long              & ! intent(in) 
+                                   , writing_eorq              ! ! intent(in)
    use canopy_air_coms      , only : icanturb                  & ! intent(in)
                                    , isfclyrm                  & ! intent(in)
                                    , ied_grndvap               & ! intent(in)
@@ -533,12 +540,27 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are useful to check for which output types to allocate.           !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Bcast(writing_dail    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_mont    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_dcyc    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_year    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_long    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_eorq    ,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(fast_diagnostics,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !   One last thing to send is the layer index based on the soil_depth. It is not really !
    ! a namelist thing, but it is still a setup variable.                                   !
    !---------------------------------------------------------------------------------------!
    call MPI_Barrier(MPI_COMM_WORLD,ierr) ! Just to wait until the matrix is allocated
    call MPI_Bcast(layer_index,nlat_lyr*nlon_lyr,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine ed_masterput_nl
@@ -1241,7 +1263,14 @@ subroutine ed_nodeget_nl
                                    , iallom                    & ! intent(out)
                                    , igrass                    & ! intent(out)
                                    , min_site_area             & ! intent(out)
-                                   , attach_metadata           ! ! intent(out)
+                                   , attach_metadata           & ! intent(out)
+                                   , fast_diagnostics          & ! intent(out)
+                                   , writing_dail              & ! intent(out)
+                                   , writing_mont              & ! intent(out)
+                                   , writing_dcyc              & ! intent(out)
+                                   , writing_year              & ! intent(out)
+                                   , writing_long              & ! intent(out) 
+                                   , writing_eorq              ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
                                    , ied_grndvap               & ! intent(out)
@@ -1644,7 +1673,21 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(min_recruit_dbh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idetailed,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(patch_keep,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
- 
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are useful to check for which output types to allocate.           !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Bcast(writing_dail    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_mont    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_dcyc    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_year    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_long    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(writing_eorq    ,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(fast_diagnostics,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Receive the layer index based on soil_depth.  This is allocatable, so we first    !
    ! allocate, then let the master know that it is safe to send to this node and then the  !

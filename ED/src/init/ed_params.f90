@@ -45,7 +45,7 @@ subroutine load_ed_ecosystem_params()
    !    2 | Early tropical                             |      no |      yes |           no !
    !    3 | Mid tropical                               |      no |      yes |           no !
    !    4 | Late tropical                              |      no |      yes |           no !
-   !    5 | C3 grass                                   |     yes |       no |          yes !
+   !    5 | Temperate C3 grass                         |     yes |       no |          yes !
    !    6 | Northern pines                             |      no |       no |           no !
    !    7 | Southern pines                             |      no |       no |           no !
    !    8 | Late conifers                              |      no |       no |           no !
@@ -56,8 +56,8 @@ subroutine load_ed_ecosystem_params()
    !   13 | C3 crop (e.g.,wheat, rice, soybean)        |     yes |       no |          yes !
    !   14 | C4 pasture                                 |     yes |      yes |          yes !
    !   15 | C4 crop (e.g.,corn/maize)                  |     yes |      yes |          yes !
-   !   16 | Subtropical C3 grass                       |     yes |      yes |          yes !
-   !   17 | Araucaria                                  |      no |      yes |           no !
+   !   16 | Tropical C3 grass                          |     yes |      yes |          yes !
+   !   17 | Araucaria (similar to 7, tropical allom.)  |      no |      yes |           no !
    !------+--------------------------------------------+---------+----------+--------------!
 
    !----- Name the PFTs (no spaces, please). ----------------------------------------------!
@@ -150,8 +150,8 @@ subroutine load_ed_ecosystem_params()
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     This should be always the last one, since it depends on variables assigned in     !
-   ! the previous init_????_params.                                                        !
+   !     This should be always the last one, since it depends on variables assigned in the !
+   ! previous init_????_params.                                                            !
    !---------------------------------------------------------------------------------------!
    call init_rk4_params()
    !---------------------------------------------------------------------------------------!
@@ -172,26 +172,26 @@ end subroutine load_ed_ecosystem_params
 ! wouldn't fit in any of the other categories.                                             !
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_misc_coms
-   use ed_max_dims  , only : n_pft               & ! intent(in)
-                           , n_dbh               & ! intent(in)
-                           , n_age               ! ! intent(in)
-   use consts_coms  , only : erad                & ! intent(in)
-                           , pio180              ! ! intent(in)
-   use ed_misc_coms , only : burnin              & ! intent(out)
-                           , outputMonth         & ! intent(out)
-                           , restart_target_year & ! intent(out)
-                           , use_target_year     & ! intent(out)
-                           , maxage              & ! intent(out)
-                           , dagei               & ! intent(out)
-                           , maxdbh              & ! intent(out)
-                           , ddbhi               & ! intent(out)
-                           , vary_elev           & ! intent(out)
-                           , vary_hyd            & ! intent(out)
-                           , vary_rad            & ! intent(out)
-                           , max_thsums_dist     & ! intent(out)
-                           , max_poihist_dist    & ! intent(out)
-                           , max_poi99_dist      & ! intent(out)
-                           , suppress_h5_warnings
+   use ed_max_dims  , only : n_pft                & ! intent(in)
+                           , n_dbh                & ! intent(in)
+                           , n_age                ! ! intent(in)
+   use consts_coms  , only : erad                 & ! intent(in)
+                           , pio180               ! ! intent(in)
+   use ed_misc_coms , only : burnin               & ! intent(out)
+                           , outputMonth          & ! intent(out)
+                           , restart_target_year  & ! intent(out)
+                           , use_target_year      & ! intent(out)
+                           , maxage               & ! intent(out)
+                           , dagei                & ! intent(out)
+                           , maxdbh               & ! intent(out)
+                           , ddbhi                & ! intent(out)
+                           , vary_elev            & ! intent(out)
+                           , vary_hyd             & ! intent(out)
+                           , vary_rad             & ! intent(out)
+                           , max_thsums_dist      & ! intent(out)
+                           , max_poihist_dist     & ! intent(out)
+                           , max_poi99_dist       & ! intent(out)
+                           , suppress_h5_warnings ! ! intent(out)
    implicit none
 
 
@@ -870,8 +870,8 @@ subroutine init_can_air_params()
                              , ribmax                & ! intent(out)
                              , leaf_drywhc           & ! intent(out)
                              , leaf_maxwhc           & ! intent(out)
-                             , rb_inter              & ! intent(out)
-                             , rb_slope              & ! intent(out)
+                             , gbhmos_min            & ! intent(out)
+                             , gbhmos_min8           & ! intent(out)
                              , veg_height_min        & ! intent(out)
                              , minimum_canopy_depth  & ! intent(out)
                              , minimum_canopy_depth8 & ! intent(out)
@@ -1037,11 +1037,13 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !      Variables to define the vegetation aerodynamic resistance.  They are currently   !
+   !      Variables to define the vegetation aerodynamic conductance.  They are currently  !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   rb_slope =   0.0
-   rb_inter =   1.e9
+   gbhmos_min  = 1.e-9
+   gbhmos_min8 = dble(gbhmos_min)
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
@@ -4777,6 +4779,8 @@ subroutine init_ff_coms
                                  , light_toler_max    & ! intent(out)
                                  , light_toler_mult   & ! intent(out)
                                  , fuse_relax         & ! intent(out)
+                                 , corr_patch         & ! intent(out)
+                                 , corr_cohort        & ! intent(out)
                                  , print_fuse_details & ! intent(out)
                                  , fuse_prefix        ! ! intent(out)
    use consts_coms        , only : onethird           & ! intent(out)
@@ -4818,6 +4822,15 @@ subroutine init_ff_coms
    light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus
 
    fuse_relax        = .false.
+
+   !---------------------------------------------------------------------------------------!
+   !      Coefficient of correlation assumed between two patches and cohorts that are      !
+   ! about to be fused.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   corr_patch  = 1.0
+   corr_cohort = 1.0
+   !---------------------------------------------------------------------------------------!
+
 
    !----- The following flag switches detailed debugging on. ------------------------------!
    print_fuse_details = .false.
@@ -4901,6 +4914,7 @@ subroutine init_rk4_params()
                              , thbnds_fout            & ! intent(out)
                              , detail_pref            & ! intent(out)
                              , budget_pref            ! ! intent(out)
+   use ed_misc_coms   , only : fast_diagnostics       ! ! intent(inout)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -5051,6 +5065,13 @@ subroutine init_rk4_params()
    ! tests, this variable should be always true.                                           !
    !---------------------------------------------------------------------------------------!
    leaf_intercept = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Update fast_diagnostics in case checkbudget is set to true.                      !
+   !---------------------------------------------------------------------------------------!
+   fast_diagnostics = fast_diagnostics .or. checkbudget
    !---------------------------------------------------------------------------------------!
 
    return

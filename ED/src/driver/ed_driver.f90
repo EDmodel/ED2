@@ -387,20 +387,23 @@ subroutine exterminate_patches_except(keeppa)
    use ed_state_vars  , only : edgrid_g           & ! structure
                              , edtype             & ! structure
                              , polygontype        & ! structure
-                             , sitetype           ! ! structure
+                             , sitetype           & ! structure
+                             , patchtype          ! ! structure
    use grid_coms      , only : ngrids             ! ! intent(in)
    use fuse_fiss_utils, only : terminate_patches  ! ! sub-routine
    !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)  :: keeppa
+   integer                        , intent(in)  :: keeppa
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype)             , pointer     :: cgrid
-   type(polygontype)        , pointer     :: cpoly
-   type(sitetype)           , pointer     :: csite
-   integer                                :: ifm
-   integer                                :: ipy
-   integer                                :: isi
-   integer                                :: ipa
-   integer                                :: keepact
+   type(edtype)                   , pointer     :: cgrid
+   type(polygontype)              , pointer     :: cpoly
+   type(sitetype)                 , pointer     :: csite
+   type(patchtype)                , pointer     :: cpatch
+   integer                                      :: ifm
+   integer                                      :: ipy
+   integer                                      :: isi
+   integer                                      :: ipa
+   integer                                      :: keepact
+   real             , dimension(:), allocatable :: csite_lai
    !---------------------------------------------------------------------------------------!
 
 
@@ -412,16 +415,32 @@ subroutine exterminate_patches_except(keeppa)
 
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
-            
+
             select case(keeppa)
             case (0)
                return
             case (-2)
                !----- Keep the one with the lowest LAI. -----------------------------------!
-               keepact = minloc(csite%lai,dim=1)
+               allocate(csite_lai(csite%npatches))
+               csite_lai(:) = 0.0
+               keepm2loop: do ipa=1,csite%npatches
+                  cpatch => csite%patch(ipa)
+                  if (cpatch%ncohorts > 0) csite_lai(ipa) = sum(cpatch%lai)
+               end do keepm2loop
+               keepact = minloc(csite_lai,dim=1)
+               deallocate(csite_lai)
+               !---------------------------------------------------------------------------!
             case (-1)
-               !----- Keep the one with the highest LAI. ----------------------------------!
-               keepact = maxloc(csite%lai,dim=1)
+               !----- Keep the one with the lowest LAI. -----------------------------------!
+               allocate(csite_lai(csite%npatches))
+               csite_lai(:) = 0.0
+               keepm1loop: do ipa=1,csite%npatches
+                  cpatch => csite%patch(ipa)
+                  if (cpatch%ncohorts > 0) csite_lai(ipa) = sum(cpatch%lai)
+               end do keepm1loop
+               keepact = maxloc(csite_lai,dim=1)
+               deallocate(csite_lai)
+               !---------------------------------------------------------------------------!
             case default
                !----- Keep a fixed patch number. ------------------------------------------!
                keepact = keeppa

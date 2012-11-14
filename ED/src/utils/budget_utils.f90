@@ -58,7 +58,8 @@ module budget_utils
                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff       &
                             ,site_area,cbudget_nep,old_can_enthalpy,old_can_shv            &
                             ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
-      use ed_state_vars, only : sitetype           ! ! structure
+      use ed_state_vars, only : sitetype           & ! structure
+                              , patchtype          ! ! structure
       use ed_max_dims  , only : str_len            ! ! intent(in)
       use ed_misc_coms , only : dtlsm              & ! intent(in)
                               , fast_diagnostics   & ! intent(in)
@@ -98,8 +99,8 @@ module budget_utils
       real                                    , intent(in)    :: old_can_temp
       real                                    , intent(in)    :: old_can_prss
       !----- Local variables --------------------------------------------------------------!
+      type(patchtype)                         , pointer       :: cpatch
       character(len=str_len)                                  :: budget_fout
-      real, dimension(n_dbh)                                  :: gpp_dbh
       real                                                    :: co2budget_finalstorage
       real                                                    :: co2budget_deltastorage
       real                                                    :: co2curr_gpp
@@ -133,7 +134,10 @@ module budget_utils
       real                                                    :: co2_factor
       real                                                    :: ene_factor
       real                                                    :: h2o_factor
+      real                                                    :: patch_lai
+      real                                                    :: patch_wai
       integer                                                 :: jpa
+      integer                                                 :: ico
       logical                                                 :: isthere
       logical                                                 :: co2_ok
       logical                                                 :: energy_ok
@@ -248,7 +252,7 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !     Compute the carbon flux components.                                            !
       !------------------------------------------------------------------------------------!
-      call sum_plant_cfluxes(csite,ipa,gpp,gpp_dbh,leaf_resp,root_resp,growth_resp         &
+      call sum_plant_cfluxes(csite,ipa,gpp,leaf_resp,root_resp,growth_resp                 &
                             ,storage_resp,vleaf_resp)
       co2curr_gpp         = gpp           * dtlsm
       co2curr_leafresp    = leaf_resp     * dtlsm
@@ -309,14 +313,11 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !----- 1. Carbon dioxide. -----------------------------------------------------------!
       csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)       + gpp       *dtlsm
-      csite%co2budget_gpp_dbh(:,ipa)   = csite%co2budget_gpp_dbh(:,ipa) + gpp_dbh(:)*dtlsm
       csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                       &
                                        + ( leaf_resp + root_resp + growth_resp             &
                                          + storage_resp + vleaf_resp ) * dtlsm
       csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                           &
                                        + csite%rh(ipa) * dtlsm
-      csite%co2budget_cwd_rh(ipa)      = csite%co2budget_cwd_rh(ipa)                       &
-                                       + csite%cwd_rh(ipa) * dtlsm
       csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa)                   &
                                        + co2curr_denseffect
       csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)                     &
@@ -364,13 +365,28 @@ module budget_utils
                                                      + abs(wbudget_deltastorage)   )
 
 
+         !---------------------------------------------------------------------------------!
+         !     Find the patch LAI and WAI for output, only if it is needed.                !
+         !---------------------------------------------------------------------------------!
+         if (.not. (co2_ok .and. energy_ok .and. water_ok) .or. print_budget) then
+            cpatch => csite%patch(ipa)
+            patch_lai = 0.0
+            patch_wai = 0.0
+            do ico=1,cpatch%ncohorts
+               patch_lai = patch_lai + cpatch%lai(ico)
+               patch_wai = patch_wai + cpatch%wai(ico)
+            end do
+         end if
+         !---------------------------------------------------------------------------------!
+
+
          if (.not. co2_ok) then
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') '|           !!! ): CO2 budget failed :( !!!        |'
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
-            write (unit=*,fmt=fmtf ) ' LAI            : ',csite%lai(ipa)
+            write (unit=*,fmt=fmtf ) ' LAI            : ',patch_lai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT     : ',csite%veg_height(ipa)
             write (unit=*,fmt=fmtf ) ' CAN_RHOS       : ',csite%can_rhos(ipa)
             write (unit=*,fmt=fmtf ) ' OLD_CAN_RHOS   : ',old_can_rhos
@@ -400,7 +416,7 @@ module budget_utils
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
-            write (unit=*,fmt=fmtf ) ' LAI            : ',csite%lai(ipa)
+            write (unit=*,fmt=fmtf ) ' LAI            : ',patch_lai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT     : ',csite%veg_height(ipa)
             write (unit=*,fmt=fmtf ) ' CAN_DEPTH      : ',csite%can_depth(ipa)
             write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',ecurr_residual
@@ -425,7 +441,7 @@ module budget_utils
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
-            write (unit=*,fmt=fmtf ) ' LAI            : ',csite%lai(ipa)
+            write (unit=*,fmt=fmtf ) ' LAI            : ',patch_lai
             write (unit=*,fmt=fmtf ) ' VEG_HEIGHT     : ',csite%veg_height(ipa)
             write (unit=*,fmt=fmtf ) ' CAN_DEPTH      : ',csite%can_depth(ipa)
             write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',wcurr_residual
@@ -484,7 +500,7 @@ module budget_utils
                  ,position='append')
             write(unit=86,fmt=bbfmt)                                                       &
                  current_time%year      , current_time%month     , current_time%date       &
-               , current_time%time      , csite%lai(ipa)         , csite%wai(ipa)          &
+               , current_time%time      , patch_lai              , patch_wai               &
                , csite%veg_height(ipa)  , co2budget_finalstorage , co2curr_residual        &
                , co2budget_deltastorage , co2curr_nep            , co2curr_denseffect      &
                , co2curr_loss2atm       , ebudget_finalstorage   , ecurr_residual          &
@@ -703,7 +719,7 @@ module budget_utils
    !=======================================================================================!
    !    This subroutine computes the carbon flux terms.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,leaf_resp,root_resp,growth_resp    &
+   subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,growth_resp            &
                                ,storage_resp,vleaf_resp)
       use ed_state_vars        , only : sitetype    & ! structure
                                       , patchtype   ! ! structure
@@ -716,7 +732,6 @@ module budget_utils
       type(sitetype)        , target      :: csite
       integer               , intent(in)  :: ipa
       real                  , intent(out) :: gpp
-      real, dimension(n_dbh), intent(out) :: gpp_dbh
       real                  , intent(out) :: leaf_resp
       real                  , intent(out) :: root_resp
       real                  , intent(out) :: growth_resp
@@ -738,7 +753,6 @@ module budget_utils
 
       !----- Initializing some variables. -------------------------------------------------!
       gpp          = 0.0
-      gpp_dbh      = 0.0 
       leaf_resp    = 0.0
       root_resp    = 0.0
       growth_resp  = 0.0
@@ -752,12 +766,7 @@ module budget_utils
       do ico = 1,cpatch%ncohorts
          !----- Add GPP and leaf respiration only for those cohorts with enough leaves. ---!
          if (cpatch%leaf_resolvable(ico)) then
-            gpp = gpp + cpatch%gpp(ico)
-            !----- Forest cohorts have dbh distribution, add them to gpp_dbh. -------------!
-            if (forest) then 
-               idbh=max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
-               gpp_dbh(idbh) = gpp_dbh(idbh) + cpatch%gpp(ico)
-            end if
+            gpp       = gpp       + cpatch%gpp(ico)
             leaf_resp = leaf_resp + cpatch%leaf_respiration(ico)
 
          end if

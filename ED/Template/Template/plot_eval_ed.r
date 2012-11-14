@@ -432,32 +432,31 @@ for (place in myplaces){
                myinst = hdf5load(file=myfile,load=FALSE,verbosity=0,tidy=TRUE)
             }#end if
             #------------------------------------------------------------------------------#
-            model$atm.tmp  [tt] = myinst$AVG.ATM.TMP  - t00
-            model$atm.shv  [tt] = myinst$AVG.ATM.SHV  * 1000.
-            model$atm.prss [tt] = myinst$AVG.ATM.PRSS * 0.01
-            model$rain     [tt] = myinst$AVG.PCPG     * hr.sec
-            model$atm.co2  [tt] = myinst$AVG.ATM.CO2
-            model$atm.vels [tt] = myinst$AVG.VELS
-            model$rshort   [tt] = myinst$AVG.RSHORT
-            model$rlong    [tt] = myinst$AVG.RLONG
-            model$par      [tt] = ( ( myinst$AVG.PAR.BEAM + myinst$AVG.PAR.DIFF ) 
-                                  * Watts.2.Ein * 1.e6)
-            model$hflxca   [tt] = - myinst$AVG.SENSIBLE.AC
-            model$wflxca   [tt] = - myinst$AVG.VAPOR.AC    * day.sec
-            model$cflxca   [tt] = - myinst$AVG.CARBON.AC 
-            model$cflxst   [tt] = + myinst$AVG.CARBON.ST
-            model$gpp      [tt] = myinst$AVG.GPP * umols.2.kgCyr
-            model$reco     [tt] = ( ( myinst$AVG.PLANT.RESP + myinst$AVG.HTROPH.RESP )
-                                  * umols.2.kgCyr )
-            model$nep      [tt] = model$gpp[tt] - model$reco[tt]
-            model$nee      [tt] = - model$nep[tt] * kgCyr.2.umols
-            model$ustar    [tt] = myinst$AVG.USTAR
-            model$rlongup  [tt] = myinst$AVG.RLONGUP
-            model$albedo   [tt] = myinst$AVG.ALBEDO
-            model$rnet     [tt] = ( (1. - myinst$AVG.ALBEDO) * myinst$AVG.RSHORT
-                                  + myinst$AVG.RLONG - myinst$AVG.RLONGUP )
-            model$parup    [tt] = myinst$AVG.PARUP * Watts.2.Ein * 1.e6
-            model$rshortup [tt] = myinst$AVG.RSHORTUP
+            model$atm.tmp  [tt] =   myinst$FMEAN.ATM.TEMP.PY       - t00
+            model$atm.shv  [tt] =   myinst$FMEAN.ATM.SHV.PY        * 1000.
+            model$atm.prss [tt] =   myinst$FMEAN.ATM.PRSS.PY       * 0.01
+            model$rain     [tt] =   myinst$FMEAN.PCPG.PY           * hr.sec
+            model$atm.co2  [tt] =   myinst$FMEAN.ATM.CO2.PY
+            model$atm.vels [tt] =   myinst$FMEAN.ATM.VELS.PY
+            model$rshort   [tt] =   myinst$FMEAN.ATM.RSHORT.PY
+            model$rlong    [tt] =   myinst$FMEAN.ATM.RLONG.PY
+            model$par      [tt] =   myinst$FMEAN.ATM.PAR.PY        * Watts.2.Ein * 1.e6
+            model$hflxca   [tt] = - myinst$FMEAN.SENSIBLE.AC.PY
+            model$wflxca   [tt] = - myinst$FMEAN.VAPOR.AC.PY       * day.sec
+            model$cflxca   [tt] = - myinst$FMEAN.CARBON.AC.PY 
+            model$cflxst   [tt] = + myinst$FMEAN.CARBON.ST.PY
+            model$gpp      [tt] =   myinst$FMEAN.GPP.PY
+            model$reco     [tt] = ( myinst$FMEAN.PLRESP.PY
+                                  + myinst$FMEAN.RH.PY           )
+            model$nep      [tt] =   myinst$FMEAN.NEP.PY
+            model$nee      [tt] = ( myinst$FMEAN.CARBON.ST.PY 
+                                  - myinst$FMEAN.CARBON.AC.PY )
+            model$ustar    [tt] =   myinst$FMEAN.USTAR.PY
+            model$rlongup  [tt] =   myinst$FMEAN.RLONGUP.PY
+            model$albedo   [tt] =   myinst$FMEAN.ALBEDO.PY
+            model$rnet     [tt] =   myinst$FMEAN.RNET.PY
+            model$parup    [tt] =   myinst$FMEAN.PARUP.PY          * Watts.2.Ein * 1.e6
+            model$rshortup [tt] =   myinst$FMEAN.RSHORTUP.PY
 
             if (tt == ntimes){
                eddy.complete = TRUE

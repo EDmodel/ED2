@@ -184,6 +184,14 @@ Module ed_misc_coms
    logical :: fast_diagnostics       !! If ifoutput,idoutput,and imoutput are zero, then
                                      !! there is no need to integrate fast flux diagnostics
 
+
+   logical :: writing_dail ! Writing daily
+   logical :: writing_mont ! Writing monthly
+   logical :: writing_dcyc ! Writing mean diel
+   logical :: writing_year ! Writing yearly
+   logical :: writing_eorq ! If either monthly or mean diel are written.
+   logical :: writing_long ! If either daily, monthly, or mean diel are written.
+
    ! Namelist option to attach metadata to HDF5 output files 0=no, 1=yes
 
    integer :: attach_metadata
