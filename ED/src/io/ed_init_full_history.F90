@@ -1647,31 +1647,31 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !      3-D variables, dimensions: (max_site;max_site+1;npolygons).                      !
    !---------------------------------------------------------------------------------------!
-   dsetrank    = 3
-   globdims(1) = int(max_site,8)
-   chnkdims(1) = int(max_site,8)
-   memdims (1) = int(max_site,8)
-   memsize (1) = int(max_site,8)
-   chnkoffs(1) = 0_8
-   memoffs (1) = 0_8
+   ! dsetrank    = 3
+   ! globdims(1) = int(max_site,8)
+   ! chnkdims(1) = int(max_site,8)
+   ! memdims (1) = int(max_site,8)
+   ! memsize (1) = int(max_site,8)
+   ! chnkoffs(1) = 0_8
+   ! memoffs (1) = 0_8
 
-   globdims(2) = int(max_site+1,8)
-   chnkdims(2) = int(max_site+1,8)
-   memdims (2) = int(max_site+1,8)
-   memsize (2) = int(max_site+1,8)
-   chnkoffs(2) = 0_8
-   memoffs (2) = 0_8
+   ! globdims(2) = int(max_site+1,8)
+   ! chnkdims(2) = int(max_site+1,8)
+   ! memdims (2) = int(max_site+1,8)
+   ! memsize (2) = int(max_site+1,8)
+   ! chnkoffs(2) = 0_8
+   ! memoffs (2) = 0_8
 
-   globdims(3)  = int(cgrid%npolygons_global,8)
-   chnkdims(3)  = 1_8
-   chnkoffs(3)  = int(py_index - 1,8)
-   memdims (3)  = 1_8
-   memsize (3)  = 1_8
-   memoffs (3)  = 0_8
+   ! globdims(3)  = int(cgrid%npolygons_global,8)
+   ! chnkdims(3)  = 1_8
+   ! chnkoffs(3)  = int(py_index - 1,8)
+   ! memdims (3)  = 1_8
+   ! memsize (3)  = 1_8
+   ! memoffs (3)  = 0_8
 
 
-   call hdf_getslab_r(cgrid%site_adjacency(:,:,ipy)                                        &
-                     ,'SITE_ADJACENCY ',dsetrank,iparallel,.true.,foundvar)
+   ! call hdf_getslab_r(cgrid%site_adjacency(:,:,ipy)                                      &
+   !                   ,'SITE_ADJACENCY ',dsetrank,iparallel,.true.,foundvar)
 
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -2366,7 +2366,7 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
                      ,'DISTURBANCE_RATES_SI ',dsetrank,iparallel,.false.,foundvar)
    if (.not. foundvar) then
       call hdf_getslab_r(cpoly%disturbance_rates                                           &
-                        ,'DISTURBANCE_RATES_SI ',dsetrank,iparallel,.true.,foundvar)
+                        ,'DISTURBANCE_RATES ',dsetrank,iparallel,.true.,foundvar)
    end if
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -2734,11 +2734,11 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
    call hdf_getslab_r(csite%fsn_in                                                         &
                      ,'FSN_IN                      ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%total_plant_nitrogen_uptake                                    &
-                     ,'TOTAL_PLANT_NITROGEN_UPTAKE ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'TOTAL_PLANT_NITROGEN_UPTAKE ',dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(csite%mineralized_N_loss                                             &
-                     ,'MINERALIZED_N_LOSS          ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'MINERALIZED_N_LOSS          ',dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(csite%mineralized_N_input                                            &
-                     ,'MINERALIZED_N_INPUT         ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'MINERALIZED_N_INPUT         ',dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(csite%rshort_g                                                       &
                      ,'RSHORT_G                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%rshort_g_beam                                                  &
@@ -3348,7 +3348,7 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
    memoffs (2) = 0_8
    call hdf_getslab_r(csite%soil_energy                                                    &
                      ,'SOIL_ENERGY_PA       ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%soil_energy                                                    &
+   call hdf_getslab_r(csite%soil_mstpot                                                    &
                      ,'SOIL_MSTPOT_PA       ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%soil_water                                                     &
                      ,'SOIL_WATER_PA        ',dsetrank,iparallel,.true. ,foundvar)
@@ -3787,7 +3787,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    call hdf_getslab_r(cpatch%bstorage                                                      &
                      ,'BSTORAGE                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%bseeds                                                        &
-                     ,'BSEEDS                    ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'BSEEDS_CO                 ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%lai                                                           &
                      ,'LAI_CO                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%wai                                                           &

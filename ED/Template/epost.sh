@@ -55,6 +55,7 @@ idbhtype=2                     # Type of DBH class
 #                      (patch-level only).                                                 #
 #   - plot_eval_ed.r - This creates plots comparing model with eddy flux observations.     #
 #   - plot_census.r  - This creates plots comparing model with biometric data.             #
+#   - whichrun.r     - This checks the run status.                                         #
 #                                                                                          #
 #   The following scripts should work too, but I haven't tested them.                      #
 #   - plot_daily.r   - This creates plots from the daily mean output.                      #
@@ -166,6 +167,8 @@ while [ ${ff} -lt ${npolys} ]
 do
    let ff=${ff}+1
    let line=${ff}+3
+   
+   fflab="${ff}/${npolys}"
 
    #---------------------------------------------------------------------------------------#
    #      Read the ffth line of the polygon list.  There must be smarter ways of doing     #
@@ -323,12 +326,12 @@ do
       #----- Print a banner. --------------------------------------------------------------#
       if [ ${script} == 'plot_census.r' ] && [ ${subcens} -eq 0 ]
       then
-         "Skipping submission of ${script} for polygon: ${polyname}..."
+         echo "${fflab} - Skipping submission of ${script} for polygon: ${polyname}..."
       elif [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
       then
-         echo "Submitting script ${script} for polygon: ${polyname}..."
+         echo "${fflab} - Submitting script ${script} for polygon: ${polyname}..."
       else
-         echo "Copying script ${script} to polygon: ${polyname}..."
+         echo "${fflab} - Copying script ${script} to polygon: ${polyname}..."
       fi
       #------------------------------------------------------------------------------------#
 
@@ -551,7 +554,7 @@ do
          ;;
 
 
-      patchprops.r)
+      whichrun.r|patchprops.r)
          #---------------------------------------------------------------------------------#
          #     Script with time-independent patch properties.  No need to skip anything.   #
          #---------------------------------------------------------------------------------#
@@ -577,10 +580,20 @@ do
 
 
          #----- Define the job name, and the names of the output files. -------------------#
-         epostout='ppro_epost.out'
-         epostsh='ppro_epost.sh'
-         epostlsf='ppro_epost.lsf'
-         epostjob='eb-ppro-'${polyname}
+         case ${script} in
+         patchprops.r)
+           epostout='ppro_epost.out'
+           epostsh='ppro_epost.sh'
+           epostlsf='ppro_epost.lsf'
+           epostjob='eb-ppro-'${polyname}
+           ;;
+         whichrun.r)
+           epostout='pwhr_epost.out'
+           epostsh='pwhr_epost.sh'
+           epostlsf='pwhr_epost.lsf'
+           epostjob='eb-pwhr-'${polyname}
+           ;;
+         esac
          #---------------------------------------------------------------------------------#
          ;;
       plot_daily.r)

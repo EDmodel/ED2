@@ -27,6 +27,9 @@ module ed_state_vars
    use ed_misc_coms       , only : writing_long    & ! intent(in)
                                  , writing_eorq    & ! intent(in)
                                  , writing_dcyc    & ! intent(in)
+                                 , history_fast    & ! intent(in)
+                                 , history_dail    & ! intent(in)
+                                 , history_eorq    & ! intent(in)
                                  , ndcycle         ! ! intent(in)
 
    implicit none
@@ -11478,103 +11481,103 @@ module ed_state_vars
       if (associated(cgrid%Cleaf_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Cleaf_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CLEAF_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'CLEAF_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Leaf Carbon Growth','?','ipoly') 
       end if
       if (associated(cgrid%Croot_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Croot_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CROOT_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'CROOT_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Fine Root Carbon Growth','?','ipoly') 
       end if
       if (associated(cgrid%Cdead_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Cdead_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CDEAD_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'CDEAD_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Wood Carbon Growth','?','ipoly') 
       end if
       if (associated(cgrid%Cstore_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Cstore_Grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CSTORE_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'CSTORE_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Storage Carbon growth','?','ipoly') 
       end if
       if (associated(cgrid%Cleaf_litter_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Cleaf_litter_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CLEAF_LITTER_FLUX :11:dail') 
+              var_len,var_len_global,max_ptrs,'CLEAF_LITTER_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Leaf Litter Carbon Flux','?','ipoly') 
       end if
       if (associated(cgrid%Croot_litter_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Croot_litter_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CROOT_LITTER_FLUX :11:dail') 
+              var_len,var_len_global,max_ptrs,'CROOT_LITTER_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Fine Root Litter Carbon Flux','?','ipoly') 
       end if
       if (associated(cgrid%Ccwd_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Ccwd_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CCWD_FLUX :11:dail') 
+              var_len,var_len_global,max_ptrs,'CCWD_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Coarse Woody Debris Carbon FLUX','?','ipoly') 
       end if
       if (associated(cgrid%Nleaf_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nleaf_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NLEAF_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'NLEAF_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Leaf Nitrogen growth','?','ipoly') 
       end if
       if (associated(cgrid%Nroot_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nroot_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NROOT_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'NROOT_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Fine Root Nitrogen Growth','?','ipoly') 
       end if
       if (associated(cgrid%Ndead_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Ndead_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NDEAD_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'NDEAD_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Wood Nitrogen growth','?','ipoly') 
       end if
       if (associated(cgrid%Nstore_grow)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nstore_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NSTORE_GROW :11:dail') 
+              var_len,var_len_global,max_ptrs,'NSTORE_GROW :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Storage Nitrogen Growth','?','ipoly') 
       end if
       if (associated(cgrid%Nleaf_litter_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nleaf_litter_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NLEAF_LITTER_FLUX :11:dail') 
+              var_len,var_len_global,max_ptrs,'NLEAF_LITTER_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Leaf litter Nitrogen flux','?','ipoly') 
       end if
       if (associated(cgrid%Nroot_litter_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nroot_litter_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NROOT_LITTER_FLUX :11:dail') 
+              var_len,var_len_global,max_ptrs,'NROOT_LITTER_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. fine root litter Nitrogen flux','?','ipoly') 
       end if
       if (associated(cgrid%Ncwd_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Ncwd_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NCWD_FLUX :11:dail') 
+              var_len,var_len_global,max_ptrs,'NCWD_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. CWD Nitrogen flux','?','ipoly') 
       end if
       if (associated(cgrid%Nbiomass_uptake)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nbiomass_uptake,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NBIOMASS_UPTAKE :11:dail') 
+              var_len,var_len_global,max_ptrs,'NBIOMASS_UPTAKE :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Nitrogen Uptake','?','ipoly') 
       end if
       if (associated(cgrid%Ngross_min)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Ngross_min,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NGROSS_MIN :11:dail') 
+              var_len,var_len_global,max_ptrs,'NGROSS_MIN :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Gross Nitrogen mineralization','?','ipoly') 
       end if
       if (associated(cgrid%Nnet_min)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nnet_min,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NNET_MIN :11:dail') 
+              var_len,var_len_global,max_ptrs,'NNET_MIN :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Net Nitrogen mineralization','?','ipoly') 
       end if
 
@@ -11616,7 +11619,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%cwd_c                                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'CWD_C      :11:hist:anal:dail')
+                           ,'CWD_C_PY    :11:hist:anal:dail')
          call metadata_edio(nvar,igr,'Coarse woody debris'                                 &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -11640,7 +11643,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%cwd_n                                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'CWD_N      :11:hist:anal:dail')
+                           ,'CWD_N_PY    :11:hist:anal:dail')
          call metadata_edio(nvar,igr,'Coarse woody debris nitrogen'                        &
                            ,'[kgN/m2]','(ipoly)')
       end if
@@ -11667,15 +11670,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype), target        :: cgrid
-      integer     , intent(in)    :: init
-      integer     , intent(in)    :: igr
-      integer     , intent(in)    :: var_len
-      integer     , intent(in)    :: max_ptrs
-      integer     , intent(in)    :: var_len_global
-      integer     , intent(inout) :: nvar
+      type(edtype)          , target        :: cgrid
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: npts
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the sub-daily means to the history file.              !
+      !------------------------------------------------------------------------------------!
+      if (history_fast) then
+         fast_keys = 'hist:anal'
+      else
+         fast_keys = 'anal'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -11693,7 +11709,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_gpp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_GPP_PY               :11:hist:anal'     )
+                           ,'FMEAN_GPP_PY               :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gross primary productivity'                  &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11702,7 +11718,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_npp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_NPP_PY               :11:hist:anal'     )
+                           ,'FMEAN_NPP_PY               :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net primary productivity'                    &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11711,7 +11727,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_RESP_PY         :11:hist:anal'     )
+                           ,'FMEAN_LEAF_RESP_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf respiration'                            &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11720,7 +11736,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_root_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ROOT_RESP_PY         :11:hist:anal'     )
+                           ,'FMEAN_ROOT_RESP_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root respiration'                            &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11729,7 +11745,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_growth_resp                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_GROWTH_RESP_PY       :11:hist:anal'     )
+                           ,'FMEAN_GROWTH_RESP_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Growth respiration'                          &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11738,7 +11754,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_storage_resp                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_STORAGE_RESP_PY      :11:hist:anal'     )
+                           ,'FMEAN_STORAGE_RESP_PY      :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Storage respiration'                         &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11747,7 +11763,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_vleaf_resp                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VLEAF_RESP_PY        :11:hist:anal'     )
+                           ,'FMEAN_VLEAF_RESP_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Virtual leaf respiration'                    &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11756,7 +11772,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_plresp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PLRESP_PY            :11:hist:anal'     )
+                           ,'FMEAN_PLRESP_PY            :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Plant respiration'                           &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -11765,7 +11781,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_ENERGY_PY       :11:hist:anal'     )
+                           ,'FMEAN_LEAF_ENERGY_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf internal energy'                        &
                            ,'[       J/m2]','(ipoly)'            )
@@ -11774,7 +11790,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_WATER_PY        :11:hist:anal'     )
+                           ,'FMEAN_LEAF_WATER_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf surface water'                          &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -11783,7 +11799,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_HCAP_PY         :11:hist:anal'     )
+                           ,'FMEAN_LEAF_HCAP_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf heat capacity'                          &
                            ,'[     J/m2/K]','(ipoly)'            )
@@ -11792,7 +11808,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_vpdef                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_VPDEF_PY        :11:hist:anal'     )
+                           ,'FMEAN_LEAF_VPDEF_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf vapour pressure deficit'                &
                            ,'[         Pa]','(ipoly)'            )
@@ -11801,7 +11817,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_TEMP_PY         :11:hist:anal'     )
+                           ,'FMEAN_LEAF_TEMP_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf temperature'                            &
                            ,'[          K]','(ipoly)'            )
@@ -11810,7 +11826,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_FLIQ_PY         :11:hist:anal'     )
+                           ,'FMEAN_LEAF_FLIQ_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Liquid fraction'                             &
                            ,'[         --]','(ipoly)'            )
@@ -11819,7 +11835,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_gsw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_GSW_PY          :11:hist:anal'     )
+                           ,'FMEAN_LEAF_GSW_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Stomatal conductance'                        &
                            ,'[kg/m2leaf/s]','(ipoly)'            )
@@ -11828,7 +11844,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_LEAF_GBW_PY          :11:hist:anal'     )
+                           ,'FMEAN_LEAF_GBW_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf boundary layer conductance'             &
                            ,'[kg/m2leaf/s]','(ipoly)'            )
@@ -11837,7 +11853,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wood_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WOOD_ENERGY_PY       :11:hist:anal'     )
+                           ,'FMEAN_WOOD_ENERGY_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood internal energy'                        &
                            ,'[       J/m2]','(ipoly)'            )
@@ -11846,7 +11862,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wood_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WOOD_WATER_PY        :11:hist:anal'     )
+                           ,'FMEAN_WOOD_WATER_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood surface water'                          &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -11855,7 +11871,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wood_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WOOD_HCAP_PY         :11:hist:anal'     )
+                           ,'FMEAN_WOOD_HCAP_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood heat capacity'                          &
                            ,'[     J/m2/K]','(ipoly)'            )
@@ -11864,7 +11880,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wood_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WOOD_TEMP_PY         :11:hist:anal'     )
+                           ,'FMEAN_WOOD_TEMP_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood temperature'                            &
                            ,'[          K]','(ipoly)'            )
@@ -11873,7 +11889,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wood_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WOOD_FLIQ_PY         :11:hist:anal'     )
+                           ,'FMEAN_WOOD_FLIQ_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Liquid fraction'                             &
                            ,'[         --]','(ipoly)'            )
@@ -11882,7 +11898,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wood_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WOOD_GBW_PY          :11:hist:anal'     )
+                           ,'FMEAN_WOOD_GBW_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood boundary layer conductance'             &
                            ,'[kg/m2wood/s]','(ipoly)'            )
@@ -11891,7 +11907,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_fs_open                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_FS_OPEN_PY           :11:hist:anal'     )
+                           ,'FMEAN_FS_OPEN_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net stress factor'                           &
                            ,'[         --]','(ipoly)'            )
@@ -11900,7 +11916,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_fsw                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_FSW_PY               :11:hist:anal'     )
+                           ,'FMEAN_FSW_PY               :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Moisture stress'                             &
                            ,'[         --]','(ipoly)'            )
@@ -11909,7 +11925,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_fsn                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_FSN_PY               :11:hist:anal'     )
+                           ,'FMEAN_FSN_PY               :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Nitrogen stress'                             &
                            ,'[         --]','(ipoly)'            )
@@ -11918,7 +11934,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_psi_open                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PSI_OPEN_PY          :11:hist:anal'     )
+                           ,'FMEAN_PSI_OPEN_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Transpiration with no stress'                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -11927,7 +11943,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_psi_closed                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PSI_CLOSED_PY        :11:hist:anal'     )
+                           ,'FMEAN_PSI_CLOSED_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Transpiration at maximum stress'             &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -11936,7 +11952,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_water_supply                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WATER_SUPPLY_PY      :11:hist:anal'     )
+                           ,'FMEAN_WATER_SUPPLY_PY      :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water supply'                                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -11945,7 +11961,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_par_l                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PAR_L_PY             :11:hist:anal'     )
+                           ,'FMEAN_PAR_L_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - PAR absorbed by leaves'                      &
                            ,'[       W/m2]','(ipoly)'            )
@@ -11954,7 +11970,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_par_l_beam                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PAR_L_BEAM_PY        :11:hist:anal'     )
+                           ,'FMEAN_PAR_L_BEAM_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Direct PAR absorbed by leaves'               &
                            ,'[       W/m2]','(ipoly)'            )
@@ -11963,7 +11979,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_par_l_diff                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PAR_L_DIFF_PY        :11:hist:anal'     )
+                           ,'FMEAN_PAR_L_DIFF_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Diffuse PAR absorbed by leaves'              &
                            ,'[       W/m2]','(ipoly)'            )
@@ -11972,7 +11988,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rshort_l                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RSHORT_L_PY          :11:hist:anal'     )
+                           ,'FMEAN_RSHORT_L_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation absorbed by leaves'      &
                            ,'[       W/m2]','(ipoly)'            )
@@ -11981,7 +11997,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rlong_l                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONG_L_PY           :11:hist:anal'     )
+                           ,'FMEAN_RLONG_L_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation absorbed by leaves'       &
                            ,'[       W/m2]','(ipoly)'            )
@@ -11990,7 +12006,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sensible_lc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_LC_PY       :11:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_LC_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat'                               &
                            ,'[       W/m2]','(ipoly)'            )
@@ -11999,7 +12015,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_vapor_lc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VAPOR_LC_PY          :11:hist:anal'     )
+                           ,'FMEAN_VAPOR_LC_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf evaporation'                            &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12008,7 +12024,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_transp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_TRANSP_PY            :11:hist:anal'     )
+                           ,'FMEAN_TRANSP_PY            :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf transpiration'                          &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12017,7 +12033,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_intercepted_al                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_INTERCEPTED_AL_PY    :11:hist:anal'     )
+                           ,'FMEAN_INTERCEPTED_AL_PY    :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf interception'                           &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12026,7 +12042,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wshed_lg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WSHED_LG_PY          :11:hist:anal'     )
+                           ,'FMEAN_WSHED_LG_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf shedding'                               &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12035,7 +12051,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rshort_w                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RSHORT_W_PY          :11:hist:anal'     )
+                           ,'FMEAN_RSHORT_W_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation absorbed by wood'        &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12044,7 +12060,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rlong_w                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONG_W_PY           :11:hist:anal'     )
+                           ,'FMEAN_RLONG_W_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation absorbed by wood'         &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12053,7 +12069,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sensible_wc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_WC_PY       :11:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_WC_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat'                               &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12062,7 +12078,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_vapor_wc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VAPOR_WC_PY          :11:hist:anal'     )
+                           ,'FMEAN_VAPOR_WC_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood evaporation'                            &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12071,7 +12087,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_intercepted_aw                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_INTERCEPTED_AW_PY    :11:hist:anal'     )
+                           ,'FMEAN_INTERCEPTED_AW_PY    :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood interception'                           &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12080,7 +12096,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_wshed_wg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_WSHED_WG_PY          :11:hist:anal'     )
+                           ,'FMEAN_WSHED_WG_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood shedding'                               &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12089,7 +12105,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rh                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RH_PY                :11:hist:anal'     )
+                           ,'FMEAN_RH_PY                :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Heterotrophic respiration'                   &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -12098,7 +12114,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_cwd_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CWD_RH_PY            :11:hist:anal'     )
+                           ,'FMEAN_CWD_RH_PY            :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Coarse woody debris respiration'             &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -12107,7 +12123,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_nep                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_NEP_PY               :11:hist:anal'     )
+                           ,'FMEAN_NEP_PY               :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net Ecosystem productivity'                  &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -12116,7 +12132,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rk4step                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RK4STEP_PY           :11:hist:anal'     )
+                           ,'FMEAN_RK4STEP_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - RK4 time step'                               &
                            ,'[          s]','(ipoly)'            )
@@ -12125,7 +12141,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_available_water                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_AVAILABLE_WATER_PY   :11:hist:anal'     )
+                           ,'FMEAN_AVAILABLE_WATER_PY   :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Available water'                             &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -12134,7 +12150,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_THEIV_PY         :11:hist:anal'     )
+                           ,'FMEAN_CAN_THEIV_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ice-vapour equiv. pot. temperature - CAS'    &
                            ,'[          K]','(ipoly)'            )
@@ -12143,7 +12159,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_THETA_PY         :11:hist:anal'     )
+                           ,'FMEAN_CAN_THETA_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Potential temperature - CAS'                 &
                            ,'[          K]','(ipoly)'            )
@@ -12152,7 +12168,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_VPDEF_PY         :11:hist:anal'     )
+                           ,'FMEAN_CAN_VPDEF_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Vapour pressure deficit - CAS'               &
                            ,'[         Pa]','(ipoly)'            )
@@ -12161,7 +12177,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_TEMP_PY          :11:hist:anal'     )
+                           ,'FMEAN_CAN_TEMP_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Temperature - CAS'                           &
                            ,'[          K]','(ipoly)'            )
@@ -12170,7 +12186,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_SHV_PY           :11:hist:anal'     )
+                           ,'FMEAN_CAN_SHV_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Specific humidity - CAS'                     &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -12179,7 +12195,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_CO2_PY           :11:hist:anal'     )
+                           ,'FMEAN_CAN_CO2_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 mixing ratio - CAS'                      &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -12188,7 +12204,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_RHOS_PY          :11:hist:anal'     )
+                           ,'FMEAN_CAN_RHOS_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Air density - CAS'                           &
                            ,'[      kg/m3]','(ipoly)'            )
@@ -12197,7 +12213,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_PRSS_PY          :11:hist:anal'     )
+                           ,'FMEAN_CAN_PRSS_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Pressure - CAS'                              &
                            ,'[         Pa]','(ipoly)'            )
@@ -12206,7 +12222,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_gnd_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_GND_TEMP_PY          :11:hist:anal'     )
+                           ,'FMEAN_GND_TEMP_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ground temperature'                          &
                            ,'[          K]','(ipoly)'            )
@@ -12215,7 +12231,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_gnd_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_GND_SHV_PY           :11:hist:anal'     )
+                           ,'FMEAN_GND_SHV_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ground specific humidity'                    &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -12224,7 +12240,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_ggnd                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_GGND_PY          :11:hist:anal'     )
+                           ,'FMEAN_CAN_GGND_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net canopy conductance'                      &
                            ,'[        m/2]','(ipoly)'            )
@@ -12233,7 +12249,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sfcw_depth                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_DEPTH_PY        :11:hist:anal'     )
+                           ,'FMEAN_SFCW_DEPTH_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Depth - temporary water layer'               &
                            ,'[          m]','(ipoly)'            )
@@ -12242,7 +12258,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sfcw_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_ENERGY_PY       :11:hist:anal'     )
+                           ,'FMEAN_SFCW_ENERGY_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Internal energy - temporary water layer'     &
                            ,'[       J/kg]','(ipoly)'            )
@@ -12251,7 +12267,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sfcw_mass                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_MASS_PY         :11:hist:anal'     )
+                           ,'FMEAN_SFCW_MASS_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water mass - temporary water layer'          &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -12260,7 +12276,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sfcw_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_TEMP_PY         :11:hist:anal'     )
+                           ,'FMEAN_SFCW_TEMP_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Temperature - temporary water layer'         &
                            ,'[          K]','(ipoly)'            )
@@ -12269,7 +12285,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sfcw_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_FLIQ_PY         :11:hist:anal'     )
+                           ,'FMEAN_SFCW_FLIQ_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Liquid fraction - temporary water layer'     &
                            ,'[         --]','(ipoly)'            )
@@ -12278,7 +12294,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rshort_gnd                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RSHORT_GND_PY        :11:hist:anal'     )
+                           ,'FMEAN_RSHORT_GND_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation absorbed by ground'      &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12287,7 +12303,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_par_gnd                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PAR_GND_PY           :11:hist:anal'     )
+                           ,'FMEAN_PAR_GND_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - PAR absorbed by ground'                      &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12296,7 +12312,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rlong_gnd                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONG_GND_PY         :11:hist:anal'     )
+                           ,'FMEAN_RLONG_GND_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation absorbed by ground'       &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12305,7 +12321,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rlongup                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONGUP_PY           :11:hist:anal'     )
+                           ,'FMEAN_RLONGUP_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing longwave radiation'                 &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12314,7 +12330,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_parup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PARUP_PY             :11:hist:anal'     )
+                           ,'FMEAN_PARUP_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing PAR'                                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12323,7 +12339,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_nirup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_NIRUP_PY             :11:hist:anal'     )
+                           ,'FMEAN_NIRUP_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing near infra-red radiation'           &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12332,7 +12348,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rshortup                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RSHORTUP_PY          :11:hist:anal'     )
+                           ,'FMEAN_RSHORTUP_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing shortwave radiation'                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12341,7 +12357,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rnet                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RNET_PY              :11:hist:anal'     )
+                           ,'FMEAN_RNET_PY              :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net radiation at top of canopy'              &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12350,7 +12366,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_albedo                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ALBEDO_PY            :11:hist:anal'     )
+                           ,'FMEAN_ALBEDO_PY            :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Albedo'                                      &
                            ,'[       ----]','(ipoly)'            )
@@ -12359,7 +12375,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_albedo_beam                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ALBEDO_BEAM_PY       :11:hist:anal'     )
+                           ,'FMEAN_ALBEDO_BEAM_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Albedo - direct radiation'                   &
                            ,'[       ----]','(ipoly)'            )
@@ -12368,7 +12384,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_albedo_diff                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ALBEDO_DIFF_PY       :11:hist:anal'     )
+                           ,'FMEAN_ALBEDO_DIFF_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Albedo - diffuse radiation'                  &
                            ,'[       ----]','(ipoly)'            )
@@ -12377,7 +12393,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rlong_albedo                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONG_ALBEDO_PY      :11:hist:anal'     )
+                           ,'FMEAN_RLONG_ALBEDO_PY      :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Kind of albedo - longwave radiation'         &
                            ,'[       ----]','(ipoly)'            )
@@ -12386,7 +12402,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_ustar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_USTAR_PY             :11:hist:anal'     )
+                           ,'FMEAN_USTAR_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Friction velocity'                           &
                            ,'[        m/s]','(ipoly)'            )
@@ -12395,7 +12411,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_tstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_TSTAR_PY             :11:hist:anal'     )
+                           ,'FMEAN_TSTAR_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gradient scale for potential temperature'    &
                            ,'[          K]','(ipoly)'            )
@@ -12404,7 +12420,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_qstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QSTAR_PY             :11:hist:anal'     )
+                           ,'FMEAN_QSTAR_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gradient scale for specific humidity'        &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -12413,7 +12429,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_cstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CSTAR_PY             :11:hist:anal'     )
+                           ,'FMEAN_CSTAR_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gradient scale for CO2 mixing ratio'         &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -12422,7 +12438,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_carbon_ac                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CARBON_AC_PY         :11:hist:anal'     )
+                           ,'FMEAN_CARBON_AC_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 flux: atmosphere -> CAS'                 &
                            ,'[  umol/m2/s]','(ipoly)'            )
@@ -12431,7 +12447,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_carbon_st                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CARBON_ST_PY         :11:hist:anal'     )
+                           ,'FMEAN_CARBON_ST_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 storage at CAS'                          &
                            ,'[  umol/m2/s]','(ipoly)'            )
@@ -12440,7 +12456,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_vapor_gc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VAPOR_GC_PY          :11:hist:anal'     )
+                           ,'FMEAN_VAPOR_GC_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water vapour flux: ground -> CAS'            &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12449,7 +12465,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_vapor_ac                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VAPOR_AC_PY          :11:hist:anal'     )
+                           ,'FMEAN_VAPOR_AC_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water vapour flux: atmosphere -> CAS'        &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12458,7 +12474,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_throughfall                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_THROUGHFALL_PY       :11:hist:anal'     )
+                           ,'FMEAN_THROUGHFALL_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Throughfall rate'                            &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12467,7 +12483,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_runoff                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RUNOFF_PY            :11:hist:anal'     )
+                           ,'FMEAN_RUNOFF_PY            :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water runoff'                                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12476,7 +12492,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_drainage                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_DRAINAGE_PY          :11:hist:anal'     )
+                           ,'FMEAN_DRAINAGE_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water drainage'                              &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12485,7 +12501,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sensible_gc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_GC_PY       :11:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_GC_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat flux: ground -> CAS'           &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12494,7 +12510,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sensible_ac                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_AC_PY       :11:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_AC_PY       :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat flux: atmosphere -> CAS'       &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12503,7 +12519,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_qthroughfall                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QTHROUGHFALL_PY      :11:hist:anal'     )
+                           ,'FMEAN_QTHROUGHFALL_PY      :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Throughfall rate'                            &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12512,7 +12528,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_qrunoff                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QRUNOFF_PY           :11:hist:anal'     )
+                           ,'FMEAN_QRUNOFF_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Surface runoff'                              &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12521,7 +12537,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_qdrainage                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QDRAINAGE_PY         :11:hist:anal'     )
+                           ,'FMEAN_QDRAINAGE_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Drainage energy loss'                        &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12530,7 +12546,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_THEIV_PY         :11:hist:anal'     )
+                           ,'FMEAN_ATM_THEIV_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ice-vapour equiv. pot. temp.: Atmosphere'    &
                            ,'[          K]','(ipoly)'            )
@@ -12539,7 +12555,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_THETA_PY         :11:hist:anal'     )
+                           ,'FMEAN_ATM_THETA_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Potential temperature: Atmosphere'           &
                            ,'[          K]','(ipoly)'            )
@@ -12548,7 +12564,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_TEMP_PY          :11:hist:anal'     )
+                           ,'FMEAN_ATM_TEMP_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Temperature: Atmosphere'                     &
                            ,'[          K]','(ipoly)'            )
@@ -12557,7 +12573,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_VPDEF_PY         :11:hist:anal'     )
+                           ,'FMEAN_ATM_VPDEF_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Vapour pressure deficit: Atmosphere'         &
                            ,'[         Pa]','(ipoly)'            )
@@ -12566,7 +12582,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_SHV_PY           :11:hist:anal'     )
+                           ,'FMEAN_ATM_SHV_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Specific humidity: Atmosphere'               &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -12575,7 +12591,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_rshort                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RSHORT_PY        :11:hist:anal'     )
+                           ,'FMEAN_ATM_RSHORT_PY        :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation: Atmosphere'             &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12584,7 +12600,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RSHORT_DIFF_PY   :11:hist:anal'     )
+                           ,'FMEAN_ATM_RSHORT_DIFF_PY   :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Diffuse SW radiation: Atmosphere'            &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12593,7 +12609,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_par                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_PAR_PY           :11:hist:anal'     )
+                           ,'FMEAN_ATM_PAR_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - PAR: Atmosphere'                             &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12602,7 +12618,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_par_diff                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_PAR_DIFF_PY      :11:hist:anal'     )
+                           ,'FMEAN_ATM_PAR_DIFF_PY      :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Diffuse PAR: Atmosphere'                     &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12611,7 +12627,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_rlong                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RLONG_PY         :11:hist:anal'     )
+                           ,'FMEAN_ATM_RLONG_PY         :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation: Atmosphere'              &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12620,7 +12636,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_vels                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_VELS_PY          :11:hist:anal'     )
+                           ,'FMEAN_ATM_VELS_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wind speed: atmosphere'                      &
                            ,'[        m/s]','(ipoly)'            )
@@ -12629,7 +12645,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RHOS_PY          :11:hist:anal'     )
+                           ,'FMEAN_ATM_RHOS_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Air density: Atmosphere'                     &
                            ,'[      kg/m3]','(ipoly)'            )
@@ -12638,7 +12654,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_PRSS_PY          :11:hist:anal'     )
+                           ,'FMEAN_ATM_PRSS_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Air pressure: Atmosphere'                    &
                            ,'[         Pa]','(ipoly)'            )
@@ -12647,7 +12663,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_atm_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_CO2_PY           :11:hist:anal'     )
+                           ,'FMEAN_ATM_CO2_PY           :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 mixing ratio: Atmosphere'                &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -12656,7 +12672,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_pcpg                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PCPG_PY              :11:hist:anal'     )
+                           ,'FMEAN_PCPG_PY              :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Precipitation rate'                          &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -12665,7 +12681,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_qpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QPCPG_PY             :11:hist:anal'     )
+                           ,'FMEAN_QPCPG_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Energy gain - rain'                          &
                            ,'[       W/m2]','(ipoly)'            )
@@ -12674,7 +12690,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_dpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_DPCPG_PY             :11:hist:anal'     )
+                           ,'FMEAN_DPCPG_PY             :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Precipitation depth'                         &
                            ,'[          m]','(ipoly)'            )
@@ -12683,7 +12699,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_soil_wetness                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_WETNESS_PY      :11:hist:anal'     )
+                           ,'FMEAN_SOIL_WETNESS_PY      :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil wetness index'                          &
                            ,'[         --]','(ipoly)'            )
@@ -12692,7 +12708,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_skin_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SKIN_TEMP_PY  :11:hist:anal'  )
+                           ,'FMEAN_SKIN_TEMP_PY  :11:'//trim(fast_keys)  )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Skin temperature'                            &
                            ,'[          K]','(ipoly)'            )
@@ -12721,19 +12737,31 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype), target        :: cgrid
-      integer     , intent(in)    :: init
-      integer     , intent(in)    :: igr
-      integer     , intent(in)    :: var_len
-      integer     , intent(in)    :: max_ptrs
-      integer     , intent(in)    :: var_len_global
-      integer     , intent(inout) :: nvar
+      type(edtype)          , target        :: cgrid
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: npts
+      integer                               :: npts
+      character(len=str_len)                :: dail_keys
       !------------------------------------------------------------------------------------!
 
 
-      
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to save daily mean to history or not.                           !
+      !------------------------------------------------------------------------------------!
+      if (history_dail) then
+         dail_keys = 'hist:dail'
+      else
+         dail_keys = 'dail'
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     This is the 1-D block.  All variables must have the number of points defined   !
@@ -12746,7 +12774,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppleaf                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPPLEAF_PY           :11:hist:dail'     )
+                           ,'DMEAN_NPPLEAF_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Leaf'                 &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12755,7 +12783,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppfroot                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPPFROOT_PY          :11:hist:dail'     )
+                           ,'DMEAN_NPPFROOT_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Fine root'            &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12764,7 +12792,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppsapwood                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPPSAPWOOD_PY        :11:hist:dail'     )
+                           ,'DMEAN_NPPSAPWOOD_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Sap wood'             &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12773,7 +12801,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppcroot                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPPCROOT_PY          :11:hist:dail'     )
+                           ,'DMEAN_NPPCROOT_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Coarse root'          &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12782,7 +12810,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppseeds                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPPSEEDS_PY          :11:hist:dail'     )
+                           ,'DMEAN_NPPSEEDS_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - seeds'                &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12791,7 +12819,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppwood                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPPWOOD_PY           :11:hist:dail'     )
+                           ,'DMEAN_NPPWOOD_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - heart wood'           &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12800,7 +12828,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppdaily                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPPDAILY_PY          :11:hist:dail'     )
+                           ,'DMEAN_NPPDAILY_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - total'                &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12809,7 +12837,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_A_decomp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_A_DECOMP_PY          :11:hist:dail'     )
+                           ,'DMEAN_A_DECOMP_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Decomposition scale'                             &
                            ,'[         --]','(ipoly)'            )
@@ -12818,7 +12846,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_Af_decomp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_AF_DECOMP_PY         :11:hist:dail'     )
+                           ,'DMEAN_AF_DECOMP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Decomposition scale with N immobilisation'       &
                            ,'[         --]','(ipoly)'            )
@@ -12827,7 +12855,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_co2_residual                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CO2_RESIDUAL_PY      :11:hist:dail'     )
+                           ,'DMEAN_CO2_RESIDUAL_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Budget check - CO2 residual'                     &
                            ,'[    umol/m2]','(ipoly)'            )
@@ -12836,7 +12864,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_energy_residual                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ENERGY_RESIDUAL_PY   :11:hist:dail'     )
+                           ,'DMEAN_ENERGY_RESIDUAL_PY   :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Budget check - Enthalpy residual'                &
                            ,'[       J/m2]','(ipoly)'            )
@@ -12845,7 +12873,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_water_residual                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WATER_RESIDUAL_PY    :11:hist:dail'     )
+                           ,'DMEAN_WATER_RESIDUAL_PY    :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Budget check - Water residual'                   &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -12854,7 +12882,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_gpp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_GPP_PY               :11:hist:dail'     )
+                           ,'DMEAN_GPP_PY               :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gross primary productivity'                      &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12863,7 +12891,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_npp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NPP_PY               :11:hist:dail'     )
+                           ,'DMEAN_NPP_PY               :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity'                        &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12872,7 +12900,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_RESP_PY         :11:hist:dail'     )
+                           ,'DMEAN_LEAF_RESP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf respiration'                                &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12881,7 +12909,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_root_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ROOT_RESP_PY         :11:hist:dail'     )
+                           ,'DMEAN_ROOT_RESP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root respiration'                                &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12890,7 +12918,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_growth_resp                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_GROWTH_RESP_PY       :11:hist:dail'     )
+                           ,'DMEAN_GROWTH_RESP_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Growth respiration'                              &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12899,7 +12927,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_storage_resp                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_STORAGE_RESP_PY      :11:hist:dail'     )
+                           ,'DMEAN_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Storage respiration'                             &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12908,7 +12936,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_vleaf_resp                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VLEAF_RESP_PY        :11:hist:dail'     )
+                           ,'DMEAN_VLEAF_RESP_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Virtual leaf respiration'                        &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12917,7 +12945,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_plresp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PLRESP_PY            :11:hist:dail'     )
+                           ,'DMEAN_PLRESP_PY            :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Plant respiration'                               &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -12926,7 +12954,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_ENERGY_PY       :11:hist:dail'     )
+                           ,'DMEAN_LEAF_ENERGY_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf internal energy'                            &
                            ,'[       J/m2]','(ipoly)'            )
@@ -12935,7 +12963,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_WATER_PY        :11:hist:dail'     )
+                           ,'DMEAN_LEAF_WATER_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf surface water'                              &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -12944,7 +12972,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_HCAP_PY         :11:hist:dail'     )
+                           ,'DMEAN_LEAF_HCAP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf heat capacity'                              &
                            ,'[     J/m2/K]','(ipoly)'            )
@@ -12953,7 +12981,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_vpdef                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_VPDEF_PY        :11:hist:dail'     )
+                           ,'DMEAN_LEAF_VPDEF_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf vapour pressure deficit'                    &
                            ,'[         Pa]','(ipoly)'            )
@@ -12962,7 +12990,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_TEMP_PY         :11:hist:dail'     )
+                           ,'DMEAN_LEAF_TEMP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf temperature'                                &
                            ,'[          K]','(ipoly)'            )
@@ -12971,7 +12999,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_FLIQ_PY         :11:hist:dail'     )
+                           ,'DMEAN_LEAF_FLIQ_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Liquid fraction'                                 &
                            ,'[         --]','(ipoly)'            )
@@ -12980,7 +13008,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_gsw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_GSW_PY          :11:hist:dail'     )
+                           ,'DMEAN_LEAF_GSW_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Stomatal conductance'                            &
                            ,'[kg/m2leaf/s]','(ipoly)'            )
@@ -12989,7 +13017,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_LEAF_GBW_PY          :11:hist:dail'     )
+                           ,'DMEAN_LEAF_GBW_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf boundary layer conductance'                 &
                            ,'[kg/m2leaf/s]','(ipoly)'            )
@@ -12998,7 +13026,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wood_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WOOD_ENERGY_PY       :11:hist:dail'     )
+                           ,'DMEAN_WOOD_ENERGY_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood internal energy'                            &
                            ,'[       J/m2]','(ipoly)'            )
@@ -13007,7 +13035,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wood_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WOOD_WATER_PY        :11:hist:dail'     )
+                           ,'DMEAN_WOOD_WATER_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood surface water'                              &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -13016,7 +13044,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wood_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WOOD_HCAP_PY         :11:hist:dail'     )
+                           ,'DMEAN_WOOD_HCAP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood heat capacity'                              &
                            ,'[     J/m2/K]','(ipoly)'            )
@@ -13025,7 +13053,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wood_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WOOD_TEMP_PY         :11:hist:dail'     )
+                           ,'DMEAN_WOOD_TEMP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood temperature'                                &
                            ,'[          K]','(ipoly)'            )
@@ -13034,7 +13062,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wood_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WOOD_FLIQ_PY         :11:hist:dail'     )
+                           ,'DMEAN_WOOD_FLIQ_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Liquid fraction'                                 &
                            ,'[         --]','(ipoly)'            )
@@ -13043,7 +13071,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wood_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WOOD_GBW_PY          :11:hist:dail'     )
+                           ,'DMEAN_WOOD_GBW_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood boundary layer conductance'                 &
                            ,'[kg/m2wood/s]','(ipoly)'            )
@@ -13052,7 +13080,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_fs_open                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_FS_OPEN_PY           :11:hist:dail'     )
+                           ,'DMEAN_FS_OPEN_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net stress factor'                               &
                            ,'[         --]','(ipoly)'            )
@@ -13061,7 +13089,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_fsw                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_FSW_PY               :11:hist:dail'     )
+                           ,'DMEAN_FSW_PY               :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Moisture stress'                                 &
                            ,'[         --]','(ipoly)'            )
@@ -13070,7 +13098,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_fsn                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_FSN_PY               :11:hist:dail'     )
+                           ,'DMEAN_FSN_PY               :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Nitrogen stress'                                 &
                            ,'[         --]','(ipoly)'            )
@@ -13079,7 +13107,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_psi_open                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PSI_OPEN_PY          :11:hist:dail'     )
+                           ,'DMEAN_PSI_OPEN_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Transpiration with no stress'                    &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13088,7 +13116,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_psi_closed                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PSI_CLOSED_PY        :11:hist:dail'     )
+                           ,'DMEAN_PSI_CLOSED_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Transpiration at maximum stress'                 &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13097,7 +13125,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_water_supply                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WATER_SUPPLY_PY      :11:hist:dail'     )
+                           ,'DMEAN_WATER_SUPPLY_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water supply'                                    &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13106,7 +13134,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_par_l                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PAR_L_PY             :11:hist:dail'     )
+                           ,'DMEAN_PAR_L_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - PAR absorbed by leaves'                          &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13115,7 +13143,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_par_l_beam                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PAR_L_BEAM_PY        :11:hist:dail'     )
+                           ,'DMEAN_PAR_L_BEAM_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Direct PAR absorbed by leaves'                   &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13124,7 +13152,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_par_l_diff                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PAR_L_DIFF_PY        :11:hist:dail'     )
+                           ,'DMEAN_PAR_L_DIFF_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Diffuse PAR absorbed by leaves'                  &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13133,7 +13161,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rshort_l                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RSHORT_L_PY          :11:hist:dail'     )
+                           ,'DMEAN_RSHORT_L_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation absorbed by leaves'          &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13142,7 +13170,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rlong_l                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONG_L_PY           :11:hist:dail'     )
+                           ,'DMEAN_RLONG_L_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation absorbed by leaves'           &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13151,7 +13179,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sensible_lc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_LC_PY       :11:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_LC_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat'                                   &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13160,7 +13188,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_vapor_lc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VAPOR_LC_PY          :11:hist:dail'     )
+                           ,'DMEAN_VAPOR_LC_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf evaporation'                                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13169,7 +13197,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_transp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_TRANSP_PY            :11:hist:dail'     )
+                           ,'DMEAN_TRANSP_PY            :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf transpiration'                              &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13178,7 +13206,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_intercepted_al                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_INTERCEPTED_AL_PY    :11:hist:dail'     )
+                           ,'DMEAN_INTERCEPTED_AL_PY    :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf interception'                               &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13187,7 +13215,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wshed_lg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WSHED_LG_PY          :11:hist:dail'     )
+                           ,'DMEAN_WSHED_LG_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf shedding'                                   &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13196,7 +13224,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rshort_w                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RSHORT_W_PY          :11:hist:dail'     )
+                           ,'DMEAN_RSHORT_W_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation absorbed by wood'            &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13205,7 +13233,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rlong_w                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONG_W_PY           :11:hist:dail'     )
+                           ,'DMEAN_RLONG_W_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation absorbed by wood'             &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13214,7 +13242,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sensible_wc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_WC_PY       :11:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_WC_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat'                                   &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13223,7 +13251,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_vapor_wc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VAPOR_WC_PY          :11:hist:dail'     )
+                           ,'DMEAN_VAPOR_WC_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood evaporation'                                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13232,7 +13260,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_intercepted_aw                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_INTERCEPTED_AW_PY    :11:hist:dail'     )
+                           ,'DMEAN_INTERCEPTED_AW_PY    :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood interception'                               &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13241,7 +13269,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_wshed_wg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WSHED_WG_PY          :11:hist:dail'     )
+                           ,'DMEAN_WSHED_WG_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood shedding'                                   &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13250,7 +13278,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rh                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RH_PY                :11:hist:dail'     )
+                           ,'DMEAN_RH_PY                :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Heterotrophic respiration'                       &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -13259,7 +13287,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_cwd_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CWD_RH_PY            :11:hist:dail'     )
+                           ,'DMEAN_CWD_RH_PY            :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Coarse woody debris respiration'                 &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -13268,7 +13296,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nep                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NEP_PY               :11:hist:dail'     )
+                           ,'DMEAN_NEP_PY               :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net Ecosystem productivity'                      &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -13277,7 +13305,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rk4step                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RK4STEP_PY           :11:hist:dail'     )
+                           ,'DMEAN_RK4STEP_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - RK4 time step'                                   &
                            ,'[          s]','(ipoly)'            )
@@ -13286,7 +13314,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_available_water                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_AVAILABLE_WATER_PY   :11:hist:dail'     )
+                           ,'DMEAN_AVAILABLE_WATER_PY   :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Available water'                                 &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -13295,7 +13323,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_THEIV_PY         :11:hist:dail'     )
+                           ,'DMEAN_CAN_THEIV_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ice-vapour equiv. pot. temperature - CAS'        &
                            ,'[          K]','(ipoly)'            )
@@ -13304,7 +13332,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_THETA_PY         :11:hist:dail'     )
+                           ,'DMEAN_CAN_THETA_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Potential temperature - CAS'                     &
                            ,'[          K]','(ipoly)'            )
@@ -13313,7 +13341,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_VPDEF_PY         :11:hist:dail'     )
+                           ,'DMEAN_CAN_VPDEF_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Vapour pressure deficit - CAS'                   &
                            ,'[         Pa]','(ipoly)'            )
@@ -13322,7 +13350,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_TEMP_PY          :11:hist:dail'     )
+                           ,'DMEAN_CAN_TEMP_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Temperature - CAS'                               &
                            ,'[          K]','(ipoly)'            )
@@ -13331,7 +13359,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_SHV_PY           :11:hist:dail'     )
+                           ,'DMEAN_CAN_SHV_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Specific humidity - CAS'                         &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -13340,7 +13368,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_CO2_PY           :11:hist:dail'     )
+                           ,'DMEAN_CAN_CO2_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 mixing ratio - CAS'                          &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -13349,7 +13377,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_RHOS_PY          :11:hist:dail'     )
+                           ,'DMEAN_CAN_RHOS_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Air density - CAS'                               &
                            ,'[      kg/m3]','(ipoly)'            )
@@ -13358,7 +13386,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_PRSS_PY          :11:hist:dail'     )
+                           ,'DMEAN_CAN_PRSS_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Pressure - CAS'                                  &
                            ,'[         Pa]','(ipoly)'            )
@@ -13367,7 +13395,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_gnd_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_GND_TEMP_PY          :11:hist:dail'     )
+                           ,'DMEAN_GND_TEMP_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ground temperature'                              &
                            ,'[          K]','(ipoly)'            )
@@ -13376,7 +13404,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_gnd_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_GND_SHV_PY           :11:hist:dail'     )
+                           ,'DMEAN_GND_SHV_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ground specific humidity'                        &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -13385,7 +13413,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_ggnd                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_GGND_PY          :11:hist:dail'     )
+                           ,'DMEAN_CAN_GGND_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net canopy conductance'                          &
                            ,'[        m/2]','(ipoly)'            )
@@ -13394,7 +13422,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sfcw_depth                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_DEPTH_PY        :11:hist:dail'     )
+                           ,'DMEAN_SFCW_DEPTH_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Depth - temporary water layer'                   &
                            ,'[          m]','(ipoly)'            )
@@ -13403,7 +13431,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sfcw_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_ENERGY_PY       :11:hist:dail'     )
+                           ,'DMEAN_SFCW_ENERGY_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Internal energy - temporary water layer'         &
                            ,'[       J/kg]','(ipoly)'            )
@@ -13412,7 +13440,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sfcw_mass                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_MASS_PY         :11:hist:dail'     )
+                           ,'DMEAN_SFCW_MASS_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water mass - temporary water layer'              &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -13421,7 +13449,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sfcw_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_TEMP_PY         :11:hist:dail'     )
+                           ,'DMEAN_SFCW_TEMP_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Temperature - temporary water layer'             &
                            ,'[          K]','(ipoly)'            )
@@ -13430,7 +13458,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sfcw_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_FLIQ_PY         :11:hist:dail'     )
+                           ,'DMEAN_SFCW_FLIQ_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Liquid fraction - temporary water layer'         &
                            ,'[         --]','(ipoly)'            )
@@ -13439,7 +13467,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rshort_gnd                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RSHORT_GND_PY        :11:hist:dail'     )
+                           ,'DMEAN_RSHORT_GND_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation absorbed by ground'          &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13448,7 +13476,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_par_gnd                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PAR_GND_PY           :11:hist:dail'     )
+                           ,'DMEAN_PAR_GND_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - PAR absorbed by ground'                          &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13457,7 +13485,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rlong_gnd                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONG_GND_PY         :11:hist:dail'     )
+                           ,'DMEAN_RLONG_GND_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation absorbed by ground'           &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13466,7 +13494,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rlongup                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONGUP_PY           :11:hist:dail'     )
+                           ,'DMEAN_RLONGUP_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing longwave radiation'                     &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13475,7 +13503,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_parup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PARUP_PY             :11:hist:dail'     )
+                           ,'DMEAN_PARUP_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing PAR'                                    &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13484,7 +13512,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nirup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NIRUP_PY             :11:hist:dail'     )
+                           ,'DMEAN_NIRUP_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing near infra-red radiation'               &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13493,7 +13521,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rshortup                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RSHORTUP_PY          :11:hist:dail'     )
+                           ,'DMEAN_RSHORTUP_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing shortwave radiation'                    &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13502,7 +13530,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rnet                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RNET_PY              :11:hist:dail'     )
+                           ,'DMEAN_RNET_PY              :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net radiation at top of canopy'                  &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13511,7 +13539,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_albedo                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ALBEDO_PY            :11:hist:dail'     )
+                           ,'DMEAN_ALBEDO_PY            :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Albedo'                                          &
                            ,'[       ----]','(ipoly)'            )
@@ -13520,7 +13548,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_albedo_beam                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ALBEDO_BEAM_PY       :11:hist:dail'     )
+                           ,'DMEAN_ALBEDO_BEAM_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Albedo - direct radiation'                       &
                            ,'[       ----]','(ipoly)'            )
@@ -13529,7 +13557,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_albedo_diff                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ALBEDO_DIFF_PY       :11:hist:dail'     )
+                           ,'DMEAN_ALBEDO_DIFF_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Albedo - diffuse radiation'                      &
                            ,'[       ----]','(ipoly)'            )
@@ -13538,7 +13566,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rlong_albedo                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONG_ALBEDO_PY      :11:hist:dail'     )
+                           ,'DMEAN_RLONG_ALBEDO_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Kind of albedo - longwave radiation'             &
                            ,'[       ----]','(ipoly)'            )
@@ -13547,7 +13575,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_ustar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_USTAR_PY             :11:hist:dail'     )
+                           ,'DMEAN_USTAR_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Friction velocity'                               &
                            ,'[        m/s]','(ipoly)'            )
@@ -13556,7 +13584,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_tstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_TSTAR_PY             :11:hist:dail'     )
+                           ,'DMEAN_TSTAR_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gradient scale for potential temperature'        &
                            ,'[          K]','(ipoly)'            )
@@ -13565,7 +13593,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_qstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QSTAR_PY             :11:hist:dail'     )
+                           ,'DMEAN_QSTAR_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gradient scale for specific humidity'            &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -13574,7 +13602,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_cstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CSTAR_PY             :11:hist:dail'     )
+                           ,'DMEAN_CSTAR_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gradient scale for CO2 mixing ratio'             &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -13583,7 +13611,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_carbon_ac                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CARBON_AC_PY         :11:hist:dail'     )
+                           ,'DMEAN_CARBON_AC_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 flux: atmosphere -> CAS'                     &
                            ,'[  umol/m2/s]','(ipoly)'            )
@@ -13592,7 +13620,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_carbon_st                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CARBON_ST_PY         :11:hist:dail'     )
+                           ,'DMEAN_CARBON_ST_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 storage at CAS'                              &
                            ,'[  umol/m2/s]','(ipoly)'            )
@@ -13601,7 +13629,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_vapor_gc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VAPOR_GC_PY          :11:hist:dail'     )
+                           ,'DMEAN_VAPOR_GC_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water vapour flux: ground -> CAS'                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13610,7 +13638,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_vapor_ac                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VAPOR_AC_PY          :11:hist:dail'     )
+                           ,'DMEAN_VAPOR_AC_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water vapour flux: atmosphere -> CAS'            &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13619,7 +13647,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_throughfall                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_THROUGHFALL_PY       :11:hist:dail'     )
+                           ,'DMEAN_THROUGHFALL_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Throughfall rate'                                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13628,7 +13656,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_runoff                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RUNOFF_PY            :11:hist:dail'     )
+                           ,'DMEAN_RUNOFF_PY            :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water runoff'                                    &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13637,7 +13665,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_drainage                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_DRAINAGE_PY          :11:hist:dail'     )
+                           ,'DMEAN_DRAINAGE_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water drainage'                                  &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13646,7 +13674,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sensible_gc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_GC_PY       :11:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_GC_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat flux: ground -> CAS'               &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13655,7 +13683,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sensible_ac                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_AC_PY       :11:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_AC_PY       :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat flux: atmosphere -> CAS'           &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13664,7 +13692,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_qthroughfall                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QTHROUGHFALL_PY      :11:hist:dail'     )
+                           ,'DMEAN_QTHROUGHFALL_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Throughfall rate'                                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13673,7 +13701,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_qrunoff                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QRUNOFF_PY           :11:hist:dail'     )
+                           ,'DMEAN_QRUNOFF_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Surface runoff'                                  &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13682,7 +13710,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_qdrainage                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QDRAINAGE_PY         :11:hist:dail'     )
+                           ,'DMEAN_QDRAINAGE_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Drainage energy loss'                            &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13691,7 +13719,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_THEIV_PY         :11:hist:dail'     )
+                           ,'DMEAN_ATM_THEIV_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ice-vapour equiv. pot. temp.: Atmosphere'        &
                            ,'[          K]','(ipoly)'            )
@@ -13700,7 +13728,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_THETA_PY         :11:hist:dail'     )
+                           ,'DMEAN_ATM_THETA_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Potential temperature: Atmosphere'               &
                            ,'[          K]','(ipoly)'            )
@@ -13709,7 +13737,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_TEMP_PY          :11:hist:dail'     )
+                           ,'DMEAN_ATM_TEMP_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Temperature: Atmosphere'                         &
                            ,'[          K]','(ipoly)'            )
@@ -13718,7 +13746,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_VPDEF_PY         :11:hist:dail'     )
+                           ,'DMEAN_ATM_VPDEF_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Vapour pressure deficit: Atmosphere'             &
                            ,'[         Pa]','(ipoly)'            )
@@ -13727,7 +13755,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_SHV_PY           :11:hist:dail'     )
+                           ,'DMEAN_ATM_SHV_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Specific humidity: Atmosphere'                   &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -13736,7 +13764,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_rshort                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RSHORT_PY        :11:hist:dail'     )
+                           ,'DMEAN_ATM_RSHORT_PY        :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation: Atmosphere'                 &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13745,7 +13773,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RSHORT_DIFF_PY   :11:hist:dail'     )
+                           ,'DMEAN_ATM_RSHORT_DIFF_PY   :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Diffuse SW radiation: Atmosphere'                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13754,7 +13782,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_par                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_PAR_PY           :11:hist:dail'     )
+                           ,'DMEAN_ATM_PAR_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - PAR: Atmosphere'                                 &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13763,7 +13791,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_par_diff                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_PAR_DIFF_PY      :11:hist:dail'     )
+                           ,'DMEAN_ATM_PAR_DIFF_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Diffuse PAR: Atmosphere'                         &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13772,7 +13800,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_rlong                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RLONG_PY         :11:hist:dail'     )
+                           ,'DMEAN_ATM_RLONG_PY         :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation: Atmosphere'                  &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13781,7 +13809,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_vels                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_VELS_PY          :11:hist:dail'     )
+                           ,'DMEAN_ATM_VELS_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wind speed: atmosphere'                          &
                            ,'[        m/s]','(ipoly)'            )
@@ -13790,7 +13818,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RHOS_PY          :11:hist:dail'     )
+                           ,'DMEAN_ATM_RHOS_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Air density: Atmosphere'                         &
                            ,'[      kg/m3]','(ipoly)'            )
@@ -13799,7 +13827,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_PRSS_PY          :11:hist:dail'     )
+                           ,'DMEAN_ATM_PRSS_PY          :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Air pressure: Atmosphere'                        &
                            ,'[         Pa]','(ipoly)'            )
@@ -13808,7 +13836,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_atm_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_CO2_PY           :11:hist:dail'     )
+                           ,'DMEAN_ATM_CO2_PY           :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 mixing ratio: Atmosphere'                    &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -13817,7 +13845,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_pcpg                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PCPG_PY              :11:hist:dail'     )
+                           ,'DMEAN_PCPG_PY              :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Precipitation rate'                              &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -13826,7 +13854,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_qpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QPCPG_PY             :11:hist:dail'     )
+                           ,'DMEAN_QPCPG_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Energy gain - rain'                              &
                            ,'[       W/m2]','(ipoly)'            )
@@ -13835,7 +13863,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_dpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_DPCPG_PY             :11:hist:dail'     )
+                           ,'DMEAN_DPCPG_PY             :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Precipitation depth'                             &
                            ,'[          m]','(ipoly)'            )
@@ -13864,19 +13892,32 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype), target        :: cgrid
-      integer     , intent(in)    :: init
-      integer     , intent(in)    :: igr
-      integer     , intent(in)    :: var_len
-      integer     , intent(in)    :: max_ptrs
-      integer     , intent(in)    :: var_len_global
-      integer     , intent(inout) :: nvar
+      type(edtype)          , target        :: cgrid
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
       !------------------------------------------------------------------------------------!
 
 
-      
+
+      !------------------------------------------------------------------------------------!
+      !      Check whether we need to save monthly means to history or not.                !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     This is the 1-D block.  All variables must have the number of points defined   !
@@ -13888,7 +13929,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_gpp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_GPP_PY               :11:hist:mont:dcyc')
+                           ,'MMEAN_GPP_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gross primary productivity'                    &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13897,7 +13938,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_npp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPP_PY               :11:hist:mont:dcyc')
+                           ,'MMEAN_NPP_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity'                      &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13906,7 +13947,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_RESP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_RESP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf respiration'                              &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13915,7 +13956,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_root_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ROOT_RESP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_ROOT_RESP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root respiration'                              &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13924,7 +13965,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_growth_resp                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_GROWTH_RESP_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_GROWTH_RESP_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Growth respiration'                            &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13933,7 +13974,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_storage_resp                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_STORAGE_RESP_PY      :11:hist:mont:dcyc')
+                           ,'MMEAN_STORAGE_RESP_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Storage respiration'                           &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13942,7 +13983,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_vleaf_resp                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VLEAF_RESP_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_VLEAF_RESP_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Virtual leaf respiration'                      &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13951,7 +13992,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_plresp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PLRESP_PY            :11:hist:mont:dcyc')
+                           ,'MMEAN_PLRESP_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Plant respiration'                             &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -13960,7 +14001,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_ENERGY_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_ENERGY_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf internal energy'                          &
                            ,'[       J/m2]','(ipoly)'            )
@@ -13969,7 +14010,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_WATER_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_WATER_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf surface water'                            &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -13978,7 +14019,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_HCAP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_HCAP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf heat capacity'                            &
                            ,'[     J/m2/K]','(ipoly)'            )
@@ -13987,7 +14028,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_vpdef                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_VPDEF_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_VPDEF_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf vapour pressure deficit'                  &
                            ,'[         Pa]','(ipoly)'            )
@@ -13996,7 +14037,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_TEMP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_TEMP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf temperature'                              &
                            ,'[          K]','(ipoly)'            )
@@ -14005,7 +14046,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_FLIQ_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_FLIQ_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction'                               &
                            ,'[         --]','(ipoly)'            )
@@ -14014,7 +14055,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_gsw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_GSW_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_GSW_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Stomatal conductance'                          &
                            ,'[kg/m2leaf/s]','(ipoly)'            )
@@ -14023,7 +14064,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_GBW_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_GBW_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf boundary layer conductance'               &
                            ,'[kg/m2leaf/s]','(ipoly)'            )
@@ -14032,7 +14073,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wood_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WOOD_ENERGY_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_ENERGY_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood internal energy'                          &
                            ,'[       J/m2]','(ipoly)'            )
@@ -14041,7 +14082,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wood_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WOOD_WATER_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_WATER_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood surface water'                            &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -14050,7 +14091,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wood_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WOOD_HCAP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_HCAP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood heat capacity'                            &
                            ,'[     J/m2/K]','(ipoly)'            )
@@ -14059,7 +14100,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wood_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WOOD_TEMP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_TEMP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood temperature'                              &
                            ,'[          K]','(ipoly)'            )
@@ -14068,7 +14109,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wood_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WOOD_FLIQ_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_FLIQ_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction'                               &
                            ,'[         --]','(ipoly)'            )
@@ -14077,7 +14118,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wood_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WOOD_GBW_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_GBW_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood boundary layer conductance'               &
                            ,'[kg/m2wood/s]','(ipoly)'            )
@@ -14086,7 +14127,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_fs_open                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FS_OPEN_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_FS_OPEN_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net stress factor'                             &
                            ,'[         --]','(ipoly)'            )
@@ -14095,7 +14136,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_fsw                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FSW_PY               :11:hist:mont:dcyc')
+                           ,'MMEAN_FSW_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Moisture stress'                               &
                            ,'[         --]','(ipoly)'            )
@@ -14104,7 +14145,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_fsn                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FSN_PY               :11:hist:mont:dcyc')
+                           ,'MMEAN_FSN_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Nitrogen stress'                               &
                            ,'[         --]','(ipoly)'            )
@@ -14113,7 +14154,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_psi_open                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PSI_OPEN_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_PSI_OPEN_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Transpiration with no stress'                  &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14122,7 +14163,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_psi_closed                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PSI_CLOSED_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_PSI_CLOSED_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Transpiration at maximum stress'               &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14131,7 +14172,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_water_supply                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WATER_SUPPLY_PY      :11:hist:mont:dcyc')
+                           ,'MMEAN_WATER_SUPPLY_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water supply'                                  &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14140,7 +14181,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_par_l                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PAR_L_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_PAR_L_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - PAR absorbed by leaves'                        &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14149,7 +14190,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_par_l_beam                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PAR_L_BEAM_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_PAR_L_BEAM_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Direct PAR absorbed by leaves'                 &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14158,7 +14199,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_par_l_diff                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PAR_L_DIFF_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_PAR_L_DIFF_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Diffuse PAR absorbed by leaves'                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14167,7 +14208,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rshort_l                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RSHORT_L_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_RSHORT_L_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation absorbed by leaves'        &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14176,7 +14217,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rlong_l                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONG_L_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_L_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation absorbed by leaves'         &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14185,7 +14226,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sensible_lc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_LC_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_LC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat'                                 &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14194,7 +14235,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_vapor_lc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VAPOR_LC_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_LC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf evaporation'                              &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14203,7 +14244,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_transp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_TRANSP_PY            :11:hist:mont:dcyc')
+                           ,'MMEAN_TRANSP_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf transpiration'                            &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14212,7 +14253,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_intercepted_al                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_INTERCEPTED_AL_PY    :11:hist:mont:dcyc')
+                           ,'MMEAN_INTERCEPTED_AL_PY    :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf interception'                             &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14221,7 +14262,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wshed_lg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WSHED_LG_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_WSHED_LG_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf shedding'                                 &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14230,7 +14271,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rshort_w                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RSHORT_W_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_RSHORT_W_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation absorbed by wood'          &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14239,7 +14280,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rlong_w                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONG_W_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_W_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation absorbed by wood'           &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14248,7 +14289,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sensible_wc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_WC_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_WC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat'                                 &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14257,7 +14298,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_vapor_wc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VAPOR_WC_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_WC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood evaporation'                              &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14266,7 +14307,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_intercepted_aw                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_INTERCEPTED_AW_PY    :11:hist:mont:dcyc')
+                           ,'MMEAN_INTERCEPTED_AW_PY    :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood interception'                             &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14275,7 +14316,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_wshed_wg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WSHED_WG_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_WSHED_WG_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood shedding'                                 &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14284,7 +14325,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rh                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RH_PY                :11:hist:mont:dcyc')
+                           ,'MMEAN_RH_PY                :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Heterotrophic respiration'                     &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -14293,7 +14334,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_cwd_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_RH_PY            :11:hist:mont:dcyc')
+                           ,'MMEAN_CWD_RH_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Coarse woody debris respiration'               &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -14302,7 +14343,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nep                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NEP_PY               :11:hist:mont:dcyc')
+                           ,'MMEAN_NEP_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net Ecosystem productivity'                    &
                            ,'[   kg/m2/yr]','(ipoly)'            )
@@ -14311,7 +14352,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rk4step                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RK4STEP_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_RK4STEP_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - RK4 time step'                                 &
                            ,'[          s]','(ipoly)'            )
@@ -14320,7 +14361,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_available_water                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_AVAILABLE_WATER_PY   :11:hist:mont:dcyc')
+                           ,'MMEAN_AVAILABLE_WATER_PY   :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Available water'                               &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -14329,7 +14370,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_THEIV_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_THEIV_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ice-vapour equiv. pot. temperature - CAS'      &
                            ,'[          K]','(ipoly)'            )
@@ -14338,7 +14379,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_THETA_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_THETA_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Potential temperature - CAS'                   &
                            ,'[          K]','(ipoly)'            )
@@ -14347,7 +14388,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_VPDEF_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_VPDEF_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Vapour pressure deficit - CAS'                 &
                            ,'[         Pa]','(ipoly)'            )
@@ -14356,7 +14397,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_TEMP_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_TEMP_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Temperature - CAS'                             &
                            ,'[          K]','(ipoly)'            )
@@ -14365,7 +14406,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_SHV_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_SHV_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Specific humidity - CAS'                       &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -14374,7 +14415,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_CO2_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_CO2_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 mixing ratio - CAS'                        &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -14383,7 +14424,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_RHOS_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_RHOS_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air density - CAS'                             &
                            ,'[      kg/m3]','(ipoly)'            )
@@ -14392,7 +14433,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_PRSS_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_PRSS_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Pressure - CAS'                                &
                            ,'[         Pa]','(ipoly)'            )
@@ -14401,7 +14442,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_gnd_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_GND_TEMP_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_GND_TEMP_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ground temperature'                            &
                            ,'[          K]','(ipoly)'            )
@@ -14410,7 +14451,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_gnd_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_GND_SHV_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_GND_SHV_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ground specific humidity'                      &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -14419,7 +14460,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_can_ggnd                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_GGND_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_CAN_GGND_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net canopy conductance'                        &
                            ,'[        m/2]','(ipoly)'            )
@@ -14428,7 +14469,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sfcw_depth                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_DEPTH_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_DEPTH_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Depth - temporary water layer'                 &
                            ,'[          m]','(ipoly)'            )
@@ -14437,7 +14478,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sfcw_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_ENERGY_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_ENERGY_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Internal energy - temporary water layer'       &
                            ,'[       J/kg]','(ipoly)'            )
@@ -14446,7 +14487,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sfcw_mass                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_MASS_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_MASS_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water mass - temporary water layer'            &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -14455,7 +14496,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sfcw_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_TEMP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_TEMP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Temperature - temporary water layer'           &
                            ,'[          K]','(ipoly)'            )
@@ -14464,7 +14505,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sfcw_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_FLIQ_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_FLIQ_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction - temporary water layer'       &
                            ,'[         --]','(ipoly)'            )
@@ -14473,7 +14514,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rshort_gnd                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RSHORT_GND_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_RSHORT_GND_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation absorbed by ground'        &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14482,7 +14523,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_par_gnd                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PAR_GND_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_PAR_GND_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - PAR absorbed by ground'                        &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14491,7 +14532,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rlong_gnd                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONG_GND_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_GND_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation absorbed by ground'         &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14500,7 +14541,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rlongup                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONGUP_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_RLONGUP_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing longwave radiation'                   &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14509,7 +14550,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_parup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PARUP_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_PARUP_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing PAR'                                  &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14518,7 +14559,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nirup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NIRUP_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_NIRUP_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing near infra-red radiation'             &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14527,7 +14568,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rshortup                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RSHORTUP_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_RSHORTUP_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing shortwave radiation'                  &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14536,7 +14577,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rnet                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RNET_PY              :11:hist:mont:dcyc')
+                           ,'MMEAN_RNET_PY              :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net radiation at top of canopy'                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14545,7 +14586,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_albedo                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ALBEDO_PY            :11:hist:mont:dcyc')
+                           ,'MMEAN_ALBEDO_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Albedo'                                        &
                            ,'[       ----]','(ipoly)'            )
@@ -14554,7 +14595,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_albedo_beam                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ALBEDO_BEAM_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_ALBEDO_BEAM_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Albedo - direct radiation'                     &
                            ,'[       ----]','(ipoly)'            )
@@ -14563,7 +14604,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_albedo_diff                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ALBEDO_DIFF_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_ALBEDO_DIFF_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Albedo - diffuse radiation'                    &
                            ,'[       ----]','(ipoly)'            )
@@ -14572,7 +14613,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_rlong_albedo                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONG_ALBEDO_PY      :11:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_ALBEDO_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Kind of albedo - longwave radiation'           &
                            ,'[       ----]','(ipoly)'            )
@@ -14581,7 +14622,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_ustar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_USTAR_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_USTAR_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Friction velocity'                             &
                            ,'[        m/s]','(ipoly)'            )
@@ -14590,7 +14631,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_tstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_TSTAR_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_TSTAR_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gradient scale for potential temperature'      &
                            ,'[          K]','(ipoly)'            )
@@ -14599,7 +14640,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_qstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QSTAR_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_QSTAR_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gradient scale for specific humidity'          &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -14608,7 +14649,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_cstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CSTAR_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_CSTAR_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gradient scale for CO2 mixing ratio'           &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -14617,7 +14658,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_carbon_ac                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CARBON_AC_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_CARBON_AC_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 flux: atmosphere -> CAS'                   &
                            ,'[  umol/m2/s]','(ipoly)'            )
@@ -14626,7 +14667,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_carbon_st                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CARBON_ST_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_CARBON_ST_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 storage at CAS'                            &
                            ,'[  umol/m2/s]','(ipoly)'            )
@@ -14635,7 +14676,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_vapor_gc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VAPOR_GC_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_GC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water vapour flux: ground -> CAS'              &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14644,7 +14685,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_vapor_ac                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VAPOR_AC_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_AC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water vapour flux: atmosphere -> CAS'          &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14653,7 +14694,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_throughfall                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_THROUGHFALL_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_THROUGHFALL_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Throughfall rate'                              &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14662,7 +14703,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_runoff                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RUNOFF_PY            :11:hist:mont:dcyc')
+                           ,'MMEAN_RUNOFF_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water runoff'                                  &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14671,7 +14712,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_drainage                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_DRAINAGE_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_DRAINAGE_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water drainage'                                &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14680,7 +14721,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sensible_gc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_GC_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_GC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat flux: ground -> CAS'             &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14689,7 +14730,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sensible_ac                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_AC_PY       :11:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_AC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat flux: atmosphere -> CAS'         &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14698,7 +14739,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_qthroughfall                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QTHROUGHFALL_PY      :11:hist:mont:dcyc')
+                           ,'MMEAN_QTHROUGHFALL_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Throughfall rate'                              &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14707,7 +14748,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_qrunoff                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QRUNOFF_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_QRUNOFF_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Surface runoff'                                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14716,7 +14757,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_qdrainage                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QDRAINAGE_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_QDRAINAGE_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Drainage energy loss'                          &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14725,7 +14766,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppleaf                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPPLEAF_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_NPPLEAF_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Leaf'               &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -14734,7 +14775,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppfroot                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPPFROOT_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_NPPFROOT_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Fine root'          &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -14743,7 +14784,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppsapwood                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPPSAPWOOD_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_NPPSAPWOOD_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Sap wood'           &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -14752,7 +14793,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppcroot                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPPCROOT_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_NPPCROOT_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Coarse root'        &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -14761,7 +14802,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppseeds                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPPSEEDS_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_NPPSEEDS_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - seeds'              &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -14770,7 +14811,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppwood                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPPWOOD_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_NPPWOOD_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - heart wood'         &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -14779,7 +14820,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppdaily                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NPPDAILY_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_NPPDAILY_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - total'              &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -14788,7 +14829,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_A_decomp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_A_DECOMP_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_A_DECOMP_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Decomposition scale'                           &
                            ,'[         --]','(ipoly)'            )
@@ -14797,7 +14838,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_Af_decomp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_AF_DECOMP_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_AF_DECOMP_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Decomposition scale with N immobilisation'     &
                            ,'[         --]','(ipoly)'            )
@@ -14806,7 +14847,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_co2_residual                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CO2_RESIDUAL_PY      :11:hist:mont:dcyc')
+                           ,'MMEAN_CO2_RESIDUAL_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Budget check - CO2 residual'                   &
                            ,'[    umol/m2]','(ipoly)'            )
@@ -14815,7 +14856,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_energy_residual                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ENERGY_RESIDUAL_PY   :11:hist:mont:dcyc')
+                           ,'MMEAN_ENERGY_RESIDUAL_PY   :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Budget check - Enthalpy residual'              &
                            ,'[       J/m2]','(ipoly)'            )
@@ -14824,7 +14865,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_water_residual                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WATER_RESIDUAL_PY    :11:hist:mont:dcyc')
+                           ,'MMEAN_WATER_RESIDUAL_PY    :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Budget check - Water residual'                 &
                            ,'[      kg/m2]','(ipoly)'            )
@@ -14833,7 +14874,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_THEIV_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_THEIV_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ice-vapour equiv. pot. temp.: Atmosphere'      &
                            ,'[          K]','(ipoly)'            )
@@ -14842,7 +14883,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_THETA_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_THETA_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Potential temperature: Atmosphere'             &
                            ,'[          K]','(ipoly)'            )
@@ -14851,7 +14892,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_TEMP_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_TEMP_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Temperature: Atmosphere'                       &
                            ,'[          K]','(ipoly)'            )
@@ -14860,7 +14901,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_VPDEF_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_VPDEF_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Vapour pressure deficit: Atmosphere'           &
                            ,'[         Pa]','(ipoly)'            )
@@ -14869,7 +14910,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_SHV_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_SHV_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Specific humidity: Atmosphere'                 &
                            ,'[      kg/kg]','(ipoly)'            )
@@ -14878,7 +14919,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_rshort                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RSHORT_PY        :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RSHORT_PY        :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation: Atmosphere'               &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14887,7 +14928,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RSHORT_DIFF_PY   :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RSHORT_DIFF_PY   :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Diffuse SW radiation: Atmosphere'              &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14896,7 +14937,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_par                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_PAR_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_PAR_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - PAR: Atmosphere'                               &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14905,7 +14946,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_par_diff                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_PAR_DIFF_PY      :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_PAR_DIFF_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Diffuse PAR: Atmosphere'                       &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14914,7 +14955,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_rlong                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RLONG_PY         :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RLONG_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation: Atmosphere'                &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14923,7 +14964,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_vels                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_VELS_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_VELS_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wind speed: atmosphere'                        &
                            ,'[        m/s]','(ipoly)'            )
@@ -14932,7 +14973,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RHOS_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RHOS_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air density: Atmosphere'                       &
                            ,'[      kg/m3]','(ipoly)'            )
@@ -14941,7 +14982,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_PRSS_PY          :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_PRSS_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air pressure: Atmosphere'                      &
                            ,'[         Pa]','(ipoly)'            )
@@ -14950,7 +14991,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_atm_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_CO2_PY           :11:hist:mont:dcyc')
+                           ,'MMEAN_ATM_CO2_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 mixing ratio: Atmosphere'                  &
                            ,'[   umol/mol]','(ipoly)'            )
@@ -14959,7 +15000,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_pcpg                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PCPG_PY              :11:hist:mont:dcyc')
+                           ,'MMEAN_PCPG_PY              :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Precipitation rate'                            &
                            ,'[    kg/m2/s]','(ipoly)'            )
@@ -14968,7 +15009,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_qpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QPCPG_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_QPCPG_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Energy gain - rain'                            &
                            ,'[       W/m2]','(ipoly)'            )
@@ -14977,7 +15018,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_dpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_DPCPG_PY             :11:hist:mont:dcyc')
+                           ,'MMEAN_DPCPG_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Precipitation depth'                           &
                            ,'[          m]','(ipoly)'            )
@@ -14986,7 +15027,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_fast_soil_c                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FAST_SOIL_C_PY     :11:hist:mont:dcyc')
+                           ,'MMEAN_FAST_SOIL_C_PY     :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Fast pool)'              &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -14994,7 +15035,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_slow_soil_c                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SLOW_SOIL_C_PY     :11:hist:mont:dcyc')
+                           ,'MMEAN_SLOW_SOIL_C_PY     :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Slow pool)'              &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -15002,7 +15043,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_struct_soil_c                                 &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_STRUCT_SOIL_C_PY   :11:hist:mont:dcyc')
+                           ,'MMEAN_STRUCT_SOIL_C_PY   :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Soil Carbon (Structural pool)'        &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -15010,7 +15051,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_struct_soil_l                                 &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_STRUCT_SOIL_L_PY   :11:hist:mont:dcyc')
+                           ,'MMEAN_STRUCT_SOIL_L_PY   :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Soil Lignin (Structural pool)'        &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -15018,7 +15059,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_cwd_c                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_C_PY   :11:hist:mont:dcyc')
+                           ,'MMEAN_CWD_C_PY   :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Coarse woody debris'                  &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -15026,7 +15067,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_fast_soil_n                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FAST_SOIL_N_PY     :11:hist:mont:dcyc')
+                           ,'MMEAN_FAST_SOIL_N_PY     :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Soil Nitrogen (Fast pool)'            &
                            ,'[kgN/m2]','(ipoly)')
       end if
@@ -15034,7 +15075,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_mineral_soil_n                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_MINERAL_SOIL_N_PY  :11:hist:mont:dcyc')
+                           ,'MMEAN_MINERAL_SOIL_N_PY  :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Soil Nitrogen (Mineralised pool)'     &
                            ,'[kgN/m2]','(ipoly)')
       end if
@@ -15042,7 +15083,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_cwd_n                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_N_PY   :11:hist:mont:dcyc')
+                           ,'MMEAN_CWD_N_PY   :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Coarse woody debris nitrogen'         &
                            ,'[kgN/m2]','(ipoly)')
       end if
@@ -15050,7 +15091,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_gpp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_GPP_PY               :11:hist:mont:dcyc')
+                           ,'MMSQU_GPP_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Gross primary productivity'                    &
                            ,'[kgC2/m4/yr2]','(ipoly)'            )
@@ -15059,7 +15100,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_npp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_NPP_PY               :11:hist:mont:dcyc')
+                           ,'MMSQU_NPP_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net primary productivity'                      &
                            ,'[kgC2/m4/yr2]','(ipoly)'            )
@@ -15068,7 +15109,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_plresp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_PLRESP_PY            :11:hist:mont:dcyc')
+                           ,'MMSQU_PLRESP_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Plant respiration'                             &
                            ,'[kgC2/m4/yr2]','(ipoly)'            )
@@ -15077,7 +15118,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_sensible_lc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_SENSIBLE_LC_PY       :11:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_LC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat'                                 &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15086,7 +15127,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_vapor_lc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_VAPOR_LC_PY          :11:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_LC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Leaf evaporation'                              &
                            ,'[  kg2/m4/s2]','(ipoly)'            )
@@ -15095,7 +15136,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_transp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_TRANSP_PY            :11:hist:mont:dcyc')
+                           ,'MMSQU_TRANSP_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Leaf transpiration'                            &
                            ,'[  kg2/m4/s2]','(ipoly)'            )
@@ -15104,7 +15145,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_sensible_wc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_SENSIBLE_WC_PY       :11:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_WC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat'                                 &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15113,7 +15154,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_vapor_wc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_VAPOR_WC_PY          :11:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_WC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Wood evaporation'                              &
                            ,'[  kg2/m4/s2]','(ipoly)'            )
@@ -15122,7 +15163,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_rh                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RH_PY                :11:hist:mont:dcyc')
+                           ,'MMSQU_RH_PY                :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Heterotrophic respiration'                     &
                            ,'[ kg2/m4/yr2]','(ipoly)'            )
@@ -15131,7 +15172,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_cwd_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CWD_RH_PY            :11:hist:mont:dcyc')
+                           ,'MMSQU_CWD_RH_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Coarse woody debris respiration'               &
                            ,'[ kg2/m4/yr2]','(ipoly)'            )
@@ -15140,7 +15181,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_nep                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_NEP_PY               :11:hist:mont:dcyc')
+                           ,'MMSQU_NEP_PY               :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net Ecosystem productivity'                    &
                            ,'[ kg2/m4/yr2]','(ipoly)'            )
@@ -15149,7 +15190,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_rlongup                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RLONGUP_PY           :11:hist:mont:dcyc')
+                           ,'MMSQU_RLONGUP_PY           :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing longwave radiation'                   &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15158,7 +15199,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_parup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_PARUP_PY             :11:hist:mont:dcyc')
+                           ,'MMSQU_PARUP_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing PAR'                                  &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15167,7 +15208,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_nirup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_NIRUP_PY             :11:hist:mont:dcyc')
+                           ,'MMSQU_NIRUP_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing near infra-red radiation'             &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15176,7 +15217,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_rshortup                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RSHORTUP_PY          :11:hist:mont:dcyc')
+                           ,'MMSQU_RSHORTUP_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing shortwave radiation'                  &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15185,7 +15226,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_rnet                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RNET_PY              :11:hist:mont:dcyc')
+                           ,'MMSQU_RNET_PY              :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net radiation at top of canopy'                &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15194,7 +15235,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_albedo                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_ALBEDO_PY            :11:hist:mont:dcyc')
+                           ,'MMSQU_ALBEDO_PY            :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Albedo'                                        &
                            ,'[       ----]','(ipoly)'            )
@@ -15203,7 +15244,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_ustar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_USTAR_PY             :11:hist:mont:dcyc')
+                           ,'MMSQU_USTAR_PY             :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Friction velocity'                             &
                            ,'[      m2/s2]','(ipoly)'            )
@@ -15212,7 +15253,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_carbon_ac                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CARBON_AC_PY         :11:hist:mont:dcyc')
+                           ,'MMSQU_CARBON_AC_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - CO2 flux: atmosphere -> CAS'                   &
                            ,'[umol2/m4/s2]','(ipoly)'            )
@@ -15221,7 +15262,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_carbon_st                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CARBON_ST_PY         :11:hist:mont:dcyc')
+                           ,'MMSQU_CARBON_ST_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - CO2 storage at CAS'                            &
                            ,'[umol2/m4/s2]','(ipoly)'            )
@@ -15230,7 +15271,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_vapor_gc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_VAPOR_GC_PY          :11:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_GC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Water vapour flux: ground -> CAS'              &
                            ,'[  kg2/m4/s2]','(ipoly)'            )
@@ -15239,7 +15280,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_vapor_ac                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_VAPOR_AC_PY          :11:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_AC_PY          :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Water vapour flux: atmosphere -> CAS'          &
                            ,'[  kg2/m4/s2]','(ipoly)'            )
@@ -15248,7 +15289,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_sensible_gc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_SENSIBLE_GC_PY       :11:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_GC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat flux: ground -> CAS'             &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15257,7 +15298,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_sensible_ac                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_SENSIBLE_AC_PY       :11:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_AC_PY       :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat flux: atmosphere -> CAS'         &
                            ,'[      W2/m4]','(ipoly)'            )
@@ -15286,18 +15327,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype), target        :: cgrid
-      integer     , intent(in)    :: init
-      integer     , intent(in)    :: igr
-      integer     , intent(in)    :: var_len
-      integer     , intent(in)    :: max_ptrs
-      integer     , intent(in)    :: var_len_global
-      integer     , intent(inout) :: nvar
+      type(edtype)          , target        :: cgrid
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to save the mean diel variables to history or not.              !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:dcyc'
+      else
+         eorq_keys = 'dcyc'
+      end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -15310,7 +15361,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_gpp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_GPP_PY              :-11:hist:dcyc'     )
+                           ,'QMEAN_GPP_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gross primary productivity'                       &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15319,7 +15370,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_npp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_NPP_PY              :-11:hist:dcyc'     )
+                           ,'QMEAN_NPP_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net primary productivity'                         &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15328,7 +15379,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_RESP_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_RESP_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf respiration'                                 &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15337,7 +15388,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_root_resp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ROOT_RESP_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_ROOT_RESP_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root respiration'                                 &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15346,7 +15397,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_growth_resp                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_GROWTH_RESP_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_GROWTH_RESP_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Growth respiration'                               &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15355,7 +15406,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_storage_resp                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_STORAGE_RESP_PY     :-11:hist:dcyc'     )
+                           ,'QMEAN_STORAGE_RESP_PY     :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Storage respiration'                              &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15364,7 +15415,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_vleaf_resp                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VLEAF_RESP_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_VLEAF_RESP_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Virtual leaf respiration'                         &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15373,7 +15424,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_plresp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PLRESP_PY           :-11:hist:dcyc'     )
+                           ,'QMEAN_PLRESP_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Plant respiration'                                &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
@@ -15382,7 +15433,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_ENERGY_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_ENERGY_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf internal energy'                             &
                            ,'[       J/m2]','(ndcycle,ipoly)'    )
@@ -15391,7 +15442,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_WATER_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_WATER_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf surface water'                               &
                            ,'[      kg/m2]','(ndcycle,ipoly)'    )
@@ -15400,7 +15451,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_HCAP_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_HCAP_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf heat capacity'                               &
                            ,'[     J/m2/K]','(ndcycle,ipoly)'    )
@@ -15409,7 +15460,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_vpdef                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_VPDEF_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_VPDEF_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf vapour pressure deficit'                     &
                            ,'[         Pa]','(ndcycle,ipoly)'    )
@@ -15418,7 +15469,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_TEMP_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_TEMP_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf temperature'                                 &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -15427,7 +15478,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_FLIQ_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_FLIQ_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction'                                  &
                            ,'[         --]','(ndcycle,ipoly)'    )
@@ -15436,7 +15487,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_gsw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_GSW_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_GSW_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Stomatal conductance'                             &
                            ,'[kg/m2leaf/s]','(ndcycle,ipoly)'    )
@@ -15445,7 +15496,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_LEAF_GBW_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_LEAF_GBW_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf boundary layer conductance'                  &
                            ,'[kg/m2leaf/s]','(ndcycle,ipoly)'    )
@@ -15454,7 +15505,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wood_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WOOD_ENERGY_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_WOOD_ENERGY_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood internal energy'                             &
                            ,'[       J/m2]','(ndcycle,ipoly)'    )
@@ -15463,7 +15514,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wood_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WOOD_WATER_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_WOOD_WATER_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood surface water'                               &
                            ,'[      kg/m2]','(ndcycle,ipoly)'    )
@@ -15472,7 +15523,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wood_hcap                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WOOD_HCAP_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_WOOD_HCAP_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood heat capacity'                               &
                            ,'[     J/m2/K]','(ndcycle,ipoly)'    )
@@ -15481,7 +15532,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wood_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WOOD_TEMP_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_WOOD_TEMP_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood temperature'                                 &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -15490,7 +15541,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wood_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WOOD_FLIQ_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_WOOD_FLIQ_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction'                                  &
                            ,'[         --]','(ndcycle,ipoly)'    )
@@ -15499,7 +15550,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wood_gbw                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WOOD_GBW_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_WOOD_GBW_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood boundary layer conductance'                  &
                            ,'[kg/m2wood/s]','(ndcycle,ipoly)'    )
@@ -15508,7 +15559,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_fs_open                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_FS_OPEN_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_FS_OPEN_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net stress factor'                                &
                            ,'[         --]','(ndcycle,ipoly)'    )
@@ -15517,7 +15568,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_fsw                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_FSW_PY              :-11:hist:dcyc'     )
+                           ,'QMEAN_FSW_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Moisture stress'                                  &
                            ,'[         --]','(ndcycle,ipoly)'    )
@@ -15526,7 +15577,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_fsn                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_FSN_PY              :-11:hist:dcyc'     )
+                           ,'QMEAN_FSN_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Nitrogen stress'                                  &
                            ,'[         --]','(ndcycle,ipoly)'    )
@@ -15535,7 +15586,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_psi_open                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PSI_OPEN_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_PSI_OPEN_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Transpiration with no stress'                     &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15544,7 +15595,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_psi_closed                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PSI_CLOSED_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_PSI_CLOSED_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Transpiration at maximum stress'                  &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15553,7 +15604,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_water_supply                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WATER_SUPPLY_PY     :-11:hist:dcyc'     )
+                           ,'QMEAN_WATER_SUPPLY_PY     :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water supply'                                     &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15562,7 +15613,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_par_l                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PAR_L_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_PAR_L_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - PAR absorbed by leaves'                           &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15571,7 +15622,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_par_l_beam                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PAR_L_BEAM_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_PAR_L_BEAM_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Direct PAR absorbed by leaves'                    &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15580,7 +15631,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_par_l_diff                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PAR_L_DIFF_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_PAR_L_DIFF_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Diffuse PAR absorbed by leaves'                   &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15589,7 +15640,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rshort_l                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RSHORT_L_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_RSHORT_L_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation absorbed by leaves'           &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15598,7 +15649,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rlong_l                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONG_L_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_RLONG_L_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation absorbed by leaves'            &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15607,7 +15658,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sensible_lc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_LC_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_LC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat'                                    &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15616,7 +15667,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_vapor_lc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VAPOR_LC_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_LC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf evaporation'                                 &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15625,7 +15676,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_transp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_TRANSP_PY           :-11:hist:dcyc'     )
+                           ,'QMEAN_TRANSP_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf transpiration'                               &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15634,7 +15685,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_intercepted_al                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_INTERCEPTED_AL_PY   :-11:hist:dcyc'     )
+                           ,'QMEAN_INTERCEPTED_AL_PY   :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf interception'                                &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15643,7 +15694,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wshed_lg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WSHED_LG_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_WSHED_LG_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf shedding'                                    &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15652,7 +15703,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rshort_w                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RSHORT_W_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_RSHORT_W_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation absorbed by wood'             &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15661,7 +15712,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rlong_w                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONG_W_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_RLONG_W_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation absorbed by wood'              &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15670,7 +15721,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sensible_wc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_WC_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_WC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat'                                    &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15679,7 +15730,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_vapor_wc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VAPOR_WC_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_WC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood evaporation'                                 &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15688,7 +15739,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_intercepted_aw                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_INTERCEPTED_AW_PY   :-11:hist:dcyc'     )
+                           ,'QMEAN_INTERCEPTED_AW_PY   :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood interception'                                &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15697,7 +15748,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_wshed_wg                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_WSHED_WG_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_WSHED_WG_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood shedding'                                    &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -15706,7 +15757,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rh                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RH_PY               :-11:hist:dcyc'     )
+                           ,'QMEAN_RH_PY               :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Heterotrophic respiration'                        &
                            ,'[   kg/m2/yr]','(ndcycle,ipoly)'    )
@@ -15715,7 +15766,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_cwd_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CWD_RH_PY           :-11:hist:dcyc'     )
+                           ,'QMEAN_CWD_RH_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Coarse woody debris respiration'                  &
                            ,'[   kg/m2/yr]','(ndcycle,ipoly)'    )
@@ -15724,7 +15775,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_nep                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_NEP_PY              :-11:hist:dcyc'     )
+                           ,'QMEAN_NEP_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net Ecosystem productivity'                       &
                            ,'[   kg/m2/yr]','(ndcycle,ipoly)'    )
@@ -15733,7 +15784,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rk4step                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RK4STEP_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_RK4STEP_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - RK4 time step'                                    &
                            ,'[          s]','(ndcycle,ipoly)'    )
@@ -15742,7 +15793,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_available_water                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_AVAILABLE_WATER_PY  :-11:hist:dcyc'     )
+                           ,'QMEAN_AVAILABLE_WATER_PY  :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Available water'                                  &
                            ,'[      kg/m2]','(ndcycle,ipoly)'    )
@@ -15751,7 +15802,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_THEIV_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_THEIV_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ice-vapour equiv. pot. temperature - CAS'         &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -15760,7 +15811,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_THETA_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_THETA_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Potential temperature - CAS'                      &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -15769,7 +15820,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_VPDEF_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_VPDEF_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Vapour pressure deficit - CAS'                    &
                            ,'[         Pa]','(ndcycle,ipoly)'    )
@@ -15778,7 +15829,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_TEMP_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_TEMP_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Temperature - CAS'                                &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -15787,7 +15838,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_SHV_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_SHV_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Specific humidity - CAS'                          &
                            ,'[      kg/kg]','(ndcycle,ipoly)'    )
@@ -15796,7 +15847,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_CO2_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_CO2_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 mixing ratio - CAS'                           &
                            ,'[   umol/mol]','(ndcycle,ipoly)'    )
@@ -15805,7 +15856,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_RHOS_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_RHOS_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air density - CAS'                                &
                            ,'[      kg/m3]','(ndcycle,ipoly)'    )
@@ -15814,7 +15865,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_PRSS_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_PRSS_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Pressure - CAS'                                   &
                            ,'[         Pa]','(ndcycle,ipoly)'    )
@@ -15823,7 +15874,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_gnd_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_GND_TEMP_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_GND_TEMP_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ground temperature'                               &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -15832,7 +15883,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_gnd_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_GND_SHV_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_GND_SHV_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ground specific humidity'                         &
                            ,'[      kg/kg]','(ndcycle,ipoly)'    )
@@ -15841,7 +15892,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_can_ggnd                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_GGND_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_CAN_GGND_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net canopy conductance'                           &
                            ,'[        m/2]','(ndcycle,ipoly)'    )
@@ -15850,7 +15901,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sfcw_depth                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_DEPTH_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_SFCW_DEPTH_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Depth - temporary water layer'                    &
                            ,'[          m]','(ndcycle,ipoly)'    )
@@ -15859,7 +15910,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sfcw_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_ENERGY_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_SFCW_ENERGY_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Internal energy - temporary water layer'          &
                            ,'[       J/kg]','(ndcycle,ipoly)'    )
@@ -15868,7 +15919,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sfcw_mass                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_MASS_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_SFCW_MASS_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water mass - temporary water layer'               &
                            ,'[      kg/m2]','(ndcycle,ipoly)'    )
@@ -15877,7 +15928,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sfcw_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_TEMP_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_SFCW_TEMP_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Temperature - temporary water layer'              &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -15886,7 +15937,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sfcw_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_FLIQ_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_SFCW_FLIQ_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction - temporary water layer'          &
                            ,'[         --]','(ndcycle,ipoly)'    )
@@ -15895,7 +15946,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rshort_gnd                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RSHORT_GND_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_RSHORT_GND_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation absorbed by ground'           &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15904,7 +15955,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_par_gnd                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PAR_GND_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_PAR_GND_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - PAR absorbed by ground'                           &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15913,7 +15964,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rlong_gnd                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONG_GND_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_RLONG_GND_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation absorbed by ground'            &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15922,7 +15973,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rlongup                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONGUP_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_RLONGUP_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing longwave radiation'                      &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15931,7 +15982,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_parup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PARUP_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_PARUP_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing PAR'                                     &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15940,7 +15991,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_nirup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_NIRUP_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_NIRUP_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing near infra-red radiation'                &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15949,7 +16000,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rshortup                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RSHORTUP_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_RSHORTUP_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing shortwave radiation'                     &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15958,7 +16009,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rnet                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RNET_PY             :-11:hist:dcyc'     )
+                           ,'QMEAN_RNET_PY             :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net radiation at top of canopy'                   &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -15967,7 +16018,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_albedo                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ALBEDO_PY           :-11:hist:dcyc'     )
+                           ,'QMEAN_ALBEDO_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Albedo'                                           &
                            ,'[       ----]','(ndcycle,ipoly)'    )
@@ -15976,7 +16027,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_albedo_beam                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ALBEDO_BEAM_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_ALBEDO_BEAM_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Albedo - direct radiation'                        &
                            ,'[       ----]','(ndcycle,ipoly)'    )
@@ -15985,7 +16036,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_albedo_diff                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ALBEDO_DIFF_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_ALBEDO_DIFF_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Albedo - diffuse radiation'                       &
                            ,'[       ----]','(ndcycle,ipoly)'    )
@@ -15994,7 +16045,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_rlong_albedo                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONG_ALBEDO_PY     :-11:hist:dcyc'     )
+                           ,'QMEAN_RLONG_ALBEDO_PY     :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Kind of albedo - longwave radiation'              &
                            ,'[       ----]','(ndcycle,ipoly)'    )
@@ -16003,7 +16054,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_ustar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_USTAR_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_USTAR_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Friction velocity'                                &
                            ,'[        m/s]','(ndcycle,ipoly)'    )
@@ -16012,7 +16063,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_tstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_TSTAR_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_TSTAR_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gradient scale for potential temperature'         &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -16021,7 +16072,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_qstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QSTAR_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_QSTAR_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gradient scale for specific humidity'             &
                            ,'[      kg/kg]','(ndcycle,ipoly)'    )
@@ -16030,7 +16081,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_cstar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CSTAR_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_CSTAR_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gradient scale for CO2 mixing ratio'              &
                            ,'[   umol/mol]','(ndcycle,ipoly)'    )
@@ -16039,7 +16090,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_carbon_ac                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CARBON_AC_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_CARBON_AC_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 flux: atmosphere -> CAS'                      &
                            ,'[  umol/m2/s]','(ndcycle,ipoly)'    )
@@ -16048,7 +16099,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_carbon_st                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CARBON_ST_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_CARBON_ST_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 storage at CAS'                               &
                            ,'[  umol/m2/s]','(ndcycle,ipoly)'    )
@@ -16057,7 +16108,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_vapor_gc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VAPOR_GC_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_GC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water vapour flux: ground -> CAS'                 &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -16066,7 +16117,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_vapor_ac                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VAPOR_AC_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_AC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water vapour flux: atmosphere -> CAS'             &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -16075,7 +16126,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_throughfall                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_THROUGHFALL_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_THROUGHFALL_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Throughfall rate'                                 &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -16084,7 +16135,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_runoff                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RUNOFF_PY           :-11:hist:dcyc'     )
+                           ,'QMEAN_RUNOFF_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water runoff'                                     &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -16093,7 +16144,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_drainage                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_DRAINAGE_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_DRAINAGE_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water drainage'                                   &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -16102,7 +16153,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sensible_gc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_GC_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_GC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat flux: ground -> CAS'                &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16111,7 +16162,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sensible_ac                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_AC_PY      :-11:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_AC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat flux: atmosphere -> CAS'            &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16120,7 +16171,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_qthroughfall                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QTHROUGHFALL_PY     :-11:hist:dcyc'     )
+                           ,'QMEAN_QTHROUGHFALL_PY     :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Throughfall rate'                                 &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16129,7 +16180,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_qrunoff                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QRUNOFF_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_QRUNOFF_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Surface runoff'                                   &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16138,7 +16189,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_qdrainage                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QDRAINAGE_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_QDRAINAGE_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Drainage energy loss'                             &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16147,7 +16198,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_theiv                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_THEIV_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_THEIV_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ice-vapour equiv. pot. temp.: Atmosphere'         &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -16156,7 +16207,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_theta                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_THETA_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_THETA_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Potential temperature: Atmosphere'                &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -16165,7 +16216,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_temp                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_TEMP_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_TEMP_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Temperature: Atmosphere'                          &
                            ,'[          K]','(ndcycle,ipoly)'    )
@@ -16174,7 +16225,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_vpdef                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_VPDEF_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_VPDEF_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Vapour pressure deficit: Atmosphere'              &
                            ,'[         Pa]','(ndcycle,ipoly)'    )
@@ -16183,7 +16234,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_shv                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_SHV_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_SHV_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Specific humidity: Atmosphere'                    &
                            ,'[      kg/kg]','(ndcycle,ipoly)'    )
@@ -16192,7 +16243,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_rshort                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RSHORT_PY       :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_RSHORT_PY       :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation: Atmosphere'                  &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16201,7 +16252,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RSHORT_DIFF_PY  :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_RSHORT_DIFF_PY  :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Diffuse SW radiation: Atmosphere'                 &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16210,7 +16261,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_par                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_PAR_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_PAR_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - PAR: Atmosphere'                                  &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16219,7 +16270,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_par_diff                                  &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_PAR_DIFF_PY     :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_PAR_DIFF_PY     :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Diffuse PAR: Atmosphere'                          &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16228,7 +16279,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_rlong                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RLONG_PY        :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_RLONG_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation: Atmosphere'                   &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16237,7 +16288,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_vels                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_VELS_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_VELS_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wind speed: atmosphere'                           &
                            ,'[        m/s]','(ndcycle,ipoly)'    )
@@ -16246,7 +16297,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_rhos                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RHOS_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_RHOS_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air density: Atmosphere'                          &
                            ,'[      kg/m3]','(ndcycle,ipoly)'    )
@@ -16255,7 +16306,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_prss                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_PRSS_PY         :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_PRSS_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air pressure: Atmosphere'                         &
                            ,'[         Pa]','(ndcycle,ipoly)'    )
@@ -16264,7 +16315,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_atm_co2                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_CO2_PY          :-11:hist:dcyc'     )
+                           ,'QMEAN_ATM_CO2_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 mixing ratio: Atmosphere'                     &
                            ,'[   umol/mol]','(ndcycle,ipoly)'    )
@@ -16273,7 +16324,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_pcpg                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PCPG_PY             :-11:hist:dcyc'     )
+                           ,'QMEAN_PCPG_PY             :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Precipitation rate'                               &
                            ,'[    kg/m2/s]','(ndcycle,ipoly)'    )
@@ -16282,7 +16333,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_qpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QPCPG_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_QPCPG_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Energy gain - rain'                               &
                            ,'[       W/m2]','(ndcycle,ipoly)'    )
@@ -16291,7 +16342,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_dpcpg                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_DPCPG_PY            :-11:hist:dcyc'     )
+                           ,'QMEAN_DPCPG_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Precipitation depth'                              &
                            ,'[          m]','(ndcycle,ipoly)'    )
@@ -16300,7 +16351,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_gpp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_GPP_PY              :-11:hist:dcyc'     )
+                           ,'QMSQU_GPP_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Gross primary productivity'                       &
                            ,'[kgC2/m4/yr2]','(ndcycle,ipoly)'    )
@@ -16309,7 +16360,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_npp                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_NPP_PY              :-11:hist:dcyc'     )
+                           ,'QMSQU_NPP_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net primary productivity'                         &
                            ,'[kgC2/m4/yr2]','(ndcycle,ipoly)'    )
@@ -16318,7 +16369,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_plresp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_PLRESP_PY           :-11:hist:dcyc'     )
+                           ,'QMSQU_PLRESP_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Plant respiration'                                &
                            ,'[kgC2/m4/yr2]','(ndcycle,ipoly)'    )
@@ -16327,7 +16378,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_sensible_lc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_SENSIBLE_LC_PY      :-11:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_LC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat'                                    &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16336,7 +16387,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_vapor_lc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_VAPOR_LC_PY         :-11:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_LC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Leaf evaporation'                                 &
                            ,'[  kg2/m4/s2]','(ndcycle,ipoly)'    )
@@ -16345,7 +16396,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_transp                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_TRANSP_PY           :-11:hist:dcyc'     )
+                           ,'QMSQU_TRANSP_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Leaf transpiration'                               &
                            ,'[  kg2/m4/s2]','(ndcycle,ipoly)'    )
@@ -16354,7 +16405,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_sensible_wc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_SENSIBLE_WC_PY      :-11:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_WC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat'                                    &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16363,7 +16414,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_vapor_wc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_VAPOR_WC_PY         :-11:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_WC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Wood evaporation'                                 &
                            ,'[  kg2/m4/s2]','(ndcycle,ipoly)'    )
@@ -16372,7 +16423,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_rh                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RH_PY               :-11:hist:dcyc'     )
+                           ,'QMSQU_RH_PY               :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Heterotrophic respiration'                        &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipoly)'    )
@@ -16381,7 +16432,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_cwd_rh                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CWD_RH_PY           :-11:hist:dcyc'     )
+                           ,'QMSQU_CWD_RH_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Coarse woody debris respiration'                  &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipoly)'    )
@@ -16390,7 +16441,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_nep                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_NEP_PY              :-11:hist:dcyc'     )
+                           ,'QMSQU_NEP_PY              :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net Ecosystem productivity'                       &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipoly)'    )
@@ -16399,7 +16450,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_rlongup                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RLONGUP_PY          :-11:hist:dcyc'     )
+                           ,'QMSQU_RLONGUP_PY          :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing longwave radiation'                      &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16408,7 +16459,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_parup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_PARUP_PY            :-11:hist:dcyc'     )
+                           ,'QMSQU_PARUP_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing PAR'                                     &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16417,7 +16468,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_nirup                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_NIRUP_PY            :-11:hist:dcyc'     )
+                           ,'QMSQU_NIRUP_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing near infra-red radiation'                &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16426,7 +16477,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_rshortup                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RSHORTUP_PY         :-11:hist:dcyc'     )
+                           ,'QMSQU_RSHORTUP_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing shortwave radiation'                     &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16435,7 +16486,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_rnet                                          &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RNET_PY             :-11:hist:dcyc'     )
+                           ,'QMSQU_RNET_PY             :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net radiation at top of canopy'                   &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16444,7 +16495,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_albedo                                        &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_ALBEDO_PY           :-11:hist:dcyc'     )
+                           ,'QMSQU_ALBEDO_PY           :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Albedo'                                           &
                            ,'[       ----]','(ndcycle,ipoly)'    )
@@ -16453,7 +16504,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_ustar                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_USTAR_PY            :-11:hist:dcyc'     )
+                           ,'QMSQU_USTAR_PY            :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Friction velocity'                                &
                            ,'[      m2/s2]','(ndcycle,ipoly)'    )
@@ -16462,7 +16513,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_carbon_ac                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CARBON_AC_PY        :-11:hist:dcyc'     )
+                           ,'QMSQU_CARBON_AC_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - CO2 flux: atmosphere -> CAS'                      &
                            ,'[umol2/m4/s2]','(ndcycle,ipoly)'    )
@@ -16471,7 +16522,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_carbon_st                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CARBON_ST_PY        :-11:hist:dcyc'     )
+                           ,'QMSQU_CARBON_ST_PY        :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - CO2 storage at CAS'                               &
                            ,'[umol2/m4/s2]','(ndcycle,ipoly)'    )
@@ -16480,7 +16531,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_vapor_gc                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_VAPOR_GC_PY         :-11:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_GC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Water vapour flux: ground -> CAS'                 &
                            ,'[  kg2/m4/s2]','(ndcycle,ipoly)'    )
@@ -16489,7 +16540,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_vapor_ac                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_VAPOR_AC_PY         :-11:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_AC_PY         :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Water vapour flux: atmosphere -> CAS'             &
                            ,'[  kg2/m4/s2]','(ndcycle,ipoly)'    )
@@ -16498,7 +16549,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_sensible_gc                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_SENSIBLE_GC_PY      :-11:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_GC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat flux: ground -> CAS'                &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16507,7 +16558,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_sensible_ac                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_SENSIBLE_AC_PY      :-11:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_AC_PY      :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat flux: atmosphere -> CAS'            &
                            ,'[      W2/m4]','(ndcycle,ipoly)'    )
@@ -16537,16 +16588,43 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype), target        :: cgrid
-      integer     , intent(in)    :: init
-      integer     , intent(in)    :: igr
-      integer     , intent(in)    :: var_len
-      integer     , intent(in)    :: max_ptrs
-      integer     , intent(in)    :: var_len_global
-      integer     , intent(inout) :: nvar
+      type(edtype)          , target        :: cgrid
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: npts
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      character(len=str_len)                :: dail_keys
+      character(len=str_len)                :: eorq_keys
       !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write fast, daily, and monthly mean variables to history.   !
+      !------------------------------------------------------------------------------------!
+      if (history_fast) then
+         fast_keys = 'hist:anal'
+      else
+         fast_keys = 'anal'
+      end if
+      if (history_dail) then
+         dail_keys = 'hist:dail'
+      else
+         dail_keys = 'dail'
+      end if
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
 
       !------------------------------------------------------------------------------------!
@@ -16559,7 +16637,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_soil_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_ENERGY_PY       :12:hist:anal'     )
+                           ,'FMEAN_SOIL_ENERGY_PY       :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil internal energy'                        &
                            ,'[       J/m3]','(nzg,ipoly)'        )
@@ -16568,7 +16646,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_soil_mstpot                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_MSTPOT_PY       :12:hist:anal'     )
+                           ,'FMEAN_SOIL_MSTPOT_PY       :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil matric potential'                       &
                            ,'[          m]','(nzg,ipoly)'        )
@@ -16577,7 +16655,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_soil_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_WATER_PY        :12:hist:anal'     )
+                           ,'FMEAN_SOIL_WATER_PY        :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil water content'                          &
                            ,'[      m3/m3]','(nzg,ipoly)'        )
@@ -16586,7 +16664,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_soil_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_TEMP_PY         :12:hist:anal'     )
+                           ,'FMEAN_SOIL_TEMP_PY         :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil temperature'                            &
                            ,'[          K]','(nzg,ipoly)'        )
@@ -16595,7 +16673,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_soil_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_FLIQ_PY         :12:hist:anal'     )
+                           ,'FMEAN_SOIL_FLIQ_PY         :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil liquid fraction'                        &
                            ,'[         --]','(nzg,ipoly)'        )
@@ -16604,7 +16682,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_smoist_gg                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SMOIST_GG_PY         :12:hist:anal'     )
+                           ,'FMEAN_SMOIST_GG_PY         :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil water flux'                             &
                            ,'[    kg/m2/s]','(nzg,ipoly)'        )
@@ -16613,7 +16691,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_transloss                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_TRANSLOSS_PY         :12:hist:anal'     )
+                           ,'FMEAN_TRANSLOSS_PY         :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water loss through transpiration'            &
                            ,'[    kg/m2/s]','(nzg,ipoly)'        )
@@ -16622,7 +16700,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_sensible_gg                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_GG_PY       :12:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_GG_PY       :12:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil heat flux'                              &
                            ,'[       W/m2]','(nzg,ipoly)'        )
@@ -16631,7 +16709,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_ENERGY_PY       :12:hist:dail'     )
+                           ,'DMEAN_SOIL_ENERGY_PY       :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil internal energy'                            &
                            ,'[       J/m3]','(nzg,ipoly)'        )
@@ -16640,7 +16718,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_mstpot                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_MSTPOT_PY       :12:hist:dail'     )
+                           ,'DMEAN_SOIL_MSTPOT_PY       :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil matric potential'                           &
                            ,'[          m]','(nzg,ipoly)'        )
@@ -16649,7 +16727,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_WATER_PY        :12:hist:dail'     )
+                           ,'DMEAN_SOIL_WATER_PY        :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil water content'                              &
                            ,'[      m3/m3]','(nzg,ipoly)'        )
@@ -16658,7 +16736,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_TEMP_PY         :12:hist:dail'     )
+                           ,'DMEAN_SOIL_TEMP_PY         :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil temperature'                                &
                            ,'[          K]','(nzg,ipoly)'        )
@@ -16667,7 +16745,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_FLIQ_PY         :12:hist:dail'     )
+                           ,'DMEAN_SOIL_FLIQ_PY         :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil liquid fraction'                            &
                            ,'[         --]','(nzg,ipoly)'        )
@@ -16676,7 +16754,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_smoist_gg                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SMOIST_GG_PY         :12:hist:dail'     )
+                           ,'DMEAN_SMOIST_GG_PY         :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil water flux'                                 &
                            ,'[    kg/m2/s]','(nzg,ipoly)'        )
@@ -16685,7 +16763,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_transloss                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_TRANSLOSS_PY         :12:hist:dail'     )
+                           ,'DMEAN_TRANSLOSS_PY         :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water loss through transpiration'                &
                            ,'[    kg/m2/s]','(nzg,ipoly)'        )
@@ -16694,7 +16772,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sensible_gg                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_GG_PY       :12:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_GG_PY       :12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil heat flux'                                  &
                            ,'[       W/m2]','(nzg,ipoly)'        )
@@ -16703,7 +16781,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_soil_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_ENERGY_PY       :12:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_ENERGY_PY       :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil internal energy'                          &
                            ,'[       J/m3]','(nzg,ipoly)'        )
@@ -16712,7 +16790,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_soil_mstpot                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_MSTPOT_PY       :12:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_MSTPOT_PY       :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil matric potential'                         &
                            ,'[          m]','(nzg,ipoly)'        )
@@ -16721,7 +16799,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_soil_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_WATER_PY        :12:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_WATER_PY        :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil water content'                            &
                            ,'[      m3/m3]','(nzg,ipoly)'        )
@@ -16730,7 +16808,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_soil_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_TEMP_PY         :12:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_TEMP_PY         :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil temperature'                              &
                            ,'[          K]','(nzg,ipoly)'        )
@@ -16739,7 +16817,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_soil_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_FLIQ_PY         :12:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_FLIQ_PY         :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil liquid fraction'                          &
                            ,'[         --]','(nzg,ipoly)'        )
@@ -16748,7 +16826,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_smoist_gg                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SMOIST_GG_PY         :12:hist:mont:dcyc')
+                           ,'MMEAN_SMOIST_GG_PY         :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil water flux'                               &
                            ,'[    kg/m2/s]','(nzg,ipoly)'        )
@@ -16757,7 +16835,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_transloss                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_TRANSLOSS_PY         :12:hist:mont:dcyc')
+                           ,'MMEAN_TRANSLOSS_PY         :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water loss through transpiration'              &
                            ,'[    kg/m2/s]','(nzg,ipoly)'        )
@@ -16766,7 +16844,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_sensible_gg                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_GG_PY       :12:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_GG_PY       :12:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil heat flux'                                &
                            ,'[       W/m2]','(nzg,ipoly)'        )
@@ -16797,16 +16875,32 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype), target        :: cgrid
-      integer     , intent(in)    :: init
-      integer     , intent(in)    :: igr
-      integer     , intent(in)    :: var_len
-      integer     , intent(in)    :: max_ptrs
-      integer     , intent(in)    :: var_len_global
-      integer     , intent(inout) :: nvar
+      type(edtype)          , target        :: cgrid
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
       !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the mean diel variables to the history.               !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:dcyc'
+      else
+         eorq_keys = 'dcyc'
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
 
       !------------------------------------------------------------------------------------!
@@ -16819,7 +16913,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_soil_energy                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_ENERGY_PY      :-12:hist:dcyc'     )
+                           ,'QMEAN_SOIL_ENERGY_PY      :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil internal energy'                             &
                            ,'[       J/m3]','(nzg,ndcycle,ipoly)')
@@ -16828,7 +16922,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_soil_mstpot                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_MSTPOT_PY      :-12:hist:dcyc'     )
+                           ,'QMEAN_SOIL_MSTPOT_PY      :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil matric potential'                            &
                            ,'[          m]','(nzg,ndcycle,ipoly)')
@@ -16837,7 +16931,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_soil_water                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_WATER_PY       :-12:hist:dcyc'     )
+                           ,'QMEAN_SOIL_WATER_PY       :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil water content'                               &
                            ,'[      m3/m3]','(nzg,ndcycle,ipoly)')
@@ -16846,7 +16940,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_soil_temp                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_TEMP_PY        :-12:hist:dcyc'     )
+                           ,'QMEAN_SOIL_TEMP_PY        :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil temperature'                                 &
                            ,'[          K]','(nzg,ndcycle,ipoly)')
@@ -16855,7 +16949,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_soil_fliq                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_FLIQ_PY        :-12:hist:dcyc'     )
+                           ,'QMEAN_SOIL_FLIQ_PY        :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil liquid fraction'                             &
                            ,'[         --]','(nzg,ndcycle,ipoly)')
@@ -16864,7 +16958,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_smoist_gg                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SMOIST_GG_PY        :-12:hist:dcyc'     )
+                           ,'QMEAN_SMOIST_GG_PY        :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil water flux'                                  &
                            ,'[    kg/m2/s]','(nzg,ndcycle,ipoly)')
@@ -16873,7 +16967,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_transloss                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_TRANSLOSS_PY        :-12:hist:dcyc'     )
+                           ,'QMEAN_TRANSLOSS_PY        :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water loss through transpiration'                 &
                            ,'[    kg/m2/s]','(nzg,ndcycle,ipoly)')
@@ -16882,7 +16976,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_sensible_gg                                   &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_GG_PY      :-12:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_GG_PY      :-12:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil heat flux'                                   &
                            ,'[       W/m2]','(nzg,ndcycle,ipoly)')
@@ -16959,15 +17053,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype), target        :: cgrid
-      integer     , intent(in)    :: init
-      integer     , intent(in)    :: igr
-      integer     , intent(in)    :: var_len
-      integer     , intent(in)    :: max_ptrs
-      integer     , intent(in)    :: var_len_global
-      integer     , intent(inout) :: nvar
+      type(edtype)          , target        :: cgrid
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                     :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to write monthly means to history or not.                       !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -17174,7 +17281,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_lai                                           &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LAI_PY         :146:hist:mont:dcyc')
+                           ,'MMEAN_LAI_PY         :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Leaf area index'                      &
                            ,'[m2leaf/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17182,7 +17289,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_bleaf                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BLEAF_PY       :146:hist:mont:dcyc')
+                           ,'MMEAN_BLEAF_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Leaf biomass'                         &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17190,7 +17297,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_broot                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BROOT_PY       :146:hist:mont:dcyc')
+                           ,'MMEAN_BROOT_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Root biomass'                         &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17198,7 +17305,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_bstorage                                      &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BSTORAGE_PY       :146:hist:mont:dcyc')
+                           ,'MMEAN_BSTORAGE_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Storage biomass'                      &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17206,7 +17313,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_bleaf_n                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BLEAF_N_PY     :146:hist:mont:dcyc')
+                           ,'MMEAN_BLEAF_N_PY     :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Leaf nitrogen mass'                   &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17214,7 +17321,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_broot_n                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BROOT_N_PY     :146:hist:mont:dcyc')
+                           ,'MMEAN_BROOT_N_PY     :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Root nitrogen mass'                   &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17222,7 +17329,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_bstorage_n                                    &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_BSTORAGE_N_PY     :146:hist:mont:dcyc')
+                           ,'MMEAN_BSTORAGE_N_PY     :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Storage nitrogen mass'                &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17230,7 +17337,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_leaf_maintenance                              &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_MAINTENANCE_PY       :146:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_MAINTENANCE_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Leaf maintenance rate'                &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17238,7 +17345,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_root_maintenance                              &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ROOT_MAINTENANCE_PY       :146:hist:mont:dcyc')
+                           ,'MMEAN_ROOT_MAINTENANCE_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Root maintenance rate'                &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17246,7 +17353,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_leaf_drop                                     &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_LEAF_DROP_PY       :146:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_DROP_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Leaf drop'                            &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
@@ -17784,15 +17891,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(polygontype), target        :: cpoly
-      integer          , intent(in)    :: init
-      integer          , intent(in)    :: igr
-      integer          , intent(in)    :: var_len
-      integer          , intent(in)    :: max_ptrs
-      integer          , intent(in)    :: var_len_global
-      integer          , intent(inout) :: nvar
+      type(polygontype)     , target        :: cpoly
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                          :: npts
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the sub-daily means to the history file.              !
+      !------------------------------------------------------------------------------------!
+      if (history_fast) then
+         fast_keys = 'hist:anal'
+      else
+         fast_keys = 'anal'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -17810,7 +17930,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_theiv                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_THEIV_SI         :21:hist:anal'     )
+                           ,'FMEAN_ATM_THEIV_SI         :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ice-vapour equiv. pot. temp.: Atmosphere'    &
                            ,'[          K]','(isite)'            )
@@ -17819,7 +17939,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_theta                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_THETA_SI         :21:hist:anal'     )
+                           ,'FMEAN_ATM_THETA_SI         :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Potential temperature: Atmosphere'           &
                            ,'[          K]','(isite)'            )
@@ -17828,7 +17948,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_temp                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_TEMP_SI          :21:hist:anal'     )
+                           ,'FMEAN_ATM_TEMP_SI          :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Temperature: Atmosphere'                     &
                            ,'[          K]','(isite)'            )
@@ -17837,7 +17957,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_vpdef                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_VPDEF_SI         :21:hist:anal'     )
+                           ,'FMEAN_ATM_VPDEF_SI         :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Vapour pressure deficit: Atmosphere'         &
                            ,'[         Pa]','(isite)'            )
@@ -17846,7 +17966,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_shv                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_SHV_SI           :21:hist:anal'     )
+                           ,'FMEAN_ATM_SHV_SI           :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Specific humidity: Atmosphere'               &
                            ,'[      kg/kg]','(isite)'            )
@@ -17855,7 +17975,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_rshort                                    &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RSHORT_SI        :21:hist:anal'     )
+                           ,'FMEAN_ATM_RSHORT_SI        :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation: Atmosphere'             &
                            ,'[       W/m2]','(isite)'            )
@@ -17864,7 +17984,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RSHORT_DIFF_SI   :21:hist:anal'     )
+                           ,'FMEAN_ATM_RSHORT_DIFF_SI   :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Diffuse SW radiation: Atmosphere'            &
                            ,'[       W/m2]','(isite)'            )
@@ -17873,7 +17993,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_par                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_PAR_SI           :21:hist:anal'     )
+                           ,'FMEAN_ATM_PAR_SI           :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - PAR: Atmosphere'                             &
                            ,'[       W/m2]','(isite)'            )
@@ -17882,7 +18002,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_par_diff                                  &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_PAR_DIFF_SI      :21:hist:anal'     )
+                           ,'FMEAN_ATM_PAR_DIFF_SI      :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Diffuse PAR: Atmosphere'                     &
                            ,'[       W/m2]','(isite)'            )
@@ -17891,7 +18011,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_rlong                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RLONG_SI         :21:hist:anal'     )
+                           ,'FMEAN_ATM_RLONG_SI         :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation: Atmosphere'              &
                            ,'[       W/m2]','(isite)'            )
@@ -17900,7 +18020,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_vels                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_VELS_SI          :21:hist:anal'     )
+                           ,'FMEAN_ATM_VELS_SI          :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wind speed: atmosphere'                      &
                            ,'[        m/s]','(isite)'            )
@@ -17909,7 +18029,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_rhos                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_RHOS_SI          :21:hist:anal'     )
+                           ,'FMEAN_ATM_RHOS_SI          :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Air density: Atmosphere'                     &
                            ,'[      kg/m3]','(isite)'            )
@@ -17918,7 +18038,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_prss                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_PRSS_SI          :21:hist:anal'     )
+                           ,'FMEAN_ATM_PRSS_SI          :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Air pressure: Atmosphere'                    &
                            ,'[         Pa]','(isite)'            )
@@ -17927,7 +18047,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_atm_co2                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ATM_CO2_SI           :21:hist:anal'     )
+                           ,'FMEAN_ATM_CO2_SI           :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 mixing ratio: Atmosphere'                &
                            ,'[   umol/mol]','(isite)'            )
@@ -17936,7 +18056,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_pcpg                                          &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PCPG_SI              :21:hist:anal'     )
+                           ,'FMEAN_PCPG_SI              :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Precipitation rate'                          &
                            ,'[    kg/m2/s]','(isite)'            )
@@ -17945,7 +18065,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_qpcpg                                         &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QPCPG_SI             :21:hist:anal'     )
+                           ,'FMEAN_QPCPG_SI             :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Energy gain - rain'                          &
                            ,'[       W/m2]','(isite)'            )
@@ -17954,7 +18074,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%fmean_dpcpg                                         &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_DPCPG_SI             :21:hist:anal'     )
+                           ,'FMEAN_DPCPG_SI             :21:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Precipitation depth'                         &
                            ,'[          m]','(isite)'            )
@@ -17984,17 +18104,29 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(polygontype), target        :: cpoly
-      integer          , intent(in)    :: init
-      integer          , intent(in)    :: igr
-      integer          , intent(in)    :: var_len
-      integer          , intent(in)    :: max_ptrs
-      integer          , intent(in)    :: var_len_global
-      integer          , intent(inout) :: nvar
+      type(polygontype)     , target        :: cpoly
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                          :: npts
+      integer                               :: npts
+      character(len=str_len)                :: dail_keys
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the daily means to the history file.                  !
+      !------------------------------------------------------------------------------------!
+      if (history_dail) then
+         dail_keys = 'hist:dail'
+      else
+         dail_keys = 'dail'
+      end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -18009,7 +18141,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_theiv                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_THEIV_SI         :21:hist:dail'     )
+                           ,'DMEAN_ATM_THEIV_SI         :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ice-vapour equiv. pot. temp.: Atmosphere'        &
                            ,'[          K]','(isite)'            )
@@ -18018,7 +18150,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_theta                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_THETA_SI         :21:hist:dail'     )
+                           ,'DMEAN_ATM_THETA_SI         :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Potential temperature: Atmosphere'               &
                            ,'[          K]','(isite)'            )
@@ -18027,7 +18159,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_temp                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_TEMP_SI          :21:hist:dail'     )
+                           ,'DMEAN_ATM_TEMP_SI          :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Temperature: Atmosphere'                         &
                            ,'[          K]','(isite)'            )
@@ -18036,7 +18168,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_vpdef                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_VPDEF_SI         :21:hist:dail'     )
+                           ,'DMEAN_ATM_VPDEF_SI         :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Vapour pressure deficit: Atmosphere'             &
                            ,'[         Pa]','(isite)'            )
@@ -18045,7 +18177,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_shv                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_SHV_SI           :21:hist:dail'     )
+                           ,'DMEAN_ATM_SHV_SI           :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Specific humidity: Atmosphere'                   &
                            ,'[      kg/kg]','(isite)'            )
@@ -18054,7 +18186,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_rshort                                    &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RSHORT_SI        :21:hist:dail'     )
+                           ,'DMEAN_ATM_RSHORT_SI        :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation: Atmosphere'                 &
                            ,'[       W/m2]','(isite)'            )
@@ -18063,7 +18195,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RSHORT_DIFF_SI   :21:hist:dail'     )
+                           ,'DMEAN_ATM_RSHORT_DIFF_SI   :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Diffuse SW radiation: Atmosphere'                &
                            ,'[       W/m2]','(isite)'            )
@@ -18072,7 +18204,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_par                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_PAR_SI           :21:hist:dail'     )
+                           ,'DMEAN_ATM_PAR_SI           :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - PAR: Atmosphere'                                 &
                            ,'[       W/m2]','(isite)'            )
@@ -18081,7 +18213,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_par_diff                                  &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_PAR_DIFF_SI      :21:hist:dail'     )
+                           ,'DMEAN_ATM_PAR_DIFF_SI      :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Diffuse PAR: Atmosphere'                         &
                            ,'[       W/m2]','(isite)'            )
@@ -18090,7 +18222,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_rlong                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RLONG_SI         :21:hist:dail'     )
+                           ,'DMEAN_ATM_RLONG_SI         :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation: Atmosphere'                  &
                            ,'[       W/m2]','(isite)'            )
@@ -18099,7 +18231,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_vels                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_VELS_SI          :21:hist:dail'     )
+                           ,'DMEAN_ATM_VELS_SI          :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wind speed: atmosphere'                          &
                            ,'[        m/s]','(isite)'            )
@@ -18108,7 +18240,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_rhos                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_RHOS_SI          :21:hist:dail'     )
+                           ,'DMEAN_ATM_RHOS_SI          :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Air density: Atmosphere'                         &
                            ,'[      kg/m3]','(isite)'            )
@@ -18117,7 +18249,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_prss                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_PRSS_SI          :21:hist:dail'     )
+                           ,'DMEAN_ATM_PRSS_SI          :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Air pressure: Atmosphere'                        &
                            ,'[         Pa]','(isite)'            )
@@ -18126,7 +18258,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%dmean_atm_co2                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ATM_CO2_SI           :21:hist:dail'     )
+                           ,'DMEAN_ATM_CO2_SI           :21:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 mixing ratio: Atmosphere'                    &
                            ,'[   umol/mol]','(isite)'            )
@@ -18156,15 +18288,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(polygontype), target        :: cpoly
-      integer          , intent(in)    :: init
-      integer          , intent(in)    :: igr
-      integer          , intent(in)    :: var_len
-      integer          , intent(in)    :: max_ptrs
-      integer          , intent(in)    :: var_len_global
-      integer          , intent(inout) :: nvar
+      type(polygontype)     , target        :: cpoly
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                          :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the monthly means to the history file.                !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -18181,7 +18326,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_theiv                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_THEIV_SI         :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_THEIV_SI         :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ice-vapour equiv. pot. temp.: Atmosphere'      &
                            ,'[          K]','(isite)'            )
@@ -18190,7 +18335,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_theta                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_THETA_SI         :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_THETA_SI         :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Potential temperature: Atmosphere'             &
                            ,'[          K]','(isite)'            )
@@ -18199,7 +18344,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_temp                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_TEMP_SI          :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_TEMP_SI          :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Temperature: Atmosphere'                       &
                            ,'[          K]','(isite)'            )
@@ -18208,7 +18353,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_vpdef                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_VPDEF_SI         :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_VPDEF_SI         :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Vapour pressure deficit: Atmosphere'           &
                            ,'[         Pa]','(isite)'            )
@@ -18217,7 +18362,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_shv                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_SHV_SI           :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_SHV_SI           :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Specific humidity: Atmosphere'                 &
                            ,'[      kg/kg]','(isite)'            )
@@ -18226,7 +18371,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_rshort                                    &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RSHORT_SI        :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RSHORT_SI        :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation: Atmosphere'               &
                            ,'[       W/m2]','(isite)'            )
@@ -18235,7 +18380,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RSHORT_DIFF_SI   :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RSHORT_DIFF_SI   :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Diffuse SW radiation: Atmosphere'              &
                            ,'[       W/m2]','(isite)'            )
@@ -18244,7 +18389,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_par                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_PAR_SI           :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_PAR_SI           :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - PAR: Atmosphere'                               &
                            ,'[       W/m2]','(isite)'            )
@@ -18253,7 +18398,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_par_diff                                  &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_PAR_DIFF_SI      :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_PAR_DIFF_SI      :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Diffuse PAR: Atmosphere'                       &
                            ,'[       W/m2]','(isite)'            )
@@ -18262,7 +18407,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_rlong                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RLONG_SI         :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RLONG_SI         :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation: Atmosphere'                &
                            ,'[       W/m2]','(isite)'            )
@@ -18271,7 +18416,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_vels                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_VELS_SI          :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_VELS_SI          :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wind speed: atmosphere'                        &
                            ,'[        m/s]','(isite)'            )
@@ -18280,7 +18425,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_rhos                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_RHOS_SI          :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_RHOS_SI          :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air density: Atmosphere'                       &
                            ,'[      kg/m3]','(isite)'            )
@@ -18289,7 +18434,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_prss                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_PRSS_SI          :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_PRSS_SI          :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air pressure: Atmosphere'                      &
                            ,'[         Pa]','(isite)'            )
@@ -18298,7 +18443,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_atm_co2                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ATM_CO2_SI           :21:hist:mont:dcyc')
+                           ,'MMEAN_ATM_CO2_SI           :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 mixing ratio: Atmosphere'                  &
                            ,'[   umol/mol]','(isite)'            )
@@ -18307,7 +18452,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_pcpg                                          &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PCPG_SI              :21:hist:mont:dcyc')
+                           ,'MMEAN_PCPG_SI              :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Precipitation rate'                            &
                            ,'[    kg/m2/s]','(isite)'            )
@@ -18316,7 +18461,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_qpcpg                                         &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QPCPG_SI             :21:hist:mont:dcyc')
+                           ,'MMEAN_QPCPG_SI             :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Energy gain - rain'                            &
                            ,'[       W/m2]','(isite)'            )
@@ -18325,7 +18470,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%mmean_dpcpg                                         &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_DPCPG_SI             :21:hist:mont:dcyc')
+                           ,'MMEAN_DPCPG_SI             :21:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Precipitation depth'                           &
                            ,'[          m]','(isite)'            )
@@ -18470,15 +18615,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(polygontype), target        :: cpoly
-      integer          , intent(in)    :: init
-      integer          , intent(in)    :: igr
-      integer          , intent(in)    :: var_len
-      integer          , intent(in)    :: max_ptrs
-      integer          , intent(in)    :: var_len_global
-      integer          , intent(inout) :: nvar
+      type(polygontype)     , target        :: cpoly
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                          :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the mean diel to the history file.                    !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:dcyc'
+      else
+         eorq_keys = 'dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -18496,7 +18654,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_theiv                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_THEIV_SI        :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_THEIV_SI        :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ice-vapour equiv. pot. temp.: Atmosphere'         &
                            ,'[          K]','(ndcycle,isite)'    )
@@ -18505,7 +18663,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_theta                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_THETA_SI        :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_THETA_SI        :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Potential temperature: Atmosphere'                &
                            ,'[          K]','(ndcycle,isite)'    )
@@ -18514,7 +18672,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_temp                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_TEMP_SI         :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_TEMP_SI         :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Temperature: Atmosphere'                          &
                            ,'[          K]','(ndcycle,isite)'    )
@@ -18523,7 +18681,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_vpdef                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_VPDEF_SI        :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_VPDEF_SI        :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Vapour pressure deficit: Atmosphere'              &
                            ,'[         Pa]','(ndcycle,isite)'    )
@@ -18532,7 +18690,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_shv                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_SHV_SI          :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_SHV_SI          :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Specific humidity: Atmosphere'                    &
                            ,'[      kg/kg]','(ndcycle,isite)'    )
@@ -18541,7 +18699,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_rshort                                    &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RSHORT_SI       :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_RSHORT_SI       :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation: Atmosphere'                  &
                            ,'[       W/m2]','(ndcycle,isite)'    )
@@ -18550,7 +18708,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_rshort_diff                               &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RSHORT_DIFF_SI  :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_RSHORT_DIFF_SI  :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Diffuse SW radiation: Atmosphere'                 &
                            ,'[       W/m2]','(ndcycle,isite)'    )
@@ -18559,7 +18717,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_par                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_PAR_SI          :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_PAR_SI          :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - PAR: Atmosphere'                                  &
                            ,'[       W/m2]','(ndcycle,isite)'    )
@@ -18568,7 +18726,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_par_diff                                  &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_PAR_DIFF_SI     :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_PAR_DIFF_SI     :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Diffuse PAR: Atmosphere'                          &
                            ,'[       W/m2]','(ndcycle,isite)'    )
@@ -18577,7 +18735,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_rlong                                     &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RLONG_SI        :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_RLONG_SI        :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation: Atmosphere'                   &
                            ,'[       W/m2]','(ndcycle,isite)'    )
@@ -18586,7 +18744,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_vels                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_VELS_SI         :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_VELS_SI         :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wind speed: atmosphere'                           &
                            ,'[        m/s]','(ndcycle,isite)'    )
@@ -18595,7 +18753,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_rhos                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_RHOS_SI         :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_RHOS_SI         :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air density: Atmosphere'                          &
                            ,'[      kg/m3]','(ndcycle,isite)'    )
@@ -18604,7 +18762,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_prss                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_PRSS_SI         :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_PRSS_SI         :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air pressure: Atmosphere'                         &
                            ,'[         Pa]','(ndcycle,isite)'    )
@@ -18613,7 +18771,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_atm_co2                                       &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ATM_CO2_SI          :-21:hist:dcyc'     )
+                           ,'QMEAN_ATM_CO2_SI          :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 mixing ratio: Atmosphere'                     &
                            ,'[   umol/mol]','(ndcycle,isite)'    )
@@ -18622,7 +18780,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_pcpg                                          &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PCPG_SI             :-21:hist:dcyc'     )
+                           ,'QMEAN_PCPG_SI             :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Precipitation rate'                               &
                            ,'[    kg/m2/s]','(ndcycle,isite)'    )
@@ -18631,7 +18789,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_qpcpg                                         &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QPCPG_SI            :-21:hist:dcyc'     )
+                           ,'QMEAN_QPCPG_SI            :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Energy gain - rain'                               &
                            ,'[       W/m2]','(ndcycle,isite)'    )
@@ -18640,7 +18798,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpoly%qmean_dpcpg                                         &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_DPCPG_SI            :-21:hist:dcyc'     )
+                           ,'QMEAN_DPCPG_SI            :-21:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Precipitation depth'                              &
                            ,'[          m]','(ndcycle,isite)'    )
@@ -19925,15 +20083,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target        :: csite
-      integer       , intent(in)    :: init
-      integer       , intent(in)    :: igr
-      integer       , intent(in)    :: var_len
-      integer       , intent(in)    :: max_ptrs
-      integer       , intent(in)    :: var_len_global
-      integer       , intent(inout) :: nvar
+      type(sitetype)        , target        :: csite
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                       :: npts
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the sub-daily means to the history file.              !
+      !------------------------------------------------------------------------------------!
+      if (history_fast) then
+         fast_keys = 'hist:anal'
+      else
+         fast_keys = 'anal'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -19951,7 +20122,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rh                                            &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RH_PA                :31:hist:anal'     )
+                           ,'FMEAN_RH_PA                :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Heterotrophic respiration'                   &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -19960,7 +20131,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_cwd_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CWD_RH_PA            :31:hist:anal'     )
+                           ,'FMEAN_CWD_RH_PA            :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Coarse woody debris respiration'             &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -19969,7 +20140,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_nep                                           &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_NEP_PA               :31:hist:anal'     )
+                           ,'FMEAN_NEP_PA               :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net Ecosystem productivity'                  &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -19978,7 +20149,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rk4step                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RK4STEP_PA           :31:hist:anal'     )
+                           ,'FMEAN_RK4STEP_PA           :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - RK4 time step'                               &
                            ,'[          s]','(ipatch)'            )
@@ -19987,7 +20158,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_available_water                               &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_AVAILABLE_WATER_PA   :31:hist:anal'     )
+                           ,'FMEAN_AVAILABLE_WATER_PA   :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Available water'                             &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -19996,7 +20167,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_theiv                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_THEIV_PA         :31:hist:anal'     )
+                           ,'FMEAN_CAN_THEIV_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ice-vapour equiv. pot. temperature - CAS'    &
                            ,'[          K]','(ipatch)'            )
@@ -20005,7 +20176,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_theta                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_THETA_PA         :31:hist:anal'     )
+                           ,'FMEAN_CAN_THETA_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Potential temperature - CAS'                 &
                            ,'[          K]','(ipatch)'            )
@@ -20014,7 +20185,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_vpdef                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_VPDEF_PA         :31:hist:anal'     )
+                           ,'FMEAN_CAN_VPDEF_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Vapour pressure deficit - CAS'               &
                            ,'[         Pa]','(ipatch)'            )
@@ -20023,7 +20194,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_TEMP_PA          :31:hist:anal'     )
+                           ,'FMEAN_CAN_TEMP_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Temperature - CAS'                           &
                            ,'[          K]','(ipatch)'            )
@@ -20032,7 +20203,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_SHV_PA           :31:hist:anal'     )
+                           ,'FMEAN_CAN_SHV_PA           :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Specific humidity - CAS'                     &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -20041,7 +20212,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_co2                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_CO2_PA           :31:hist:anal'     )
+                           ,'FMEAN_CAN_CO2_PA           :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 mixing ratio - CAS'                      &
                            ,'[   umol/mol]','(ipatch)'            )
@@ -20050,7 +20221,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_rhos                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_RHOS_PA          :31:hist:anal'     )
+                           ,'FMEAN_CAN_RHOS_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Air density - CAS'                           &
                            ,'[      kg/m3]','(ipatch)'            )
@@ -20059,7 +20230,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_prss                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_PRSS_PA          :31:hist:anal'     )
+                           ,'FMEAN_CAN_PRSS_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Pressure - CAS'                              &
                            ,'[         Pa]','(ipatch)'            )
@@ -20068,7 +20239,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_gnd_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_GND_TEMP_PA          :31:hist:anal'     )
+                           ,'FMEAN_GND_TEMP_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ground temperature'                          &
                            ,'[          K]','(ipatch)'            )
@@ -20077,7 +20248,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_gnd_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_GND_SHV_PA           :31:hist:anal'     )
+                           ,'FMEAN_GND_SHV_PA           :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Ground specific humidity'                    &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -20086,7 +20257,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_can_ggnd                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CAN_GGND_PA          :31:hist:anal'     )
+                           ,'FMEAN_CAN_GGND_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net canopy conductance'                      &
                            ,'[        m/2]','(ipatch)'            )
@@ -20095,7 +20266,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sfcw_depth                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_DEPTH_PA        :31:hist:anal'     )
+                           ,'FMEAN_SFCW_DEPTH_PA        :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Depth - temporary water layer'               &
                            ,'[          m]','(ipatch)'            )
@@ -20104,7 +20275,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sfcw_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_ENERGY_PA       :31:hist:anal'     )
+                           ,'FMEAN_SFCW_ENERGY_PA       :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Internal energy - temporary water layer'     &
                            ,'[       J/kg]','(ipatch)'            )
@@ -20113,7 +20284,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sfcw_mass                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_MASS_PA         :31:hist:anal'     )
+                           ,'FMEAN_SFCW_MASS_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water mass - temporary water layer'          &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -20122,7 +20293,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sfcw_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_TEMP_PA         :31:hist:anal'     )
+                           ,'FMEAN_SFCW_TEMP_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Temperature - temporary water layer'         &
                            ,'[          K]','(ipatch)'            )
@@ -20131,7 +20302,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sfcw_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SFCW_FLIQ_PA         :31:hist:anal'     )
+                           ,'FMEAN_SFCW_FLIQ_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Liquid fraction - temporary water layer'     &
                            ,'[         --]','(ipatch)'            )
@@ -20140,7 +20311,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rshort_gnd                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RSHORT_GND_PA        :31:hist:anal'     )
+                           ,'FMEAN_RSHORT_GND_PA        :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation absorbed by ground'      &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20149,7 +20320,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_par_gnd                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PAR_GND_PA           :31:hist:anal'     )
+                           ,'FMEAN_PAR_GND_PA           :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - PAR absorbed by ground'                      &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20158,7 +20329,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rlong_gnd                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONG_GND_PA         :31:hist:anal'     )
+                           ,'FMEAN_RLONG_GND_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation absorbed by ground'       &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20167,7 +20338,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rlongup                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONGUP_PA           :31:hist:anal'     )
+                           ,'FMEAN_RLONGUP_PA           :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing longwave radiation'                 &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20176,7 +20347,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_parup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_PARUP_PA             :31:hist:anal'     )
+                           ,'FMEAN_PARUP_PA             :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing PAR'                                &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20185,7 +20356,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_nirup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_NIRUP_PA             :31:hist:anal'     )
+                           ,'FMEAN_NIRUP_PA             :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing near infra-red radiation'           &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20194,7 +20365,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rshortup                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RSHORTUP_PA          :31:hist:anal'     )
+                           ,'FMEAN_RSHORTUP_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Outgoing shortwave radiation'                &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20203,7 +20374,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rnet                                          &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RNET_PA              :31:hist:anal'     )
+                           ,'FMEAN_RNET_PA              :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net radiation at top of canopy'              &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20212,7 +20383,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_albedo                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ALBEDO_PA            :31:hist:anal'     )
+                           ,'FMEAN_ALBEDO_PA            :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Albedo'                                      &
                            ,'[       ----]','(ipatch)'            )
@@ -20221,7 +20392,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_albedo_beam                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ALBEDO_BEAM_PA       :31:hist:anal'     )
+                           ,'FMEAN_ALBEDO_BEAM_PA       :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Albedo - direct radiation'                   &
                            ,'[       ----]','(ipatch)'            )
@@ -20230,7 +20401,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_albedo_diff                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_ALBEDO_DIFF_PA       :31:hist:anal'     )
+                           ,'FMEAN_ALBEDO_DIFF_PA       :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Albedo - diffuse radiation'                  &
                            ,'[       ----]','(ipatch)'            )
@@ -20239,7 +20410,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rlong_albedo                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RLONG_ALBEDO_PA      :31:hist:anal'     )
+                           ,'FMEAN_RLONG_ALBEDO_PA      :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Kind of albedo - longwave radiation'         &
                            ,'[       ----]','(ipatch)'            )
@@ -20248,7 +20419,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_ustar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_USTAR_PA             :31:hist:anal'     )
+                           ,'FMEAN_USTAR_PA             :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Friction velocity'                           &
                            ,'[        m/s]','(ipatch)'            )
@@ -20257,7 +20428,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_tstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_TSTAR_PA             :31:hist:anal'     )
+                           ,'FMEAN_TSTAR_PA             :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gradient scale for potential temperature'    &
                            ,'[          K]','(ipatch)'            )
@@ -20266,7 +20437,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_qstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QSTAR_PA             :31:hist:anal'     )
+                           ,'FMEAN_QSTAR_PA             :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gradient scale for specific humidity'        &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -20275,7 +20446,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_cstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CSTAR_PA             :31:hist:anal'     )
+                           ,'FMEAN_CSTAR_PA             :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gradient scale for CO2 mixing ratio'         &
                            ,'[   umol/mol]','(ipatch)'            )
@@ -20284,7 +20455,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_carbon_ac                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CARBON_AC_PA         :31:hist:anal'     )
+                           ,'FMEAN_CARBON_AC_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 flux: atmosphere -> CAS'                 &
                            ,'[  umol/m2/s]','(ipatch)'            )
@@ -20293,7 +20464,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_carbon_st                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_CARBON_ST_PA         :31:hist:anal'     )
+                           ,'FMEAN_CARBON_ST_PA         :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2 storage at CAS'                          &
                            ,'[  umol/m2/s]','(ipatch)'            )
@@ -20302,7 +20473,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_vapor_gc                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VAPOR_GC_PA          :31:hist:anal'     )
+                           ,'FMEAN_VAPOR_GC_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water vapour flux: ground -> CAS'            &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20311,7 +20482,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_vapor_ac                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VAPOR_AC_PA          :31:hist:anal'     )
+                           ,'FMEAN_VAPOR_AC_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water vapour flux: atmosphere -> CAS'        &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20320,7 +20491,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_throughfall                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_THROUGHFALL_PA       :31:hist:anal'     )
+                           ,'FMEAN_THROUGHFALL_PA       :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Throughfall rate'                            &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20329,7 +20500,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_runoff                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_RUNOFF_PA            :31:hist:anal'     )
+                           ,'FMEAN_RUNOFF_PA            :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water runoff'                                &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20338,7 +20509,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_drainage                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_DRAINAGE_PA          :31:hist:anal'     )
+                           ,'FMEAN_DRAINAGE_PA          :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water drainage'                              &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20347,7 +20518,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sensible_gc                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_GC_PA       :31:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_GC_PA       :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat flux: ground -> CAS'           &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20356,7 +20527,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sensible_ac                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_AC_PA       :31:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_AC_PA       :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat flux: atmosphere -> CAS'       &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20365,7 +20536,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_qthroughfall                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QTHROUGHFALL_PA      :31:hist:anal'     )
+                           ,'FMEAN_QTHROUGHFALL_PA      :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Throughfall rate'                            &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20374,7 +20545,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_qrunoff                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_QRUNOFF_PA           :31:hist:anal'     )
+                           ,'FMEAN_QRUNOFF_PA           :31:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Surface runoff'                              &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20402,15 +20573,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target        :: csite
-      integer       , intent(in)    :: init
-      integer       , intent(in)    :: igr
-      integer       , intent(in)    :: var_len
-      integer       , intent(in)    :: max_ptrs
-      integer       , intent(in)    :: var_len_global
-      integer       , intent(inout) :: nvar
+      type(sitetype)        , target        :: csite
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                       :: npts
+      integer                               :: npts
+      character(len=str_len)                :: dail_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the daily means to the history file.                  !
+      !------------------------------------------------------------------------------------!
+      if (history_dail) then
+         dail_keys = 'hist:dail'
+      else
+         dail_keys = 'dail'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -20428,7 +20612,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_A_decomp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_A_DECOMP_PA          :31:hist:dail'     )
+                           ,'DMEAN_A_DECOMP_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Decomposition scale'                             &
                            ,'[         --]','(ipatch)'            )
@@ -20437,7 +20621,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_Af_decomp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_AF_DECOMP_PA         :31:hist:dail'     )
+                           ,'DMEAN_AF_DECOMP_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Decomposition scale with N immobilisation'       &
                            ,'[         --]','(ipatch)'            )
@@ -20446,7 +20630,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_co2_residual                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CO2_RESIDUAL_PA      :31:hist:dail'     )
+                           ,'DMEAN_CO2_RESIDUAL_PA      :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Budget check - CO2 residual'                     &
                            ,'[    umol/m2]','(ipatch)'            )
@@ -20455,7 +20639,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_energy_residual                               &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ENERGY_RESIDUAL_PA   :31:hist:dail'     )
+                           ,'DMEAN_ENERGY_RESIDUAL_PA   :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Budget check - Enthalpy residual'                &
                            ,'[       J/m2]','(ipatch)'            )
@@ -20464,7 +20648,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_water_residual                                &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_WATER_RESIDUAL_PA    :31:hist:dail'     )
+                           ,'DMEAN_WATER_RESIDUAL_PA    :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Budget check - Water residual'                   &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -20474,7 +20658,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rh                                            &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RH_PA                :31:hist:dail'     )
+                           ,'DMEAN_RH_PA                :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Heterotrophic respiration'                       &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -20483,7 +20667,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_cwd_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CWD_RH_PA            :31:hist:dail'     )
+                           ,'DMEAN_CWD_RH_PA            :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Coarse woody debris respiration'                 &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -20492,7 +20676,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_nep                                           &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NEP_PA               :31:hist:dail'     )
+                           ,'DMEAN_NEP_PA               :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net Ecosystem productivity'                      &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -20501,7 +20685,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rk4step                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RK4STEP_PA           :31:hist:dail'     )
+                           ,'DMEAN_RK4STEP_PA           :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - RK4 time step'                                   &
                            ,'[          s]','(ipatch)'            )
@@ -20510,7 +20694,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_available_water                               &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_AVAILABLE_WATER_PA   :31:hist:dail'     )
+                           ,'DMEAN_AVAILABLE_WATER_PA   :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Available water'                                 &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -20519,7 +20703,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_theiv                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_THEIV_PA         :31:hist:dail'     )
+                           ,'DMEAN_CAN_THEIV_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ice-vapour equiv. pot. temperature - CAS'        &
                            ,'[          K]','(ipatch)'            )
@@ -20528,7 +20712,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_theta                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_THETA_PA         :31:hist:dail'     )
+                           ,'DMEAN_CAN_THETA_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Potential temperature - CAS'                     &
                            ,'[          K]','(ipatch)'            )
@@ -20537,7 +20721,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_vpdef                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_VPDEF_PA         :31:hist:dail'     )
+                           ,'DMEAN_CAN_VPDEF_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Vapour pressure deficit - CAS'                   &
                            ,'[         Pa]','(ipatch)'            )
@@ -20546,7 +20730,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_TEMP_PA          :31:hist:dail'     )
+                           ,'DMEAN_CAN_TEMP_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Temperature - CAS'                               &
                            ,'[          K]','(ipatch)'            )
@@ -20555,7 +20739,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_SHV_PA           :31:hist:dail'     )
+                           ,'DMEAN_CAN_SHV_PA           :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Specific humidity - CAS'                         &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -20564,7 +20748,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_co2                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_CO2_PA           :31:hist:dail'     )
+                           ,'DMEAN_CAN_CO2_PA           :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 mixing ratio - CAS'                          &
                            ,'[   umol/mol]','(ipatch)'            )
@@ -20573,7 +20757,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_rhos                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_RHOS_PA          :31:hist:dail'     )
+                           ,'DMEAN_CAN_RHOS_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Air density - CAS'                               &
                            ,'[      kg/m3]','(ipatch)'            )
@@ -20582,7 +20766,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_prss                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_PRSS_PA          :31:hist:dail'     )
+                           ,'DMEAN_CAN_PRSS_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Pressure - CAS'                                  &
                            ,'[         Pa]','(ipatch)'            )
@@ -20591,7 +20775,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_gnd_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_GND_TEMP_PA          :31:hist:dail'     )
+                           ,'DMEAN_GND_TEMP_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ground temperature'                              &
                            ,'[          K]','(ipatch)'            )
@@ -20600,7 +20784,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_gnd_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_GND_SHV_PA           :31:hist:dail'     )
+                           ,'DMEAN_GND_SHV_PA           :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Ground specific humidity'                        &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -20609,7 +20793,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_ggnd                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CAN_GGND_PA          :31:hist:dail'     )
+                           ,'DMEAN_CAN_GGND_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net canopy conductance'                          &
                            ,'[        m/2]','(ipatch)'            )
@@ -20618,7 +20802,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sfcw_depth                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_DEPTH_PA        :31:hist:dail'     )
+                           ,'DMEAN_SFCW_DEPTH_PA        :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Depth - temporary water layer'                   &
                            ,'[          m]','(ipatch)'            )
@@ -20627,7 +20811,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sfcw_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_ENERGY_PA       :31:hist:dail'     )
+                           ,'DMEAN_SFCW_ENERGY_PA       :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Internal energy - temporary water layer'         &
                            ,'[       J/kg]','(ipatch)'            )
@@ -20636,7 +20820,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sfcw_mass                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_MASS_PA         :31:hist:dail'     )
+                           ,'DMEAN_SFCW_MASS_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water mass - temporary water layer'              &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -20645,7 +20829,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sfcw_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_TEMP_PA         :31:hist:dail'     )
+                           ,'DMEAN_SFCW_TEMP_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Temperature - temporary water layer'             &
                            ,'[          K]','(ipatch)'            )
@@ -20654,7 +20838,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sfcw_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SFCW_FLIQ_PA         :31:hist:dail'     )
+                           ,'DMEAN_SFCW_FLIQ_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Liquid fraction - temporary water layer'         &
                            ,'[         --]','(ipatch)'            )
@@ -20663,7 +20847,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rshort_gnd                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RSHORT_GND_PA        :31:hist:dail'     )
+                           ,'DMEAN_RSHORT_GND_PA        :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation absorbed by ground'          &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20672,7 +20856,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_par_gnd                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PAR_GND_PA           :31:hist:dail'     )
+                           ,'DMEAN_PAR_GND_PA           :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - PAR absorbed by ground'                          &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20681,7 +20865,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rlong_gnd                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONG_GND_PA         :31:hist:dail'     )
+                           ,'DMEAN_RLONG_GND_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation absorbed by ground'           &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20690,7 +20874,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rlongup                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONGUP_PA           :31:hist:dail'     )
+                           ,'DMEAN_RLONGUP_PA           :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing longwave radiation'                     &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20699,7 +20883,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_parup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_PARUP_PA             :31:hist:dail'     )
+                           ,'DMEAN_PARUP_PA             :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing PAR'                                    &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20708,7 +20892,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_nirup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_NIRUP_PA             :31:hist:dail'     )
+                           ,'DMEAN_NIRUP_PA             :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing near infra-red radiation'               &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20717,7 +20901,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rshortup                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RSHORTUP_PA          :31:hist:dail'     )
+                           ,'DMEAN_RSHORTUP_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Outgoing shortwave radiation'                    &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20726,7 +20910,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rnet                                          &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RNET_PA              :31:hist:dail'     )
+                           ,'DMEAN_RNET_PA              :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net radiation at top of canopy'                  &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20735,7 +20919,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_albedo                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ALBEDO_PA            :31:hist:dail'     )
+                           ,'DMEAN_ALBEDO_PA            :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Albedo'                                          &
                            ,'[       ----]','(ipatch)'            )
@@ -20744,7 +20928,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_albedo_beam                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ALBEDO_BEAM_PA       :31:hist:dail'     )
+                           ,'DMEAN_ALBEDO_BEAM_PA       :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Albedo - direct radiation'                       &
                            ,'[       ----]','(ipatch)'            )
@@ -20753,7 +20937,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_albedo_diff                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_ALBEDO_DIFF_PA       :31:hist:dail'     )
+                           ,'DMEAN_ALBEDO_DIFF_PA       :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Albedo - diffuse radiation'                      &
                            ,'[       ----]','(ipatch)'            )
@@ -20762,7 +20946,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rlong_albedo                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RLONG_ALBEDO_PA      :31:hist:dail'     )
+                           ,'DMEAN_RLONG_ALBEDO_PA      :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Kind of albedo - longwave radiation'             &
                            ,'[       ----]','(ipatch)'            )
@@ -20771,7 +20955,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_ustar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_USTAR_PA             :31:hist:dail'     )
+                           ,'DMEAN_USTAR_PA             :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Friction velocity'                               &
                            ,'[        m/s]','(ipatch)'            )
@@ -20780,7 +20964,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_tstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_TSTAR_PA             :31:hist:dail'     )
+                           ,'DMEAN_TSTAR_PA             :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gradient scale for potential temperature'        &
                            ,'[          K]','(ipatch)'            )
@@ -20789,7 +20973,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_qstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QSTAR_PA             :31:hist:dail'     )
+                           ,'DMEAN_QSTAR_PA             :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gradient scale for specific humidity'            &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -20798,7 +20982,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_cstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CSTAR_PA             :31:hist:dail'     )
+                           ,'DMEAN_CSTAR_PA             :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gradient scale for CO2 mixing ratio'             &
                            ,'[   umol/mol]','(ipatch)'            )
@@ -20807,7 +20991,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_carbon_ac                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CARBON_AC_PA         :31:hist:dail'     )
+                           ,'DMEAN_CARBON_AC_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 flux: atmosphere -> CAS'                     &
                            ,'[  umol/m2/s]','(ipatch)'            )
@@ -20816,7 +21000,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_carbon_st                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_CARBON_ST_PA         :31:hist:dail'     )
+                           ,'DMEAN_CARBON_ST_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - CO2 storage at CAS'                              &
                            ,'[  umol/m2/s]','(ipatch)'            )
@@ -20825,7 +21009,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_vapor_gc                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VAPOR_GC_PA          :31:hist:dail'     )
+                           ,'DMEAN_VAPOR_GC_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water vapour flux: ground -> CAS'                &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20834,7 +21018,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_vapor_ac                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VAPOR_AC_PA          :31:hist:dail'     )
+                           ,'DMEAN_VAPOR_AC_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water vapour flux: atmosphere -> CAS'            &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20843,7 +21027,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_throughfall                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_THROUGHFALL_PA       :31:hist:dail'     )
+                           ,'DMEAN_THROUGHFALL_PA       :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Throughfall rate'                                &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20852,7 +21036,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_runoff                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_RUNOFF_PA            :31:hist:dail'     )
+                           ,'DMEAN_RUNOFF_PA            :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water runoff'                                    &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20861,7 +21045,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_drainage                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_DRAINAGE_PA          :31:hist:dail'     )
+                           ,'DMEAN_DRAINAGE_PA          :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water drainage'                                  &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -20870,7 +21054,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sensible_gc                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_GC_PA       :31:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_GC_PA       :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat flux: ground -> CAS'               &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20879,7 +21063,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sensible_ac                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_AC_PA       :31:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_AC_PA       :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat flux: atmosphere -> CAS'           &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20888,7 +21072,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_qthroughfall                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QTHROUGHFALL_PA      :31:hist:dail'     )
+                           ,'DMEAN_QTHROUGHFALL_PA      :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Throughfall rate'                                &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20897,7 +21081,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_qrunoff                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QRUNOFF_PA           :31:hist:dail'     )
+                           ,'DMEAN_QRUNOFF_PA           :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Surface runoff'                                  &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20906,7 +21090,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_qdrainage                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_QDRAINAGE_PA         :31:hist:dail'     )
+                           ,'DMEAN_QDRAINAGE_PA         :31:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Drainage energy loss'                            &
                            ,'[       W/m2]','(ipatch)'            )
@@ -20935,15 +21119,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target        :: csite
-      integer       , intent(in)    :: init
-      integer       , intent(in)    :: igr
-      integer       , intent(in)    :: var_len
-      integer       , intent(in)    :: max_ptrs
-      integer       , intent(in)    :: var_len_global
-      integer       , intent(inout) :: nvar
+      type(sitetype)        , target        :: csite
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                       :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the monthly means to the history file.                !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -20960,7 +21157,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rh                                            &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RH_PA                :31:hist:mont:dcyc')
+                           ,'MMEAN_RH_PA                :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Heterotrophic respiration'                     &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -20969,7 +21166,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_cwd_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CWD_RH_PA            :31:hist:mont:dcyc')
+                           ,'MMEAN_CWD_RH_PA            :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Coarse woody debris respiration'               &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -20978,7 +21175,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_nep                                           &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NEP_PA               :31:hist:mont:dcyc')
+                           ,'MMEAN_NEP_PA               :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net Ecosystem productivity'                    &
                            ,'[   kg/m2/yr]','(ipatch)'            )
@@ -20987,7 +21184,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rk4step                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RK4STEP_PA           :31:hist:mont:dcyc')
+                           ,'MMEAN_RK4STEP_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - RK4 time step'                                 &
                            ,'[          s]','(ipatch)'            )
@@ -20996,7 +21193,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_available_water                               &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_AVAILABLE_WATER_PA   :31:hist:mont:dcyc')
+                           ,'MMEAN_AVAILABLE_WATER_PA   :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Available water'                               &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -21005,7 +21202,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_theiv                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_THEIV_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_THEIV_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ice-vapour equiv. pot. temperature - CAS'      &
                            ,'[          K]','(ipatch)'            )
@@ -21014,7 +21211,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_theta                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_THETA_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_THETA_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Potential temperature - CAS'                   &
                            ,'[          K]','(ipatch)'            )
@@ -21023,7 +21220,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_vpdef                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_VPDEF_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_VPDEF_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Vapour pressure deficit - CAS'                 &
                            ,'[         Pa]','(ipatch)'            )
@@ -21032,7 +21229,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_TEMP_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_TEMP_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Temperature - CAS'                             &
                            ,'[          K]','(ipatch)'            )
@@ -21041,7 +21238,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_SHV_PA           :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_SHV_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Specific humidity - CAS'                       &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -21050,7 +21247,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_co2                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_CO2_PA           :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_CO2_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 mixing ratio - CAS'                        &
                            ,'[   umol/mol]','(ipatch)'            )
@@ -21059,7 +21256,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_rhos                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_RHOS_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_RHOS_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Air density - CAS'                             &
                            ,'[      kg/m3]','(ipatch)'            )
@@ -21068,7 +21265,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_prss                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_PRSS_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_PRSS_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Pressure - CAS'                                &
                            ,'[         Pa]','(ipatch)'            )
@@ -21077,7 +21274,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_gnd_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_GND_TEMP_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_GND_TEMP_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ground temperature'                            &
                            ,'[          K]','(ipatch)'            )
@@ -21086,7 +21283,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_gnd_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_GND_SHV_PA           :31:hist:mont:dcyc')
+                           ,'MMEAN_GND_SHV_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Ground specific humidity'                      &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -21095,7 +21292,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_can_ggnd                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CAN_GGND_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_CAN_GGND_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net canopy conductance'                        &
                            ,'[        m/2]','(ipatch)'            )
@@ -21104,7 +21301,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sfcw_depth                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_DEPTH_PA        :31:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_DEPTH_PA        :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Depth - temporary water layer'                 &
                            ,'[          m]','(ipatch)'            )
@@ -21113,7 +21310,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sfcw_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_ENERGY_PA       :31:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_ENERGY_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Internal energy - temporary water layer'       &
                            ,'[       J/kg]','(ipatch)'            )
@@ -21122,7 +21319,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sfcw_mass                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_MASS_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_MASS_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water mass - temporary water layer'            &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -21131,7 +21328,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sfcw_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_TEMP_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_TEMP_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Temperature - temporary water layer'           &
                            ,'[          K]','(ipatch)'            )
@@ -21140,7 +21337,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sfcw_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SFCW_FLIQ_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_SFCW_FLIQ_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction - temporary water layer'       &
                            ,'[         --]','(ipatch)'            )
@@ -21149,7 +21346,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rshort_gnd                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RSHORT_GND_PA        :31:hist:mont:dcyc')
+                           ,'MMEAN_RSHORT_GND_PA        :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation absorbed by ground'        &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21158,7 +21355,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_par_gnd                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PAR_GND_PA           :31:hist:mont:dcyc')
+                           ,'MMEAN_PAR_GND_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - PAR absorbed by ground'                        &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21167,7 +21364,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rlong_gnd                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONG_GND_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_GND_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation absorbed by ground'         &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21176,7 +21373,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rlongup                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONGUP_PA           :31:hist:mont:dcyc')
+                           ,'MMEAN_RLONGUP_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing longwave radiation'                   &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21185,7 +21382,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_parup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_PARUP_PA             :31:hist:mont:dcyc')
+                           ,'MMEAN_PARUP_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing PAR'                                  &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21194,7 +21391,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_nirup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_NIRUP_PA             :31:hist:mont:dcyc')
+                           ,'MMEAN_NIRUP_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing near infra-red radiation'             &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21203,7 +21400,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rshortup                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RSHORTUP_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_RSHORTUP_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Outgoing shortwave radiation'                  &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21212,7 +21409,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rnet                                          &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RNET_PA              :31:hist:mont:dcyc')
+                           ,'MMEAN_RNET_PA              :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net radiation at top of canopy'                &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21221,7 +21418,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_albedo                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ALBEDO_PA            :31:hist:mont:dcyc')
+                           ,'MMEAN_ALBEDO_PA            :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Albedo'                                        &
                            ,'[       ----]','(ipatch)'            )
@@ -21230,7 +21427,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_albedo_beam                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ALBEDO_BEAM_PA       :31:hist:mont:dcyc')
+                           ,'MMEAN_ALBEDO_BEAM_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Albedo - direct radiation'                     &
                            ,'[       ----]','(ipatch)'            )
@@ -21239,7 +21436,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_albedo_diff                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ALBEDO_DIFF_PA       :31:hist:mont:dcyc')
+                           ,'MMEAN_ALBEDO_DIFF_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Albedo - diffuse radiation'                    &
                            ,'[       ----]','(ipatch)'            )
@@ -21248,7 +21445,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_rlong_albedo                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RLONG_ALBEDO_PA      :31:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_ALBEDO_PA      :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Kind of albedo - longwave radiation'           &
                            ,'[       ----]','(ipatch)'            )
@@ -21257,7 +21454,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_ustar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_USTAR_PA             :31:hist:mont:dcyc')
+                           ,'MMEAN_USTAR_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Friction velocity'                             &
                            ,'[        m/s]','(ipatch)'            )
@@ -21266,7 +21463,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_tstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_TSTAR_PA             :31:hist:mont:dcyc')
+                           ,'MMEAN_TSTAR_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gradient scale for potential temperature'      &
                            ,'[          K]','(ipatch)'            )
@@ -21275,7 +21472,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_qstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QSTAR_PA             :31:hist:mont:dcyc')
+                           ,'MMEAN_QSTAR_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gradient scale for specific humidity'          &
                            ,'[      kg/kg]','(ipatch)'            )
@@ -21284,7 +21481,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_cstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CSTAR_PA             :31:hist:mont:dcyc')
+                           ,'MMEAN_CSTAR_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gradient scale for CO2 mixing ratio'           &
                            ,'[   umol/mol]','(ipatch)'            )
@@ -21293,7 +21490,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_carbon_ac                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CARBON_AC_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_CARBON_AC_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 flux: atmosphere -> CAS'                   &
                            ,'[  umol/m2/s]','(ipatch)'            )
@@ -21302,7 +21499,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_carbon_st                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CARBON_ST_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_CARBON_ST_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - CO2 storage at CAS'                            &
                            ,'[  umol/m2/s]','(ipatch)'            )
@@ -21311,7 +21508,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_vapor_gc                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VAPOR_GC_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_GC_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water vapour flux: ground -> CAS'              &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -21320,7 +21517,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_vapor_ac                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VAPOR_AC_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_AC_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water vapour flux: atmosphere -> CAS'          &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -21329,7 +21526,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_throughfall                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_THROUGHFALL_PA       :31:hist:mont:dcyc')
+                           ,'MMEAN_THROUGHFALL_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Throughfall rate'                              &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -21338,7 +21535,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_runoff                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_RUNOFF_PA            :31:hist:mont:dcyc')
+                           ,'MMEAN_RUNOFF_PA            :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water runoff'                                  &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -21347,7 +21544,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_drainage                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_DRAINAGE_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_DRAINAGE_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water drainage'                                &
                            ,'[    kg/m2/s]','(ipatch)'            )
@@ -21356,7 +21553,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sensible_gc                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_GC_PA       :31:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_GC_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat flux: ground -> CAS'             &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21365,7 +21562,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sensible_ac                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_AC_PA       :31:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_AC_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat flux: atmosphere -> CAS'         &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21374,7 +21571,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_qthroughfall                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QTHROUGHFALL_PA      :31:hist:mont:dcyc')
+                           ,'MMEAN_QTHROUGHFALL_PA      :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Throughfall rate'                              &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21383,7 +21580,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_qrunoff                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QRUNOFF_PA           :31:hist:mont:dcyc')
+                           ,'MMEAN_QRUNOFF_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Surface runoff'                                &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21392,7 +21589,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_qdrainage                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_QDRAINAGE_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_QDRAINAGE_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Drainage energy loss'                          &
                            ,'[       W/m2]','(ipatch)'            )
@@ -21401,7 +21598,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_fast_soil_c                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FAST_SOIL_C          :31:hist:mont:dcyc')
+                           ,'MMEAN_FAST_SOIL_C          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Carbon (Fast pool)'                       &
                            ,'[     kgC/m2]','(ipatch)'            )
@@ -21410,7 +21607,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_slow_soil_c                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SLOW_SOIL_C          :31:hist:mont:dcyc')
+                           ,'MMEAN_SLOW_SOIL_C          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Carbon (Slow pool)'                       &
                            ,'[     kgC/m2]','(ipatch)'            )
@@ -21419,7 +21616,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_struct_soil_c                                 &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_STRUCT_SOIL_C        :31:hist:mont:dcyc')
+                           ,'MMEAN_STRUCT_SOIL_C        :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Carbon (Structural pool)'                 &
                            ,'[     kgC/m2]','(ipatch)'            )
@@ -21428,7 +21625,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_struct_soil_l                                 &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_STRUCT_SOIL_L        :31:hist:mont:dcyc')
+                           ,'MMEAN_STRUCT_SOIL_L        :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Lignin (Structural pool)'                 &
                            ,'[     kgL/m2]','(ipatch)'            )
@@ -21437,7 +21634,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_fast_soil_n                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_FAST_SOIL_N          :31:hist:mont:dcyc')
+                           ,'MMEAN_FAST_SOIL_N          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Nitrogen (Fast pool)'                     &
                            ,'[     kgN/m2]','(ipatch)'            )
@@ -21446,7 +21643,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_mineral_soil_n                                &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_MINERAL_SOIL_N       :31:hist:mont:dcyc')
+                           ,'MMEAN_MINERAL_SOIL_N       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Nitrogen (Mineralised pool)'              &
                            ,'[     kgN/m2]','(ipatch)'            )
@@ -21455,7 +21652,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_A_decomp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_A_DECOMP_PA          :31:hist:mont:dcyc')
+                           ,'MMEAN_A_DECOMP_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Decomposition scale'                           &
                            ,'[         --]','(ipatch)'            )
@@ -21464,7 +21661,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_Af_decomp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_AF_DECOMP_PA         :31:hist:mont:dcyc')
+                           ,'MMEAN_AF_DECOMP_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Decomposition scale with N immobilisation'     &
                            ,'[         --]','(ipatch)'            )
@@ -21473,7 +21670,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_co2_residual                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_CO2_RESIDUAL_PA      :31:hist:mont:dcyc')
+                           ,'MMEAN_CO2_RESIDUAL_PA      :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Budget check - CO2 residual'                   &
                            ,'[    umol/m2]','(ipatch)'            )
@@ -21482,7 +21679,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_energy_residual                               &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_ENERGY_RESIDUAL_PA   :31:hist:mont:dcyc')
+                           ,'MMEAN_ENERGY_RESIDUAL_PA   :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Budget check - Enthalpy residual'              &
                            ,'[       J/m2]','(ipatch)'            )
@@ -21491,7 +21688,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_water_residual                                &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_WATER_RESIDUAL_PA    :31:hist:mont:dcyc')
+                           ,'MMEAN_WATER_RESIDUAL_PA    :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Budget check - Water residual'                 &
                            ,'[      kg/m2]','(ipatch)'            )
@@ -21500,7 +21697,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_rh                                            &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RH_PA                :31:hist:mont:dcyc')
+                           ,'MMSQU_RH_PA                :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Heterotrophic respiration'                     &
                            ,'[ kg2/m4/yr2]','(ipatch)'            )
@@ -21509,7 +21706,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_cwd_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CWD_RH_PA            :31:hist:mont:dcyc')
+                           ,'MMSQU_CWD_RH_PA            :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Coarse woody debris respiration'               &
                            ,'[ kg2/m4/yr2]','(ipatch)'            )
@@ -21518,7 +21715,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_nep                                           &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_NEP_PA               :31:hist:mont:dcyc')
+                           ,'MMSQU_NEP_PA               :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net Ecosystem productivity'                    &
                            ,'[ kg2/m4/yr2]','(ipatch)'            )
@@ -21527,7 +21724,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_rlongup                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RLONGUP_PA           :31:hist:mont:dcyc')
+                           ,'MMSQU_RLONGUP_PA           :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing longwave radiation'                   &
                            ,'[      W2/m4]','(ipatch)'            )
@@ -21536,7 +21733,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_parup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_PARUP_PA             :31:hist:mont:dcyc')
+                           ,'MMSQU_PARUP_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing PAR'                                  &
                            ,'[      W2/m4]','(ipatch)'            )
@@ -21545,7 +21742,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_nirup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_NIRUP_PA             :31:hist:mont:dcyc')
+                           ,'MMSQU_NIRUP_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing near infra-red radiation'             &
                            ,'[      W2/m4]','(ipatch)'            )
@@ -21554,7 +21751,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_rshortup                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RSHORTUP_PA          :31:hist:mont:dcyc')
+                           ,'MMSQU_RSHORTUP_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Outgoing shortwave radiation'                  &
                            ,'[      W2/m4]','(ipatch)'            )
@@ -21563,7 +21760,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_rnet                                          &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_RNET_PA              :31:hist:mont:dcyc')
+                           ,'MMSQU_RNET_PA              :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net radiation at top of canopy'                &
                            ,'[      W2/m4]','(ipatch)'            )
@@ -21572,7 +21769,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_albedo                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_ALBEDO_PA            :31:hist:mont:dcyc')
+                           ,'MMSQU_ALBEDO_PA            :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Albedo'                                        &
                            ,'[       ----]','(ipatch)'            )
@@ -21581,7 +21778,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_ustar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_USTAR_PA             :31:hist:mont:dcyc')
+                           ,'MMSQU_USTAR_PA             :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Friction velocity'                             &
                            ,'[      m2/s2]','(ipatch)'            )
@@ -21590,7 +21787,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_carbon_ac                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CARBON_AC_PA         :31:hist:mont:dcyc')
+                           ,'MMSQU_CARBON_AC_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - CO2 flux: atmosphere -> CAS'                   &
                            ,'[umol2/m4/s2]','(ipatch)'            )
@@ -21599,7 +21796,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_carbon_st                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_CARBON_ST_PA         :31:hist:mont:dcyc')
+                           ,'MMSQU_CARBON_ST_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - CO2 storage at CAS'                            &
                            ,'[umol2/m4/s2]','(ipatch)'            )
@@ -21608,7 +21805,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_vapor_gc                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_VAPOR_GC_PA          :31:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_GC_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Water vapour flux: ground -> CAS'              &
                            ,'[  kg2/m4/s2]','(ipatch)'            )
@@ -21617,7 +21814,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_vapor_ac                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_VAPOR_AC_PA          :31:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_AC_PA          :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Water vapour flux: atmosphere -> CAS'          &
                            ,'[  kg2/m4/s2]','(ipatch)'            )
@@ -21626,7 +21823,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_sensible_gc                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_SENSIBLE_GC_PA       :31:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_GC_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat flux: ground -> CAS'             &
                            ,'[      W2/m4]','(ipatch)'            )
@@ -21635,7 +21832,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmsqu_sensible_ac                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMSQU_SENSIBLE_AC_PA       :31:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_AC_PA       :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat flux: atmosphere -> CAS'         &
                            ,'[      W2/m4]','(ipatch)'            )
@@ -21666,15 +21863,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target        :: csite
-      integer       , intent(in)    :: init
-      integer       , intent(in)    :: igr
-      integer       , intent(in)    :: var_len
-      integer       , intent(in)    :: max_ptrs
-      integer       , intent(in)    :: var_len_global
-      integer       , intent(inout) :: nvar
+      type(sitetype)        , target        :: csite
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                       :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the mean diel to the history file.                    !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:dcyc'
+      else
+         eorq_keys = 'dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -21694,7 +21904,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rh                                            &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RH_PA               :-31:hist:dcyc'     )
+                           ,'QMEAN_RH_PA               :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Heterotrophic respiration'                        &
                            ,'[   kg/m2/yr]','(ndcycle,ipatch)'    )
@@ -21703,7 +21913,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_cwd_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CWD_RH_PA           :-31:hist:dcyc'     )
+                           ,'QMEAN_CWD_RH_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Coarse woody debris respiration'                  &
                            ,'[   kg/m2/yr]','(ndcycle,ipatch)'    )
@@ -21712,7 +21922,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_nep                                           &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_NEP_PA              :-31:hist:dcyc'     )
+                           ,'QMEAN_NEP_PA              :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net Ecosystem productivity'                       &
                            ,'[   kg/m2/yr]','(ndcycle,ipatch)'    )
@@ -21721,7 +21931,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rk4step                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RK4STEP_PA          :-31:hist:dcyc'     )
+                           ,'QMEAN_RK4STEP_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - RK4 time step'                                    &
                            ,'[          s]','(ndcycle,ipatch)'    )
@@ -21730,7 +21940,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_available_water                               &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_AVAILABLE_WATER_PA  :-31:hist:dcyc'     )
+                           ,'QMEAN_AVAILABLE_WATER_PA  :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Available water'                                  &
                            ,'[      kg/m2]','(ndcycle,ipatch)'    )
@@ -21739,7 +21949,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_theiv                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_THEIV_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_THEIV_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ice-vapour equiv. pot. temperature - CAS'         &
                            ,'[          K]','(ndcycle,ipatch)'    )
@@ -21748,7 +21958,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_theta                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_THETA_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_THETA_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Potential temperature - CAS'                      &
                            ,'[          K]','(ndcycle,ipatch)'    )
@@ -21757,7 +21967,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_vpdef                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_VPDEF_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_VPDEF_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Vapour pressure deficit - CAS'                    &
                            ,'[         Pa]','(ndcycle,ipatch)'    )
@@ -21766,7 +21976,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_TEMP_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_TEMP_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Temperature - CAS'                                &
                            ,'[          K]','(ndcycle,ipatch)'    )
@@ -21775,7 +21985,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_SHV_PA          :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_SHV_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Specific humidity - CAS'                          &
                            ,'[      kg/kg]','(ndcycle,ipatch)'    )
@@ -21784,7 +21994,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_co2                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_CO2_PA          :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_CO2_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 mixing ratio - CAS'                           &
                            ,'[   umol/mol]','(ndcycle,ipatch)'    )
@@ -21793,7 +22003,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_rhos                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_RHOS_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_RHOS_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Air density - CAS'                                &
                            ,'[      kg/m3]','(ndcycle,ipatch)'    )
@@ -21802,7 +22012,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_prss                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_PRSS_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_PRSS_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Pressure - CAS'                                   &
                            ,'[         Pa]','(ndcycle,ipatch)'    )
@@ -21811,7 +22021,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_gnd_temp                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_GND_TEMP_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_GND_TEMP_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ground temperature'                               &
                            ,'[          K]','(ndcycle,ipatch)'    )
@@ -21820,7 +22030,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_gnd_shv                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_GND_SHV_PA          :-31:hist:dcyc'     )
+                           ,'QMEAN_GND_SHV_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Ground specific humidity'                         &
                            ,'[      kg/kg]','(ndcycle,ipatch)'    )
@@ -21829,7 +22039,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_can_ggnd                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CAN_GGND_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_CAN_GGND_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net canopy conductance'                           &
                            ,'[        m/2]','(ndcycle,ipatch)'    )
@@ -21838,7 +22048,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sfcw_depth                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_DEPTH_PA       :-31:hist:dcyc'     )
+                           ,'QMEAN_SFCW_DEPTH_PA       :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Depth - temporary water layer'                    &
                            ,'[          m]','(ndcycle,ipatch)'    )
@@ -21847,7 +22057,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sfcw_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_ENERGY_PA      :-31:hist:dcyc'     )
+                           ,'QMEAN_SFCW_ENERGY_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Internal energy - temporary water layer'          &
                            ,'[       J/kg]','(ndcycle,ipatch)'    )
@@ -21856,7 +22066,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sfcw_mass                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_MASS_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_SFCW_MASS_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water mass - temporary water layer'               &
                            ,'[      kg/m2]','(ndcycle,ipatch)'    )
@@ -21865,7 +22075,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sfcw_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_TEMP_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_SFCW_TEMP_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Temperature - temporary water layer'              &
                            ,'[          K]','(ndcycle,ipatch)'    )
@@ -21874,7 +22084,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sfcw_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SFCW_FLIQ_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_SFCW_FLIQ_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction - temporary water layer'          &
                            ,'[         --]','(ndcycle,ipatch)'    )
@@ -21883,7 +22093,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rshort_gnd                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RSHORT_GND_PA       :-31:hist:dcyc'     )
+                           ,'QMEAN_RSHORT_GND_PA       :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation absorbed by ground'           &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21892,7 +22102,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_par_gnd                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PAR_GND_PA          :-31:hist:dcyc'     )
+                           ,'QMEAN_PAR_GND_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - PAR absorbed by ground'                           &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21901,7 +22111,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rlong_gnd                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONG_GND_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_RLONG_GND_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation absorbed by ground'            &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21910,7 +22120,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rlongup                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONGUP_PA          :-31:hist:dcyc'     )
+                           ,'QMEAN_RLONGUP_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing longwave radiation'                      &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21919,7 +22129,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_parup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_PARUP_PA            :-31:hist:dcyc'     )
+                           ,'QMEAN_PARUP_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing PAR'                                     &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21928,7 +22138,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_nirup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_NIRUP_PA            :-31:hist:dcyc'     )
+                           ,'QMEAN_NIRUP_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing near infra-red radiation'                &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21937,7 +22147,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rshortup                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RSHORTUP_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_RSHORTUP_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Outgoing shortwave radiation'                     &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21946,7 +22156,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rnet                                          &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RNET_PA             :-31:hist:dcyc'     )
+                           ,'QMEAN_RNET_PA             :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net radiation at top of canopy'                   &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -21955,7 +22165,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_albedo                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ALBEDO_PA           :-31:hist:dcyc'     )
+                           ,'QMEAN_ALBEDO_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Albedo'                                           &
                            ,'[       ----]','(ndcycle,ipatch)'    )
@@ -21964,7 +22174,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_albedo_beam                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ALBEDO_BEAM_PA      :-31:hist:dcyc'     )
+                           ,'QMEAN_ALBEDO_BEAM_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Albedo - direct radiation'                        &
                            ,'[       ----]','(ndcycle,ipatch)'    )
@@ -21973,7 +22183,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_albedo_diff                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_ALBEDO_DIFF_PA      :-31:hist:dcyc'     )
+                           ,'QMEAN_ALBEDO_DIFF_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Albedo - diffuse radiation'                       &
                            ,'[       ----]','(ndcycle,ipatch)'    )
@@ -21982,7 +22192,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_rlong_albedo                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RLONG_ALBEDO_PA     :-31:hist:dcyc'     )
+                           ,'QMEAN_RLONG_ALBEDO_PA     :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Kind of albedo - longwave radiation'              &
                            ,'[       ----]','(ndcycle,ipatch)'    )
@@ -21991,7 +22201,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_ustar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_USTAR_PA            :-31:hist:dcyc'     )
+                           ,'QMEAN_USTAR_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Friction velocity'                                &
                            ,'[        m/s]','(ndcycle,ipatch)'    )
@@ -22000,7 +22210,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_tstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_TSTAR_PA            :-31:hist:dcyc'     )
+                           ,'QMEAN_TSTAR_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gradient scale for potential temperature'         &
                            ,'[          K]','(ndcycle,ipatch)'    )
@@ -22009,7 +22219,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_qstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QSTAR_PA            :-31:hist:dcyc'     )
+                           ,'QMEAN_QSTAR_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gradient scale for specific humidity'             &
                            ,'[      kg/kg]','(ndcycle,ipatch)'    )
@@ -22018,7 +22228,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_cstar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CSTAR_PA            :-31:hist:dcyc'     )
+                           ,'QMEAN_CSTAR_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gradient scale for CO2 mixing ratio'              &
                            ,'[   umol/mol]','(ndcycle,ipatch)'    )
@@ -22027,7 +22237,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_carbon_ac                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CARBON_AC_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_CARBON_AC_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 flux: atmosphere -> CAS'                      &
                            ,'[  umol/m2/s]','(ndcycle,ipatch)'    )
@@ -22036,7 +22246,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_carbon_st                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_CARBON_ST_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_CARBON_ST_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - CO2 storage at CAS'                               &
                            ,'[  umol/m2/s]','(ndcycle,ipatch)'    )
@@ -22045,7 +22255,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_vapor_gc                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VAPOR_GC_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_GC_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water vapour flux: ground -> CAS'                 &
                            ,'[    kg/m2/s]','(ndcycle,ipatch)'    )
@@ -22054,7 +22264,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_vapor_ac                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VAPOR_AC_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_AC_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water vapour flux: atmosphere -> CAS'             &
                            ,'[    kg/m2/s]','(ndcycle,ipatch)'    )
@@ -22063,7 +22273,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_throughfall                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_THROUGHFALL_PA      :-31:hist:dcyc'     )
+                           ,'QMEAN_THROUGHFALL_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Throughfall rate'                                 &
                            ,'[    kg/m2/s]','(ndcycle,ipatch)'    )
@@ -22072,7 +22282,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_runoff                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_RUNOFF_PA           :-31:hist:dcyc'     )
+                           ,'QMEAN_RUNOFF_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water runoff'                                     &
                            ,'[    kg/m2/s]','(ndcycle,ipatch)'    )
@@ -22081,7 +22291,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_drainage                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_DRAINAGE_PA         :-31:hist:dcyc'     )
+                           ,'QMEAN_DRAINAGE_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water drainage'                                   &
                            ,'[    kg/m2/s]','(ndcycle,ipatch)'    )
@@ -22090,7 +22300,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sensible_gc                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_GC_PA      :-31:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_GC_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat flux: ground -> CAS'                &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -22099,7 +22309,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sensible_ac                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_AC_PA      :-31:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_AC_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat flux: atmosphere -> CAS'            &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -22108,7 +22318,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_qthroughfall                                  &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QTHROUGHFALL_PA     :-31:hist:dcyc'     )
+                           ,'QMEAN_QTHROUGHFALL_PA     :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Throughfall rate'                                 &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -22117,7 +22327,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_qrunoff                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QRUNOFF_PA          :-31:hist:dcyc'     )
+                           ,'QMEAN_QRUNOFF_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Surface runoff'                                   &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -22126,7 +22336,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_qdrainage                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_QDRAINAGE_PA        :-31:hist:dcyc'     )
+                           ,'QMEAN_QDRAINAGE_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Drainage energy loss'                             &
                            ,'[       W/m2]','(ndcycle,ipatch)'    )
@@ -22135,7 +22345,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_rh                                            &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RH_PA               :-31:hist:dcyc'     )
+                           ,'QMSQU_RH_PA               :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Heterotrophic respiration'                        &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipatch)'    )
@@ -22144,7 +22354,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_cwd_rh                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CWD_RH_PA           :-31:hist:dcyc'     )
+                           ,'QMSQU_CWD_RH_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Coarse woody debris respiration'                  &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipatch)'    )
@@ -22153,7 +22363,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_nep                                           &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_NEP_PA              :-31:hist:dcyc'     )
+                           ,'QMSQU_NEP_PA              :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net Ecosystem productivity'                       &
                            ,'[ kg2/m4/yr2]','(ndcycle,ipatch)'    )
@@ -22162,7 +22372,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_rlongup                                       &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RLONGUP_PA          :-31:hist:dcyc'     )
+                           ,'QMSQU_RLONGUP_PA          :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing longwave radiation'                      &
                            ,'[      W2/m4]','(ndcycle,ipatch)'    )
@@ -22171,7 +22381,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_parup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_PARUP_PA            :-31:hist:dcyc'     )
+                           ,'QMSQU_PARUP_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing PAR'                                     &
                            ,'[      W2/m4]','(ndcycle,ipatch)'    )
@@ -22180,7 +22390,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_nirup                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_NIRUP_PA            :-31:hist:dcyc'     )
+                           ,'QMSQU_NIRUP_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing near infra-red radiation'                &
                            ,'[      W2/m4]','(ndcycle,ipatch)'    )
@@ -22189,7 +22399,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_rshortup                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RSHORTUP_PA         :-31:hist:dcyc'     )
+                           ,'QMSQU_RSHORTUP_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Outgoing shortwave radiation'                     &
                            ,'[      W2/m4]','(ndcycle,ipatch)'    )
@@ -22198,7 +22408,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_rnet                                          &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_RNET_PA             :-31:hist:dcyc'     )
+                           ,'QMSQU_RNET_PA             :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net radiation at top of canopy'                   &
                            ,'[      W2/m4]','(ndcycle,ipatch)'    )
@@ -22207,7 +22417,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_albedo                                        &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_ALBEDO_PA           :-31:hist:dcyc'     )
+                           ,'QMSQU_ALBEDO_PA           :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Albedo'                                           &
                            ,'[       ----]','(ndcycle,ipatch)'    )
@@ -22216,7 +22426,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_ustar                                         &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_USTAR_PA            :-31:hist:dcyc'     )
+                           ,'QMSQU_USTAR_PA            :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Friction velocity'                                &
                            ,'[      m2/s2]','(ndcycle,ipatch)'    )
@@ -22225,7 +22435,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_carbon_ac                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CARBON_AC_PA        :-31:hist:dcyc'     )
+                           ,'QMSQU_CARBON_AC_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - CO2 flux: atmosphere -> CAS'                      &
                            ,'[umol2/m4/s2]','(ndcycle,ipatch)'    )
@@ -22234,7 +22444,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_carbon_st                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_CARBON_ST_PA        :-31:hist:dcyc'     )
+                           ,'QMSQU_CARBON_ST_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - CO2 storage at CAS'                               &
                            ,'[umol2/m4/s2]','(ndcycle,ipatch)'    )
@@ -22243,7 +22453,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_vapor_gc                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_VAPOR_GC_PA         :-31:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_GC_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Water vapour flux: ground -> CAS'                 &
                            ,'[  kg2/m4/s2]','(ndcycle,ipatch)'    )
@@ -22252,7 +22462,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_vapor_ac                                      &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_VAPOR_AC_PA         :-31:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_AC_PA         :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Water vapour flux: atmosphere -> CAS'             &
                            ,'[  kg2/m4/s2]','(ndcycle,ipatch)'    )
@@ -22261,7 +22471,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_sensible_gc                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_SENSIBLE_GC_PA      :-31:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_GC_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat flux: ground -> CAS'                &
                            ,'[      W2/m4]','(ndcycle,ipatch)'    )
@@ -22270,7 +22480,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmsqu_sensible_ac                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMSQU_SENSIBLE_AC_PA      :-31:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_AC_PA      :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat flux: atmosphere -> CAS'            &
                            ,'[      W2/m4]','(ndcycle,ipatch)'    )
@@ -22299,15 +22509,40 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target        :: csite
-      integer       , intent(in)    :: init
-      integer       , intent(in)    :: igr
-      integer       , intent(in)    :: var_len
-      integer       , intent(in)    :: max_ptrs
-      integer       , intent(in)    :: var_len_global
-      integer       , intent(inout) :: nvar
+      type(sitetype)        , target        :: csite
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                       :: npts
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      character(len=str_len)                :: dail_keys
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the fast, daily, and monthly means to the history.    !
+      !------------------------------------------------------------------------------------!
+      if (history_fast) then
+         fast_keys = 'hist:anal'
+      else
+         fast_keys = 'anal'
+      end if
+      if (history_dail) then
+         dail_keys = 'hist:dail'
+      else
+         dail_keys = 'dail'
+      end if
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -22378,7 +22613,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_soil_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_ENERGY_PA       :32:hist:anal'     )
+                           ,'FMEAN_SOIL_ENERGY_PA       :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil internal energy'                        &
                            ,'[       J/m3]','(nzg,ipatch)'        )
@@ -22387,7 +22622,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_soil_mstpot                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_MSTPOT_PA       :32:hist:anal'     )
+                           ,'FMEAN_SOIL_MSTPOT_PA       :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil matric potential'                       &
                            ,'[          m]','(nzg,ipatch)'        )
@@ -22396,7 +22631,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_soil_water                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_WATER_PA        :32:hist:anal'     )
+                           ,'FMEAN_SOIL_WATER_PA        :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil water content'                          &
                            ,'[      m3/m3]','(nzg,ipatch)'        )
@@ -22405,7 +22640,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_soil_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_TEMP_PA         :32:hist:anal'     )
+                           ,'FMEAN_SOIL_TEMP_PA         :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil temperature'                            &
                            ,'[          K]','(nzg,ipatch)'        )
@@ -22414,7 +22649,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_soil_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_FLIQ_PA         :32:hist:anal'     )
+                           ,'FMEAN_SOIL_FLIQ_PA         :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil liquid fraction'                        &
                            ,'[         --]','(nzg,ipatch)'        )
@@ -22423,7 +22658,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_smoist_gg                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SMOIST_GG_PA         :32:hist:anal'     )
+                           ,'FMEAN_SMOIST_GG_PA         :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil water flux'                             &
                            ,'[    kg/m2/s]','(nzg,ipatch)'        )
@@ -22432,7 +22667,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_transloss                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_TRANSLOSS_PA         :32:hist:anal'     )
+                           ,'FMEAN_TRANSLOSS_PA         :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water loss through transpiration'            &
                            ,'[    kg/m2/s]','(nzg,ipatch)'        )
@@ -22441,7 +22676,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_sensible_gg                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_GG_PA       :32:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_GG_PA       :32:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Soil heat flux'                              &
                            ,'[       W/m2]','(nzg,ipatch)'        )
@@ -22450,7 +22685,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_soil_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_ENERGY_PA       :32:hist:dail'     )
+                           ,'DMEAN_SOIL_ENERGY_PA       :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil internal energy'                            &
                            ,'[       J/m3]','(nzg,ipatch)'        )
@@ -22459,7 +22694,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_soil_mstpot                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_MSTPOT_PA       :32:hist:dail'     )
+                           ,'DMEAN_SOIL_MSTPOT_PA       :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil matric potential'                           &
                            ,'[          m]','(nzg,ipatch)'        )
@@ -22468,7 +22703,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_soil_water                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_WATER_PA        :32:hist:dail'     )
+                           ,'DMEAN_SOIL_WATER_PA        :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil water content'                              &
                            ,'[      m3/m3]','(nzg,ipatch)'        )
@@ -22477,7 +22712,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_soil_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_TEMP_PA         :32:hist:dail'     )
+                           ,'DMEAN_SOIL_TEMP_PA         :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil temperature'                                &
                            ,'[          K]','(nzg,ipatch)'        )
@@ -22486,7 +22721,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_soil_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_FLIQ_PA         :32:hist:dail'     )
+                           ,'DMEAN_SOIL_FLIQ_PA         :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil liquid fraction'                            &
                            ,'[         --]','(nzg,ipatch)'        )
@@ -22495,7 +22730,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_smoist_gg                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SMOIST_GG_PA         :32:hist:dail'     )
+                           ,'DMEAN_SMOIST_GG_PA         :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil water flux'                                 &
                            ,'[    kg/m2/s]','(nzg,ipatch)'        )
@@ -22504,7 +22739,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_transloss                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_TRANSLOSS_PA         :32:hist:dail'     )
+                           ,'DMEAN_TRANSLOSS_PA         :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water loss through transpiration'                &
                            ,'[    kg/m2/s]','(nzg,ipatch)'        )
@@ -22513,7 +22748,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_sensible_gg                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_GG_PA       :32:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_GG_PA       :32:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Soil heat flux'                                  &
                            ,'[       W/m2]','(nzg,ipatch)'        )
@@ -22522,7 +22757,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_soil_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_ENERGY_PA       :32:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_ENERGY_PA       :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil internal energy'                          &
                            ,'[       J/m3]','(nzg,ipatch)'        )
@@ -22531,7 +22766,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_soil_mstpot                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_MSTPOT_PA       :32:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_MSTPOT_PA       :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil matric potential'                         &
                            ,'[          m]','(nzg,ipatch)'        )
@@ -22540,7 +22775,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_soil_water                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_WATER_PA        :32:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_WATER_PA        :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil water content'                            &
                            ,'[      m3/m3]','(nzg,ipatch)'        )
@@ -22549,7 +22784,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_soil_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_TEMP_PA         :32:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_TEMP_PA         :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil temperature'                              &
                            ,'[          K]','(nzg,ipatch)'        )
@@ -22558,7 +22793,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_soil_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_FLIQ_PA         :32:hist:mont:dcyc')
+                           ,'MMEAN_SOIL_FLIQ_PA         :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil liquid fraction'                          &
                            ,'[         --]','(nzg,ipatch)'        )
@@ -22567,7 +22802,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_smoist_gg                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SMOIST_GG_PA         :32:hist:mont:dcyc')
+                           ,'MMEAN_SMOIST_GG_PA         :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil water flux'                               &
                            ,'[    kg/m2/s]','(nzg,ipatch)'        )
@@ -22576,7 +22811,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_transloss                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_TRANSLOSS_PA         :32:hist:mont:dcyc')
+                           ,'MMEAN_TRANSLOSS_PA         :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water loss through transpiration'              &
                            ,'[    kg/m2/s]','(nzg,ipatch)'        )
@@ -22585,7 +22820,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%mmean_sensible_gg                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_GG_PA       :32:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_GG_PA       :32:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil heat flux'                                &
                            ,'[       W/m2]','(nzg,ipatch)'        )
@@ -22614,15 +22849,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target        :: csite
-      integer       , intent(in)    :: init
-      integer       , intent(in)    :: igr
-      integer       , intent(in)    :: var_len
-      integer       , intent(in)    :: max_ptrs
-      integer       , intent(in)    :: var_len_global
-      integer       , intent(inout) :: nvar
+      type(sitetype)        , target        :: csite
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                       :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the mean diel to the history file.                    !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:dcyc'
+      else
+         eorq_keys = 'dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -22642,7 +22890,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_soil_energy                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_ENERGY_PA      :-32:hist:dcyc'     )
+                           ,'QMEAN_SOIL_ENERGY_PA      :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil internal energy'                             &
                            ,'[       J/m3]','(nzg,ndcycle,ipatch)')
@@ -22651,7 +22899,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_soil_mstpot                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_MSTPOT_PA      :-32:hist:dcyc'     )
+                           ,'QMEAN_SOIL_MSTPOT_PA      :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil matric potential'                            &
                            ,'[          m]','(nzg,ndcycle,ipatch)')
@@ -22660,7 +22908,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_soil_water                                    &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_WATER_PA       :-32:hist:dcyc'     )
+                           ,'QMEAN_SOIL_WATER_PA       :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil water content'                               &
                            ,'[      m3/m3]','(nzg,ndcycle,ipatch)')
@@ -22669,7 +22917,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_soil_temp                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_TEMP_PA        :-32:hist:dcyc'     )
+                           ,'QMEAN_SOIL_TEMP_PA        :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil temperature'                                 &
                            ,'[          K]','(nzg,ndcycle,ipatch)')
@@ -22678,7 +22926,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_soil_fliq                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SOIL_FLIQ_PA        :-32:hist:dcyc'     )
+                           ,'QMEAN_SOIL_FLIQ_PA        :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil liquid fraction'                             &
                            ,'[         --]','(nzg,ndcycle,ipatch)')
@@ -22687,7 +22935,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_smoist_gg                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SMOIST_GG_PA        :-32:hist:dcyc'     )
+                           ,'QMEAN_SMOIST_GG_PA        :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil water flux'                                  &
                            ,'[    kg/m2/s]','(nzg,ndcycle,ipatch)')
@@ -22696,7 +22944,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_transloss                                     &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_TRANSLOSS_PA        :-32:hist:dcyc'     )
+                           ,'QMEAN_TRANSLOSS_PA        :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water loss through transpiration'                 &
                            ,'[    kg/m2/s]','(nzg,ndcycle,ipatch)')
@@ -22705,7 +22953,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,csite%qmean_sensible_gg                                   &
                            ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_SENSIBLE_GG_PA      :-32:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_GG_PA      :-32:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Soil heat flux'                                   &
                            ,'[       W/m2]','(nzg,ndcycle,ipatch)')
@@ -23997,20 +24245,29 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target        :: cpatch
-      integer        , intent(in)    :: init
-      integer        , intent(in)    :: igr
-      integer        , intent(in)    :: var_len
-      integer        , intent(in)    :: max_ptrs
-      integer        , intent(in)    :: var_len_global
-      integer        , intent(inout) :: nvar
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                        :: npts
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
       !------------------------------------------------------------------------------------!
 
 
 
-
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the sub-daily means to the history file.              !
+      !------------------------------------------------------------------------------------!
+      if (history_fast) then
+         fast_keys = 'hist:anal'
+      else
+         fast_keys = 'anal'
+      end if
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -24027,7 +24284,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_gpp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_GPP_CO               :41:hist:anal'     )
+                           ,'FMEAN_GPP_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gross primary productivity'                  &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24036,7 +24293,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_npp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_NPP_CO               :41:hist:anal'     )
+                           ,'FMEAN_NPP_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net primary productivity'                    &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24045,7 +24302,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_RESP_CO         :41:hist:anal'     )
+                           ,'FMEAN_LEAF_RESP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf respiration'                            &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24054,7 +24311,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_root_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_ROOT_RESP_CO         :41:hist:anal'     )
+                           ,'FMEAN_ROOT_RESP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root respiration'                            &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24063,7 +24320,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_growth_resp                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_GROWTH_RESP_CO       :41:hist:anal'     )
+                           ,'FMEAN_GROWTH_RESP_CO       :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Growth respiration'                          &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24072,7 +24329,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_storage_resp                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_STORAGE_RESP_CO      :41:hist:anal'     )
+                           ,'FMEAN_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Storage respiration'                         &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24081,7 +24338,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_vleaf_resp                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_VLEAF_RESP_CO        :41:hist:anal'     )
+                           ,'FMEAN_VLEAF_RESP_CO        :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Virtual leaf respiration'                    &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24090,7 +24347,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_plresp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_PLRESP_CO            :41:hist:anal'     )
+                           ,'FMEAN_PLRESP_CO            :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Plant respiration'                           &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24099,7 +24356,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_ENERGY_CO       :41:hist:anal'     )
+                           ,'FMEAN_LEAF_ENERGY_CO       :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf internal energy'                        &
                            ,'[       J/m2]','(icohort)'            )
@@ -24108,7 +24365,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_WATER_CO        :41:hist:anal'     )
+                           ,'FMEAN_LEAF_WATER_CO        :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf surface water'                          &
                            ,'[      kg/m2]','(icohort)'            )
@@ -24117,7 +24374,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_HCAP_CO         :41:hist:anal'     )
+                           ,'FMEAN_LEAF_HCAP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf heat capacity'                          &
                            ,'[     J/m2/K]','(icohort)'            )
@@ -24126,7 +24383,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_vpdef                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_VPDEF_CO        :41:hist:anal'     )
+                           ,'FMEAN_LEAF_VPDEF_CO        :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf vapour pressure deficit'                &
                            ,'[         Pa]','(icohort)'            )
@@ -24135,7 +24392,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_TEMP_CO         :41:hist:anal'     )
+                           ,'FMEAN_LEAF_TEMP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf temperature'                            &
                            ,'[          K]','(icohort)'            )
@@ -24144,7 +24401,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_FLIQ_CO         :41:hist:anal'     )
+                           ,'FMEAN_LEAF_FLIQ_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Liquid fraction'                             &
                            ,'[         --]','(icohort)'            )
@@ -24153,7 +24410,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_gsw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_GSW_CO          :41:hist:anal'     )
+                           ,'FMEAN_LEAF_GSW_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Stomatal conductance'                        &
                            ,'[kg/m2leaf/s]','(icohort)'            )
@@ -24162,7 +24419,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LEAF_GBW_CO          :41:hist:anal'     )
+                           ,'FMEAN_LEAF_GBW_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf boundary layer conductance'             &
                            ,'[kg/m2leaf/s]','(icohort)'            )
@@ -24171,7 +24428,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wood_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WOOD_ENERGY_CO       :41:hist:anal'     )
+                           ,'FMEAN_WOOD_ENERGY_CO       :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood internal energy'                        &
                            ,'[       J/m2]','(icohort)'            )
@@ -24180,7 +24437,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wood_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WOOD_WATER_CO        :41:hist:anal'     )
+                           ,'FMEAN_WOOD_WATER_CO        :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood surface water'                          &
                            ,'[      kg/m2]','(icohort)'            )
@@ -24189,7 +24446,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wood_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WOOD_HCAP_CO         :41:hist:anal'     )
+                           ,'FMEAN_WOOD_HCAP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood heat capacity'                          &
                            ,'[     J/m2/K]','(icohort)'            )
@@ -24198,7 +24455,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wood_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WOOD_TEMP_CO         :41:hist:anal'     )
+                           ,'FMEAN_WOOD_TEMP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood temperature'                            &
                            ,'[          K]','(icohort)'            )
@@ -24207,7 +24464,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wood_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WOOD_FLIQ_CO         :41:hist:anal'     )
+                           ,'FMEAN_WOOD_FLIQ_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Liquid fraction'                             &
                            ,'[         --]','(icohort)'            )
@@ -24216,7 +24473,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wood_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WOOD_GBW_CO          :41:hist:anal'     )
+                           ,'FMEAN_WOOD_GBW_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood boundary layer conductance'             &
                            ,'[kg/m2wood/s]','(icohort)'            )
@@ -24225,7 +24482,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_fs_open                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_FS_OPEN_CO           :41:hist:anal'     )
+                           ,'FMEAN_FS_OPEN_CO           :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net stress factor'                           &
                            ,'[         --]','(icohort)'            )
@@ -24234,7 +24491,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_fsw                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_FSW_CO               :41:hist:anal'     )
+                           ,'FMEAN_FSW_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Moisture stress'                             &
                            ,'[         --]','(icohort)'            )
@@ -24243,7 +24500,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_fsn                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_FSN_CO               :41:hist:anal'     )
+                           ,'FMEAN_FSN_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Nitrogen stress'                             &
                            ,'[         --]','(icohort)'            )
@@ -24252,7 +24509,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_psi_open                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_PSI_OPEN_CO          :41:hist:anal'     )
+                           ,'FMEAN_PSI_OPEN_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Transpiration with no stress'                &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24261,7 +24518,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_psi_closed                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_PSI_CLOSED_CO        :41:hist:anal'     )
+                           ,'FMEAN_PSI_CLOSED_CO        :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Transpiration at maximum stress'             &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24270,7 +24527,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_water_supply                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WATER_SUPPLY_CO      :41:hist:anal'     )
+                           ,'FMEAN_WATER_SUPPLY_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Water supply'                                &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24279,7 +24536,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_light_level                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LIGHT_LEVEL_CO       :41:hist:anal'     )
+                           ,'FMEAN_LIGHT_LEVEL_CO       :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Light level'                                 &
                            ,'[         --]','(icohort)'            )
@@ -24288,7 +24545,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_light_level_beam                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LIGHT_LEVEL_BEAM_CO  :41:hist:anal'     )
+                           ,'FMEAN_LIGHT_LEVEL_BEAM_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Light level (direct radiation)'              &
                            ,'[         --]','(icohort)'            )
@@ -24297,7 +24554,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_light_level_diff                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_LIGHT_LEVEL_DIFF_CO  :41:hist:anal'     )
+                           ,'FMEAN_LIGHT_LEVEL_DIFF_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Light level (diffuse radiation)'             &
                            ,'[         --]','(icohort)'            )
@@ -24306,7 +24563,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_par_l                                        &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_PAR_L_CO             :41:hist:anal'     )
+                           ,'FMEAN_PAR_L_CO             :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - PAR absorbed by leaves'                      &
                            ,'[       W/m2]','(icohort)'            )
@@ -24315,7 +24572,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_par_l_beam                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_PAR_L_BEAM_CO        :41:hist:anal'     )
+                           ,'FMEAN_PAR_L_BEAM_CO        :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Direct PAR absorbed by leaves'               &
                            ,'[       W/m2]','(icohort)'            )
@@ -24324,7 +24581,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_par_l_diff                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_PAR_L_DIFF_CO        :41:hist:anal'     )
+                           ,'FMEAN_PAR_L_DIFF_CO        :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Diffuse PAR absorbed by leaves'              &
                            ,'[       W/m2]','(icohort)'            )
@@ -24333,7 +24590,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_rshort_l                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_RSHORT_L_CO          :41:hist:anal'     )
+                           ,'FMEAN_RSHORT_L_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation absorbed by leaves'      &
                            ,'[       W/m2]','(icohort)'            )
@@ -24342,7 +24599,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_rlong_l                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_RLONG_L_CO           :41:hist:anal'     )
+                           ,'FMEAN_RLONG_L_CO           :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation absorbed by leaves'       &
                            ,'[       W/m2]','(icohort)'            )
@@ -24351,7 +24608,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_sensible_lc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_SENSIBLE_LC_CO       :41:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_LC_CO       :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat'                               &
                            ,'[       W/m2]','(icohort)'            )
@@ -24360,7 +24617,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_vapor_lc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_VAPOR_LC_CO          :41:hist:anal'     )
+                           ,'FMEAN_VAPOR_LC_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf evaporation'                            &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24369,7 +24626,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_transp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_TRANSP_CO            :41:hist:anal'     )
+                           ,'FMEAN_TRANSP_CO            :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf transpiration'                          &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24378,7 +24635,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_intercepted_al                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_INTERCEPTED_AL_CO    :41:hist:anal'     )
+                           ,'FMEAN_INTERCEPTED_AL_CO    :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf interception'                           &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24387,7 +24644,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wshed_lg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WSHED_LG_CO          :41:hist:anal'     )
+                           ,'FMEAN_WSHED_LG_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf shedding'                               &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24396,7 +24653,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_rshort_w                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_RSHORT_W_CO          :41:hist:anal'     )
+                           ,'FMEAN_RSHORT_W_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Shortwave radiation absorbed by wood'        &
                            ,'[       W/m2]','(icohort)'            )
@@ -24405,7 +24662,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_rlong_w                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_RLONG_W_CO           :41:hist:anal'     )
+                           ,'FMEAN_RLONG_W_CO           :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Longwave radiation absorbed by wood'         &
                            ,'[       W/m2]','(icohort)'            )
@@ -24414,7 +24671,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_sensible_wc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_SENSIBLE_WC_CO       :41:hist:anal'     )
+                           ,'FMEAN_SENSIBLE_WC_CO       :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Sensible heat'                               &
                            ,'[       W/m2]','(icohort)'            )
@@ -24423,7 +24680,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_vapor_wc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_VAPOR_WC_CO          :41:hist:anal'     )
+                           ,'FMEAN_VAPOR_WC_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood evaporation'                            &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24432,7 +24689,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_intercepted_aw                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_INTERCEPTED_AW_CO    :41:hist:anal'     )
+                           ,'FMEAN_INTERCEPTED_AW_CO    :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood interception'                           &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24441,7 +24698,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_wshed_wg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WSHED_WG_CO          :41:hist:anal'     )
+                           ,'FMEAN_WSHED_WG_CO          :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Wood shedding'                               &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24470,15 +24727,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target        :: cpatch
-      integer        , intent(in)    :: init
-      integer        , intent(in)    :: igr
-      integer        , intent(in)    :: var_len
-      integer        , intent(in)    :: max_ptrs
-      integer        , intent(in)    :: var_len_global
-      integer        , intent(inout) :: nvar
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                        :: npts
+      integer                               :: npts
+      character(len=str_len)                :: dail_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the daily means to the history file.                  !
+      !------------------------------------------------------------------------------------!
+      if (history_dail) then
+         dail_keys = 'hist:dail'
+      else
+         dail_keys = 'dail'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -24501,7 +24771,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppleaf                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPPLEAF_CO           :41:hist:dail'     )
+                           ,'DMEAN_NPPLEAF_CO           :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Leaf'                 &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24510,7 +24780,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppfroot                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPPFROOT_CO          :41:hist:dail'     )
+                           ,'DMEAN_NPPFROOT_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Fine root'            &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24519,7 +24789,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppsapwood                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPPSAPWOOD_CO        :41:hist:dail'     )
+                           ,'DMEAN_NPPSAPWOOD_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Sap wood'             &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24528,7 +24798,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppcroot                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPPCROOT_CO          :41:hist:dail'     )
+                           ,'DMEAN_NPPCROOT_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - Coarse root'          &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24537,7 +24807,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppseeds                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPPSEEDS_CO          :41:hist:dail'     )
+                           ,'DMEAN_NPPSEEDS_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - seeds'                &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24546,7 +24816,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppwood                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPPWOOD_CO           :41:hist:dail'     )
+                           ,'DMEAN_NPPWOOD_CO           :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - heart wood'           &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24555,7 +24825,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppdaily                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPPDAILY_CO          :41:hist:dail'     )
+                           ,'DMEAN_NPPDAILY_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity - total'                &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24564,7 +24834,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_gpp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_GPP_CO               :41:hist:dail'     )
+                           ,'DMEAN_GPP_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gross primary productivity'                      &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24573,7 +24843,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_npp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_NPP_CO               :41:hist:dail'     )
+                           ,'DMEAN_NPP_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity'                        &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24582,7 +24852,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_RESP_CO         :41:hist:dail'     )
+                           ,'DMEAN_LEAF_RESP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf respiration'                                &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24591,7 +24861,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_root_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_ROOT_RESP_CO         :41:hist:dail'     )
+                           ,'DMEAN_ROOT_RESP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root respiration'                                &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24600,7 +24870,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_growth_resp                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_GROWTH_RESP_CO       :41:hist:dail'     )
+                           ,'DMEAN_GROWTH_RESP_CO       :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Growth respiration'                              &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24609,7 +24879,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_storage_resp                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_STORAGE_RESP_CO      :41:hist:dail'     )
+                           ,'DMEAN_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Storage respiration'                             &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24618,7 +24888,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_vleaf_resp                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_VLEAF_RESP_CO        :41:hist:dail'     )
+                           ,'DMEAN_VLEAF_RESP_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Virtual leaf respiration'                        &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24627,7 +24897,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_plresp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_PLRESP_CO            :41:hist:dail'     )
+                           ,'DMEAN_PLRESP_CO            :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Plant respiration'                               &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -24636,7 +24906,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_ENERGY_CO       :41:hist:dail'     )
+                           ,'DMEAN_LEAF_ENERGY_CO       :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf internal energy'                            &
                            ,'[       J/m2]','(icohort)'            )
@@ -24645,7 +24915,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_WATER_CO        :41:hist:dail'     )
+                           ,'DMEAN_LEAF_WATER_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf surface water'                              &
                            ,'[      kg/m2]','(icohort)'            )
@@ -24654,7 +24924,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_HCAP_CO         :41:hist:dail'     )
+                           ,'DMEAN_LEAF_HCAP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf heat capacity'                              &
                            ,'[     J/m2/K]','(icohort)'            )
@@ -24663,7 +24933,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_vpdef                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_VPDEF_CO        :41:hist:dail'     )
+                           ,'DMEAN_LEAF_VPDEF_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf vapour pressure deficit'                    &
                            ,'[         Pa]','(icohort)'            )
@@ -24672,7 +24942,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_TEMP_CO         :41:hist:dail'     )
+                           ,'DMEAN_LEAF_TEMP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf temperature'                                &
                            ,'[          K]','(icohort)'            )
@@ -24681,7 +24951,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_FLIQ_CO         :41:hist:dail'     )
+                           ,'DMEAN_LEAF_FLIQ_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Liquid fraction'                                 &
                            ,'[         --]','(icohort)'            )
@@ -24690,7 +24960,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_gsw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_GSW_CO          :41:hist:dail'     )
+                           ,'DMEAN_LEAF_GSW_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Stomatal conductance'                            &
                            ,'[kg/m2leaf/s]','(icohort)'            )
@@ -24699,7 +24969,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LEAF_GBW_CO          :41:hist:dail'     )
+                           ,'DMEAN_LEAF_GBW_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf boundary layer conductance'                 &
                            ,'[kg/m2leaf/s]','(icohort)'            )
@@ -24708,7 +24978,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wood_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WOOD_ENERGY_CO       :41:hist:dail'     )
+                           ,'DMEAN_WOOD_ENERGY_CO       :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood internal energy'                            &
                            ,'[       J/m2]','(icohort)'            )
@@ -24717,7 +24987,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wood_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WOOD_WATER_CO        :41:hist:dail'     )
+                           ,'DMEAN_WOOD_WATER_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood surface water'                              &
                            ,'[      kg/m2]','(icohort)'            )
@@ -24726,7 +24996,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wood_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WOOD_HCAP_CO         :41:hist:dail'     )
+                           ,'DMEAN_WOOD_HCAP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood heat capacity'                              &
                            ,'[     J/m2/K]','(icohort)'            )
@@ -24735,7 +25005,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wood_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WOOD_TEMP_CO         :41:hist:dail'     )
+                           ,'DMEAN_WOOD_TEMP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood temperature'                                &
                            ,'[          K]','(icohort)'            )
@@ -24744,7 +25014,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wood_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WOOD_FLIQ_CO         :41:hist:dail'     )
+                           ,'DMEAN_WOOD_FLIQ_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Liquid fraction'                                 &
                            ,'[         --]','(icohort)'            )
@@ -24753,7 +25023,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wood_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WOOD_GBW_CO          :41:hist:dail'     )
+                           ,'DMEAN_WOOD_GBW_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood boundary layer conductance'                 &
                            ,'[kg/m2wood/s]','(icohort)'            )
@@ -24762,7 +25032,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_fs_open                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_FS_OPEN_CO           :41:hist:dail'     )
+                           ,'DMEAN_FS_OPEN_CO           :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net stress factor'                               &
                            ,'[         --]','(icohort)'            )
@@ -24771,7 +25041,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_fsw                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_FSW_CO               :41:hist:dail'     )
+                           ,'DMEAN_FSW_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Moisture stress'                                 &
                            ,'[         --]','(icohort)'            )
@@ -24780,7 +25050,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_fsn                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_FSN_CO               :41:hist:dail'     )
+                           ,'DMEAN_FSN_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Nitrogen stress'                                 &
                            ,'[         --]','(icohort)'            )
@@ -24789,7 +25059,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_psi_open                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_PSI_OPEN_CO          :41:hist:dail'     )
+                           ,'DMEAN_PSI_OPEN_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Transpiration with no stress'                    &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24798,7 +25068,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_psi_closed                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_PSI_CLOSED_CO        :41:hist:dail'     )
+                           ,'DMEAN_PSI_CLOSED_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Transpiration at maximum stress'                 &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24807,7 +25077,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_water_supply                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WATER_SUPPLY_CO      :41:hist:dail'     )
+                           ,'DMEAN_WATER_SUPPLY_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Water supply'                                    &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24816,7 +25086,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_light_level                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LIGHT_LEVEL_CO       :41:hist:dail'     )
+                           ,'DMEAN_LIGHT_LEVEL_CO       :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Light level'                                     &
                            ,'[         --]','(icohort)'            )
@@ -24825,7 +25095,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_light_level_beam                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LIGHT_LEVEL_BEAM_CO  :41:hist:dail'     )
+                           ,'DMEAN_LIGHT_LEVEL_BEAM_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Light level (direct radiation)'                  &
                            ,'[         --]','(icohort)'            )
@@ -24834,7 +25104,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_light_level_diff                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_LIGHT_LEVEL_DIFF_CO  :41:hist:dail'     )
+                           ,'DMEAN_LIGHT_LEVEL_DIFF_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Light level (diffuse radiation)'                 &
                            ,'[         --]','(icohort)'            )
@@ -24843,7 +25113,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_par_l                                        &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_PAR_L_CO             :41:hist:dail'     )
+                           ,'DMEAN_PAR_L_CO             :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - PAR absorbed by leaves'                          &
                            ,'[       W/m2]','(icohort)'            )
@@ -24852,7 +25122,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_par_l_beam                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_PAR_L_BEAM_CO        :41:hist:dail'     )
+                           ,'DMEAN_PAR_L_BEAM_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Direct PAR absorbed by leaves'                   &
                            ,'[       W/m2]','(icohort)'            )
@@ -24861,7 +25131,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_par_l_diff                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_PAR_L_DIFF_CO        :41:hist:dail'     )
+                           ,'DMEAN_PAR_L_DIFF_CO        :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Diffuse PAR absorbed by leaves'                  &
                            ,'[       W/m2]','(icohort)'            )
@@ -24870,7 +25140,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_rshort_l                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_RSHORT_L_CO          :41:hist:dail'     )
+                           ,'DMEAN_RSHORT_L_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation absorbed by leaves'          &
                            ,'[       W/m2]','(icohort)'            )
@@ -24879,7 +25149,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_rlong_l                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_RLONG_L_CO           :41:hist:dail'     )
+                           ,'DMEAN_RLONG_L_CO           :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation absorbed by leaves'           &
                            ,'[       W/m2]','(icohort)'            )
@@ -24888,7 +25158,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_sensible_lc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_SENSIBLE_LC_CO       :41:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_LC_CO       :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat'                                   &
                            ,'[       W/m2]','(icohort)'            )
@@ -24897,7 +25167,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_vapor_lc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_VAPOR_LC_CO          :41:hist:dail'     )
+                           ,'DMEAN_VAPOR_LC_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf evaporation'                                &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24906,7 +25176,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_transp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_TRANSP_CO            :41:hist:dail'     )
+                           ,'DMEAN_TRANSP_CO            :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf transpiration'                              &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24915,7 +25185,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_intercepted_al                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_INTERCEPTED_AL_CO    :41:hist:dail'     )
+                           ,'DMEAN_INTERCEPTED_AL_CO    :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf interception'                               &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24924,7 +25194,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wshed_lg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WSHED_LG_CO          :41:hist:dail'     )
+                           ,'DMEAN_WSHED_LG_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf shedding'                                   &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24933,7 +25203,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_rshort_w                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_RSHORT_W_CO          :41:hist:dail'     )
+                           ,'DMEAN_RSHORT_W_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Shortwave radiation absorbed by wood'            &
                            ,'[       W/m2]','(icohort)'            )
@@ -24942,7 +25212,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_rlong_w                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_RLONG_W_CO           :41:hist:dail'     )
+                           ,'DMEAN_RLONG_W_CO           :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Longwave radiation absorbed by wood'             &
                            ,'[       W/m2]','(icohort)'            )
@@ -24951,7 +25221,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_sensible_wc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_SENSIBLE_WC_CO       :41:hist:dail'     )
+                           ,'DMEAN_SENSIBLE_WC_CO       :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Sensible heat'                                   &
                            ,'[       W/m2]','(icohort)'            )
@@ -24960,7 +25230,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_vapor_wc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_VAPOR_WC_CO          :41:hist:dail'     )
+                           ,'DMEAN_VAPOR_WC_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood evaporation'                                &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24969,7 +25239,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_intercepted_aw                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_INTERCEPTED_AW_CO    :41:hist:dail'     )
+                           ,'DMEAN_INTERCEPTED_AW_CO    :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood interception'                               &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -24978,7 +25248,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_wshed_wg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WSHED_WG_CO          :41:hist:dail'     )
+                           ,'DMEAN_WSHED_WG_CO          :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Wood shedding'                                   &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25007,15 +25277,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target        :: cpatch
-      integer        , intent(in)    :: init
-      integer        , intent(in)    :: igr
-      integer        , intent(in)    :: var_len
-      integer        , intent(in)    :: max_ptrs
-      integer        , intent(in)    :: var_len_global
-      integer        , intent(inout) :: nvar
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                        :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the monthly means to the history file.                !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -25038,7 +25321,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_gpp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_GPP_CO               :41:hist:mont:dcyc')
+                           ,'MMEAN_GPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gross primary productivity'                    &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25047,7 +25330,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_npp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPP_CO               :41:hist:mont:dcyc')
+                           ,'MMEAN_NPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity'                      &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25056,7 +25339,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_RESP_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_RESP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf respiration'                              &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25065,7 +25348,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_root_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_ROOT_RESP_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_ROOT_RESP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root respiration'                              &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25074,7 +25357,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_growth_resp                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_GROWTH_RESP_CO       :41:hist:mont:dcyc')
+                           ,'MMEAN_GROWTH_RESP_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Growth respiration'                            &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25083,7 +25366,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_storage_resp                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_STORAGE_RESP_CO      :41:hist:mont:dcyc')
+                           ,'MMEAN_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Storage respiration'                           &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25092,7 +25375,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_vleaf_resp                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_VLEAF_RESP_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_VLEAF_RESP_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Virtual leaf respiration'                      &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25101,7 +25384,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_plresp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_PLRESP_CO            :41:hist:mont:dcyc')
+                           ,'MMEAN_PLRESP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Plant respiration'                             &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25110,7 +25393,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_ENERGY_CO       :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_ENERGY_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf internal energy'                          &
                            ,'[       J/m2]','(icohort)'            )
@@ -25119,7 +25402,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_WATER_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_WATER_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf surface water'                            &
                            ,'[      kg/m2]','(icohort)'            )
@@ -25128,7 +25411,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_HCAP_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_HCAP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf heat capacity'                            &
                            ,'[     J/m2/K]','(icohort)'            )
@@ -25137,7 +25420,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_vpdef                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_VPDEF_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_VPDEF_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf vapour pressure deficit'                  &
                            ,'[         Pa]','(icohort)'            )
@@ -25146,7 +25429,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_TEMP_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_TEMP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf temperature'                              &
                            ,'[          K]','(icohort)'            )
@@ -25155,7 +25438,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_FLIQ_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_FLIQ_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction'                               &
                            ,'[         --]','(icohort)'            )
@@ -25164,7 +25447,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_gsw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_GSW_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_GSW_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Stomatal conductance'                          &
                            ,'[kg/m2leaf/s]','(icohort)'            )
@@ -25173,7 +25456,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_GBW_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_GBW_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf boundary layer conductance'               &
                            ,'[kg/m2leaf/s]','(icohort)'            )
@@ -25182,7 +25465,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wood_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WOOD_ENERGY_CO       :41:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_ENERGY_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood internal energy'                          &
                            ,'[       J/m2]','(icohort)'            )
@@ -25191,7 +25474,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wood_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WOOD_WATER_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_WATER_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood surface water'                            &
                            ,'[      kg/m2]','(icohort)'            )
@@ -25200,7 +25483,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wood_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WOOD_HCAP_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_HCAP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood heat capacity'                            &
                            ,'[     J/m2/K]','(icohort)'            )
@@ -25209,7 +25492,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wood_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WOOD_TEMP_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_TEMP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood temperature'                              &
                            ,'[          K]','(icohort)'            )
@@ -25218,7 +25501,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wood_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WOOD_FLIQ_CO         :41:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_FLIQ_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction'                               &
                            ,'[         --]','(icohort)'            )
@@ -25227,7 +25510,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wood_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WOOD_GBW_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_WOOD_GBW_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood boundary layer conductance'               &
                            ,'[kg/m2wood/s]','(icohort)'            )
@@ -25236,7 +25519,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_fs_open                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_FS_OPEN_CO           :41:hist:mont:dcyc')
+                           ,'MMEAN_FS_OPEN_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net stress factor'                             &
                            ,'[         --]','(icohort)'            )
@@ -25245,7 +25528,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_fsw                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_FSW_CO               :41:hist:mont:dcyc')
+                           ,'MMEAN_FSW_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Moisture stress'                               &
                            ,'[         --]','(icohort)'            )
@@ -25254,7 +25537,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_fsn                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_FSN_CO               :41:hist:mont:dcyc')
+                           ,'MMEAN_FSN_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Nitrogen stress'                               &
                            ,'[         --]','(icohort)'            )
@@ -25263,7 +25546,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_psi_open                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_PSI_OPEN_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_PSI_OPEN_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Transpiration with no stress'                  &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25272,7 +25555,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_psi_closed                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_PSI_CLOSED_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_PSI_CLOSED_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Transpiration at maximum stress'               &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25281,7 +25564,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_water_supply                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WATER_SUPPLY_CO      :41:hist:mont:dcyc')
+                           ,'MMEAN_WATER_SUPPLY_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Water supply'                                  &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25290,7 +25573,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_light_level                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LIGHT_LEVEL_CO       :41:hist:mont:dcyc')
+                           ,'MMEAN_LIGHT_LEVEL_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Light level'                                   &
                            ,'[         --]','(icohort)'            )
@@ -25299,7 +25582,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_light_level_beam                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LIGHT_LEVEL_BEAM_CO  :41:hist:mont:dcyc')
+                           ,'MMEAN_LIGHT_LEVEL_BEAM_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Light level (direct radiation)'                &
                            ,'[         --]','(icohort)'            )
@@ -25308,7 +25591,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_light_level_diff                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LIGHT_LEVEL_DIFF_CO  :41:hist:mont:dcyc')
+                           ,'MMEAN_LIGHT_LEVEL_DIFF_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Light level (diffuse radiation)'               &
                            ,'[         --]','(icohort)'            )
@@ -25317,7 +25600,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_par_l                                        &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_PAR_L_CO             :41:hist:mont:dcyc')
+                           ,'MMEAN_PAR_L_CO             :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - PAR absorbed by leaves'                        &
                            ,'[       W/m2]','(icohort)'            )
@@ -25326,7 +25609,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_par_l_beam                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_PAR_L_BEAM_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_PAR_L_BEAM_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Direct PAR absorbed by leaves'                 &
                            ,'[       W/m2]','(icohort)'            )
@@ -25335,7 +25618,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_par_l_diff                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_PAR_L_DIFF_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_PAR_L_DIFF_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Diffuse PAR absorbed by leaves'                &
                            ,'[       W/m2]','(icohort)'            )
@@ -25344,7 +25627,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_rshort_l                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_RSHORT_L_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_RSHORT_L_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation absorbed by leaves'        &
                            ,'[       W/m2]','(icohort)'            )
@@ -25353,7 +25636,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_rlong_l                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_RLONG_L_CO           :41:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_L_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation absorbed by leaves'         &
                            ,'[       W/m2]','(icohort)'            )
@@ -25362,7 +25645,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_sensible_lc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_SENSIBLE_LC_CO       :41:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_LC_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat'                                 &
                            ,'[       W/m2]','(icohort)'            )
@@ -25371,7 +25654,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_vapor_lc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_VAPOR_LC_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_LC_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf evaporation'                              &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25380,7 +25663,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_transp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_TRANSP_CO            :41:hist:mont:dcyc')
+                           ,'MMEAN_TRANSP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf transpiration'                            &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25389,7 +25672,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_intercepted_al                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_INTERCEPTED_AL_CO    :41:hist:mont:dcyc')
+                           ,'MMEAN_INTERCEPTED_AL_CO    :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf interception'                             &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25398,7 +25681,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wshed_lg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WSHED_LG_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_WSHED_LG_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf shedding'                                 &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25407,7 +25690,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_rshort_w                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_RSHORT_W_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_RSHORT_W_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Shortwave radiation absorbed by wood'          &
                            ,'[       W/m2]','(icohort)'            )
@@ -25416,7 +25699,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_rlong_w                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_RLONG_W_CO           :41:hist:mont:dcyc')
+                           ,'MMEAN_RLONG_W_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Longwave radiation absorbed by wood'           &
                            ,'[       W/m2]','(icohort)'            )
@@ -25425,7 +25708,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_sensible_wc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_SENSIBLE_WC_CO       :41:hist:mont:dcyc')
+                           ,'MMEAN_SENSIBLE_WC_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Sensible heat'                                 &
                            ,'[       W/m2]','(icohort)'            )
@@ -25434,7 +25717,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_vapor_wc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_VAPOR_WC_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_VAPOR_WC_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood evaporation'                              &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25443,7 +25726,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_intercepted_aw                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_INTERCEPTED_AW_CO    :41:hist:mont:dcyc')
+                           ,'MMEAN_INTERCEPTED_AW_CO    :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood interception'                             &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25452,7 +25735,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_wshed_wg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WSHED_WG_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_WSHED_WG_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Wood shedding'                                 &
                            ,'[    kg/m2/s]','(icohort)'            )
@@ -25461,7 +25744,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_lai                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LAI_CO                :41:hist:mont:dcyc')
+                           ,'MMEAN_LAI_CO                :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf area index'                               &
                            ,'[  m2leaf/m2]','(icohort)'            )
@@ -25470,7 +25753,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_bleaf                                        &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_BLEAF_CO             :41:hist:mont:dcyc')
+                           ,'MMEAN_BLEAF_CO             :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf biomass'                                  &
                            ,'[     kgC/pl]','(icohort)'            )
@@ -25479,7 +25762,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_broot                                        &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_BROOT_CO             :41:hist:mont:dcyc')
+                           ,'MMEAN_BROOT_CO             :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root biomass'                                  &
                            ,'[     kgC/pl]','(icohort)'            )
@@ -25488,7 +25771,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_bstorage                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_BSTORAGE_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_BSTORAGE_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Storage biomass'                               &
                            ,'[     kgC/pl]','(icohort)'            )
@@ -25497,7 +25780,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_maintenance                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_MAINTENANCE_CO     :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_MAINTENANCE_CO     :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf maintenance rate'                         &
                            ,'[  kgC/pl/yr]','(icohort)'            )
@@ -25506,7 +25789,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_root_maintenance                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_ROOT_MAINTENANCE_CO     :41:hist:mont:dcyc')
+                           ,'MMEAN_ROOT_MAINTENANCE_CO     :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root maintenance rate'                         &
                            ,'[  kgC/pl/yr]','(icohort)'            )
@@ -25515,7 +25798,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_drop                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_LEAF_DROP_CO            :41:hist:mont:dcyc')
+                           ,'MMEAN_LEAF_DROP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf drop'                                     &
                            ,'[  kgC/pl/yr]','(icohort)'            )
@@ -25524,7 +25807,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_cb                                           &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_CB_CO                   :41:hist:mont:dcyc')
+                           ,'MMEAN_CB_CO                   :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Carbon balance'                                &
                            ,'[  kgC/pl/yr]','(icohort)'            )
@@ -25533,7 +25816,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_nppleaf                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPPLEAF_CO           :41:hist:mont:dcyc')
+                           ,'MMEAN_NPPLEAF_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Leaf'               &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25542,7 +25825,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_nppfroot                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPPFROOT_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_NPPFROOT_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Fine root'          &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25551,7 +25834,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_nppsapwood                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPPSAPWOOD_CO        :41:hist:mont:dcyc')
+                           ,'MMEAN_NPPSAPWOOD_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Sap wood'           &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25560,7 +25843,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_nppcroot                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPPCROOT_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_NPPCROOT_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Coarse root'        &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25569,7 +25852,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_nppseeds                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPPSEEDS_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_NPPSEEDS_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - seeds'              &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25578,7 +25861,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_nppwood                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPPWOOD_CO           :41:hist:mont:dcyc')
+                           ,'MMEAN_NPPWOOD_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - heart wood'         &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25587,7 +25870,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_nppdaily                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_NPPDAILY_CO          :41:hist:mont:dcyc')
+                           ,'MMEAN_NPPDAILY_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - total'              &
                            ,'[  kgC/m2/yr]','(icohort)'            )
@@ -25596,7 +25879,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_gpp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_GPP_CO               :41:hist:mont:dcyc')
+                           ,'MMSQU_GPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Gross primary productivity'                    &
                            ,'[kgC2/m4/yr2]','(icohort)'            )
@@ -25605,7 +25888,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_npp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_NPP_CO               :41:hist:mont:dcyc')
+                           ,'MMSQU_NPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net primary productivity'                      &
                            ,'[kgC2/m4/yr2]','(icohort)'            )
@@ -25614,7 +25897,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_plresp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_PLRESP_CO            :41:hist:mont:dcyc')
+                           ,'MMSQU_PLRESP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Plant respiration'                             &
                            ,'[kgC2/m4/yr2]','(icohort)'            )
@@ -25623,7 +25906,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_sensible_lc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_SENSIBLE_LC_CO       :41:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_LC_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat'                                 &
                            ,'[      W2/m4]','(icohort)'            )
@@ -25632,7 +25915,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_vapor_lc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_VAPOR_LC_CO          :41:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_LC_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Leaf evaporation'                              &
                            ,'[  kg2/m4/s2]','(icohort)'            )
@@ -25641,7 +25924,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_transp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_TRANSP_CO            :41:hist:mont:dcyc')
+                           ,'MMSQU_TRANSP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Leaf transpiration'                            &
                            ,'[  kg2/m4/s2]','(icohort)'            )
@@ -25650,7 +25933,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_sensible_wc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_SENSIBLE_WC_CO       :41:hist:mont:dcyc')
+                           ,'MMSQU_SENSIBLE_WC_CO       :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Sensible heat'                                 &
                            ,'[      W2/m4]','(icohort)'            )
@@ -25659,7 +25942,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmsqu_vapor_wc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMSQU_VAPOR_WC_CO          :41:hist:mont:dcyc')
+                           ,'MMSQU_VAPOR_WC_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Wood evaporation'                              &
                            ,'[  kg2/m4/s2]','(icohort)'            )
@@ -25688,15 +25971,28 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target        :: cpatch
-      integer        , intent(in)    :: init
-      integer        , intent(in)    :: igr
-      integer        , intent(in)    :: var_len
-      integer        , intent(in)    :: max_ptrs
-      integer        , intent(in)    :: var_len_global
-      integer        , intent(inout) :: nvar
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                        :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the mean diel to the history file.                    !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:dcyc'
+      else
+         eorq_keys = 'dcyc'
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -25713,7 +26009,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_gpp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_GPP_CO              :-41:hist:dcyc'     )
+                           ,'QMEAN_GPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gross primary productivity'                       &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25722,7 +26018,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_npp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_NPP_CO              :-41:hist:dcyc'     )
+                           ,'QMEAN_NPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net primary productivity'                         &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25731,7 +26027,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_RESP_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_RESP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf respiration'                                 &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25740,7 +26036,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_root_resp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_ROOT_RESP_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_ROOT_RESP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root respiration'                                 &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25749,7 +26045,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_growth_resp                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_GROWTH_RESP_CO      :-41:hist:dcyc'     )
+                           ,'QMEAN_GROWTH_RESP_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Growth respiration'                               &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25758,7 +26054,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_storage_resp                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_STORAGE_RESP_CO     :-41:hist:dcyc'     )
+                           ,'QMEAN_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Storage respiration'                              &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25767,7 +26063,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_vleaf_resp                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_VLEAF_RESP_CO       :-41:hist:dcyc'     )
+                           ,'QMEAN_VLEAF_RESP_CO       :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Virtual leaf respiration'                         &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25776,7 +26072,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_plresp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_PLRESP_CO           :-41:hist:dcyc'     )
+                           ,'QMEAN_PLRESP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Plant respiration'                                &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
@@ -25785,7 +26081,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_ENERGY_CO      :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_ENERGY_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf internal energy'                             &
                            ,'[       J/m2]','(ndcycle,icohort)'    )
@@ -25794,7 +26090,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_WATER_CO       :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_WATER_CO       :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf surface water'                               &
                            ,'[      kg/m2]','(ndcycle,icohort)'    )
@@ -25803,7 +26099,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_HCAP_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_HCAP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf heat capacity'                               &
                            ,'[     J/m2/K]','(ndcycle,icohort)'    )
@@ -25812,7 +26108,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_vpdef                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_VPDEF_CO       :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_VPDEF_CO       :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf vapour pressure deficit'                     &
                            ,'[         Pa]','(ndcycle,icohort)'    )
@@ -25821,7 +26117,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_TEMP_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_TEMP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf temperature'                                 &
                            ,'[          K]','(ndcycle,icohort)'    )
@@ -25830,7 +26126,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_FLIQ_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_FLIQ_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction'                                  &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25839,7 +26135,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_gsw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_GSW_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_GSW_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Stomatal conductance'                             &
                            ,'[kg/m2leaf/s]','(ndcycle,icohort)'    )
@@ -25848,7 +26144,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LEAF_GBW_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_LEAF_GBW_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf boundary layer conductance'                  &
                            ,'[kg/m2leaf/s]','(ndcycle,icohort)'    )
@@ -25857,7 +26153,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wood_energy                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WOOD_ENERGY_CO      :-41:hist:dcyc'     )
+                           ,'QMEAN_WOOD_ENERGY_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood internal energy'                             &
                            ,'[       J/m2]','(ndcycle,icohort)'    )
@@ -25866,7 +26162,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wood_water                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WOOD_WATER_CO       :-41:hist:dcyc'     )
+                           ,'QMEAN_WOOD_WATER_CO       :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood surface water'                               &
                            ,'[      kg/m2]','(ndcycle,icohort)'    )
@@ -25875,7 +26171,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wood_hcap                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WOOD_HCAP_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_WOOD_HCAP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood heat capacity'                               &
                            ,'[     J/m2/K]','(ndcycle,icohort)'    )
@@ -25884,7 +26180,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wood_temp                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WOOD_TEMP_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_WOOD_TEMP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood temperature'                                 &
                            ,'[          K]','(ndcycle,icohort)'    )
@@ -25893,7 +26189,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wood_fliq                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WOOD_FLIQ_CO        :-41:hist:dcyc'     )
+                           ,'QMEAN_WOOD_FLIQ_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction'                                  &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25902,7 +26198,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wood_gbw                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WOOD_GBW_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_WOOD_GBW_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood boundary layer conductance'                  &
                            ,'[kg/m2wood/s]','(ndcycle,icohort)'    )
@@ -25911,7 +26207,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_fs_open                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_FS_OPEN_CO          :-41:hist:dcyc'     )
+                           ,'QMEAN_FS_OPEN_CO          :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net stress factor'                                &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25920,7 +26216,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_fsw                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_FSW_CO              :-41:hist:dcyc'     )
+                           ,'QMEAN_FSW_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Moisture stress'                                  &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25929,7 +26225,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_fsn                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_FSN_CO              :-41:hist:dcyc'     )
+                           ,'QMEAN_FSN_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Nitrogen stress'                                  &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25938,7 +26234,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_psi_open                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_PSI_OPEN_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_PSI_OPEN_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Transpiration with no stress'                     &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -25947,7 +26243,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_psi_closed                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_PSI_CLOSED_CO       :-41:hist:dcyc'     )
+                           ,'QMEAN_PSI_CLOSED_CO       :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Transpiration at maximum stress'                  &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -25956,7 +26252,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_water_supply                                 &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WATER_SUPPLY_CO     :-41:hist:dcyc'     )
+                           ,'QMEAN_WATER_SUPPLY_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Water supply'                                     &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -25965,7 +26261,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_light_level                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LIGHT_LEVEL_CO      :-41:hist:dcyc'     )
+                           ,'QMEAN_LIGHT_LEVEL_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Light level'                                      &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25974,7 +26270,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_light_level_beam                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LIGHT_LEVEL_BEAM_CO :-41:hist:dcyc'     )
+                           ,'QMEAN_LIGHT_LEVEL_BEAM_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Light level (direct radiation)'                   &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25983,7 +26279,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_light_level_diff                             &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_LIGHT_LEVEL_DIFF_CO :-41:hist:dcyc'     )
+                           ,'QMEAN_LIGHT_LEVEL_DIFF_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Light level (diffuse radiation)'                  &
                            ,'[         --]','(ndcycle,icohort)'    )
@@ -25992,7 +26288,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_par_l                                        &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_PAR_L_CO            :-41:hist:dcyc'     )
+                           ,'QMEAN_PAR_L_CO            :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - PAR absorbed by leaves'                           &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26001,7 +26297,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_par_l_beam                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_PAR_L_BEAM_CO       :-41:hist:dcyc'     )
+                           ,'QMEAN_PAR_L_BEAM_CO       :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Direct PAR absorbed by leaves'                    &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26010,7 +26306,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_par_l_diff                                   &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_PAR_L_DIFF_CO       :-41:hist:dcyc'     )
+                           ,'QMEAN_PAR_L_DIFF_CO       :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Diffuse PAR absorbed by leaves'                   &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26019,7 +26315,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_rshort_l                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_RSHORT_L_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_RSHORT_L_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation absorbed by leaves'           &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26028,7 +26324,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_rlong_l                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_RLONG_L_CO          :-41:hist:dcyc'     )
+                           ,'QMEAN_RLONG_L_CO          :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation absorbed by leaves'            &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26037,7 +26333,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_sensible_lc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_SENSIBLE_LC_CO      :-41:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_LC_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat'                                    &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26046,7 +26342,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_vapor_lc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_VAPOR_LC_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_LC_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf evaporation'                                 &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -26055,7 +26351,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_transp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_TRANSP_CO           :-41:hist:dcyc'     )
+                           ,'QMEAN_TRANSP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf transpiration'                               &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -26064,7 +26360,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_intercepted_al                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_INTERCEPTED_AL_CO   :-41:hist:dcyc'     )
+                           ,'QMEAN_INTERCEPTED_AL_CO   :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf interception'                                &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -26073,7 +26369,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wshed_lg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WSHED_LG_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_WSHED_LG_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf shedding'                                    &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -26082,7 +26378,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_rshort_w                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_RSHORT_W_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_RSHORT_W_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Shortwave radiation absorbed by wood'             &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26091,7 +26387,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_rlong_w                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_RLONG_W_CO          :-41:hist:dcyc'     )
+                           ,'QMEAN_RLONG_W_CO          :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Longwave radiation absorbed by wood'              &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26100,7 +26396,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_sensible_wc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_SENSIBLE_WC_CO      :-41:hist:dcyc'     )
+                           ,'QMEAN_SENSIBLE_WC_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Sensible heat'                                    &
                            ,'[       W/m2]','(ndcycle,icohort)'    )
@@ -26109,7 +26405,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_vapor_wc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_VAPOR_WC_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_VAPOR_WC_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood evaporation'                                 &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -26118,7 +26414,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_intercepted_aw                               &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_INTERCEPTED_AW_CO   :-41:hist:dcyc'     )
+                           ,'QMEAN_INTERCEPTED_AW_CO   :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood interception'                                &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -26127,7 +26423,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_wshed_wg                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_WSHED_WG_CO         :-41:hist:dcyc'     )
+                           ,'QMEAN_WSHED_WG_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Wood shedding'                                    &
                            ,'[    kg/m2/s]','(ndcycle,icohort)'    )
@@ -26136,7 +26432,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_gpp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_GPP_CO              :-41:hist:dcyc'     )
+                           ,'QMSQU_GPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Gross primary productivity'                       &
                            ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
@@ -26145,7 +26441,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_npp                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_NPP_CO              :-41:hist:dcyc'     )
+                           ,'QMSQU_NPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net primary productivity'                         &
                            ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
@@ -26154,7 +26450,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_plresp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_PLRESP_CO           :-41:hist:dcyc'     )
+                           ,'QMSQU_PLRESP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Plant respiration'                                &
                            ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
@@ -26163,7 +26459,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_sensible_lc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_SENSIBLE_LC_CO      :-41:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_LC_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat'                                    &
                            ,'[      W2/m4]','(ndcycle,icohort)'    )
@@ -26172,7 +26468,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_vapor_lc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_VAPOR_LC_CO         :-41:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_LC_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Leaf evaporation'                                 &
                            ,'[  kg2/m4/s2]','(ndcycle,icohort)'    )
@@ -26181,7 +26477,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_transp                                       &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_TRANSP_CO           :-41:hist:dcyc'     )
+                           ,'QMSQU_TRANSP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Leaf transpiration'                               &
                            ,'[  kg2/m4/s2]','(ndcycle,icohort)'    )
@@ -26190,7 +26486,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_sensible_wc                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_SENSIBLE_WC_CO      :-41:hist:dcyc'     )
+                           ,'QMSQU_SENSIBLE_WC_CO      :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Sensible heat'                                    &
                            ,'[      W2/m4]','(ndcycle,icohort)'    )
@@ -26199,7 +26495,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmsqu_vapor_wc                                     &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMSQU_VAPOR_WC_CO         :-41:hist:dcyc'     )
+                           ,'QMSQU_VAPOR_WC_CO         :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Wood evaporation'                                 &
                            ,'[  kg2/m4/s2]','(ndcycle,icohort)'    )
@@ -26229,17 +26525,30 @@ module ed_state_vars
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target        :: cpatch
-      integer        , intent(in)    :: init
-      integer        , intent(in)    :: igr
-      integer        , intent(in)    :: var_len
-      integer        , intent(in)    :: max_ptrs
-      integer        , intent(in)    :: var_len_global
-      integer        , intent(inout) :: nvar
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
       !----- Local variables. -------------------------------------------------------------!
-      integer                        :: npts
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
       !------------------------------------------------------------------------------------!
 
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the monthly means to the history file.                !
+      !------------------------------------------------------------------------------------!
+      if (history_eorq) then
+         eorq_keys = 'hist:mont:dcyc'
+      else
+         eorq_keys = 'mont:dcyc'
+      end if
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -26262,7 +26571,7 @@ module ed_state_vars
       if (associated(cpatch%mmean_mort_rate)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%mmean_mort_rate,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_MORT_RATE_CO :48:hist:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'MMEAN_MORT_RATE_CO :48:'//trim(eorq_keys)) 
          call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','icohort') 
       end if
       !------------------------------------------------------------------------------------!

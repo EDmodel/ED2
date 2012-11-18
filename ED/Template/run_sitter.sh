@@ -26,17 +26,44 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
+#----- Where the output is. ---------------------------------------------------------------#
+there=${here}
+#------------------------------------------------------------------------------------------#
+
+
 #----- Path with some utilities for run_sitter.sh (this script). --------------------------#
 situtils="${here}/sit_utils"
 #------------------------------------------------------------------------------------------#
 
 
-#----- Where the output is. ---------------------------------------------------------------#
-there=${here}
+#----- Path where biomass initialisation files are: ---------------------------------------#
+bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
 #------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#   desc     -- Unique job description for these simulations (it really must be unique).   #
+#               Normally it is the path name.                                              #
+#   runtitle -- Full name of this simulation, this is used only in the e-mail subject.     #
+#------------------------------------------------------------------------------------------#
+desc=`basename ${here}`
+runtitle="Drought/warming scenario"
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- User name, usually set by `whoami` so you don't need to change it. -----------------#
 moi=`whoami`
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Met driver location settings.                                                         #
+#    copy2scratch -- Should the met driver be copied to local scratch disks? ("y"|"n")     #
+#    packdatasrc  -- Source path from where to copy to scratch.                            #
+#------------------------------------------------------------------------------------------#
+copy2scratch='y'
+packdatasrc='/n/moorcroft_data/mlongo/data/tower_scratch'
 #------------------------------------------------------------------------------------------#
 
 
@@ -100,22 +127,22 @@ ccc='/n/Moorcroft_Lab/Users/mlongo/util/calc.sh'  # Calculator
 #------------------------------------------------------------------------------------------#
 #------ Queue: moorcroft2a. ---------------------------------------------------------------#
 m2afull=96
-m2aumax=80
+m2aumax=48
 #------ Queue: moorcroft2b. ---------------------------------------------------------------#
 m2bfull=88
 m2bumax=88
 #------ Queue: moorcroft2c. ---------------------------------------------------------------#
-m2cfull=64
+m2cfull=0
 m2cumax=64
 #------ Queue: moorcroft_6100a. -----------------------------------------------------------#
 a61full=48
-a61umax=36
+a61umax=18
 #------ Queue: moorcroft_6100b. -----------------------------------------------------------#
 b61full=480
-b61umax=380
+b61umax=320
 #------ Queue: wofsy. ---------------------------------------------------------------------#
 wsyfull=96
-wsyumax=24
+wsyumax=48
 #------ Queue: unrestricted_serial. -------------------------------------------------------#
 usefull=80
 useumax=80
@@ -126,22 +153,33 @@ upapmax=0
 
 #------------------------------------------------------------------------------------------#
 #    E-mail options (normally only the first three options may require changes.            #
-#    email1day  -- Should I e-mail once a day (1) or every time I run (0)?                 #
-#    recipient  -- To which e-mail should I send the update?                               #
-#    plotstatus -- Plot the current status of the run (you will need to edit the R script  #
-#                  for each simulation). 0: no; 1: yes                                     #
-#    emailbody  -- File that will contain the e-mail.                                      #
-#    headfile   -- File with header                                                        #
-#    tailfile   -- File with "bye"                                                         #
-#    recefile   -- File with the recent activity                                           #
-#    statfile   -- File with the current status                                            #
-#    queuefile  -- File with queue status                                                  #
-#    pendfile   -- File with pending status                                                #
-#    email1day  -- Reminder so the script knows whether an e-mail has been sent or not.    #
+#    email1day    -- Should I e-mail once a day (1) or every time I run (0)?               #
+#    recipient    -- To which e-mail should I send the update?                             #
+#    plotstatus   -- Plot the current status of the run (you will need to create some R    #
+#                    script for each simulation). 0: no; 1: yes                            #
+#    Rscript_plot -- Script that you want to run to generate some plots.                   #
+#    R_figlist    -- List with figure names (you must list all files you want to append)   #
+#    emailbody    -- File that will contain the e-mail.                                    #
+#    headfile     -- File with header                                                      #
+#    tailfile     -- File with "bye"                                                       #
+#    recefile     -- File with the recent activity                                         #
+#    statfile     -- File with the current status                                          #
+#    queuefile    -- File with queue status                                                #
+#    pendfile     -- File with pending status                                              #
+#    email1day    -- Reminder so the script knows whether an e-mail has been sent or not.  #
 #------------------------------------------------------------------------------------------#
 email1day=1
 recipient='xxxxxx@xxxx.com'
-plotstatus='n'
+plotstatus=1
+Rscript_plot="${situtils}/plot.status.r"
+R_figlist="${situtils}/stt_stext16.png
+           ${situtils}/stt_stext06.png
+           ${situtils}/agb_stext16.png
+           ${situtils}/agb_stext06.png
+           ${situtils}/bsa_stext16.png
+           ${situtils}/bsa_stext06.png
+           ${situtils}/lai_stext16.png
+           ${situtils}/lai_stext06.png"
 emailbody="${situtils}/email.txt"
 headfile="${situtils}/head.txt"
 tailfile="${situtils}/tail.txt"
@@ -164,12 +202,6 @@ fi
 #------------------------------------------------------------------------------------------#
 callunpa=${here}'/callunpa.sh'
 unparun=${here}'/unparun.sh'
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Unique job description for these simulations (it really must be unique). -----------#
-desc=`basename ${here}`
 #------------------------------------------------------------------------------------------#
 
 
@@ -216,6 +248,20 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
+#----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
+if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
+then
+   sitemet='/scratch/mlongo/met_driver/site_met_driver'
+   scenariopath='/scratch/mlongo/met_driver/realisation_scen_driver'
+   shefpath='/scratch/mlongo/met_driver/sheffield'
+else
+   sitemet=${sitemetdef}
+   scenariopath=${scenariopathdef}
+   shefpath=''
+fi
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Determine the number of polygons to check. -----------------------------------------#
 let npolys=`wc -l ${joborder} | awk '{print $1 }'`-3
@@ -231,6 +277,7 @@ echo 'Number of polygons: '${npolys}'...'
 ff=0          # Polygon counter.
 nstart=0      # Number of new polygons that initialised
 nmetmiss=0    # Number of new polygons that crashed due to missing met driver
+nsigsegv=0    # Number of new polygons that crashed due to segmentation violation
 nstopped=0    # Number of new polygons that crashed due to unknown reason
 ncrashed=0    # Number of new polygons that crashed due to numeric instability
 newststate=0  # Number of new polygons at steady state
@@ -262,16 +309,6 @@ then
    do
       let ff=${ff}+1
       let line=${ff}+3
-      let rem=${ff}%${printevery}
-
-      #------------------------------------------------------------------------------------#
-      #     Plot a banner to entertain the user.                                           #
-      #------------------------------------------------------------------------------------#
-      if [ ${rem} -eq 0 -o ${ff} -eq ${npolys} ]
-      then
-         echo ' - Checked '${ff}' polygons so far...'
-      fi
-      #------------------------------------------------------------------------------------#
 
 
 
@@ -280,7 +317,7 @@ then
       # ing this, but this works.  Here we obtain the polygon name, and its longitude and  #
       # latitude.                                                                          #
       #------------------------------------------------------------------------------------#
-      oi=`head -${line} ${lonlat} | tail -1`
+      oi=`head -${line} ${joborder} | tail -1`
       polyname=`echo ${oi}     | awk '{print $1 }'`
       polyiata=`echo ${oi}     | awk '{print $2 }'`
       polylon=`echo ${oi}      | awk '{print $3 }'`
@@ -374,6 +411,643 @@ then
       #------------------------------------------------------------------------------------#
 
 
+
+
+      #------------------------------------------------------------------------------------#
+      #     Define whether we use the met cycle to define the first and last year, or the  #
+      # default year.                                                                      #
+      #------------------------------------------------------------------------------------#
+      if [ ${yeara} -eq 0 ]
+      then
+         thisyeara=${metcyc1}
+      else
+         thisyeara=${yeara}
+      fi
+      if [ ${yearz} -eq 0 ]
+      then
+         thisyearz=${metcycf}
+      else
+         thisyearz=${yearz}
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Determine which soil profile to use.  We have eight categories (A-H), and the  #
+      # soil resolution.                                                                   #
+      #------------------------------------------------------------------------------------#
+      polyslz1=''
+      polyslz2=''
+      polyslz3=''
+      polyslz4=''
+      polyslz5=''
+      polyslz6=''
+      polyslz7=''
+      polyslm1=''
+      polyslm2=''
+      polyslm3=''
+      polyslm4=''
+      polyslm5=''
+      polyslm6=''
+      polyslm7=''
+      polyslt1=''
+      polyslt2=''
+      polyslt3=''
+      polyslt4=''
+      polyslt5=''
+      polyslt6=''
+      polyslt7=''
+      case ${slzres} in
+      0)
+         case ${polydepth} in
+         A)
+            polynzg=16
+            polyslz1='-1.250,-1.135,-1.024,-0.917,-0.814,-0.715,-0.620,-0.530,-0.445,-0.364,'
+            polyslz2='-0.289,-0.221,-0.158,-0.103,-0.056,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         B)
+            polynzg=16
+            polyslz1='-2.000,-1.797,-1.602,-1.417,-1.240,-1.073,-0.916,-0.769,-0.632,-0.507,'
+            polyslz2='-0.392,-0.290,-0.200,-0.124,-0.063,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         C)
+            polynzg=16
+            polyslz1='-3.000,-2.670,-2.357,-2.061,-1.784,-1.524,-1.283,-1.061,-0.857,-0.673,'
+            polyslz2='-0.510,-0.367,-0.245,-0.146,-0.070,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         D)
+            polynzg=16
+            polyslz1='-4.000,-3.536,-3.099,-2.690,-2.308,-1.955,-1.629,-1.332,-1.064,-0.824,'
+            polyslz2='-0.614,-0.433,-0.283,-0.163,-0.075,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         E)
+            polynzg=16
+            polyslz1='-4.500,-3.967,-3.467,-3.000,-2.565,-2.164,-1.797,-1.462,-1.162,-0.895,'
+            polyslz2='-0.662,-0.464,-0.300,-0.171,-0.077,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         F)
+            polynzg=16
+            polyslz1='-6.000,-5.254,-4.559,-3.914,-3.320,-2.776,-2.282,-1.837,-1.442,-1.095,'
+            polyslz2='-0.798,-0.548,-0.346,-0.192,-0.083,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         G)
+            polynzg=16
+            polyslz1='-7.000,-6.108,-5.279,-4.514,-3.812,-3.172,-2.593,-2.076,-1.618,-1.221,'
+            polyslz2='-0.881,-0.600,-0.374,-0.204,-0.087,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         H)
+            polynzg=16
+            polyslz1='-8.000,-6.959,-5.995,-5.108,-4.296,-3.560,-2.897,-2.307,-1.789,-1.340,'
+            polyslz2='-0.961,-0.648,-0.400,-0.215,-0.089,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         *)
+            polynzg=16
+            polyslz1='-8.000,-6.959,-5.995,-5.108,-4.296,-3.560,-2.897,-2.307,-1.789,-1.340,'
+            polyslz2='-0.961,-0.648,-0.400,-0.215,-0.089,-0.020'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         esac
+         ;;
+      1)
+         case ${polydepth} in
+         A)
+            polynzg='30'
+            polyslz1='-1.329,-1.246,-1.168,-1.093,-1.022,-0.955,-0.890,-0.829,-0.770,-0.714,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-0.661,-0.611,-0.563,-0.517,-0.473,-0.432,-0.392,-0.354,-0.318,-0.284,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-0.252,-0.221,-0.191,-0.163,-0.136,-0.111,-0.086,-0.063,-0.041,-0.020'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         B)
+            polynzg='37'
+            polyslz1='-2.033,-1.917,-1.806,-1.701,-1.601,-1.506,-1.415,-1.329,-1.246,-1.168,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-1.093,-1.022,-0.955,-0.890,-0.829,-0.770,-0.714,-0.661,-0.611,-0.563,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-0.517,-0.473,-0.432,-0.392,-0.354,-0.318,-0.284,-0.252,-0.221,-0.191,'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz4='-0.163,-0.136,-0.111,-0.086,-0.063,-0.041,-0.020'
+            polyslm4=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt4=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         C)
+            polynzg='44'
+            polyslz1='-3.023,-2.860,-2.705,-2.557,-2.416,-2.282,-2.154,-2.033,-1.917,-1.806,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-1.701,-1.601,-1.506,-1.415,-1.329,-1.246,-1.168,-1.093,-1.022,-0.955,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-0.890,-0.829,-0.770,-0.714,-0.661,-0.611,-0.563,-0.517,-0.473,-0.432,'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz4='-0.392,-0.354,-0.318,-0.284,-0.252,-0.221,-0.191,-0.163,-0.136,-0.111,'
+            polyslm4=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt4=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz5='-0.086,-0.063,-0.041,-0.020'
+            polyslm5=' 1.000, 1.000, 1.000, 1.000'
+            polyslt5=' 0.000, 0.000, 0.000, 0.000'
+            ;;
+         D)
+            polynzg='50'
+            polyslz1='-4.187,-3.969,-3.761,-3.562,-3.374,-3.194,-3.023,-2.860,-2.705,-2.557,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-2.416,-2.282,-2.154,-2.033,-1.917,-1.806,-1.701,-1.601,-1.506,-1.415,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-1.329,-1.246,-1.168,-1.093,-1.022,-0.955,-0.890,-0.829,-0.770,-0.714,'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz4='-0.661,-0.611,-0.563,-0.517,-0.473,-0.432,-0.392,-0.354,-0.318,-0.284,'
+            polyslm4=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt4=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz5='-0.252,-0.221,-0.191,-0.163,-0.136,-0.111,-0.086,-0.063,-0.041,-0.020'
+            polyslm5=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt5=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         E)
+            polynzg='52'
+            polyslz1='-4.657,-4.416,-4.187,-3.969,-3.761,-3.562,-3.374,-3.194,-3.023,-2.860,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-2.705,-2.557,-2.416,-2.282,-2.154,-2.033,-1.917,-1.806,-1.701,-1.601,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-1.506,-1.415,-1.329,-1.246,-1.168,-1.093,-1.022,-0.955,-0.890,-0.829,'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz4='-0.770,-0.714,-0.661,-0.611,-0.563,-0.517,-0.473,-0.432,-0.392,-0.354,'
+            polyslm4=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt4=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz5='-0.318,-0.284,-0.252,-0.221,-0.191,-0.163,-0.136,-0.111,-0.086,-0.063,'
+            polyslm5=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt5=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz6='-0.041,-0.020'
+            polyslm6=' 1.000, 1.000'
+            polyslt6=' 0.000, 0.000'
+            ;;
+         F)
+            polynzg='58'
+            polyslz1='-6.157,-5.907,-5.657,-5.407,-5.157,-4.907,-4.657,-4.416,-4.187,-3.969,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-3.761,-3.562,-3.374,-3.194,-3.023,-2.860,-2.705,-2.557,-2.416,-2.282,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-2.154,-2.033,-1.917,-1.806,-1.701,-1.601,-1.506,-1.415,-1.329,-1.246,'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz4='-1.168,-1.093,-1.022,-0.955,-0.890,-0.829,-0.770,-0.714,-0.661,-0.611,'
+            polyslm4=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt4=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz5='-0.563,-0.517,-0.473,-0.432,-0.392,-0.354,-0.318,-0.284,-0.252,-0.221,'
+            polyslm5=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt5=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz6='-0.191,-0.163,-0.136,-0.111,-0.086,-0.063,-0.041,-0.020'
+            polyslm6=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt6=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         G)
+            polynzg='62'
+            polyslz1='-7.157,-6.907,-6.657,-6.407,-6.157,-5.907,-5.657,-5.407,-5.157,-4.907,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-4.657,-4.416,-4.187,-3.969,-3.761,-3.562,-3.374,-3.194,-3.023,-2.860,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-2.705,-2.557,-2.416,-2.282,-2.154,-2.033,-1.917,-1.806,-1.701,-1.601,'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz4='-1.506,-1.415,-1.329,-1.246,-1.168,-1.093,-1.022,-0.955,-0.890,-0.829,'
+            polyslm4=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt4=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz5='-0.770,-0.714,-0.661,-0.611,-0.563,-0.517,-0.473,-0.432,-0.392,-0.354,'
+            polyslm5=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt5=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz6='-0.318,-0.284,-0.252,-0.221,-0.191,-0.163,-0.136,-0.111,-0.086,-0.063,'
+            polyslm6=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt6=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz7='-0.041,-0.020'
+            polyslm7=' 1.000, 1.000'
+            polyslt7=' 0.000, 0.000'
+            ;;
+         H)
+            polynzg='66'
+            polyslz1='-8.157,-7.907,-7.657,-7.407,-7.157,-6.907,-6.657,-6.407,-6.157,-5.907,'
+            polyslm1=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt1=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz2='-5.657,-5.407,-5.157,-4.907,-4.657,-4.416,-4.187,-3.969,-3.761,-3.562,'
+            polyslm2=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt2=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz3='-3.374,-3.194,-3.023,-2.860,-2.705,-2.557,-2.416,-2.282,-2.154,-2.033,'
+            polyslm3=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt3=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz4='-1.917,-1.806,-1.701,-1.601,-1.506,-1.415,-1.329,-1.246,-1.168,-1.093,'
+            polyslm4=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt4=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz5='-1.022,-0.955,-0.890,-0.829,-0.770,-0.714,-0.661,-0.611,-0.563,-0.517,'
+            polyslm5=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt5=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz6='-0.473,-0.432,-0.392,-0.354,-0.318,-0.284,-0.252,-0.221,-0.191,-0.163,'
+            polyslm6=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,'
+            polyslt6=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,'
+            polyslz7='-0.136,-0.111,-0.086,-0.063,-0.041,-0.020'
+            polyslm7=' 1.000, 1.000, 1.000, 1.000, 1.000, 1.000'
+            polyslt7=' 0.000, 0.000, 0.000, 0.000, 0.000, 0.000'
+            ;;
+         *)
+            ;;
+         esac
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Determine which PFTs to use based on the "iata" code and isizepft.             #
+      #------------------------------------------------------------------------------------#
+      case ${isizepft} in
+      0|1)
+         case ${polyiata} in
+         tzi|zmh|nqn)
+            pfts='6,7,9,10,11,16,17'
+            crop=16
+            plantation=17
+            ;;
+         hvd|wch|tqh)
+            pfts='6,8,9,10,11,16,17'
+            crop=16
+            plantation=17
+            ;;
+         asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
+            pfts='1,2,3,4,16,17'
+            crop=16
+            plantation=17
+            ;;
+         fns*)
+            pfts='1,16'
+            crop=1
+            plantation=17
+            ;;
+         s77*)
+            pfts='1,16'
+            crop=16
+            plantation=17
+            ;;
+         *)
+            pfts='1,2,3,4,16'
+            crop=1
+            plantation=3
+            ;;
+         esac
+         ;;
+      2)
+         case ${polyiata} in
+         tzi|zmh|nqn|hvd|wch|tqh)
+            pfts='10,16'
+            crop=16
+            plantation=17
+            ;;
+         fns*|s77*)
+            pfts='1'
+            crop=1
+            plantation=17
+            ;;
+         *)
+            pfts='1,3'
+            crop=1
+            plantation=3
+            ;;
+         esac
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Determine the census structure.                                                #
+      #------------------------------------------------------------------------------------#
+      let yodd=${yeara}%2
+      case ${polyiata} in
+      gyf)
+         dtcensus=24
+         let yr1stcensus=${yeara}+${yodd}
+         mon1stcensus=7
+         minrecruitdbh=10
+         ;;
+      s67)
+         dtcensus=24
+         let yr1stcensus=${yeara}+1-${yodd}
+         mon1stcensus=7
+         minrecruitdbh=10
+         ;;
+      *)
+         dtcensus=1
+         yr1stcensus=${yeara}
+         mon1stcensus=1
+         minrecruitdbh=10
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #    Find the biometric files.  This has been checked in spawn_poly.sh so they are   #
+      # correct.  Add a dummy name in case this is not supposed to be a biomass            #
+      # initialisation run.                                                                #
+      #------------------------------------------------------------------------------------#
+      case ${isizepft} in
+      0)
+         #----- Frankeinstein's under storey. ---------------------------------------------#
+         thisbiomin="${bioinit}/${polyiata}_default."
+         ;;
+      1)
+         #----- No under storey. ----------------------------------------------------------#
+         thisbiomin="${bioinit}/${polyiata}_nounder."
+         ;;
+      2)
+         #----- Same as default, but with only one grass and one tree. --------------------#
+         thisbiomin="${bioinit}/${polyiata}_twopft."
+         ;;
+      *)
+         thisbiomin="${bioinit}/${polyiata}_nothing."
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Choose the scenario to use.  Iscenario follows the following convention:      #
+      # "default"    -- No scenario.  Use the tower/Sheffield data.                        #
+      # "rRRR_tTTT   -- Use scenarios, with rRRRR controlling the rainfall, and tTTTT      #
+      #                 controlling temperature.                                           #
+      #                                                                                    #
+      # rRRR         -- Rainfall scenarios, where rRRRR means:                             #
+      #                 r+000: INMET-based time series, no resampling.                     #
+      #                 r+010: Re-sampling with substitution, but equal chances for all    #
+      #                        years                                                       #
+      #                 r-XXX: Shift the location (similar to mean) of the distribution by #
+      #                        -X.XX units of scale (similar to standard deviation), so    #
+      #                        the time series becomes drier.                              #
+      #                 r+XXX: Similar to above, but make the time series wetter.          #
+      #                                                                                    #
+      # tTTT         -- Temperature scenarios, where tTTTT means:                          #
+      #                 t+000: No change in temperature                                    #
+      #                 t-YYY: Change temperature by -Y.YY Kelvin.  Keep relative humidity #
+      #                        the same and correct specific humidity.                     #
+      #                 t+YYY: Change temperature by +Y.YY Kelvin.  Keep relative humidity #
+      #                        the same and correct by +Y.YY Kelvin.                       #
+      #                 r+XXX: Similar to above, but make the time series wetter.          #
+      #------------------------------------------------------------------------------------#
+      if [ ${iscenario} == "default" ]
+      then
+         #---------------------------------------------------------------------------------#
+         #     Determine which meteorological data set to use.  Default is the             #
+         # Sheffield/NCEP dataset, otherwise the site-level tower data is used.            #
+         #---------------------------------------------------------------------------------#
+         case ${metdriver} in
+         Bananal)
+            metdriverdb=${sitemet}'/Bananal/Bananal_HEADER'
+            metcyc1=2004
+            metcycf=2006
+            imetavg=1
+            ;;
+         Caxiuana)
+            metdriverdb=${sitemet}'/Caxiuana/Caxiuana_HEADER'
+            metcyc1=1999
+            metcycf=2003
+            imetavg=1
+            ;;
+         Fazenda_Nossa_Senhora)
+            metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
+            metcyc1=1999
+            metcycf=2002
+            imetavg=1
+            ;;
+         Harvard)
+            metdriverdb=${sitemet}'/Harvard/Harvard_HEADER'
+            metcyc1=1992
+            metcycf=2003
+            imetavg=1
+            ;;
+         Manaus_Km34)
+            metdriverdb=${sitemet}'/Manaus_Km34/Manaus_Km34_HEADER'
+            metcyc1=1999
+            metcycf=2005
+            imetavg=1
+            ;;
+         Paracou)
+            metdriverdb=${sitemet}'/Paracou/Paracou_HEADER'
+            metcyc1=2004
+            metcycf=2009
+            imetavg=1
+            ;;
+         Pe-de-Gigante)
+            metdriverdb=${sitemet}'/Pe-de-Gigante/Pe-de-Gigante_HEADER'
+            metcyc1=2001
+            metcycf=2003
+            imetavg=1
+            ;;
+         Petrolina)
+            metdriverdb=${sitemet}'/Petrolina/Petrolina_HEADER'
+            metcyc1=2004
+            metcycf=2011
+            imetavg=1
+            ;;
+         Rebio_Jaru)
+            metdriverdb=${sitemet}'/Rebio_Jaru/Rebio_Jaru_HEADER'
+            metcyc1=1999
+            metcycf=2002
+            imetavg=1
+            ;;
+         Santarem_Km67)
+            metdriverdb=${sitemet}'/Santarem_Km67/Santarem_Km67_HEADER'
+            metcyc1=2001
+            metcycf=2010
+            imetavg=1
+            ;;
+         Santarem_Km77)
+            metdriverdb=${sitemet}'/Santarem_Km77/Santarem_Km77_HEADER'
+            metcyc1=2001
+            metcycf=2005
+            imetavg=1
+            ;;
+         Santarem_Km83)
+            metdriverdb=${sitemet}'/Santarem_Km83/Santarem_Km83_HEADER'
+            metcyc1=2000
+            metcycf=2003
+            imetavg=1
+            ;;
+         Sheffield)
+            if [ 'x'${shefpath} == 'x' ]
+            then
+               metdriverdb=${here}/${polyname}/${shefhead}
+            else
+               metdriverdb=${shefpath}/${shefhead}
+            fi
+            metcyc1=1969
+            metcycf=2008
+            imetavg=2
+            ;;
+         Tonzi)
+            metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
+            metcyc1=2000
+            metcycf=2010
+            imetavg=1
+            ;;
+         *)
+            echo 'Met driver: '${metdriver}
+            echo 'Sorry, this met driver is not valid for regular runs'
+            exit 85
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+      else
+         #---------------------------------------------------------------------------------#
+         #     Find out which scenario to use.                                             #
+         #---------------------------------------------------------------------------------#
+         fullscen="${scenariopath}/${iscenario}"
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Determine which meteorological data set to use.  Default is the             #
+         # Sheffield/NCEP dataset, otherwise the site-level tower data is used.            #
+         #---------------------------------------------------------------------------------#
+         case ${metdriver} in
+         Bananal)
+            metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Caxiuana)
+            metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Fazenda_Nossa_Senhora)
+            metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
+            metcyc1=1977
+            metcycf=2002
+            imetavg=1
+            ;;
+         Manaus_Km34)
+            metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Paracou)
+            metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Pe-de-Gigante)
+            metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Petrolina)
+            metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Rebio_Jaru)
+            metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
+            metcyc1=1977
+            metcycf=2002
+            imetavg=1
+            ;;
+         Santarem_Km67)
+            metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Santarem_Km77)
+            metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Santarem_Km83)
+            metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         *)
+            echo 'Met driver: '${metdriver}
+            echo 'Sorry, this met driver is not valid for scenario runs'
+            exit 85
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+      fi
+      #------------------------------------------------------------------------------------#
+
+
       #----- Define the job name. ---------------------------------------------------------#
       jobname="${desc}-${polyname}"
       #------------------------------------------------------------------------------------#
@@ -386,12 +1060,6 @@ then
       sed -i s@thisqueue@${queue}@g          ${here}/${polyname}/whichrun.r
       sed -i s@pathhere@${here}@g            ${here}/${polyname}/whichrun.r
       sed -i s@paththere@${here}@g           ${here}/${polyname}/whichrun.r
-      sed -i s@thisfirst@${yr1sthisto}@g     ${here}/${polyname}/whichrun.r
-      sed -i s@thisdthisto@${dthisto}@g      ${here}/${polyname}/whichrun.r
-      sed -i s@thismetyeara@${metyeara}@g    ${here}/${polyname}/whichrun.r
-      sed -i s@thismetcycle@${metcycle}@g    ${here}/${polyname}/whichrun.r
-      sed -i s@thisststcrit@${ststcrit}@g    ${here}/${polyname}/whichrun.r
-      sed -i s@thisncycle@${ncycle}@g        ${here}/${polyname}/whichrun.r
       sed -i s@thisyeara@${yeara}@g          ${here}/${polyname}/whichrun.r
       sed -i s@thismontha@${montha}@g        ${here}/${polyname}/whichrun.r
       sed -i s@thisdatea@${datea}@g          ${here}/${polyname}/whichrun.r
@@ -435,10 +1103,12 @@ then
       # long.  Once a polygon has reached a steady state / gone extinct / crashed (oh      #
       # well, that happens unfortunately), then its status should remain the same.         #
       #------------------------------------------------------------------------------------#
-      if [ ${runt} != 'EXTINCT' ] && [ ${runt} != 'STSTATE' ] && [ ${runt} != 'THE_END' ]
-      then
+      #if [ ${runt} != 'EXTINCT' ] && [ ${runt} != 'STSTATE' ] && [ ${runt} != 'THE_END' ]
+      #then
          #----- Call R to check status. ---------------------------------------------------#
-         R CMD BATCH ${here}/${polyname}/whichrun.r ${here}/${polyname}/outwhich.txt
+         whichrun=${here}/${polyname}/whichrun.r
+         outwhich=${here}/${polyname}/outwhich.txt
+         R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
          year=`cat ${statrun}  | awk '{print $2}'`
          month=`cat ${statrun} | awk '{print $3}'`
          day=`cat ${statrun}   | awk '{print $4}'`
@@ -447,18 +1117,18 @@ then
          agb=`cat ${statrun}   | awk '{print $7}'`
          bsa=`cat ${statrun}   | awk '{print $8}'`
          lai=`cat ${statrun}   | awk '{print $9}'`
-      fi
+      #fi
       #------------------------------------------------------------------------------------#
 
 
 
 
       #------------------------------------------------------------------------------------#
-      #    In case the polygon is extinct or it has crashed, we must do some stuff...      #
+      #    In case the polygon has crashed, we must do some stuff...                       #
       #------------------------------------------------------------------------------------#
-      if [ ${runt} == 'CRASHED' ] || [ ${runt} == 'STOPPED' ] || [ ${runt} == 'METMISS' ]
+      if [ ${runt} == 'CRASHED' ] || [ ${runt} == 'STOPPED' ] ||
+         [ ${runt} == 'METMISS' ] || [ ${runt} == 'SIGSEGV' ]
       then
-
          #---------------------------------------------------------------------------------#
          #     Find out the tolerance used in the unfortunate run, then submit the job     #
          # with a tolerance 10 times more strict.                                          #
@@ -475,23 +1145,29 @@ then
 
          if [ ${runt} == 'CRASHED' ]
          then
-            echo '  :-( Polygon '${polyname}' has crashed !!!'
+            echo "${ff}  :-( ${polyname} HAS CRASHED (RK4 PROBLEM)..."
             let ncrashed=${ncrashed}+1
             #----- Make the tolerance 10 times smaller. -----------------------------------#
             toler=`${ccc} ${toler}/10`
-            echo '      - New tolerance = '${toler}
+            echo "      - New tolerance = ${toler}"
             /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/crashed_out.out
             /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/crashed_out.err
+         elif [ ${runt} == 'SIGSEGV' ]
+         then
+            let nsigsegv=${nsigsegv}+1
+            echo "${ff} >:-# ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+            /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/sigsegv_out.out
+            /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/sigsegv_out.err
          elif [ ${runt} == 'METMISS' ]
          then
             let nmetmiss=${nmetmiss}+1
-            echo '  :-{ Polygon '${polyname}' stopped due to missing met driver !!!'
+            echo "${ff}  :-/ ${polyname} DID NOT FIND MET DRIVERS... <==========="
             /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/metmiss_out.out
             /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/metmiss_out.err
          elif [ ${runt} == 'STOPPED' ]
          then
             let nstopped=${nstopped}+1
-            echo '  o_0 Polygon '${polyname}' mysteriously stopped!!!'
+            echo "${ff}  :-S ${polyname} STOPPED (UNKNOWN REASON)... <==========="
             /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/stopped_out.out
             /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/stopped_out.err
          fi
@@ -506,43 +1182,6 @@ then
 
             #----- Copy the Template to the right directory. ------------------------------#
             cp ${here}/Template/ED2IN ${ED2IN}
-
-
-            #------------------------------------------------------------------------------#
-            #     Determine which PFTs to use.                                             #
-            #------------------------------------------------------------------------------#
-            lonint=${polylon/.*}
-            latint=${polylat/.*}
-            pfts='1,2,3,4,16'
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
-            #    Find the biometric files.  This has been checked in spawn_poly.sh so they #
-            # are correct.  Add a dummy name in case this is not supposed to be a biomass  #
-            # initialisation run.                                                          #
-            #------------------------------------------------------------------------------#
-            case ${isizepft} in
-            0)
-               #----- Frankeinstein's under storey. ---------------------------------------#
-               thisbiomin="${bioinit}/${polyiata}_default."
-               ;;
-            1)
-               #----- No under storey. ----------------------------------------------------#
-               thisbiomin="${bioinit}/${polyiata}_nounder."
-               ;;
-            2)
-               #----- Same as default, but with only one grass and one tree. --------------#
-               thisbiomin="${bioinit}/${polyiata}_twopft."
-               ;;
-            *)
-               thisbiomin="${bioinit}/${polyiata}_nothing."
-               ;;
-            esac
-            #------------------------------------------------------------------------------#
-
-
 
 
             #----- Check whether to use SFILIN as restart or history. ---------------------#
@@ -569,10 +1208,10 @@ then
             sed -i s@thispoly@${polyname}@g              ${ED2IN}
             sed -i s@plonflag@${polylon}@g               ${ED2IN}
             sed -i s@platflag@${polylat}@g               ${ED2IN}
-            sed -i s@timehhhh@${time}@g                  ${ED2IN}
-            sed -i s@datehhhh@${date}@g                  ${ED2IN}
-            sed -i s@monthhhh@${month}@g                 ${ED2IN}
-            sed -i s@yearhhhh@${year}@g                  ${ED2IN}
+            sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
+            sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
+            sed -i s@monthhhh@${monthh}@g                ${ED2IN}
+            sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
             sed -i s@myinitmode@${initmode}@g            ${ED2IN}
             sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
             sed -i s@mytrees@${pfts}@g                   ${ED2IN}
@@ -701,7 +1340,8 @@ then
             then
                thisname=${jobname}
             else
-               thisname="app-${thisname}"
+               polyIATA=`echo ${polyiata} | tr '[:lower:]' '[:upper:]'`
+               thisname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
             fi
             #------------------------------------------------------------------------------#
 
@@ -733,12 +1373,12 @@ then
             sed -i s@thisdesc@${desc}@g      ${srun}
             sed -i s@thisqueue@${newqueue}@g ${srun}
             sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-            sed -i s@myorder@${poly}@g       ${srun}
+            sed -i s@myorder@${ff}@g         ${srun}
             #------------------------------------------------------------------------------#
 
          else
             #----- Give up on this node. --------------------------------------------------#
-            echo '   :-/ Tolerance is tiny and it still does not work.  Giving up...'
+            echo '${ff}  :-{ Tolerance is tiny and it still does not work.  Giving up...'
             runt='THE_END'
             #------------------------------------------------------------------------------#
          fi # [ ${toler} != '0.0000010' -a ${toler} != '0.0000001' -a ${toler} != '00' ]
@@ -746,7 +1386,7 @@ then
 
       elif [ ${runt} == 'THE_END' ]
       then 
-         echo '  :-) Polygon '${polyname}' finished !!!'
+         echo "${ff} o/\o ${polyname} has finished..."
 
       elif [ ${runt} == 'EXTINCT' -o ${runt} == 'STSTATE' ] && 
            [ ${queue} != 'unrestricted_parallel' ]
@@ -758,12 +1398,29 @@ then
             if [ ${runt} == 'EXTINCT' ]
             then
                let newextinct=${newextinct}+1
+               echo "${ff}  B-) ${polyname} has become a desert..."
             elif [ ${runt} == 'STSTATE' ]
             then
                let newststate=${newststate}+1
+               echo "${ff}  :-D ${polyname} has reached steady state..."
             fi
          fi
-      fi # [ ${runt} == 'CRASHED' ]
+      elif [ ${runt} == 'HISTORY' ]
+      then
+         #----- Check whether the simulation is running, and when in model time it is. ----#
+         stdout="${here}/${polyname}/serial_out.out"
+         simline=`grep "Simulating: "   ${stdout} | tail -1`
+         runtime=`echo ${simline} | awk '{print $3}'`
+         simline=`grep "Simulating: "   ${stdout} | tail -1`
+         runtime=`echo ${simline} | awk '{print $3}'`
+         echo "${ff}  :-) ${polyname} is running (${runtime})..."
+         #---------------------------------------------------------------------------------#
+      elif [ ${runt} == 'INITIAL' ]
+      then
+         echo "${ff}  :-| ${polyname} is pending ..."
+      else
+         echo "${ff} <:-| ${polyname} status is unknown..."
+      fi # [ ${runt} == 'CRASHED' ]...
       #------------------------------------------------------------------------------------#
 
 
@@ -864,10 +1521,10 @@ then
             sed -i s@thispoly@${polyname}@g              ${ED2IN}
             sed -i s@plonflag@${polylon}@g               ${ED2IN}
             sed -i s@platflag@${polylat}@g               ${ED2IN}
-            sed -i s@timehhhh@${time}@g                  ${ED2IN}
-            sed -i s@datehhhh@${date}@g                  ${ED2IN}
-            sed -i s@monthhhh@${month}@g                 ${ED2IN}
-            sed -i s@yearhhhh@${year}@g                  ${ED2IN}
+            sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
+            sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
+            sed -i s@monthhhh@${monthh}@g                ${ED2IN}
+            sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
             sed -i s@myinitmode@${initmode}@g            ${ED2IN}
             sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
             sed -i s@mytrees@${pfts}@g                   ${ED2IN}
@@ -996,7 +1653,7 @@ then
             thiswait=`grep 'Sleep time is' ${polyname}/srun.sh | awk '{print $5}'`
             if [ 'x'${thiswait} == 'x' ]
             then
-               let wtime=${poly}%8
+               let wtime=${ff}%8
                let wtime=${wtime}*20
                nudge=`date +%S`
                if [ ${nudge} -lt 10 ]
@@ -1022,7 +1679,7 @@ then
             sed -i s@thisqueue@${newqueue}@g ${srun}
             sed -i s@thisdesc@${desc}@g      ${srun}
             sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-            sed -i s@myorder@${poly}@g       ${srun}
+            sed -i s@myorder@${ff}@g         ${srun}
 
             #----- Re-submit the job to long_serial queue. --------------------------------#
             ${here}'/'${polyname}'/srun.sh'
@@ -1031,7 +1688,7 @@ then
             year=${yeara}
             month=${montha}
             day=${datea}
-            hhmm=${houra}
+            hhmm=${timea}
             runt='INITIAL'
             agb='NA'
             bsa='NA'
@@ -1227,11 +1884,11 @@ then
       fi
 
       #------------------------------------------------------------------------------------#
-      #      Read the polyth line of the polygon list.  There must be smarter ways of do-  #
+      #      Read the lineth line of the polygon list.  There must be smarter ways of do-  #
       # ing this, but this works.  Here we obtain the polygon name, and its longitude and  #
       # latitude.                                                                          #
       #------------------------------------------------------------------------------------#
-      oi=`head -${line} ${lonlat} | tail -1`
+      oi=`head -${line} ${joborder} | tail -1`
       polyname=`echo ${oi}     | awk '{print $1 }'`
       polyiata=`echo ${oi}     | awk '{print $2 }'`
       polylon=`echo ${oi}      | awk '{print $3 }'`
@@ -1362,7 +2019,8 @@ fi
 if [ ${plotstatus} -eq 1 ]
 then
    echo 'Running the status check...'
-   R CMD BATCH "${situtils}/status.r" "${situtils}/rout.rout"
+   Rscript_out="`dirname ${Rscript_plot}`/`basename ${Rscript_plot} .r`.txt"
+   R CMD BATCH --no-save --no-restore ${Rscript_plot} ${Rscript_out}
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -1420,8 +2078,9 @@ wsymoi=`bjobs -q wofsy           2> /dev/null | wc -l`
 let wsyrun=${wmorun}+${wprrun}
 let wsypen=${wmopen}+${wprpen}
 #----- Unrestricted serial.  Count only the jobs by the user. -----------------------------#
-userun=`bjobs -q unrestricted_serial          2> /dev/null | grep RUN  | wc -l`
-usepen=`bjobs -q unrestricted_serial          2> /dev/null | grep PEND | wc -l`
+userun=`bqueues  unrestricted_serial     | tail -1    | awk '{print $10}'`
+usepen=`bqueues  unrestricted_serial     | tail -1    | awk '{print  $9}'`
+usemoi=`bjobs -q unrestricted_serial     2> /dev/null | wc -l`
 
 
 #----- Create a file with the pending jobs. -----------------------------------------------#
@@ -1639,14 +2298,137 @@ ll=0
 while [ ${ff} -lt ${nfill} ]
 do
    let ll=${ll}+1
+   let line=${ll}+3
 
-   oi=`head -${ll} ${joborder} | tail -1`
-   polyname=`echo ${oi} | awk '{print $1}'`
-   thisjob="${desc}-${polyname}"
+   #---------------------------------------------------------------------------------------#
+   #      Read the lineth line of the polygon list.  There must be smarter ways of doing   #
+   # this, but this works.  Here we obtain the polygon name, and its longitude and         #
+   # latitude.                                                                             #
+   #---------------------------------------------------------------------------------------#
+   oi=`head -${line} ${joborder} | tail -1`
+   polyname=`echo ${oi}     | awk '{print $1 }'`
+   polyiata=`echo ${oi}     | awk '{print $2 }'`
+   polylon=`echo ${oi}      | awk '{print $3 }'`
+   polylat=`echo ${oi}      | awk '{print $4 }'`
+   yeara=`echo ${oi}        | awk '{print $5 }'`
+   montha=`echo ${oi}       | awk '{print $6 }'`
+   datea=`echo ${oi}        | awk '{print $7 }'`
+   timea=`echo ${oi}        | awk '{print $8 }'`
+   yearz=`echo ${oi}        | awk '{print $9 }'`
+   monthz=`echo ${oi}       | awk '{print $10}'`
+   datez=`echo ${oi}        | awk '{print $11}'`
+   timez=`echo ${oi}        | awk '{print $12}'`
+   initmode=`echo ${oi}     | awk '{print $13}'`
+   iscenario=`echo ${oi}    | awk '{print $14}'`
+   isizepft=`echo ${oi}     | awk '{print $15}'`
+   polyisoil=`echo ${oi}    | awk '{print $16}'`
+   polyntext=`echo ${oi}    | awk '{print $17}'`
+   polysand=`echo ${oi}     | awk '{print $18}'`
+   polyclay=`echo ${oi}     | awk '{print $19}'`
+   polydepth=`echo ${oi}    | awk '{print $20}'`
+   polysoilbc=`echo ${oi}   | awk '{print $21}'`
+   polysldrain=`echo ${oi}  | awk '{print $22}'`
+   polycol=`echo ${oi}      | awk '{print $23}'`
+   slzres=`echo ${oi}       | awk '{print $24}'`
+   queue=`echo ${oi}        | awk '{print $25}'`
+   metdriver=`echo ${oi}    | awk '{print $26}'`
+   dtlsm=`echo ${oi}        | awk '{print $27}'`
+   vmfactc3=`echo ${oi}     | awk '{print $28}'`
+   vmfactc4=`echo ${oi}     | awk '{print $29}'`
+   mphototrc3=`echo ${oi}   | awk '{print $30}'`
+   mphototec3=`echo ${oi}   | awk '{print $31}'`
+   mphotoc4=`echo ${oi}     | awk '{print $32}'`
+   bphotoblc3=`echo ${oi}   | awk '{print $33}'`
+   bphotonlc3=`echo ${oi}   | awk '{print $34}'`
+   bphotoc4=`echo ${oi}     | awk '{print $35}'`
+   kwgrass=`echo ${oi}      | awk '{print $36}'`
+   kwtree=`echo ${oi}       | awk '{print $37}'`
+   gammac3=`echo ${oi}      | awk '{print $38}'`
+   gammac4=`echo ${oi}      | awk '{print $39}'`
+   d0grass=`echo ${oi}      | awk '{print $40}'`
+   d0tree=`echo ${oi}       | awk '{print $41}'`
+   alphac3=`echo ${oi}      | awk '{print $42}'`
+   alphac4=`echo ${oi}      | awk '{print $43}'`
+   klowco2=`echo ${oi}      | awk '{print $44}'`
+   decomp=`echo ${oi}       | awk '{print $45}'`
+   rrffact=`echo ${oi}      | awk '{print $46}'`
+   growthresp=`echo ${oi}   | awk '{print $47}'`
+   lwidthgrass=`echo ${oi}  | awk '{print $48}'`
+   lwidthbltree=`echo ${oi} | awk '{print $49}'`
+   lwidthnltree=`echo ${oi} | awk '{print $50}'`
+   q10c3=`echo ${oi}        | awk '{print $51}'`
+   q10c4=`echo ${oi}        | awk '{print $52}'`
+   h2olimit=`echo ${oi}     | awk '{print $53}'`
+   imortscheme=`echo ${oi}  | awk '{print $54}'`
+   ddmortconst=`echo ${oi}  | awk '{print $55}'`
+   isfclyrm=`echo ${oi}     | awk '{print $56}'`
+   icanturb=`echo ${oi}     | awk '{print $57}'`
+   ubmin=`echo ${oi}        | awk '{print $58}'`
+   ugbmin=`echo ${oi}       | awk '{print $59}'`
+   ustmin=`echo ${oi}       | awk '{print $60}'`
+   gamm=`echo ${oi}         | awk '{print $61}'`
+   gamh=`echo ${oi}         | awk '{print $62}'`
+   tprandtl=`echo ${oi}     | awk '{print $63}'`
+   ribmax=`echo ${oi}       | awk '{print $64}'`
+   atmco2=`echo ${oi}       | awk '{print $65}'`
+   thcrit=`echo ${oi}       | awk '{print $66}'`
+   smfire=`echo ${oi}       | awk '{print $67}'`
+   ifire=`echo ${oi}        | awk '{print $68}'`
+   fireparm=`echo ${oi}     | awk '{print $69}'`
+   ipercol=`echo ${oi}      | awk '{print $70}'`
+   runoff=`echo ${oi}       | awk '{print $71}'`
+   imetrad=`echo ${oi}      | awk '{print $72}'`
+   ibranch=`echo ${oi}      | awk '{print $73}'`
+   icanrad=`echo ${oi}      | awk '{print $74}'`
+   crown=`echo   ${oi}      | awk '{print $75}'`
+   ltransvis=`echo ${oi}    | awk '{print $76}'`
+   lreflectvis=`echo ${oi}  | awk '{print $77}'`
+   ltransnir=`echo ${oi}    | awk '{print $78}'`
+   lreflectnir=`echo ${oi}  | awk '{print $79}'`
+   orienttree=`echo ${oi}   | awk '{print $80}'`
+   orientgrass=`echo ${oi}  | awk '{print $81}'`
+   clumptree=`echo ${oi}    | awk '{print $82}'`
+   clumpgrass=`echo ${oi}   | awk '{print $83}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $84}'`
+   igndvap=`echo ${oi}      | awk '{print $85}'`
+   iphen=`echo ${oi}        | awk '{print $86}'`
+   iallom=`echo ${oi}       | awk '{print $87}'`
+   ibigleaf=`echo ${oi}     | awk '{print $88}'`
+   irepro=`echo ${oi}       | awk '{print $89}'`
+   treefall=`echo ${oi}     | awk '{print $90}'`
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the job name (or the alternative job name). --------------------------------#
+   polyIATA=`echo ${polyiata} | tr '[:lower:]' '[:upper:]'`
+   jobname="${desc}-${polyname}"
+   altname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Check whether the job is pending or not.  If it is, then switch queues. ---------#
-   ispending=`grep ${thisjob} ${pendfile} | wc -l`
-   
+   jobpending=`grep ${jobname} ${pendfile} | wc -l`
+   altpending=`grep ${altname} ${pendfile} | wc -l`
+   if [ ${jobpending} -gt 0 ]
+   then
+      ispending=${jobpending}
+      thisjob=${jobname}
+   elif [ ${altpending} -gt 0 ]
+   then
+      ispending=${altpending}
+      thisjob=${altname}
+   else
+      ispending=0
+      thisjob=${jobname}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       If the job is pending, switch the queue.                                        #
+   #---------------------------------------------------------------------------------------#
    if [ ${ispending} -gt 0 ]
    then
       let ff=${ff}+1
@@ -1677,16 +2459,17 @@ do
       bswitch -J ${thisjob} ${newqueue}
 
       #----- Update the queue in joborder.txt. --------------------------------------------#
-      line=`grep ${polyname} ${joborder}`
-      thislon=`echo ${line}  | awk '{print $2}'`
-      thislat=`echo ${line}  | awk '{print $3}'`
-      oldqueue=`echo ${line} | awk '{print $4}'`
-
-      oldline=${polyname}' '${thislon}' '${thislat}' '${oldqueue}
-      newline=${polyname}' '${thislon}' '${thislat}' '${newqueue}
-      sed -i s@"${line}"@"${newline}"@g ${joborder}
+      oldline=${oi}
+      newline=`echo ${oldline} | sed s@${queue}@${newqueue}@g`
+      sed -i s@"${oldline}"@"${newline}"@g ${joborder}
+      #------------------------------------------------------------------------------------#
    fi # [ ${ispending} -gt 0 ]
+   #---------------------------------------------------------------------------------------#
 done # [ ${ff} -lt ${nfill} ]
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------------------------------------------------------------------------------------------#
 #     If unrestricted_parallel has some room, we also create new jobs there.               #
@@ -1712,14 +2495,138 @@ nnff=0
 while [ ${nnff} -lt ${nodefill} ]
 do
    let ll=${ll}+1
+   let line=${ll}+3
 
-   oi=`head -${ll} ${joborder} | tail -1`
-   polyname=`echo ${oi} | awk '{print $1}'`
-   thisjob="${desc}-${polyname}"
+
+   #---------------------------------------------------------------------------------------#
+   #      Read the lineth line of the polygon list.  There must be smarter ways of doing   #
+   # this, but this works.  Here we obtain the polygon name, and its longitude and         #
+   # latitude.                                                                             #
+   #---------------------------------------------------------------------------------------#
+   oi=`head -${line} ${joborder} | tail -1`
+   polyname=`echo ${oi}     | awk '{print $1 }'`
+   polyiata=`echo ${oi}     | awk '{print $2 }'`
+   polylon=`echo ${oi}      | awk '{print $3 }'`
+   polylat=`echo ${oi}      | awk '{print $4 }'`
+   yeara=`echo ${oi}        | awk '{print $5 }'`
+   montha=`echo ${oi}       | awk '{print $6 }'`
+   datea=`echo ${oi}        | awk '{print $7 }'`
+   timea=`echo ${oi}        | awk '{print $8 }'`
+   yearz=`echo ${oi}        | awk '{print $9 }'`
+   monthz=`echo ${oi}       | awk '{print $10}'`
+   datez=`echo ${oi}        | awk '{print $11}'`
+   timez=`echo ${oi}        | awk '{print $12}'`
+   initmode=`echo ${oi}     | awk '{print $13}'`
+   iscenario=`echo ${oi}    | awk '{print $14}'`
+   isizepft=`echo ${oi}     | awk '{print $15}'`
+   polyisoil=`echo ${oi}    | awk '{print $16}'`
+   polyntext=`echo ${oi}    | awk '{print $17}'`
+   polysand=`echo ${oi}     | awk '{print $18}'`
+   polyclay=`echo ${oi}     | awk '{print $19}'`
+   polydepth=`echo ${oi}    | awk '{print $20}'`
+   polysoilbc=`echo ${oi}   | awk '{print $21}'`
+   polysldrain=`echo ${oi}  | awk '{print $22}'`
+   polycol=`echo ${oi}      | awk '{print $23}'`
+   slzres=`echo ${oi}       | awk '{print $24}'`
+   queue=`echo ${oi}        | awk '{print $25}'`
+   metdriver=`echo ${oi}    | awk '{print $26}'`
+   dtlsm=`echo ${oi}        | awk '{print $27}'`
+   vmfactc3=`echo ${oi}     | awk '{print $28}'`
+   vmfactc4=`echo ${oi}     | awk '{print $29}'`
+   mphototrc3=`echo ${oi}   | awk '{print $30}'`
+   mphototec3=`echo ${oi}   | awk '{print $31}'`
+   mphotoc4=`echo ${oi}     | awk '{print $32}'`
+   bphotoblc3=`echo ${oi}   | awk '{print $33}'`
+   bphotonlc3=`echo ${oi}   | awk '{print $34}'`
+   bphotoc4=`echo ${oi}     | awk '{print $35}'`
+   kwgrass=`echo ${oi}      | awk '{print $36}'`
+   kwtree=`echo ${oi}       | awk '{print $37}'`
+   gammac3=`echo ${oi}      | awk '{print $38}'`
+   gammac4=`echo ${oi}      | awk '{print $39}'`
+   d0grass=`echo ${oi}      | awk '{print $40}'`
+   d0tree=`echo ${oi}       | awk '{print $41}'`
+   alphac3=`echo ${oi}      | awk '{print $42}'`
+   alphac4=`echo ${oi}      | awk '{print $43}'`
+   klowco2=`echo ${oi}      | awk '{print $44}'`
+   decomp=`echo ${oi}       | awk '{print $45}'`
+   rrffact=`echo ${oi}      | awk '{print $46}'`
+   growthresp=`echo ${oi}   | awk '{print $47}'`
+   lwidthgrass=`echo ${oi}  | awk '{print $48}'`
+   lwidthbltree=`echo ${oi} | awk '{print $49}'`
+   lwidthnltree=`echo ${oi} | awk '{print $50}'`
+   q10c3=`echo ${oi}        | awk '{print $51}'`
+   q10c4=`echo ${oi}        | awk '{print $52}'`
+   h2olimit=`echo ${oi}     | awk '{print $53}'`
+   imortscheme=`echo ${oi}  | awk '{print $54}'`
+   ddmortconst=`echo ${oi}  | awk '{print $55}'`
+   isfclyrm=`echo ${oi}     | awk '{print $56}'`
+   icanturb=`echo ${oi}     | awk '{print $57}'`
+   ubmin=`echo ${oi}        | awk '{print $58}'`
+   ugbmin=`echo ${oi}       | awk '{print $59}'`
+   ustmin=`echo ${oi}       | awk '{print $60}'`
+   gamm=`echo ${oi}         | awk '{print $61}'`
+   gamh=`echo ${oi}         | awk '{print $62}'`
+   tprandtl=`echo ${oi}     | awk '{print $63}'`
+   ribmax=`echo ${oi}       | awk '{print $64}'`
+   atmco2=`echo ${oi}       | awk '{print $65}'`
+   thcrit=`echo ${oi}       | awk '{print $66}'`
+   smfire=`echo ${oi}       | awk '{print $67}'`
+   ifire=`echo ${oi}        | awk '{print $68}'`
+   fireparm=`echo ${oi}     | awk '{print $69}'`
+   ipercol=`echo ${oi}      | awk '{print $70}'`
+   runoff=`echo ${oi}       | awk '{print $71}'`
+   imetrad=`echo ${oi}      | awk '{print $72}'`
+   ibranch=`echo ${oi}      | awk '{print $73}'`
+   icanrad=`echo ${oi}      | awk '{print $74}'`
+   crown=`echo   ${oi}      | awk '{print $75}'`
+   ltransvis=`echo ${oi}    | awk '{print $76}'`
+   lreflectvis=`echo ${oi}  | awk '{print $77}'`
+   ltransnir=`echo ${oi}    | awk '{print $78}'`
+   lreflectnir=`echo ${oi}  | awk '{print $79}'`
+   orienttree=`echo ${oi}   | awk '{print $80}'`
+   orientgrass=`echo ${oi}  | awk '{print $81}'`
+   clumptree=`echo ${oi}    | awk '{print $82}'`
+   clumpgrass=`echo ${oi}   | awk '{print $83}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $84}'`
+   igndvap=`echo ${oi}      | awk '{print $85}'`
+   iphen=`echo ${oi}        | awk '{print $86}'`
+   iallom=`echo ${oi}       | awk '{print $87}'`
+   ibigleaf=`echo ${oi}     | awk '{print $88}'`
+   irepro=`echo ${oi}       | awk '{print $89}'`
+   treefall=`echo ${oi}     | awk '{print $90}'`
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the job name (or the alternative job name). --------------------------------#
+   polyIATA=`echo ${polyiata} | tr '[:lower:]' '[:upper:]'`
+   jobname="${desc}-${polyname}"
+   altname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Check whether the job is pending or not.  If it is, then switch queues. ---------#
-   ispending1=`grep ${thisjob} ${pendfile} | wc -l`
-   
+   jobpending=`grep ${jobname} ${pendfile} | wc -l`
+   altpending=`grep ${altname} ${pendfile} | wc -l`
+   if [ ${jobpending} -gt 0 ]
+   then
+      ispending1=${jobpending}
+      thisjob=${jobname}
+   elif [ ${altpending} -gt 0 ]
+   then
+      ispending1=${altpending}
+      thisjob=${altname}
+   else
+      ispending1=0
+      thisjob=${jobname}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       If the job is pending, switch the queue.                                        #
+   #---------------------------------------------------------------------------------------#
    if [ ${ispending1} -gt 0 ]
    then
       let nnff=${nnff}+1
@@ -1747,71 +2654,213 @@ do
             while [ ${ispending2} -eq 0 ]
             do
                let ll=${ll}+1
-
-               oi=`head -${ll} ${joborder} | tail -1`
-               polyname=`echo ${oi} | awk '{print $1}'`
-               thisjob="${desc}-${polyname}"
+               let line=${ll}+3
 
                #---------------------------------------------------------------------------#
-               #     Check whether the job is pending or not.  If it is, then switch       #
+               #      Read the lineth line of the polygon list.  There must be smarter     #
+               # ways of doing this, but this works.  Here we obtain the polygon name, and #
+               # its longitude and latitude.                                               #
+               #---------------------------------------------------------------------------#
+               oi=`head -${line} ${joborder} | tail -1`
+               polyname=`echo ${oi}     | awk '{print $1 }'`
+               polyiata=`echo ${oi}     | awk '{print $2 }'`
+               polylon=`echo ${oi}      | awk '{print $3 }'`
+               polylat=`echo ${oi}      | awk '{print $4 }'`
+               yeara=`echo ${oi}        | awk '{print $5 }'`
+               montha=`echo ${oi}       | awk '{print $6 }'`
+               datea=`echo ${oi}        | awk '{print $7 }'`
+               timea=`echo ${oi}        | awk '{print $8 }'`
+               yearz=`echo ${oi}        | awk '{print $9 }'`
+               monthz=`echo ${oi}       | awk '{print $10}'`
+               datez=`echo ${oi}        | awk '{print $11}'`
+               timez=`echo ${oi}        | awk '{print $12}'`
+               initmode=`echo ${oi}     | awk '{print $13}'`
+               iscenario=`echo ${oi}    | awk '{print $14}'`
+               isizepft=`echo ${oi}     | awk '{print $15}'`
+               polyisoil=`echo ${oi}    | awk '{print $16}'`
+               polyntext=`echo ${oi}    | awk '{print $17}'`
+               polysand=`echo ${oi}     | awk '{print $18}'`
+               polyclay=`echo ${oi}     | awk '{print $19}'`
+               polydepth=`echo ${oi}    | awk '{print $20}'`
+               polysoilbc=`echo ${oi}   | awk '{print $21}'`
+               polysldrain=`echo ${oi}  | awk '{print $22}'`
+               polycol=`echo ${oi}      | awk '{print $23}'`
+               slzres=`echo ${oi}       | awk '{print $24}'`
+               queue=`echo ${oi}        | awk '{print $25}'`
+               metdriver=`echo ${oi}    | awk '{print $26}'`
+               dtlsm=`echo ${oi}        | awk '{print $27}'`
+               vmfactc3=`echo ${oi}     | awk '{print $28}'`
+               vmfactc4=`echo ${oi}     | awk '{print $29}'`
+               mphototrc3=`echo ${oi}   | awk '{print $30}'`
+               mphototec3=`echo ${oi}   | awk '{print $31}'`
+               mphotoc4=`echo ${oi}     | awk '{print $32}'`
+               bphotoblc3=`echo ${oi}   | awk '{print $33}'`
+               bphotonlc3=`echo ${oi}   | awk '{print $34}'`
+               bphotoc4=`echo ${oi}     | awk '{print $35}'`
+               kwgrass=`echo ${oi}      | awk '{print $36}'`
+               kwtree=`echo ${oi}       | awk '{print $37}'`
+               gammac3=`echo ${oi}      | awk '{print $38}'`
+               gammac4=`echo ${oi}      | awk '{print $39}'`
+               d0grass=`echo ${oi}      | awk '{print $40}'`
+               d0tree=`echo ${oi}       | awk '{print $41}'`
+               alphac3=`echo ${oi}      | awk '{print $42}'`
+               alphac4=`echo ${oi}      | awk '{print $43}'`
+               klowco2=`echo ${oi}      | awk '{print $44}'`
+               decomp=`echo ${oi}       | awk '{print $45}'`
+               rrffact=`echo ${oi}      | awk '{print $46}'`
+               growthresp=`echo ${oi}   | awk '{print $47}'`
+               lwidthgrass=`echo ${oi}  | awk '{print $48}'`
+               lwidthbltree=`echo ${oi} | awk '{print $49}'`
+               lwidthnltree=`echo ${oi} | awk '{print $50}'`
+               q10c3=`echo ${oi}        | awk '{print $51}'`
+               q10c4=`echo ${oi}        | awk '{print $52}'`
+               h2olimit=`echo ${oi}     | awk '{print $53}'`
+               imortscheme=`echo ${oi}  | awk '{print $54}'`
+               ddmortconst=`echo ${oi}  | awk '{print $55}'`
+               isfclyrm=`echo ${oi}     | awk '{print $56}'`
+               icanturb=`echo ${oi}     | awk '{print $57}'`
+               ubmin=`echo ${oi}        | awk '{print $58}'`
+               ugbmin=`echo ${oi}       | awk '{print $59}'`
+               ustmin=`echo ${oi}       | awk '{print $60}'`
+               gamm=`echo ${oi}         | awk '{print $61}'`
+               gamh=`echo ${oi}         | awk '{print $62}'`
+               tprandtl=`echo ${oi}     | awk '{print $63}'`
+               ribmax=`echo ${oi}       | awk '{print $64}'`
+               atmco2=`echo ${oi}       | awk '{print $65}'`
+               thcrit=`echo ${oi}       | awk '{print $66}'`
+               smfire=`echo ${oi}       | awk '{print $67}'`
+               ifire=`echo ${oi}        | awk '{print $68}'`
+               fireparm=`echo ${oi}     | awk '{print $69}'`
+               ipercol=`echo ${oi}      | awk '{print $70}'`
+               runoff=`echo ${oi}       | awk '{print $71}'`
+               imetrad=`echo ${oi}      | awk '{print $72}'`
+               ibranch=`echo ${oi}      | awk '{print $73}'`
+               icanrad=`echo ${oi}      | awk '{print $74}'`
+               crown=`echo   ${oi}      | awk '{print $75}'`
+               ltransvis=`echo ${oi}    | awk '{print $76}'`
+               lreflectvis=`echo ${oi}  | awk '{print $77}'`
+               ltransnir=`echo ${oi}    | awk '{print $78}'`
+               lreflectnir=`echo ${oi}  | awk '{print $79}'`
+               orienttree=`echo ${oi}   | awk '{print $80}'`
+               orientgrass=`echo ${oi}  | awk '{print $81}'`
+               clumptree=`echo ${oi}    | awk '{print $82}'`
+               clumpgrass=`echo ${oi}   | awk '{print $83}'`
+               ivegtdyn=`echo ${oi}     | awk '{print $84}'`
+               igndvap=`echo ${oi}      | awk '{print $85}'`
+               iphen=`echo ${oi}        | awk '{print $86}'`
+               iallom=`echo ${oi}       | awk '{print $87}'`
+               ibigleaf=`echo ${oi}     | awk '{print $88}'`
+               irepro=`echo ${oi}       | awk '{print $89}'`
+               treefall=`echo ${oi}     | awk '{print $90}'`
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Find the job name (or the alternative job name). --------------------#
+               polyIATA=`echo ${polyiata} | tr '[:lower:]' '[:upper:]'`
+               jobname="${desc}-${polyname}"
+               altname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #      Check whether the job is pending or not.  If it is, then switch      #
                # queues.                                                                   #
                #---------------------------------------------------------------------------#
-               ispending2=`grep ${thisjob} ${pendfile} | wc -l`
+               jobpending=`grep ${jobname} ${pendfile} | wc -l`
+               altpending=`grep ${altname} ${pendfile} | wc -l`
+               if [ ${jobpending} -gt 0 ]
+               then
+                  ispending2=${jobpending}
+                  thisjob=${jobname}
+               elif [ ${altpending} -gt 0 ]
+               then
+                  ispending2=${altpending}
+                  thisjob=${altname}
+               else
+                  ispending2=0
+                  thisjob=${jobname}
+               fi
+               #---------------------------------------------------------------------------#
             done
+            #------------------------------------------------------------------------------#
          fi
+         #---------------------------------------------------------------------------------#
+
+
 
          #----- Put the skipping flag to the job. -----------------------------------------#
          echo 'Skip this node for now.' > ${here}/${polyname}/skipper.txt
+         #---------------------------------------------------------------------------------#
 
          #----- Kill the job because it will go to the unrestricted_parallel. -------------#
          bkill -J ${thisjob}
+         #---------------------------------------------------------------------------------#
+
 
          #----- Add the command to call this job from unrestricted_parallel driver. -------#
          mycomm="${here}/${polyname}/callserial.sh ${wtime} &"
          echo ${mycomm} >> ${callunpa}
+         #---------------------------------------------------------------------------------#
 
-         #----- Update the queue in joborder.txt. --------------------------------------------#
-         line=`grep ${polyname} ${joborder}`
-         thislon=`echo ${line} | awk '{print $2}'`
-         thislat=`echo ${line} | awk '{print $3}'`
-         oldqueue=`echo ${line} | awk '{print $4}'`
+
+         #----- Update the queue in joborder.txt. -----------------------------------------#
+         oldline=${oi}
          newqueue='unrestricted_parallel'
-
-         oldline=${polyname}' '${thislon}' '${thislat}' '${oldqueue}
-         newline=${polyname}' '${thislon}' '${thislat}' '${newqueue}
-         sed -i s@"${line}"@"${newline}"@g ${joborder}
+         newline=`echo ${oldline} | sed s@${queue}@${newqueue}@g`
+         sed -i s@"${oldline}"@"${newline}"@g ${joborder}
+         #---------------------------------------------------------------------------------#
       done
-   
-      #----- Finalise the script that controls submits the jobs, then submit the job... ------#
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Finalise the script that controls submits the jobs, then submit the job... ---#
       echo 'wait' >> ${callunpa}
       chmod u+x ${callunpa}
       mv ${callunpa} ${here}/${polyname}
+      #------------------------------------------------------------------------------------#
 
 
       #----- Create the shell script that will call bsub. ------------------------------------#
       /bin/rm -f ${unparun}
       echo '#!/bin/sh' > ${unparun}
-      bsub="bsub -q unrestricted_parallel -R 'hname!=hero3114'"
+      bsub="bsub -q unrestricted_parallel"
       bsub="${bsub} -J ${thisjob}"
       bsub="${bsub} -o ${here}/${polyname}/serial_lsf.out -n 8"
       bsub="${bsub} < ${here}/${polyname}/"`basename ${callunpa}`
       echo ${bsub} >> ${unparun}
       chmod u+x ${unparun}
       mv ${unparun} ${here}/${polyname}
+      #------------------------------------------------------------------------------------#
 
-      #----- Submit the jobs to the queue. ---------------------------------------------------#
+
+      #----- Submit the jobs to the queue. ------------------------------------------------#
       ${here}/${polyname}/unparun.sh
+      #------------------------------------------------------------------------------------#
    fi # [ ${ispending1} -gt 0 ]
+   #---------------------------------------------------------------------------------------#
 done
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Get the number of polygons that went to unrestricted_parallel. ---------------------#
 let nptounpa=${nodefill}*8
+#------------------------------------------------------------------------------------------#
 
 
 #----- Get rid of the temporary file. -----------------------------------------------------#
 /bin/rm -f ${pendfile}
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Sleep 5 more minutes. --------------------------------------------------------------#
 echo 'Taking another nap before checking the queues again...'
 sleep 300
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Quick check the status of the queues. ----------------------------------------------#
 /bin/rm -f ${recefile}
@@ -1823,6 +2872,10 @@ echo 'Number of polygons to unrestricted_parallel:  '${nptounpa}   >> ${recefile
 echo 'Number of polygons that went extinct:         '${newextinct} >> ${recefile}
 echo 'Number of polygons that reached steady state: '${newststate} >> ${recefile}
 echo '--------------------------------------------------------------------' >> ${recefile}
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #----- Check the queue status. ------------------------------------------------------------#
 echo 'Counting the jobs...'
@@ -1862,16 +2915,23 @@ a61ptot=`bjobs -q moorcroft_6100a                      2> /dev/null | grep PEND 
 b61ptot=`bjobs -q moorcroft_6100b                      2> /dev/null | grep PEND | wc -l`
 useptot=`bjobs -q unrestricted_serial                  2> /dev/null | grep PEND | wc -l`
 upaptot=`bjobs -q unrestricted_parallel                2> /dev/null | grep PEND | wc -l`
-let lsertot=${lsertot}+${lseptot}
-let m2artot=${m2artot}+${m2aptot}
-let m2brtot=${m2brtot}+${m2bptot}
-let m2crtot=${m2crtot}+${m2cptot}
-let wsyrtot=${wsyrtot}+${wsyptot}
-let a61rtot=${a61rtot}+${a61ptot}
-let b61rtot=${b61rtot}+${b61ptot}
-let usertot=${usertot}+${useptot}
-let upartot=${upartot}+${upaptot}
+let lsetot=${lsertot}+${lseptot}
+let m2atot=${m2artot}+${m2aptot}
+let m2btot=${m2brtot}+${m2bptot}
+let m2ctot=${m2crtot}+${m2cptot}
+let wsytot=${wsyrtot}+${wsyptot}
+let a61tot=${a61rtot}+${a61ptot}
+let b61tot=${b61rtot}+${b61ptot}
+let usetot=${usertot}+${useptot}
+let upatot=${upartot}+${upaptot}
+#------------------------------------------------------------------------------------------#
 
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Make the table with the queue statuses.                                              #
+#------------------------------------------------------------------------------------------#
 /bin/rm -f ${queuefile}
 touch ${queuefile}
 echo "------- Queue status. --------------------------------------------" >> ${queuefile}
@@ -1885,6 +2945,9 @@ echo "Long_serial            RUN=${lserun}  PEN=${lsepen}  TOT=${lsetot}" >> ${q
 echo "Unrestricted_serial    RUN=${userun}  PEN=${usepen}  TOT=${usetot}" >> ${queuefile}
 echo "Unrestricted_parallel  RUN=${uparun}  PEN=${upapen}  TOT=${upatot}" >> ${queuefile}
 echo "------------------------------------------------------------------" >> ${queuefile}
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Current simulation status. ---------------------------------------------------------#
 n_initial=`grep INITIAL ${outcheck} | wc -l`
@@ -1907,19 +2970,32 @@ echo " Number of polygons that became desert                : ${n_extinct}" >> $
 echo " Number of polygons that have reached steady state    : ${n_ststate}" >> ${statfile}
 echo " Number of polygons that have reached the end         : ${n_the_end}" >> ${statfile}
 echo "--------------------------------------------------------------------" >> ${statfile}
+#------------------------------------------------------------------------------------------#
 
-#----- Convert the PNG files to an e-mail friendly format. --------------------------------#
+
+
+
+#----- Convert the figure files to an e-mail friendly format. -----------------------------#
 if [ ${plotstatus} -eq 1 ]
 then
    echo 'Converting the PNG files to e-mail format...'
-   uuencode ${situtils}/polystatus.png polystat.png > ${situtils}/polystat.txt
-   uuencode ${situtils}/polyagb.png    polyagb.png  > ${situtils}/polyagb.txt
-   uuencode ${situtils}/polybsa.png    polybsa.png  > ${situtils}/polybsa.txt
-   uuencode ${situtils}/polylai.png    polylai.png  > ${situtils}/polylai.txt
-   uuencode ${situtils}/polyvel.png    polyvel.png  > ${situtils}/polyvel.txt
+   for fichier in ${R_figlist}
+   do
+      ext=`echo ${fichier##*.}`
+      path=`dirname ${fichier}`
+      base=`basename ${fichier}`
+      prefix=`basename ${base} .${ext}`
+      text="${path}/${prefix}.txt"
+      uuencode ${fichier} ${base} > ${text}
+   done
 fi
+#------------------------------------------------------------------------------------------#
 
-#------ Build the e-mail body. ------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Build the e-mail body.                                                               #
+#------------------------------------------------------------------------------------------#
 echo 'Building the e-mail...'
 /bin/rm -f ${emailbody}
 touch ${emailbody}
@@ -1933,53 +3009,80 @@ cat ${queuefile} >> ${emailbody}
 echo ' '         >> ${emailbody}
 cat ${tailfile}  >> ${emailbody}
 echo ' '         >> ${emailbody}
-
+#----- Check whether to append some plots. ------------------------------------------------#
 if [ ${plotstatus} -eq 1 ]
 then
-   cat ${situtils}/polystat.txt >> ${emailbody}
-   echo ' '         >> ${emailbody}
-   cat ${situtils}/polyagb.txt  >> ${emailbody}
-   echo ' '         >> ${emailbody}
-   cat ${situtils}/polybsa.txt  >> ${emailbody}
-   echo ' '         >> ${emailbody}
-   cat ${situtils}/polylai.txt  >> ${emailbody}
-   echo ' '         >> ${emailbody}
-   cat ${situtils}/polyvel.txt  >> ${emailbody}
-   echo ' '         >> ${emailbody}
+   for fichier in ${R_figlist}
+   do
+      ext=`echo ${fichier##*.}`
+      path=`dirname ${fichier}`
+      base=`basename ${fichier}`
+      prefix=`basename ${base} .${ext}`
+      text="${path}/${prefix}.txt"
+      cat ${text} >> ${emailbody}
+      echo ' '    >> ${emailbody}
+      /bin/rm -f ${text}
+   done
 fi
+#------------------------------------------------------------------------------------------#
 
-when=`date +'%B %d, %Y - %R %Z'`
+
+#------------------------------------------------------------------------------------------#
+#     Create the subject for the e-mail.                                                   #
+#------------------------------------------------------------------------------------------#
+when=`date +'%d %B %Y - %R %Z'`
 today=`date +'%Y-%m-%d'`
-subject="${desc} run status as of ${when}"
+subject="${runtitle} run status as of ${when}"
+#------------------------------------------------------------------------------------------#
 
+
+
+#------------------------------------------------------------------------------------------#
+#     Check whether to send the e-mail or not.                                             #
+#------------------------------------------------------------------------------------------#
 if [ ${email1day} -eq 0 ]
 then
-  echo ${today} > ${emailday}
-  echo 'Sending e-mail...'
-  mail -s "${subject}" ${recipient} < ${emailbody}
+  #----- Always send e-mail. --------------------------------------------------------------#
+  sendemail="y"
+  #----------------------------------------------------------------------------------------#
 elif [ -s ${emailday} ]
 then
+   #----- E-mail has been sent.  Check whether it is time to send again. ------------------#
    lastemail=`cat ${emailday}`
    if [ ${today} != ${lastemail} ]
    then
-      echo ${today} > ${emailday}
-      echo 'Sending e-mail...'
-      mail -s "${subject}" ${recipient} < ${emailbody}
+      #----- Time to send another e-mail. -------------------------------------------------#
+      sendemail="y"
+      #------------------------------------------------------------------------------------#
    else
-      echo 'Skipping e-mail...'
+      #----- E-mail has been sent recently.  Don't send another one now. ------------------#
+      sendemail="n"
+      #------------------------------------------------------------------------------------#
    fi
+   #---------------------------------------------------------------------------------------#
 else
-  echo ${today} > ${emailday}
-  echo 'Sending e-mail...'
-  mail -s "${subject}" ${recipient} < ${emailbody}
+   #----- E-mail has not been sent yet.  Send it. -----------------------------------------#
+   sendemail="y"
+   #---------------------------------------------------------------------------------------#
 fi
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#      Send/skip the e-mail.                                                               #
+#------------------------------------------------------------------------------------------#
+if [ ${sendemail} == "y" ]
+then
+   echo ${today} > ${emailday}
+   echo 'Sending e-mail...'
+   mail -s "${subject}" ${recipient} < ${emailbody}
+else
+   echo 'Skipping e-mail...'
+fi
+#------------------------------------------------------------------------------------------#
 
 #----- Clean-up stuff. --------------------------------------------------------------------#
 echo 'Deleting some temporary files...'
-/bin/rm -f ${emailbody} ${queuefile} ${recefile}
-/bin/rm -f ${situtils}/polystat.txt
-/bin/rm -f ${situtils}/polyagb.txt
-/bin/rm -f ${situtils}/polybsa.txt
-/bin/rm -f ${situtils}/polylai.txt
+/bin/rm -f ${queuefile} ${recefile}
 /bin/rm -f ${here}/run_sitter.lock
 echo '==== run_sitter.sh execution ends. ===='

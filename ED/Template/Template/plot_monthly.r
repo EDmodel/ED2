@@ -30,6 +30,7 @@ reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
 nyears.long    = 25           # Runs longer than this are considered long runs.
+n.density      = 256          # Number of density points
 #------------------------------------------------------------------------------------------#
 
 
@@ -54,9 +55,8 @@ plotgrid       = TRUE                   # Should I plot the grid in the backgrou
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
                                         #    plots? (FALSE will set a suitable scale for
                                         #    each plot)
-ncolsfc        = 200                    # Target number of colours for filled contour.
 fcgrid         = TRUE                   # Include a grid on the filled contour plots?
-ncolshov       = 200                    # Target number of colours for Hovmoller diagrams.
+ncolsfc        = 80                     # Target number of colours for filled contour.
 hovgrid        = TRUE                   # Include a grid on the Hovmoller plots?
 legwhere       = "topleft"              # Where should I place the legend?
 inset          = 0.01                   # Inset between legend and edge of plot region.
@@ -306,6 +306,54 @@ for (place in myplaces){
       save(datum,file=ed22.rdata)
       #------------------------------------------------------------------------------------#
    }#end if (! complete)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Define a suitable scale for those time series that uses datum$tomonth...             #
+   #---------------------------------------------------------------------------------------#
+   whenplot6 = pretty.time(datum$tomonth,n=6)
+   whenplot8 = pretty.time(datum$tomonth,n=8)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Define a suitable scale for diurnal cycle...                                     #
+   #---------------------------------------------------------------------------------------#
+   thisday = seq(from=0,to=ndcycle,by=1) * 24 / ndcycle
+   uplot = list()
+   uplot$levels = c(0,4,8,12,16,20,24)
+   uplot$n      = 7
+   uplot$scale  = "hours"
+   uplot$padj   = rep(0,times=uplot$n)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Define a suitable scale for soil profile layers...                               #
+   #---------------------------------------------------------------------------------------#
+   znice  = -pretty.log(-slz,n=8)
+   znice  = sort(c(znice,slz[1],slz[nzg]))
+   sel    = znice >= slz[1] & znice <= slz[nzg]
+   znice  = znice[sel]
+   zat    = -log(-znice)
+   nznice = length(znice)
+   znice  = sprintf("%.2f",znice)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Define a suitable scale for monthly means...                                     #
+   #---------------------------------------------------------------------------------------#
+   montmont  = seq(from=1,to=12,by=1)
+   mplot        = list()
+   mplot$levels = montmont
+   mplot$labels = capwords(mon2mmm(montmont))
+   mplot$n      = 12
+   mplot$scale  = "months"
+   mplot$padj   = rep(0,times=mplot$n)
    #---------------------------------------------------------------------------------------#
 
 
@@ -777,6 +825,80 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
 
 
+
+   #---------------------------------------------------------------------------------------#
+   #      Find the patch density function for all patch-level data.                        #
+   #---------------------------------------------------------------------------------------#
+   cat ("    - Finding the distribution function of patch properties...","\n")
+   patchpdf = list()
+   for (pp in 1:nplotpatch){
+      this        = plotpatch[[pp]]
+      vname       = this$vnam
+      col.scheme  = get(this$col.scheme)(n=ncolsfc)
+      emean.area  = patch$area
+      emean.vname = patch[[vname]]
+      mmean.area  = tapply(X=emean.area ,INDEX=mfac,FUN=unlist)
+      mmean.vname = tapply(X=emean.vname,INDEX=mfac,FUN=unlist)
+
+      #----- Find the range for which we find the density function. -----------------------#
+      low.vname   = min(unlist(emean.vname),na.rm=TRUE)
+      high.vname  = max(unlist(emean.vname),na.rm=TRUE)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find the density function for each time. -------------------------------------#
+      edfun.now   = mapply( FUN      = density.safe
+                          , x        = emean.vname
+                          , weights  = emean.area
+                          , MoreArgs = list(n=n.density,from=low.vname,to=high.vname)
+                          )#end mapply
+      mdfun.now   = mapply( FUN      = density.safe
+                          , x        = mmean.vname
+                          , weights  = mmean.area
+                          , MoreArgs = list(n=n.density,from=low.vname,to=high.vname)
+                          )#end mapply
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Save the density function. ---------------------------------------------------#
+      edfun        = list()
+      edfun$x      = chron(datum$when)
+      edfun$y      = seq(from=low.vname,to=high.vname,length.out=n.density)
+      edfun$z      = t(sapply(X=edfun.now["y",],FUN=cbind))
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Save the density function. ---------------------------------------------------#
+      mdfun        = list()
+      mdfun$x      = montmont
+      mdfun$y      = seq(from=low.vname,to=high.vname,length.out=n.density)
+      mdfun$z      = t(sapply(X=mdfun.now["y",],FUN=cbind))
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Remove tiny values (even with log scale values can be very hard to see. ------#
+      bye         = is.finite(edfun$z) & edfun$z < 1.e-6 * max(unlist(edfun$z),na.rm=TRUE)
+      edfun$z[bye] = NA
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Remove tiny values (even with log scale values can be very hard to see. ------#
+      bye         = is.finite(mdfun$z) & mdfun$z < 1.e-6 * max(unlist(mdfun$z),na.rm=TRUE)
+      mdfun$z[bye] = NA
+      #------------------------------------------------------------------------------------#
+      patchpdf[[vname]] = list(edensity=edfun,mdensity=mdfun)
+   }#end for 
+   #---------------------------------------------------------------------------------------#
+
+
+
+
    #----- Find which PFTs, land uses and transitions we need to consider ------------------#
    pftave  = apply( X      = szpft$agb[,ndbh+1,]
                   , MARGIN = 2
@@ -799,54 +921,6 @@ for (place in myplaces){
 
 
 
-   #---------------------------------------------------------------------------------------#
-   #      Define a suitable scale for those time series that uses datum$tomonth...             #
-   #---------------------------------------------------------------------------------------#
-   whenplot6 = pretty.time(datum$tomonth,n=6)
-   whenplot8 = pretty.time(datum$tomonth,n=8)
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Define a suitable scale for diurnal cycle...                                     #
-   #---------------------------------------------------------------------------------------#
-   thisday = seq(from=0,to=ndcycle,by=1) * 24 / ndcycle
-   uplot = list()
-   uplot$levels = c(0,4,8,12,16,20,24)
-   uplot$n      = 7
-   uplot$scale  = "hours"
-   uplot$padj   = rep(0,times=uplot$n)
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Define a suitable scale for soil profile layers...                               #
-   #---------------------------------------------------------------------------------------#
-   znice  = -pretty.log(-slz,n=8)
-   znice  = sort(c(znice,slz[1],slz[nzg]))
-   sel    = znice >= slz[1] & znice <= slz[nzg]
-   znice  = znice[sel]
-   zat    = -log(-znice)
-   nznice = length(znice)
-   znice  = sprintf("%.2f",znice)
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Define a suitable scale for monthly means...                                     #
-   #---------------------------------------------------------------------------------------#
-   montmont  = seq(from=1,to=12,by=1)
-   mplot        = list()
-   mplot$levels = montmont
-   mplot$labels = capwords(mon2mmm(montmont))
-   mplot$n      = 12
-   mplot$scale  = "months"
-   mplot$padj   = rep(0,times=mplot$n)
-   #---------------------------------------------------------------------------------------#
-
-
-
 
 
 
@@ -857,6 +931,9 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    cat ("    - Plotting figures...","\n")
    #---------------------------------------------------------------------------------------#
+
+
+
 
 
 
@@ -2273,11 +2350,11 @@ for (place in myplaces){
 
          if (pnlog){
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty.log(x=vrange,n=ncolshov)
+            vlevels = pretty.log(x=vrange,n=ncolsfc)
             vnlev   = length(vlevels)
          }else{
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty(x=vrange,n=ncolshov)
+            vlevels = pretty(x=vrange,n=ncolsfc)
             vnlev   = length(vlevels)
          }#end if
 
@@ -2306,9 +2383,9 @@ for (place in myplaces){
                      ,key.log=pnlog
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=zat,labels=znice)
-                                 if (hovgrid){
+                                 if (fcgrid){
                                     abline(h=zat,v=monat,col="grey52",lty="dotted")
-                                 }#end if hovgrid
+                                 }#end if fcgrid
                                 }#end plot.axes
                      )
 
@@ -2385,11 +2462,11 @@ for (place in myplaces){
 
          if (pnlog){
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty.log(x=vrange,n=ncolshov)
+            vlevels = pretty.log(x=vrange,n=ncolsfc)
             vnlev   = length(vlevels)
          }else{
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty(x=vrange,n=ncolshov)
+            vlevels = pretty(x=vrange,n=ncolsfc)
             vnlev   = length(vlevels)
          }#end if
 
@@ -2419,10 +2496,10 @@ for (place in myplaces){
                      ,plot.axes={axis(side=1,at=whenplot6$levels
                                      ,labels=whenplot6$labels,padj=whenplot6$padj)
                                  axis(side=2,at=zat,labels=znice)
-                                 if (hovgrid){
+                                 if (fcgrid){
                                     abline(h=zat,v=whenplot6$levels,col="grey52"
                                           ,lty="dotted")
-                                 }#end if hovgrid
+                                 }#end if fcgrid
                                 }#end plot.axes
                      )#end sombreado
 
@@ -2515,7 +2592,7 @@ for (place in myplaces){
          yraxis  = c(min(yraxis)-1,yraxis,max(yraxis)+1)
 
          vrange  = range(varbuff,na.rm=TRUE)
-         vlevels = pretty(x=vrange,n=ncolshov)
+         vlevels = pretty(x=vrange,n=ncolsfc)
          vnlev   = length(vlevels)
 
          #----- Loop over formats. --------------------------------------------------------#
@@ -2541,14 +2618,14 @@ for (place in myplaces){
                      ,key.title=title(main=unit,cex.main=0.8)
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=yrat)
-                                 if (hovgrid){
+                                 if (fcgrid){
                                     for (yl in yrat){
                                        abline(h=yl,col="grey52",lty="dotted")
                                     } #end for yl
                                     for (ml in monat){
                                        abline(v=ml,col="grey52",lty="dotted")
                                     } #end for ml
-                                 }#end if hovgrid
+                                 }#end if fcgrid
                                 }#end plot.axes
                      )
 
@@ -2612,7 +2689,7 @@ for (place in myplaces){
          huplot    = pretty.time(whenaxis,n=8)
 
          vrange  = range(varbuff,na.rm=TRUE)
-         vlevels = pretty(x=vrange,n=ncolshov)
+         vlevels = pretty(x=vrange,n=ncolsfc)
          vnlev   = length(vlevels)
 
          #----- Loop over formats. --------------------------------------------------------#
@@ -2639,10 +2716,10 @@ for (place in myplaces){
                      ,key.title=title(main=unit,cex.main=0.8)
                      ,plot.axes={axis(side=1,at=huplot$level,labels=huplot$labels)
                                  axis(side=2,at=uplot$levels,labels=uplot$labels)
-                                 if (hovgrid){
+                                 if (fcgrid){
                                     abline(v=huplot$levels,h=uplot$levels
                                           ,col="grey52",lty="dotted")
-                                 }#end if hovgrid
+                                 }#end if fcgrid
                                 }#end plot.axes
                      )
 
@@ -2715,6 +2792,217 @@ for (place in myplaces){
          } #end for outform
       }#end if
    }#end for nbox
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the PDF of patch-level properties as a function of time.                       #
+   #---------------------------------------------------------------------------------------#
+   cat ("      * Time series of PDF of properties by patch...","\n")
+   for (v in 1:nplotpatch){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      thispatch   = plotpatch[[v]]
+      vnam        = thispatch$vnam
+      description = thispatch$desc
+      unit        = thispatch$unit
+      vcscheme    = thispatch$col.scheme
+      plog        = thispatch$plog
+      plotit      = thispatch$emean
+
+      if (plotit){
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+         outdir  =  paste(outpref,"patch_emean",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         cat("      + PDF plot of ",description,"...","\n")
+
+         this = patchpdf[[vnam]]$edensity
+
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
+            if (outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+            }#end if
+
+            letitre = paste("Density function of ",description," \ ",lieu,sep="")
+            lex     = "Time"
+            ley     = paste(description," [",unit,"]",sep="")
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot the PDF distribution.                                               #
+            #------------------------------------------------------------------------------#
+            sombreado( x              = this$x
+                     , y              = this$y
+                     , z              = this$z
+                     , nlevels        = ncolsfc
+                     , colour.palette = get(vcscheme)
+                     , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
+                     , key.title      = title(main="Density",cex.main=0.8)
+                     , key.log        = plog 
+                     , plot.axes      = {  axis( side   = 1
+                                               , at     = whenplot8$levels
+                                               , labels = whenplot8$labels
+                                               , padj   = whenplot8$padj
+                                               )#end axis
+                                           axis( side   = 2
+                                               , at     = pretty(this$y)
+                                               , labels = NULL
+                                               )#end axis
+                                           if (fcgrid){
+                                              abline( v   = whenplot8$levels
+                                                    , h   = pretty(this$y)
+                                                    , col = "grey52"
+                                                    , lty = "dotted"
+                                                    )#end abline
+                                           }#end if fcgrid
+                                        }#end plot.axes
+                     )#end sombreado
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Close the device.                                                        #
+            #------------------------------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            #------------------------------------------------------------------------------#
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         } #end for outform
+         #---------------------------------------------------------------------------------#
+      }#end if plotit
+      #------------------------------------------------------------------------------------#
+   }#end for (v in 1:npatchplot)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Plot the PDF of patch-level properties as a function of time.                       #
+   #---------------------------------------------------------------------------------------#
+   cat ("      * Monthly PDF of properties by patch...","\n")
+   for (v in 1:nplotpatch){
+
+      #----- Retrieve variable information from the list. ---------------------------------#
+      thispatch   = plotpatch[[v]]
+      vnam        = thispatch$vnam
+      description = thispatch$desc
+      unit        = thispatch$unit
+      vcscheme    = thispatch$col.scheme
+      plog        = thispatch$plog
+      plotit      = thispatch$mmean
+
+      if (plotit){
+
+         #---------------------------------------------------------------------------------#
+         #     Check if the directory exists.  If not, create it.                          #
+         #---------------------------------------------------------------------------------#
+         outdir  =  paste(outpref,"patch_mmean",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         cat("      + PDF plot of ",description,"...","\n")
+
+         this = patchpdf[[vnam]]$mdensity
+
+
+         #----- Find the month tick marks. ------------------------------------------------#
+         monat  = 1:12
+         monlab = c("J","F","M","A","M","J","J","A","S","O","N","D")
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Loop over formats. --------------------------------------------------------#
+         for (o in 1:nout){
+            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
+            if(outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+            }#end if
+
+            letitre = paste("Density function of ",description," \ ",lieu,sep="")
+            lex     = "Months"
+            ley     = paste(description," [",unit,"]",sep="")
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot the PDF distribution.                                               #
+            #------------------------------------------------------------------------------#
+            sombreado( x              = this$x
+                     , y              = this$y
+                     , z              = this$z
+                     , nlevels        = ncolsfc
+                     , colour.palette = get(vcscheme)
+                     , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
+                     , key.title      = title(main="Density",cex.main=0.8)
+                     , key.log        = plog 
+                     , plot.axes      = {  axis( side   = 1
+                                               , at     = monat
+                                               , labels = monlab
+                                               )#end axis
+                                           axis( side   = 2
+                                               , at     = pretty(this$y)
+                                               , labels = NULL
+                                               )#end axis
+                                           if (fcgrid){
+                                              abline( v   = monat
+                                                    , h   = pretty(this$y)
+                                                    , col = "grey52"
+                                                    , lty = "dotted"
+                                                    )#end abline
+                                           }#end if fcgrid
+                                        }#end plot.axes
+                     )#end sombreado
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Close the device.                                                        #
+            #------------------------------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            #------------------------------------------------------------------------------#
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         } #end for outform
+         #---------------------------------------------------------------------------------#
+      }#end if plotit
+      #------------------------------------------------------------------------------------#
+   }#end for (v in 1:npatchplot)
    #---------------------------------------------------------------------------------------#
 
 
@@ -3029,7 +3317,7 @@ for (place in myplaces){
                         , inset  = inset
                         , legend = pftleg
                         , fill   = colleg
-                        , ncol   = min(2,pretty.box(n.selpft)$ncol)
+                        , ncol   = 1
                         , title  = expression(bold("PFT"))
                         , bg     = "white"
                         , cex    = 0.9
@@ -3050,5 +3338,5 @@ for (place in myplaces){
    }#end for npsas
    #---------------------------------------------------------------------------------------#
 }#end for places
-
-#q("no")
+#==========================================================================================#
+#==========================================================================================#

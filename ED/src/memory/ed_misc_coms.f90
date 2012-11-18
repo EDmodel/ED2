@@ -191,6 +191,9 @@ Module ed_misc_coms
    logical :: writing_year ! Writing yearly
    logical :: writing_eorq ! If either monthly or mean diel are written.
    logical :: writing_long ! If either daily, monthly, or mean diel are written.
+   logical :: history_fast ! Save sub-daily (fast) means to history 
+   logical :: history_dail ! Save daily means to history 
+   logical :: history_eorq ! Save monthly means and mean diel to history
 
    ! Namelist option to attach metadata to HDF5 output files 0=no, 1=yes
 

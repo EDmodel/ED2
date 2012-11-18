@@ -23,14 +23,14 @@ sitemetdef='/n/moorcroft_data/mlongo/data/ed2_data/site_met_driver'
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with default pseudo past drivers. ---------------------------------------------#
-scenariopathdef='/n/moorcroft_data/mlongo/data/ed2_data/scenario_met_driver'
+scenariopathdef='/n/moorcroft_data/mlongo/data/ed2_data/realisation_scen_driver'
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch='n'
 #------------------------------------------------------------------------------------------#
 #    In case we should copy, this is the source where the data is organised to go.  This   #
 # will override sitemetdef and scenariopath.                                               #
 #------------------------------------------------------------------------------------------#
-packdatasrc='/n/moorcroft_data/mlongo/data/2scratch'
+packdatasrc='/n/moorcroft_data/mlongo/data/tower_scratch'
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -82,7 +82,7 @@ execname='ed_2.1-opt'
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
    sitemet='/scratch/mlongo/met_driver/site_met_driver'
-   scenariopath='/scratch/mlongo/met_driver/scenario_met_driver'
+   scenariopath='/scratch/mlongo/met_driver/realisation_scen_driver'
    shefpath='/scratch/mlongo/met_driver/sheffield'
 else
    sitemet=${sitemetdef}
@@ -407,11 +407,20 @@ do
          #      Run the small R script to check whether the simulation was running or not, #
          # and whether there was any cohort left by the time the runs were stopped.        #
          #---------------------------------------------------------------------------------#
-         sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
-         sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
-         sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
-         sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
-         R CMD BATCH ${here}/${polyname}/whichrun.r ${here}/${polyname}/outwhichrun.txt
+         /bin/rm -f ${here}/${polyname}/statusrun.txt
+         /bin/rm -f ${here}/${polyname}/whichrun.r
+         /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
+         whichrun="${here}/${polyname}/whichrun.r"
+         outwhich="${here}/${polyname}/outwhichrun.txt"
+         sed -i s@thispoly@${polyname}@g ${whichrun}
+         sed -i s@thisqueue@${queue}@g   ${whichrun}
+         sed -i s@pathhere@${here}@g     ${whichrun}
+         sed -i s@paththere@${there}@g   ${whichrun}
+         sed -i s@thisyeara@${yeara}@g   ${whichrun}
+         sed -i s@thismontha@${montha}@g ${whichrun}
+         sed -i s@thisdatea@${datea}@g   ${whichrun}
+         sed -i s@thistimea@${timea}@g   ${whichrun}
+         R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
          while [ ! -s ${here}/${polyname}/statusrun.txt ]
          do
             sleep 0.5
@@ -433,10 +442,19 @@ do
             cp -r ${here}/Template ${there}/${polyname}
          fi
 
-         sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
-         sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
-         sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
-         sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
+         /bin/rm -f ${here}/${polyname}/statusrun.txt
+         /bin/rm -f ${here}/${polyname}/whichrun.r
+         /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
+         whichrun="${here}/${polyname}/whichrun.r"
+         outwhich="${here}/${polyname}/outwhichrun.txt"
+         sed -i s@thispoly@${polyname}@g ${whichrun}
+         sed -i s@thisqueue@${queue}@g   ${whichrun}
+         sed -i s@pathhere@${here}@g     ${whichrun}
+         sed -i s@paththere@${there}@g   ${whichrun}
+         sed -i s@thisyeara@${yeara}@g   ${whichrun}
+         sed -i s@thismontha@${montha}@g ${whichrun}
+         sed -i s@thisdatea@${datea}@g   ${whichrun}
+         sed -i s@thistimea@${timea}@g   ${whichrun}
          year=${yeara}
          month=${montha}
          date=${datea}
@@ -452,11 +470,20 @@ do
       then
          cp -r ${here}/Template ${there}/${polyname}
       fi
-
-      sed -i s@thispoly@${polyname}@g ${here}/${polyname}/whichrun.r
-      sed -i s@thisqueue@${queue}@g   ${here}/${polyname}/whichrun.r
-      sed -i s@pathhere@${here}@g     ${here}/${polyname}/whichrun.r
-      sed -i s@paththere@${there}@g   ${here}/${polyname}/whichrun.r
+      /bin/rm -f ${here}/${polyname}/statusrun.txt
+      /bin/rm -f ${here}/${polyname}/whichrun.r
+      /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
+      whichrun="${here}/${polyname}/whichrun.r"
+      outwhich="${here}/${polyname}/outwhichrun.txt"
+      sed -i s@thispoly@${polyname}@g ${whichrun}
+      sed -i s@thisqueue@${queue}@g   ${whichrun}
+      sed -i s@pathhere@${here}@g     ${whichrun}
+      sed -i s@paththere@${there}@g   ${whichrun}
+      sed -i s@thisyeara@${yeara}@g   ${whichrun}
+      sed -i s@thismontha@${montha}@g ${whichrun}
+      sed -i s@thisdatea@${datea}@g   ${whichrun}
+      sed -i s@thistimea@${timea}@g   ${whichrun}
+      R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
       year=${yeara}
       month=${montha}
       date=${datea}
@@ -564,31 +591,27 @@ do
 
    #---------------------------------------------------------------------------------------#
    #      Choose the scenario to use.  Iscenario follows the following convention:         #
-   #  0 -- No scenario, this only uses the tower years.                                    #
-   # -1 -- Gap-filled data for the past 40 years, using historical rain but no sampling    #
-   #  1 -- The gap-filled data is resampled with uniform distribution for probability of   #
-   #       picking any year (WITH replacement)                                             #
+   # "default"    -- No scenario.  Use the tower/Sheffield data.                           #
+   # "rRRR_tTTT   -- Use scenarios, with rRRRR controlling the rainfall, and tTTTT         #
+   #                 controlling temperature.                                              #
    #                                                                                       #
-   #  For any A other than 0 or 1, a non-uniform probability of picking any year p(y):     #
-   #  (A is always positive the minus is just a flag)                                      #
+   # rRRR         -- Rainfall scenarios, where rRRRR means:                                #
+   #                 r+000: INMET-based time series, no resampling.                        #
+   #                 r+010: Re-sampling with substitution, but equal chances for all years #
+   #                 r-XXX: Shift the location (similar to mean) of the distribution by    #
+   #                        -X.XX units of scale (similar to standard deviation), so the   #
+   #                        time series becomes drier.                                     #
+   #                 r+XXX: Similar to above, but make the time series wetter.             #
    #                                                                                       #
-   # -A -- p (y) = k * A ^ [1 - 2*q(y)]                                                    #
-   #  A -- p (y) = k * A ^ [2*q(y) - 1]                                                    #
-   #                                                                                       #
-   #  where q(y) is the year ranking, q(driest) = 0, q(wettest) = 1)                       #
-   #                                                                                       #
-   #  k is just a constant to make the CDF 1 for q>=1, it doesn't really matter, but in    #
-   #    case you're curious:                                                               #
-   #                                                                                       #
-   #       2 * A * ln(A)                                                                   #
-   #  k = ---------------                                                                  #
-   #         A^2 - A                                                                       #
-   #                                                                                       #
-   #     In summary, Negative A means that dry years are going to be picked more often,    #
-   #  whereas positive means that wet years are picked more often.                         #
-   #                                                                                       #
+   # tTTT         -- Temperature scenarios, where tTTTT means:                             #
+   #                 t+000: No change in temperature                                       #
+   #                 t-YYY: Change temperature by -Y.YY Kelvin.  Keep relative humidity    #
+   #                        the same and correct specific humidity.                        #
+   #                 t+YYY: Change temperature by +Y.YY Kelvin.  Keep relative humidity    #
+   #                        the same and correct by +Y.YY Kelvin.                          #
+   #                 r+XXX: Similar to above, but make the time series wetter.             #
    #---------------------------------------------------------------------------------------#
-   if [ ${iscenario} -eq 0 ]
+   if [ ${iscenario} == "default" ]
    then
       #------------------------------------------------------------------------------------#
       #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
@@ -695,22 +718,7 @@ do
       #------------------------------------------------------------------------------------#
       #     Find out which scenario to use.                                                #
       #------------------------------------------------------------------------------------#
-      if [ ${iscenario} -eq -1 ]
-      then
-         whichscen='past'
-      elif [ ${iscenario} -eq 1 ]
-      then
-         whichscen='unif'
-      elif [ ${iscenario} -gt 1 ]
-      then
-         let wetter=1000+${iscenario}
-         whichscen='w'`echo ${wetter} | awk '{print substr($1,2,3)}'`
-      elif [ ${iscenario} -lt -1 ]
-      then
-         let drier=1000-${iscenario}
-         whichscen='d'`echo ${drier} | awk '{print substr($1,2,3)}'`
-      fi
-      fullscen="${scenariopath}/${whichscen}"
+      fullscen="${scenariopath}/${iscenario}"
       #------------------------------------------------------------------------------------#
 
 
@@ -1425,10 +1433,11 @@ do
    sed -i s@myexec@${execname}@g        ${callserial}
    sed -i s@myname@${moi}@g             ${callserial}
    sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+   sed -i s@myscenario@${iscenario}@g   ${callserial}
 
    if [ ${queue} == 'unrestricted_parallel' ]
    then
-      sed -i s@thisqueue@GC3@g ${srun}
+      sed -i s@thisqueue@long_serial@g ${srun}
       echo 'Skip this node for now.' > ${here}/${polyname}/skipper.txt
    else
       sed -i s@thisqueue@${queue}@g ${srun}

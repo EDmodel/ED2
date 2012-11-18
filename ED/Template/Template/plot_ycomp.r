@@ -270,6 +270,20 @@ for (place in myplaces){
 
 
    #---------------------------------------------------------------------------------------#
+   #    Copy the data to temporary variables.                                              #
+   #---------------------------------------------------------------------------------------#
+   emean  = datum$emean
+   emsqu  = datum$emsqu
+   qmean  = datum$qmean
+   qmsqu  = datum$qmsqu
+   szpft  = datum$szpft
+   lu     = datum$lu
+   patch  = datum$patch
+   cohort = datum$cohort
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
    #    Create a list with unique years.                                                   #
    #---------------------------------------------------------------------------------------#
    print (paste("    - Finding the years and seasons...",sep=""))
@@ -348,11 +362,11 @@ for (place in myplaces){
             outplot[[y]]   = list()
             outplot[[y]]$x = month.when
             if (cumul){
-               copy.datum                    = datum[[vname]][sel]
+               copy.datum                    = emean[[vname]][sel]
                copy.datum[is.na(copy.datum)] = 0
                outplot[[y]]$y = cumsum(copy.datum)
             }else{
-               outplot[[y]]$y = datum[[vname]][sel]
+               outplot[[y]]$y = emean[[vname]][sel]
             }#end if
 
             #----- Update range. ----------------------------------------------------------#
@@ -424,6 +438,7 @@ for (place in myplaces){
             }else{
                dev.off()
             }#end if
+            dummy = clean.tmp()
             #------------------------------------------------------------------------------#
          }#end for
          #---------------------------------------------------------------------------------#
@@ -449,7 +464,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Find the seasonality matrix.                                                #
          #---------------------------------------------------------------------------------#
-         this.var = datum[[vname]]
+         this.var = emean[[vname]]
          if (cumul){
             season.vec = tapply(X=this.var,INDEX=this.season,FUN=sum)
          }else{
@@ -458,7 +473,7 @@ for (place in myplaces){
          season.mat = matrix( data     = season.vec
                             , ncol     = 4
                             , nrow     = nyr3mon
-                            , dimnames = list(yr3mon.desc,season.list)
+                            , dimnames = list(yr3mon.desc,season.list[-nseasons])
                             , byrow    = TRUE
                             )#end matrix
          if (vname == "rain"){
@@ -526,6 +541,7 @@ for (place in myplaces){
             }else{
                dev.off()
             }#end if
+            dummy = clean.tmp()
             #------------------------------------------------------------------------------#
          }#end for
          #---------------------------------------------------------------------------------#
@@ -578,21 +594,21 @@ for (place in myplaces){
             #----- Attribute symbols according to the year. -------------------------------#
             this.pch  = eft.pch[match(yr.season,eft.year)]
             #----- Expand the edges of the x axis. ----------------------------------------#
-            xvar      = datum[[xvname]]
+            xvar      = emean[[xvname]]
             lex       = paste(xdesc," [",xunit,"]",sep="")
             xrange    = range(xvar,na.rm=TRUE)
             xlimit    = xrange
             xlimit[1] = xrange[1] - 0.05 * (xrange[2] - xrange[1])
             xlimit[2] = xrange[2] + 0.05 * (xrange[2] - xrange[1])
             #----- Expand the edges of the y axis. ----------------------------------------#
-            yvar      = datum[[yvname]]
+            yvar      = emean[[yvname]]
             ley       = paste(ydesc," [",yunit[y],"]",sep="")
             yrange    = range(yvar,na.rm=TRUE)
             ylimit    = yrange
             ylimit[1] = yrange[1] - 0.05 * (yrange[2] - yrange[1])
             ylimit[2] = yrange[2] + 0.40 * (yrange[2] - yrange[1])
             #----- Annotation for the colour map ("Z" axis). ------------------------------#
-            zvar      = datum[[zvname]]
+            zvar      = emean[[zvname]]
             lez       = paste(zkey,"\n [",zunit,"]",sep="")
             #----- Find the position to plot the legend. ----------------------------------#
             leg.pos   = paste(yleg,xleg,sep="")
@@ -663,6 +679,7 @@ for (place in myplaces){
                }else{
                   dev.off()
                }#end if
+               dummy = clean.tmp()
                #---------------------------------------------------------------------------#
             }#end for outform
             #------------------------------------------------------------------------------#
@@ -674,5 +691,3 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
 }#end for places
 #------------------------------------------------------------------------------------------#
-
-#q("no")
