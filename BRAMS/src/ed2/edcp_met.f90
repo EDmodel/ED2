@@ -1576,7 +1576,7 @@ subroutine copy_avgvars_to_leaf(ifm)
                             , nzs                ! ! intent(in)
    use rconstants    , only : t3ple              & ! intent(in)
                             , wdns               & ! intent(in)
-                            , kgCyr_2_umols      & ! intent(in)
+                            , umols_2_kgCyr      ! ! intent(in)
    use therm_lib     , only : alvl               & ! intent(in)
                             , alvi               & ! intent(in)
                             , uint2tl            & ! intent(in)
@@ -1608,6 +1608,7 @@ subroutine copy_avgvars_to_leaf(ifm)
    integer                    :: idbh
    integer                    :: ipft
    integer                    :: nsoil
+   real                       :: poly_area_i
    real                       :: site_area_i
    real                       :: patch_wgt
    real                       :: ground_temp
@@ -1728,11 +1729,11 @@ subroutine copy_avgvars_to_leaf(ifm)
             !----- Temporary surface water: squeeze everything into one layer. ------------!
             leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp) =                                     &
                          leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp)                          &
-                       + csite%fmean_sfcw_energy(ipa) *  csite%fmean_sfcw_water(ipa)       &
+                       + csite%fmean_sfcw_energy(ipa) *  csite%fmean_sfcw_mass(ipa)        &
                        * patch_wgt
             leaf_g(ifm)%sfcwater_mass  (1,ix,iy,ilp) =                                     &
                          leaf_g(ifm)%sfcwater_mass  (1,ix,iy,ilp)                          &
-                       + csite%fmean_sfcw_water(ipa) * patch_wgt
+                       + csite%fmean_sfcw_mass (ipa) * patch_wgt
             leaf_g(ifm)%sfcwater_depth (1,ix,iy,ilp) =                                     &
                          leaf_g(ifm)%sfcwater_depth (1,ix,iy,ilp)                          &
                        + csite%fmean_sfcw_depth (ipa) * patch_wgt
@@ -1797,7 +1798,7 @@ subroutine copy_avgvars_to_leaf(ifm)
             !----- Heterotrophic respiration.  Make units umol/m2/s. ----------------------!
             leaf_g(ifm)%resphet(ix,iy,ilp) = leaf_g(ifm)%resphet(ix,iy,ilp)                &
                                            + csite%fmean_rh     (ico)                      &
-                                           * patch_wgt * kgCyr_2_umols
+                                           * patch_wgt / umols_2_kgCyr
             !------------------------------------------------------------------------------!
 
 
@@ -1820,7 +1821,7 @@ subroutine copy_avgvars_to_leaf(ifm)
                veg_hcap   = cpatch%fmean_leaf_hcap  (ico) + cpatch%fmean_wood_hcap  (ico)
                if (veg_hcap > 0.) then
                   !----- There are plants.  Use standard thermodynamics. ------------------!
-                  call uextcm2tcl(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+                  call uextcm2tl(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
                else
                   !----- No plant biomass. Use CAS temperature instead. -------------------!
                   veg_temp  = can_temp
@@ -1846,7 +1847,7 @@ subroutine copy_avgvars_to_leaf(ifm)
                leaf_g(ifm)%veg_lai   (ix,iy,ilp) = leaf_g(ifm)%veg_lai   (ix,iy,ilp)       &
                                                  + cpatch%lai(ico) * patch_wgt
                leaf_g(ifm)%veg_tai   (ix,iy,ilp) = leaf_g(ifm)%veg_tai   (ix,iy,ilp)       &
-                                                 + ( cpatch%lai(ico) + cgrid%wai(ico) )    &
+                                                 + ( cpatch%lai(ico) + cpatch%wai(ico) )   &
                                                  * patch_wgt
                leaf_g(ifm)%veg_agb   (ix,iy,ilp) = leaf_g(ifm)%veg_agb   (ix,iy,ilp)       &
                                                  + (cpatch%nplant(ico) * cpatch%agb(ico))  &
@@ -1881,11 +1882,11 @@ subroutine copy_avgvars_to_leaf(ifm)
                leaf_g(ifm)%gpp    (ix,iy,ilp) = leaf_g(ifm)%gpp    (ix,iy,ilp)             &
                                               + cpatch%fmean_gpp   (ico)                   &
                                               * cpatch%nplant      (ico)                   &
-                                              * patch_wgt * kgCyr_2_umols
+                                              * patch_wgt / umols_2_kgCyr
                leaf_g(ifm)%plresp (ix,iy,ilp) = leaf_g(ifm)%plresp (ix,iy,ilp)             &
                                               + cpatch%fmean_plresp(ico)                   &
                                               * cpatch%nplant      (ico)                   &
-                                              * patch_wgt * kgCyr_2_umols
+                                              * patch_wgt / umols_2_kgCyr
                !---------------------------------------------------------------------------!
             end do cohortloop
             !------------------------------------------------------------------------------!
@@ -1897,11 +1898,11 @@ subroutine copy_avgvars_to_leaf(ifm)
          !    Check whether there was some mass in the temporary pounding/snow layer.  In  !
          ! case there isn't, force all properties to be zero.                              !
          !---------------------------------------------------------------------------------!
-         if (leaf_g(ifm)%sfcwater_mass > tiny_sfcwater_mass) then
+         if (leaf_g(ifm)%sfcwater_mass(1,ix,iy,ilp) > tiny_sfcwater_mass) then
             leaf_g(ifm)%sfcwater_nlev    (ix,iy,ilp) = 1.
             leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp) =                                     &
                                                   leaf_g(ifm)%sfcwater_energy(1,ix,iy,ilp) &
-                                                / leaf_g(ifm)%sfcwater_water (1,ix,iy,ilp)
+                                                / leaf_g(ifm)%sfcwater_mass  (1,ix,iy,ilp)
          else
             leaf_g(ifm)%sfcwater_nlev     (ix,iy,ilp) = 0.
             leaf_g(ifm)%sfcwater_energy (1,ix,iy,ilp) = 0.
