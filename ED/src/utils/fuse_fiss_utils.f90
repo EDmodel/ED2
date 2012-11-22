@@ -2925,31 +2925,38 @@ module fuse_fiss_utils
       integer                             :: tot_ncohorts    ! Total # of cohorts
       !----- Locally saved variables. --------------------------------------------------------!
       logical                   , save    :: first_time = .true.
+      logical                   , save    :: dont_force_fuse
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     First time here.  Delete all files.                                            !
       !------------------------------------------------------------------------------------!
-      if (first_time .and. print_fuse_details) then
-         do jpy = 1, cgrid%npolygons
-            jpoly => cgrid%polygon(jpy)
-            do jsi = 1, jpoly%nsites
-               write (fuse_fout,fmt='(a,2(a,i4.4),a)')                                     &
-                     trim(fuse_prefix),'polygon_',jpy,'_site_',jsi,'.txt'
-               open (unit=72,file=trim(fuse_fout),status='replace',action='write')
-               write(unit=72,fmt='(a)')       '----------------------------------------'
-               write(unit=72,fmt='(a)')       ' Patch Fusion log for: '
-               write(unit=72,fmt='(a,1x,i5)') ' POLYGON: ',jpy 
-               write(unit=72,fmt='(a,1x,i5)') ' SITE:    ',jsi 
-               write(unit=72,fmt='(a)')       '----------------------------------------'
-               write(unit=72,fmt='(a)')       ' '
-               close(unit=72,status='keep')
+      if (first_time) then
+         dont_force_fuse = abs(maxpatch) /= 1
+         if (print_fuse_details) then
+            do jpy = 1, cgrid%npolygons
+               jpoly => cgrid%polygon(jpy)
+               do jsi = 1, jpoly%nsites
+                  write (fuse_fout,fmt='(a,2(a,i4.4),a)')                                  &
+                        trim(fuse_prefix),'polygon_',jpy,'_site_',jsi,'.txt'
+                  open (unit=72,file=trim(fuse_fout),status='replace',action='write')
+                  write(unit=72,fmt='(a)')       '----------------------------------------'
+                  write(unit=72,fmt='(a)')       ' Patch Fusion log for: '
+                  write(unit=72,fmt='(a,1x,i5)') ' POLYGON: ',jpy 
+                  write(unit=72,fmt='(a,1x,i5)') ' SITE:    ',jsi 
+                  write(unit=72,fmt='(a)')       '----------------------------------------'
+                  write(unit=72,fmt='(a)')       ' '
+                  close(unit=72,status='keep')
+               end do
+               !---------------------------------------------------------------------------!
             end do
-         end do
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
          first_time = .false.
       end if
-      !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -3061,7 +3068,11 @@ module fuse_fiss_utils
                donpatch => csite%patch(donp)
                
                !----- If patch is not empty, or has already been fused, move on. ----------!
-               if ( (.not. fuse_table(donp)) .or. donpatch%ncohorts > 0) cycle donloope
+               if ( (.not. fuse_table(donp)) .or.                                          &
+                    ( dont_force_fuse .and.  donpatch%ncohorts > 0) ) then
+                  cycle donloope
+               end if
+               !---------------------------------------------------------------------------!
 
 
                !---------------------------------------------------------------------------!
@@ -3082,8 +3093,9 @@ module fuse_fiss_utils
                   ! if the donor and receptor have different disturbance types.            !
                   !------------------------------------------------------------------------!
                   if ( (.not. fuse_table(recp))                       .or.                 &
-                       recpatch%ncohorts > 0                          .or.                 &
-                       csite%dist_type(donp) /= csite%dist_type(recp)     ) then
+                       ( dont_force_fuse                              .and.                &
+                         ( recpatch%ncohorts > 0                      .or.                 &
+                           csite%dist_type(donp) /= csite%dist_type(recp)     ) ) ) then
                      cycle recloope
                   end if
                   !------------------------------------------------------------------------!
@@ -3186,9 +3198,11 @@ module fuse_fiss_utils
                      donpatch => csite%patch(donp)
                      
                      !----- If patch is not empty, or has already been fused, move on. ----!
-                     if ( (.not. fuse_table(donp)) .or. donpatch%ncohorts == 0) then
+                     if ( (.not. fuse_table(donp)) .or.                                    &
+                          ( dont_force_fuse .and. donpatch%ncohorts == 0 ) ) then
                         cycle donloopa
                      end if
+                     !---------------------------------------------------------------------!
 
 
                      !---------------------------------------------------------------------!
@@ -3210,10 +3224,12 @@ module fuse_fiss_utils
                         ! fused, or if the donor and receptor have different disturbance   !
                         ! types.                                                           !
                         !------------------------------------------------------------------!
-                        if ( (.not. fuse_table(recp))                       .or.           &
-                             recpatch%ncohorts == 0                         .or.           &
-                             csite%dist_type(donp) /= csite%dist_type(recp) .or.           &
-                             csite%age(donp)      /=  csite%age(recp)    ) then
+                        if ( (.not. fuse_table(recp))                           .or.       &
+                             ( dont_force_fuse                                 .and.       &
+                               ( recpatch%ncohorts == 0                         .or.       &
+                                 csite%dist_type(donp) /= csite%dist_type(recp) .or.       &
+                                 csite%age(donp)       /=  csite%age(recp)           ) ) ) &
+                        then
                            cycle recloopa
                         end if
                         !------------------------------------------------------------------!
@@ -3348,10 +3364,13 @@ module fuse_fiss_utils
                            !     If fuse_flag is false, the patches aren't similar, move   !
                            ! to the next donor patch.                                      !
                            !---------------------------------------------------------------!
-                           if (.not. fuse_flag) cycle recloopa
+                           if (dont_force_fuse .and. (.not. fuse_flag)) cycle recloopa
                            !---------------------------------------------------------------!
                         end do hgtloopa
                         !------------------------------------------------------------------!
+
+
+
                         !------------------------------------------------------------------!
                         !     Take an average of the patch properties of donpatch and      !
                         ! recpatch, and assign the average recpatch.                       !
@@ -3360,6 +3379,7 @@ module fuse_fiss_utils
                                            ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
                                            ,cpoly%green_leaf_factor(:,isi),elim_nplant     &
                                            ,elim_lai)
+                        !------------------------------------------------------------------!
 
 
                         !----- Record the fusion if requested by the user. ----------------!
@@ -3541,7 +3561,10 @@ module fuse_fiss_utils
                   ! patches, but, just in case... If both patches are empty they cannot be !
                   ! fused in this loop.                                                    !
                   !------------------------------------------------------------------------!
-                  if (donpatch%ncohorts == 0 .and. recpatch%ncohorts == 0) cycle donloopp
+                  if ( dont_force_fuse        .and.                                        &
+                       donpatch%ncohorts == 0 .and. recpatch%ncohorts == 0) then
+                     cycle donloopp
+                  end if
                   !------------------------------------------------------------------------!
 
 
@@ -3669,7 +3692,7 @@ module fuse_fiss_utils
                      !     If fuse_flag is false, the patches aren't similar, move to      !
                      ! the next donor patch.                                               !
                      !---------------------------------------------------------------------!
-                     if (.not. fuse_flag) cycle donloopp
+                     if (dont_force_fuse .and. (.not. fuse_flag)) cycle donloopp
                      !---------------------------------------------------------------------!
                   end do hgtloop
                   !------------------------------------------------------------------------!
@@ -3738,7 +3761,9 @@ module fuse_fiss_utils
                ! less than the target, or if we have reached the maximum tolerance and the !
                ! patch fusion still can't find similar patches, we quit the fusion loop.   !
                !---------------------------------------------------------------------------!
-               if (npatches_new <= abs(maxpatch)) exit mainfuseloop
+               if ( (.not. dont_force_fuse) .and. npatches_new <= abs(maxpatch)) then
+                  exit mainfuseloop
+               end if
                !---------------------------------------------------------------------------!
 
                !----- Increment tolerance -------------------------------------------------!
@@ -3747,7 +3772,6 @@ module fuse_fiss_utils
                light_toler =     light_toler * light_toler_mult
                !---------------------------------------------------------------------------!
             end do mainfuseloop
-
             !------------------------------------------------------------------------------!
 
 

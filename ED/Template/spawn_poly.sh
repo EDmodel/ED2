@@ -1449,12 +1449,12 @@ do
       if [ ${runt} == 'HISTORY' -o ${runt} == 'INITIAL' ]
       then
          touch ${callunpa}
+         let unpa=${unpa}+1
+         let submit=${unpa}%8 # % is mod operator
 
          #----- Add command to the node. --------------------------------------------------#
          if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
          then
-            let unpa=${unpa}+1
-            let submit=${unpa}%8 # % is mod operator
             let wtime=${submit}*15
             let wtime=${wtime}+2
          else

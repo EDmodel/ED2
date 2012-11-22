@@ -2656,6 +2656,11 @@ $ED2_INFO
    !                   the initialization, and fusion will never happen again.  Notice     !
    !                   that if the patches are too different, then the actual number of    !
    !                   patches in a site may exceed MAXPATCH.                              !
+   !                                                                                       !
+   !                   IMPORTANT: If MAXPATCH = -1 or 1, then the model will force fusion  !
+   !                              until the total number of patches is 1 for each land     !
+   !                              use type.                                                !
+   !                                                                                       !
    ! MAXCOHORT      -- If number of cohorts in a given patch exceeds MAXCOHORT, force      !
    !                   cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.   !
    !                   If MAXCOHORT is negative, then the absolute value is used only      !

@@ -23,30 +23,19 @@ outfile = file.path(here,"newjoborder.txt")        #   Job order
 #------------------------------------------------------------------------------------------#
 #      Variables that will vary (check the list below for all possibilities.               #
 #------------------------------------------------------------------------------------------#
-rscen    = c("r+000","r-020","r-040","r-060","r-080","r-100")
-tscen    = c("t+000","t+100","t+200","t+300")
-escen    = paste("real",sprintf("%2.2i",seq(from=0,to=9,by=1)),sep="-")
-
-scenario = apply( X        = expand.grid(list(rscen,tscen,escen), stringsAsFactors = FALSE)
-                , MARGIN   = 1
-                , FUN      = paste
-                , collapse = "_"
-                )#end apply
-
-
-varrun  = list( iata      = c("gyf","s67","rja")
-              , iscenario = scenario
+varrun  = list( iata      = c("gyf","s67")
               , iphen     = c(-1,2)
-              , yeara     = 1962
-              , yearz     = 2012
+              , yeara     = 1851
+              , yearz     = 2011
+              , queue     = "unrestricted_parallel"
               , isoilflg  = 2
-              , istext    = c(16,6,2,8,11)
+              , istext    = c(0,16,6,2,8,11,17)
               )#end list
 varlabel = list( iata      = varrun$iata
-               , iscenario = scenario
                , iphen     = paste("iphen",sprintf("%+2.2i",varrun$iphen) ,sep="")
-               , yeara     = "yr1962"
-               , yearz     = "yr2012"
+               , yeara     = "yr1851"
+               , yearz     = "yr2011"
+               , queue     = "unrestricted_parallel"
                , isoilflg  = "isoil02"
                , istext    = paste("stext",sprintf("%2.2i",varrun$istext),sep="")
                )#end list
@@ -212,7 +201,7 @@ for (n in 1:nvars) joborder[[names(myruns)[n]]] = myruns[[names(myruns)[n]]]
 #------------------------------------------------------------------------------------------#
 #     Create a table with room for all simulations.                                        #
 #------------------------------------------------------------------------------------------#
-poidata = poilist[match(joborder$iata,poilist$iata),]
+poitout = poilist[match(joborder$iata,poilist$iata),]
 #------------------------------------------------------------------------------------------#
 
 
@@ -220,7 +209,7 @@ poidata = poilist[match(joborder$iata,poilist$iata),]
 #     Replace met driver when it is supposed to be tower data.                             #
 #------------------------------------------------------------------------------------------#
 is.tower                      = joborder$met.driver == "tower"
-joborder$met.driver[is.tower] = poidata$met.driver[is.tower]
+joborder$met.driver[is.tower] = poitout$met.driver[is.tower]
 #------------------------------------------------------------------------------------------#
 
 
@@ -228,17 +217,28 @@ joborder$met.driver[is.tower] = poidata$met.driver[is.tower]
 #     Replace other POI-specific variables as long as they are not to be specified by the  #
 # user settings.                                                                           #
 #------------------------------------------------------------------------------------------#
-keep    = ( names(poidata) %in% names(joborder) 
-          & ( ! names(poidata) %in% names(myruns) )
-          & ( ! names(poidata) %in% c("iata","met.driver") )
+keep    = ( names(poitout) %in% names(joborder) 
+          & ( ! names(poitout) %in% names(myruns) )
+          & ( ! names(poitout) %in% c("iata","met.driver") )
           )#end keep
-poidata = poidata[,keep]
+poidata = poitout[,keep]
 npois   = ncol(poidata)
 if (npois > 0){
    for (p in 1:npois) joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
 }#end if
 #------------------------------------------------------------------------------------------#
 
+
+#------------------------------------------------------------------------------------------#
+#     We must overwrite clay and sand in case soil type is one of the variables.           #
+#------------------------------------------------------------------------------------------#
+if ("istext" %in% names(varrun)){
+   zero = joborder$istext == 0
+   joborder$istext[  zero] = poitout$ntext[zero]
+   joborder$sand  [! zero] = -1
+   joborder$clay  [! zero] = -1
+}#end if
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
