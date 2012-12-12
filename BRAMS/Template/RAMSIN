@@ -889,7 +889,7 @@ $CUPARM_OPTIONS
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-   NCLOUDS  = 2,
+   NCLOUDS  = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -917,7 +917,7 @@ $CUPARM_OPTIONS
    ! CONFRQ: how often should the cumulus parametrisation be updated?                      !
    ! CPTIME: when I should start computing the cumulus parametrisation.                    !
    !---------------------------------------------------------------------------------------!
-   CONFRQ =   900.,
+   CONFRQ =  1200.,
    CPTIME =     0.,
    !---------------------------------------------------------------------------------------!
 
@@ -1173,9 +1173,9 @@ $MODEL_OPTIONS
    !             1 -- yes.  That's the standard for most runs.                             !
    !---------------------------------------------------------------------------------------!
    ISWRTYP  = 3,
-   ILWRTYP  = 1,
+   ILWRTYP  = 4,
    ICUMFDBK = 1,
-   RADFRQ   = 300.,
+   RADFRQ   = 900.,
    LONRAD   = 1,
    !---------------------------------------------------------------------------------------!
 
@@ -1422,7 +1422,7 @@ $MODEL_OPTIONS
       !   Soil type 21 is a special case in which we use the albedo method that used to be !
       ! the default in ED-2.1.                                                             !
       !------------------------------------------------------------------------------------!
-      ISOILCOL  = 2,
+      ISOILCOL  = 14,
       !------------------------------------------------------------------------------------!
 
 
@@ -1845,7 +1845,7 @@ $ED2_INFO
    !          If time is a problem, i.e., the runs are too slow, then try making it        !
    !          larger, but not much larger so to avoid problems...                          !
    !---------------------------------------------------------------------------------------!
-   DTLSM  = 120.0,
+   DTLSM  = 240.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1882,6 +1882,38 @@ $ED2_INFO
    IYOUTPUT  =  0,
    ITOUTPUT  =  0,
    ISOUTPUT  =  3,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control whether site-, patch-, and cohort-level time      !
+   ! means and mean sum of squares should be included in the output files or not.          !
+   !                                                                                       !
+   ! Reasons to add them:                                                                  !
+   ! a. Sub-polygon variables are more comprehensive.                                      !
+   ! b. Explore heterogeneity within a polygon and make interesting analysis.              !
+   ! c. More chances to create cool 3-D plots.                                             !
+   !                                                                                       !
+   ! Reasons to NOT add them:                                                              !
+   ! a. Output files will become much larger!                                              !
+   ! b. In regional/coupled runs, the output files will be ridiculously large.             !
+   ! c. You may fill up the disk.                                                          !
+   ! d. Other people's job may crash due to insufficient disk space.                       !
+   ! e. You will gain a bad reputation amongst your colleagues.                            !
+   ! f. And it will be entirely your fault.                                                !
+   !                                                                                       !
+   !     Either way, polygon-level averages are always included, and so are the instan-    !
+   ! taneous site-, patch-, and cohort-level variables needed for resuming the run.        ! 
+   !                                                                                       !
+   ! IADD_SITE_MEANS   --  Add site-level averages to the output   (0 = no; 1 = yes)       !
+   ! IADD_PATCH_MEANS  --  Add patch-level averages to the output  (0 = no; 1 = yes)       !
+   ! IADD_COHORT_MEANS --  Add cohort-level averages to the output (0 = no; 1 = yes)       !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   IADD_SITE_MEANS   = 0,
+   IADD_PATCH_MEANS  = 0,
+   IADD_COHORT_MEANS = 0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2019,7 +2051,7 @@ $ED2_INFO
    SOIL_DATABASE     = '/n/moorcroft_data/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
    LU_DATABASE       = '/n/moorcroft_data/mlongo/scenarios/glu-3.3.1+sb1/one/glu-3.3.1+sb1-',
    PLANTATION_FILE   = '',
-   LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2038.txt',
+   LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2008.txt',
    THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
    !---------------------------------------------------------------------------------------!
 
@@ -2096,7 +2128,7 @@ $ED2_INFO
    !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
    !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
-   INTEGRATION_SCHEME = 3,
+   INTEGRATION_SCHEME = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2280,7 +2312,7 @@ $ED2_INFO
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
    !---------------------------------------------------------------------------------------!
-   CROWN_MOD       = 1,
+   CROWN_MOD       = 0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2315,11 +2347,11 @@ $ED2_INFO
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   ICANRAD        =      0,
+   ICANRAD        =      1,
    LTRANS_VIS     =  0.050,
-   LTRANS_NIR     =  0.270,
+   LTRANS_NIR     =  0.230,
    LREFLECT_VIS   =  0.100,
-   LREFLECT_NIR   =  0.540,
+   LREFLECT_NIR   =  0.460,
    ORIENT_TREE    =  0.100,
    ORIENT_GRASS   = -0.100,
    CLUMP_TREE     =  0.800,
@@ -2391,8 +2423,8 @@ $ED2_INFO
    !                  cr    = k ------------- + (1 - k) -------------                      !
    !                             CB_lightmax             CB_watermax                       !
    !---------------------------------------------------------------------------------------!
-   IDDMORT_SCHEME  = 0,
-   DDMORT_CONST    = 1.,
+   IDDMORT_SCHEME  = 1,
+   DDMORT_CONST    = 0.8,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2449,8 +2481,8 @@ $ED2_INFO
    BPHOTO_C4       = 10000.,
    KW_GRASS        = 900.,
    KW_TREE         = 600.,
-   GAMMA_C3        = 0.015,
-   GAMMA_C4        = 0.040,
+   GAMMA_C3        = 0.0145,
+   GAMMA_C4        = 0.035,
    D0_GRASS        = 0.016,
    D0_TREE         = 0.016,
    ALPHA_C3        = 0.080,
@@ -2545,7 +2577,7 @@ $ED2_INFO
    !                   the minimum water deficit relative to the total rainfall, over the  !
    !                   past 12 months, to trigger fires.                                   !
    !---------------------------------------------------------------------------------------!
-   INCLUDE_FIRE    =     2,
+   INCLUDE_FIRE    =   0,
    FIRE_PARAMETER  =   0.5,
    SM_FIRE         = -1.40,
    !---------------------------------------------------------------------------------------!
@@ -2558,7 +2590,7 @@ $ED2_INFO
    !                   0.  no anthropogenic disturbance.                                   !
    !                   1.  use anthropogenic disturbance dataset.                          !
    !---------------------------------------------------------------------------------------!
-   IANTH_DISTURB   = 0,
+   IANTH_DISTURB   = 1,
    !---------------------------------------------------------------------------------------!
 
 

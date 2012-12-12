@@ -458,6 +458,77 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
                            , writing_eorq  & ! intent(in)
                            , writing_dcyc  ! ! intent(in)
    implicit none
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+   if (cgrid%npolygons == 0) return
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Split the routine into smaller routines to avoid segmentation violation.         !
+   !---------------------------------------------------------------------------------------!
+   call fill_history_grid_p11     (cgrid,ipy,py_index)
+   call fill_history_grid_p11dmean(cgrid,ipy,py_index)
+   call fill_history_grid_p11mmean(cgrid,ipy,py_index)
+   call fill_history_grid_p12     (cgrid,ipy,py_index)
+   call fill_history_grid_m11     (cgrid,ipy,py_index)
+   call fill_history_grid_p19     (cgrid,ipy,py_index)
+   call fill_history_grid_m12     (cgrid,ipy,py_index)
+   call fill_history_grid_p146    (cgrid,ipy,py_index)
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine fill_history_grid
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_p11(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 #if USE_INTERF
    interface
@@ -659,6 +730,155 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
                      ,'MINERAL_SOIL_N_PY '        ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%cwd_n                   (ipy:ipy)                              &
                      ,'CWD_N_PY '                 ,dsetrank,iparallel,.false.,foundvar)
+   !---------------------------------------------------------------------------------------!
+   return
+end subroutine fill_history_grid_p11
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      Single dimension variables.                                                      !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 1
+   globdims(1) = int(cgrid%npolygons_global,8)
+   chnkdims(1) = 1_8
+   chnkoffs(1) = int(py_index - 1,8)
+   memdims (1) = 1_8
+   memoffs (1) = 0_8
+   memsize (1) = 1_8
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !       Try to load daily and monthly means if the user is going to write them.         !
@@ -910,6 +1130,156 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
       call hdf_getslab_r(cgrid%dmean_dpcpg          (ipy:ipy)                              &
                         ,'DMEAN_DPCPG_PY            ',dsetrank,iparallel,.false.,foundvar)
    end if
+   return
+end subroutine fill_history_grid_p11dmean
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      Single dimension variables.                                                      !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 1
+   globdims(1) = int(cgrid%npolygons_global,8)
+   chnkdims(1) = 1_8
+   chnkoffs(1) = int(py_index - 1,8)
+   memdims (1) = 1_8
+   memoffs (1) = 0_8
+   memsize (1) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+
    !------ Monthly means. -----------------------------------------------------------------!
    if (writing_eorq) then
       call hdf_getslab_r(cgrid%mmean_fast_soil_c    (ipy:ipy)                              &
@@ -1238,8 +1608,137 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
+   return
+end subroutine fill_history_grid_p11mmean
+!==========================================================================================!
+!==========================================================================================!
 
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_p12(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -1304,9 +1803,137 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
+   return
+end subroutine fill_history_grid_p12
+!==========================================================================================!
+!==========================================================================================!
 
 
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_m11(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -1604,6 +2231,137 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
+   return
+end subroutine fill_history_grid_m11
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_p19(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -1635,51 +2393,137 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
+   return
+end subroutine fill_history_grid_p19
+!==========================================================================================!
+!==========================================================================================!
 
 
 
 
 
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_m12(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
    !---------------------------------------------------------------------------------------!
-   !---------------------------------------------------------------------------------------!
-   !      3-D variables, dimensions: (max_site;max_site+1;npolygons).                      !
-   !---------------------------------------------------------------------------------------!
-   ! dsetrank    = 3
-   ! globdims(1) = int(max_site,8)
-   ! chnkdims(1) = int(max_site,8)
-   ! memdims (1) = int(max_site,8)
-   ! memsize (1) = int(max_site,8)
-   ! chnkoffs(1) = 0_8
-   ! memoffs (1) = 0_8
-
-   ! globdims(2) = int(max_site+1,8)
-   ! chnkdims(2) = int(max_site+1,8)
-   ! memdims (2) = int(max_site+1,8)
-   ! memsize (2) = int(max_site+1,8)
-   ! chnkoffs(2) = 0_8
-   ! memoffs (2) = 0_8
-
-   ! globdims(3)  = int(cgrid%npolygons_global,8)
-   ! chnkdims(3)  = 1_8
-   ! chnkoffs(3)  = int(py_index - 1,8)
-   ! memdims (3)  = 1_8
-   ! memsize (3)  = 1_8
-   ! memoffs (3)  = 0_8
-
-
-   ! call hdf_getslab_r(cgrid%site_adjacency(:,:,ipy)                                      &
-   !                   ,'SITE_ADJACENCY ',dsetrank,iparallel,.true.,foundvar)
-
-   !---------------------------------------------------------------------------------------!
-   !---------------------------------------------------------------------------------------!
-   !---------------------------------------------------------------------------------------!
-
-
-
-
 
 
 
@@ -1731,10 +2575,137 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
+   return
+end subroutine fill_history_grid_m12
+!==========================================================================================!
+!==========================================================================================!
 
 
 
 
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_p146(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   integer(SIZE_T)              :: sz
+   integer                      :: hdferr
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -1839,7 +2810,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    return
-end subroutine fill_history_grid
+end subroutine fill_history_grid_p146
 !==========================================================================================!
 !==========================================================================================!
 

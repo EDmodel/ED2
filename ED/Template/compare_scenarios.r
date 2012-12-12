@@ -16,7 +16,7 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 here        = getwd()                                  #   Current directory
 srcdir      = "/n/moorcroft_data/mlongo/util/Rsc"      #   Script directory
-outroot     = file.path(here,"scenario_comp")
+outroot     = file.path(here,"4dbh_comp")
 #------------------------------------------------------------------------------------------#
 
 
@@ -39,12 +39,12 @@ rdata.path       = file.path(here,"RData_scomp") # Path for the scenario compari
 #  NA    -- plot only the first   (debugging only).                                        #
 #  FALSE -- skip them altogether                                                           #
 #------------------------------------------------------------------------------------------#
-plot.panel       = TRUE
-plot.tseries     = TRUE
-plot.szpft       = TRUE
-plot.barplot     = TRUE
-plot.xyzvars     = TRUE
-plot.scencomp    = TRUE
+plot.panel       = TRUE   # TRUE
+plot.tseries     = FALSE  # TRUE
+plot.szpft       = FALSE  # TRUE
+plot.barplot     = FALSE  # TRUE
+plot.xyzvars     = TRUE   # TRUE
+plot.scencomp    = FALSE  # TRUE
 #------------------------------------------------------------------------------------------#
 
 
@@ -98,7 +98,7 @@ plot.scencomp    = TRUE
 # (only key, desc, and pattern are defined).                                               #
 #------------------------------------------------------------------------------------------#
 name.template    = "tPPP_rRRRR_tTTTT_real-ZZ_iphenDDD_stextSS"
-use.global       = c(4,2)   # Which global to use (TRUE means all of them)
+use.global       = c(4)   # Which global to use (TRUE means all of them)
 #----- Global variables. ------------------------------------------------------------------#
 global         = list()
 global$stext   = list( key     = c("stext02","stext06","stext08","stext16","stext17")
@@ -145,18 +145,18 @@ scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-10
                      , pattern = "rRRRR"
                      , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0)
                      , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0)
-                     , colour  = c("royalblue4","deepskyblue","yellow3","darkorange2"
-                                  ,"firebrick","#520000")
+                     , colour  = c("royalblue","deepskyblue","yellow3","gold"
+                                  ,"darkorange2","red3")
                      , pch     = c(15L,17L,12L,13L,6L,8L)
                      , default = "r+000"
-                     , alabel  = c("Mean rainfall change [units of scale parameter]")
+                     , alabel  = paste(c("Mean rainfall change [Scale]",sep=""))
                     )#end list
 scenario$dtemp = list( key     = c("t+000","t+100","t+200","t+300")
                      , desc    = c("dT = +0.0 K","dT = +1.0 K","dT = +2.0 K","dT = +3.0 K")
                      , pattern = "tTTTT"
                      , value   = c(0.0,1.0,2.0,3.0)
                      , label   = c(0.0,1.0,2.0,3.0)
-                     , colour  = c("dodgerblue","yellow3","darkorange2","firebrick")
+                     , colour  = c("dodgerblue","yellow3","darkorange2","red3")
                      , pch     = c(18L,17L,13L,6L)
                      , default = "t+000"
                      , alabel  = c("Mean temperature change [K]")
@@ -177,9 +177,10 @@ yeara          = 1972         # First year we will include
 yeare          = 2001         # First year to use in the averaged output
 yearz          = 2011         # Last year we will include
 slz.min        = -5.0         # The deepest depth that trees access water.
-idbh.type      = 2            # Type of DBH class
+idbh.type      = 3            # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                              # 3 -- 0-10; 10-35; 35-70; > 70 (cm)
 #------------------------------------------------------------------------------------------#
 
 
@@ -198,24 +199,28 @@ byeold         = TRUE                  # Remove old files of the given format?
 
 depth          = 96                    # PNG resolution, in pixels per inch
 paper          = "letter"              # Paper size, to define the plot shape
-ptsz           = 14                    # Font size.
+ptsz           = 16                    # Font size.
 lwidth         = 2.5                   # Line width
 plotgrid       = TRUE                  # Should I plot the grid in the background? 
 
 legwhere       = "topleft"             # Where should I place the legend?
 inset          = 0.01                  # Inset between legend and edge of plot region.
-legbg          = "white"               # Legend background colour.
 fracexp        = 0.40                  # Expansion factor for y axis (to fit legend)
-cex.main       = 0.8                   # Scale coefficient for the title
+cex.main       = 1.0                   # Scale coefficient for the title
 n.colourbar    = 32                    # Number of colours for the colour bars
 n.whitebar     =  1                    # Number of levels around zero to be set to white
 notch          = FALSE                 # Add notches to the box plots.
-mtext.xoff.im  = -8.50                 # Offset for the x label
+mtext.xoff.im  = -7.00                 # Offset for the x label
 mtext.xoff     = -7.00                 # Offset for the x label
 mtext.yoff     = -1.00                 # Offset for the y label
 mtext.xadj     =  0.50                 # Offset for the x label
 mtext.yadj     =  0.65                 # Offset for the y label
 barplot.lwd    =  1.50                 # Line width for the bar plots
+ibackground    =  2                    # Background colour where the figure will be used:
+                                       #     (the actual background will be transparent)
+                                       # 0 -- White
+                                       # 1 -- Pitch black
+                                       # 2 -- Dark grey
 #------------------------------------------------------------------------------------------#
 
 
@@ -305,8 +310,8 @@ if (! file.exists(rdata.path)) dir.create(rdata.path)
 #------------------------------------------------------------------------------------------#
 #     Define some dimensions.                                                              #
 #------------------------------------------------------------------------------------------#
-pft.use       = c( 1, 2, 3, 4,16, 18)    # PFT classes to include (add PFT=18, the total)
-pft.mp        = c( F, T, T, T, F,  T)    # Include the PFT on multi-panel plots?
+pft.use       = c( 2, 3, 4, 18)          # PFT classes to include (add PFT=18, the total)
+pft.mp        = c( T, T, T,  T)          # Include the PFT on multi-panel plots?
 pft.key       = pft$key    [pft.use   ]  # PFT keys  (for dimnames)
 pft.desc      = pft$name   [pft.use   ]  # PFT names (for titles)
 pft.colour    = pft$colour [pft.use   ]  # PFT colours
@@ -346,6 +351,8 @@ n.season      = length(season.use)       # Number of seasons
 n.season.mp   = n.season-1               # Number of seasons for multiple panels
 n.year        = length(year.use)         # Number of years
 y.sel         = year.use %in% year.avg   # This will select the years for the output
+a.pft         = npft+1                   # Index for all PFTs
+a.dbh         = ndbh+1                   # Index for all DBH classes
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -361,7 +368,7 @@ dbh.suffix    = paste("dbh",tolower(dbh.key),sep="-")
 #------------------------------------------------------------------------------------------#
 #      This is the R object that has the simulation information.                           #
 #------------------------------------------------------------------------------------------#
-rdata.siminfo = file.path(rdata.path,"SimInfo.RData")
+rdata.siminfo = file.path(rdata.path,"4dbh_SimInfo.RData")
 #------------------------------------------------------------------------------------------#
 
 
@@ -631,7 +638,7 @@ if (retrieve.siminfo && file.exists(rdata.siminfo)){
 
 
    #------ Save the header. ---------------------------------------------------------------#
-   cat (" + Loading simulation information from ",basename(rdata.siminfo),"...","\n")
+   cat (" + Saving simulation information from ",basename(rdata.siminfo),"...","\n")
    save(simul,file=rdata.siminfo)
    #---------------------------------------------------------------------------------------#
 }#end if
@@ -1003,7 +1010,9 @@ for (g in loop.global){
 
 
    #----- File name for this global scenario. ---------------------------------------------#
-   rdata.global = file.path(rdata.path,paste("sim_",simul$global$level[g],".RData",sep=""))
+   rdata.global = file.path( rdata.path
+                           , paste("4dbh_sim_",simul$global$level[g],".RData",sep="")
+                           )#end file.path
    #---------------------------------------------------------------------------------------#
 
 
@@ -1121,10 +1130,10 @@ for (g in loop.global){
       cat ("   - Reading the output from each simulation...","\n")
       jr      = 0
       n.total = n.gsel * n.real
-      for (j in 1:n.gsel){
+      for (j in sequence(n.gsel)){
          #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
          #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-         for (r in 1:n.real){
+         for (r in sequence(n.real)){
             jr = jr + 1
 
             #------------------------------------------------------------------------------#
@@ -1135,7 +1144,9 @@ for (g in loop.global){
 
             cat  ("     * Load data from file ",paste("(",jr,"/",n.total,")",sep="")
                                                ,basename(rdata.simul),"...","\n")
-            load (rdata.simul)
+            dummy = load (rdata.simul)
+            emean = datum$emean
+            szpft = datum$szpft
             #------------------------------------------------------------------------------#
 
 
@@ -1174,8 +1185,6 @@ for (g in loop.global){
                is.dbh     = scen.ts$dbh   [v]
                is.mort    = scen.ts$mort  [v]
                is.recr    = scen.ts$recr  [v]
-               var.pft    = paste(var.vname,"pft"   ,sep="")
-               var.pftdbh = paste(var.vname,"pftdbh",sep="")
                cat  ("       > Processing ",var.desc,"...","\n")
                #---------------------------------------------------------------------------#
 
@@ -1186,38 +1195,24 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #     Grab the time series.                                                 #
                #---------------------------------------------------------------------------#
-               var.now    = empty
+               var.now        = empty
                if (is.pft){
-                  var.now[w.sel] = datum[[var.pft]][idx,pft.use[n.pft]]
+                  var.now[w.sel] = szpft[[var.vname]][idx,a.dbh,a.pft]
                }else{
-                  var.now[w.sel] = datum[[var.vname]][idx]
-               }#end if (is.pft)
-               #------ Find the means/sum by year and by season. --------------------------#
-               if (var.vname %in% c("rain","water.deficit")){
-                  eft[[var.vname]]$ts[j,r,,ee] = tapply( X     = var.now
-                                                       , INDEX = list(eft$ss.year
-                                                                     ,eft$ss.season)
-                                                       , FUN   = var.f.aggr
-                                                       , na.rm = TRUE
-                                                       )#end tapply
-                  eft[[var.vname]]$ts[j,r,,e5] = tapply( X     = var.now
-                                                       , INDEX = eft$ss.year
-                                                       , FUN   = var.f.aggr
-                                                       , na.rm = TRUE
-                                                       )#end tapply
-               }else{
-                  eft[[var.vname]]$ts[j,r,,ee] = tapply( X     = var.now
-                                                       , INDEX = list(eft$ss.year
-                                                                     ,eft$ss.season)
-                                                       , FUN   = var.f.aggr
-                                                       , na.rm = TRUE
-                                                       )#end tapply
-                  eft[[var.vname]]$ts[j,r,,e5] = tapply( X     = var.now
-                                                       , INDEX = eft$ss.year
-                                                       , FUN   = var.f.aggr
-                                                       , na.rm = TRUE
-                                                       )#end tapply
+                  var.now[w.sel] = emean[[var.vname]][idx]
                }#end if
+               #------ Find the means/sum by year and by season. --------------------------#
+               eft[[var.vname]]$ts[j,r,,ee] = tapply( X     = var.now
+                                                    , INDEX = list(eft$ss.year
+                                                                  ,eft$ss.season)
+                                                    , FUN   = var.f.aggr
+                                                    , na.rm = TRUE
+                                                    )#end tapply
+               eft[[var.vname]]$ts[j,r,,e5] = tapply( X     = var.now
+                                                    , INDEX = eft$ss.year
+                                                    , FUN   = var.f.aggr
+                                                    , na.rm = TRUE
+                                                    )#end tapply
                #---------------------------------------------------------------------------#
 
 
@@ -1228,7 +1223,7 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                if (is.pft){
                   var.now         = empty.pft
-                  var.now[w.sel,] = datum[[var.pft]][idx,pft.use]
+                  var.now[w.sel,] = szpft[[var.vname]][idx,a.dbh,pft.use]
 
 
                   #----- Find the means/sum by year and by season. ------------------------#
@@ -1258,7 +1253,7 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                if (is.dbh){
                   var.now          = empty.pftdbh
-                  var.now[w.sel,,] = datum[[var.pftdbh]][idx,dbh.use,pft.use]
+                  var.now[w.sel,,] = szpft[[var.vname]][idx,dbh.use,pft.use]
 
                   #----- Find the means/sum by year and by season. ------------------------#
                   eft[[var.vname]]$tspftdbh[j,r,,ee,,] = qapply( X     = var.now
@@ -1281,10 +1276,17 @@ for (g in loop.global){
             }#end for (v in 1:nscen.ts)
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-         }#end for
+
+            #------------------------------------------------------------------------------#
+            #     Remove the temporary variables.                                          #
+            #------------------------------------------------------------------------------#
+            rm(datum,emean,szpft)
+            #------------------------------------------------------------------------------#
+
+         }#end for (r in 1:n.real)
          #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
          #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-      }#end for
+      }#end for (j in 1:n.gsel)
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
 
@@ -1482,6 +1484,7 @@ for (g in loop.global){
             now = scenario[-simul$scenario$idxcol[s]][[1]]
          }#end if
          n.now = length(now$key)
+         n.lax = n.now + 2
          #---------------------------------------------------------------------------------#
 
 
@@ -1566,7 +1569,6 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
 
 
-
                #----- Set the title. ------------------------------------------------------#
                letitre = paste(var.desc," (Seasonal means)","\n",out.desc,sep="")
                lex     = paste("Year")
@@ -1619,6 +1621,7 @@ for (g in loop.global){
 
 
                   #----- Plot legend. -----------------------------------------------------#
+                  par(par.user)
                   par(mar=c(0.2,0.1,0.1,0.1))
                   plot.new()
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
@@ -1628,10 +1631,11 @@ for (g in loop.global){
                          , col     = now$colour
                          , lwd     = 2.0
                          , pch     = 16
-                         , bg      = "white"
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
                          , cex     = 1.0
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -1664,7 +1668,7 @@ for (g in loop.global){
                      if (left  ) axis(side=2)
                      box()
                      title(main=lesub)
-                     if (plotgrid) grid(col="grey83",lty="solid")
+                     if (plotgrid) grid(col=grid.colour,lty="solid")
 
                      #----- Plot the lines. -----------------------------------------------#
                      for (n in 1:n.now){
@@ -1753,14 +1757,48 @@ for (g in loop.global){
 
 
 
+                  #------------------------------------------------------------------------#
+                  #     Split the window into several smaller windows.  Add a bottom row   #
+                  # to fit the legend.                                                     #
+                  #------------------------------------------------------------------------#
+                  par.orig = par(no.readonly = TRUE)
+                  mar.orig = par.orig$mar
+                  layout(mat=rbind(2,1),heights=c(5,1))
+                  #------------------------------------------------------------------------#
+
+
+
+                  #---- Add the legend. ---------------------------------------------------#
+                  par.now = modifyList(x=par.user,val=list(mar=c(0.2,4.0,0.1,2.0)))
+                  par(par.now)
+                  plot.new()
+                  plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                  legend ( x       = "topright"
+                         , inset   = inset
+                         , legend  = now$desc
+                         , col     = now$colour
+                         , lwd     = 2.0
+                         , pch     = 16
+                         , bg      = background
+                         , ncol    = min(3,pretty.box(n.now)$ncol)
+                         , title   = expression(bold("Simulation"))
+                         , cex     = 1.0
+                         , xpd     = TRUE
+                         )#end legend
+                  #------------------------------------------------------------------------#
+
+
+
                   #----- Plot window and grid. --------------------------------------------#
+                  par(par.user)
+                  par(mar=c(5,4,4,2)+0.1)
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit)
                   axis(side=1)
                   axis(side=2)
                   box()
-                  title(main=letitre,xlab=lex,ylab=ley)
-                  if (plotgrid) grid(col="grey83",lty="solid")
+                  title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
+                  if (plotgrid) grid(col=grid.colour,lty="solid")
                   #------------------------------------------------------------------------#
 
 
@@ -1770,22 +1808,6 @@ for (g in loop.global){
                      points(x=year.use,y=this[n,,n.season],type="o",pch=16
                            ,col=now$colour[n],lwd=2.0)
                   }#end for
-                  #------------------------------------------------------------------------#
-
-
-
-                  #---- Add the legend. ---------------------------------------------------#
-                  legend ( x       = "topright"
-                         , inset   = inset
-                         , legend  = now$desc
-                         , col     = now$colour
-                         , lwd     = 2.0
-                         , pch     = 16
-                         , bg      = "white"
-                         , ncol    = min(3,pretty.box(n.now)$ncol)
-                         , title   = expression(bold("Simulation"))
-                         , cex     = 1.0
-                         )#end legend
                   #------------------------------------------------------------------------#
 
 
@@ -1875,6 +1897,7 @@ for (g in loop.global){
                      #     Split the window into several smaller windows.  Add a bottom    #
                      # row to fit the legend.                                              #
                      #---------------------------------------------------------------------#
+                     par(par.user)
                      par.orig = par(no.readonly = TRUE)
                      mar.orig = par.orig$mar
                      par(oma = c(0.2,3,4.5,0))
@@ -1895,10 +1918,11 @@ for (g in loop.global){
                             , col     = now$colour
                             , lwd     = 2.0
                             , pch     = 16
-                            , bg      = "white"
+                            , bg      = background
                             , ncol    = min(3,pretty.box(n.now)$ncol)
                             , title   = expression(bold("Simulation"))
                             , cex     = 1.0
+                            , xpd     = TRUE
                             )#end legend
                      #---------------------------------------------------------------------#
 
@@ -1933,8 +1957,8 @@ for (g in loop.global){
                         if (bottom) axis(side=1)
                         if (left  ) axis(side=2)
                         box()
-                        title(main=lesub)
-                        if (plotgrid) grid(col="grey83",lty="solid")
+                        title(main=lesub,cex.main=cex.main)
+                        if (plotgrid) grid(col=grid.colour,lty="solid")
 
                         #----- Plot the lines. --------------------------------------------#
                         for (n in 1:n.now){
@@ -2027,7 +2051,8 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   par.orig = par(no.readonly = TRUE)
                   mar.orig = par.orig$mar
-                  par(oma = c(0.2,3,4.5,0))
+                  par.now  = modifyList(x=par.user,val=list(oma = c(0.2,3,4.5,0)))
+                  par(par.now)
                   layout(mat    = rbind(1+lo.pft$mat,rep(1,times=lo.pft$ncol))
                         ,height = c(rep(5/lo.pft$nrow,times=lo.pft$nrow),1)
                         )#end layout
@@ -2045,10 +2070,11 @@ for (g in loop.global){
                          , col     = now$colour
                          , lwd     = 2.0
                          , pch     = 16
-                         , bg      = "white"
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
                          , cex     = 1.0
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -2083,8 +2109,8 @@ for (g in loop.global){
                      if (bottom) axis(side=1)
                      if (left  ) axis(side=2)
                      box()
-                     title(main=lesub)
-                     if (plotgrid) grid(col="grey83",lty="solid")
+                     title(main=lesub,cex.main=cex.main)
+                     if (plotgrid) grid(col=grid.colour,lty="solid")
 
                      #----- Plot the lines. -----------------------------------------------#
                      for (n in 1:n.now){
@@ -2192,7 +2218,7 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #     Set up the box plot colour.                                           #
                #---------------------------------------------------------------------------#
-               bp.colour = rep(now$colour)
+               bp.colour = now$colour
                #---------------------------------------------------------------------------#
 
 
@@ -2231,6 +2257,7 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   par.orig = par(no.readonly = TRUE)
                   mar.orig = par.orig$mar
+                  par(par.user)
                   par(oma = c(0.2,3,4.5,0))
                   layout(mat    = lo.season$mat)
                   #------------------------------------------------------------------------#
@@ -2276,8 +2303,10 @@ for (g in loop.global){
                      if (bottom) axis(side=1,at=xat,labels=now$label)
                      if (left  ) axis(side=2)
                      box()
-                     title(main=lesub)
-                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                     title(main=lesub,cex.main=cex.main)
+                     if (plotgrid){
+                        abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                     }#end if
 
                      #----- Add the box plot, without the x axis. -------------------------#
                      boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
@@ -2292,7 +2321,7 @@ for (g in loop.global){
                   #     Plot the global title.                                             #
                   #------------------------------------------------------------------------#
                   par(las=0)
-                  mtext(text=lex    ,side=1,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff/3)
+                  mtext(text=lex,side=1,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff/3)
                   mtext(text=ley    ,side=2,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                   mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
                   #------------------------------------------------------------------------#
@@ -2316,7 +2345,7 @@ for (g in loop.global){
 
 
                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-               #      Plot the box plot by PFT (annual means).                             #
+               #      Plot the box plot (annual means).                                    #
                #---------------------------------------------------------------------------#
                xlimit = c(0,n.now) + 0.5
                xat    = sequence(n.now)
@@ -2391,13 +2420,14 @@ for (g in loop.global){
 
 
                   #----- Plot window and grid. --------------------------------------------#
+                  par(par.user)
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                   axis(side=1,at=xat,labels=now$label)
                   axis(side=2)
                   box()
-                  title(main=letitre,xlab=lex,ylab=ley)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                  title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
+                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
                   #----- Add the box plot, without the x axis. ----------------------------#
                   boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
                          ,yaxt="n")
@@ -2431,9 +2461,9 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #      Plot the box plot by PFT and by season.                              #
                #---------------------------------------------------------------------------#
-               xlimit = c(0,n.pft.bp*n.now) + 0.5
-               xat    = seq(from=1 + 0.5*(n.now-1), to=n.pft.bp*n.now, by=n.now)
-               xgrid  = seq(from=0.5, to=(n.pft.bp+1)*n.now - 0.5*(n.now-1),by=n.now)
+               xlimit = c(0,n.pft.bp*n.lax) + 0.5
+               xat    = seq(from=1 + 0.5*(n.lax-1), to=n.pft.bp*n.lax, by=n.lax)
+               xgrid  = seq(from=0.5, to=(n.pft.bp+1)*n.lax - 0.5*(n.lax-1),by=n.lax)
                #---------------------------------------------------------------------------#
 
 
@@ -2463,7 +2493,9 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #     Set up the box plot colour.                                           #
                #---------------------------------------------------------------------------#
-               bp.colour = rep(now$colour,times=n.pft.bp)
+               bp.colour = rep( x     = c("transparent",now$colour,"transparent")
+                              , times = n.pft.bp
+                              )#end rep
                #---------------------------------------------------------------------------#
 
 
@@ -2500,6 +2532,7 @@ for (g in loop.global){
                   #     Split the window into several smaller windows.  Add a bottom row   #
                   # to fit the legend.                                                     #
                   #------------------------------------------------------------------------#
+                  par(par.user)
                   par.orig = par(no.readonly = TRUE)
                   mar.orig = par.orig$mar
                   par(oma = c(0.2,3,4.5,0))
@@ -2518,11 +2551,12 @@ for (g in loop.global){
                          , inset   = 0.0
                          , legend  = now$desc
                          , fill    = now$colour
-                         , border  = "black"
-                         , bg      = "white"
+                         , border  = foreground
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
                          , cex     = 1.0
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -2553,6 +2587,11 @@ for (g in loop.global){
 
                      #----- Create the temporary box plot list. ---------------------------#
                      ss.this = this[,,e,]
+                     empty   = array( data     = NA
+                                    , dim      = dim(ss.this)[-1]
+                                    , dimnames = dimnames(ss.this)[-1]
+                                    )#end array
+                     ss.this = abind(aaa=empty,ss.this,zzz=empty,along=1)
                      ai      = arrayInd(sequence(length(ss.this)),.dim=dim(ss.this))
                      bp.plot = split(x=ss.this,f=list(ai[,1],ai[,3]))
                      #---------------------------------------------------------------------#
@@ -2567,8 +2606,8 @@ for (g in loop.global){
                      if (bottom) axis(side=1,at=xat,labels=pft.key[pft.bp])
                      if (left  ) axis(side=2)
                      box()
-                     title(main=lesub)
-                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                     title(main=lesub,cex.main=cex.main)
+                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
 
                      #----- Add the box plot, without the x axis. -------------------------#
                      boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
@@ -2609,9 +2648,9 @@ for (g in loop.global){
                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                #      Plot the box plot by PFT (annual means).                             #
                #---------------------------------------------------------------------------#
-               xlimit = c(0,n.pft.bp*n.now) + 0.5
-               xat    = seq(from=1 + 0.5*(n.now-1), to=n.pft.bp*n.now, by=n.now)
-               xgrid  = seq(from=0.5, to=(n.pft.bp+1)*n.now - 0.5*(n.now-1),by=n.now)
+               xlimit = c(0,n.pft.bp*n.lax) + 0.5
+               xat    = seq(from=1 + 0.5*(n.lax-1), to=n.pft.bp*n.lax, by=n.lax)
+               xgrid  = seq(from=0.5, to=(n.pft.bp+1)*n.lax - 0.5*(n.lax-1),by=n.lax)
                #---------------------------------------------------------------------------#
 
 
@@ -2642,7 +2681,7 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #     Set up the box plot colour.                                           #
                #---------------------------------------------------------------------------#
-               bp.colour = rep(now$colour,times=n.pft.bp)
+               bp.colour = rep(c("transparent",now$colour,"transparent"),times=n.pft.bp)
                #---------------------------------------------------------------------------#
 
 
@@ -2675,12 +2714,18 @@ for (g in loop.global){
 
 
                   #----- Create the temporary box plot list. ------------------------------#
-                  ai      = arrayInd(sequence(length(this)),.dim=dim(this))
-                  bp.plot = split(x=this,f=list(ai[,1],ai[,3]))
+                  empty   = array( data     = NA
+                                 , dim      = dim(this)[-1]
+                                 , dimnames = dimnames(this)[-1]
+                                 )#end array
+                  ss.this = abind(aaa=empty,this,zzz=empty,along=1)
+                  ai      = arrayInd(sequence(length(ss.this)),.dim=dim(ss.this))
+                  bp.plot = split(x=ss.this,f=list(ai[,1],ai[,3]))
                   #------------------------------------------------------------------------#
 
 
                   #----- Split into two plots. --------------------------------------------#
+                  par(par.user)
                   layout(mat=matrix(c(2,1),nrow=2),heights=c(5,1))
                   #------------------------------------------------------------------------#
 
@@ -2694,11 +2739,12 @@ for (g in loop.global){
                          , inset   = inset
                          , legend  = now$desc
                          , fill    = now$colour
-                         , border  = "black"
-                         , bg      = "white"
+                         , border  = foreground
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
                          , cex     = 1.0
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -2711,8 +2757,8 @@ for (g in loop.global){
                   axis(side=1,at=xat,labels=pft.key[pft.bp])
                   axis(side=2)
                   box()
-                  title(main=letitre,xlab=lex,ylab=ley)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                  title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
+                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
                   #----- Add the box plot, without the x axis. ----------------------------#
                   boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
                          ,yaxt="n")
@@ -2746,9 +2792,9 @@ for (g in loop.global){
                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                #      Plot the box plot by PFT and by season.                              #
                #---------------------------------------------------------------------------#
-               xlimit = c(0,n.dbh*n.now) + 0.5
-               xat    = seq(from=1 + 0.5*(n.now-1), to=n.dbh*n.now, by=n.now)
-               xgrid  = seq(from=0.5, to=(n.dbh+1)*n.now - 0.5*(n.now-1), by=n.now)
+               xlimit = c(0,n.dbh*n.lax) + 0.5
+               xat    = seq(from=1 + 0.5*(n.lax-1), to=n.dbh*n.lax, by=n.lax)
+               xgrid  = seq(from=0.5, to=(n.dbh+1)*n.lax - 0.5*(n.lax-1), by=n.lax)
                #---------------------------------------------------------------------------#
 
 
@@ -2779,7 +2825,7 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #     Set up the box plot colour.                                           #
                #---------------------------------------------------------------------------#
-               bp.colour = rep(now$colour,times=n.dbh)
+               bp.colour = rep(c("transparent",now$colour,"transparent"),times=n.dbh)
                #---------------------------------------------------------------------------#
 
 
@@ -2818,6 +2864,7 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   par.orig = par(no.readonly = TRUE)
                   mar.orig = par.orig$mar
+                  par(par.user)
                   par(oma = c(0.2,3,4.5,0))
                   layout(mat    = rbind(1+lo.season$mat,rep(1,times=lo.season$ncol))
                         ,height = c(rep(5/lo.season$nrow,times=lo.season$nrow),1)
@@ -2834,11 +2881,12 @@ for (g in loop.global){
                          , inset   = 0.0
                          , legend  = now$desc
                          , fill    = now$colour
-                         , border  = "black"
-                         , bg      = "white"
+                         , border  = foreground
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
                          , cex     = 1.0
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -2869,6 +2917,11 @@ for (g in loop.global){
 
                      #----- Create the temporary box plot list. ---------------------------#
                      ss.this = this[,,e,]
+                     empty   = array( data     = NA
+                                    , dim      = dim(ss.this)[-1]
+                                    , dimnames = dimnames(ss.this)[-1]
+                                    )#end array
+                     ss.this = abind(aaa=empty,ss.this,zzz=empty,along=1)
                      ai      = arrayInd(sequence(length(ss.this)),.dim=dim(ss.this))
                      bp.plot = split(x=ss.this,f=list(ai[,1],ai[,3]))
                      #---------------------------------------------------------------------#
@@ -2882,8 +2935,8 @@ for (g in loop.global){
                      if (bottom) axis(side=1,at=xat,labels=dbh.key)
                      if (left  ) axis(side=2)
                      box()
-                     title(main=lesub)
-                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                     title(main=lesub,cex.main=cex.main)
+                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
 
                      #----- Add the box plot, without the x axis. -------------------------#
                      boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
@@ -2925,9 +2978,9 @@ for (g in loop.global){
                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                #      Plot the box plot by DBH (annual means).                             #
                #---------------------------------------------------------------------------#
-               xlimit = c(0,n.dbh*n.now) + 0.5
-               xat    = seq(from=1 + 0.5*(n.now-1), to=n.dbh*n.now, by=n.now)
-               xgrid  = seq(from=0.5, to=(n.dbh+1)*n.now - 0.5*(n.now-1), by=n.now)
+               xlimit = c(0,n.dbh*n.lax) + 0.5
+               xat    = seq(from=1 + 0.5*(n.lax-1), to=n.dbh*n.lax, by=n.lax)
+               xgrid  = seq(from=0.5, to=(n.dbh+1)*n.lax - 0.5*(n.lax-1), by=n.lax)
                #---------------------------------------------------------------------------#
 
 
@@ -2958,7 +3011,7 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #     Set up the box plot colour.                                           #
                #---------------------------------------------------------------------------#
-               bp.colour = rep(now$colour,times=n.dbh)
+               bp.colour = rep(c("transparent",now$colour,"transparent"),times=n.dbh)
                #---------------------------------------------------------------------------#
 
 
@@ -2992,12 +3045,18 @@ for (g in loop.global){
 
 
                   #----- Create the temporary box plot list. ------------------------------#
-                  ai      = arrayInd(sequence(length(this)),.dim=dim(this))
-                  bp.plot = split(x=this,f=list(ai[,1],ai[,3]))
+                  empty   = array( data     = NA
+                                 , dim      = dim(this)[-1]
+                                 , dimnames = dimnames(this)[-1]
+                                 )#end array
+                  ss.this = abind(aaa=empty,this,zzz=empty,along=1)
+                  ai      = arrayInd(sequence(length(ss.this)),.dim=dim(ss.this))
+                  bp.plot = split(x=ss.this,f=list(ai[,1],ai[,3]))
                   #------------------------------------------------------------------------#
 
 
                   #----- Split into two plots. --------------------------------------------#
+                  par(par.user)
                   layout(mat=matrix(c(2,1),nrow=2),heights=c(5,1))
                   #------------------------------------------------------------------------#
 
@@ -3011,11 +3070,12 @@ for (g in loop.global){
                          , inset   = inset
                          , legend  = now$desc
                          , fill    = now$colour
-                         , border  = "black"
-                         , bg      = "white"
+                         , border  = foreground
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
                          , cex     = 1.0
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -3028,8 +3088,8 @@ for (g in loop.global){
                   axis(side=1,at=xat,labels=dbh.key)
                   axis(side=2)
                   box()
-                  title(main=letitre,xlab=lex,ylab=ley)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                  title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
+                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
 
                   #----- Add the box plot, without the x axis. ----------------------------#
                   boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
@@ -3071,9 +3131,9 @@ for (g in loop.global){
                   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                   #      Plot the box plot by PFT and by season.                           #
                   #------------------------------------------------------------------------#
-                  xlimit = c(0,n.pft.bp*n.now) + 0.5
-                  xat    = seq(from=1 + 0.5*(n.now-1), to=n.pft.bp*n.now, by=n.now)
-                  xgrid  = seq(from=0.5,to=(n.pft.bp+1)*n.now-0.5*(n.now-1),by=n.now)
+                  xlimit = c(0,n.dbh*n.lax) + 0.5
+                  xat    = seq(from=1 + 0.5*(n.lax-1), to=n.dbh*n.lax, by=n.lax)
+                  xgrid  = seq(from=0.5,to=(n.dbh+1)*n.lax-0.5*(n.lax-1),by=n.lax)
                   #------------------------------------------------------------------------#
 
 
@@ -3106,7 +3166,7 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   #     Set up the box plot colour.                                        #
                   #------------------------------------------------------------------------#
-                  bp.colour = rep(now$colour,times=n.dbh)
+                  bp.colour = rep(c("transparent",now$colour,"transparent"),times=n.dbh)
                   #------------------------------------------------------------------------#
 
 
@@ -3145,6 +3205,7 @@ for (g in loop.global){
                      #---------------------------------------------------------------------#
                      par.orig = par(no.readonly = TRUE)
                      mar.orig = par.orig$mar
+                     par(par.user)
                      par(oma = c(0.2,3,4.5,0))
                      layout(mat    = rbind(1+lo.pft$mat,rep(1,times=lo.pft$ncol))
                            ,height = c(rep(5/lo.pft$nrow,times=lo.pft$nrow),1)
@@ -3161,11 +3222,12 @@ for (g in loop.global){
                             , inset   = 0.0
                             , legend  = now$desc
                             , fill    = now$colour
-                            , border  = "black"
-                            , bg      = "white"
+                            , border  = foreground
+                            , bg      = background
                             , ncol    = min(3,pretty.box(n.now)$ncol)
                             , title   = expression(bold("Simulation"))
                             , cex     = 1.0
+                            , xpd     = TRUE
                             )#end legend
                      #---------------------------------------------------------------------#
 
@@ -3196,6 +3258,11 @@ for (g in loop.global){
 
                         #----- Create the temporary box plot list. ------------------------#
                         ss.this = this[,,,f]
+                        empty   = array( data     = NA
+                                       , dim      = dim(ss.this)[-1]
+                                       , dimnames = dimnames(ss.this)[-1]
+                                       )#end array
+                        ss.this = abind(aaa=empty,ss.this,zzz=empty,along=1)
                         ai      = arrayInd(sequence(length(ss.this)),.dim=dim(ss.this))
                         bp.plot = split(x=ss.this,f=list(ai[,1],ai[,3]))
                         #------------------------------------------------------------------#
@@ -3209,8 +3276,10 @@ for (g in loop.global){
                         if (bottom) axis(side=1,at=xat,labels=dbh.key)
                         if (left  ) axis(side=2)
                         box()
-                        title(main=lesub)
-                        if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                        title(main=lesub,cex.main=cex.main)
+                        if (plotgrid){
+                           abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                        }#end if
 
                         #----- Add the box plot, without the x axis. ----------------------#
                         boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE
@@ -3374,8 +3443,8 @@ for (g in loop.global){
 
                #----- Find the limits for the plot. ---------------------------------------#
                xlimit = range(c(xat,xgrid))
-               yrange = pretty.xylim(u=this,fracexp= 0.00,is.log=var.plog)
-               ylimit = pretty.xylim(u=this,fracexp=-0.06,is.log=var.plog)
+               yrange = pretty.xylim(u=c(ybottom,ytop),fracexp= 0.00,is.log=var.plog)
+               ylimit = pretty.xylim(u=yrange,fracexp=-0.06,is.log=var.plog)
                #---------------------------------------------------------------------------#
 
 
@@ -3421,6 +3490,7 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   par.orig = par(no.readonly = TRUE)
                   mar.orig = par.orig$mar
+                  par(par.user)
                   par(oma = c(0.2,3,4.5,0))
 
                   emat = matrix( data  = c( rep(2+t(lo.season$mat),each=2)
@@ -3447,10 +3517,11 @@ for (g in loop.global){
                          , inset   = 0.0
                          , legend  = now$desc
                          , fill    = now$colour
-                         , bg      = "white"
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
-                         , cex     = 1.0
+                         , cex     = 0.8
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -3464,11 +3535,12 @@ for (g in loop.global){
                          , inset   = 0.0
                          , legend  = pft.desc  [pft.bp]
                          , fill    = pft.colour[pft.bp]
-                         , border  = "black"
-                         , bg      = "white"
+                         , border  = foreground
+                         , bg      = background
                          , ncol    = min(2,pretty.box(n.pft.bp)$ncol)
                          , title   = expression(bold("Plant Functional Type"))
-                         , cex     = 1.0
+                         , cex     = 0.8
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -3504,8 +3576,8 @@ for (g in loop.global){
                      if (bottom) axis(side=1,at=xat,labels=dbh.key)
                      if (left  ) axis(side=2)
                      box()
-                     title(main=lesub)
-                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                     title(main=lesub,cex.main=cex.main)
+                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
                      #---------------------------------------------------------------------#
 
 
@@ -3517,7 +3589,7 @@ for (g in loop.global){
                          , ytop    = ytop    [,,e]
                          , density = -1
                          , col     = fill.col
-                         , border  = "black"
+                         , border  = foreground
                          , lwd     = barplot.lwd
                          )#end rect
                      #---------------------------------------------------------------------#
@@ -3659,8 +3731,8 @@ for (g in loop.global){
 
                #----- Find the limits for the plot. ---------------------------------------#
                xlimit = range(c(xat,xgrid))
-               yrange = pretty.xylim(u=this,fracexp= 0.00,is.log=var.plog)
-               ylimit = pretty.xylim(u=this,fracexp=-0.06,is.log=var.plog)
+               yrange = pretty.xylim(u=c(ybottom,ytop),fracexp= 0.00,is.log=var.plog)
+               ylimit = pretty.xylim(u=yrange,fracexp=-0.06,is.log=var.plog)
                #---------------------------------------------------------------------------#
 
 
@@ -3706,6 +3778,7 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   par.orig = par(no.readonly = TRUE)
                   emat = matrix(c(3,3,1,2),ncol=2,nrow=2,byrow=T)
+                  par(par.user)
                   layout(mat=emat,heights=c(5,1))
                   #------------------------------------------------------------------------#
 
@@ -3719,10 +3792,11 @@ for (g in loop.global){
                          , inset   = 0.0
                          , legend  = now$desc
                          , fill    = now$colour
-                         , bg      = "white"
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
                          , title   = expression(bold("Simulation"))
-                         , cex     = 1.0
+                         , cex     = 0.8
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -3736,11 +3810,12 @@ for (g in loop.global){
                          , inset   = 0.0
                          , legend  = pft.desc  [pft.bp]
                          , fill    = pft.colour[pft.bp]
-                         , border  = "black"
-                         , bg      = "white"
+                         , border  = foreground
+                         , bg      = background
                          , ncol    = min(3,pretty.box(n.pft.bp)$ncol)
                          , title   = expression(bold("Plant Functional Type"))
-                         , cex     = 1.0
+                         , cex     = 0.8
+                         , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -3754,8 +3829,8 @@ for (g in loop.global){
                   axis(side=1,at=xat,labels=dbh.key)
                   axis(side=2)
                   box()
-                  title(main=letitre,xlab=lex,ylab=ley)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col="grey40",lty="solid")
+                  title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
+                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
                   #------------------------------------------------------------------------#
 
 
@@ -3767,7 +3842,7 @@ for (g in loop.global){
                       , ytop    = ytop
                       , density = -1
                       , col     = fill.col
-                      , border  = "black"
+                      , border  = foreground
                       , lwd     = barplot.lwd
                       )#end rect
                   #------------------------------------------------------------------------#
@@ -3964,6 +4039,7 @@ for (g in loop.global){
                         #------------------------------------------------------------------#
                         leg.ncol    = min(3,pretty.box(n.now)$ncol)
                         leg.letitre = expression(bold("Simulation"))
+                        par(par.user)
                         xyz.plot( x              = x.list
                                 , y              = y.list
                                 , z              = z.list
@@ -3984,19 +4060,21 @@ for (g in loop.global){
                                                        , adj  = mtext.yadj
                                                        , padj = mtext.yoff
                                                        )#end list
-                                , xyz.more       = list(grid=list(col="grey83",lty="solid"))
+                                , xyz.more       = list(grid=list(col=grid.colour
+                                                                 ,lty="solid"))
                                 , key.log        = z.plog
-                                , key.title      = list(main=lacle,cex.main=0.8)
+                                , key.title      = list(main=lacle,cex.main=0.8*cex.main)
                                 , xyz.legend     = list( x      = "bottom"
                                                        , inset  = 0.0
                                                        , legend = now$desc
                                                        , pch    = now$pch
-                                                       , col    = "grey16"
-                                                       , border = "black"
-                                                       , bg     = "white"
+                                                       , col    = grey.fg
+                                                       , border = foreground
+                                                       , bg     = background
                                                        , ncol   = leg.ncol
                                                        , title  = leg.letitre
-                                                       , cex    = 1.2
+                                                       , cex    = 1.0
+                                                       , xpd    = TRUE
                                                        )#end legend
                                 )#end xyz.plot
                         #------------------------------------------------------------------#
@@ -4074,6 +4152,7 @@ for (g in loop.global){
                         #------------------------------------------------------------------#
                         #      Plot the boxes.                                             #
                         #------------------------------------------------------------------#
+                        par(par.user)
                         leg.ncol    = min(3,pretty.box(n.now)$ncol)
                         leg.title   = expression(bold("Simulation"))
                         xyz.plot( x              = x.list
@@ -4096,19 +4175,21 @@ for (g in loop.global){
                                                        , adj  = mtext.yadj
                                                        , padj = mtext.yoff
                                                        )#end list
-                                , xyz.more       = list(grid=list(col="grey83",lty="solid"))
+                                , xyz.more       = list(grid=list(col=grid.colour
+                                                                 ,lty="solid"))
                                 , key.log        = z.plog
-                                , key.title      = list(main=lacle,cex.main=0.8)
+                                , key.title      = list(main=lacle,cex.main=0.8*cex.main)
                                 , xyz.legend     = list( x       = "bottom"
                                                        , inset   = 0.0
                                                        , legend  = now$desc
                                                        , pch     = now$pch
-                                                       , col     = "grey16"
-                                                       , border  = "black"
-                                                       , bg      = "white"
+                                                       , col     = grey.fg
+                                                       , border  = foreground
+                                                       , bg      = background
                                                        , ncol    = leg.ncol
                                                        , title   = leg.title
                                                        , cex     = 1.0
+                                                       , xpd     = TRUE
                                                        )#end legend
                                 )#end xyz.plot
                         #------------------------------------------------------------------#
@@ -4289,6 +4370,7 @@ for (g in loop.global){
          #      Plot the data by season.                                                   #
          #---------------------------------------------------------------------------------#
          for (e in 1:n.season){
+
             #------------------------------------------------------------------------------#
             #     Keep the current season only.                                            #
             #------------------------------------------------------------------------------#
@@ -4405,12 +4487,12 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #      Split the plotting window.                                           #
                #---------------------------------------------------------------------------#
+               par(par.user)
                par(oma = c(0.2,3,4.5,0))
                layout( mat     = rbind(lo.panel$mat+1,rep(1,times=lo.panel$ncol))
-                     , heights = c(rep(5/lo.panel$nrow,lo.panel$nrow),1)
+                     , heights = c(rep(4/lo.panel$nrow,lo.panel$nrow),1)
                      )#end layout
                #---------------------------------------------------------------------------#
-
 
 
                #---------------------------------------------------------------------------#
@@ -4429,6 +4511,7 @@ for (g in loop.global){
                         , lwd    = 2.5
                         , title  = expression(bold(now$alabel))
                         , cex    = 1.0
+                        , xpd    = TRUE
                         )#end legend
                }else{
                   par(mar=c(3,3,2,3)+0.1)
@@ -4439,7 +4522,7 @@ for (g in loop.global){
                   box()
                   axis(side=1,at=legat)
                   title(main=paste(var.desc," change [",var.unit,"]",sep="")
-                       ,xlab="",ylab="")
+                       ,xlab="",ylab="",cex.main=cex.main)
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -4478,9 +4561,9 @@ for (g in loop.global){
                      if (bottom) axis(side=1,at=x.value,labels=x.label)
                      if (left)   axis(side=2)
                      box()
-                     grid(col="grey60",lty="solid")
-                     title(main=lesub)
-                     abline(h=0,v=0,col="black",lty="dotdash",lwd=2.0)
+                     grid(col=grid.colour,lty="solid")
+                     title(main=lesub,cex.main=cex.main)
+                     abline(h=0,v=0,col=foreground,lty="dotdash",lwd=2.0)
                      for (n in 1:n.now){
                         points(x = now$value,y=this.var[p,],type="o",col=now$colour[n]
                               ,pch=16,lwd=2.5)
@@ -4488,8 +4571,8 @@ for (g in loop.global){
                   }else{
                      image(x=x.value,y=y.value,z=this.var[p,,],col=var.colours
                           ,breaks=var.brks
-                          ,xaxt="n",yaxt="n",main=lesub,xlab="",ylab="")
-                     text (x=0,y=0,labels="0",col="black",font=2,cex=2)
+                          ,xaxt="n",yaxt="n",main=lesub,cex.main=cex.main,xlab="",ylab="")
+                     text (x=0,y=0,labels="0",col=foreground,font=2,cex=2)
                      if (bottom) axis(side=1,at=x.value,labels=x.label)
                      if (left)   axis(side=2,at=y.value,labels=y.label)
                   }#end if
@@ -4504,9 +4587,9 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                par(las=0)
                if (n.scenario == 1){
-                  mtext(side=1,text=lex    ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+                  mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
                }else{
-                  mtext(side=1,text=lex    ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
+                  mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
                }#end if
                mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                mtext(side=3,text=letitre,outer=TRUE,cex=1.10,font=2)
@@ -4761,9 +4844,10 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   #      Split the plotting window.                                        #
                   #------------------------------------------------------------------------#
+                  par(par.user)
                   par(oma = c(0.2,3,4.5,0))
                   layout( mat     = rbind(lo.panel$mat+1,rep(1,times=lo.panel$ncol))
-                        , heights = c(rep(5/lo.panel$nrow,lo.panel$nrow),1)
+                        , heights = c(rep(4/lo.panel$nrow,lo.panel$nrow),1)
                         )#end layout
                   #------------------------------------------------------------------------#
 
@@ -4785,6 +4869,7 @@ for (g in loop.global){
                            , lwd    = 2.5
                            , title  = expression(bold(now$alabel))
                            , cex    = 1.0
+                           , xpd    = TRUE
                            )#end legend
                   }else{
                      par(mar=c(3,3,2,3)+0.1)
@@ -4796,7 +4881,7 @@ for (g in loop.global){
                      box()
                      axis(side=1,at=legat)
                      title(main=paste(var.desc," change [",var.unit,"]",sep="")
-                          ,xlab="",ylab="")
+                          ,xlab="",ylab="",cex.main=cex.main)
                   }#end if
                   #------------------------------------------------------------------------#
 
@@ -4835,9 +4920,9 @@ for (g in loop.global){
                         if (bottom) axis(side=1,at=x.value,labels=x.label)
                         if (left)   axis(side=2)
                         box()
-                        grid(col="grey60",lty="solid")
-                        title(main=lesub)
-                        abline(h=0,v=0,col="black",lty="dotdash",lwd=2.0)
+                        grid(col=grid.colour,lty="solid")
+                        title(main=lesub,cex.main=cex.main)
+                        abline(h=0,v=0,col=foreground,lty="dotdash",lwd=2.0)
                         for (n in 1:n.now){
                            points(x = now$value,y=this.var[p,],type="o",col=now$colour[n]
                                  ,pch=16,lwd=2.5)
@@ -4845,8 +4930,9 @@ for (g in loop.global){
                      }else{
                         image(x=scenario[[1]]$value,y=scenario[[2]]$value
                              ,z=this.var[p,,],col=var.colours,breaks=var.brks
-                             ,xaxt="n",yaxt="n",main=lesub,xlab="",ylab="")
-                        text (x=0,y=0,labels="0",col="black",font=2,cex=2)
+                             ,xaxt="n",yaxt="n",main=lesub,xlab="",ylab=""
+                             ,cex.main=cex.main)
+                        text (x=0,y=0,labels="0",col=foreground,font=2,cex=2)
                         if (bottom) axis(side=1,at=x.value,labels=x.label)
                         if (left)   axis(side=2,at=y.value,labels=y.label)
                      }#end if
@@ -4861,9 +4947,9 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   par(las=0)
                   if (n.scenario == 1){
-                     mtext(side=1,text=lex ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+                     mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
                   }else{
-                     mtext(side=1,text=lex ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
+                     mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
                   }#end if
                   mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                   mtext(side=3,text=letitre,outer=TRUE,cex=1.0,font=2)
@@ -5120,9 +5206,10 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   #      Split the plotting window.                                        #
                   #------------------------------------------------------------------------#
+                  par(par.user)
                   par(oma = c(0.2,3,4.5,0))
                   layout( mat     = rbind(lo.panel$mat+1,rep(1,times=lo.panel$ncol))
-                        , heights = c(rep(5/lo.panel$nrow,lo.panel$nrow),1)
+                        , heights = c(rep(4/lo.panel$nrow,lo.panel$nrow),1)
                         )#end layout
                   #------------------------------------------------------------------------#
 
@@ -5144,6 +5231,7 @@ for (g in loop.global){
                            , lwd    = 2.5
                            , title  = expression(bold(now$alabel))
                            , cex    = 1.0
+                           , xpd    = TRUE
                            )#end legend
                   }else{
                      par(mar=c(3,3,2,3)+0.1)
@@ -5155,7 +5243,7 @@ for (g in loop.global){
                      box()
                      axis(side=1,at=legat)
                      title(main=paste(var.desc," change [",var.unit,"]",sep="")
-                          ,xlab="",ylab="")
+                          ,xlab="",ylab="",cex.main=cex.main)
                   }#end if
                   #------------------------------------------------------------------------#
 
@@ -5194,9 +5282,9 @@ for (g in loop.global){
                         if (bottom) axis(side=1,at=x.value,labels=x.label)
                         if (left)   axis(side=2)
                         box()
-                        grid(col="grey60",lty="solid")
-                        title(main=lesub)
-                        abline(h=0,v=0,col="black",lty="dotdash",lwd=2.0)
+                        grid(col=grid.colour,lty="solid")
+                        title(main=lesub,cex.main=cex.main)
+                        abline(h=0,v=0,col=foreground,lty="dotdash",lwd=2.0)
                         for (n in 1:n.now){
                            points(x = now$value,y=this.var[p,],type="o",col=now$colour[n]
                                  ,pch=16,lwd=2.5)
@@ -5204,8 +5292,9 @@ for (g in loop.global){
                      }else{
                         image(x=scenario[[1]]$value,y=scenario[[2]]$value
                              ,z=this.var[p,,],col=var.colours,breaks=var.brks
-                             ,xaxt="n",yaxt="n",main=lesub,xlab="",ylab="")
-                        text (x=0,y=0,labels="0",col="black",font=2,cex=2)
+                             ,xaxt="n",yaxt="n",main=lesub,xlab="",ylab=""
+                             ,cex.main=cex.main)
+                        text (x=0,y=0,labels="0",col=foreground,font=2,cex=2)
                         if (bottom) axis(side=1,at=x.value,labels=x.label)
                         if (left)   axis(side=2,at=y.value,labels=y.label)
                      }#end if
@@ -5220,9 +5309,9 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   par(las=0)
                   if (n.scenario == 1){
-                     mtext(side=1,text=lex ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+                     mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
                   }else{
-                     mtext(side=1,text=lex ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
+                     mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
                   }#end if
                   mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                   mtext(side=3,text=letitre,outer=TRUE,cex=1.0,font=2)

@@ -61,7 +61,6 @@ ncolshov       = 200                    # Target number of colours for Hovmoller
 hovgrid        = TRUE                   # Include a grid on the Hovmoller plots?
 legwhere       = "topleft"              # Where should I place the legend?
 inset          = 0.01                   # Inset between legend and edge of plot region.
-legbg          = "white"                # Legend background colour.
 scalleg        = 0.40                   # Expand y limits by this relative amount to fit
                                         #    the legend
 cex.main       = 0.8                    # Scale coefficient for the title
@@ -70,10 +69,10 @@ phi            = 30.                    # Vertical angle for perspective project
 ltheta         = -210.                  # Azimuth angle for light
 shade          = 0.125                  # Shade intensity
 expz           = 0.5                    # Expansion factor for Z axis
-gcol           = c("lightblue","white") # Colours for the fifties style floor
 cexmin         = 0.5                    # Minimum "head" size of the lollipop
 cexmax         = 3.0                    # Maximum "head" size of the lollipop
-ylnudge         = 0.05                  # Nudging factor for ylimit
+ylnudge        = 0.05                   # Nudging factor for ylimit
+ibackground    = mybackground           # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
@@ -417,11 +416,12 @@ for (place in myplaces){
             ley     = paste(desc," [",unit,"]")
 
 
+            par(par.user)
             plot(x=outplot[[2]]$x,y=outplot[[2]]$y,type="n",main=letitre,xlab=lex,ylab=ley
                 ,ylim=ylimit,cex.main=cex.main,xaxt="n")
             axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
             if (plotgrid){ 
-               abline(v=whenplot$levels,h=axTicks(side=2),col="gray62",lty="solid")
+               abline(v=whenplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (y in 2:nyears){
                lines(x=outplot[[y]]$x,y=outplot[[y]]$y,type=plttype,pch=16,cex=1.0
@@ -526,9 +526,10 @@ for (place in myplaces){
             ley     = paste(desc," [",unit,"]")
 
 
+            par(par.user)
             barplot(season.mat,col=yr3mon.col,main=letitre,xlab=lex,ylab=ley
                    ,cex.main=cex.main,ylim=ylimit,legend.text=FALSE,beside=TRUE
-                   ,border="gray23",xpd=FALSE)
+                   ,border=grey.fg,xpd=FALSE)
             box()
             legend(x=leg.pos,inset=0.01,legend=yr3mon.desc,fill=yr3mon.col
                   ,title="Period",cex=0.9,ncol=2)
@@ -623,12 +624,12 @@ for (place in myplaces){
             paxes       = list()
             paxes[[1]]  = list( x.axis = list(side=1)
                               , y.axis = list(side=2)
-                              , grid   = list(col="gray62",lty="solid")
+                              , grid   = list(col=grey.fg,lty="solid")
                               , legend = list( x      = leg.pos
                                              , inset  = 0.01
                                              , legend = yr3mon.desc
-                                             , col    = "black"
-                                             , bg     = "white"
+                                             , col    = foreground
+                                             , bg     = background
                                              , pch    = yr3mon.pch
                                              , title  = "Period"
                                              , ncol   = 2
@@ -661,6 +662,7 @@ for (place in myplaces){
 
 
                #----- Plot the parameter space. -------------------------------------------#
+               par(par.user)
                colourmap(x=xvar,y=yvar,z=zvar,xlim=xlimit,ylim=ylimit
                         ,colour.palette=muitas,cex=1.6,pch=this.pch,lwd=2
                         ,plot.title=ptitle

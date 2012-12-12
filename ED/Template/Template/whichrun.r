@@ -35,8 +35,7 @@ output = paste(main,polyg,sep="/") # Current directory.
 
 
 #----- Load some useful scripts and packages. ---------------------------------------------#
-isok = require(hdf5)
-source(paste(srcdir,"globdims.r",sep="/"))
+source(paste(srcdir,"load.everything.r",sep="/"))
 #------------------------------------------------------------------------------------------#
 
 

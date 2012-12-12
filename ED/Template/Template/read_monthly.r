@@ -123,9 +123,10 @@ for (place in myplaces){
    #      Make the RData file name, then we check whether we must read the files again     #
    # or use the stored RData.                                                              #
    #---------------------------------------------------------------------------------------#
-   path.data  = paste(here,place,"rdata_month",sep="/")
+   path.data   = file.path(here,place,"rdata_month")
    if (! file.exists(path.data)) dir.create(path.data)
-   ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
+   ed22.rdata  = file.path(path.data,paste(place,"RData",sep="."))
+   ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
       cat("   - Loading previous session...","\n")
@@ -198,6 +199,8 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
    }#end if (! complete)
    #---------------------------------------------------------------------------------------#
+   
+   latest = paste(datum$year[ntimes],datum$month[ntimes],sep=" ")
+   dummy  = write(x=latest,file=ed22.status,append=FALSE)
 }#end for places
-
-#q("no")
+#------------------------------------------------------------------------------------------#

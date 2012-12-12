@@ -56,9 +56,9 @@ plotgrid       = TRUE           # Should I plot the grid in the background?
 
 legwhere       = "topleft"      # Where should I place the legend?
 inset          = 0.01           # inset distance between legend and edge of plot region.
-legbg          = "white"        # Legend background colour.
 scalleg        = 0.20
 cex.main       = 0.8            # Scale coefficient for the title
+ibackground    = mybackground   # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
@@ -126,7 +126,7 @@ compvar       = list()
 compvar[[ 1]] = list( vnam       = "hflxca"
                     , desc       = "Sensible heat flux"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -134,7 +134,7 @@ compvar[[ 1]] = list( vnam       = "hflxca"
 compvar[[ 2]] = list( vnam       = "wflxca"
                     , desc       = "Water vapour flux"
                     , unit       = "[kg/m2/day]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("deepskyblue","royalblue4")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -142,7 +142,7 @@ compvar[[ 2]] = list( vnam       = "wflxca"
 compvar[[ 3]] = list( vnam       = "cflxca"
                     , desc       = "Carbon dioxide flux"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("chartreuse2","darkgreen")
                     , leg.corner = "bottomright"
                     , sunvar     = FALSE
@@ -150,7 +150,7 @@ compvar[[ 3]] = list( vnam       = "cflxca"
 compvar[[ 4]] = list( vnam       = "cflxst"
                     , desc       = "Carbon dioxide storage"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("lightgoldenrod3","darkorange1")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -158,7 +158,7 @@ compvar[[ 4]] = list( vnam       = "cflxst"
 compvar[[ 5]] = list( vnam       = "gpp"
                     , desc       = "Gross primary productivity"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("green3","darkgreen")
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
@@ -166,7 +166,7 @@ compvar[[ 5]] = list( vnam       = "gpp"
 compvar[[ 6]] = list( vnam       = "reco"
                     , desc       = "Ecosystem respiration"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("yellow3","peru")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -174,7 +174,7 @@ compvar[[ 6]] = list( vnam       = "reco"
 compvar[[ 7]] = list( vnam       = "nep"
                     , desc       = "Net ecosystem productivity"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("olivedrab2","darkolivegreen4")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -182,7 +182,7 @@ compvar[[ 7]] = list( vnam       = "nep"
 compvar[[ 8]] = list( vnam       = "nee"
                     , desc       = "Net ecosystem exchange"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "bottomright"
                     , sunvar     = FALSE
@@ -190,7 +190,7 @@ compvar[[ 8]] = list( vnam       = "nee"
 compvar[[ 9]] = list( vnam       = "ustar"
                     , desc       = "Friction velocity"
                     , unit       = "[m/s]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("mediumpurple1","purple4")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -198,7 +198,7 @@ compvar[[ 9]] = list( vnam       = "ustar"
 compvar[[10]] = list( vnam       = "rlongup"
                     , desc       = "Outgoing longwave radiation"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -206,7 +206,7 @@ compvar[[10]] = list( vnam       = "rlongup"
 compvar[[11]] = list( vnam       = "rnet"
                     , desc       = "Net radiation"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
@@ -214,7 +214,7 @@ compvar[[11]] = list( vnam       = "rnet"
 compvar[[12]] = list( vnam       = "albedo"
                     , desc       = "Albedo"
                     , unit       = "[--]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
@@ -222,7 +222,7 @@ compvar[[12]] = list( vnam       = "albedo"
 compvar[[13]] = list( vnam       = "parup"
                     , desc       = "Outgoing PAR"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
@@ -230,7 +230,7 @@ compvar[[13]] = list( vnam       = "parup"
 compvar[[14]] = list( vnam       = "rshortup"
                     , desc       = "Outgoing SW"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
+                    , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("deepskyblue","royalblue3")
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
@@ -628,23 +628,24 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Open an empty plotting area.                                          #
                #---------------------------------------------------------------------------#
+               par(par.user)
                plot(x=obser.data$par,y=obser.data$gpp,type="n",main=letitre
                    ,xlab=lex,ylab=ley,cex.main=cex.main,ylim=ylimit)
-               grid(col="grey76",lty="solid")
+               grid(col=grid.colour,lty="solid")
                #----- Add the observations. -----------------------------------------------#
-               points(x=obser.data$par,y=obser.data$gpp,pch=16,col="grey50")
+               points(x=obser.data$par,y=obser.data$gpp,pch=16,col=grey.bg)
                points(x=model.data$par,y=model.data$gpp,pch=16,col="chartreuse")
                #----- Add the density functions. ------------------------------------------#
-               lines(x=obser.data$par,y=obser.pred,lwd=3.0,col="grey21")
+               lines(x=obser.data$par,y=obser.pred,lwd=3.0,col=grey.fg)
                lines(x=model.data$par,y=model.pred,lwd=3.0,col="chartreuse4")
                #----- Add the legend. -----------------------------------------------------#
                legend( x      = "topleft"
+                     , bg     = background
                      , inset  = 0.01
                      , legend = c("Observation","Fit - Observation","Model","Fit - Model")
                      , pch    = c(16,NA,16,NA)
                      , lwd    = c(NA, 3,NA, 3)
-                     , col    = c("grey50","grey21","chartreuse","chartreuse4")
-                     , bg     = "white"
+                     , col    = c(grey.bg,grey.fg,"chartreuse","chartreuse4")
                      , cex    = 1.0)
                #---------------------------------------------------------------------------#
 
@@ -1036,9 +1037,10 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         #     Open an empty plotting area.                                 #
                         #------------------------------------------------------------------#
+                        par(par.user)
                         plot(x=quant,y=dfunc.obser,type="n",main=letitre,xlab=lex,ylab=ley
                             ,cex.main=cex.main,ylim=ylimit)
-                        grid(col="grey76",lty="solid")
+                        grid(col=grid.colour,lty="solid")
                         #------------------------------------------------------------------#
 
 
@@ -1060,7 +1062,7 @@ for (place in myplaces){
                               ,fill  =c(col.obser[2],col.model[2])
                               ,border=c(col.obser[2],col.model[2])
                               ,angle =c(-45,45),density=30
-                              ,lwd=2.0,col=c(col.obser[2],col.model[2]),bg="white"
+                              ,lwd=2.0,col=c(col.obser[2],col.model[2]),bg=background
                               ,cex=1.0)
                         #------------------------------------------------------------------#
 
@@ -1130,9 +1132,10 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         #     Open an empty plotting area.                                 #
                         #------------------------------------------------------------------#
+                        par(par.user)
                         plot(x=xlimit,y=ylimit,type="n",main=letitre,xlab=lex,ylab=ley
                             ,cex.main=cex.main)
-                        grid(col="grey76",lty="solid")
+                        grid(col=grid.colour,lty="solid")
                         lines(x=qq$y,y=qq$y,type="l",col=col.obser[2],lwd=3.0)
                         points(x=qq$x,y=qq$y,type="p",pch=16,cex=0.8,col=col.model[1])
                         #------------------------------------------------------------------#
@@ -1208,13 +1211,14 @@ for (place in myplaces){
 
 
                   #----- Plot the box plot. -----------------------------------------------#
+                  par(par.user)
                   plot(x=xlimit,y=ylimit,type="n",main=letitre,xlab=lex,ylab=ley
                       ,cex.main=cex.main,xaxt="n")
                   axis(side=1,at=xat,labels=dl.name)
-                  abline(h=axTicks(side=2),v=xgrid,col="grey66",lty="solid")
+                  abline(h=axTicks(side=2),v=xgrid,col=grid.colour,lty="solid")
                   boxplot(x=bp.list,col=bpcolour,notch=TRUE,add=TRUE,show.names=FALSE)
-                  legend(x=leg.corner,inset=0.01,legend=c("Observation","Model"),bg="white"
-                        ,fill=c(col.obser[1],col.model[1]))
+                  legend(x=leg.corner,inset=0.01,legend=c("Observation","Model")
+                        ,bg=background,fill=c(col.obser[1],col.model[1]))
                   #------------------------------------------------------------------------#
 
                   #------------------------------------------------------------------------#

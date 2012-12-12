@@ -22,6 +22,7 @@ scalleg        = 0.25           # Increase in y scale to fit the legend.
 ncolshov       = 200            # Target number of colours for Hovmoller diagrams.
 hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots?
 offegrid       = TRUE           # Should I include a grid on the top offender plots?
+ibackground    = mybackground   # Background settings (check load_everything.r)
 
 #----- Comparative plot of monthly means of errors. ---------------------------------------#
 nbox = 14
@@ -140,20 +141,24 @@ vades61 = list(vnam="sfcw.mass.04"  ,desc="Sfc. water mass   (z= 4)"    )
 
 
 
-#----- Loading some packages. -------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-#------------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
 
 
 
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -169,29 +174,6 @@ nout = length(outform)
 errvar  = c("errmax","sanchk")
 errdesc = c("Maximum Error","Sanity Check")
 nerror  = length(errvar)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Avoiding unecessary and extremely annoying beeps. ----------------------------------#
-options(locatorBell=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r",sep="/"))
-source(paste(srcdir,"globdims.r",sep="/"))
-source(paste(srcdir,"locations.r",sep="/"))
-source(paste(srcdir,"muitas.r",sep="/"))
-source(paste(srcdir,"pretty.log.r",sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"plotsize.r",sep="/"))
-source(paste(srcdir,"qapply.r",sep="/"))
-source(paste(srcdir,"rconstants.r",sep="/"))
-source(paste(srcdir,"sombreado.r",sep="/"))
-source(paste(srcdir,"southammap.r",sep="/"))
-source(paste(srcdir,"timeutils.r",sep="/"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -420,6 +402,7 @@ for (place in myplaces){
                ylimit  = range(thisvar, na.rm=TRUE)
                
                letitre = paste(thiseds,description,lieu,sep=" - ")
+               par(par.user)
                plot(thism3,thisvar,main=letitre,ylim=ylimit
                    ,xlab="Time",ylab=paste("Error counts [Error/month]",sep=""))
 
@@ -535,6 +518,7 @@ for (place in myplaces){
                }#end if
 
                letitre = paste(description," - ",lieu,sep="")
+               par(par.user)
                sombreado(x=monaxis,y=yraxis,z=varbuff,levels=vlevels,nlevels=vnlev
                         ,color.palette=get(vcscheme)
                         ,plot.title=title(main=letitre,xlab="Month",ylab="Year")
@@ -631,11 +615,12 @@ for (place in myplaces){
          }#end if
 
          letitre = paste("Mean annual cycle - ",lieu,sep="")
+         par(par.user)
          plot(x=thiserr$mon,y=thiserr$mon,type="n",log="y",ylim=ylimit,xlab="Month"
              ,ylab="Error count [error/month]",main=letitre,xaxt="n",yaxt="n")
          axis(side=1,at=monat,labels=monlab)
          axis(side=2,at=errat,labels=TRUE)
-         if (offegrid) abline(v=monat,h=errat,lty="dashed",col="gray66")
+         if (offegrid) abline(v=monat,h=errat,lty="dashed",col=grid.colour)
          for (v in 1:ntopoffe){
 
 
@@ -648,7 +633,7 @@ for (place in myplaces){
             points(x=thiserr$mon,y=t(thisvar),type="o",pch=16,col=coloffe[v],lwd=2,cex=1.2)
          }#end for
          legend(x="top",inset=0.02,legend=lege,col=colleg,pch=16,lty="solid",lwd=2
-               ,pt.cex=1.2,cex=0.8,bg="white",ncol=3
+               ,pt.cex=1.2,cex=0.8,bg=background,ncol=3
                ,title=paste(ntopoffe,"commonest causes for rejection"))
 
          if (outform[o] == "x11"){

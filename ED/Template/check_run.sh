@@ -146,7 +146,7 @@ do
    stdout="${here}/${polyname}/serial_out.out"
    stderr="${here}/${polyname}/serial_out.err"
    lsfout="${here}/${polyname}/serial_lsf.out"
-   stopped=
+   skipper="${here}/${polyname}/skipper.txt"
    #---------------------------------------------------------------------------------------#
 
 
@@ -195,7 +195,7 @@ do
       #------------------------------------------------------------------------------------#
       #     Plot a message so the user knows what is going on.                             #
       #------------------------------------------------------------------------------------#
-      if [ ${running} -gt 0 ] && [ ${sigsegv} -eq 0 ]
+      if [ ${running} -gt 0 ] || [ -s ${skipper} ] && [ ${sigsegv} -eq 0 ]
       then
          echo -e ${opt} "${off} :-) ${polyname} is running (${runtime})..."
       elif [ ${sigsegv} -gt 0 ]

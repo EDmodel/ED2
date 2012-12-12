@@ -368,7 +368,10 @@ do
    # we simply copy the template, and assume initial run.  Otherwise, we must find out     #
    # where the simulation was when it stopped.                                             #
    #---------------------------------------------------------------------------------------#
-   if [ -s  ${there}/${polyname} ]
+   if [ ! -s ${there}/${polyname} ] && [ ${here} != ${there} ]
+   then
+      cp -r ${here}/Template ${there}/${polyname}
+   elif [ -s  ${there}/${polyname} ]
    then
 
       #------------------------------------------------------------------------------------#
@@ -400,96 +403,39 @@ do
             /bin/rm -f ${here}/badfile.txt
          done
          #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #      Run the small R script to check whether the simulation was running or not, #
-         # and whether there was any cohort left by the time the runs were stopped.        #
-         #---------------------------------------------------------------------------------#
-         /bin/rm -f ${here}/${polyname}/statusrun.txt
-         /bin/rm -f ${here}/${polyname}/whichrun.r
-         /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
-         whichrun="${here}/${polyname}/whichrun.r"
-         outwhich="${here}/${polyname}/outwhichrun.txt"
-         sed -i s@thispoly@${polyname}@g ${whichrun}
-         sed -i s@thisqueue@${queue}@g   ${whichrun}
-         sed -i s@pathhere@${here}@g     ${whichrun}
-         sed -i s@paththere@${there}@g   ${whichrun}
-         sed -i s@thisyeara@${yeara}@g   ${whichrun}
-         sed -i s@thismontha@${montha}@g ${whichrun}
-         sed -i s@thisdatea@${datea}@g   ${whichrun}
-         sed -i s@thistimea@${timea}@g   ${whichrun}
-         R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
-         while [ ! -s ${here}/${polyname}/statusrun.txt ]
-         do
-            sleep 0.5
-         done
-         year=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}'`
-         month=`cat ${here}/${polyname}/statusrun.txt | awk '{print $3}'`
-         date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
-         time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
-         runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
-         #---------------------------------------------------------------------------------#
-      else
-
-         #---------------------------------------------------------------------------------#
-         #      Make a copy of the directory "there" in case here and there aren't the     #
-         # same.                                                                           #
-         #---------------------------------------------------------------------------------#
-         if [ ${here} != ${there} ]
-         then
-            cp -r ${here}/Template ${there}/${polyname}
-         fi
-
-         /bin/rm -f ${here}/${polyname}/statusrun.txt
-         /bin/rm -f ${here}/${polyname}/whichrun.r
-         /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
-         whichrun="${here}/${polyname}/whichrun.r"
-         outwhich="${here}/${polyname}/outwhichrun.txt"
-         sed -i s@thispoly@${polyname}@g ${whichrun}
-         sed -i s@thisqueue@${queue}@g   ${whichrun}
-         sed -i s@pathhere@${here}@g     ${whichrun}
-         sed -i s@paththere@${there}@g   ${whichrun}
-         sed -i s@thisyeara@${yeara}@g   ${whichrun}
-         sed -i s@thismontha@${montha}@g ${whichrun}
-         sed -i s@thisdatea@${datea}@g   ${whichrun}
-         sed -i s@thistimea@${timea}@g   ${whichrun}
-         year=${yeara}
-         month=${montha}
-         date=${datea}
-         time=${timea}
-         runt='INITIAL'
-         #---------------------------------------------------------------------------------#
       fi
       #------------------------------------------------------------------------------------#
-   else
-
-      #----- Make a copy of the directory "there" in case here and there aren't the same. -#
-      if [ ${here} != ${there} ]
-      then
-         cp -r ${here}/Template ${there}/${polyname}
-      fi
-      /bin/rm -f ${here}/${polyname}/statusrun.txt
-      /bin/rm -f ${here}/${polyname}/whichrun.r
-      /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
-      whichrun="${here}/${polyname}/whichrun.r"
-      outwhich="${here}/${polyname}/outwhichrun.txt"
-      sed -i s@thispoly@${polyname}@g ${whichrun}
-      sed -i s@thisqueue@${queue}@g   ${whichrun}
-      sed -i s@pathhere@${here}@g     ${whichrun}
-      sed -i s@paththere@${there}@g   ${whichrun}
-      sed -i s@thisyeara@${yeara}@g   ${whichrun}
-      sed -i s@thismontha@${montha}@g ${whichrun}
-      sed -i s@thisdatea@${datea}@g   ${whichrun}
-      sed -i s@thistimea@${timea}@g   ${whichrun}
-      R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
-      year=${yeara}
-      month=${montha}
-      date=${datea}
-      time=${timea}
-      runt='INITIAL'
    fi
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Run the small R script to check whether the simulation was running or not, and   #
+   # whether there was any cohort left by the time the runs were stopped.                  #
+   #---------------------------------------------------------------------------------------#
+   /bin/rm -f ${here}/${polyname}/statusrun.txt
+   /bin/rm -f ${here}/${polyname}/whichrun.r
+   /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
+   whichrun="${here}/${polyname}/whichrun.r"
+   outwhich="${here}/${polyname}/outwhichrun.txt"
+   sed -i s@thispoly@${polyname}@g ${whichrun}
+   sed -i s@thisqueue@${queue}@g   ${whichrun}
+   sed -i s@pathhere@${here}@g     ${whichrun}
+   sed -i s@paththere@${there}@g   ${whichrun}
+   sed -i s@thisyeara@${yeara}@g   ${whichrun}
+   sed -i s@thismontha@${montha}@g ${whichrun}
+   sed -i s@thisdatea@${datea}@g   ${whichrun}
+   sed -i s@thistimea@${timea}@g   ${whichrun}
+   R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
+   while [ ! -s ${here}/${polyname}/statusrun.txt ]
+   do
+      sleep 0.5
+   done
+   year=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}'`
+   month=`cat ${here}/${polyname}/statusrun.txt | awk '{print $3}'`
+   date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
+   time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
+   runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
    #---------------------------------------------------------------------------------------#
 
 

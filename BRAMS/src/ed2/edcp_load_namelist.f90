@@ -106,6 +106,9 @@ subroutine read_ednl(iunit,filename)
                                    , iyoutput                              & ! intent(out)
                                    , itoutput                              & ! intent(out)
                                    , isoutput                              & ! intent(out)
+                                   , iadd_site_means                       & ! intent(out)
+                                   , iadd_patch_means                      & ! intent(out)
+                                   , iadd_cohort_meansß                    & ! intent(out)
                                    , frqfast                               & ! intent(out)
                                    , frqstate                              & ! intent(out)
                                    , outfast                               & ! intent(out)
@@ -243,7 +246,8 @@ subroutine read_ednl(iunit,filename)
    logical                      :: op
    !----- Namelist. -----------------------------------------------------------------------!
    namelist /ED2_INFO/  dtlsm,co2_offset,ifoutput,idoutput,imoutput,iqoutput,iyoutput      &
-                       ,itoutput,isoutput,attach_metadata,outfast,outstate,ffilout,sfilout &
+                       ,itoutput,isoutput,iadd_site_means,iadd_patch_means                 &
+                       ,iadd_cohort_means,attach_metadata,outfast,outstate,ffilout,sfilout &
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf  &
@@ -296,6 +300,9 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' iyoutput                  =',iyoutput
       write (unit=*,fmt=*) ' itoutput                  =',itoutput
       write (unit=*,fmt=*) ' isoutput                  =',isoutput
+      write (unit=*,fmt=*) ' iadd_site_means           =',iadd_site_means
+      write (unit=*,fmt=*) ' iadd_patch_means          =',iadd_patch_means
+      write (unit=*,fmt=*) ' iadd_cohort_means         =',iadd_cohort_means
       write (unit=*,fmt=*) ' attach_metadata           =',attach_metadata
       write (unit=*,fmt=*) ' outfast                   =',outfast
       write (unit=*,fmt=*) ' outstate                  =',outstate

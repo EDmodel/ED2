@@ -134,6 +134,9 @@ subroutine ed_masterput_nl(par_run)
                                    , iallom                    & ! intent(in)
                                    , igrass                    & ! intent(in)
                                    , min_site_area             & ! intent(in)
+                                   , iadd_site_means           & ! intent(in)
+                                   , iadd_patch_means          & ! intent(in)
+                                   , iadd_cohort_means         & ! intent(in)
                                    , attach_metadata           & ! intent(in)
                                    , fast_diagnostics          & ! intent(in)
                                    , writing_dail              & ! intent(in)
@@ -533,8 +536,11 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(zrough,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iadd_site_means  ,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iadd_patch_means ,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iadd_cohort_means,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
+   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(dt_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(yr1st_census,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -1269,6 +1275,9 @@ subroutine ed_nodeget_nl
                                    , iallom                    & ! intent(out)
                                    , igrass                    & ! intent(out)
                                    , min_site_area             & ! intent(out)
+                                   , iadd_site_means           & ! intent(out)
+                                   , iadd_patch_means          & ! intent(out)
+                                   , iadd_cohort_means         & ! intent(out)
                                    , attach_metadata           & ! intent(out)
                                    , fast_diagnostics          & ! intent(out)
                                    , writing_dail              & ! intent(out)
@@ -1673,6 +1682,10 @@ subroutine ed_nodeget_nl
 
    call MPI_Bcast(zrough,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   
+   call MPI_Bcast(iadd_site_means  ,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iadd_patch_means ,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iadd_cohort_means,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   

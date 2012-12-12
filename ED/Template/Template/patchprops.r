@@ -1,3 +1,16 @@
+#==========================================================================================#
+#==========================================================================================#
+#     Leave these commands at the beginning.  They will refresh the session.               #
+#------------------------------------------------------------------------------------------#
+rm(list=ls())
+graphics.off()
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath"                               # Current directory.
 there          = "thatpath"    # Directory where analyses/history are 
@@ -19,7 +32,7 @@ plotgrid       = TRUE            # Should I plot the grid in the background?
 exfac          = 0.30            # Expansion factor to plot legend.
 legwhere       = "topleft"       # Where to put the PFT legend
 inset          = 0.01            # Inset
-legbg          = "white"         # Colour for legend background
+ibackground    = mybackground    # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 #     List of possible plots. In case you don't want some of them, simply switch plt to F. #
 #------------------------------------------------------------------------------------------#
@@ -74,8 +87,9 @@ cohprop08 = list(vnam="ba"    ,desc="Basal area"   ,unit="m2"       ,plog=T,lwd=
 #------------------------------------------------------------------------------------------#
 
 
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -93,40 +107,8 @@ pftnames = c("C4 Grass","Early Tropical","Mid Tropical","Late Tropical","Temp. C
              ,"C3 Grass","Araucaria","Total")
 pftcols  = c("gold","chartreuse","limegreen","darkgreen","purple3"
             ,"deepskyblue","aquamarine","midnightblue","darkorange3","sienna"
-            ,"firebrick","orchid","coral","gray45","olivedrab"
-            ,"goldenrod","steelblue","gray22")
-#------------------------------------------------------------------------------------------#
-
-
-#----- Loading some packages. -------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-library(fields)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Avoiding unecessary and extremely annoying beeps. ----------------------------------#
-options(locatorBell=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r"     ,sep="/"))
-source(paste(srcdir,"globdims.r"  ,sep="/"))
-source(paste(srcdir,"locations.r" ,sep="/"))
-source(paste(srcdir,"muitas.r"    ,sep="/"))
-source(paste(srcdir,"plotsize.r"  ,sep="/"))
-source(paste(srcdir,"rconstants.r",sep="/"))
-source(paste(srcdir,"sombreado.r" ,sep="/"))
-source(paste(srcdir,"southammap.r",sep="/"))
-source(paste(srcdir,"timeutils.r" ,sep="/"))
+            ,"firebrick","orchid","coral","grey45","olivedrab"
+            ,"goldenrod","steelblue","grey22")
 #------------------------------------------------------------------------------------------#
 
 
@@ -334,9 +316,10 @@ for (ipy in 1:nplaces){
 
 
             #----- Plot the graph. --------------------------------------------------------#
+            par(par.user)
             plot(x=patchidx,y=thisvar,type="n",main=letitre,xlab=lexlab,ylab=leylab)
-            grid(nx=0,ny=NULL,col="gray59",lty="dotted")
-            abline(v=patchidx,col="gray59",lty="dotted")
+            grid(nx=0,ny=NULL,col=grid.colour,lty="dotted")
+            abline(v=patchidx,col=grid.colour,lty="dotted")
             points(x=patchidx,y=thisvar,type="h",lwd=plwd,col=pcolour)
             points(x=patchidx,y=thisvar,type="p",pch=16,cex=1.5,col=pcolour)
             #------------------------------------------------------------------------------#
@@ -444,11 +427,11 @@ for (ipy in 1:nplaces){
                   #----- Plot the graph. --------------------------------------------------#
                   plot(x=thisidx,y=thisvar,type="n",main=letitre,log=plog
                       ,xlab=lexlab,ylab=leylab,ylim=ylimit)
-                  abline(v=thisidx,h=axTicks(side=2),col="gray59",lty="dotted")
+                  abline(v=thisidx,h=axTicks(side=2),col=grid.colour,lty="dotted")
                   points(x=thisidx,y=thisvar,type="h",lwd=plwd,col=pcolour)
                   points(x=thisidx,y=thisvar,type="p",pch=16,cex=1.5,col=pcolour)
-                  legend(x=legwhere,inset=inset,bg=legbg,pch=16,pt.cex=1.5,legend=legpft
-                        ,cex=0.7,col=colpft,lwd=plwd)
+                  legend(x=legwhere,inset=inset,bg=background,pch=16,pt.cex=1.5
+                        ,legend=legpft,cex=0.7,col=colpft,lwd=plwd)
                   #------------------------------------------------------------------------#
 
 

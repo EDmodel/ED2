@@ -127,25 +127,25 @@ ccc='/n/Moorcroft_Lab/Users/mlongo/util/calc.sh'  # Calculator
 #------------------------------------------------------------------------------------------#
 #------ Queue: moorcroft2a. ---------------------------------------------------------------#
 m2afull=96
-m2aumax=48
+m2aumax=0
 #------ Queue: moorcroft2b. ---------------------------------------------------------------#
 m2bfull=88
-m2bumax=88
+m2bumax=0
 #------ Queue: moorcroft2c. ---------------------------------------------------------------#
-m2cfull=0
-m2cumax=64
+m2cfull=64
+m2cumax=0
 #------ Queue: moorcroft_6100a. -----------------------------------------------------------#
 a61full=48
-a61umax=18
+a61umax=0
 #------ Queue: moorcroft_6100b. -----------------------------------------------------------#
 b61full=480
-b61umax=320
+b61umax=0
 #------ Queue: wofsy. ---------------------------------------------------------------------#
 wsyfull=96
-wsyumax=48
+wsyumax=0
 #------ Queue: unrestricted_serial. -------------------------------------------------------#
 usefull=80
-useumax=80
+useumax=0
 #------ Queue: unrestricted_parallel. -----------------------------------------------------#
 upapmax=0
 #------------------------------------------------------------------------------------------#
@@ -186,6 +186,7 @@ tailfile="${situtils}/tail.txt"
 recefile="${situtils}/rece.txt"
 statfile="${situtils}/stat.txt"
 queuefile="${situtils}/queue.txt"
+tablefile="${situtils}/table_queue.txt"
 pendfile=${here}'/pending.txt'
 emailday=${here}'/emailday.txt'
 if [ ${recipient} == "xxxxxx@xxxx.com" ]
@@ -1048,42 +1049,20 @@ then
       #------------------------------------------------------------------------------------#
 
 
+
+
       #----- Define the job name. ---------------------------------------------------------#
       jobname="${desc}-${polyname}"
       #------------------------------------------------------------------------------------#
 
 
-      #----- Update the R script that controls the run. -----------------------------------#
-      /bin/rm -f ${here}/${polyname}/whichrun.r
-      /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
-      sed -i s@thispoly@${polyname}@g        ${here}/${polyname}/whichrun.r
-      sed -i s@thisqueue@${queue}@g          ${here}/${polyname}/whichrun.r
-      sed -i s@pathhere@${here}@g            ${here}/${polyname}/whichrun.r
-      sed -i s@paththere@${here}@g           ${here}/${polyname}/whichrun.r
-      sed -i s@thisyeara@${yeara}@g          ${here}/${polyname}/whichrun.r
-      sed -i s@thismontha@${montha}@g        ${here}/${polyname}/whichrun.r
-      sed -i s@thisdatea@${datea}@g          ${here}/${polyname}/whichrun.r
-      sed -i s@thistimea@${timea}@g          ${here}/${polyname}/whichrun.r
-      #------------------------------------------------------------------------------------#
-
-
 
       #------------------------------------------------------------------------------------#
-      #    Retrie ve the information on statusrun.txt because it may tell whether the run  #
-      # was in steady state or all PFTs went extinct.  These will never start again.       #
+      #      Here we check whether the directory exists.  If not, we cannot do anything,   #
+      # we must wait for the next time.                                                    #
       #------------------------------------------------------------------------------------#
-      statrun=${here}/${polyname}/statusrun.txt
-      if [ -s ${statrun} ]
+      if [ ! -s ${here}/${polyname} ]
       then
-         yearh=`cat ${statrun}  | awk '{print $2}'`
-         monthh=`cat ${statrun} | awk '{print $3}'`
-         dateh=`cat ${statrun}  | awk '{print $4}'`
-         timeh=`cat ${statrun}  | awk '{print $5}'`
-         runt=`cat ${statrun}   | awk '{print $6}'`
-         agb=`cat ${statrun}    | awk '{print $7}'`
-         bsa=`cat ${statrun}    | awk '{print $8}'`
-         lai=`cat ${statrun}    | awk '{print $9}'`
-      else
          yearh=${yeara}
          monthh=${montha}
          dateh=${datea}
@@ -1092,622 +1071,672 @@ then
          agb='NA'
          bsa='NA'
          lai='NA'
-      fi
-      #------------------------------------------------------------------------------------#
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #    We only check those polygons that may be running, so the check doesn't take too #
-      # long.  Once a polygon has reached a steady state / gone extinct / crashed (oh      #
-      # well, that happens unfortunately), then its status should remain the same.         #
-      #------------------------------------------------------------------------------------#
-      #if [ ${runt} != 'EXTINCT' ] && [ ${runt} != 'STSTATE' ] && [ ${runt} != 'THE_END' ]
-      #then
-         #----- Call R to check status. ---------------------------------------------------#
-         whichrun=${here}/${polyname}/whichrun.r
-         outwhich=${here}/${polyname}/outwhich.txt
-         R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
-         year=`cat ${statrun}  | awk '{print $2}'`
-         month=`cat ${statrun} | awk '{print $3}'`
-         day=`cat ${statrun}   | awk '{print $4}'`
-         hhmm=`cat ${statrun}  | awk '{print $5}'`
-         runt=`cat ${statrun}  | awk '{print $6}'`
-         agb=`cat ${statrun}   | awk '{print $7}'`
-         bsa=`cat ${statrun}   | awk '{print $8}'`
-         lai=`cat ${statrun}   | awk '{print $9}'`
-      #fi
-      #------------------------------------------------------------------------------------#
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #    In case the polygon has crashed, we must do some stuff...                       #
-      #------------------------------------------------------------------------------------#
-      if [ ${runt} == 'CRASHED' ] || [ ${runt} == 'STOPPED' ] ||
-         [ ${runt} == 'METMISS' ] || [ ${runt} == 'SIGSEGV' ]
-      then
-         #---------------------------------------------------------------------------------#
-         #     Find out the tolerance used in the unfortunate run, then submit the job     #
-         # with a tolerance 10 times more strict.                                          #
-         #---------------------------------------------------------------------------------#
-         ED2IN=${here}'/'${polyname}'/ED2IN'
-         #----- Save the tolerance before we delete the file. -----------------------------#
-         toler=`grep NL%RK4_TOLERANCE ${ED2IN} | awk '{print $3}'`
-         if [ 'x'${toler} == 'xmytoler' -o 'x'${toler} == 'x' ]
-         then
-            toler=0.01
-         fi # [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
-         #---------------------------------------------------------------------------------#
-
-
-         if [ ${runt} == 'CRASHED' ]
-         then
-            echo "${ff}  :-( ${polyname} HAS CRASHED (RK4 PROBLEM)..."
-            let ncrashed=${ncrashed}+1
-            #----- Make the tolerance 10 times smaller. -----------------------------------#
-            toler=`${ccc} ${toler}/10`
-            echo "      - New tolerance = ${toler}"
-            /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/crashed_out.out
-            /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/crashed_out.err
-         elif [ ${runt} == 'SIGSEGV' ]
-         then
-            let nsigsegv=${nsigsegv}+1
-            echo "${ff} >:-# ${polyname} HAD SEGMENTATION VIOLATION... <==========="
-            /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/sigsegv_out.out
-            /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/sigsegv_out.err
-         elif [ ${runt} == 'METMISS' ]
-         then
-            let nmetmiss=${nmetmiss}+1
-            echo "${ff}  :-/ ${polyname} DID NOT FIND MET DRIVERS... <==========="
-            /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/metmiss_out.out
-            /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/metmiss_out.err
-         elif [ ${runt} == 'STOPPED' ]
-         then
-            let nstopped=${nstopped}+1
-            echo "${ff}  :-S ${polyname} STOPPED (UNKNOWN REASON)... <==========="
-            /bin/mv ${here}/${polyname}/serial_out.out ${here}/${polyname}/stopped_out.out
-            /bin/mv ${here}/${polyname}/serial_out.err ${here}/${polyname}/stopped_out.err
-         fi
-         #---------------------------------------------------------------------------------#
-
-         if [ ${toler} != '0.0000010' -a ${toler} != '0.0000001' -a ${toler} != '00' ]
-         then
-
-            #----- Re-generate ED2IN. -----------------------------------------------------#
-            rm -f ${ED2IN} 
-            rm -f ${here}/${polyname}/serial_lsf.out
-
-            #----- Copy the Template to the right directory. ------------------------------#
-            cp ${here}/Template/ED2IN ${ED2IN}
-
-
-            #----- Check whether to use SFILIN as restart or history. ---------------------#
-            if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
-            then
-               thissfilin=${thisbiomin}
-            else
-               thissfilin=${there}/${polyname}/histo/${polyname}
-            fi
-            #---------------------------------------------------------------------------------------#
-
-
-            #----- Update the polygon information on ED2IN. -------------------------------#
-            sed -i s@paththere@${there}@g                ${ED2IN}
-            sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
-            sed -i s@mymontha@${montha}@g                ${ED2IN}
-            sed -i s@mydatea@${datea}@g                  ${ED2IN}
-            sed -i s@mytimea@${timea}@g                  ${ED2IN}
-            sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
-            sed -i s@mymonthz@${monthz}@g                ${ED2IN}
-            sed -i s@mydatez@${datez}@g                  ${ED2IN}
-            sed -i s@mytimez@${timez}@g                  ${ED2IN}
-            sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
-            sed -i s@thispoly@${polyname}@g              ${ED2IN}
-            sed -i s@plonflag@${polylon}@g               ${ED2IN}
-            sed -i s@platflag@${polylat}@g               ${ED2IN}
-            sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
-            sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
-            sed -i s@monthhhh@${monthh}@g                ${ED2IN}
-            sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
-            sed -i s@myinitmode@${initmode}@g            ${ED2IN}
-            sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
-            sed -i s@mytrees@${pfts}@g                   ${ED2IN}
-            sed -i s@mycrop@${crop}@g                    ${ED2IN}
-            sed -i s@myplantation@${plantation}@g        ${ED2IN}
-            sed -i s@myiphen@${iphen}@g                  ${ED2IN}
-            sed -i s@myallom@${iallom}@g                 ${ED2IN}
-            sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
-            sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
-            sed -i s@myslxsand@${polysand}@g             ${ED2IN}
-            sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
-            sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
-            sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
-            sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
-            sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
-            sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
-            sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
-            sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
-            sed -i s@mytoler@${toler}@g                  ${ED2IN}
-            sed -i s@RUNFLAG@HISTORY@g                   ${ED2IN}
-            sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
-            sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
-            sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
-            sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
-            sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
-            sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
-            sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
-            sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
-            sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
-            sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
-            sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
-            sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
-            sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
-            sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
-            sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
-            sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
-            sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
-            sed -i s@mydecomp@${decomp}@g                ${ED2IN}
-            sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
-            sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
-            sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
-            sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
-            sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
-            sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
-            sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
-            sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
-            sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
-            sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
-            sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
-            sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
-            sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
-            sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
-            sed -i s@mysmfire@${smfire}@g                ${ED2IN}
-            sed -i s@myfire@${ifire}@g                   ${ED2IN}
-            sed -i s@myfuel@${fireparm}@g                ${ED2IN}
-            sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
-            sed -i s@mypercol@${ipercol}@g               ${ED2IN}
-            sed -i s@myrunoff@${runoff}@g                ${ED2IN}
-            sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
-            sed -i s@mybranch@${ibranch}@g               ${ED2IN}
-            sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
-            sed -i s@mycrown@${crown}@g                  ${ED2IN}
-            sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
-            sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
-            sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
-            sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
-            sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
-            sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
-            sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
-            sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
-            sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
-            sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
-            sed -i s@myrepro@${irepro}@g                 ${ED2IN}
-            sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
-            sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
-            sed -i s@myustmin@${ustmin}@g                ${ED2IN}
-            sed -i s@mygamm@${gamm}@g                    ${ED2IN}
-            sed -i s@mygamh@${gamh}@g                    ${ED2IN}
-            sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
-            sed -i s@myribmax@${ribmax}@g                ${ED2IN}
-            sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
-            sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
-            sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
-            sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
-            sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
-            sed -i s@mytreefall@${treefall}@g            ${ED2IN}
-            #------ Soil variables. -------------------------------------------------------#
-            sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
-            sed -i s@myslz2@"${polyslz2}"@g           ${ED2IN}
-            sed -i s@myslz3@"${polyslz3}"@g           ${ED2IN}
-            sed -i s@myslz4@"${polyslz4}"@g           ${ED2IN}
-            sed -i s@myslz5@"${polyslz5}"@g           ${ED2IN}
-            sed -i s@myslz6@"${polyslz6}"@g           ${ED2IN}
-            sed -i s@myslz7@"${polyslz7}"@g           ${ED2IN}
-            sed -i s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
-            sed -i s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
-            sed -i s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
-            sed -i s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
-            sed -i s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
-            sed -i s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
-            sed -i s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
-            sed -i s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
-            sed -i s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
-            sed -i s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
-            sed -i s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
-            sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
-            sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
-            sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
-            #------------------------------------------------------------------------------#
-
-
-
-
-
-
-            #------------------------------------------------------------------------------#
-            #      A crashed polygon will inevitably go to the long_serial queue.  Check   #
-            # whether this is a head of a unrestricted parallel run.  If it is, then call  #
-            # this something else, otherwise use the polygon name.  In any case, re-write  #
-            # the srun.sh file.                                                            #
-            #------------------------------------------------------------------------------#
-            srun=${here}'/'${polyname}'/srun.sh'
-
-            unpahead=`bjobs -w -J ${jobname} 2> /dev/null | wc -l`
-            if [ ${unpahead} -eq 0 ]
-            then
-               thisname=${jobname}
-            else
-               polyIATA=`echo ${polyiata} | tr '[:lower:]' '[:upper:]'`
-               thisname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
-            fi
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Get the waiting time used before. --------------------------------------#
-            thiswait=`grep "Sleep time is" ${polyname}/srun.sh | awk '{print $5}'`
-            #------------------------------------------------------------------------------#
-
-
-            #----- Copy the data set again. -----------------------------------------------#
-            /bin/rm -f ${srun}
-            /bin/rm -f ${here}/${polyname}/skipper.txt
-            /bin/cp ${here}/Template/srun.sh ${here}/${polyname}/srun.sh
-            #------------------------------------------------------------------------------#
-
-
-            #----- The new queue is by default the long_serial. ---------------------------#
-            newqueue='long_serial'
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Change some settings in srun.sh. ---------------------------------------#
-            sed -i s@"jobname='thisjob'"@"jobname='${thisname}'"@g ${srun}
-            sed -i s@pathhere@${here}@g      ${srun}
-            sed -i s@paththere@${here}@g     ${srun}
-            sed -i s@thispoly@${polyname}@g  ${srun}
-            sed -i s@thisdesc@${desc}@g      ${srun}
-            sed -i s@thisqueue@${newqueue}@g ${srun}
-            sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-            sed -i s@myorder@${ff}@g         ${srun}
-            #------------------------------------------------------------------------------#
-
-         else
-            #----- Give up on this node. --------------------------------------------------#
-            echo '${ff}  :-{ Tolerance is tiny and it still does not work.  Giving up...'
-            runt='THE_END'
-            #------------------------------------------------------------------------------#
-         fi # [ ${toler} != '0.0000010' -a ${toler} != '0.0000001' -a ${toler} != '00' ]
-         #---------------------------------------------------------------------------------#
-
-      elif [ ${runt} == 'THE_END' ]
-      then 
-         echo "${ff} o/\o ${polyname} has finished..."
-
-      elif [ ${runt} == 'EXTINCT' -o ${runt} == 'STSTATE' ] && 
-           [ ${queue} != 'unrestricted_parallel' ]
-      then
-         running=`bjobs -w -J ${jobname} 2> /dev/null | grep RUN | wc -l`
-         if [ ${running} -gt 0 ]
-         then
-            deathrow="${deathrow} ${jobname}"
-            if [ ${runt} == 'EXTINCT' ]
-            then
-               let newextinct=${newextinct}+1
-               echo "${ff}  B-) ${polyname} has become a desert..."
-            elif [ ${runt} == 'STSTATE' ]
-            then
-               let newststate=${newststate}+1
-               echo "${ff}  :-D ${polyname} has reached steady state..."
-            fi
-         fi
-      elif [ ${runt} == 'HISTORY' ]
-      then
-         #----- Check whether the simulation is running, and when in model time it is. ----#
-         stdout="${here}/${polyname}/serial_out.out"
-         simline=`grep "Simulating: "   ${stdout} | tail -1`
-         runtime=`echo ${simline} | awk '{print $3}'`
-         simline=`grep "Simulating: "   ${stdout} | tail -1`
-         runtime=`echo ${simline} | awk '{print $3}'`
-         echo "${ff}  :-) ${polyname} is running (${runtime})..."
-         #---------------------------------------------------------------------------------#
-      elif [ ${runt} == 'INITIAL' ]
-      then
-         echo "${ff}  :-| ${polyname} is pending ..."
+         echo "${ff} H:-\ ${polyname} doesn't have a home directory..."
       else
-         echo "${ff} <:-| ${polyname} status is unknown..."
-      fi # [ ${runt} == 'CRASHED' ]...
-      #------------------------------------------------------------------------------------#
+
+         #----- Update the R script that controls the run. --------------------------------#
+         /bin/rm -f ${here}/${polyname}/whichrun.r
+         /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
+         sed -i s@thispoly@${polyname}@g        ${here}/${polyname}/whichrun.r
+         sed -i s@thisqueue@${queue}@g          ${here}/${polyname}/whichrun.r
+         sed -i s@pathhere@${here}@g            ${here}/${polyname}/whichrun.r
+         sed -i s@paththere@${here}@g           ${here}/${polyname}/whichrun.r
+         sed -i s@thisyeara@${yeara}@g          ${here}/${polyname}/whichrun.r
+         sed -i s@thismontha@${montha}@g        ${here}/${polyname}/whichrun.r
+         sed -i s@thisdatea@${datea}@g          ${here}/${polyname}/whichrun.r
+         sed -i s@thistimea@${timea}@g          ${here}/${polyname}/whichrun.r
+         #---------------------------------------------------------------------------------#
 
 
 
-
-      #------------------------------------------------------------------------------------#
-      #    Last, we check whether the job is still running or not.  In case it is not but  #
-      # it should, update the ED2IN with the latest history and re-submit the job.         #
-      #------------------------------------------------------------------------------------#
-      if [ ${runt} != 'THE_END' ] && [ ${runt} != 'STSTATE' ] && [ ${runt} != 'EXTINCT' ]
-      then
-         if [ ${queue} == 'unrestricted_parallel' ]
+         #---------------------------------------------------------------------------------#
+         #    Retrie ve the information on statusrun.txt because it may tell whether the   #
+         # run was in steady state or all PFTs went extinct.  These will never start       #
+         # again.                                                                          #
+         #---------------------------------------------------------------------------------#
+         statrun=${here}/${polyname}/statusrun.txt
+         if [ -s ${statrun} ]
          then
-            nlist=`grep ${polyname} ${here}/*/callunpa.sh | wc -l`
-            if [ ${nlist} -eq 0 ]
-            then
-               running=0
-            else
-               j=0
-               running=0
-               while [ ${j} -lt ${nlist} ] && [ ${running} -eq 0 ]
-               do
-                  let j=${j}+1
-                  thisline=`grep ${polyname} ${here}/*/callunpa.sh | head -${j} | tail -1`
-                  parent=`echo ${thisline} | awk '{print substr($1,1,8)}'`
-                  parjob="${desc}-${parent}"
-                  running=`bjobs -w -q ${queue} -J ${parjob} 2> /dev/null | tail -1 | wc -l`
-               done
-            fi
+            yearh=`cat ${statrun}  | awk '{print $2}'`
+            monthh=`cat ${statrun} | awk '{print $3}'`
+            dateh=`cat ${statrun}  | awk '{print $4}'`
+            timeh=`cat ${statrun}  | awk '{print $5}'`
+            runt=`cat ${statrun}   | awk '{print $6}'`
+            agb=`cat ${statrun}    | awk '{print $7}'`
+            bsa=`cat ${statrun}    | awk '{print $8}'`
+            lai=`cat ${statrun}    | awk '{print $9}'`
          else
-            running=`bjobs -w -J ${jobname} 2> /dev/null | tail -1 | wc -l`
-         fi
-
-         if [ ${running} -eq 0 ]
-         then
-            echo "${polyname} is missing.  Re-submitting..." >> ${situation}
-
-            let nresubmit=${nresubmit}+1
-
-            #------------------------------------------------------------------------------#
-            #     Job was kicked out, submit it again.                                     #
-            #------------------------------------------------------------------------------#
-            ED2IN=${here}'/'${polyname}'/ED2IN'
-            #----- Save the tolerance before we delete the file. --------------------------#
-            toler=`grep NL%RK4_TOLERANCE ${ED2IN} | awk '{print $3}'`
-            #------------------------------------------------------------------------------#
-            #   This should never happen, but...                                           #
-            #------------------------------------------------------------------------------#
-            if [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
-            then
-               toler=0.01
-            else
-               toler=${oldtol}
-            fi # [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
-            #------------------------------------------------------------------------------#
-
-
-            #----- Re-generate ED2IN. -----------------------------------------------------#
-            rm -f ${ED2IN} 
-            rm -f ${here}/${polyname}/serial_out.out
-            rm -f ${here}/${polyname}/serial_lsf.out
-            rm -f ${here}/${polyname}/serial_out.err
-
-            #----- Copy the Template to the right directory. ------------------------------#
-            cp ${here}/Template/ED2IN ${ED2IN}
-
-            #------------------------------------------------------------------------------#
-            #     Determine which PFTs to use.                                             #
-            #------------------------------------------------------------------------------#
-            lonint=${polylon/.*}
-            latint=${polylat/.*}
-            pfts='1,2,3,4,16'
-            #------------------------------------------------------------------------------#
-
-
-
-
-            #----- Check whether to use SFILIN as restart or history. ---------------------#
-            if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
-            then
-               thissfilin=${thisbiomin}
-            else
-               thissfilin=${there}/${polyname}/histo/${polyname}
-            fi
-            #---------------------------------------------------------------------------------------#
-
-            #----- Update the polygon information on ED2IN. -------------------------------#
-            sed -i s@paththere@${there}@g                ${ED2IN}
-            sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
-            sed -i s@mymontha@${montha}@g                ${ED2IN}
-            sed -i s@mydatea@${datea}@g                  ${ED2IN}
-            sed -i s@mytimea@${timea}@g                  ${ED2IN}
-            sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
-            sed -i s@mymonthz@${monthz}@g                ${ED2IN}
-            sed -i s@mydatez@${datez}@g                  ${ED2IN}
-            sed -i s@mytimez@${timez}@g                  ${ED2IN}
-            sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
-            sed -i s@thispoly@${polyname}@g              ${ED2IN}
-            sed -i s@plonflag@${polylon}@g               ${ED2IN}
-            sed -i s@platflag@${polylat}@g               ${ED2IN}
-            sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
-            sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
-            sed -i s@monthhhh@${monthh}@g                ${ED2IN}
-            sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
-            sed -i s@myinitmode@${initmode}@g            ${ED2IN}
-            sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
-            sed -i s@mytrees@${pfts}@g                   ${ED2IN}
-            sed -i s@mycrop@${crop}@g                    ${ED2IN}
-            sed -i s@myplantation@${plantation}@g        ${ED2IN}
-            sed -i s@myiphen@${iphen}@g                  ${ED2IN}
-            sed -i s@myallom@${iallom}@g                 ${ED2IN}
-            sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
-            sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
-            sed -i s@myslxsand@${polysand}@g             ${ED2IN}
-            sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
-            sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
-            sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
-            sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
-            sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
-            sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
-            sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
-            sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
-            sed -i s@mytoler@${toler}@g                  ${ED2IN}
-            sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
-            sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
-            sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
-            sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
-            sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
-            sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
-            sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
-            sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
-            sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
-            sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
-            sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
-            sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
-            sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
-            sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
-            sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
-            sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
-            sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
-            sed -i s@mydecomp@${decomp}@g                ${ED2IN}
-            sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
-            sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
-            sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
-            sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
-            sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
-            sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
-            sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
-            sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
-            sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
-            sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
-            sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
-            sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
-            sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
-            sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
-            sed -i s@mysmfire@${smfire}@g                ${ED2IN}
-            sed -i s@myfire@${ifire}@g                   ${ED2IN}
-            sed -i s@myfuel@${fireparm}@g                ${ED2IN}
-            sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
-            sed -i s@mypercol@${ipercol}@g               ${ED2IN}
-            sed -i s@myrunoff@${runoff}@g                ${ED2IN}
-            sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
-            sed -i s@mybranch@${ibranch}@g               ${ED2IN}
-            sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
-            sed -i s@mycrown@${crown}@g                  ${ED2IN}
-            sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
-            sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
-            sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
-            sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
-            sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
-            sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
-            sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
-            sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
-            sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
-            sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
-            sed -i s@myrepro@${irepro}@g                 ${ED2IN}
-            sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
-            sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
-            sed -i s@myustmin@${ustmin}@g                ${ED2IN}
-            sed -i s@mygamm@${gamm}@g                    ${ED2IN}
-            sed -i s@mygamh@${gamh}@g                    ${ED2IN}
-            sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
-            sed -i s@myribmax@${ribmax}@g                ${ED2IN}
-            sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
-            sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
-            sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
-            sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
-            sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
-            sed -i s@mytreefall@${treefall}@g            ${ED2IN}
-            #------ Soil variables. -------------------------------------------------------#
-            sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
-            sed -i s@myslz2@"${polyslz2}"@g           ${ED2IN}
-            sed -i s@myslz3@"${polyslz3}"@g           ${ED2IN}
-            sed -i s@myslz4@"${polyslz4}"@g           ${ED2IN}
-            sed -i s@myslz5@"${polyslz5}"@g           ${ED2IN}
-            sed -i s@myslz6@"${polyslz6}"@g           ${ED2IN}
-            sed -i s@myslz7@"${polyslz7}"@g           ${ED2IN}
-            sed -i s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
-            sed -i s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
-            sed -i s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
-            sed -i s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
-            sed -i s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
-            sed -i s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
-            sed -i s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
-            sed -i s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
-            sed -i s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
-            sed -i s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
-            sed -i s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
-            sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
-            sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
-            sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
-            #----- Change run type. -------------------------------------------------------#
-            if [ ${runt} == 'INITIAL' ]
-            then
-               sed -i s@RUNFLAG@${runt}@g      ${ED2IN}
-           else
-               sed -i s@RUNFLAG@HISTORY@g      ${ED2IN}
-            fi
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
-            #      A halted polygon will inevitably go to the long_serial queue.  Re-write #
-            # the srun.sh file.                                                            #
-            #------------------------------------------------------------------------------#
-            srun=${here}'/'${polyname}'/srun.sh'
-
-            #----- Get the waiting time used before. --------------------------------------#
-            thiswait=`grep 'Sleep time is' ${polyname}/srun.sh | awk '{print $5}'`
-            if [ 'x'${thiswait} == 'x' ]
-            then
-               let wtime=${ff}%8
-               let wtime=${wtime}*20
-               nudge=`date +%S`
-               if [ ${nudge} -lt 10 ]
-               then 
-                  nudge=`echo ${nudge} | awk '{print substr($1,2,1)}'`
-               fi
-               let nudge=${nudge}%15
-               let wtime=${wtime}+${nudge}
-               let wtime=${wtime}+2
-            fi
-            /bin/rm -f ${srun}
-            /bin/rm -f ${here}/${polyname}/skipper.txt
-
-            cp ${here}/Template/srun.sh ${here}/${polyname}/srun.sh
-
-            #----- The new queue is by default the long_serial. ---------------------------#
-            newqueue='long_serial'
-
-            #----- Change some settings in srun.sh. ---------------------------------------#
-            sed -i s@pathhere@${here}@g      ${srun}
-            sed -i s@paththere@${here}@g     ${srun}
-            sed -i s@thispoly@${polyname}@g  ${srun}
-            sed -i s@thisqueue@${newqueue}@g ${srun}
-            sed -i s@thisdesc@${desc}@g      ${srun}
-            sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-            sed -i s@myorder@${ff}@g         ${srun}
-
-            #----- Re-submit the job to long_serial queue. --------------------------------#
-            ${here}'/'${polyname}'/srun.sh'
-
-            #----- Switch the status to pending. ------------------------------------------#
-            year=${yeara}
-            month=${montha}
-            day=${datea}
-            hhmm=${timea}
+            yearh=${yeara}
+            monthh=${montha}
+            dateh=${datea}
+            timeh=${timea}
             runt='INITIAL'
             agb='NA'
             bsa='NA'
             lai='NA'
-         else
-            echo "${polyname} is running/pending..." >> ${situation}
-         fi # [ ${running} -eq 0 ]
-      else
-         echo "${polyname} status is ${runt}.  No need to resubmit." >> ${situation}
-      fi # [ ${runt} == 'HISTORY' -a ${queue} == 'long_serial' ]
-      #------------------------------------------------------------------------------------#
+         fi
+         #---------------------------------------------------------------------------------#
 
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    We only check those polygons that may be running, so the check doesn't take  #
+         # too long.  Once a polygon has reached a steady state / gone extinct / finished, #
+         # then its status should remain the same.                                         #
+         #---------------------------------------------------------------------------------#
+         # if [ ${runt} != 'EXTINCT' ] && [ ${runt} != 'STSTATE' ] && 
+         #    [ ${runt} != 'THE_END' ]
+         # then
+            #----- Call R to check status. ------------------------------------------------#
+            whichrun=${here}/${polyname}/whichrun.r
+            outwhich=${here}/${polyname}/outwhich.txt
+            R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
+            year=`cat ${statrun}  | awk '{print $2}'`
+            month=`cat ${statrun} | awk '{print $3}'`
+            day=`cat ${statrun}   | awk '{print $4}'`
+            hhmm=`cat ${statrun}  | awk '{print $5}'`
+            runt=`cat ${statrun}  | awk '{print $6}'`
+            agb=`cat ${statrun}   | awk '{print $7}'`
+            bsa=`cat ${statrun}   | awk '{print $8}'`
+            lai=`cat ${statrun}   | awk '{print $9}'`
+         # fi
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    In case the polygon has crashed, we must do some stuff...                    #
+         #---------------------------------------------------------------------------------#
+         if [ ${runt} == 'CRASHED' ] || [ ${runt} == 'STOPPED' ] ||
+            [ ${runt} == 'METMISS' ] || [ ${runt} == 'SIGSEGV' ]
+         then
+            #------------------------------------------------------------------------------#
+            #     Find out the tolerance used in the unfortunate run, then submit the job  #
+            # with a tolerance 10 times more strict.                                       #
+            #------------------------------------------------------------------------------#
+            ED2IN=${here}'/'${polyname}'/ED2IN'
+            #----- Save the tolerance before we delete the file. --------------------------#
+            toler=`grep NL%RK4_TOLERANCE ${ED2IN} | awk '{print $3}'`
+            if [ 'x'${toler} == 'xmytoler' -o 'x'${toler} == 'x' ]
+            then
+               toler=0.01
+            fi # [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
+            #------------------------------------------------------------------------------#
+
+            serial_out="${here}/${polyname}/serial_out.out"
+            serial_err="${here}/${polyname}/serial_out.err"
+
+            if [ ${runt} == 'CRASHED' ]
+            then
+               echo "${ff}  :-( ${polyname} HAS CRASHED (RK4 PROBLEM)..."
+               let ncrashed=${ncrashed}+1
+               #----- Make the tolerance 10 times smaller. --------------------------------#
+               toler=`${ccc} ${toler}/10`
+               echo "      - New tolerance = ${toler}"
+               /bin/mv ${serial_out} ${here}/${polyname}/crashed_out.out
+               /bin/mv ${serial_err} ${here}/${polyname}/crashed_out.err
+            elif [ ${runt} == 'SIGSEGV' ]
+            then
+               let nsigsegv=${nsigsegv}+1
+               echo "${ff} >:-# ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+               /bin/mv ${serial_out} ${here}/${polyname}/sigsegv_out.out
+               /bin/mv ${serial_err} ${here}/${polyname}/sigsegv_out.err
+            elif [ ${runt} == 'METMISS' ]
+            then
+               let nmetmiss=${nmetmiss}+1
+               echo "${ff}  :-/ ${polyname} DID NOT FIND MET DRIVERS... <==========="
+               /bin/mv ${serial_out} ${here}/${polyname}/metmiss_out.out
+               /bin/mv ${serial_err} ${here}/${polyname}/metmiss_out.err
+            elif [ ${runt} == 'STOPPED' ]
+            then
+               let nstopped=${nstopped}+1
+               echo "${ff}  :-S ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+               /bin/mv ${serial_out} ${here}/${polyname}/stopped_out.out
+               /bin/mv ${serial_err} ${here}/${polyname}/stopped_out.err
+            fi
+            #------------------------------------------------------------------------------#
+
+            if [ ${toler} != '0.0000010' -a ${toler} != '0.0000001' -a ${toler} != '00' ]
+            then
+
+               #----- Re-generate ED2IN. --------------------------------------------------#
+               rm -f ${ED2IN} 
+               rm -f ${here}/${polyname}/serial_lsf.out
+
+               #----- Copy the Template to the right directory. ---------------------------#
+               cp ${here}/Template/ED2IN ${ED2IN}
+
+
+               #----- Check whether to use SFILIN as restart or history. ------------------#
+               if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
+               then
+                  thissfilin=${thisbiomin}
+               else
+                  thissfilin=${there}/${polyname}/histo/${polyname}
+               fi
+               #---------------------------------------------------------------------------#
+
+
+               #----- Update the polygon information on ED2IN. ----------------------------#
+               sed -i s@paththere@${there}@g                ${ED2IN}
+               sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
+               sed -i s@mymontha@${montha}@g                ${ED2IN}
+               sed -i s@mydatea@${datea}@g                  ${ED2IN}
+               sed -i s@mytimea@${timea}@g                  ${ED2IN}
+               sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
+               sed -i s@mymonthz@${monthz}@g                ${ED2IN}
+               sed -i s@mydatez@${datez}@g                  ${ED2IN}
+               sed -i s@mytimez@${timez}@g                  ${ED2IN}
+               sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
+               sed -i s@thispoly@${polyname}@g              ${ED2IN}
+               sed -i s@plonflag@${polylon}@g               ${ED2IN}
+               sed -i s@platflag@${polylat}@g               ${ED2IN}
+               sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
+               sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
+               sed -i s@monthhhh@${monthh}@g                ${ED2IN}
+               sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
+               sed -i s@myinitmode@${initmode}@g            ${ED2IN}
+               sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
+               sed -i s@mytrees@${pfts}@g                   ${ED2IN}
+               sed -i s@mycrop@${crop}@g                    ${ED2IN}
+               sed -i s@myplantation@${plantation}@g        ${ED2IN}
+               sed -i s@myiphen@${iphen}@g                  ${ED2IN}
+               sed -i s@myallom@${iallom}@g                 ${ED2IN}
+               sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
+               sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
+               sed -i s@myslxsand@${polysand}@g             ${ED2IN}
+               sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
+               sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
+               sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
+               sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
+               sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
+               sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
+               sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
+               sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
+               sed -i s@mytoler@${toler}@g                  ${ED2IN}
+               sed -i s@RUNFLAG@HISTORY@g                   ${ED2IN}
+               sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
+               sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
+               sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
+               sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
+               sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
+               sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
+               sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
+               sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
+               sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
+               sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
+               sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
+               sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
+               sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
+               sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
+               sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
+               sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
+               sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
+               sed -i s@mydecomp@${decomp}@g                ${ED2IN}
+               sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
+               sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
+               sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
+               sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
+               sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
+               sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
+               sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
+               sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
+               sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
+               sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
+               sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
+               sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
+               sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
+               sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
+               sed -i s@mysmfire@${smfire}@g                ${ED2IN}
+               sed -i s@myfire@${ifire}@g                   ${ED2IN}
+               sed -i s@myfuel@${fireparm}@g                ${ED2IN}
+               sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
+               sed -i s@mypercol@${ipercol}@g               ${ED2IN}
+               sed -i s@myrunoff@${runoff}@g                ${ED2IN}
+               sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
+               sed -i s@mybranch@${ibranch}@g               ${ED2IN}
+               sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
+               sed -i s@mycrown@${crown}@g                  ${ED2IN}
+               sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
+               sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
+               sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
+               sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
+               sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
+               sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
+               sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
+               sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+               sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
+               sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
+               sed -i s@myrepro@${irepro}@g                 ${ED2IN}
+               sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
+               sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
+               sed -i s@myustmin@${ustmin}@g                ${ED2IN}
+               sed -i s@mygamm@${gamm}@g                    ${ED2IN}
+               sed -i s@mygamh@${gamh}@g                    ${ED2IN}
+               sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
+               sed -i s@myribmax@${ribmax}@g                ${ED2IN}
+               sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
+               sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
+               sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
+               sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
+               sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
+               sed -i s@mytreefall@${treefall}@g            ${ED2IN}
+               #------ Soil variables. ----------------------------------------------------#
+               sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
+               sed -i s@myslz2@"${polyslz2}"@g           ${ED2IN}
+               sed -i s@myslz3@"${polyslz3}"@g           ${ED2IN}
+               sed -i s@myslz4@"${polyslz4}"@g           ${ED2IN}
+               sed -i s@myslz5@"${polyslz5}"@g           ${ED2IN}
+               sed -i s@myslz6@"${polyslz6}"@g           ${ED2IN}
+               sed -i s@myslz7@"${polyslz7}"@g           ${ED2IN}
+               sed -i s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
+               sed -i s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
+               sed -i s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
+               sed -i s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
+               sed -i s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
+               sed -i s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
+               sed -i s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
+               sed -i s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
+               sed -i s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
+               sed -i s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
+               sed -i s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
+               sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
+               sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
+               sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
+               #---------------------------------------------------------------------------#
+
+
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #      A crashed polygon will inevitably go to the long_serial queue.       #
+               # Check whether this is a head of a unrestricted parallel run.  If it is,   #
+               # then call this something else, otherwise use the polygon name.  In any    #
+               # case, re-write the srun.sh file.                                          #
+               #---------------------------------------------------------------------------#
+               srun=${here}'/'${polyname}'/srun.sh'
+
+               unpahead=`bjobs -w -J ${jobname} 2> /dev/null | wc -l`
+               if [ ${unpahead} -eq 0 ]
+               then
+                  thisname=${jobname}
+               else
+                  polyIATA=`echo ${polyiata} | tr '[:lower:]' '[:upper:]'`
+                  thisname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
+               fi
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Get the waiting time used before. -----------------------------------#
+               thiswait=`grep "Sleep time is" ${polyname}/srun.sh | awk '{print $5}'`
+               #---------------------------------------------------------------------------#
+
+
+               #----- Copy the data set again. --------------------------------------------#
+               /bin/rm -f ${srun}
+               /bin/rm -f ${here}/${polyname}/skipper.txt
+               /bin/cp ${here}/Template/srun.sh ${here}/${polyname}/srun.sh
+               #---------------------------------------------------------------------------#
+
+
+               #----- The new queue is by default the long_serial. ------------------------#
+               newqueue='long_serial'
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Change some settings in srun.sh. ------------------------------------#
+               sed -i s@"jobname='thisjob'"@"jobname='${thisname}'"@g ${srun}
+               sed -i s@pathhere@${here}@g      ${srun}
+               sed -i s@paththere@${here}@g     ${srun}
+               sed -i s@thispoly@${polyname}@g  ${srun}
+               sed -i s@thisdesc@${desc}@g      ${srun}
+               sed -i s@thisqueue@${newqueue}@g ${srun}
+               sed -i s@zzzzzzzz@${wtime}@g     ${srun}
+               sed -i s@myorder@${ff}@g         ${srun}
+               #---------------------------------------------------------------------------#
+
+            else
+               #----- Give up on this node. -----------------------------------------------#
+               echo "${ff}  :-{ Tolerance is tiny and it still doesn't work.  Giving up..."
+               runt='THE_END'
+               #---------------------------------------------------------------------------#
+            fi # [ ${toler} != '0.0000010' -a ${toler} != '0.0000001' -a ${toler} != '00' ]
+            #------------------------------------------------------------------------------#
+
+         elif [ ${runt} == 'THE_END' ]
+         then 
+            echo "${ff} o/\o ${polyname} has finished..."
+
+         elif [ ${runt} == 'EXTINCT' -o ${runt} == 'STSTATE' ] && 
+              [ ${queue} != 'unrestricted_parallel' ]
+         then
+            running=`bjobs -w -J ${jobname} 2> /dev/null | grep RUN | wc -l`
+            if [ ${running} -gt 0 ]
+            then
+               deathrow="${deathrow} ${jobname}"
+               if [ ${runt} == 'EXTINCT' ]
+               then
+                  let newextinct=${newextinct}+1
+                  echo "${ff}  B-) ${polyname} has become a desert..."
+               elif [ ${runt} == 'STSTATE' ]
+               then
+                  let newststate=${newststate}+1
+                  echo "${ff}  :-D ${polyname} has reached steady state..."
+               fi
+            fi
+         elif [ ${runt} == 'HISTORY' ]
+         then
+            #----- Check whether the simulation is running, and when in model time it is. -#
+            stdout="${here}/${polyname}/serial_out.out"
+            simline=`grep "Simulating: "   ${stdout} | tail -1`
+            runtime=`echo ${simline} | awk '{print $3}'`
+            simline=`grep "Simulating: "   ${stdout} | tail -1`
+            runtime=`echo ${simline} | awk '{print $3}'`
+            echo "${ff}  :-) ${polyname} is running (${runtime})..."
+            #------------------------------------------------------------------------------#
+         elif [ ${runt} == 'INITIAL' ]
+         then
+            echo "${ff}  :-| ${polyname} is pending ..."
+         else
+            echo "${ff} <:-| ${polyname} status is unknown..."
+         fi # [ ${runt} == 'CRASHED' ]...
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    Last, we check whether the job is still running or not.  In case it is not   #
+         # but it should, update the ED2IN with the latest history and re-submit the job.  #
+         #---------------------------------------------------------------------------------#
+         if [ ${runt} != 'THE_END' ] && [ ${runt} != 'STSTATE' ] && 
+            [ ${runt} != 'EXTINCT' ]
+         then
+            if [ ${queue} == 'unrestricted_parallel' ]
+            then
+               nlist=`grep ${polyname} ${here}/*/callunpa.sh | wc -l`
+               if [ ${nlist} -eq 0 ]
+               then
+                  running=0
+               else
+                  j=0
+                  running=0
+                  while [ ${j} -lt ${nlist} ] && [ ${running} -eq 0 ]
+                  do
+                     let j=${j}+1
+                     thisline=`grep ${polyname} ${here}/*/callunpa.sh | head -${j} \
+                                                                      | tail -1`
+                     parent=`echo ${thisline} | awk '{print substr($1,1,8)}'`
+                     parjob="${desc}-${parent}"
+                     running=`bjobs -w -q ${queue} -J ${parjob} 2> /dev/null | tail -1 \
+                                                                             | wc -l`
+                  done
+               fi
+            else
+               running=`bjobs -w -J ${jobname} 2> /dev/null | tail -1 | wc -l`
+            fi
+
+            if [ ${running} -eq 0 ]
+            then
+               echo "${polyname} is missing.  Re-submitting..." >> ${situation}
+
+               let nresubmit=${nresubmit}+1
+
+               #---------------------------------------------------------------------------#
+               #     Job was kicked out, submit it again.                                  #
+               #---------------------------------------------------------------------------#
+               ED2IN=${here}'/'${polyname}'/ED2IN'
+               #----- Save the tolerance before we delete the file. -----------------------#
+               toler=`grep NL%RK4_TOLERANCE ${ED2IN} | awk '{print $3}'`
+               #---------------------------------------------------------------------------#
+               #   This should never happen, but...                                        #
+               #---------------------------------------------------------------------------#
+               if [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
+               then
+                  toler=0.01
+               else
+                  toler=${oldtol}
+               fi # [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
+               #---------------------------------------------------------------------------#
+
+
+               #----- Re-generate ED2IN. --------------------------------------------------#
+               rm -f ${ED2IN} 
+               rm -f ${here}/${polyname}/serial_out.out
+               rm -f ${here}/${polyname}/serial_lsf.out
+               rm -f ${here}/${polyname}/serial_out.err
+
+               #----- Copy the Template to the right directory. ---------------------------#
+               cp ${here}/Template/ED2IN ${ED2IN}
+
+               #---------------------------------------------------------------------------#
+               #     Determine which PFTs to use.                                          #
+               #---------------------------------------------------------------------------#
+               lonint=${polylon/.*}
+               latint=${polylat/.*}
+               pfts='1,2,3,4,16'
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Check whether to use SFILIN as restart or history. ------------------#
+               if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
+               then
+                  thissfilin=${thisbiomin}
+               else
+                  thissfilin=${there}/${polyname}/histo/${polyname}
+               fi
+               #---------------------------------------------------------------------------#
+
+               #----- Update the polygon information on ED2IN. ----------------------------#
+               sed -i s@paththere@${there}@g                ${ED2IN}
+               sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
+               sed -i s@mymontha@${montha}@g                ${ED2IN}
+               sed -i s@mydatea@${datea}@g                  ${ED2IN}
+               sed -i s@mytimea@${timea}@g                  ${ED2IN}
+               sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
+               sed -i s@mymonthz@${monthz}@g                ${ED2IN}
+               sed -i s@mydatez@${datez}@g                  ${ED2IN}
+               sed -i s@mytimez@${timez}@g                  ${ED2IN}
+               sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
+               sed -i s@thispoly@${polyname}@g              ${ED2IN}
+               sed -i s@plonflag@${polylon}@g               ${ED2IN}
+               sed -i s@platflag@${polylat}@g               ${ED2IN}
+               sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
+               sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
+               sed -i s@monthhhh@${monthh}@g                ${ED2IN}
+               sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
+               sed -i s@myinitmode@${initmode}@g            ${ED2IN}
+               sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
+               sed -i s@mytrees@${pfts}@g                   ${ED2IN}
+               sed -i s@mycrop@${crop}@g                    ${ED2IN}
+               sed -i s@myplantation@${plantation}@g        ${ED2IN}
+               sed -i s@myiphen@${iphen}@g                  ${ED2IN}
+               sed -i s@myallom@${iallom}@g                 ${ED2IN}
+               sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
+               sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
+               sed -i s@myslxsand@${polysand}@g             ${ED2IN}
+               sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
+               sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
+               sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
+               sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
+               sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
+               sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
+               sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
+               sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
+               sed -i s@mytoler@${toler}@g                  ${ED2IN}
+               sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
+               sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
+               sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
+               sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
+               sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
+               sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
+               sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
+               sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
+               sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
+               sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
+               sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
+               sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
+               sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
+               sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
+               sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
+               sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
+               sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
+               sed -i s@mydecomp@${decomp}@g                ${ED2IN}
+               sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
+               sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
+               sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
+               sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
+               sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
+               sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
+               sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
+               sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
+               sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
+               sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
+               sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
+               sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
+               sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
+               sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
+               sed -i s@mysmfire@${smfire}@g                ${ED2IN}
+               sed -i s@myfire@${ifire}@g                   ${ED2IN}
+               sed -i s@myfuel@${fireparm}@g                ${ED2IN}
+               sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
+               sed -i s@mypercol@${ipercol}@g               ${ED2IN}
+               sed -i s@myrunoff@${runoff}@g                ${ED2IN}
+               sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
+               sed -i s@mybranch@${ibranch}@g               ${ED2IN}
+               sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
+               sed -i s@mycrown@${crown}@g                  ${ED2IN}
+               sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
+               sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
+               sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
+               sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
+               sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
+               sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
+               sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
+               sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+               sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
+               sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
+               sed -i s@myrepro@${irepro}@g                 ${ED2IN}
+               sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
+               sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
+               sed -i s@myustmin@${ustmin}@g                ${ED2IN}
+               sed -i s@mygamm@${gamm}@g                    ${ED2IN}
+               sed -i s@mygamh@${gamh}@g                    ${ED2IN}
+               sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
+               sed -i s@myribmax@${ribmax}@g                ${ED2IN}
+               sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
+               sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
+               sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
+               sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
+               sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
+               sed -i s@mytreefall@${treefall}@g            ${ED2IN}
+               #------ Soil variables. ----------------------------------------------------#
+               sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
+               sed -i s@myslz2@"${polyslz2}"@g           ${ED2IN}
+               sed -i s@myslz3@"${polyslz3}"@g           ${ED2IN}
+               sed -i s@myslz4@"${polyslz4}"@g           ${ED2IN}
+               sed -i s@myslz5@"${polyslz5}"@g           ${ED2IN}
+               sed -i s@myslz6@"${polyslz6}"@g           ${ED2IN}
+               sed -i s@myslz7@"${polyslz7}"@g           ${ED2IN}
+               sed -i s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
+               sed -i s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
+               sed -i s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
+               sed -i s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
+               sed -i s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
+               sed -i s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
+               sed -i s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
+               sed -i s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
+               sed -i s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
+               sed -i s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
+               sed -i s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
+               sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
+               sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
+               sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
+               #----- Change run type. ----------------------------------------------------#
+               if [ ${runt} == 'INITIAL' ]
+               then
+                  sed -i s@RUNFLAG@${runt}@g      ${ED2IN}
+              else
+                  sed -i s@RUNFLAG@HISTORY@g      ${ED2IN}
+               fi
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      A halted polygon will inevitably go to the long_serial queue.        #
+               # Re-write the srun.sh file.                                                #
+               #---------------------------------------------------------------------------#
+               srun=${here}'/'${polyname}'/srun.sh'
+
+               #----- Get the waiting time used before. -----------------------------------#
+               thiswait=`grep 'Sleep time is' ${polyname}/srun.sh | awk '{print $5}'`
+               if [ 'x'${thiswait} == 'x' ]
+               then
+                  let wtime=${ff}%8
+                  let wtime=${wtime}*20
+                  nudge=`date +%S`
+                  if [ ${nudge} -lt 10 ]
+                  then 
+                     nudge=`echo ${nudge} | awk '{print substr($1,2,1)}'`
+                  fi
+                  let nudge=${nudge}%15
+                  let wtime=${wtime}+${nudge}
+                  let wtime=${wtime}+2
+               fi
+               /bin/rm -f ${srun}
+               /bin/rm -f ${here}/${polyname}/skipper.txt
+
+               cp ${here}/Template/srun.sh ${here}/${polyname}/srun.sh
+
+               #----- The new queue is by default the long_serial. ------------------------#
+               newqueue='long_serial'
+
+               #----- Change some settings in srun.sh. ------------------------------------#
+               sed -i s@pathhere@${here}@g      ${srun}
+               sed -i s@paththere@${here}@g     ${srun}
+               sed -i s@thispoly@${polyname}@g  ${srun}
+               sed -i s@thisqueue@${newqueue}@g ${srun}
+               sed -i s@thisdesc@${desc}@g      ${srun}
+               sed -i s@zzzzzzzz@${wtime}@g     ${srun}
+               sed -i s@myorder@${ff}@g         ${srun}
+
+               #----- Re-submit the job to long_serial queue. -----------------------------#
+               ${here}'/'${polyname}'/srun.sh'
+
+               #----- Switch the status to pending. ---------------------------------------#
+               year=${yeara}
+               month=${montha}
+               day=${datea}
+               hhmm=${timea}
+               runt='INITIAL'
+               agb='NA'
+               bsa='NA'
+               lai='NA'
+            else
+               echo "${polyname} is running/pending..." >> ${situation}
+            fi # [ ${running} -eq 0 ]
+         else
+            echo "${polyname} status is ${runt}.  No need to resubmit." >> ${situation}
+         fi # [ ${runt} == 'HISTORY' -a ${queue} == 'long_serial' ]
+         #---------------------------------------------------------------------------------#
+      fi
+      #------------------------------------------------------------------------------------#
 
 
 
       #------------------------------------------------------------------------------------#
       #     Test whether the job can be submitted.                                         #
       #------------------------------------------------------------------------------------#
-      if [ ${runt} == 'INITIAL' ]
+      if [ ${runt} == 'INITIAL' ] && [ -s ${here}/${polyname} ]
       then
          if [ ${queue} == 'unrestricted_parallel' ]
          then
@@ -1757,39 +1786,13 @@ then
          fi
          #---------------------------------------------------------------------------------#
       fi
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Add the speed test for the polygons that ran at least two cycles. ------------#
-      let dyear=${year}-${yeara}+1
-      if [ ${dyear} -gt 2 ]
-      then
-         premier=${here}/${polyname}/histo/${polyname}-S-${yeara}-01-01-000000-g01.h5
-         dernier=${here}/${polyname}/histo/${polyname}-S-${year}-01-01-000000-g01.h5
-
-         #----- Find time it took so far. -------------------------------------------------#
-         whenh1st=`stat -c %Z ${premier} | awk '{print $1}'`
-         whenhlast=`stat -c %Z ${dernier} | awk '{print $1}'`
-         let dwhen=${whenhlast}-${whenh1st}
-         dwhen=`${ccc} ${dwhen}/86400.`
-
-         #----- Find the number of years. -------------------------------------------------#
-         let yearfull=${yearz}-${yeara}
-         let yearsofar=${year}-${yeara}
-
-         #----- Estimate the number of years until the last year. -------------------------#
-         whenend=`${ccc} ${dwhen}*${yearfull}/${yearsofar}`
-      else
-         whenend='NA'
-      fi
       #---------------------------------------------------------------------------------------#
 
 
 
       #----- Write polygon check into a single table. -------------------------------------#
       output="${polyname} ${polylon} ${polylat} ${year} ${month} ${day} ${hhmm}"
-      output="${output} ${runt} ${agb} ${bsa} ${lai} ${whenend}"
+      output="${output} ${runt} ${agb} ${bsa} ${lai} NA"
       echo ${output} >> ${outcheck}
       #------------------------------------------------------------------------------------#
 
@@ -1834,13 +1837,20 @@ then
             newline=`echo ${oldline} | sed s@${queue}@${newqueue}@g`
             sed -i s@"${oldline}"@"${newline}"@g ${joborder}
          fi
+      elif [ ! -s ${here}/${polyname} ]
+      then
+         newqueue="long_serial"
+         oldline=${oi}
+         newline=`echo ${oldline} | sed s@${queue}@${newqueue}@g`
+         sed -i s@"${oldline}"@"${newline}"@g ${joborder}
       fi
       
       #------------------------------------------------------------------------------------#
       #    Check whether the steady-state restart file is copied to the destination        #
       # directory.                                                                         #
       #------------------------------------------------------------------------------------#
-      if [ "x${copyrestart}" == "xy" ] || [ "x${copyrestart}" == "xY" ]
+      if [ "x${copyrestart}" == "xy" ] || [ "x${copyrestart}" == "xY" ] &&
+         [ -s ${here}/${polyname} ]
       then
          if [ ${runt} == 'STSTATE' -o ${runt} == 'THE_END' -o ${runt} == 'EXTINCT' ]
          then
@@ -2102,174 +2112,176 @@ echo 'Looking for empty cores on the queues...'
 #     Check the amount of room left for each queue.  Make sure that we don't exceed the    #
 # maximum availability or the maximum use allowed.                                         #
 #------------------------------------------------------------------------------------------#
+/bin/rm -f ${tablefile}
+touch ${tablefile}
 #------ Moorcroft2a. ----------------------------------------------------------------------#
 let m2atot=${m2arun}+${m2apen}
 let m2aroom=${m2afull}-${m2atot}
 let m2apot=${m2aumax}-${m2amoi}
-if [ ${m2apot} -lt 0 ]
+if [ ${m2apot} -lt 0 ] || [ ${m2aroom} -lt 0 ]
 then
    m2aroom=0
 elif [ ${m2apot} -lt ${m2aroom} ]
 then
    m2aroom=${m2apot}
 fi
-echo " -----------------------------------------------------------"
-echo "   Moorcroft2a"
-echo " "
-echo "   TOTAL     = ${m2atot} "
-echo "   RUN       = ${m2arun} "
-echo "   PEND      = ${m2apen} "
-echo "   User max  = ${m2aumax}"
-echo "   My runs   = ${m2amoi} "
-echo "   Room      = ${m2aroom}"
-echo "   Potential = ${m2apot} "
-echo "   User max  = ${m2aumax}"
-echo " -----------------------------------------------------------"
-echo " "
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Moorcroft2a"                                               >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${m2atot} "                                    >> ${tablefile}
+echo "   RUN       = ${m2arun} "                                    >> ${tablefile}
+echo "   PEND      = ${m2apen} "                                    >> ${tablefile}
+echo "   User max  = ${m2aumax}"                                    >> ${tablefile}
+echo "   My runs   = ${m2amoi} "                                    >> ${tablefile}
+echo "   Room      = ${m2aroom}"                                    >> ${tablefile}
+echo "   Potential = ${m2apot} "                                    >> ${tablefile}
+echo "   User max  = ${m2aumax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------ Moorcroft2b. ----------------------------------------------------------------------#
 let m2btot=${m2brun}+${m2bpen}
 let m2broom=${m2bfull}-${m2btot}
 let m2bpot=${m2bumax}-${m2bmoi}
-if [ ${m2bpot} -lt 0 ]
+if [ ${m2bpot} -lt 0 ] || [ ${m2broom} -lt 0 ]
 then
    m2broom=0
 elif [ ${m2bpot} -lt ${m2broom} ]
 then
    m2broom=${m2bpot}
 fi
-echo " -----------------------------------------------------------"
-echo "   Moorcroft2b"
-echo " "
-echo "   TOTAL     = ${m2btot} "
-echo "   RUN       = ${m2brun} "
-echo "   PEND      = ${m2bpen} "
-echo "   User max  = ${m2bumax}"
-echo "   My runs   = ${m2bmoi} "
-echo "   Room      = ${m2broom}"
-echo "   Potential = ${m2bpot} "
-echo "   User max  = ${m2bumax}"
-echo " -----------------------------------------------------------"
-echo " "
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Moorcroft2b"                                               >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${m2btot} "                                    >> ${tablefile}
+echo "   RUN       = ${m2brun} "                                    >> ${tablefile}
+echo "   PEND      = ${m2bpen} "                                    >> ${tablefile}
+echo "   User max  = ${m2bumax}"                                    >> ${tablefile}
+echo "   My runs   = ${m2bmoi} "                                    >> ${tablefile}
+echo "   Room      = ${m2broom}"                                    >> ${tablefile}
+echo "   Potential = ${m2bpot} "                                    >> ${tablefile}
+echo "   User max  = ${m2bumax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------ Moorcroft2c. ----------------------------------------------------------------------#
 let m2ctot=${m2crun}+${m2cpen}
 let m2croom=${m2cfull}-${m2ctot}
 let m2cpot=${m2cumax}-${m2cmoi}
-if [ ${m2cpot} -lt 0 ]
+if [ ${m2cpot} -lt 0 ] || [ ${m2croom} -lt 0 ]
 then
    m2croom=0
 elif [ ${m2cpot} -lt ${m2croom} ]
 then
    m2croom=${m2cpot}
 fi
-echo " -----------------------------------------------------------"
-echo "   Moorcroft2c"
-echo " "
-echo "   TOTAL     = ${m2ctot} "
-echo "   RUN       = ${m2crun} "
-echo "   PEND      = ${m2cpen} "
-echo "   User max  = ${m2cumax}"
-echo "   My runs   = ${m2cmoi} "
-echo "   Room      = ${m2croom}"
-echo "   Potential = ${m2cpot} "
-echo "   User max  = ${m2cumax}"
-echo " -----------------------------------------------------------"
-echo " "
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Moorcroft2c"                                               >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${m2ctot} "                                    >> ${tablefile}
+echo "   RUN       = ${m2crun} "                                    >> ${tablefile}
+echo "   PEND      = ${m2cpen} "                                    >> ${tablefile}
+echo "   User max  = ${m2cumax}"                                    >> ${tablefile}
+echo "   My runs   = ${m2cmoi} "                                    >> ${tablefile}
+echo "   Room      = ${m2croom}"                                    >> ${tablefile}
+echo "   Potential = ${m2cpot} "                                    >> ${tablefile}
+echo "   User max  = ${m2cumax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------ Moorcroft_6100a. ------------------------------------------------------------------#
 let a61tot=${a61run}+${a61pen}
 let a61room=${a61full}-${a61tot}
 let a61pot=${a61umax}-${a61moi}
-if [ ${a61pot} -lt 0 ]
+if [ ${a61pot} -lt 0 ] || [ ${a61room} -lt 0 ]
 then
    a61room=0
 elif [ ${a61pot} -lt ${a61room} ]
 then
    a61room=${a61pot}
 fi
-echo " -----------------------------------------------------------"
-echo "   Moorcroft_6100a"
-echo " "
-echo "   TOTAL     = ${a61tot} "
-echo "   RUN       = ${a61run} "
-echo "   PEND      = ${a61pen} "
-echo "   User max  = ${a61umax}"
-echo "   My runs   = ${a61moi} "
-echo "   Room      = ${a61room}"
-echo "   Potential = ${a61pot} "
-echo "   User max  = ${a61umax}"
-echo " -----------------------------------------------------------"
-echo " "
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Moorcroft_6100a"                                           >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${a61tot} "                                    >> ${tablefile}
+echo "   RUN       = ${a61run} "                                    >> ${tablefile}
+echo "   PEND      = ${a61pen} "                                    >> ${tablefile}
+echo "   User max  = ${a61umax}"                                    >> ${tablefile}
+echo "   My runs   = ${a61moi} "                                    >> ${tablefile}
+echo "   Room      = ${a61room}"                                    >> ${tablefile}
+echo "   Potential = ${a61pot} "                                    >> ${tablefile}
+echo "   User max  = ${a61umax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------ Moorcroft_6100b. ------------------------------------------------------------------#
 let b61tot=${b61run}+${b61pen}
 let b61room=${b61full}-${b61tot}
 let b61pot=${b61umax}-${b61moi}
-if [ ${b61pot} -lt 0 ]
+if [ ${b61pot} -lt 0 ] || [ ${b61room} -lt 0 ]
 then
    b61room=0
 elif [ ${b61pot} -lt ${b61room} ]
 then
    b61room=${b61pot}
 fi
-echo " -----------------------------------------------------------"
-echo "   Moorcroft_6100b"
-echo " "
-echo "   TOTAL     = ${b61tot} "
-echo "   RUN       = ${b61run} "
-echo "   PEND      = ${b61pen} "
-echo "   User max  = ${b61umax}"
-echo "   My runs   = ${b61moi} "
-echo "   Room      = ${b61room}"
-echo "   Potential = ${b61pot} "
-echo "   User max  = ${b61umax}"
-echo " -----------------------------------------------------------"
-echo " "
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Moorcroft_6100b"                                           >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${b61tot} "                                    >> ${tablefile}
+echo "   RUN       = ${b61run} "                                    >> ${tablefile}
+echo "   PEND      = ${b61pen} "                                    >> ${tablefile}
+echo "   User max  = ${b61umax}"                                    >> ${tablefile}
+echo "   My runs   = ${b61moi} "                                    >> ${tablefile}
+echo "   Room      = ${b61room}"                                    >> ${tablefile}
+echo "   Potential = ${b61pot} "                                    >> ${tablefile}
+echo "   User max  = ${b61umax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------ Wofsy. ----------------------------------------------------------------------------#
 let wsytot=${wsyrun}+${wsypen}
 let wsyroom=${wsyfull}-${wsytot}
 let wsypot=${wsyumax}-${wsymoi}
-if [ ${wsypot} -lt 0 ]
+if [ ${wsypot} -lt 0 ] || [ ${wsyroom} -lt 0 ]
 then
    wsyroom=0
 elif [ ${wsypot} -lt ${wsyroom} ]
 then
    wsyroom=${wsypot}
 fi
-echo " -----------------------------------------------------------"
-echo "   Wofsy"
-echo " "
-echo "   TOTAL     = ${wsytot} "
-echo "   RUN       = ${wsyrun} "
-echo "   PEND      = ${wsypen} "
-echo "   User max  = ${wsyumax}"
-echo "   My runs   = ${wsymoi} "
-echo "   Room      = ${wsyroom}"
-echo "   Potential = ${wsypot} "
-echo "   User max  = ${wsyumax}"
-echo " -----------------------------------------------------------"
-echo " "
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Wofsy"                                                     >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${wsytot} "                                    >> ${tablefile}
+echo "   RUN       = ${wsyrun} "                                    >> ${tablefile}
+echo "   PEND      = ${wsypen} "                                    >> ${tablefile}
+echo "   User max  = ${wsyumax}"                                    >> ${tablefile}
+echo "   My runs   = ${wsymoi} "                                    >> ${tablefile}
+echo "   Room      = ${wsyroom}"                                    >> ${tablefile}
+echo "   Potential = ${wsypot} "                                    >> ${tablefile}
+echo "   User max  = ${wsyumax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------ Unrestricted_serial. --------------------------------------------------------------#
 let usetot=${userun}+${usepen}
 let useroom=${usefull}-${usetot}
 let usepot=${useumax}-${usemoi}
-if [ ${usepot} -lt 0 ]
+if [ ${usepot} -lt 0 ] || [ ${useroom} -lt 0 ]
 then
    useroom=0
 elif [ ${usepot} -lt ${useroom} ]
 then
    useroom=${usepot}
 fi
-echo " -----------------------------------------------------------"
-echo "   Unrestricted_serial"
-echo " "
-echo "   TOTAL     = ${usetot} "
-echo "   RUN       = ${userun} "
-echo "   PEND      = ${usepen} "
-echo "   User max  = ${useumax}"
-echo "   My runs   = ${usemoi} "
-echo "   Room      = ${useroom}"
-echo "   Potential = ${usepot} "
-echo "   User max  = ${useumax}"
-echo " -----------------------------------------------------------"
-echo " "
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Unrestricted_serial"                                       >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${usetot} "                                    >> ${tablefile}
+echo "   RUN       = ${userun} "                                    >> ${tablefile}
+echo "   PEND      = ${usepen} "                                    >> ${tablefile}
+echo "   User max  = ${useumax}"                                    >> ${tablefile}
+echo "   My runs   = ${usemoi} "                                    >> ${tablefile}
+echo "   Room      = ${useroom}"                                    >> ${tablefile}
+echo "   Potential = ${usepot} "                                    >> ${tablefile}
+echo "   User max  = ${useumax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------------------------------------------------------------------------------------------#
 
 

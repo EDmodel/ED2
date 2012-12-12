@@ -908,10 +908,7 @@ subroutine copy_fluxes_lsm2atm(ifm)
          !---------------------------------------------------------------------------------!
          !   Include emission and reflected longwave in rlongup.                           !
          !---------------------------------------------------------------------------------!
-         fluxp%rlongup(ix,iy,ilp) = sum( csite%area  * ( csite%rlongup                     &
-                                                       + cpoly%met(isi)%rlong              &
-                                                       * csite%rlong_albedo  ) )           &
-                                  * site_area_i
+         fluxp%rlongup(ix,iy,ilp) = sum( csite%area *  csite%rlongup ) * site_area_i
          !---------------------------------------------------------------------------------!
 
 
@@ -1797,7 +1794,7 @@ subroutine copy_avgvars_to_leaf(ifm)
 
             !----- Heterotrophic respiration.  Make units umol/m2/s. ----------------------!
             leaf_g(ifm)%resphet(ix,iy,ilp) = leaf_g(ifm)%resphet(ix,iy,ilp)                &
-                                           + csite%fmean_rh     (ico)                      &
+                                           + csite%fmean_rh     (ipa)                      &
                                            * patch_wgt / umols_2_kgCyr
             !------------------------------------------------------------------------------!
 

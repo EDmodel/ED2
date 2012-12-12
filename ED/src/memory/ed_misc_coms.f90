@@ -47,6 +47,10 @@ Module ed_misc_coms
    integer :: isoutput
    integer :: iclobber
 
+   integer :: iadd_site_means
+   integer :: iadd_patch_means
+   integer :: iadd_cohort_means
+
    integer :: unitfast
    integer :: unitstate
    real ::  frqstate

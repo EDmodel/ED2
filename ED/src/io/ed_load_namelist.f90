@@ -183,6 +183,9 @@ subroutine copy_nl(copy_type)
                                    , frqstate                  & ! intent(out)
                                    , sfilout                   & ! intent(out)
                                    , isoutput                  & ! intent(out)
+                                   , iadd_site_means           & ! intent(out)
+                                   , iadd_patch_means          & ! intent(out)
+                                   , iadd_cohort_means         & ! intent(out)
                                    , iprintpolys               & ! intent(out)
                                    , printvars                 & ! intent(out)
                                    , npvars                    & ! intent(out)
@@ -297,6 +300,10 @@ subroutine copy_nl(copy_type)
       iyoutput                  = nl%iyoutput
       itoutput                  = nl%itoutput
       isoutput                  = nl%isoutput
+
+      iadd_site_means           = nl%iadd_site_means
+      iadd_patch_means          = nl%iadd_patch_means
+      iadd_cohort_means         = nl%iadd_cohort_means
 
       attach_metadata           = nl%attach_metadata
 

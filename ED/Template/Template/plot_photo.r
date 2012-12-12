@@ -33,7 +33,6 @@ plotgrid       = TRUE           # Should I plot the grid in the background?
 
 legwhere       = "topleft"      # Where should I place the legend?
 inset          = 0.05           # inset distance between legend and edge of plot region.
-legbg          = "white"        # Legend background colour.
 
 scalleg        = 0.32           # Increase in y scale to fit the legend.
 ncolshov       = 200            # Target number of colours for Hovmoller diagrams.
@@ -41,6 +40,28 @@ hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots
 
 lai.min        = 1.e-5          # Minimum leaf area index
 nplant.min     = 4.e-8          # Minimum nplant.
+ibackground    = mybackground   # Background settings (check load_everything.r)
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
@@ -70,7 +91,7 @@ hovdi02 = list(vnam   = c("parv","util.parv","parv.min","nirv")
               ,plt    = TRUE)
 hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","ground.temp")
               ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
-              ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+              ,colour = c("deepskyblue","grey45","chartreuse","goldenrod","sienna")
               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "temperature"
@@ -80,7 +101,7 @@ hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","ground.
               ,plt    = TRUE)
 hovdi04 = list(vnam   = c("atm.shv","can.shv","ground.shv","lsfc.shv.clos","lint.shv")
               ,desc   = c("Atmosphere","Canopy air","Ground","Leaf Surface","Intercellular")
-              ,colour = c("deepskyblue","gray21","sienna","chartreuse","forestgreen")
+              ,colour = c("deepskyblue","grey45","sienna","chartreuse","forestgreen")
               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "h2oclosed"
@@ -90,7 +111,7 @@ hovdi04 = list(vnam   = c("atm.shv","can.shv","ground.shv","lsfc.shv.clos","lint
               ,plt    = TRUE)
 hovdi05 = list(vnam   = c("atm.shv","can.shv","ground.shv","lsfc.shv.open","lint.shv")
               ,desc   = c("Atmosphere","Canopy air","Ground","Leaf Surface","Intercellular")
-              ,colour = c("deepskyblue","gray21","sienna","chartreuse","forestgreen")
+              ,colour = c("deepskyblue","grey45","sienna","chartreuse","forestgreen")
               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "h2oopen"
@@ -101,7 +122,7 @@ hovdi05 = list(vnam   = c("atm.shv","can.shv","ground.shv","lsfc.shv.open","lint
 hovdi06 = list(vnam   = c("atm.co2","can.co2","lsfc.co2.clos","lint.co2.clos","compp")
               ,desc   = c("Atmosphere","Canopy air","Leaf surface","Intercellular"
                          ,"GPP comp. point")
-              ,colour = c("deepskyblue","gray21","chartreuse","forestgreen","yellowgreen")
+              ,colour = c("deepskyblue","grey45","chartreuse","forestgreen","yellowgreen")
               ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "co2closed"
@@ -112,7 +133,7 @@ hovdi06 = list(vnam   = c("atm.co2","can.co2","lsfc.co2.clos","lint.co2.clos","c
 hovdi07 = list(vnam   = c("atm.co2","can.co2","lsfc.co2.open","lint.co2.open","compp")
               ,desc   = c("Atmosphere","Canopy air","Leaf surface","Intercellular"
                          ,"GPP comp. point")
-              ,colour = c("deepskyblue","gray21","chartreuse","forestgreen","yellowgreen")
+              ,colour = c("deepskyblue","grey45","chartreuse","forestgreen","yellowgreen")
               ,lwd    = c(2.0,2.0,2.0,2.0)
               ,type   = ptype
               ,prefix = "co2open"
@@ -234,58 +255,34 @@ hovdi18 = list(vnam   = c("par.area","nir.area")
               ,plt    = TRUE)
 
 
-#----- Loading some packages. -------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-#------------------------------------------------------------------------------------------#
 
 
 
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Setting how many formats we must output. -------------------------------------------#
-outform = tolower(outform)
-nout    = length(outform)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Avoiding unecessary and extremely annoying beeps. ----------------------------------#
-options(locatorBell=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
 jallom         = c(0,0,1,1,2)
 iallom         = jallom[iallom]
 
 
-#----- Load some files with global constants. ---------------------------------------------#
-source(paste(srcdir,"allometry.r",sep="/"))
-source(paste(srcdir,"rconstants.r",sep="/"))
-#----- Load some files with useful functions. ---------------------------------------------#
-source(paste(srcdir,"arrhenius.r",sep="/"))
-source(paste(srcdir,"atlas.r",sep="/"))
-source(paste(srcdir,"collatz.r",sep="/"))
-source(paste(srcdir,"globdims.r",sep="/"))
-source(paste(srcdir,"locations.r",sep="/"))
-source(paste(srcdir,"muitas.r",sep="/"))
-source(paste(srcdir,"pft.coms.r",sep="/"))
-source(paste(srcdir,"pretty.log.r",sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"plotsize.r",sep="/"))
-source(paste(srcdir,"qapply.r",sep="/"))
-source(paste(srcdir,"sombreado.r",sep="/"))
-source(paste(srcdir,"southammap.r",sep="/"))
-source(paste(srcdir,"timeutils.r",sep="/"))
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
+
+#----- Setting how many formats we must output. -------------------------------------------#
+outform = tolower(outform)
+nout    = length(outform)
 #------------------------------------------------------------------------------------------#
 
 
@@ -604,12 +601,13 @@ for (place in myplaces){
                                     " \n"," PFT: ",pftnames[ipft], " - Height: ",height,"m",
                                     sep="")
 
+                     par(par.user)
                      plot(x=when,y=ccohort[[vnames[1]]],type="n",main=letitre,xlab="Time"
                          ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),xaxt="n"
                          ,cex.main=cex.main)
                      axis(side=1,at=whenout$levels,labels=whenout$labels,padj=whenout$padj)
                      if (hovgrid){
-                         abline(h=axTicks(side=2),v=whenout$levels,col="gray66"
+                         abline(h=axTicks(side=2),v=whenout$levels,col=grid.colour
                                ,lty="dotted")
                      }#end if
                      for (l in 1:nlayers){

@@ -48,7 +48,7 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "pdf" - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 14                     # Font size.
+ptsz           = 18                     # Font size.
 lwidth         = 2.5                    # Line width
 plotgrid       = TRUE                   # Should I plot the grid in the background? 
 fcgrid         = TRUE                   # Include a grid on the filled contour plots?
@@ -56,7 +56,6 @@ ncolshov       = 200                    # Target number of colours for Hovmoller
 hovgrid        = TRUE                   # Include a grid on the Hovmoller plots?
 legwhere       = "topleft"              # Where should I place the legend?
 inset          = 0.01                   # Inset between legend and edge of plot region.
-legbg          = "white"                # Legend background colour.
 scalleg        = 0.40                   # Expand y limits by this relative amount to fit
                                         #    the legend
 cex.main       = 0.8                    # Scale coefficient for the title
@@ -68,6 +67,7 @@ drought.mark   = mydroughtmark          # Put a background to highlight droughts
 drought.yeara  = mydroughtyeara         # First year that has drought
 drought.yearz  = mydroughtyearz         # Last year that has drought
 months.drought = mymonthsdrought        # Months with drought
+ibackground    = mybackground           # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
@@ -584,6 +584,7 @@ for (place in myplaces){
             letitre = paste(description,lieu,sep=" - ")
             cols    = pft$colour[selpft]
             legs    = pft$name  [selpft]
+            par(par.user)
             plot(x=datum$toyear,y=thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
 
@@ -591,12 +592,12 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (n in 1:(npft+1)){
                if (selpft[n]){
@@ -605,7 +606,7 @@ for (place in myplaces){
             }#end for
             legend( x      = legwhere
                   , inset  = inset
-                  , bg     = legbg
+                  , bg     = background
                   , legend = legs
                   , col    = cols
                   , lwd    = lwidth
@@ -710,24 +711,25 @@ for (place in myplaces){
                }#end if
 
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               par(par.user)
                plot(x=datum$toyear,y=thisvar[,1,p],type="n",main=letitre,ylim=ylimit
                    ,xlab="Time",ylab=unit,cex.main=0.7,log=xylog)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                          ,xright = drought[[n]][2],ytop    = ydrought[2]
-                         ,col    = "grey84",border=NA)
+                         ,col    = grid.colour,border=NA)
                   }#end for
                }#end if
                if (plotgrid){ 
-                  abline(v=axTicks(side=1),h=axTicks(side=2),col="grey52",lty="solid")
+                  abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                for (d in seq(from=1,to=ndbh+1,by=1)){
                   lines(datum$toyear,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
                }#end for
                legend( x      = legwhere
                      , inset  = inset
-                     , bg     = legbg
+                     , bg     = background
                      , legend = dbhnames
                      , col    = dbhcols
                      , ncol   = min(pretty.box(ndbh+1)$ncol,3)
@@ -854,12 +856,13 @@ for (place in myplaces){
 
                #----- Load variable -------------------------------------------------------#
                letitre = paste(description," - ",lieu,"\n","Monthly mean - ",cyear,sep="")
+               par(par.user)
                plot(x=montmont,y=var.year,type="n",main=letitre,xlab="Time"
                    ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
                    ,cex.main=cex.main)
                axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
                if (plotgrid){ 
-                  abline(v=mplot$levels,h=axTicks(side=2),col="grey52",lty="solid")
+                  abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                if (plotsd){
                   polygon(x=mod.x.poly,y=mod.y.poly,col=errcolours[2],angle=angle[2]
@@ -878,7 +881,7 @@ for (place in myplaces){
                         , density = dens
                         , lwd     = llwd
                         , col     = lcolours
-                        , bg      = "white"
+                        , bg      = background
                         , title   = expression(bold("Shaded areas = 1 SD"))
                         , cex     = 1.0
                         , pch     = 16
@@ -980,6 +983,7 @@ for (place in myplaces){
             letitre = paste(description,lieu,sep=" - ")
             cols    = lucols[sellu]
             legs    = lunames[sellu]
+            par(par.user)
             plot(datum$toyear,thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Year",ylab=unit,cex.main=0.7)
 
@@ -987,11 +991,11 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (n in 1:(nlu+1)){
                if (sellu[n]){
@@ -1000,7 +1004,7 @@ for (place in myplaces){
             }#end for
             legend( x      = legwhere
                   , inset  = inset
-                  , bg     = legbg
+                  , bg     = background
                   , legend = legs
                   , col    = cols
                   , lwd    = lwidth
@@ -1063,17 +1067,18 @@ for (place in myplaces){
          letitre = paste("Disturbance rates",lieu,sep=" - ")
          cols    = NULL
          legs    = NULL
+         par(par.user)
          plot(datum$toyear,datum$dist[,1,1],type="n",main=letitre,ylim=ylimit
              ,xlab="Year",ylab="[1/yr]",cex.main=0.7)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
          n = 0
          for (jlu in 1:nlu){
@@ -1089,7 +1094,7 @@ for (place in myplaces){
          }#end for
          legend(x      = legwhere
                ,inset  = inset
-               ,bg     = legbg
+               ,bg     = background
                ,legend = legs
                ,col    = cols
                ,lwd    = lwidth
@@ -1196,17 +1201,18 @@ for (place in myplaces){
 
             letitre = paste(" Time series: ",group,"\n",lieu,sep="")
 
+            par(par.user)
             plot(x=datum$toyear,y=thisvar,type="n",main=letitre,xlab="Year"
                 ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,cex.main=cex.main)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (l in 1:nlayers){
                thisvar = ymean[[vnames[l]]]
@@ -1320,12 +1326,13 @@ for (place in myplaces){
 
                letitre = paste(group," - Mean diurnal cycle - ",cyear,"\n",lieu,sep="")
 
+               par(par.user)
                plot(x=thisday,y=thisvar[yy,],type="n",main=letitre,xlab="Time"
                    ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,xaxt="n"
                    ,cex.main=cex.main)
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                if (plotgrid){ 
-                  abline(v=uplot$levels,h=axTicks(side=2),col="grey52",lty="solid")
+                  abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                for (l in 1:nlayers){
                   thisvar = umean[[vnames[l]]]
@@ -1444,6 +1451,7 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description,"\n",lieu,sep="")
+            par(par.user)
             sombreado(x=yearaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,color.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
@@ -1453,7 +1461,7 @@ for (place in myplaces){
                      ,plot.axes={axis(side=1)
                                  axis(side=2,at=zat,labels=znice)
                                  if (hovgrid){
-                                    abline(h=zat,v=axTicks(1),col="grey52",lty="dotted")
+                                    abline(h=zat,v=axTicks(1),col=grid.colour,lty="dotted")
                                  }#end if hovgrid
                                 }#end plot.axes
                      )
@@ -1583,13 +1591,14 @@ for (place in myplaces){
 
 
                #----- Plot all monthly means together. ------------------------------------#
+               par(par.user)
                barplot(height=t(thisvnam[y,,]),names.arg=dbhnames[1:ndbh],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border="grey23",xpd=FALSE,cex.main=cex.main)
+                      ,border=grid.colour,xpd=FALSE,cex.main=cex.main)
                if (plotgrid & (! stacked)){
                   xgrid=0.5+(1:ndbh)*(1+npftuse)
-                  abline(v=xgrid,col="grey46",lty="solid")
+                  abline(v=xgrid,col=grid.colour,lty="solid")
                }#end if
                box()
                legend( x      = "topleft"
@@ -1599,7 +1608,7 @@ for (place in myplaces){
                      , ncol   = min(3,pretty.box(n.selpft)$ncol)
                      , title  = expression(bold("Plant functional type"))
                      , cex    = 1.0
-                     , bg     = "white"
+                     , bg     = background
                      )#end legend
                #---------------------------------------------------------------------------#
 

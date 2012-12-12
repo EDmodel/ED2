@@ -29,11 +29,11 @@ plotgrid       = TRUE           # Should I plot the grid in the background?
 
 legwhere       = "topleft"      # Where should I place the legend?
 inset          = 0.05           # inset distance between legend and edge of plot region.
-legbg          = "white"        # Legend background colour.
 
 scalleg        = 0.32           # Increase in y scale to fit the legend.
 ncolshov       = 200            # Target number of colours for Hovmoller diagrams.
 hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots?
+ibackground    = mybackground   # Background settings (check load_everything.r)
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
@@ -91,7 +91,7 @@ phovdi04 = list(vnam   = c("hflxgc","hflxca","hflxlc","hflxwc")
                ,plt    = TRUE)
 phovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.temp")
                ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
-               ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+               ,colour = c("deepskyblue","grey45","chartreuse","goldenrod","sienna")
                ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
@@ -102,7 +102,7 @@ phovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.te
                ,plt    = TRUE)
 phovdi06 = list(vnam   = c("atm.shv","can.shv","sfc.shv")
                ,desc   = c("Atmosphere","Canopy air","Surface")
-               ,colour = c("deepskyblue","gray21","sienna")
+               ,colour = c("deepskyblue","grey45","sienna")
                ,lwd    = c(2.0,2.0,2.0)
                ,type   = ptype
                ,plog   = ""
@@ -389,7 +389,7 @@ chovdi01 = list(vnam   = c("gpp","leaf.resp","root.resp","growth.resp","storage.
                ,plt    = TRUE)
 chovdi02 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.temp")
                ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Surface")
-               ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+               ,colour = c("deepskyblue","grey45","chartreuse","goldenrod","sienna")
                ,cohlev = c(FALSE,FALSE,TRUE,TRUE,FALSE)
                ,lwd    = c(2.0,2.0,2.0,2.0,2.0)
                ,type   = ptype
@@ -400,7 +400,7 @@ chovdi02 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","sfc.te
                ,plt    = TRUE)
 chovdi03 = list(vnam   = c("atm.shv","can.shv","sfc.shv","lint.shv")
                ,desc   = c("Atmosphere","Canopy air","Ground","Intercellular")
-               ,colour = c("deepskyblue","gray21","sienna","chartreuse","forestgreen")
+               ,colour = c("deepskyblue","grey45","sienna","chartreuse","forestgreen")
                ,cohlev = c(FALSE,FALSE,FALSE,TRUE)
                ,lwd    = c(2.0,2.0,2.0,2.0)
                ,type   = ptype
@@ -531,6 +531,29 @@ chovdi13 = list(vnam   = c("rshort.w","rlong.w","hflxwc","qwflxwc","qwshed","qtr
 
 
 
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
+
+
+
+
 
 
 #----- Define the PFT names. --------------------------------------------------------------#
@@ -542,51 +565,9 @@ pftnames = c("C4 Grass","Early Tropical","Mid Tropical","Late Tropical","Temp. C
 
 
 
-#----- Loading some packages. -------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
-#------------------------------------------------------------------------------------------#
-
-
-
 #----- Setting how many formats we must output. -------------------------------------------#
 outform = tolower(outform)
 nout = length(outform)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Avoiding unecessary and extremely annoying beeps. ----------------------------------#
-options(locatorBell=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r"      ,sep="/"))
-source(paste(srcdir,"globdims.r"   ,sep="/"))
-source(paste(srcdir,"locations.r"  ,sep="/"))
-source(paste(srcdir,"muitas.r"     ,sep="/"))
-source(paste(srcdir,"pretty.log.r" ,sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"plotsize.r"   ,sep="/"))
-source(paste(srcdir,"qapply.r"     ,sep="/"))
-source(paste(srcdir,"rconstants.r" ,sep="/"))
-source(paste(srcdir,"sombreado.r"  ,sep="/"))
-source(paste(srcdir,"southammap.r" ,sep="/"))
-source(paste(srcdir,"thermlib.r"   ,sep="/"))
-source(paste(srcdir,"timeutils.r"  ,sep="/"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -885,17 +866,19 @@ for (place in myplaces){
                letitre = paste(theme," - ",thispoi$lieu,"(Patch ",ipa,")",
                                " \n"," Time series: ",theme,sep="")
 
+               par(par.user)
                plot(x=when,y=cpatch[[vnames[1]]],type="n",main=letitre,xlab="Time",
                     ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n")
                axis(side=1,at=whenout$levels,labels=whenout$labels,padj=whenout$padj)
                if (hovgrid){
-                   abline(h=axTicks(side=2),v=whenout$levels,col="gray66",lty="dotted")
+                   abline(h=axTicks(side=2),v=whenout$levels,col=grid.colour,lty="dotted")
                }#end if
                for (l in 1:nlayers){
                   points(x=when,y=cpatch[[vnames[l]]],col=lcolours[l]
                         ,lwd=llwd[l],type=ltype,pch=16,cex=0.8)
                }#end for
-               legend(x=legpos,inset=0.05,legend=description,col=lcolours,lwd=llwd)
+               legend(x=legpos,bg=background,inset=0.05,legend=description
+                     ,col=lcolours,lwd=llwd)
                if (outform[o] == "x11"){
                   locator(n=1)
                   dev.off()
@@ -1127,11 +1110,12 @@ for (place in myplaces){
                         thisvar = cpatch[[vnames[1]]]
                      }#end if
 
+                     par(par.user)
                      plot(x=when,y=thisvar,type="n",main=letitre,xlab="Time",
                           ylim=ylimit,ylab=paste("[",unit,"]",sep=""),xaxt="n",cex.main=0.8)
                      axis(side=1,at=whenout$levels,labels=whenout$labels,padj=whenout$padj)
                      if (hovgrid){
-                         abline(h=axTicks(side=2),v=whenout$levels,col="gray66"
+                         abline(h=axTicks(side=2),v=whenout$levels,col=grid.colour
                                ,lty="dotted")
                      }#end if
                      for (l in 1:nlayers){

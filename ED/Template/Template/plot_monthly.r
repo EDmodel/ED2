@@ -60,7 +60,6 @@ ncolsfc        = 80                     # Target number of colours for filled co
 hovgrid        = TRUE                   # Include a grid on the Hovmoller plots?
 legwhere       = "topleft"              # Where should I place the legend?
 inset          = 0.01                   # Inset between legend and edge of plot region.
-legbg          = "white"                # Legend background colour.
 scalleg        = 0.40                   # Expand y limits by this relative amount to fit
                                         #    the legend
 cex.main       = 0.8                    # Scale coefficient for the title
@@ -69,7 +68,6 @@ phi            = 30.                    # Vertical angle for perspective project
 ltheta         = -210.                  # Azimuth angle for light
 shade          = 0.125                  # Shade intensity
 expz           = 0.5                    # Expansion factor for Z axis
-gcol           = c("lightblue","white") # Colours for the fifties style floor
 cexmin         = 0.5                    # Minimum "head" size of the lollipop
 cexmax         = 3.0                    # Maximum "head" size of the lollipop
 ylnudge         = 0.05                  # Nudging factor for ylimit
@@ -80,6 +78,7 @@ drought.mark   = mydroughtmark          # Put a background to highlight droughts
 drought.yeara  = mydroughtyeara         # First year that has drought
 drought.yearz  = mydroughtyearz         # Last year that has drought
 months.drought = mymonthsdrought        # Months with drought
+ibackground    = mybackground           # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
@@ -1006,6 +1005,7 @@ for (place in myplaces){
             letitre = paste(description,lieu,sep=" - ")
             cols    = pft$colour[selpft]
             legs    = pft$name  [selpft]
+            par(par.user)
             plot(x=datum$tomonth,y=thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7,log=xylog)
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
@@ -1014,12 +1014,12 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             
             if (plotgrid){ 
-               abline(v=whenplot8$levels,h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (n in 1:(npft+1)){
                if (selpft[n]){
@@ -1028,7 +1028,7 @@ for (place in myplaces){
             }#end for
             legend( x      = legwhere
                   , inset  = inset
-                  , bg     = legbg
+                  , bg     = background
                   , legend = legs
                   , col    = cols
                   , lwd    = lwidth
@@ -1129,6 +1129,7 @@ for (place in myplaces){
                }#end if
 
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               par(par.user)
                plot(x=datum$tomonth,y=thisvar[,1,p],type="n",main=letitre,ylim=ylimit
                    ,xlab="Time",xaxt="n",ylab=unit,cex.main=0.7,log=xylog)
                axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
@@ -1136,18 +1137,18 @@ for (place in myplaces){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                          ,xright = drought[[n]][2],ytop    = ydrought[2]
-                         ,col    = "grey84",border=NA)
+                         ,col    = grid.colour,border=NA)
                   }#end for
                }#end if
                if (plotgrid){ 
-                  abline(v=whenplot8$levels,h=axTicks(side=2),col="grey52",lty="solid")
+                  abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                for (d in seq(from=1,to=ndbh+1,by=1)){
                   lines(datum$tomonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
                }#end for
                legend( x      = legwhere
                      , inset  = inset
-                     , bg     = legbg
+                     , bg     = background
                      , legend = dbhnames
                      , col    = dbhcols
                      , ncol   = min(pretty.box(ndbh+1)$ncol,3)
@@ -1288,12 +1289,13 @@ for (place in myplaces){
 
             #----- Load variable ----------------------------------------------------------#
             letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            par(par.user)
             plot(x=thiswhen,y=thismean,type="n",main=letitre,xlab="Time"
                 ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
                 ,cex.main=cex.main)
             axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
             if (plotgrid){
-               abline(v=whenplote$levels,h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=whenplote$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             points(x=thiswhen,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
                   ,pch=16,cex=1.0)
@@ -1457,12 +1459,13 @@ for (place in myplaces){
 
             #----- Load variable ----------------------------------------------------------#
             letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            par(par.user)
             plot(x=montmont,y=thismean,type="n",main=letitre,xlab="Time"
                 ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
                 ,cex.main=cex.main)
             axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
             if (plotgrid){ 
-               abline(v=mplot$levels,h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             if (plotsd){
                if (is.null(obs.x)){
@@ -1494,7 +1497,7 @@ for (place in myplaces){
             if (plotsd){
                legend(x=legpos,inset=inset,legend=c("Model","Observation")
                      ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                     ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
+                     ,bg=background,title="Shaded areas = 1 SD",cex=1.0,pch=16)
             }else{
                legend(x=legpos,inset=inset,legend=c("Model","Observation")
                      ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
@@ -1656,12 +1659,13 @@ for (place in myplaces){
                #----- Load variable -------------------------------------------------------#
                letitre = paste(description," - ",lieu,"\n"
                               ,"Mean diurnal cycle - ",namemon,sep="")
+               par(par.user)
                plot(x=thisday,y=thismean[pmon,],type="n",main=letitre,xlab="Time"
                    ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
                    ,cex.main=cex.main)
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                if (plotgrid){ 
-                  abline(v=uplot$levels,h=axTicks(side=2),col="grey52",lty="solid")
+                  abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                if (plotsd){
                   mod.x.now     = thisday
@@ -1708,7 +1712,7 @@ for (place in myplaces){
                if (plotsd){
                   legend(x=legpos,inset=inset,legend=c("Model","Observation")
                         ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                        ,bg="white",title="Shaded areas = 1 SD",cex=1.0,pch=16)
+                        ,bg=background,title="Shaded areas = 1 SD",cex=1.0,pch=16)
                }else{
                   legend(x=legpos,inset=inset,legend=c("Model","Observation")
                         ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
@@ -1796,6 +1800,7 @@ for (place in myplaces){
             letitre = paste(description,lieu,sep=" - ")
             cols    = lucols[sellu]
             legs    = lunames[sellu]
+            par(par.user)
             plot(datum$tomonth,thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Time",ylab=unit,xaxt="n",cex.main=0.7)
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
@@ -1804,11 +1809,11 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=whenplot8$levels,h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (n in 1:(nlu+1)){
                if (sellu[n]){
@@ -1817,7 +1822,7 @@ for (place in myplaces){
             }#end for
             legend( x      = legwhere
                   , inset  = inset
-                  , bg     = legbg
+                  , bg     = background
                   , legend = legs
                   , col    = cols
                   , lwd    = lwidth
@@ -1880,6 +1885,7 @@ for (place in myplaces){
          letitre = paste("Disturbance rates",lieu,sep=" - ")
          cols    = NULL
          legs    = NULL
+         par(par.user)
          plot(datum$tomonth,lu$dist[,1,1],type="n",main=letitre,ylim=ylimit
              ,xlab="Time",ylab="[1/yr]",xaxt="n",cex.main=0.7)
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
@@ -1887,11 +1893,11 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=whenplot8$levels,h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
          n = 0
          for (jlu in 1:nlu){
@@ -1907,7 +1913,7 @@ for (place in myplaces){
          }#end for
          legend(x      = legwhere
                ,inset  = inset
-               ,bg     = legbg
+               ,bg     = background
                ,legend = legs
                ,col    = cols
                ,lwd    = lwidth
@@ -2014,6 +2020,7 @@ for (place in myplaces){
 
             letitre = paste(" Time series: ",group," \n",lieu,sep="")
 
+            par(par.user)
             plot(x=datum$tomonth,y=thisvar,type="n",main=letitre,xlab="Time"
                 ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,xaxt="n"
                 ,cex.main=cex.main)
@@ -2022,11 +2029,11 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=whenplot8$levels,h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (l in 1:nlayers){
                thisvar = emean[[vnames[l]]]
@@ -2136,6 +2143,7 @@ for (place in myplaces){
 
             letitre = paste(" Time series: ",group," \n",lieu,sep="")
 
+            par(par.user)
             plot(x=montmont,y=thisvar,type="n",main=letitre,xlab="Month"
                 ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,xaxt="n"
                 ,cex.main=cex.main)
@@ -2144,11 +2152,11 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "grey84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=mplot$levels,h=axTicks(side=2),col="grey52",lty="solid")
+               abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (l in 1:nlayers){
                thisvar = mmean[[vnames[l]]]
@@ -2257,12 +2265,13 @@ for (place in myplaces){
                letitre = paste(group," - ",lieu,"\n"
                               ,"Mean diurnal cycle - ",namemon,sep="")
 
+               par(par.user)
                plot(x=thisday,y=thisvar[pmon,],type="n",main=letitre,xlab="Time"
                    ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,xaxt="n"
                    ,cex.main=cex.main)
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                if (plotgrid){ 
-                  abline(v=uplot$levels,h=axTicks(side=2),col="grey52",lty="solid")
+                  abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                for (l in 1:nlayers){
                   thisvar = umean[[vnames[l]]]
@@ -2375,6 +2384,7 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
+            par(par.user)
             sombreado(x=monaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
@@ -2384,7 +2394,7 @@ for (place in myplaces){
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=zat,labels=znice)
                                  if (fcgrid){
-                                    abline(h=zat,v=monat,col="grey52",lty="dotted")
+                                    abline(h=zat,v=monat,col=grid.colour,lty="dotted")
                                  }#end if fcgrid
                                 }#end plot.axes
                      )
@@ -2487,6 +2497,7 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
+            par(par.user)
             sombreado(x=whenaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
@@ -2497,7 +2508,7 @@ for (place in myplaces){
                                      ,labels=whenplot6$labels,padj=whenplot6$padj)
                                  axis(side=2,at=zat,labels=znice)
                                  if (fcgrid){
-                                    abline(h=zat,v=whenplot6$levels,col="grey52"
+                                    abline(h=zat,v=whenplot6$levels,col=grid.colour
                                           ,lty="dotted")
                                  }#end if fcgrid
                                 }#end plot.axes
@@ -2612,6 +2623,7 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
+            par(par.user)
             sombreado(x=monaxis,y=yraxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Year",cex.main=0.7)
@@ -2620,10 +2632,10 @@ for (place in myplaces){
                                  axis(side=2,at=yrat)
                                  if (fcgrid){
                                     for (yl in yrat){
-                                       abline(h=yl,col="grey52",lty="dotted")
+                                       abline(h=yl,col=grid.colour,lty="dotted")
                                     } #end for yl
                                     for (ml in monat){
-                                       abline(v=ml,col="grey52",lty="dotted")
+                                       abline(v=ml,col=grid.colour,lty="dotted")
                                     } #end for ml
                                  }#end if fcgrid
                                 }#end plot.axes
@@ -2709,6 +2721,7 @@ for (place in myplaces){
             }#end if
 
             letitre = paste("Mean diurnal cycle \n ",description," - ",lieu,sep="")
+            par(par.user)
             sombreado(x=whenaxis,y=hraxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,ylab="Time of day (GMT)"
@@ -2718,7 +2731,7 @@ for (place in myplaces){
                                  axis(side=2,at=uplot$levels,labels=uplot$labels)
                                  if (fcgrid){
                                     abline(v=huplot$levels,h=uplot$levels
-                                          ,col="grey52",lty="dotted")
+                                          ,col=grid.colour,lty="dotted")
                                  }#end if fcgrid
                                 }#end plot.axes
                      )
@@ -2779,6 +2792,7 @@ for (place in myplaces){
 
             ylimit  = pretty.xylim(u=thisvar,fracexp=0.0,is.log=FALSE)
             letitre = paste(description,lieu,sep=" - ")
+            par(par.user)
             plot(mmonth,thisvar,main=letitre,ylim=ylimit,cex.main=0.7
                 ,xlab="Time",ylab=paste("[",unit,"]",sep=""))
 
@@ -2849,6 +2863,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Plot the PDF distribution.                                               #
             #------------------------------------------------------------------------------#
+            par(par.user)
             sombreado( x              = this$x
                      , y              = this$y
                      , z              = this$z
@@ -2869,7 +2884,7 @@ for (place in myplaces){
                                            if (fcgrid){
                                               abline( v   = whenplot8$levels
                                                     , h   = pretty(this$y)
-                                                    , col = "grey52"
+                                                    , col = grid.colour
                                                     , lty = "dotted"
                                                     )#end abline
                                            }#end if fcgrid
@@ -2958,6 +2973,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Plot the PDF distribution.                                               #
             #------------------------------------------------------------------------------#
+            par(par.user)
             sombreado( x              = this$x
                      , y              = this$y
                      , z              = this$z
@@ -2977,7 +2993,7 @@ for (place in myplaces){
                                            if (fcgrid){
                                               abline( v   = monat
                                                     , h   = pretty(this$y)
-                                                    , col = "grey52"
+                                                    , col = grid.colour
                                                     , lty = "dotted"
                                                     )#end abline
                                            }#end if fcgrid
@@ -3125,13 +3141,14 @@ for (place in myplaces){
 
 
                #----- Plot all monthly means together. ------------------------------------#
+               par(par.user)
                barplot(height=t(thisvnam[m,,]),names.arg=dbhnames[1:ndbh],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border="grey23",xpd=FALSE,cex.main=cex.main)
+                      ,border=grey.fg,xpd=FALSE,cex.main=cex.main)
                if (plotgrid & (! stacked)){
                   xgrid=0.5+(1:ndbh)*(1+npftuse)
-                  abline(v=xgrid,col="grey46",lty="solid")
+                  abline(v=xgrid,col=grid.colour,lty="solid")
                }#end if
                box()
                legend( x      = "topleft"
@@ -3141,7 +3158,7 @@ for (place in myplaces){
                      , ncol   = min(3,pretty.box(n.selpft)$ncol)
                      , title  = expression(bold("Plant functional type"))
                      , cex    = 1.0
-                     , bg     = "white"
+                     , bg     = background
                      )#end legend
                #---------------------------------------------------------------------------#
 
@@ -3303,6 +3320,7 @@ for (place in myplaces){
                   lezlab  = paste(description," [",unit,"]",sep="")
 
                   #----- First plot: the box. ---------------------------------------------#
+                  par(par.user)
                   pout = persp(x=ageaxis,y=dbhaxis,z=flooraxis,xlim=xlimit,ylim=ylimit
                               ,zlim=zlimit,theta=theta,phi=phi,col=gcol,expand=expz
                               ,ticktype="detailed",border=NA,xlab="Gap age [yr]"
@@ -3310,7 +3328,7 @@ for (place in myplaces){
                               ,main=letitre,cex.main=0.7)
                   #----- Second plot, the actual data (aka my lollipop trees). ------------#
                   lines (trans3d(x=ageww,y=dbhww,z=varww,pmat=pout),type="l"
-                        ,col="grey29",lwd=2)
+                        ,col=grey.fg,lwd=2)
                   points(trans3d(x=ageww,y=dbhww,z=varww,pmat=pout),type="p"
                         ,pch=pchww,col=colww,cex=cexww)
                   legend( x      = "bottomright"
@@ -3319,7 +3337,7 @@ for (place in myplaces){
                         , fill   = colleg
                         , ncol   = 1
                         , title  = expression(bold("PFT"))
-                        , bg     = "white"
+                        , bg     = background
                         , cex    = 0.9
                         )#end legend
 

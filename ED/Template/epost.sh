@@ -34,6 +34,11 @@ outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
 idbhtype=2                     # Type of DBH class
                                # 1 -- Every 10 cm until 100cm; > 100cm
                                # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                               # 3 -- 0-10; 10-35; 35-70; > 70 (cm)
+#----- Default background colour. ---------------------------------------------------------#
+background=2                   # 0 -- White
+                               # 1 -- Pitch black
+                               # 2 -- Dark grey
 #------------------------------------------------------------------------------------------#
 
 
@@ -46,6 +51,7 @@ idbhtype=2                     # Type of DBH class
 #   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
 #   - plot_yearly.r  - This creates plots with year time series.                           #
 #   - plot_ycomp.r   - This creates yearly comparisons based on the monthly mean output.   #
+#   - plot_povray.r  - This creates yearly plots of the polygon using POV-Ray.             #
 #   - plot_rk4.r     - This creates plots from the detailed output for Runge-Kutta.        #
 #                      (patch-level only).                                                 #
 #   - plot_photo.r   - This creates plots from the detailed output for Farquhar-Leuning.   #
@@ -341,7 +347,7 @@ do
       #     Set up the time and output variables according to the script.                  #
       #------------------------------------------------------------------------------------#
       case ${script} in
-      read_monthly.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r)
+      read_monthly.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r)
          #---------------------------------------------------------------------------------#
          #     Scripts that are based on monthly means.  The set up is the same, the only  #
          # difference is in the output names.                                              #
@@ -427,6 +433,12 @@ do
             epostsh='pcen_epost.sh'
             epostlsf='pcen_epost.lsf'
             epostjob='eb-pcen-'${polyname}
+            ;;
+         plot_povray.r)
+            epostout='ppov_epost.out'
+            epostsh='ppov_epost.sh'
+            epostlsf='ppov_epost.lsf'
+            epostjob='eb-ppov-'${polyname}
             ;;
          esac
          #---------------------------------------------------------------------------------#
@@ -712,6 +724,7 @@ do
       sed -i s@mybiocyca@${biocyca}@g             ${here}/${polyname}/${script}
       sed -i s@mybiocycz@${biocycz}@g             ${here}/${polyname}/${script}
       sed -i s@myidbhtype@${idbhtype}@g           ${here}/${polyname}/${script}
+      sed -i s@mybackground@${background}@g       ${here}/${polyname}/${script}
       #------------------------------------------------------------------------------------#
 
 

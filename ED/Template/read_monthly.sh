@@ -2,7 +2,7 @@
 . ${HOME}/.bashrc
 here='/xxxxxxxx/xxxxxxxx/xxx_XXX/XXXXXXXXXXX' # ! Main path
 diskthere='/n/moorcroftfs2'           # ! Disk where the output files are
-thisqueue='moorcroft2c'                 # ! Queue where jobs should be submitted
+thisqueue='moorcroft'                 # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot='/xxxxxxxx/xxxxxxxx/xxx_XXX/XXXXXXXXXXX/figures'
@@ -251,264 +251,265 @@ do
    #---------------------------------------------------------------------------------------#
 
 
-   #----- Retrieve some information from ED2IN. -------------------------------------------#
-   iphysiol=`grep -i NL%IPHYSIOL ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   iallom=`grep -i NL%IALLOM ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   metcyca=`grep -i NL%METCYC1 ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   metcycz=`grep -i NL%METCYCF ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   #---------------------------------------------------------------------------------------#
-
-
-   #---- Find the forest inventory cycle. -------------------------------------------------#
-   case ${polyiata} in
-   gyf|s67)
-      biocyca=2004
-      biocycz=2009
-      subcens=1
-      ;;
-   s67)
-      biocyca=2001
-      biocycz=2011
-      subcens=1
-      ;;
-   *)
-      biocyca=${metcyca}
-      biocycz=${metcycz}
-      subcens=0
-      ;;
-   esac
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Switch years in case this is a specific drought run.                              #
-   #---------------------------------------------------------------------------------------#
-   if [ ${droughtmark} == "TRUE" ]
-   then 
-      let yeara=${droughtyeara}-1
-      let yearz=${droughtyearz}+1
-   fi
-   #---------------------------------------------------------------------------------------#
-
-
-   #------ Check which period to use. -----------------------------------------------------#
-   if [ ${useperiod} == 't' ]
+   if [ -s ${here}/${polyname} ]
    then
-      #------ One meteorological cycle.  Check the type of meteorological driver. ---------#
-      if [ ${metdriver} != 'Sheffield' ]
+
+
+
+      #----- Retrieve some information from ED2IN. ----------------------------------------#
+      iphysiol=`grep -i NL%IPHYSIOL ${here}/${polyname}/ED2IN | awk '{print $3}'`
+      iallom=`grep -i NL%IALLOM ${here}/${polyname}/ED2IN | awk '{print $3}'`
+      metcyca=`grep -i NL%METCYC1 ${here}/${polyname}/ED2IN | awk '{print $3}'`
+      metcycz=`grep -i NL%METCYCF ${here}/${polyname}/ED2IN | awk '{print $3}'`
+      #------------------------------------------------------------------------------------#
+
+
+      #---- Find the forest inventory cycle. ----------------------------------------------#
+      case ${polyiata} in
+      gyf|s67)
+         biocyca=2004
+         biocycz=2009
+         subcens=1
+         ;;
+      s67)
+         biocyca=2001
+         biocycz=2011
+         subcens=1
+         ;;
+      *)
+         biocyca=${metcyca}
+         biocycz=${metcycz}
+         subcens=0
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Switch years in case this is a specific drought run.                           #
+      #------------------------------------------------------------------------------------#
+      if [ ${droughtmark} == "TRUE" ]
+      then 
+         let yeara=${droughtyeara}-1
+         let yearz=${droughtyearz}+1
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+      #------ Check which period to use. --------------------------------------------------#
+      if [ ${useperiod} == 't' ]
       then
-         thisyeara=${metcyca}
-         thisyearz=${metcycz}
-         for i in ${shiftiata}
-         do
-            if [ 'x'${i} == 'x'${polyiata} ]
-            then
-               echo '     -> Shifting met cycle'
-               let metcycle=${metcycz}-${metcyca}+1
-               let deltayr=${shiftcycle}*${metcycle}
-               let thisyeara=${metcyca}+${deltayr}
-               let thisyearz=${metcycz}+${deltayr}
-            fi # end [ ${i} == ${iata} ]
-         done #end for i in ${shiftiata}
-      else
-         thisyeara=${metcyca}
-         thisyearz=${metcycz}
-      fi # end [ ${metdriver} != 'Sheffield' ]
-      #------------------------------------------------------------------------------------#
-
-   elif [ ${useperiod} == 'u' ]
-   then
-      #----- The user said which period to use. -------------------------------------------#
-      thisyeara=${yusera}
-      thisyearz=${yuserz}
-      #------------------------------------------------------------------------------------#
-   else
-      #----- Grab all years that the simulation is supposed to run. -----------------------#
-      thisyeara=${yeara}
-      thisyearz=${yearz}
-      #------------------------------------------------------------------------------------#
-   fi # end [ ${useperiod} == 't' ]
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #----- Set up months and days. ---------------------------------------------------------#
-   thismontha=${montha}
-   thismonthz=${monthz}
-   thisdatea=${datea}
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Define the job name, and the names of the output files.                          #
-   #---------------------------------------------------------------------------------------#
-   epostout='rmon_epost.out'
-   epostsh='rmon_epost.sh'
-   epostlsf='rmon_epost.lsf'
-   epostjob='eb-rmon-'${polyname}
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Check the status of the run.                                                      #
-   #---------------------------------------------------------------------------------------#
-   statrun=${here}/${polyname}/statusrun.txt
-   if [ -s ${statrun} ]
-   then
-      runt=`cat ${statrun} | awk '{print $6}'`
-   else
-      runt='INITIAL'
-   fi
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #      We submit only the jobs that haven't finished.  If the job has just finished, we #
-   # submit once again, but save a file to remember that this polygon is loaded.           #
-   #---------------------------------------------------------------------------------------#
-   fullload="${here}/${polyname}/qfiles_loaded.txt"
-   if [ ${runt} == "INITIAL" ]
-   then
-      submitnow="n"
-      echo "${ff} - ${polyname} : polygon hasn't started yet"
-
-   elif [ ${runt} == "THE_END" ] && [ -s ${fullload} ]
-   then
-      #----- Job has ended and all files have been processed. -----------------------------#
-      submitnow="n"
-      #------------------------------------------------------------------------------------#
-
-      echo "${ff} - ${polyname} : polygon is already loaded or queued for the last time"
-
-   elif [ ${runt} == "THE_END" ]
-   then
-      #------------------------------------------------------------------------------------#
-      #      Job has ended but loading is not complete.  Run for one last time.            #
-      #------------------------------------------------------------------------------------#
-      #----- Check that the script is not in the queue. -----------------------------------#
-      inqueue=`bjobs -w -q ${thisqueue} -J ${epostjob} 2> /dev/null | wc -l`
-      if [ ${inqueue} -eq 0 ]
-      then
-         #----- Save the time to the file that will block future submissions. -------------#
-         when=`date +'%d %B %Y - %R %Z'`
-         echo "Last submission on ${when}" > ${fullload}
+         #------ One meteorological cycle.  Check the type of meteorological driver. ------#
+         if [ ${metdriver} != 'Sheffield' ]
+         then
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+            for i in ${shiftiata}
+            do
+               if [ 'x'${i} == 'x'${polyiata} ]
+               then
+                  echo '     -> Shifting met cycle'
+                  let metcycle=${metcycz}-${metcyca}+1
+                  let deltayr=${shiftcycle}*${metcycle}
+                  let thisyeara=${metcyca}+${deltayr}
+                  let thisyearz=${metcycz}+${deltayr}
+               fi # end [ ${i} == ${iata} ]
+            done #end for i in ${shiftiata}
+         else
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+         fi # end [ ${metdriver} != 'Sheffield' ]
          #---------------------------------------------------------------------------------#
 
-         submitnow="y"
-         echo "${ff} - ${polyname}: run has finished! Submit script for the last time."
+      elif [ ${useperiod} == 'u' ]
+      then
+         #----- The user said which period to use. ----------------------------------------#
+         thisyeara=${yusera}
+         thisyearz=${yuserz}
+         #---------------------------------------------------------------------------------#
       else
-         submitnow="n"
-         echo "${ff} - ${polyname}: post-processor job has already been queued."
+         #----- Grab all years that the simulation is supposed to run. --------------------#
+         thisyeara=${yeara}
+         thisyearz=${yearz}
+         #---------------------------------------------------------------------------------#
+      fi # end [ ${useperiod} == 't' ]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Set up months and days. ------------------------------------------------------#
+      thismontha=${montha}
+      thismonthz=${monthz}
+      thisdatea=${datea}
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Define the job name, and the names of the output files.                       #
+      #------------------------------------------------------------------------------------#
+      epostout='rmon_epost.out'
+      epostsh='rmon_epost.sh'
+      epostlsf='rmon_epost.lsf'
+      epostjob='eb-rmon-'${polyname}
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Check the status of the run.                                                   #
+      #------------------------------------------------------------------------------------#
+      statrun=${here}/${polyname}/statusrun.txt
+      if [ -s ${statrun} ]
+      then
+         runt=`cat ${statrun} | awk '{print $6}'`
+      else
+         runt='INITIAL'
       fi
       #------------------------------------------------------------------------------------#
-   else
+
+
+
       #------------------------------------------------------------------------------------#
-      #      Job is still running or it has started again...  Remove the blocker and       #
-      # re-submit if the post-processor is not queued.                                     #
+      #      We submit only the jobs that haven't finished.  If the job has just finished, #
+      # we submit once again, but save a file to remember that this polygon is loaded.     #
       #------------------------------------------------------------------------------------#
-      #----- Delete the blocker. ----------------------------------------------------------#
-      /bin/rm -f ${fullload}
-      #----- Check that the script is not in the queue. -----------------------------------#
-      inqueue=`bjobs -w -q ${thisqueue} -J ${epostjob} 2> /dev/null | wc -l`
-      if [ ${inqueue} -eq 0 ]
+      status="${here}/${polyname}/rdata_month/status_${polyname}.txt"
+      if [ -s ${status} ]
       then
-         submitnow="y"
-         echo "${ff} - ${polyname}: submit post-processor script."
-      else
-         submitnow="n"
-         echo "${ff} - ${polyname}: post-processor job has already been queued."
-      fi
-      #------------------------------------------------------------------------------------#
-   fi
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Find out whether the job is on the queue.  In case it is not, re-submit.          #
-   #---------------------------------------------------------------------------------------#
-   if [ "x${submitnow}" == "xy" ]
-   then
-
-      #----- Copy the R script from the Template folder to the local path. ----------------#
-      cp -f ${here}/Template/read_monthly.r ${here}/${polyname}
-      scriptnow=${here}/${polyname}/read_monthly.r
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Switch the keywords by the current settings. ---------------------------------#
-      sed -i s@thispoly@${polyname}@g             ${scriptnow}
-      sed -i s@thisoutroot@${outroot}@g           ${scriptnow}
-      sed -i s@thispath@${here}@g                 ${scriptnow}
-      sed -i s@thatpath@${there}@g                ${scriptnow}
-      sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
-      sed -i s@thismontha@${thismontha}@g         ${scriptnow}
-      sed -i s@thisdatea@${thisdatea}@g           ${scriptnow}
-      sed -i s@thishoura@${houra}@g               ${scriptnow}
-      sed -i s@thisminua@${minua}@g               ${scriptnow}
-      sed -i s@thisyearz@${thisyearz}@g           ${scriptnow}
-      sed -i s@thismonthz@${thismonthz}@g         ${scriptnow}
-      sed -i s@thisdatez@${datez}@g               ${scriptnow}
-      sed -i s@thishourz@${hourz}@g               ${scriptnow}
-      sed -i s@thisminuz@${minuz}@g               ${scriptnow}
-      sed -i s@thisseasonmona@${seasonmona}@g     ${scriptnow}
-      sed -i s@myphysiol@${iphysiol}@g            ${scriptnow}
-      sed -i s@myallom@${iallom}@g                ${scriptnow}
-      sed -i s@mydroughtmark@${droughtmark}@g     ${scriptnow}
-      sed -i s@mydroughtyeara@${droughtyeara}@g   ${scriptnow}
-      sed -i s@mydroughtyearz@${droughtyearz}@g   ${scriptnow}
-      sed -i s@mymonthsdrought@${monthsdrought}@g ${scriptnow}
-      sed -i s@myvarcycle@${varcycle}@g           ${scriptnow}
-      sed -i s@thisoutform@${outform}@g           ${scriptnow}
-      sed -i s@mydistrib@${usedistrib}@g          ${scriptnow}
-      sed -i s@mymetcyca@${metcyca}@g             ${scriptnow}
-      sed -i s@mymetcycz@${metcycz}@g             ${scriptnow}
-      sed -i s@mybiocyca@${biocyca}@g             ${scriptnow}
-      sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
-      sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Run R to get the plots. ------------------------------------------------------#
-      rbin="R CMD BATCH --no-save --no-restore"
-      comm="${rbin} ${scriptnow} ${here}/${polyname}/${epostout}"
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
-      # Run it several times until it is complete.                                         #
-      #------------------------------------------------------------------------------------#
-      echo '#!/bin/bash' > ${here}/${polyname}/${epostsh}
-      echo ${comm} >> ${here}/${polyname}/${epostsh}
-      chmod +x ${here}/${polyname}/${epostsh}
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Submit the job according to the style (LSF or openlava).                       #
-      #------------------------------------------------------------------------------------#
-      if [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
-      then
-         #------ Check whether to use openlava or LSF. ------------------------------------#
-         if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
+         yearl=`cat ${status} | awk '{print $1}'`
+         monthl=`cat ${status} | awk '{print $2}'`
+         if [ ${yearl} -eq ${yearz} ] && [ ${monthl} -eq ${monthz} ]
          then
-            bsub="iobsub -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
-            bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
+            cestfini="y"
          else
-            bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
-            bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
+            cestfini="n"
+         fi
+      else
+         cestfini="n"
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+      if [ ${runt} == "INITIAL" ]
+      then
+         submitnow="n"
+         echo "${ff} - ${polyname} : polygon hasn't started yet"
+
+      elif [ ${runt} == "THE_END" ] && [ ${cestfini} == "y" ]
+      then
+         #----- Job has ended and all files have been processed. --------------------------#
+         submitnow="n"
+         #---------------------------------------------------------------------------------#
+
+         echo "${ff} - ${polyname} : polygon is already loaded or queued for the last time"
+      else
+         #---------------------------------------------------------------------------------#
+         #      Job is still running or it has started again...  Remove the blocker and    #
+         # re-submit if the post-processor is not queued.                                  #
+         #---------------------------------------------------------------------------------#
+         #----- Check that the script is not in the queue. --------------------------------#
+         inqueue=`bjobs -w -q ${thisqueue} -J ${epostjob} 2> /dev/null | wc -l`
+         if [ ${inqueue} -eq 0 ]
+         then
+            submitnow="y"
+            echo "${ff} - ${polyname}: submit post-processor script."
+         else
+            submitnow="n"
+            echo "${ff} - ${polyname}: post-processor job has already been queued."
          fi
          #---------------------------------------------------------------------------------#
-         ${bsub}
       fi
       #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find out whether the job is on the queue.  In case it is not, re-submit.       #
+      #------------------------------------------------------------------------------------#
+      if [ "x${submitnow}" == "xy" ]
+      then
+
+         #----- Copy the R script from the Template folder to the local path. -------------#
+         cp -f ${here}/Template/read_monthly.r ${here}/${polyname}
+         scriptnow=${here}/${polyname}/read_monthly.r
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Switch the keywords by the current settings. ------------------------------#
+         sed -i s@thispoly@${polyname}@g             ${scriptnow}
+         sed -i s@thisoutroot@${outroot}@g           ${scriptnow}
+         sed -i s@thispath@${here}@g                 ${scriptnow}
+         sed -i s@thatpath@${there}@g                ${scriptnow}
+         sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
+         sed -i s@thismontha@${thismontha}@g         ${scriptnow}
+         sed -i s@thisdatea@${thisdatea}@g           ${scriptnow}
+         sed -i s@thishoura@${houra}@g               ${scriptnow}
+         sed -i s@thisminua@${minua}@g               ${scriptnow}
+         sed -i s@thisyearz@${thisyearz}@g           ${scriptnow}
+         sed -i s@thismonthz@${thismonthz}@g         ${scriptnow}
+         sed -i s@thisdatez@${datez}@g               ${scriptnow}
+         sed -i s@thishourz@${hourz}@g               ${scriptnow}
+         sed -i s@thisminuz@${minuz}@g               ${scriptnow}
+         sed -i s@thisseasonmona@${seasonmona}@g     ${scriptnow}
+         sed -i s@myphysiol@${iphysiol}@g            ${scriptnow}
+         sed -i s@myallom@${iallom}@g                ${scriptnow}
+         sed -i s@mydroughtmark@${droughtmark}@g     ${scriptnow}
+         sed -i s@mydroughtyeara@${droughtyeara}@g   ${scriptnow}
+         sed -i s@mydroughtyearz@${droughtyearz}@g   ${scriptnow}
+         sed -i s@mymonthsdrought@${monthsdrought}@g ${scriptnow}
+         sed -i s@myvarcycle@${varcycle}@g           ${scriptnow}
+         sed -i s@thisoutform@${outform}@g           ${scriptnow}
+         sed -i s@mydistrib@${usedistrib}@g          ${scriptnow}
+         sed -i s@mymetcyca@${metcyca}@g             ${scriptnow}
+         sed -i s@mymetcycz@${metcycz}@g             ${scriptnow}
+         sed -i s@mybiocyca@${biocyca}@g             ${scriptnow}
+         sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
+         sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Run R to get the plots. ---------------------------------------------------#
+         rbin="R CMD BATCH --no-save --no-restore"
+         comm="${rbin} ${scriptnow} ${here}/${polyname}/${epostout}"
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.  #
+         # Run it several times until it is complete.                                      #
+         #---------------------------------------------------------------------------------#
+         echo '#!/bin/bash' > ${here}/${polyname}/${epostsh}
+         echo ${comm} >> ${here}/${polyname}/${epostsh}
+         chmod +x ${here}/${polyname}/${epostsh}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Submit the job according to the style (LSF or openlava).                    #
+         #---------------------------------------------------------------------------------#
+         if [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
+         then
+            #------ Check whether to use openlava or LSF. ---------------------------------#
+            if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
+            then
+               bsub="iobsub -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
+               bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
+            else
+               bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
+               bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
+            fi
+            #------------------------------------------------------------------------------#
+            ${bsub}
+         fi
+         #---------------------------------------------------------------------------------#
+      fi
+      #------------------------------------------------------------------------------------#
+   else
+      echo "${ff} - ${polyname}: directory not found."
    fi
    #---------------------------------------------------------------------------------------#
 done

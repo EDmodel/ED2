@@ -5,32 +5,35 @@
 !------------------------------------------------------------------------------------------!
 module ed_state_vars
 
-   use grid_coms          , only : nzg             & ! intent(in)
-                                 , nzs             & ! intent(in)
-                                 , ngrids          ! ! intent(in)
-   use ed_max_dims        , only : max_site        & ! intent(in)
-                                 , n_pft           & ! intent(in)
-                                 , n_dbh           & ! intent(in)
-                                 , n_mort          & ! intent(in)
-                                 , n_dist_types    & ! intent(in)
-                                 , maxmach         & ! intent(in)
-                                 , maxgrds         & ! intent(in)
-                                 , str_len         ! ! intent(in)
-   use disturb_coms       , only : lutime          & ! intent(in)
-                                 , num_lu_trans    & ! intent(in)
-                                 , max_lu_years    ! ! intent(in)
-   use met_driver_coms    , only : met_driv_data   & ! intent(in)
-                                 , met_driv_state  ! ! intent(in)
-   use fusion_fission_coms, only : ff_nhgt         & ! intent(in)
-                                 , hgt_class       ! ! intent(in)
-   use phenology_coms     , only : prescribed_phen ! ! intent(in)
-   use ed_misc_coms       , only : writing_long    & ! intent(in)
-                                 , writing_eorq    & ! intent(in)
-                                 , writing_dcyc    & ! intent(in)
-                                 , history_fast    & ! intent(in)
-                                 , history_dail    & ! intent(in)
-                                 , history_eorq    & ! intent(in)
-                                 , ndcycle         ! ! intent(in)
+   use grid_coms          , only : nzg               & ! intent(in)
+                                 , nzs               & ! intent(in)
+                                 , ngrids            ! ! intent(in)
+   use ed_max_dims        , only : max_site          & ! intent(in)
+                                 , n_pft             & ! intent(in)
+                                 , n_dbh             & ! intent(in)
+                                 , n_mort            & ! intent(in)
+                                 , n_dist_types      & ! intent(in)
+                                 , maxmach           & ! intent(in)
+                                 , maxgrds           & ! intent(in)
+                                 , str_len           ! ! intent(in)
+   use disturb_coms       , only : lutime            & ! intent(in)
+                                 , num_lu_trans      & ! intent(in)
+                                 , max_lu_years      ! ! intent(in)
+   use met_driver_coms    , only : met_driv_data     & ! intent(in)
+                                 , met_driv_state    ! ! intent(in)
+   use fusion_fission_coms, only : ff_nhgt           & ! intent(in)
+                                 , hgt_class         ! ! intent(in)
+   use phenology_coms     , only : prescribed_phen   ! ! intent(in)
+   use ed_misc_coms       , only : writing_long      & ! intent(in)
+                                 , writing_eorq      & ! intent(in)
+                                 , writing_dcyc      & ! intent(in)
+                                 , iadd_site_means   & ! intent(in)
+                                 , iadd_patch_means  & ! intent(in)
+                                 , iadd_cohort_means & ! intent(in)
+                                 , history_fast      & ! intent(in)
+                                 , history_dail      & ! intent(in)
+                                 , history_eorq      & ! intent(in)
+                                 , ndcycle           ! ! intent(in)
 
    implicit none
    !=======================================================================================!
@@ -17908,11 +17911,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the sub-daily means to the history file.              !
       !------------------------------------------------------------------------------------!
-      if (history_fast) then
-         fast_keys = 'hist:anal'
-      else
-         fast_keys = 'anal'
-      end if
+      select case (iadd_site_means)
+      case (0)
+         return
+      case (1)
+         if (history_fast) then
+            fast_keys = 'hist:anal'
+         else
+            fast_keys = 'anal'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -18121,11 +18129,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the daily means to the history file.                  !
       !------------------------------------------------------------------------------------!
-      if (history_dail) then
-         dail_keys = 'hist:dail'
-      else
-         dail_keys = 'dail'
-      end if
+      select case (iadd_site_means)
+      case (0)
+         return
+      case (1)
+         if (history_dail) then
+            dail_keys = 'hist:dail'
+         else
+            dail_keys = 'dail'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -18305,11 +18318,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the monthly means to the history file.                !
       !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:mont:dcyc'
-      else
-         eorq_keys = 'mont:dcyc'
-      end if
+      select case (iadd_site_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -18632,11 +18650,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the mean diel to the history file.                    !
       !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:dcyc'
-      else
-         eorq_keys = 'dcyc'
-      end if
+      select case (iadd_site_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:dcyc'
+         else
+            eorq_keys = 'dcyc'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -20100,11 +20123,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the sub-daily means to the history file.              !
       !------------------------------------------------------------------------------------!
-      if (history_fast) then
-         fast_keys = 'hist:anal'
-      else
-         fast_keys = 'anal'
-      end if
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_fast) then
+            fast_keys = 'hist:anal'
+         else
+            fast_keys = 'anal'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -20590,11 +20618,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the daily means to the history file.                  !
       !------------------------------------------------------------------------------------!
-      if (history_dail) then
-         dail_keys = 'hist:dail'
-      else
-         dail_keys = 'dail'
-      end if
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_dail) then
+            dail_keys = 'hist:dail'
+         else
+            dail_keys = 'dail'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -21136,11 +21169,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the monthly means to the history file.                !
       !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:mont:dcyc'
-      else
-         eorq_keys = 'mont:dcyc'
-      end if
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -21880,11 +21918,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the mean diel to the history file.                    !
       !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:dcyc'
-      else
-         eorq_keys = 'dcyc'
-      end if
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:dcyc'
+         else
+            eorq_keys = 'dcyc'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -22525,28 +22568,6 @@ module ed_state_vars
 
 
 
-      !------------------------------------------------------------------------------------!
-      !      Decide whether to write the fast, daily, and monthly means to the history.    !
-      !------------------------------------------------------------------------------------!
-      if (history_fast) then
-         fast_keys = 'hist:anal'
-      else
-         fast_keys = 'anal'
-      end if
-      if (history_dail) then
-         dail_keys = 'hist:dail'
-      else
-         dail_keys = 'dail'
-      end if
-      if (history_eorq) then
-         eorq_keys = 'hist:mont:dcyc'
-      else
-         eorq_keys = 'mont:dcyc'
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -22608,6 +22629,39 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Patch level root density with depth'                 &
                            ,'[kg/m3]','(nzg,ipatch)') 
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the fast, daily, and monthly means to the history.    !
+      !------------------------------------------------------------------------------------!
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_fast) then
+            fast_keys = 'hist:anal'
+         else
+            fast_keys = 'anal'
+         end if
+         if (history_dail) then
+            dail_keys = 'hist:dail'
+         else
+            dail_keys = 'dail'
+         end if
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
+      !------------------------------------------------------------------------------------!
+
+
 
       if (associated(csite%fmean_soil_energy     )) then
          nvar = nvar+1
@@ -22866,11 +22920,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the mean diel to the history file.                    !
       !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:dcyc'
-      else
-         eorq_keys = 'dcyc'
-      end if
+      select case (iadd_patch_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:dcyc'
+         else
+            eorq_keys = 'dcyc'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -24262,11 +24321,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the sub-daily means to the history file.              !
       !------------------------------------------------------------------------------------!
-      if (history_fast) then
-         fast_keys = 'hist:anal'
-      else
-         fast_keys = 'anal'
-      end if
+      select case (iadd_cohort_means)
+      case (0)
+         return
+      case (1)
+         if (history_fast) then
+            fast_keys = 'hist:anal'
+         else
+            fast_keys = 'anal'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -24744,11 +24808,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the daily means to the history file.                  !
       !------------------------------------------------------------------------------------!
-      if (history_dail) then
-         dail_keys = 'hist:dail'
-      else
-         dail_keys = 'dail'
-      end if
+      select case (iadd_cohort_means)
+      case (0)
+         return
+      case (1)
+         if (history_dail) then
+            dail_keys = 'hist:dail'
+         else
+            dail_keys = 'dail'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -25294,11 +25363,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the monthly means to the history file.                !
       !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:mont:dcyc'
-      else
-         eorq_keys = 'mont:dcyc'
-      end if
+      select case (iadd_cohort_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -25988,11 +26062,16 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      Decide whether to write the mean diel to the history file.                    !
       !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:dcyc'
-      else
-         eorq_keys = 'dcyc'
-      end if
+      select case (iadd_cohort_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:dcyc'
+         else
+            eorq_keys = 'dcyc'
+         end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -26541,19 +26620,6 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the monthly means to the history file.                !
-      !------------------------------------------------------------------------------------!
-      if (history_eorq) then
-         eorq_keys = 'hist:mont:dcyc'
-      else
-         eorq_keys = 'mont:dcyc'
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !       This part should have only 2-D vectors, with dimension ncohorts and mortal-  !
       ! ity types months.  Notice that they all use the same npts.  Only variables of type !
@@ -26563,16 +26629,39 @@ module ed_state_vars
 
       if (associated(cpatch%mort_rate)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%mort_rate,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MORT_RATE_CO :48:hist:dail') 
+         call vtable_edio_r(npts,cpatch%mort_rate                                          &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MORT_RATE_CO :48:hist:dail') 
          call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','icohort') 
       end if
+      !------------------------------------------------------------------------------------!
 
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the monthly means to the history file.                !
+      !------------------------------------------------------------------------------------!
+      select case (iadd_cohort_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
       if (associated(cpatch%mmean_mort_rate)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%mmean_mort_rate,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'MMEAN_MORT_RATE_CO :48:'//trim(eorq_keys)) 
-         call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','icohort') 
+         call vtable_edio_r(npts,cpatch%mmean_mort_rate                                    &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_MORT_RATE_CO :48:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','icohort')
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
