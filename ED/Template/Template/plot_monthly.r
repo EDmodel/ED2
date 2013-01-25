@@ -15,10 +15,10 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"                          # Current directory.
-there          = "thatpath"                          # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
-outroot        = "thisoutroot"                       # Directory for figures
+here           = "thispath"     # Current directory.
+there          = "thatpath"     # Directory where analyses/history are 
+srcdir         = "thisrscpath"  # Source  directory.
+outroot        = "thisoutroot"  # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -87,6 +87,7 @@ slz.min        = -5.0         # The deepest depth that trees access water.
 idbh.type      = myidbhtype   # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+klight         = myklight     # Weighting factor for maximum carbon balance
 #------------------------------------------------------------------------------------------#
 
 
@@ -372,145 +373,9 @@ for (place in myplaces){
 
 
    #---------------------------------------------------------------------------------------#
-   #      Here we find the monthly means for month, then compute the standard deviation.   #
-   #---------------------------------------------------------------------------------------#
-   cat ("    - Finding the monthly mean...","\n")
-   cat ("      * Aggregating the monthly mean...","\n")
-   mmean               = list()
-   mmean$fast.soil.c   = tapply(X=emean$fast.soil.c  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$slow.soil.c   = tapply(X=emean$slow.soil.c  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$struct.soil.c = tapply(X=emean$struct.soil.c,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$het.resp      = tapply(X=emean$het.resp     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$cwd.resp      = tapply(X=emean$cwd.resp     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$gpp           = tapply(X=emean$gpp          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$npp           = tapply(X=emean$npp          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$plant.resp    = tapply(X=emean$plant.resp   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$leaf.resp     = tapply(X=emean$leaf.resp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$root.resp     = tapply(X=emean$root.resp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$growth.resp   = tapply(X=emean$growth.resp  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$reco          = tapply(X=emean$reco         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$mco           = tapply(X=emean$mco          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$cba           = tapply(X=emean$cba          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$cbalight      = tapply(X=emean$cbalight     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$cbamoist      = tapply(X=emean$cbamoist     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$cbarel        = tapply(X=emean$cbarel       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$ldrop         = tapply(X=emean$ldrop        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$nep           = tapply(X=emean$nep          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$nee           = tapply(X=emean$nee          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$cflxca        = tapply(X=emean$cflxca       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$cflxst        = tapply(X=emean$cflxst       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$ustar         = tapply(X=emean$ustar        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$atm.vels      = tapply(X=emean$atm.vels     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$atm.prss      = tapply(X=emean$atm.prss     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$atm.temp      = tapply(X=emean$atm.temp     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$atm.shv       = tapply(X=emean$atm.shv      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$atm.vpd       = tapply(X=emean$atm.vpd      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$atm.co2       = tapply(X=emean$atm.co2      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$can.prss      = tapply(X=emean$can.prss     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$can.temp      = tapply(X=emean$can.temp     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$can.co2       = tapply(X=emean$can.co2      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$can.shv       = tapply(X=emean$can.shv      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$can.vpd       = tapply(X=emean$can.vpd      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$gnd.temp      = tapply(X=emean$gnd.temp     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$gnd.shv       = tapply(X=emean$gnd.shv      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$leaf.temp     = tapply(X=emean$leaf.temp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$leaf.vpd      = tapply(X=emean$leaf.vpd     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wood.temp     = tapply(X=emean$wood.temp    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$hflxca        = tapply(X=emean$hflxca       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$qwflxca       = tapply(X=emean$qwflxca      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$hflxgc        = tapply(X=emean$hflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$hflxlc        = tapply(X=emean$hflxlc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$hflxwc        = tapply(X=emean$hflxwc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wflxca        = tapply(X=emean$wflxca       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wflxgc        = tapply(X=emean$wflxgc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wflxlc        = tapply(X=emean$wflxlc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wflxwc        = tapply(X=emean$wflxwc       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$evap          = tapply(X=emean$evap         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$transp        = tapply(X=emean$transp       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$et            = tapply(X=emean$et           ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wue           = tapply(X=emean$wue          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rain          = tapply(X=emean$rain         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$fs.open       = tapply(X=emean$fs.open      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rshort        = tapply(X=emean$rshort       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rshort.beam   = tapply(X=emean$rshort.beam  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rshort.diff   = tapply(X=emean$rshort.diff  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rshortup      = tapply(X=emean$rshortup     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rshort.gnd    = tapply(X=emean$rshort.gnd   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rlong         = tapply(X=emean$rlong        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rlong.gnd     = tapply(X=emean$rlong.gnd    ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rlongup       = tapply(X=emean$rlongup      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$par.tot       = tapply(X=emean$par.tot      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$par.beam      = tapply(X=emean$par.beam     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$par.diff      = tapply(X=emean$par.diff     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$par.gnd       = tapply(X=emean$par.gnd      ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$parup         = tapply(X=emean$parup        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rnet          = tapply(X=emean$rnet         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$albedo        = tapply(X=emean$albedo       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$albedo.beam   = tapply(X=emean$albedo.beam  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$albedo.diff   = tapply(X=emean$albedo.diff  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$rlong.albedo  = tapply(X=emean$rlong.albedo ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$nplant        = tapply(X=emean$nplant       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$agb           = tapply(X=emean$agb          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$lai           = tapply(X=emean$lai          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wai           = tapply(X=emean$wai          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$tai           = tapply(X=emean$tai          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$area          = tapply(X=emean$area         ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$workload      = tapply(X=emean$workload     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$specwork      = tapply(X=emean$specwork     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$demand        = tapply(X=emean$demand       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$supply        = tapply(X=emean$supply       ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$paw           = tapply(X=emean$paw          ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$smpot         = tapply(X=emean$smpot        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$leaf.gsw      = tapply(X=emean$leaf.gsw     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$leaf.gbw      = tapply(X=emean$leaf.gbw     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$wood.gbw      = tapply(X=emean$wood.gbw     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$npat.global   = tapply(X=emean$npat.global  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$ncoh.global   = tapply(X=emean$ncoh.global  ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$water.deficit = tapply(X=emean$water.deficit,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.gpp         = tapply(X=emean$i.gpp        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.npp         = tapply(X=emean$i.npp        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.plant.resp  = tapply(X=emean$i.plant.resp ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.mco         = tapply(X=emean$i.mco        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.cba         = tapply(X=emean$i.cba        ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.cbalight    = tapply(X=emean$i.cbalight   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.cbamoist    = tapply(X=emean$i.cbamoist   ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.transp      = tapply(X=emean$i.transp     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.wflxlc      = tapply(X=emean$i.wflxlc     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmean$i.hflxlc      = tapply(X=emean$i.hflxlc     ,INDEX=mfac,FUN=mean,na.rm=TRUE)
-   #----- Soil variables. -----------------------------------------------------------------#
-   mmean$soil.temp     = qapply(X=emean$soil.temp    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   mmean$soil.water    = qapply(X=emean$soil.water   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   mmean$soil.mstpot   = qapply(X=emean$soil.mstpot  ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   #----- Find the mean sum of squares. ---------------------------------------------------#
-   cat ("      * Aggregating the monthly mean sum of squares...","\n")
-   mmsqu               = list()
-   mmsqu$gpp           = tapply(X=emsqu$gpp          , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$plant.resp    = tapply(X=emsqu$plant.resp   , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$het.resp      = tapply(X=emsqu$het.resp     , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$cwd.resp      = tapply(X=emsqu$cwd.resp     , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$cflxca        = tapply(X=emsqu$cflxca       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$cflxst        = tapply(X=emsqu$cflxst       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$hflxca        = tapply(X=emsqu$hflxca       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$hflxlc        = tapply(X=emsqu$hflxlc       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$hflxwc        = tapply(X=emsqu$hflxwc       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$hflxgc        = tapply(X=emsqu$hflxgc       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$wflxca        = tapply(X=emsqu$wflxca       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$qwflxca       = tapply(X=emsqu$qwflxca      , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$wflxlc        = tapply(X=emsqu$wflxlc       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$wflxwc        = tapply(X=emsqu$wflxwc       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$wflxgc        = tapply(X=emsqu$wflxgc       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$evap          = tapply(X=emsqu$evap         , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$transp        = tapply(X=emsqu$transp       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$ustar         = tapply(X=emsqu$ustar        , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$albedo        = tapply(X=emsqu$albedo       , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$rshortup      = tapply(X=emsqu$rshortup     , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$rlongup       = tapply(X=emsqu$rlongup      , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$parup         = tapply(X=emsqu$parup        , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   mmsqu$rnet          = tapply(X=emsqu$rnet         , INDEX=mfac,FUN=mean,na.rm=TRUE)
-   #---------------------------------------------------------------------------------------#
-   #   Here we convert the sum of squares into standard deviation. The standard devi-      #
-   # ation can be written in two different ways, and we will use the latter because it     #
-   # doesn't require previous knowledge of the mean.                                       #
+   #     Find the mean and standard deviation.  For variables for which we did not track   #
+   # the mean sum of squares, the standard deviation is just the standard deviation of the #
+   # means, otherwise we convert the mean sum of squares:                                  #
    #              ____________________          _____________________________________      #
    #             / SUM_i[X_i - Xm]^2           /  / SUM_i[X_i^2]         \      1          #
    # sigma = \  /  ------------------   =  \  /  |  ------------  - Xm^2 | ---------       #
@@ -519,65 +384,45 @@ for (place in myplaces){
    # srnonm1 is the square root of 1 / (1 - 1/N)                                           #
    #     Find the standard deviation.                                                      #
    #---------------------------------------------------------------------------------------#
-   cat ("      * Finding the standard deviation...","\n")
+   cat ("    - Finding the monthly means...","\n")
+
    srnorm1 = sqrt(1./(1. - 1. / datum$montable))
    srnorm1[!is.finite(srnorm1)] = 0.
 
+   mmean = list()
    msdev = list()
-   msdev$gpp           = sqrt( mmsqu$gpp        - mmean$gpp        ^ 2 ) * srnorm1 
-   msdev$plant.resp    = sqrt( mmsqu$plant.resp - mmean$plant.resp ^ 2 ) * srnorm1 
-   msdev$het.resp      = sqrt( mmsqu$het.resp   - mmean$het.resp   ^ 2 ) * srnorm1 
-   msdev$cwd.resp      = sqrt( mmsqu$cwd.resp   - mmean$cwd.resp   ^ 2 ) * srnorm1 
-   msdev$cflxca        = sqrt( mmsqu$cflxca     - mmean$cflxca     ^ 2 ) * srnorm1 
-   msdev$cflxst        = sqrt( mmsqu$cflxst     - mmean$cflxst     ^ 2 ) * srnorm1 
-   msdev$hflxca        = sqrt( mmsqu$hflxca     - mmean$hflxca     ^ 2 ) * srnorm1 
-   msdev$hflxlc        = sqrt( mmsqu$hflxlc     - mmean$hflxlc     ^ 2 ) * srnorm1 
-   msdev$hflxwc        = sqrt( mmsqu$hflxwc     - mmean$hflxwc     ^ 2 ) * srnorm1 
-   msdev$hflxgc        = sqrt( mmsqu$hflxgc     - mmean$hflxgc     ^ 2 ) * srnorm1 
-   msdev$wflxca        = sqrt( mmsqu$wflxca     - mmean$wflxca     ^ 2 ) * srnorm1 
-   msdev$qwflxca       = sqrt( mmsqu$qwflxca    - mmean$qwflxca    ^ 2 ) * srnorm1 
-   msdev$wflxlc        = sqrt( mmsqu$wflxlc     - mmean$wflxlc     ^ 2 ) * srnorm1 
-   msdev$wflxwc        = sqrt( mmsqu$wflxwc     - mmean$wflxwc     ^ 2 ) * srnorm1 
-   msdev$wflxgc        = sqrt( mmsqu$wflxgc     - mmean$wflxgc     ^ 2 ) * srnorm1 
-   msdev$evap          = sqrt( mmsqu$evap       - mmean$evap       ^ 2 ) * srnorm1 
-   msdev$transp        = sqrt( mmsqu$transp     - mmean$transp     ^ 2 ) * srnorm1 
-   msdev$ustar         = sqrt( mmsqu$ustar      - mmean$ustar      ^ 2 ) * srnorm1 
-   msdev$albedo        = sqrt( mmsqu$albedo     - mmean$albedo     ^ 2 ) * srnorm1 
-   msdev$rshortup      = sqrt( mmsqu$rshortup   - mmean$rshortup   ^ 2 ) * srnorm1 
-   msdev$rlongup       = sqrt( mmsqu$rlongup    - mmean$rlongup    ^ 2 ) * srnorm1 
-   msdev$parup         = sqrt( mmsqu$parup      - mmean$parup      ^ 2 ) * srnorm1 
-   msdev$rnet          = sqrt( mmsqu$rnet       - mmean$rnet       ^ 2 ) * srnorm1 
+   for (vname in names(emean)){
+
+      #------------------------------------------------------------------------------------#
+      #     Soil variables are multi-dimensional.  Use qapply.  Otherwise, check whether   #
+      # the mean sum of squares is available or not.                                       #
+      #------------------------------------------------------------------------------------#
+      if (vname %in% c("soil.temp","soil.water","soil.mstpot")){
+         mmean[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=mean, na.rm=TRUE)
+         msdev[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=sd  , na.rm=TRUE)
+      }else if (vname %in% names(emsqu)){
+         mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
+         mmsqu          = tapply(X=emsqu[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
+         msdev[[vname]] = sqrt  ( mmsqu - mmean[[vname]]^ 2 ) * srnorm1
+      }else{
+         mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
+         msdev[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=sd  , na.rm=TRUE)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Fix the bad data. ------------------------------------------------------------#
+      bad.mmean = ! is.finite(mmean[[vname]])
+      bad.msdev = ! is.finite(msdev[[vname]])
+      mmean[[vname]][bad.mmean] = NA
+      msdev[[vname]][bad.msdev] = 0.
+      #------------------------------------------------------------------------------------#
+   }#end for
    #---------------------------------------------------------------------------------------#
-   #     Set standard deviations that became NaN to 0.  This usually happens when we run   #
-   # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
-   # can't find the standard deviation because the number of degrees of freedom becomes 0. #
+
+
    #---------------------------------------------------------------------------------------#
-   msdev$gpp           [! is.finite(msdev$gpp       )] = 0.
-   msdev$plant.resp    [! is.finite(msdev$plant.resp)] = 0.
-   msdev$leaf.resp     [! is.finite(msdev$leaf.resp )] = 0.
-   msdev$root.resp     [! is.finite(msdev$root.resp )] = 0.
-   msdev$het.resp      [! is.finite(msdev$het.resp  )] = 0.
-   msdev$cwd.resp      [! is.finite(msdev$cwd.resp  )] = 0.
-   msdev$cflxca        [! is.finite(msdev$cflxca    )] = 0.
-   msdev$cflxst        [! is.finite(msdev$cflxst    )] = 0.
-   msdev$hflxca        [! is.finite(msdev$hflxca    )] = 0.
-   msdev$hflxlc        [! is.finite(msdev$hflxlc    )] = 0.
-   msdev$hflxwc        [! is.finite(msdev$hflxwc    )] = 0.
-   msdev$hflxgc        [! is.finite(msdev$hflxgc    )] = 0.
-   msdev$wflxca        [! is.finite(msdev$wflxca    )] = 0.
-   msdev$qwflxca       [! is.finite(msdev$qwflxca   )] = 0.
-   msdev$wflxlc        [! is.finite(msdev$wflxlc    )] = 0.
-   msdev$wflxwc        [! is.finite(msdev$wflxwc    )] = 0.
-   msdev$wflxgc        [! is.finite(msdev$wflxgc    )] = 0.
-   msdev$transp        [! is.finite(msdev$transp    )] = 0.
-   msdev$ustar         [! is.finite(msdev$ustar     )] = 0.
-   msdev$albedo        [! is.finite(msdev$albedo    )] = 0.
-   msdev$rshortup      [! is.finite(msdev$rshortup  )] = 0.
-   msdev$rlongup       [! is.finite(msdev$rlongup   )] = 0.
-   msdev$parup         [! is.finite(msdev$parup     )] = 0.
-   msdev$rnet          [! is.finite(msdev$rnet      )] = 0.
-   #---------------------------------------------------------------------------------------#
-   #     Estimate the standard deviation of NEE, REco, and evaporation.                    #
+   #     Overwrite the standard deviation of NEE, REco, and evaporation.                   #
    #---------------------------------------------------------------------------------------#
    msdev$nee  = sqrt(msdev$cflxca^2     + msdev$cflxst^2                        )
    msdev$reco = sqrt(msdev$plant.resp^2 + msdev$het.resp^2                      )
@@ -585,172 +430,45 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
 
 
+
+
    #---------------------------------------------------------------------------------------#
    #      Here we find the Mean diurnal cycle for each month, then compute the standard    #
-   # deviation.                                                                            #
+   # deviation, similar to the monthly mean.                                               #
    #---------------------------------------------------------------------------------------#
    cat ("    - Aggregating the monthly mean of the diurnal cycle...","\n")
    umean              = list()
-   umean$gpp          = qapply(X=qmean$gpp          ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$npp          = qapply(X=qmean$npp          ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$plant.resp   = qapply(X=qmean$plant.resp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$leaf.resp    = qapply(X=qmean$leaf.resp    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$root.resp    = qapply(X=qmean$root.resp    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$growth.resp  = qapply(X=qmean$growth.resp  ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$het.resp     = qapply(X=qmean$het.resp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$cwd.resp     = qapply(X=qmean$cwd.resp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$nep          = qapply(X=qmean$nep          ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$nee          = qapply(X=qmean$nee          ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$reco         = qapply(X=qmean$reco         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$cflxca       = qapply(X=qmean$cflxca       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$cflxst       = qapply(X=qmean$cflxst       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$hflxca       = qapply(X=qmean$hflxca       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$hflxlc       = qapply(X=qmean$hflxlc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$hflxwc       = qapply(X=qmean$hflxwc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$hflxgc       = qapply(X=qmean$hflxgc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$qwflxca      = qapply(X=qmean$qwflxca      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$wflxca       = qapply(X=qmean$wflxca       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$wflxlc       = qapply(X=qmean$wflxlc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$wflxwc       = qapply(X=qmean$wflxwc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$wflxgc       = qapply(X=qmean$wflxgc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$evap         = qapply(X=qmean$evap         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$transp       = qapply(X=qmean$transp       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$atm.temp     = qapply(X=qmean$atm.temp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$can.temp     = qapply(X=qmean$can.temp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$leaf.temp    = qapply(X=qmean$leaf.temp    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$wood.temp    = qapply(X=qmean$wood.temp    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$gnd.temp     = qapply(X=qmean$gnd.temp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$atm.shv      = qapply(X=qmean$atm.shv      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$can.shv      = qapply(X=qmean$can.shv      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$gnd.shv      = qapply(X=qmean$gnd.shv      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$atm.vpd      = qapply(X=qmean$atm.vpd      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$can.vpd      = qapply(X=qmean$can.vpd      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$leaf.vpd     = qapply(X=qmean$leaf.vpd     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$atm.co2      = qapply(X=qmean$atm.co2      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$can.co2      = qapply(X=qmean$can.co2      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$atm.prss     = qapply(X=qmean$atm.prss     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$can.prss     = qapply(X=qmean$can.prss     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$atm.vels     = qapply(X=qmean$atm.vels     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$ustar        = qapply(X=qmean$ustar        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$fs.open      = qapply(X=qmean$fs.open      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rain         = qapply(X=qmean$rain         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rshort       = qapply(X=qmean$rshort       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rshort.beam  = qapply(X=qmean$rshort.beam  ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rshort.diff  = qapply(X=qmean$rshort.diff  ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rshort.gnd   = qapply(X=qmean$rshort.gnd   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rshortup     = qapply(X=qmean$rshortup     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rlong        = qapply(X=qmean$rlong        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rlong.gnd    = qapply(X=qmean$rlong.gnd    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rlongup      = qapply(X=qmean$rlongup      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$par.tot      = qapply(X=qmean$par.tot      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$par.beam     = qapply(X=qmean$par.beam     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$par.diff     = qapply(X=qmean$par.diff     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$par.gnd      = qapply(X=qmean$par.gnd      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$parup        = qapply(X=qmean$parup        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rnet         = qapply(X=qmean$rnet         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$albedo       = qapply(X=qmean$albedo       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$albedo.beam  = qapply(X=qmean$albedo.beam  ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$albedo.diff  = qapply(X=qmean$albedo.diff  ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$rlong.albedo = qapply(X=qmean$rlong.albedo ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$leaf.gsw     = qapply(X=qmean$leaf.gsw     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$leaf.gbw     = qapply(X=qmean$leaf.gbw     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umean$wood.gbw     = qapply(X=qmean$wood.gbw     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   #----- Find the mean sum of squares. ---------------------------------------------------#
-   cat ("    - Aggregating the monthly mean sum of squares...","\n")
-   umsqu              = list()
-   umsqu$gpp          = qapply(X=qmsqu$gpp          ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$npp          = qapply(X=qmsqu$npp          ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$plant.resp   = qapply(X=qmsqu$plant.resp   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$het.resp     = qapply(X=qmsqu$het.resp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$cwd.resp     = qapply(X=qmsqu$cwd.resp     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$nep          = qapply(X=qmsqu$nep          ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$cflxca       = qapply(X=qmsqu$cflxca       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$cflxst       = qapply(X=qmsqu$cflxst       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$hflxca       = qapply(X=qmsqu$hflxca       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$hflxlc       = qapply(X=qmsqu$hflxlc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$hflxwc       = qapply(X=qmsqu$hflxwc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$hflxgc       = qapply(X=qmsqu$hflxgc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$qwflxca      = qapply(X=qmsqu$qwflxca      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$wflxca       = qapply(X=qmsqu$wflxca       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$wflxlc       = qapply(X=qmsqu$wflxlc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$wflxwc       = qapply(X=qmsqu$wflxwc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$wflxgc       = qapply(X=qmsqu$wflxgc       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$transp       = qapply(X=qmsqu$transp       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$ustar        = qapply(X=qmsqu$ustar        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$albedo       = qapply(X=qmsqu$albedo       ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$rshortup     = qapply(X=qmsqu$rshortup     ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$rlongup      = qapply(X=qmsqu$rlongup      ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$parup        = qapply(X=qmsqu$parup        ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   umsqu$rnet         = qapply(X=qmsqu$rnet         ,INDEX=mfac,DIM=1,FUN=mean,na.rm=TRUE)
-   #---------------------------------------------------------------------------------------#
-   #   Here we convert the sum of squares into standard deviation. The standard devi-      #
-   # ation can be written in two different ways, and we will use the latter because it     #
-   # doesn't require previous knowledge of the mean.                                       #
-   #              ____________________          _____________________________________      #
-   #             / SUM_i[X_i - Xm]^2           /  / SUM_i[X_i^2]         \      1          #
-   # sigma = \  /  ------------------   =  \  /  |  ------------  - Xm^2 | ---------       #
-   #          \/       N - 1                \/    \      N               /   1 - 1/N       #
-   #                                                                                       #
-   # srnonm1 is the square root of 1 / (1 - 1/N)                                           #
-   #     Find the standard deviation.                                                      #
-   #---------------------------------------------------------------------------------------#
-   cat ("    - Finding the standard deviation...","\n")
-   srnorm1 = sqrt(1./(1. - 1. / datum$moncnt))
-   srnorm1[!is.finite(srnorm1)] = 0.
    usdev              = list()
-   usdev$gpp          = sqrt(umsqu$gpp           - umean$gpp           ^ 2) * srnorm1
-   usdev$npp          = sqrt(umsqu$npp           - umean$npp           ^ 2) * srnorm1
-   usdev$plant.resp   = sqrt(umsqu$plant.resp    - umean$plant.resp    ^ 2) * srnorm1
-   usdev$het.resp     = sqrt(umsqu$het.resp      - umean$het.resp      ^ 2) * srnorm1
-   usdev$cwd.resp     = sqrt(umsqu$cwd.resp      - umean$cwd.resp      ^ 2) * srnorm1
-   usdev$nep          = sqrt(umsqu$nep           - umean$nep           ^ 2) * srnorm1
-   usdev$cflxca       = sqrt(umsqu$cflxca        - umean$cflxca        ^ 2) * srnorm1
-   usdev$cflxst       = sqrt(umsqu$cflxst        - umean$cflxst        ^ 2) * srnorm1
-   usdev$hflxca       = sqrt(umsqu$hflxca        - umean$hflxca        ^ 2) * srnorm1
-   usdev$hflxlc       = sqrt(umsqu$hflxlc        - umean$hflxlc        ^ 2) * srnorm1
-   usdev$hflxwc       = sqrt(umsqu$hflxwc        - umean$hflxwc        ^ 2) * srnorm1
-   usdev$hflxgc       = sqrt(umsqu$hflxgc        - umean$hflxgc        ^ 2) * srnorm1
-   usdev$qwflxca      = sqrt(umsqu$qwflxca       - umean$qwflxca       ^ 2) * srnorm1
-   usdev$wflxca       = sqrt(umsqu$wflxca        - umean$wflxca        ^ 2) * srnorm1
-   usdev$wflxlc       = sqrt(umsqu$wflxlc        - umean$wflxlc        ^ 2) * srnorm1
-   usdev$wflxwc       = sqrt(umsqu$wflxwc        - umean$wflxwc        ^ 2) * srnorm1
-   usdev$wflxgc       = sqrt(umsqu$wflxgc        - umean$wflxgc        ^ 2) * srnorm1
-   usdev$transp       = sqrt(umsqu$transp        - umean$transp        ^ 2) * srnorm1
-   usdev$ustar        = sqrt(umsqu$ustar         - umean$ustar         ^ 2) * srnorm1
-   usdev$albedo       = sqrt(umsqu$albedo        - umean$albedo        ^ 2) * srnorm1
-   usdev$rshortup     = sqrt(umsqu$rshortup      - umean$rshortup      ^ 2) * srnorm1
-   usdev$rlongup      = sqrt(umsqu$rlongup       - umean$rlongup       ^ 2) * srnorm1
-   usdev$parup        = sqrt(umsqu$parup         - umean$parup         ^ 2) * srnorm1
-   usdev$rnet         = sqrt(umsqu$rnet          - umean$rnet          ^ 2) * srnorm1
+   for (vname in names(qmean)){
+
+      #------------------------------------------------------------------------------------#
+      #     Soil variables are multi-dimensional.  Use qapply.  Otherwise, check whether   #
+      # the mean sum of squares is available or not.                                       #
+      #------------------------------------------------------------------------------------#
+      if (vname %in% names(qmsqu)){
+         umean[[vname]] = qapply(X=qmean[[vname]], INDEX=mfac, DIM=1,FUN=mean, na.rm=TRUE)
+         umsqu          = qapply(X=qmsqu[[vname]], INDEX=mfac, DIM=1,FUN=mean, na.rm=TRUE)
+         usdev[[vname]] = sqrt  ( umsqu - umean[[vname]]^ 2 ) * srnorm1
+      }else{
+         umean[[vname]] = qapply(X=qmean[[vname]], INDEX=mfac, DIM=1,FUN=mean, na.rm=TRUE)
+         usdev[[vname]] = qapply(X=qmean[[vname]], INDEX=mfac, DIM=1,FUN=sd  , na.rm=TRUE)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Fix the bad data. ------------------------------------------------------------#
+      bad.umean = ! is.finite(umean[[vname]])
+      bad.usdev = ! is.finite(usdev[[vname]])
+      umean[[vname]][bad.umean] = NA
+      usdev[[vname]][bad.usdev] = 0.
+      #------------------------------------------------------------------------------------#
+   }#end for
    #---------------------------------------------------------------------------------------#
-   #     Set standard deviations that became NaN to 0.  This usually happens when we run   #
-   # the post-processing script when the simulation hasn't run for more than 2 years.  We  #
-   # can't find the standard deviation because the number of degrees of freedom becomes 0. #
-   #---------------------------------------------------------------------------------------#
-   usdev$gpp          [! is.finite(usdev$gpp          )] = 0.0
-   usdev$npp          [! is.finite(usdev$npp          )] = 0.0
-   usdev$plant.resp   [! is.finite(usdev$plant.resp   )] = 0.0
-   usdev$het.resp     [! is.finite(usdev$het.resp     )] = 0.0
-   usdev$cwd.resp     [! is.finite(usdev$cwd.resp     )] = 0.0
-   usdev$nep          [! is.finite(usdev$nep          )] = 0.0
-   usdev$cflxca       [! is.finite(usdev$cflxca       )] = 0.0
-   usdev$cflxst       [! is.finite(usdev$cflxst       )] = 0.0
-   usdev$hflxca       [! is.finite(usdev$hflxca       )] = 0.0
-   usdev$hflxlc       [! is.finite(usdev$hflxlc       )] = 0.0
-   usdev$hflxwc       [! is.finite(usdev$hflxwc       )] = 0.0
-   usdev$hflxgc       [! is.finite(usdev$hflxgc       )] = 0.0
-   usdev$qwflxca      [! is.finite(usdev$qwflxca      )] = 0.0
-   usdev$wflxca       [! is.finite(usdev$wflxca       )] = 0.0
-   usdev$wflxlc       [! is.finite(usdev$wflxlc       )] = 0.0
-   usdev$wflxwc       [! is.finite(usdev$wflxwc       )] = 0.0
-   usdev$wflxgc       [! is.finite(usdev$wflxgc       )] = 0.0
-   usdev$transp       [! is.finite(usdev$transp       )] = 0.0
-   usdev$ustar        [! is.finite(usdev$ustar        )] = 0.0
-   usdev$albedo       [! is.finite(usdev$albedo       )] = 0.0
-   usdev$rshortup     [! is.finite(usdev$rshortup     )] = 0.0
-   usdev$rlongup      [! is.finite(usdev$rlongup      )] = 0.0
-   usdev$parup        [! is.finite(usdev$parup        )] = 0.0
-   usdev$rnet         [! is.finite(usdev$rnet         )] = 0.0
+
+
+
+
+
    #---------------------------------------------------------------------------------------#
    #      Estimate NPP and NEE standard deviation.                                         #
    #---------------------------------------------------------------------------------------#
@@ -766,51 +484,7 @@ for (place in myplaces){
    # at any given time.                                                                    #
    #---------------------------------------------------------------------------------------#
    empty = szpft$nplant == 0
-   szpft$agb               [empty] = NA
-   szpft$lai               [empty] = NA
-   szpft$wai               [empty] = NA
-   szpft$tai               [empty] = NA
-   szpft$ba                [empty] = NA
-   szpft$gpp               [empty] = NA
-   szpft$npp               [empty] = NA
-   szpft$plant.resp        [empty] = NA
-   szpft$mco               [empty] = NA
-   szpft$cba               [empty] = NA
-   szpft$cbalight          [empty] = NA
-   szpft$cbamoist          [empty] = NA
-   szpft$cbarel            [empty] = NA
-   szpft$ldrop             [empty] = NA
-   szpft$fs.open           [empty] = NA
-   szpft$leaf.gbw          [empty] = NA
-   szpft$leaf.gsw          [empty] = NA
-   szpft$wood.gbw          [empty] = NA
-   szpft$demand            [empty] = NA
-   szpft$supply            [empty] = NA
-   szpft$nplant            [empty] = NA
-   szpft$mort              [empty] = NA
-   szpft$dimort            [empty] = NA
-   szpft$ncbmort           [empty] = NA
-   szpft$growth            [empty] = NA
-   szpft$bdead             [empty] = NA
-   szpft$bleaf             [empty] = NA
-   szpft$broot             [empty] = NA
-   szpft$bsapwood          [empty] = NA
-   szpft$bstorage          [empty] = NA
-   szpft$bseeds            [empty] = NA
-   szpft$hflxlc            [empty] = NA
-   szpft$wflxlc            [empty] = NA
-   szpft$transp            [empty] = NA
-   szpft$wue               [empty] = NA
-   szpft$i.gpp             [empty] = NA
-   szpft$i.npp             [empty] = NA
-   szpft$i.plant.resp      [empty] = NA
-   szpft$i.mco             [empty] = NA
-   szpft$i.cba             [empty] = NA
-   szpft$i.cbalight        [empty] = NA
-   szpft$i.cbamoist        [empty] = NA
-   szpft$i.transp          [empty] = NA
-   szpft$i.wflxlc          [empty] = NA
-   szpft$i.hflxlc          [empty] = NA
+   for (vname in names(szpft)) szpft[[vname]][empty] = NA
    #---------------------------------------------------------------------------------------#
 
 

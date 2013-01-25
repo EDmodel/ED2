@@ -3595,6 +3595,9 @@ subroutine integrate_ed_mmean_vars(cgrid)
                cpatch%mmean_bleaf             (ico) = cpatch%mmean_bleaf             (ico) &
                                                     + cpatch%bleaf                   (ico) &
                                                     * ndaysi
+               cpatch%mmean_broot             (ico) = cpatch%mmean_broot             (ico) &
+                                                    + cpatch%broot                   (ico) &
+                                                    * ndaysi
                cpatch%mmean_bstorage          (ico) = cpatch%mmean_bstorage          (ico) &
                                                     + cpatch%bstorage                (ico) &
                                                     * ndaysi
@@ -4506,6 +4509,7 @@ subroutine zero_ed_mmean_vars(cgrid)
             cohortloop: do ico=1,cpatch%ncohorts
                cpatch%mmean_lai               (ico) = 0.0
                cpatch%mmean_bleaf             (ico) = 0.0
+               cpatch%mmean_broot             (ico) = 0.0
                cpatch%mmean_bstorage          (ico) = 0.0
                cpatch%mmean_mort_rate       (:,ico) = 0.0
                cpatch%mmean_leaf_maintenance  (ico) = 0.0

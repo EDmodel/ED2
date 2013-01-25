@@ -15,9 +15,9 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"                          # Current directory.
-there          = "thatpath"                          # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
+here           = "thispath"    # Current directory.
+there          = "thatpath"    # Directory where analyses/history are 
+srcdir         = "thisrscpath" # Source  directory.
 #------------------------------------------------------------------------------------------#
 
 
@@ -43,6 +43,8 @@ slz.min        = -5.0         # The deepest depth that trees access water.
 idbh.type      = myidbhtype   # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                              # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
+klight         = myklight     # Weighting factor for maximum carbon balance
 #------------------------------------------------------------------------------------------#
 
 

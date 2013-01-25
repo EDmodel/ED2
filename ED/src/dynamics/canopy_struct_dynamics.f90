@@ -2534,6 +2534,7 @@ module canopy_struct_dynamics
       real(kind=4)              :: ch           ! c times |Rib|^1/2 for heat.
       real(kind=4)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
       !----- Local variables, used by other schemes. --------------------------------------!
+      real(kind=4)              :: zstar        ! height above displacement
       real(kind=4)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
       real(kind=4)              :: zeta0h       ! roughness(heat)/(Obukhov length).
       real(kind=4)              :: utotal       ! Total wind (actual + convective)
@@ -2553,7 +2554,8 @@ module canopy_struct_dynamics
       !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1. + epim1 * shv_atm)
       thetav_can = theta_can * (1. + epim1 * shv_can)
-      zoz0m      = (zref-dheight)/rough
+      zstar      = zref-dheight
+      zoz0m      = zstar / rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h * zoz0m
       lnzoz0h    = log(zoz0h)
@@ -2566,7 +2568,7 @@ module canopy_struct_dynamics
       ! this will be the definitive RiB, whilst this is the first guess, which will be     !
       ! corrected by the convective velocity in the other unstable cases.                  !
       !------------------------------------------------------------------------------------!
-      rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)             &
+      rib        = 2.0 * grav * (zstar-rough) * (thetav_atm-thetav_can)                    &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
       !------------------------------------------------------------------------------------!
@@ -2655,14 +2657,16 @@ module canopy_struct_dynamics
             !     Stable case, we don't need to find convective velocity, so we don't need !
             ! the iterative case.                                                          !
             !------------------------------------------------------------------------------!
-            !----- We now compute the stability correction functions. ---------------------!
-            zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-            zeta0m = rough * zeta / (zref-dheight)
-            zeta0h = z0hoz0m * zeta0m
+            !----- Find the dimensionless height. -----------------------------------------!
+            zeta   = zoobukhov(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            !------------------------------------------------------------------------------!
 
-            !----- Find the coefficient to scale the other stars. -------------------------!
-            zeta0m = rough * zeta / (zref-dheight)
+
+            !----- Find the dimensionless roughness. --------------------------------------!
+            zeta0m = rough * zeta / zstar
             zeta0h = z0hoz0m * zeta0m
+            !------------------------------------------------------------------------------!
+
 
             !----- Find ustar, making sure it is not too small. ---------------------------!
             ustar = max (ustmin, vonk * uuse                                               &
@@ -2688,18 +2692,18 @@ module canopy_struct_dynamics
 
 
                !----- Update the Bulk Richardson number. ----------------------------------!
-               rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)    &
+               rib        = 2.0 * grav * (zstar-rough) * (thetav_atm-thetav_can)           &
                           / ( (thetav_atm+thetav_can) * utotal)
                !---------------------------------------------------------------------------!
 
 
-               !----- We now compute the stability correction functions. ------------------!
-               zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+               !----- Find the dimensionless height. --------------------------------------!
+               zeta   = zoobukhov(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
                !---------------------------------------------------------------------------!
 
 
-               !----- Find the coefficient to scale the other stars. ----------------------!
-               zeta0m = rough * zeta / (zref-dheight)
+               !----- Find the dimensionless roughness. -----------------------------------!
+               zeta0m = rough * zeta / zstar
                zeta0h = z0hoz0m * zeta0m
                !---------------------------------------------------------------------------!
 
@@ -2865,6 +2869,7 @@ module canopy_struct_dynamics
       real(kind=8)              :: ch           ! c times |Rib|^1/2 for heat.
       real(kind=8)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
       !----- Local variables, used by others. ---------------------------------------------!
+      real(kind=8)              :: zstar        ! Reference height above displacement
       real(kind=8)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
       real(kind=8)              :: zeta0h       ! roughness(heat)/(Obukhov length).
       real(kind=8)              :: utotal       ! Total wind (actual + convective)
@@ -2883,7 +2888,8 @@ module canopy_struct_dynamics
       !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1.d0 + epim18 * shv_atm)
       thetav_can = theta_can * (1.d0 + epim18 * shv_can)
-      zoz0m      = (zref-dheight)/rough
+      zstar      = zref - dheight
+      zoz0m      = zstar / rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h8 * zoz0m
       lnzoz0h    = log(zoz0h)
@@ -2896,7 +2902,7 @@ module canopy_struct_dynamics
       ! this will be the definitive RiB, whilst this is the first guess, which will be     !
       ! corrected by the convective velocity in the other unstable cases.                  !
       !------------------------------------------------------------------------------------!
-      rib        = 2.d0 * grav8 * (zref-dheight-rough) * (thetav_atm-thetav_can)           &
+      rib        = 2.d0 * grav8 * (zstar-rough) * (thetav_atm-thetav_can)                  &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
       !------------------------------------------------------------------------------------!
@@ -2986,16 +2992,26 @@ module canopy_struct_dynamics
             !     Stable case, we don't need to find convective velocity, so we don't need !
             ! the iterative case.                                                          !
             !------------------------------------------------------------------------------!
-            !----- We now compute the stability correction functions. ---------------------!
-            zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-            zeta0m = rough * zeta / (zref - dheight)
-            zeta0h = z0hoz0m8 * zeta0m
+            !----- Find the dimensionless height. -----------------------------------------!
+            zeta   = zoobukhov8(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            !------------------------------------------------------------------------------!
 
-            !----- Finding ustar, making sure it is not too small. ------------------------!
+
+            !----- Find the dimensionless roughness. --------------------------------------!
+            zeta0m = rough * zeta / zstar
+            zeta0h = z0hoz0m8 * zeta0m
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Find ustar, make sure it is not too small. -----------------------------!
             ustar = max (ustmin8, vonk8 * uuse                                             &
                                 / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
+            !------------------------------------------------------------------------------!
 
-            !----- Finding the coefficient to scale the other stars. ----------------------!
+
+
+            !----- Find the coefficient to scale the other stars. -------------------------!
             c3    = vonk8                                                                  &
                   / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
             !------------------------------------------------------------------------------!
@@ -3014,19 +3030,18 @@ module canopy_struct_dynamics
 
 
                !----- Update the Bulk Richardson number. ----------------------------------!
-               rib        = 2.d0 * grav8 * (zref-dheight-rough) * (thetav_atm-thetav_can)  &
+               rib        = 2.d0 * grav8 * (zstar-rough) * (thetav_atm-thetav_can)         &
                           / ( (thetav_atm+thetav_can) * utotal * utotal)
                !---------------------------------------------------------------------------!
 
 
-               !----- We now compute the stability correction functions. ------------------!
-               zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h      &
-                                  ,stable)
+               !----- Find the dimensionless height. --------------------------------------!
+               zeta   = zoobukhov8(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
                !---------------------------------------------------------------------------!
 
 
-               !----- Find the coefficient to scale the other stars. ----------------------!
-               zeta0m = rough * zeta / (zref - dheight)
+               !----- Find the dimensionless roughness. -----------------------------------!
+               zeta0m = rough * zeta / zstar
                zeta0h = z0hoz0m8 * zeta0m
                !---------------------------------------------------------------------------!
 

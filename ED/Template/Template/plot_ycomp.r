@@ -17,7 +17,7 @@ graphics.off()
 #----- Paths. -----------------------------------------------------------------------------#
 here           = "thispath"    # Current directory.
 there          = "thatpath"    # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
+srcdir         = "thisrscpath" # Source  directory.
 outroot        = "thisoutroot"
 #------------------------------------------------------------------------------------------#
 
@@ -26,6 +26,9 @@ outroot        = "thisoutroot"
 monthbeg       = thismontha
 yearbeg        = thisyeara         # First year to consider
 yearend        = thisyearz         # Maximum year to consider
+use.trim       = myefttrim         # Use only a sub-set of years (TRUE/FALSE)
+year.trima     = myeftyeara        # First year of the sub-set
+year.trimz     = myeftyearz        # Last year of the sub-set
 season.mona    = thisseasonmona    # First month for year by year comparison
 reload.data    = TRUE              # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)       # Months for SAS plots (short runs)
@@ -81,6 +84,7 @@ slz.min        = -5.0         # The deepest depth that trees access water.
 idbh.type      = myidbhtype   # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+klight         = myklight     # Weighting factor for maximum carbon balance
 #------------------------------------------------------------------------------------------#
 
 
@@ -190,7 +194,7 @@ for (place in myplaces){
    #      Make the RData file name, then we check whether we must read the files again     #
    # or use the stored RData.                                                              #
    #---------------------------------------------------------------------------------------#
-   path.data  = paste(here,place,"rdata_ycomp",sep="/")
+   path.data  = paste(here,place,"rdata_month",sep="/")
    if (! file.exists(path.data)) dir.create(path.data)
    ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
    if (reload.data && file.exists(ed22.rdata)){
@@ -286,18 +290,25 @@ for (place in myplaces){
    #    Create a list with unique years.                                                   #
    #---------------------------------------------------------------------------------------#
    print (paste("    - Finding the years and seasons...",sep=""))
-   if (season.mona == 1){
-      nyears    = length(datum$toyear) + 1
-      year4     = c(datum$toyear,2*datum$toyear[nyears-1] - datum$toyear[nyears-2])
+   if (use.trim){
+      sel.trim = datum$toyear %in% seq(from=year.trima,to=year.trimz,by=1)
    }else{
-      nyears    = length(datum$toyear)
-      year4     = datum$toyear
+      sel.trim = datum$toyear > -Inf
+   }#end if
+   year.use     = datum$toyear[sel.trim]
+
+   if (season.mona == 1){
+      nyears    = length(year.use) + 1
+      year4     = c(year.use,2*year.use[nyears-1] - year.use[nyears-2])
+   }else{
+      nyears    = length(year.use)
+      year4     = year.use
    }#end if
    year.desc = paste(year4-c(diff(year4)[1],diff(year4)),year4,sep="-")
    year.col  = eft.col[match(year4,eft.year)]
    #----- Year for seasonal means. --------------------------------------------------------#
-   yr3mon  = datum$toyear
-   nyr3mon = length(yr3mon)
+   yr3mon      = year.use
+   nyr3mon     = length(yr3mon)
    yr3mon.desc = paste("Dec",sprintf("%2.2i"
                                     ,(yr3mon-c(diff(yr3mon)[1],diff(yr3mon))) %% 100 )
                       ,"-Nov",sprintf("%2.2i",yr3mon %% 100),sep="")
@@ -377,11 +388,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
          }#end for
          #----- Make a dummy limit in case everything is empty. ---------------------------#
-         if (is.null(ylimit)){
-            ylimit = c(-1,1)
-         }else{
-            ylimit[2] = ylimit[2] + scalleg * (ylimit[2] - ylimit[1])
-         }#end if
+         if (is.null(ylimit)) ylimit = c(-1,1)
          #---------------------------------------------------------------------------------#
 
          #---------------------------------------------------------------------------------#
@@ -417,9 +424,22 @@ for (place in myplaces){
 
 
             par(par.user)
-            plot(x=outplot[[2]]$x,y=outplot[[2]]$y,type="n",main=letitre,xlab=lex,ylab=ley
-                ,ylim=ylimit,cex.main=cex.main,xaxt="n")
+            par(oma=c(0,0,0,0))
+            layout (mat=rbind(2,1),heights=c(5,1))
+            
+            par(mar=c(0.1,4.1,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend(x="bottom",legend=year.desc[-1]
+                  ,lwd=2.5,col=year.col[-1],title="Period",cex=0.9,ncol=4)
+
+            par(mar=c(3.1,4.1,4.1,2.1))
+            plot.new()
+            plot.window(xlim=range(outplot[[2]]$x),ylim=ylimit)
+            title(main=letitre,xlab=lex,ylab=ley,cex.main=0.8)
             axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
+            axis(side=2)
+            box()
             if (plotgrid){ 
                abline(v=whenplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
@@ -427,8 +447,6 @@ for (place in myplaces){
                lines(x=outplot[[y]]$x,y=outplot[[y]]$y,type=plttype,pch=16,cex=1.0
                     ,lwd=2.5,col=year.col[y])
             }#end for
-            legend(x="topleft",inset=0.01,legend=year.desc[2:nyears]
-                  ,lwd=2.5,col=year.col[2:nyears],title="Period",cex=0.9,ncol=3)
 
 
             #----- Close the device. ------------------------------------------------------#
@@ -477,28 +495,9 @@ for (place in myplaces){
                             , byrow    = TRUE
                             )#end matrix
          if (vname == "rain"){
-            ylimit = c(0,1.25 * max(season.vec,na.rm=TRUE))
+            ylimit = c(0,max(season.vec,na.rm=TRUE))
          }else{
-            yl.try = range(season.vec,na.rm=TRUE)
-            if (any(! is.finite(yl.try)) || ( yl.try[1] == yl.try[2] && yl.try[1] == 0)){
-               ylimit    = c(-1,1)
-               leg.pos   = "topright"
-            }else if (yl.try[1] == yl.try[2]){
-               ylimit    = yl.try
-               ylimit[1] = yl.try[1] - 0.30 * abs(yl.try[1])
-               ylimit[2] = yl.try[2] + 0.30 * abs(yl.try[2])
-               leg.pos   = "topright"
-            }else if(yl.try[2] > 0){
-               ylimit    = yl.try
-               ylimit[1] = yl.try[1] - 0.05 * (yl.try[2] - yl.try[1])
-               ylimit[2] = yl.try[2] + 0.40 * (yl.try[2] - yl.try[1])
-               leg.pos   = "topright"
-            }else{
-               ylimit    = yl.try
-               ylimit[1] = yl.try[1] - 0.40 * (yl.try[2] - yl.try[1])
-               ylimit[2] = yl.try[2] + 0.05 * (yl.try[2] - yl.try[1])
-               leg.pos   = "bottomright"
-            }#end if
+            ylimit = pretty.xylim(u=season.vec,fracexp=0.0,is.log=FALSE)
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -527,12 +526,19 @@ for (place in myplaces){
 
 
             par(par.user)
+            layout (mat=rbind(2,1),heights=c(5,1))
+            par(mar=c(0.1,4.1,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend(x="bottom",inset=0.0,legend=yr3mon.desc,fill=yr3mon.col
+                  ,title="Period",cex=0.9,ncol=2)
+
+
+            par(mar=c(3.1,4.1,4.1,2.1))
             barplot(season.mat,col=yr3mon.col,main=letitre,xlab=lex,ylab=ley
                    ,cex.main=cex.main,ylim=ylimit,legend.text=FALSE,beside=TRUE
                    ,border=grey.fg,xpd=FALSE)
             box()
-            legend(x=leg.pos,inset=0.01,legend=yr3mon.desc,fill=yr3mon.col
-                  ,title="Period",cex=0.9,ncol=2)
 
 
             #----- Close the device. ------------------------------------------------------#

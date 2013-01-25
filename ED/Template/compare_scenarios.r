@@ -16,7 +16,8 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 here        = getwd()                                  #   Current directory
 srcdir      = "/n/moorcroft_data/mlongo/util/Rsc"      #   Script directory
-outroot     = file.path(here,"4dbh_comp")
+outroot     = file.path(here,"stext_comp")
+comp.prefix = "stext"
 #------------------------------------------------------------------------------------------#
 
 
@@ -39,12 +40,13 @@ rdata.path       = file.path(here,"RData_scomp") # Path for the scenario compari
 #  NA    -- plot only the first   (debugging only).                                        #
 #  FALSE -- skip them altogether                                                           #
 #------------------------------------------------------------------------------------------#
-plot.panel       = TRUE   # TRUE
-plot.tseries     = FALSE  # TRUE
-plot.szpft       = FALSE  # TRUE
-plot.barplot     = FALSE  # TRUE
-plot.xyzvars     = TRUE   # TRUE
-plot.scencomp    = FALSE  # TRUE
+plot.panel       = c(FALSE,TRUE,NA)[1]
+plot.tseries     = c(FALSE,TRUE,NA)[2]
+plot.szpft       = c(FALSE,TRUE,NA)[2]
+plot.barplot     = c(FALSE,TRUE,NA)[2]
+plot.xyzvars     = c(FALSE,TRUE,NA)[1]
+plot.scencomp    = c(FALSE,TRUE,NA)[2]
+plot.panelbox    = c(FALSE,TRUE,NA)[2]
 #------------------------------------------------------------------------------------------#
 
 
@@ -98,31 +100,42 @@ plot.scencomp    = FALSE  # TRUE
 # (only key, desc, and pattern are defined).                                               #
 #------------------------------------------------------------------------------------------#
 name.template    = "tPPP_rRRRR_tTTTT_real-ZZ_iphenDDD_stextSS"
-use.global       = c(4)   # Which global to use (TRUE means all of them)
+use.global       = c(1)   # Which global to use (TRUE means all of them)
 #----- Global variables. ------------------------------------------------------------------#
 global         = list()
-global$stext   = list( key     = c("stext02","stext06","stext08","stext16","stext17")
-                     , desc    = paste( "Soil type:"
-                                      , c("Loamy sand","Sandy clay loam","Clayey loam"
-                                         ,"Clayey sand","Clayey silt")
-                                      ,sep = " "
-                                      )#end paste
-                     , pattern = "stextSS"
+#global$stext   = list( key     = c("stext02","stext06","stext08","stext16","stext11")
+#                     , desc    = paste( "Soil type:"
+#                                      , c("Loamy sand","Sandy clay loam","Clayey loam"
+#                                         ,"Clayey sand","Clay")
+#                                      ,sep = " "
+#                                      )#end paste
+#                     , pattern = "stextSS"
+#                     , value   = NA_real_
+#                     , label   = NA_real_
+#                     , default = NA_character_
+#                     , colour  = NA_character_
+#                     , pch     = NA_integer_
+#                     , alabel  = NA_character_
+#                     )#end list
+global$dtemp   = list( key     = c("t+000","t+100","t+200","t+300")
+                     , desc    = c("dT = +0.0 K","dT = +1.0 K","dT = +2.0 K","dT = +3.0 K")
+                     , pattern = "tTTTT"
+                     , default = NA_integer_
                      , value   = NA_real_
                      , label   = NA_real_
-                     , default = NA_character_
                      , colour  = NA_character_
                      , pch     = NA_integer_
                      , alabel  = NA_character_
                      )#end list
 #----- Panel variables. -------------------------------------------------------------------#
+iata.use       = c(1,2)
 panel          = list()
-panel$iata     = list( key     = c("gyf","s67")
-                     , desc    = c("Paracou, GUF","Santarem km 67")
+panel$iata     = list( key     = c("gyf","s67","rja")[iata.use]
+                     , desc    = c("Paracou","Santarem","Rebio Jaru")[iata.use]
                      , pattern = "PPP"
+                     , default = NA_character_
                      , value   = NA_real_
                      , label   = NA_real_
-                     , default = NA_character_
                      , colour  = NA_character_
                      , pch     = NA_integer_
                      , alabel  = NA_character_
@@ -130,36 +143,38 @@ panel$iata     = list( key     = c("gyf","s67")
 panel$iphen    = list( key     = c("iphen-01","iphen+02")
                      , desc    = paste("Phenology:",c("Evergreen","Drought Deciduous"))
                      , pattern = "iphenDDD"
+                     , default = NA_character_
                      , value   = NA_real_
                      , label   = NA_real_
-                     , default = NA_character_
                      , colour  = NA_character_
                      , pch     = NA_integer_
                      , alabel  = NA_character_
                      )#end list
 #----- Scenario variables. ----------------------------------------------------------------#
+st.use         = c(1,2,3,4,5)
 scenario       = list()
 scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-100")
                      , desc    = c("dR =  0.00 S","dR = -0.20 S","dR = -0.40 S"
                                   ,"dR = -0.60 S","dR = -0.80 S","dR = -1.00 S")
                      , pattern = "rRRRR"
+                     , default = "r+000"
                      , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0)
                      , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0)
                      , colour  = c("royalblue","deepskyblue","yellow3","gold"
                                   ,"darkorange2","red3")
                      , pch     = c(15L,17L,12L,13L,6L,8L)
-                     , default = "r+000"
                      , alabel  = paste(c("Mean rainfall change [Scale]",sep=""))
                     )#end list
-scenario$dtemp = list( key     = c("t+000","t+100","t+200","t+300")
-                     , desc    = c("dT = +0.0 K","dT = +1.0 K","dT = +2.0 K","dT = +3.0 K")
-                     , pattern = "tTTTT"
-                     , value   = c(0.0,1.0,2.0,3.0)
-                     , label   = c(0.0,1.0,2.0,3.0)
-                     , colour  = c("dodgerblue","yellow3","darkorange2","red3")
-                     , pch     = c(18L,17L,13L,6L)
-                     , default = "t+000"
-                     , alabel  = c("Mean temperature change [K]")
+scenario$stext = list( key     = c("stext02","stext06","stext08","stext16","stext11")[st.use]
+                     , desc    = c("Loamy sand","Sandy clay loam","Clayey loam"
+                                  ,"Clayey sand","Clay")[st.use]
+                     , pattern = "stextSS"
+                     , default = "stext16"
+                     , value   = c(1,2,3,4,5)[sequence(length(st.use))]
+                     , label   = c("LSa","SaCL","CL","CSa","C")[st.use]
+                     , colour  = c("yellow3","sandybrown","darkorange2","firebrick2","red4")[st.use]
+                     , pch     = c(18L,17L,13L,15L,6L)[st.use]
+                     , alabel  = c("Soil texture")
                      )#end list
 #----- Realisation variables. -------------------------------------------------------------#
 realisation = list( key     = paste("real",sprintf("%2.2i",0:9),sep="-")
@@ -199,7 +214,7 @@ byeold         = TRUE                  # Remove old files of the given format?
 
 depth          = 96                    # PNG resolution, in pixels per inch
 paper          = "letter"              # Paper size, to define the plot shape
-ptsz           = 16                    # Font size.
+ptsz           = 18                    # Font size.
 lwidth         = 2.5                   # Line width
 plotgrid       = TRUE                  # Should I plot the grid in the background? 
 
@@ -213,6 +228,7 @@ notch          = FALSE                 # Add notches to the box plots.
 mtext.xoff.im  = -7.00                 # Offset for the x label
 mtext.xoff     = -7.00                 # Offset for the x label
 mtext.yoff     = -1.00                 # Offset for the y label
+mtext.yoff.im  = -3.00                 # Offset for the y label
 mtext.xadj     =  0.50                 # Offset for the x label
 mtext.yadj     =  0.65                 # Offset for the y label
 barplot.lwd    =  1.50                 # Line width for the bar plots
@@ -368,7 +384,7 @@ dbh.suffix    = paste("dbh",tolower(dbh.key),sep="-")
 #------------------------------------------------------------------------------------------#
 #      This is the R object that has the simulation information.                           #
 #------------------------------------------------------------------------------------------#
-rdata.siminfo = file.path(rdata.path,"4dbh_SimInfo.RData")
+rdata.siminfo = file.path(rdata.path,paste(comp.prefix,"SimInfo.RData",sep="_"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -649,8 +665,6 @@ if (retrieve.siminfo && file.exists(rdata.siminfo)){
 
 
 
-
-
 #==========================================================================================#
 #==========================================================================================#
 #      Find the best set up for plotting all seasons and all PFTs in the same plot.        #
@@ -837,6 +851,140 @@ for (o in 1:nout){
                #---------------------------------------------------------------------------#
             }#end for
             #------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Create the directory where the multiple box plot will be placed.        #
+            #------------------------------------------------------------------------------#
+            root.panelbox.season    = file.path(gnow$main,"panelbox_season")
+            gnow$panelbox.year      = file.path(gnow$main,"panelbox_year"  )
+            root.panelboxpft.season = file.path(gnow$main,"panelboxpft_season")
+            root.panelboxpft.year   = file.path(gnow$main,"panelboxpft_year"  )
+            root.panelboxdbh.season = file.path(gnow$main,"panelboxdbh_season")
+            root.panelboxdbh.year   = file.path(gnow$main,"panelboxdbh_year"  )
+            if (! file.exists(root.panelbox.season   )){
+               dir.create(root.panelbox.season   )
+            }#end if
+            if (! file.exists(root.panelboxpft.season)){
+               dir.create(root.panelboxpft.season)
+            }#end if
+            if (! file.exists(root.panelboxpft.year  )){
+               dir.create(root.panelboxpft.year  )
+            }#end if
+            if (! file.exists(root.panelboxdbh.season)){
+               dir.create(root.panelboxdbh.season)
+            }#end if
+            if (! file.exists(root.panelboxdbh.year  )){
+               dir.create(root.panelboxdbh.year  )
+            }#end if
+            if (! file.exists(gnow$panelbox.year     )){
+               dir.create(gnow$panelbox.year     )
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Create one directory by season.                                         #
+            #------------------------------------------------------------------------------#
+            gnow$panelbox.season  = file.path(root.panelbox.season,season.suffix)
+            for (e in season.mp){
+               #----- Create one directory for each season. -------------------------------#
+               if (! file.exists(gnow$panelbox.season[e])){
+                  dir.create(gnow$panelbox.season[e])
+               }#end if
+               #---------------------------------------------------------------------------#
+
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Create one directory by PFT or DBH.                                     #
+            #------------------------------------------------------------------------------#
+            gnow$panelboxpft.year = file.path(root.panelboxpft.year,pft.suffix)
+            gnow$panelboxdbh.year = file.path(root.panelboxdbh.year,dbh.suffix)
+            for (f in 1:(n.pft-1)){
+               #----- Create one directory for each season. -------------------------------#
+               if (! file.exists(gnow$panelboxpft.year[f])){
+                  dir.create(gnow$panelboxpft.year[f])
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end for
+            for (d in 1:n.dbh){
+               #----- Create one directory for each season. -------------------------------#
+               if (! file.exists(gnow$panelboxdbh.year[d])){
+                  dir.create(gnow$panelboxdbh.year[d])
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Create one directory by season, then by PFT or DBH.                     #
+            #------------------------------------------------------------------------------#
+            #----- Combine all PFT/DBHs. and seasons. -------------------------------------#
+            pft.season.suffix         = expand.grid(pft.suffix,season.suffix)
+            dbh.season.suffix         = expand.grid(dbh.suffix,season.suffix)
+            #----- Create the "branches". -------------------------------------------------#
+            branch.panelboxpft.season = apply( X        = pft.season.suffix
+                                              , MARGIN   = 1
+                                              , FUN      = paste
+                                              , collapse ="/"
+                                              )#end apply
+            branch.panelboxdbh.season = apply( X        = dbh.season.suffix
+                                              , MARGIN   = 1
+                                              , FUN      = paste
+                                              , collapse ="/"
+                                              )#end apply
+            gnow$panelboxpft.season = matrix( data = file.path(root.panelboxpft.season
+                                                               ,branch.panelboxpft.season)
+                                             , nrow = n.pft
+                                             , ncol = n.season
+                                             )#end matrix
+            gnow$panelboxdbh.season = matrix( data = file.path(root.panelboxdbh.season
+                                                               ,branch.panelboxdbh.season)
+                                             , nrow = n.dbh
+                                             , ncol = n.season
+                                             )#end matrix
+            for (e in season.mp){
+               for (f in 1:(n.pft-1)){
+                  #----- Create one directory for each PFT. -------------------------------#
+                  if (! file.exists(dirname(gnow$panelboxpft.season[f,e]))){
+                     dir.create(dirname(gnow$panelboxpft.season[f,e]))
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Create one directory for each season. ----------------------------#
+                  if (! file.exists(gnow$panelboxpft.season[f,e])){
+                     dir.create(gnow$panelboxpft.season[f,e])
+                  }#end if
+                  #------------------------------------------------------------------------#
+               }#end for
+               for (d in 1:n.dbh){
+                  #----- Create one directory for each DBH. -------------------------------#
+                  if (! file.exists(dirname(gnow$panelboxdbh.season[d,e]))){
+                     dir.create(dirname(gnow$panelboxdbh.season[d,e]))
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Create one directory for each season. ----------------------------#
+                  if (! file.exists(gnow$panelboxdbh.season[d,e])){
+                     dir.create(gnow$panelboxdbh.season[d,e])
+                  }#end if
+                  #------------------------------------------------------------------------#
+               }#end for
+               #---------------------------------------------------------------------------#
+            }#end for
+            #------------------------------------------------------------------------------#
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -1011,7 +1159,8 @@ for (g in loop.global){
 
    #----- File name for this global scenario. ---------------------------------------------#
    rdata.global = file.path( rdata.path
-                           , paste("4dbh_sim_",simul$global$level[g],".RData",sep="")
+                           , paste(comp.prefix,"_sim_",simul$global$level[g],".RData"
+                                  ,sep="")
                            )#end file.path
    #---------------------------------------------------------------------------------------#
 
@@ -1558,14 +1707,31 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
 
 
+
+               #---------------------------------------------------------------------------#
+               #     Find the X and Y limits for all data (same scale for all).            #
+               #---------------------------------------------------------------------------#
+               var.now       = eft[[var.vname]]$ts
+               every         = apply(X=var.now,MARGIN=c(1,3,4),FUN=mean,na.rm=TRUE)
+               xlimit        = pretty.xylim( u       = year.use
+                                           , fracexp = 0.0
+                                           , is.log  = FALSE
+                                           )#end pretty.xylim
+               ylimit.season = pretty.xylim( u       = every[,,1:n.season.mp]
+                                           , fracexp = 0.0
+                                           , is.log   = var.plog
+                                           )#end pretty.xylim
+               ylimit.year   = pretty.xylim( u       = every[,,n.season]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylim
+               #---------------------------------------------------------------------------#
+
+
+
                #----- Load variable. ------------------------------------------------------#
-               this    = apply( X      = eft[[var.vname]]$ts[sel,,,]
-                              , MARGIN = c(1,3,4)
-                              , FUN    = mean
-                              , na.rm  = TRUE
-                              )#end apply 
-               xlimit  = pretty.xylim(year.use             ,fracexp=0.0,is.log=FALSE   )
-               ylimit  = pretty.xylim(this[,,1:n.season.mp],fracexp=0.0,is.log=var.plog)
+               this    = every[sel,,]
+               ylimit  = ylimit.season
                #---------------------------------------------------------------------------#
 
 
@@ -1715,8 +1881,7 @@ for (g in loop.global){
 
 
                #----- Update limits. ------------------------------------------------------#
-               xlimit  = pretty.xylim(year.use        ,fracexp=0.0    ,is.log=FALSE   )
-               ylimit  = pretty.xylim(this[,,n.season],fracexp=fracexp,is.log=var.plog)
+               ylimit  = ylimit.year
                #---------------------------------------------------------------------------#
 
 
@@ -1773,7 +1938,7 @@ for (g in loop.global){
                   par(par.now)
                   plot.new()
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
-                  legend ( x       = "topright"
+                  legend ( x       = "bottom"
                          , inset   = inset
                          , legend  = now$desc
                          , col     = now$colour
@@ -1837,21 +2002,39 @@ for (g in loop.global){
             #     If this is a PFT variable, plot the time series by PFT and season.       #
             #------------------------------------------------------------------------------#
             if (var.plt && is.pft){
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Grab all data (to build the same scale for all).                      #
+               #---------------------------------------------------------------------------#
+               var.now       = eft[[var.vname]]$tspft
+               every         = apply(X=var.now,MARGIN=c(1,3,4,5),FUN=mean,na.rm=TRUE)
+               xlimit        = pretty.xylim( u       = year.use
+                                           , fracexp = 0.0
+                                           , is.log  = FALSE
+                                           )#end pretty.xylim
+               #---------------------------------------------------------------------------#
+
+
+
                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                #     Plot the seasonal time series for each PFT.                           #
                #---------------------------------------------------------------------------#
                for (f in 1:(n.pft-1)){
 
+
+
                   #----- Load variable. ---------------------------------------------------#
-                  this    = apply( X      = eft[[var.vname]]$tspft[sel,,,,]
-                                 , MARGIN = c(1,3,4,5)
-                                 , FUN    = mean
-                                 , na.rm  = TRUE
-                                 )#end apply 
-                  xlimit  = pretty.xylim(year.use               
-                                        ,fracexp=0.0,is.log=FALSE   )
-                  ylimit  = pretty.xylim(this[,,1:n.season.mp,f]
-                                        ,fracexp=0.0,is.log=var.plog)
+                  this    = every[sel,,,]
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Y limits for this PFT. -------------------------------------------#
+                  ylimit = pretty.xylim( u       = every[,,-n.season,f]
+                                       , fracexp = 0.0
+                                       , is.log   = var.plog
+                                       )#end pretty.xylim
                   #------------------------------------------------------------------------#
 
 
@@ -2001,11 +2184,11 @@ for (g in loop.global){
                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                #      Plot the time series by PFT (annual, one panel for each PFT).        #
                #---------------------------------------------------------------------------#
-
-
-               #----- Reset limits. -------------------------------------------------------#
-               xlimit  = pretty.xylim(year.use,fracexp=0.0,is.log=FALSE   )
-               ylimit  = pretty.xylim(this[,,n.season,pft.mp],fracexp=0.0,is.log=var.plog)
+               #----- Set limits. ---------------------------------------------------------#
+               ylimit = pretty.xylim( u       = every[,, n.season,pft.mp]
+                                    , fracexp = 0.0
+                                    , is.log  = var.plog
+                                    )#end pretty.xylim
                #---------------------------------------------------------------------------#
 
 
@@ -2154,6 +2337,8 @@ for (g in loop.global){
 
 
 
+
+
          #.................................................................................#
          #.................................................................................#
          #      Plot the box plots.                                                        #
@@ -2192,17 +2377,41 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
 
 
-               #----- Load variable and set y axis. ---------------------------------------#
+
+               #---------------------------------------------------------------------------#
+               #     Load all simulations for y axis.                                      #
+               #---------------------------------------------------------------------------#
                if (n.real == 1){
-                  this = eft[[var.vname]]$ts[sel,1,,1:n.season.mp]
+                  every = eft[[var.vname]]$ts[,1,y.sel,]
                }else{
-                  this = apply( X = eft[[var.vname]]$ts[sel,,y.sel,1:n.season.mp]
-                              , MARGIN = c(1,2,4)
-                              , FUN    = mean
-                              , na.rm  = TRUE
-                              )#end apply
+                  every = apply( X      = eft[[var.vname]]$ts[,,y.sel,]
+                               , MARGIN = c(1,2,4)
+                               , FUN    = mean
+                               , na.rm  = TRUE
+                               )#end apply
                }#end if
-               ylimit    = pretty.xylim(u=this,fracexp=0.0,is.log=var.plog)
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Get the range for all simulations (fixed y coordinates.               #
+               #---------------------------------------------------------------------------#
+               ylimit.season = pretty.xylim( u       = every[,,-n.season]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylimit
+               ylimit.year   = pretty.xylim( u       = every[,, n.season]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylimit
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Load variable. ------------------------------------------------------#
+               this   = every[sel,,-n.season]
+               ylimit = ylimit.season
                #---------------------------------------------------------------------------#
 
 
@@ -2354,16 +2563,8 @@ for (g in loop.global){
 
 
                #----- Load variable and set y axis. ---------------------------------------#
-               if (n.real == 1){
-                  this = eft[[var.vname]]$ts[sel,1,,n.season]
-               }else{
-                  this = apply( X = eft[[var.vname]]$ts[sel,,y.sel,n.season]
-                              , MARGIN = c(1,2)
-                              , FUN    = mean
-                              , na.rm  = TRUE
-                              )#end apply
-               }#end if
-               ylimit    = pretty.xylim(u=this,fracexp=0.0,is.log=var.plog)
+               this   = every[sel,,n.season]
+               ylimit = ylimit.year
                #---------------------------------------------------------------------------#
 
 
@@ -2467,17 +2668,34 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
 
 
-               #----- Load variable and set y axis. ---------------------------------------#
+
+               #---------------------------------------------------------------------------#
+               #     Load all simulations for y axis.                                      #
+               #---------------------------------------------------------------------------#
                if (n.real == 1){
-                  this = eft[[var.vname]]$tspft[sel,1,,1:n.season.mp,pft.bp]
+                  every = eft[[var.vname]]$tspft[,1,y.sel,,pft.bp]
                }else{
-                  this = apply( X = eft[[var.vname]]$tspft[sel,,y.sel,1:n.season.mp,pft.bp]
-                              , MARGIN = c(1,2,4,5)
-                              , FUN    = mean
-                              , na.rm  = TRUE
-                              )#end apply
+                  every = apply( X      = eft[[var.vname]]$tspft[,,y.sel,,pft.bp]
+                               , MARGIN = c(1,2,4,5)
+                               , FUN    = mean
+                               , na.rm  = TRUE
+                               )#end apply
                }#end if
-               ylimit    = pretty.xylim(u=this,fracexp=0.0,is.log=var.plog)
+               ylimit.season = pretty.xylim( u       = every[,,-n.season,]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylim
+               ylimit.year   = pretty.xylim( u       = every[,, n.season,]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylim
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Load variable and set y axis. ---------------------------------------#
+               this   = every[sel,,-n.season,]
+               ylimit = ylimit.season
                #---------------------------------------------------------------------------#
 
 
@@ -2655,16 +2873,8 @@ for (g in loop.global){
 
 
                #----- Load variable and set y axis. ---------------------------------------#
-               if (n.real == 1){
-                  this = eft[[var.vname]]$tspft[sel,1,,n.season,pft.bp]
-               }else{
-                  this = apply( X = eft[[var.vname]]$tspft[sel,,y.sel,n.season,pft.bp]
-                              , MARGIN = c(1,2,4)
-                              , FUN    = mean
-                              , na.rm  = TRUE
-                              )#end apply
-               }#end if
-               ylimit    = pretty.xylim(u=this,fracexp=0.0,is.log=var.plog)
+               this   = every[sel,, n.season,]
+               ylimit = ylimit.year
                #---------------------------------------------------------------------------#
 
 
@@ -2798,18 +3008,34 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
 
 
-               #----- Load variable and set y axis. ---------------------------------------#
+
+               #---------------------------------------------------------------------------#
+               #     Load all simulations for y axis.                                      #
+               #---------------------------------------------------------------------------#
                if (n.real == 1){
-                  this = eft[[var.vname]]$tspftdbh[sel,1,,1:n.season.mp,,n.pft]
+                  every = eft[[var.vname]]$tspftdbh[,1,y.sel,,,n.pft]
                }else{
-                  this = eft[[var.vname]]$tspftdbh[sel,,y.sel,1:n.season.mp,,n.pft]
-                  this = apply( X = this
-                              , MARGIN = c(1,2,4,5)
-                              , FUN    = mean
-                              , na.rm  = TRUE
-                              )#end apply
+                  every = apply( X      = eft[[var.vname]]$tspftdbh[,,y.sel,,,n.pft]
+                               , MARGIN = c(1,2,4,5)
+                               , FUN    = mean
+                               , na.rm  = TRUE
+                               )#end apply
                }#end if
-               ylimit    = pretty.xylim(u=this,fracexp=0.0,is.log=var.plog)
+               ylimit.season = pretty.xylim( u       = every[,,-n.season,]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylim
+               ylimit.year   = pretty.xylim( u       = every[,, n.season,]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylim
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Load variable and set y axis. ---------------------------------------#
+               this   = every[sel,,-n.season,]
+               ylimit = ylimit.season
                #---------------------------------------------------------------------------#
 
 
@@ -2984,18 +3210,10 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
 
 
+
                #----- Load variable and set y axis. ---------------------------------------#
-               if (n.real == 1){
-                  this = eft[[var.vname]]$tspftdbh[sel,1,,n.season,,n.pft]
-               }else{
-                  this = eft[[var.vname]]$tspftdbh[sel,,y.sel,n.season,,n.pft]
-                  this = apply( X = this
-                              , MARGIN = c(1,2,4)
-                              , FUN    = mean
-                              , na.rm  = TRUE
-                              )#end apply
-               }#end if
-               ylimit    = pretty.xylim(u=this,fracexp=0.0,is.log=var.plog)
+               this   = every[sel,, n.season,]
+               ylimit = ylimit.year
                #---------------------------------------------------------------------------#
 
 
@@ -3124,6 +3342,30 @@ for (g in loop.global){
             #------------------------------------------------------------------------------#
             if (var.plt & is.dbh){
                #---------------------------------------------------------------------------#
+               #     Load all simulations for y axis.                                      #
+               #---------------------------------------------------------------------------#
+               if (n.real == 1){
+                  every = eft[[var.vname]]$tspftdbh[,1,y.sel,,,pft.mp]
+               }else{
+                  every = apply( X      = eft[[var.vname]]$tspftdbh[,,y.sel,,,pft.mp]
+                               , MARGIN = c(1,2,4,5,6)
+                               , FUN    = mean
+                               , na.rm  = TRUE
+                               )#end apply
+               }#end if
+               ylimit.season = pretty.xylim( u       = every[,,-n.season,,]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylim
+               ylimit.year   = pretty.xylim( u       = every[,, n.season,,]
+                                           , fracexp = 0.0
+                                           , is.log  = var.plog
+                                           )#end pretty.xylim
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
                #     Loop over each season.                                                #
                #---------------------------------------------------------------------------#
                for (e in 1:n.season){
@@ -3138,18 +3380,14 @@ for (g in loop.global){
 
 
 
+
                   #----- Load variable and set y axis. ------------------------------------#
-                  if (n.real == 1){
-                     this = eft[[var.vname]]$tspftdbh[sel,1,,e,,pft.mp]
+                  this   = every[sel,,e,,]
+                  if (e == n.season){
+                     ylimit = ylimit.year
                   }else{
-                     this = eft[[var.vname]]$tspftdbh[sel,,y.sel,e,,pft.mp]
-                     this = apply( X = this
-                                 , MARGIN = c(1,2,4,5)
-                                 , FUN    = mean
-                                 , na.rm  = TRUE
-                                 )#end apply
+                     ylimit = ylimit.season
                   }#end if
-                  ylimit    = pretty.xylim(u=this,fracexp=0.0,is.log=var.plog)
                   #------------------------------------------------------------------------#
 
 
@@ -3353,18 +3591,38 @@ for (g in loop.global){
                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                #      Plot the bar plot by PFT, DBH class, and season.                     #
                #---------------------------------------------------------------------------#
+               every = eft[[var.vname]]$tspftdbh[,,y.sel,,,pft.bp,drop=FALSE]
+               every = apply( X      = every
+                            , MARGIN = c(1,4,5,6)
+                            , FUN    = mean
+                            , na.rm  = TRUE
+                            )#end apply
+               every = apply( X = every, MARGIN = c(1,2,3)  , FUN = cumsum)
+               every = aperm( a = every, perm   = c(2,4,1,3)              )
+               #---------------------------------------------------------------------------#
 
 
-               #----- Load variable and set y axis. ---------------------------------------#
-               if (n.real == 1){
-                  this.5d   = eft[[var.vname]]$tspftdbh[sel,1,,1:n.season.mp,,pft.bp]
-                  dimnames(this.5d)[[1]] = now$key
-                  this      = apply(X=this.5d,MARGIN=c(1,3,4,5),FUN=mean,na.rm=TRUE)
-               }else{
-                  this.6d   = eft[[var.vname]]$tspftdbh[sel,,y.sel,1:n.season.mp,,pft.bp]
-                  dimnames(this.6d)[[1]] = now$key
-                  this      = apply(X=this.6d,MARGIN=c(1,4,5,6),FUN=mean,na.rm=TRUE)
-               }#end if
+
+
+               #---------------------------------------------------------------------------#
+               #      Find the y limits:                                                   #
+               #---------------------------------------------------------------------------#
+               yrange.season = pretty.xylim( u       = c(0,every[,,,-n.season])
+                                           , fracexp =  0.0
+                                           , is.log  = FALSE
+                                           )#end pretty.xylim
+               ylimit.season = pretty.xylim( u       = c(0,every[,,,-n.season])
+                                           , fracexp = -0.06
+                                           , is.log  = FALSE
+                                           )#end pretty.xylim
+               yrange.year   = pretty.xylim( u       = c(0,every[,,, n.season])
+                                           , fracexp =  0.0
+                                           , is.log  = FALSE
+                                           )#end pretty.xylim
+               ylimit.year   = pretty.xylim( u       = c(0,every[,,, n.season])
+                                           , fracexp = -0.06
+                                           , is.log  = FALSE
+                                           )#end pretty.xylim
                #---------------------------------------------------------------------------#
 
 
@@ -3372,9 +3630,10 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #      Stack the PFT data.                                                  #
                #---------------------------------------------------------------------------#
-               this      = apply(X=this,MARGIN=c(1,2,3),FUN=cumsum)
-               this      = aperm(a=this,perm=c(2,4,1,3))
+               this                = every[sel,,,]
+               dimnames(this)[[1]] = now$key
                #---------------------------------------------------------------------------#
+
 
 
 
@@ -3419,7 +3678,7 @@ for (g in loop.global){
                                  , dim      = dim(this)[1:2]
                                  , dimnames = dimnames(this)[1:2]
                                  )#end array
-               refer.col = array( data     = rep(now$colour,times=dim(this)[2])
+               refer.col  = array( data     = rep(now$colour,times=dim(this)[2])
                                  , dim      = dim(this)[1:2]
                                  , dimnames = dimnames(this)[1:2]
                                  )#end array
@@ -3443,8 +3702,8 @@ for (g in loop.global){
 
                #----- Find the limits for the plot. ---------------------------------------#
                xlimit = range(c(xat,xgrid))
-               yrange = pretty.xylim(u=c(ybottom,ytop),fracexp= 0.00,is.log=var.plog)
-               ylimit = pretty.xylim(u=yrange,fracexp=-0.06,is.log=var.plog)
+               yrange = yrange.season
+               ylimit = ylimit.season
                #---------------------------------------------------------------------------#
 
 
@@ -3644,42 +3903,6 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
 
 
-               #----- Load variable and set y axis. ---------------------------------------#
-               if (n.real == 1){
-                  this.4d   = eft[[var.vname]]$tspftdbh[sel,1,,n.season,,pft.bp]
-                  dimnames(this.4d)[[1]] = now$key
-                  this      = apply(X=this.4d,MARGIN=c(1,3,4),FUN=mean,na.rm=TRUE)
-               }else{
-                  this.5d   = eft[[var.vname]]$tspftdbh[sel,,y.sel,n.season,,pft.bp]
-                  dimnames(this.5d)[[1]] = now$key
-                  this      = apply(X=this.5d,MARGIN=c(1,4,5),FUN=mean,na.rm=TRUE)
-               }#end if
-               #---------------------------------------------------------------------------#
-
-
-
-               #---------------------------------------------------------------------------#
-               #      Stack the PFT data.                                                  #
-               #---------------------------------------------------------------------------#
-               this      = apply(X=this,MARGIN=c(1,2),FUN=cumsum)
-               this      = aperm(a=this,perm=c(2,3,1))
-               #---------------------------------------------------------------------------#
-
-
-
-               #---------------------------------------------------------------------------#
-               #      Combine simulation and size into one dimension.                      #
-               #---------------------------------------------------------------------------#
-               dth  = dim(this)
-               dnth = list( paste(rep(dimnames(this)[[1]],times=dth[2])
-                                 ,rep(dimnames(this)[[2]],each =dth[1])
-                                 ,sep=".")
-                          , dimnames(this)[[3]]
-                          )#end list
-               this = array(data= this,dim=c(dth[1]*dth[2],dth[3]),dimnames=dnth)
-               #---------------------------------------------------------------------------#
-
-
                #----- Set the title. ------------------------------------------------------#
                letitre = paste(var.desc," (Annual means)","\n",out.desc,sep="")
                lex     = paste("DBH class [cm]")
@@ -3688,51 +3911,11 @@ for (g in loop.global){
 
 
 
-               #---------------------------------------------------------------------------#
-               #    Find the x dimensions.                                                 #
-               #---------------------------------------------------------------------------#
-               xleft  = ( rep(sequence(n.now),times=n.dbh)
-                        + rep((n.now+1)*(sequence(n.dbh)-1),each=n.now) ) - 0.9
-               xright = xleft + 0.8
-               xat    = seq(from=0.5*n.now,by=n.now+1,length.out=n.dbh)
-               xgrid  = seq(from=0,by=n.now+1,length.out=n.dbh+1)-0.5
-               #---------------------------------------------------------------------------#
-
-
-
-               #---------------------------------------------------------------------------#
-               #     Find out the colour filling.                                          #
-               #---------------------------------------------------------------------------#
-               fill.col   = array( data     = rep(pft.colour[pft.bp],each=dim(this)[1])
-                                 , dim      = dim(this)[1:2]
-                                 , dimnames = dimnames(this)[1:2]
-                                 )#end array
-               refer.col  = array( data     = rep(now$colour,times=dim(this)[2])
-                                 , dim      = dim(this)[1:2]
-                                 , dimnames = dimnames(this)[1:2]
-                                 )#end array
-               xleft      = array( data     = xleft
-                                 , dim      = dim(this)[1:2]
-                                 , dimnames = dimnames(this)[1:2]
-                                 )#end array
-               xright     = array( data     = xright
-                                 , dim      = dim(this)[1:2]
-                                 , dimnames = dimnames(this)[1:2]
-                                 )#end array
-               #----- Vertical. Force the bottom to be zero. ------------------------------#
-               ybottom      = this 
-               ybottom[,-1] = ybottom[,-dim(ybottom)[2]]
-               ybottom[, 1] = 0
-               ytop         = this
-               #---------------------------------------------------------------------------#
-
-
-
 
                #----- Find the limits for the plot. ---------------------------------------#
                xlimit = range(c(xat,xgrid))
-               yrange = pretty.xylim(u=c(ybottom,ytop),fracexp= 0.00,is.log=var.plog)
-               ylimit = pretty.xylim(u=yrange,fracexp=-0.06,is.log=var.plog)
+               yrange = yrange.year
+               ylimit = ylimit.year
                #---------------------------------------------------------------------------#
 
 
@@ -3777,7 +3960,7 @@ for (g in loop.global){
                   # to fit the legend.                                                     #
                   #------------------------------------------------------------------------#
                   par.orig = par(no.readonly = TRUE)
-                  emat = matrix(c(3,3,1,2),ncol=2,nrow=2,byrow=T)
+                  emat = matrix(c(3,3,1,2),ncol=2,nrow=2,byrow=TRUE)
                   par(par.user)
                   layout(mat=emat,heights=c(5,1))
                   #------------------------------------------------------------------------#
@@ -3837,9 +4020,9 @@ for (g in loop.global){
 
                   #----- Add the bar plot using rect, so we can change the line width. ----#
                   rect( xleft   = xleft
-                      , ybottom = ybottom
+                      , ybottom = ybottom[,,n.season]
                       , xright  = xright
-                      , ytop    = ytop
+                      , ytop    = ytop   [,,n.season]
                       , density = -1
                       , col     = fill.col
                       , border  = foreground
@@ -3851,9 +4034,9 @@ for (g in loop.global){
 
                   #----- Add the simulation colour beneath the bars. ----------------------#
                   rect( xleft   = xleft
-                      , ybottom = lbottom
+                      , ybottom = lbottom[,,n.season]
                       , xright  = xright
-                      , ytop    = ltop
+                      , ytop    = ltop   [,,n.season]
                       , density = -1
                       , col     = refer.col
                       , border  = refer.col
@@ -3879,7 +4062,6 @@ for (g in loop.global){
          }#end for (v in 1:nscen.barplot)
          #.................................................................................#
          #.................................................................................#
-
 
 
 
@@ -4275,7 +4457,7 @@ for (g in loop.global){
 
 
          #----- Retrieve all simulations from this panel. ---------------------------------#
-         this    = eft[[var.vname]]$ts[,,y.sel,]
+         this    = eft[[var.vname]]$ts[,,y.sel,,drop=FALSE]
          this    = apply(X = this, FUN = mean, MARGIN = c(1,4),na.rm=TRUE)
          o.dim   = dim(this)[-1]      ; names(o.dim  ) = "season"
          o.dname = dimnames(this)[-1] ; names(o.dname) = "season"
@@ -4335,6 +4517,8 @@ for (g in loop.global){
                              )#end apply
             a.dim     = sapply(X=c(p.dim,s.dim  ,o.dim  ),FUN=c)
             a.dnames  = c(p.level,s.level,o.dname)
+            x.zero    = scenario[[1]]$value[match(s.default[[1]],scenario[[1]]$key)]
+            y.zero    = scenario[[2]]$value[match(s.default[[2]],scenario[[2]]$key)]
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -4395,12 +4579,12 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                #      Find the axis limits and labels.                                     #
                #---------------------------------------------------------------------------#
-               xlimit = pretty.xylim(u=now$value,fracexp=0.,is.log=FALSE)
-               ylimit = pretty.xylim(u=this.var ,fracexp=0.,is.log=FALSE)
+               xlimit  = pretty.xylim(u=now$value,fracexp=0.,is.log=FALSE)
+               ylimit  = pretty.xylim(u=this.var ,fracexp=0.,is.log=FALSE)
                x.value = now$value
                x.label = now$label
-               lex    = now$alabel
-               ley    = paste(var.desc," [",var.unit,"]",sep="")
+               lex     = now$alabel
+               ley     = paste(var.desc," [",var.unit,"]",sep="")
                #---------------------------------------------------------------------------#
 
             }else{
@@ -4435,7 +4619,8 @@ for (g in loop.global){
                xright      = var.brks[     -1]
                ybottom     = rep(0,times=n.brks)
                ytop        = rep(1,times=n.brks)
-               legat       = var.brks
+               legat       = pretty(var.brks,n=10)
+               legat       = legat[legat >= min(var.brks) & legat <= max(var.brks)]
                #---------------------------------------------------------------------------#
             }#end if
             #------------------------------------------------------------------------------#
@@ -4488,7 +4673,7 @@ for (g in loop.global){
                #      Split the plotting window.                                           #
                #---------------------------------------------------------------------------#
                par(par.user)
-               par(oma = c(0.2,3,4.5,0))
+               par(oma = c(0.2,5.1,4.5,0))
                layout( mat     = rbind(lo.panel$mat+1,rep(1,times=lo.panel$ncol))
                      , heights = c(rep(4/lo.panel$nrow,lo.panel$nrow),1)
                      )#end layout
@@ -4514,13 +4699,13 @@ for (g in loop.global){
                         , xpd    = TRUE
                         )#end legend
                }else{
-                  par(mar=c(3,3,2,3)+0.1)
+                  par(mar=c(2,3,2,3)+0.1)
                   plot.new()
                   plot.window(xlim=range(xleft,xright),ylim=range(ybottom,ytop)
                              ,xaxs="i",yaxs="i")
                   rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=var.colours)
                   box()
-                  axis(side=1,at=legat)
+                  axis.rt(side=1,at=legat,las=5,off=0.5)
                   title(main=paste(var.desc," change [",var.unit,"]",sep="")
                        ,xlab="",ylab="",cex.main=cex.main)
                }#end if
@@ -4572,9 +4757,9 @@ for (g in loop.global){
                      image(x=x.value,y=y.value,z=this.var[p,,],col=var.colours
                           ,breaks=var.brks
                           ,xaxt="n",yaxt="n",main=lesub,cex.main=cex.main,xlab="",ylab="")
-                     text (x=0,y=0,labels="0",col=foreground,font=2,cex=2)
-                     if (bottom) axis(side=1,at=x.value,labels=x.label)
-                     if (left)   axis(side=2,at=y.value,labels=y.label)
+                     text (x=x.zero,y=y.zero,labels="0",col=foreground,font=2,cex=2)
+                     if (bottom) axis(side=1,at=x.value,labels=x.label,cex.axis=1.1,las=1)
+                     if (left)   axis(side=2,at=y.value,labels=y.label,cex.axis=1.1,las=1)
                   }#end if
                   #------------------------------------------------------------------------#
                }#end for
@@ -4588,10 +4773,11 @@ for (g in loop.global){
                par(las=0)
                if (n.scenario == 1){
                   mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+                  mtext(side=2,text=ley,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                }else{
                   mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
+                  mtext(side=2,text=ley,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff.im)
                }#end if
-               mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                mtext(side=3,text=letitre,outer=TRUE,cex=1.10,font=2)
                #---------------------------------------------------------------------------#
 
@@ -4689,6 +4875,8 @@ for (g in loop.global){
                              )#end apply
             a.dim     = sapply(X=c(p.dim,s.dim  ,o.dim  ),FUN=c)
             a.dnames  = c(p.level,s.level,o.dname)
+            x.zero    = scenario[[1]]$value[match(s.default[[1]],scenario[[1]]$key)]
+            y.zero    = scenario[[2]]$value[match(s.default[[2]],scenario[[2]]$key)]
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -4872,14 +5060,14 @@ for (g in loop.global){
                            , xpd    = TRUE
                            )#end legend
                   }else{
-                     par(mar=c(3,3,2,3)+0.1)
+                     par(mar=c(2,3,2,3)+0.1)
                      plot.new()
                      plot.window(xlim=range(xleft,xright),ylim=range(ybottom,ytop)
                                 ,xaxs="i",yaxs="i")
                      rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop
                          ,col=var.colours)
                      box()
-                     axis(side=1,at=legat)
+                     axis.rt(side=1,at=legat,las=5,off=0.5)
                      title(main=paste(var.desc," change [",var.unit,"]",sep="")
                           ,xlab="",ylab="",cex.main=cex.main)
                   }#end if
@@ -4932,9 +5120,9 @@ for (g in loop.global){
                              ,z=this.var[p,,],col=var.colours,breaks=var.brks
                              ,xaxt="n",yaxt="n",main=lesub,xlab="",ylab=""
                              ,cex.main=cex.main)
-                        text (x=0,y=0,labels="0",col=foreground,font=2,cex=2)
-                        if (bottom) axis(side=1,at=x.value,labels=x.label)
-                        if (left)   axis(side=2,at=y.value,labels=y.label)
+                        text (x=x.zero,y=y.zero,labels="0",col=foreground,font=2,cex=2)
+                        if (bottom) axis(side=1,at=x.value,labels=x.label,las=1)
+                        if (left)   axis(side=2,at=y.value,labels=y.label,las=1)
                      }#end if
                      #---------------------------------------------------------------------#
                   }#end for
@@ -4948,10 +5136,11 @@ for (g in loop.global){
                   par(las=0)
                   if (n.scenario == 1){
                      mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+                     mtext(side=2,text=ley,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                   }else{
                      mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
+                     mtext(side=2,text=ley,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff.im)
                   }#end if
-                  mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                   mtext(side=3,text=letitre,outer=TRUE,cex=1.0,font=2)
                   #------------------------------------------------------------------------#
 
@@ -5051,6 +5240,8 @@ for (g in loop.global){
                              )#end apply
             a.dim     = sapply(X=c(p.dim,s.dim  ,o.dim  ),FUN=c)
             a.dnames  = c(p.level,s.level,o.dname)
+            x.zero    = scenario[[1]]$value[match(s.default[[1]],scenario[[1]]$key)]
+            y.zero    = scenario[[2]]$value[match(s.default[[2]],scenario[[2]]$key)]
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -5234,14 +5425,14 @@ for (g in loop.global){
                            , xpd    = TRUE
                            )#end legend
                   }else{
-                     par(mar=c(3,3,2,3)+0.1)
+                     par(mar=c(2,3,2,3)+0.1)
                      plot.new()
                      plot.window(xlim=range(xleft,xright),ylim=range(ybottom,ytop)
                                 ,xaxs="i",yaxs="i")
                      rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop
                          ,col=var.colours)
                      box()
-                     axis(side=1,at=legat)
+                     axis.rt(side=1,at=legat,las=5,off=0.5)
                      title(main=paste(var.desc," change [",var.unit,"]",sep="")
                           ,xlab="",ylab="",cex.main=cex.main)
                   }#end if
@@ -5294,9 +5485,9 @@ for (g in loop.global){
                              ,z=this.var[p,,],col=var.colours,breaks=var.brks
                              ,xaxt="n",yaxt="n",main=lesub,xlab="",ylab=""
                              ,cex.main=cex.main)
-                        text (x=0,y=0,labels="0",col=foreground,font=2,cex=2)
-                        if (bottom) axis(side=1,at=x.value,labels=x.label)
-                        if (left)   axis(side=2,at=y.value,labels=y.label)
+                        text (x=x.zero,y=y.zero,labels="0",col=foreground,font=2,cex=2)
+                        if (bottom) axis(side=1,at=x.value,labels=x.label,las=1)
+                        if (left)   axis(side=2,at=y.value,labels=y.label,las=1)
                      }#end if
                      #---------------------------------------------------------------------#
                   }#end for
@@ -5310,10 +5501,11 @@ for (g in loop.global){
                   par(las=0)
                   if (n.scenario == 1){
                      mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+                     mtext(side=2,text=ley,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                   }else{
                      mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff.im)
+                     mtext(side=2,text=ley,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff.im)
                   }#end if
-                  mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
                   mtext(side=3,text=letitre,outer=TRUE,cex=1.0,font=2)
                   #------------------------------------------------------------------------#
 
@@ -5337,6 +5529,377 @@ for (g in loop.global){
       }#end if (var.plt && is.pft && is.dbh)
       #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
    }#end for (v in 1:nscen.comp)
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #        Now we plot bo plots comparing the different scenarios.  We use the same list  #
+   # of variables as the time series.                                                      #
+   #---------------------------------------------------------------------------------------#
+   if (n.scenario == 2){
+      if (is.na(plot.panelbox)){
+         loop.panelbox = sequence(npanel.box)[1]
+      }else if (plot.panelbox){
+         loop.panelbox = sequence(npanel.box)
+      }else{
+         loop.panelbox = integer(0)
+      }#end if
+   }else{
+      loop.panelbox = integer(0)
+   }#end if
+   cat("     * Plot the multiple box plot...","\n")
+   for (v in loop.panelbox){
+      #----- Copy variable info. ----------------------------------------------------------#
+      var.vname    = panel.box$vname  [v]
+      var.desc     = panel.box$desc   [v]
+      var.quant    = panel.box$quant  [v]
+      var.low      = panel.box$low    [v]
+      var.high     = panel.box$high   [v]
+      var.unit     = panel.box$unit   [v]
+      var.plog     = panel.box$plog   [v]
+      is.pft       = panel.box$pft    [v]
+      is.dbh       = panel.box$dbh    [v]
+      var.plt      = panel.box$plt    [v]
+      var.pft      = paste(var.vname,"pft"   ,sep="")
+      var.pftdbh   = paste(var.vname,"pftdbh",sep="")
+      if (var.plog){
+         var.xylog = "y"
+      }else{
+         var.xylog = ""
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
+      #     Decide whether to plot or not.                                                 #
+      #------------------------------------------------------------------------------------#
+      if (var.plt){
+         cat  ("       . ",var.desc,"...","\n")
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #      Plot the box plot by panel.                                                #
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Retrieve all simulations from this panel. ---------------------------------#
+         every   = eft[[var.vname]]$ts[,,y.sel,,drop=FALSE]
+         every   = apply(X = every, FUN = mean, MARGIN = c(1,2,4),na.rm=TRUE)
+         r.dim   = dim(every)[-1]      ; names(o.dim  ) = c("real","season")
+         r.dname = dimnames(every)[-1] ; names(o.dname) = c("real","season")
+         r.seq   = mapply( FUN = sequence, nvec = o.dim, SIMPLIFY = FALSE)
+         o.dim   = dim(every)[-1]      ; names(o.dim  ) = c("real","season")
+         o.dname = dimnames(every)[-1] ; names(o.dname) = c("real","season")
+         o.seq   = mapply( FUN = sequence, nvec = o.dim, SIMPLIFY = FALSE)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Find the panel information. -----------------------------------------------#
+         p.type         = simul$dim.type == "panel"
+         p.name         = "panel"
+         p.ind          = simul$panel$index  [g.sel]
+         p.key          = simul$key[g.sel,p.type]
+         p.level        = list(simul$panel$level)
+         p.dim          = simul$panel$n.level
+         p.seq          = sequence(p.dim)
+         names(p.level) = "panel"
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Retrieve the scenarios and the default for each scenario.                  #
+         #---------------------------------------------------------------------------------#
+         s.type         = simul$dim.type == "scenario"
+         s.name         = names(simul$dim[s.type])
+         s.dim          = simul$dim[s.type]
+         s.dnames       = simul$panel$level
+         s.value        = simul$value[g.sel,s.type]
+         s.key          = simul$key[g.sel,s.type]
+         s.level        = split(x=simul$scenario$level,f=simul$scenario$idxcol)
+         names(s.level) = names(simul$dim)[s.type]
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Find the array names.                                                      #
+         #---------------------------------------------------------------------------------#
+         s.default = split(simul$default[s.type],index(simul$default[s.type]))
+         s.ind     = data.frame( apply(X=simul$scenario$index,MARGIN=2,FUN="[",g.sel)
+                               , stringsAsFactors = FALSE
+                               )#end data.frame
+         a.dim     = sapply(X=c(p.dim,s.dim  ,o.dim  ),FUN=c)
+         a.dnames  = c(p.level,s.level,o.dname)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Build the lists to split the array by simulation and panel.                #
+         #---------------------------------------------------------------------------------#
+         if (! is.list(p.ind)) p.ind = list(p.ind)
+         if (! is.list(s.ind)) s.ind = list(s.ind)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Split the stuff into panels, and create the scenario maps.                 #
+         #---------------------------------------------------------------------------------#
+         this       = array(data=every,dim=a.dim,dimnames=a.dnames)
+         n.a.dim    = length(a.dim)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #    Find the dimensions of each scenario.                                        #
+         #---------------------------------------------------------------------------------#
+         sc1   = scenario[[1]]
+         n.sc1 = length(sc1$key)
+         sc2   = scenario[[2]]
+         n.sc2 = length(sc2$key)
+         n.lax = n.sc2 + 2
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Set up the box plot colour.                                                 #
+         #---------------------------------------------------------------------------------#
+         bp.colour = rep( x     = c("transparent",sc2$colour,"transparent")
+                        , times = n.sc1
+                        )#end rep
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Find the x based on the 1st scenario (n.sc1) and the 2nd scenario          #
+         # (n.lax).                                                                        #
+         #---------------------------------------------------------------------------------#
+         xlimit = c(0,n.sc1*n.lax) + 0.5
+         xat    = seq(from=1 + 0.5*(n.lax-1), to=n.sc1*n.lax, by=n.lax)
+         xgrid  = seq(from=0.5, to=(n.sc1+1)*n.lax - 0.5*(n.lax-1),by=n.lax)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Find the y limits.                                                         #
+         #---------------------------------------------------------------------------------#
+         ylimit.season = pretty.xylim( u       = every[,,-n.season]
+                                     , fracexp = 0.0
+                                     , is.log  = var.plog
+                                     )#end pretty.xylim
+         ylimit.year   = pretty.xylim( u       = every[,, n.season]
+                                     , fracexp = 0.0
+                                     , is.log  = var.plog
+                                     )#end pretty.xylim
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Plot the data by season.                                                   #
+         #---------------------------------------------------------------------------------#
+         for (e in 1:n.season){
+            #------------------------------------------------------------------------------#
+            #     Keep the current season only.                                            #
+            #------------------------------------------------------------------------------#
+            bye      = n.a.dim
+            inds     = as.matrix(expand.grid(mapply(FUN=sequence,a.dim[-bye])))
+            inds     = cbind(inds,e)
+            this.var = array(this[inds],dim=a.dim[-bye],dimnames=a.dnames[-bye])
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Set the annotation and some auxiliary variables.                        #
+            #------------------------------------------------------------------------------#
+            letitre = paste("Scenario comparision - ",var.desc,"\n",season.desc[e]
+                           ," - ",global.desc,sep="")
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Axis labels. -----------------------------------------------------------#
+            lex     = scenario[[1]]$alabel
+            ley     = paste(var.desc," [",var.unit,"]",sep="")
+            #------------------------------------------------------------------------------#
+
+
+            #----- Y limit. ---------------------------------------------------------------#
+            ylimit = if(e == n.season){ylimit.year}else{ylimit.season}
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over all output formats.                                            #
+            #------------------------------------------------------------------------------#
+            for (o in 1:nout){
+               #----- Get the path and create file name. ----------------------------------#
+               if ( e == n.season){
+                  now.outpath  = outpath[[o]]$global[[g]]$panelbox.year
+                  fichier      = paste(now.outpath,"/panelbox-year-"
+                                      ,var.vname,"-",global.suffix,".",outform[o],sep="")
+               }else{
+                  now.outpath  = outpath[[o]]$global[[g]]$panelbox.season[e]
+                  fichier      = paste(now.outpath,"/panelbox-",season.suffix[e],"-"
+                                      ,var.vname,"-",global.suffix,".",outform[o],sep="")
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+               #----- Open the file. ------------------------------------------------------#
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth
+                     ,height=size$height*depth,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=size$width
+                     ,height=size$height,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Save the margins to avoid losing the data. --------------------------#
+               par.orig = par(no.readonly = TRUE)
+               mar.orig = par.orig$mar
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Split the plotting window.                                           #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par(oma = c(0.2,3,4.5,0))
+               layout( mat     = rbind(lo.panel$mat+1,rep(1,times=lo.panel$ncol))
+                     , heights = c(rep(5/lo.panel$nrow,lo.panel$nrow),1)
+                     )#end layout
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the legend.                                                      #
+               #---------------------------------------------------------------------------#
+               par(mar=c(0.2,4.1,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , legend = sc2$desc
+                     , fill   = sc2$colour
+                     , border = foreground
+                     , ncol   = min(n.sc2,max(3,pretty.box(n=n.sc2)$ncol))
+                     , title  = eval(substitute(expression(bold(a)),list(a=sc2$alabel)))
+                     , cex    = 0.9
+                     , xpd    = TRUE
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Loop over all panels, and plot the data for this season.             #
+               #---------------------------------------------------------------------------#
+               loop.panel = sequence(max(1,simul$panel$n.level   ))
+               for (p in loop.panel){
+
+                  #------------------------------------------------------------------------#
+                  #     Find out where is this box going, and set up axes and margins.     #
+                  #------------------------------------------------------------------------#
+                  left    = TRUE # (p %% lo.panel$ncol) == 1
+                  right   = (p %% lo.panel$ncol) == 0
+                  top     = p <= lo.panel$ncol
+                  bottom  = p > (lo.panel$nrow - 1) * lo.panel$ncol
+                  mar.now = c(1 + 3*bottom,1 + 1*left,1 + 2*top,1 + 1*right) + 0.1
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Make the sub-title. ----------------------------------------------#
+                  lesub=simul$panel$title[p]
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Create the temporary box plot list. ------------------------------#
+                  pp.this = this.var[p,,,]
+                  empty   = array( data     = NA
+                                 , dim      = dim(pp.this)[-2]
+                                 , dimnames = dimnames(pp.this)[-2]
+                                 )#end array
+                  pp.this = abind(aaa=empty,pp.this,zzz=empty,along=2)
+                  ai      = arrayInd(sequence(length(pp.this)),.dim=dim(pp.this))
+                  bp.plot = split(x=pp.this,f=list(ai[,2],ai[,1]))
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Set the window. --------------------------------------------------#
+                  par(mar = mar.now)
+                  plot.new()
+                  plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
+                  if (bottom) axis(side=1,at=xat,labels=sc1$label)
+                  if (left)   axis(side=2)
+                  box()
+                  title(main=lesub,cex.main=cex.main)
+                  if (plotgrid) abline(h=axTicks(2),col=grid.colour,lty="solid")
+                  if (plotgrid) abline(v=xgrid,col=grey.fg,lty="solid")
+
+                  #----- Add the box plot, without the x axis. ----------------------------#
+                  boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
+                         ,yaxt="n")
+                  #------------------------------------------------------------------------#
+               }#end for
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the global title.                                                #
+               #---------------------------------------------------------------------------#
+               par(las=0)
+               mtext(side=1,text=lex,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
+               mtext(side=2,text=ley,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
+               mtext(side=3,text=letitre,outer=TRUE,cex=1.10,font=2)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               clean.tmp()
+               #---------------------------------------------------------------------------#
+            }#end for (o in 1:nout)
+            #------------------------------------------------------------------------------#
+         }#end for (e in 1:n.season)
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
+   }#end for (v in 1:npanel.box)
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
 

@@ -1,7 +1,7 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath"                                  # Current directory.
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
-outroot        = "thisoutroot" # Source  directory.
+here           = "thispath"     # Current directory.
+srcdir         = "thisrscpath"  # Source  directory.
+outroot        = "thisoutroot"  # Output  directory.
 myplaces       = c("thispoly")
 #------------------------------------------------------------------------------------------#
 #     Initial and final times, they must be character vectors of size 2, the first one     #

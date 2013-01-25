@@ -15,10 +15,10 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"                          # Current directory.
-there          = "thatpath"                          # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
-outroot        = "thisoutroot"                       # Directory for figures
+here           = "thispath"    # Current directory.
+there          = "thatpath"    # Directory where analyses/history are 
+srcdir         = "thisrscpath" # Source  directory.
+outroot        = "thisoutroot" # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -77,6 +77,7 @@ slz.min        = -5.0         # The deepest depth that trees access water.
 idbh.type      = myidbhtype   # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+klight         = myklight     # Weighting factor for maximum carbon balance
 #------------------------------------------------------------------------------------------#
 
 
@@ -380,49 +381,7 @@ for (place in myplaces){
    # at any given time.                                                                    #
    #---------------------------------------------------------------------------------------#
    empty = szpft$nplant == 0
-   szpft$agb          [empty] = NA
-   szpft$basarea      [empty] = NA
-   szpft$lai          [empty] = NA
-   szpft$wai          [empty] = NA
-   szpft$tai          [empty] = NA
-   szpft$gpp          [empty] = NA
-   szpft$npp          [empty] = NA
-   szpft$mco          [empty] = NA
-   szpft$cba          [empty] = NA
-   szpft$cbalight     [empty] = NA
-   szpft$cbamoist     [empty] = NA
-   szpft$cbal12light  [empty] = NA
-   szpft$cbal12moist  [empty] = NA
-   szpft$cbarel       [empty] = NA
-   szpft$ldrop        [empty] = NA
-   szpft$fso          [empty] = NA
-   szpft$demand       [empty] = NA
-   szpft$supply       [empty] = NA
-   szpft$mort         [empty] = NA
-   szpft$agemort      [empty] = NA
-   szpft$ncbmort      [empty] = NA
-   szpft$tfallmort    [empty] = NA
-   szpft$coldmort     [empty] = NA
-   szpft$distmort     [empty] = NA
-   szpft$growth       [empty] = NA
-   szpft$plresp       [empty] = NA
-   szpft$bstore       [empty] = NA
-   szpft$hflxlc       [empty] = NA
-   szpft$wflxlc       [empty] = NA
-   szpft$transp       [empty] = NA
-   szpft$i.gpp        [empty] = NA
-   szpft$i.npp        [empty] = NA
-   szpft$i.plresp     [empty] = NA
-   szpft$i.mco        [empty] = NA
-   szpft$i.cba        [empty] = NA
-   szpft$i.cbalight   [empty] = NA
-   szpft$i.cbamoist   [empty] = NA
-   szpft$i.cbal12light[empty] = NA
-   szpft$i.cbal12moist[empty] = NA
-   szpft$i.transp     [empty] = NA
-   szpft$i.wflxlc     [empty] = NA
-   szpft$i.hflxlc     [empty] = NA
-   szpft$nplant       [empty] = NA
+   for (vname in names(szpft)) szpft[[vname]][empty] = NA
    #---------------------------------------------------------------------------------------#
 
 

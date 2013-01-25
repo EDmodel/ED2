@@ -23,19 +23,30 @@ outfile = file.path(here,"newjoborder.txt")        #   Job order
 #------------------------------------------------------------------------------------------#
 #      Variables that will vary (check the list below for all possibilities.               #
 #------------------------------------------------------------------------------------------#
-varrun  = list( iata      = c("gyf","s67")
+# rscen    = c("r+000","r-020","r-040","r-060","r-080","r-100")
+# tscen    = c("t+000","t+100","t+200","t+300")
+# escen    = paste("real",sprintf("%2.2i",seq(from=0,to=9,by=1)),sep="-")
+# 
+# scenario = apply( X        = expand.grid(list(rscen,tscen,escen), stringsAsFactors = FALSE)
+#                 , MARGIN   = 1
+#                 , FUN      = paste
+#                 , collapse = "_"
+#                 )#end apply
+
+
+varrun  = list( iata      = c("gyf","s67","rja")
+              , iscenario = scenario
               , iphen     = c(-1,2)
-              , yeara     = 1851
-              , yearz     = 2011
-              , queue     = "unrestricted_parallel"
+              , yeara     = 1962
+              , yearz     = 2012
               , isoilflg  = 2
-              , istext    = c(0,16,6,2,8,11,17)
+              , istext    = c(16,6,2,8,11)
               )#end list
 varlabel = list( iata      = varrun$iata
+               , iscenario = scenario
                , iphen     = paste("iphen",sprintf("%+2.2i",varrun$iphen) ,sep="")
-               , yeara     = "yr1851"
-               , yearz     = "yr2011"
-               , queue     = "unrestricted_parallel"
+               , yeara     = "yr1962"
+               , yearz     = "yr2012"
                , isoilflg  = "isoil02"
                , istext    = paste("stext",sprintf("%2.2i",varrun$istext),sep="")
                )#end list
@@ -100,6 +111,7 @@ default = list( run           = "unnamed"
               , init.mode     = 6
               , iscenario     = "default"
               , isizepft      = 0
+              , iage          = 20
               , isoilflg      = 1
               , istext        = 1
               , sand          = -1.0
@@ -201,7 +213,7 @@ for (n in 1:nvars) joborder[[names(myruns)[n]]] = myruns[[names(myruns)[n]]]
 #------------------------------------------------------------------------------------------#
 #     Create a table with room for all simulations.                                        #
 #------------------------------------------------------------------------------------------#
-poitout = poilist[match(joborder$iata,poilist$iata),]
+poidata = poilist[match(joborder$iata,poilist$iata),]
 #------------------------------------------------------------------------------------------#
 
 
@@ -209,7 +221,7 @@ poitout = poilist[match(joborder$iata,poilist$iata),]
 #     Replace met driver when it is supposed to be tower data.                             #
 #------------------------------------------------------------------------------------------#
 is.tower                      = joborder$met.driver == "tower"
-joborder$met.driver[is.tower] = poitout$met.driver[is.tower]
+joborder$met.driver[is.tower] = poidata$met.driver[is.tower]
 #------------------------------------------------------------------------------------------#
 
 
@@ -217,11 +229,11 @@ joborder$met.driver[is.tower] = poitout$met.driver[is.tower]
 #     Replace other POI-specific variables as long as they are not to be specified by the  #
 # user settings.                                                                           #
 #------------------------------------------------------------------------------------------#
-keep    = ( names(poitout) %in% names(joborder) 
-          & ( ! names(poitout) %in% names(myruns) )
-          & ( ! names(poitout) %in% c("iata","met.driver") )
+keep    = ( names(poidata) %in% names(joborder) 
+          & ( ! names(poidata) %in% names(myruns) )
+          & ( ! names(poidata) %in% c("iata","met.driver") )
           )#end keep
-poidata = poitout[,keep]
+poidata = poidata[,keep]
 npois   = ncol(poidata)
 if (npois > 0){
    for (p in 1:npois) joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
@@ -229,22 +241,28 @@ if (npois > 0){
 #------------------------------------------------------------------------------------------#
 
 
+
 #------------------------------------------------------------------------------------------#
-#     We must overwrite clay and sand in case soil type is one of the variables.           #
+#     Make sure that soil texture is standard when the user provides soil texture and the  #
+# value is not zero.                                                                       #
 #------------------------------------------------------------------------------------------#
 if ("istext" %in% names(varrun)){
-   zero = joborder$istext == 0
-   joborder$istext[  zero] = poitout$ntext[zero]
-   joborder$sand  [! zero] = -1
-   joborder$clay  [! zero] = -1
+   sel                    = joborder$istext != 0
+   joborder$sand  [  sel] = -1.0
+   joborder$clay  [  sel] = -1.0
+   joborder$istext[! sel] = poidata$istext[! sel]
 }#end if
 #------------------------------------------------------------------------------------------#
 
 
+
 #------------------------------------------------------------------------------------------#
-#    Build the name of the simulations.                                                    #
+#    Build the name of the simulations.  The polygon name always stays, even if the run is #
+# for one site only.                                                                       #
 #------------------------------------------------------------------------------------------#
-bye = which(sapply(X=varlabel,FUN=length) == 1)
+stay = which(names(varlabel) %in% c("iata"))
+bye  = which(sapply(X=varlabel,FUN=length) == 1)
+bye  = bye[! bye %in% stay]
 if (length(bye) > 0) for (b in sort(bye,decreasing=TRUE)) varlabel[[b]] = NULL
 runname  = apply( X        = expand.grid(varlabel, stringsAsFactors = FALSE)
                 , MARGIN   = 1
@@ -255,6 +273,7 @@ metname           = "s"
 metname[is.tower] = "t"
 joborder$run      = paste(metname,runname,sep="")
 #------------------------------------------------------------------------------------------#
+
 
 
 

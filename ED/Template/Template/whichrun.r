@@ -7,7 +7,7 @@ graphics.off()
 #----- The user-defined variable section. -------------------------------------------------#
 main             = "pathhere"
 histomain        = "pathhere"
-srcdir           = "/n/moorcroft_data/mlongo/util/Rsc"
+srcdir           = "thisrscpath"
 polyg            = "thispoly"
 queue            = "thisqueue"
 yeara            = thisyeara
@@ -35,7 +35,7 @@ output = paste(main,polyg,sep="/") # Current directory.
 
 
 #----- Load some useful scripts and packages. ---------------------------------------------#
-source(paste(srcdir,"load.everything.r",sep="/"))
+isok = require(hdf5)
 #------------------------------------------------------------------------------------------#
 
 

@@ -12,9 +12,9 @@ graphics.off()
 
 
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath"                               # Current directory.
-there          = "thatpath"    # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Property directory.
+here           = "thispath"         # Current directory.
+there          = "thatpath"         # Directory where analyses/history are 
+srcdir         = "thisrscpath"      # Script directory.
 when           = c("thismontha/thisdatea/thisyeara","thishoura:thisminua:00")               # Time to grab the history
 outroot        = "thisoutroot"
 myplaces       = c("thispoly")                            # Places to find patch properties

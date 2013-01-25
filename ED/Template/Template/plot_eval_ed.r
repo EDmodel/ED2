@@ -16,10 +16,10 @@ graphics.off()
 
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"                          # Current directory.
-there          = "thatpath"                          # Directory where analyses/history are
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
-outroot        = "thisoutroot"                       # Directory for figures
+here           = "thispath"     # Current directory.
+there          = "thatpath"     # Directory where analyses/history are
+srcdir         = "thisrscpath"  # Source  directory.
+outroot        = "thisoutroot"  # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 

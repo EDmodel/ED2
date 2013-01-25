@@ -15,10 +15,10 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"                          # Current directory.
-there          = "thatpath"                          # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
-outroot        = "thisoutroot"                       # Directory for figures
+here           = "thispath"    # Current directory.
+there          = "thatpath"    # Directory where analyses/history are 
+srcdir         = "thisrscpath" # Source  directory.
+outroot        = "thisoutroot" # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -52,6 +52,8 @@ slz.min        = -5.0         # The deepest depth that trees access water.
 idbh.type      = myidbhtype   # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                              # 3 -- 0-10; 10-35; 35-70; > 70 (cm)
+klight         = myklight     # Weighting factor for maximum carbon balance
 #------------------------------------------------------------------------------------------#
 
 
@@ -394,7 +396,7 @@ for (place in myplaces){
       }else if (ibackground == 1){
          pigment = "       pigment  { color rgb <1. ,1. ,1. >}   "
       }else if (ibackground == 2){
-         pigment = "       pigment  { color rgb <0.9,0.9,0.9>}   "
+         pigment = "       pigment  { color rgb <1. ,1. ,1. >}   "
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -411,7 +413,8 @@ for (place in myplaces){
          povtitle = rbind( povtitle
                          ,       "//----- The header. --------------------------------//"
                          , paste("text { ttf \"cyrvetic.ttf\" \"",lesim[n],"\" 5,0",sep="")
-                         ,        pigment
+                         ,               pigment
+                         ,       "       finish{ ambient 1.0 diffuse 0.0}"
                          ,       "       scale     <   12.0,   12.0,    0.1>"
                          ,       "       rotate    <   28.8,    0.0,    0.0>"
                          ,       "       rotate    <    0.0,   45.0,    0.0>"
@@ -425,6 +428,7 @@ for (place in myplaces){
       povstamp = rbind(       "//----- The time stamp. ----------------------------//"
                       , paste("text { ttf \"cyrvetic.ttf\" \"",pcwhen,"\" 5,0",sep="")
                       ,        pigment
+                      ,       "       finish{ ambient 1.0 diffuse 0.0}"
                       ,       "       scale     <   12.0,   12.0,    0.1>"
                       ,       "       rotate    <   28.8,    0.0,    0.0>"
                       ,       "       rotate    <    0.0,   45.0,    0.0>"

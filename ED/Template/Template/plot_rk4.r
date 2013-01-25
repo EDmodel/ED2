@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath"                                  # Current directory.
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
+here           = "thispath"    # Current directory.
+srcdir         = "thisrscpath" # Source  directory.
 outroot        = "thisoutroot" # Source  directory.
 myplaces       = c("thispoly")
 #------------------------------------------------------------------------------------------#

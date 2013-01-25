@@ -15,10 +15,10 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"                          # Current directory.
-there          = "thatpath"                          # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
-outroot        = "thisoutroot"                       # Directory for figures
+here           = "thispath"    # Current directory.
+there          = "thatpath"    # Directory where analyses/history are 
+srcdir         = "thisrscpath" # Source  directory.
+outroot        = "thisoutroot" # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -140,7 +140,7 @@ growth.labels = c("DBH","Above Ground Biomass","Basal Area")
 #------------------------------------------------------------------------------------------#
 #     Comparisons.                                                                         #
 #------------------------------------------------------------------------------------------#
-#---- 1. Plot time series of median and confidence intervals. -----------------------------#
+#---- 1. Plot time series of expected values and confidence intervals. --------------------#
 pratets      = list()
 pratets[[1]] = list( ed2.rate   = "recr"
                    , sta.rate   = "recr"
@@ -210,7 +210,7 @@ pratets[[5]] = list( ed2.rate   = "growth"
 
 
 
-#---- 2. Plot median and confidence intervals for all size classes and censuses. ----------#
+#---- 2. Plot expected values and confidence intervals for all size classes and censuses. -#
 pratesize      = list()
 pratesize[[1]] = list( ed2.rate   = "mort"
                      , sta.rate   = "mort"
@@ -264,7 +264,7 @@ pratesize[[4]] = list( ed2.rate   = "growth"
                      , legpos     = "topright"
                      , plog       = ""
                      )#end list
-#---- 3. Plot median and confidence intervals for themes. ---------------------------------#
+#---- 3. Plot expected values and confidence intervals for themes. ------------------------#
 pratetheme      = list()
 pratetheme[[1]] = list( ed2.rate   = c("ddmort","dimort")
                       , sta.rate   = "mort"
@@ -601,7 +601,7 @@ for (place in myplaces){
                         , 2. * sta$dbh.breaks[n.dbh] - sta$dbh.breaks[n.dbh-1] )
       x.dbh       = 0.5 * ( x.edge[-1] + x.edge[-(n.dbh+1)] )
       xlimit      = pretty.xylim(u=x.edge,fracexp=0.0,is.log=FALSE)
-      dbh.names   = dimnames(sta$mort.size$n$median)[[2]]
+      dbh.names   = dimnames(sta$mort.size$n$expected)[[2]]
       year4       = numyears(sta$when)
       biocyca     = year4[2]
       biocycz     = year4[length(year4)]
@@ -726,9 +726,10 @@ for (place in myplaces){
                          ,"; Census: ",paste(act.census.year[census.idx[m]]),"\n")
 
             #----- Build the file name. ---------------------------------------------------#
-            cmonth = sprintf("%2.2i",now.month)
-            cyear  = sprintf("%2.2i",now.year )
-            myfile = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5",sep="")
+            cmonth     = sprintf("%2.2i",now.month)
+            cyear      = sprintf("%2.2i",now.year )
+            myfile     = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5",sep="")
+            myfile.bz2 = paste(myfile,"bz2",sep=".")
             #------------------------------------------------------------------------------#
 
 
@@ -750,11 +751,27 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Read data if the file exists.                                            #
             #------------------------------------------------------------------------------#
-            if (file.exists(myfile)){
+            if (file.exists(myfile) | file.exists(myfile.bz2)){
+
+
+
 
                #----- Read data and close connection immediately after. -------------------#
-               #cat("     * Reading ",basename(myfile),"...","\n")
-               mymont = hdf5load(file=myfile,load=FALSE,verbosity=0,tidy=TRUE)
+               if (file.exists(myfile)){
+                  mymont    = hdf5load(file=myfile,load=FALSE,verbosity=0,tidy=TRUE)
+
+               }else if(file.exists(myfile.bz2)){
+                  temp.file = file.path(tempdir(),basename(myfile))
+                  dummy     = bunzip2(filename=myfile.bz2,destname=temp.file,remove=FALSE)
+                  mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+                  dummy     = file.remove(temp.file)
+
+               }else{
+                  cat (" - File      : ",basename(myfile)    ,"\n")
+                  cat (" - File (bz2): ",basename(myfile.bz2),"\n")
+                  stop(" Neither the expanded nor the compressed files were found!")
+
+               }#end if
                #---------------------------------------------------------------------------#
 
 
@@ -994,31 +1011,30 @@ for (place in myplaces){
                   #     Growth rates are found only for established cohorts.               #
                   #------------------------------------------------------------------------#
                   if (any(s.cs2)){
-                     #----- Estimate the median of this population. -----------------------#
-                     dlndbhdt        = dlndbhdtconow [s.cs2]
-                     dlnagbdt        = dlnagbdtconow [s.cs2]
-                     dlnbadt         = dlnbadtconow  [s.cs2]
-                     wgt             = w.nplant      [s.cs2]
-                     median.dlndbhdt = weighted.quantile( x  = dlndbhdtconow [s.cs2]
-                                                        , w  = w.nplant      [s.cs2]
-                                                        , qu = 0.50
-                                                        )#end 
-                     median.dlnagbdt = weighted.quantile( x  = dlnagbdtconow [s.cs2]
-                                                        , w  = w.nplant      [s.cs2]
-                                                        , qu = 0.50
-                                                        )#end 
-                     median.dlnbadt  = weighted.quantile( x  = dlnbadtconow  [s.cs2]
-                                                        , w  = w.nplant      [s.cs2]
-                                                        , qu = 0.50
-                                                        )#end 
+                     #----- Estimate the mean of this population. -------------------------#
+                     dlndbhdt      = dlndbhdtconow [s.cs2]
+                     dlnagbdt      = dlnagbdtconow [s.cs2]
+                     dlnbadt       = dlnbadtconow  [s.cs2]
+                     wgt           = w.nplant      [s.cs2]
+                     mean.dlndbhdt = weighted.mean( x  = dlndbhdtconow [s.cs2]
+                                                  , w  = w.nplant      [s.cs2]
+                                                  )#end 
+                     mean.dlnagbdt = weighted.mean( x  = dlnagbdtconow [s.cs2]
+                                                  , w  = w.nplant      [s.cs2]
+                                                  )#end 
+                     mean.dlnbadt  = weighted.mean( x  = dlnbadtconow  [s.cs2]
+                                                  , w  = w.nplant      [s.cs2]
+                                                  )#end 
                      #---------------------------------------------------------------------#
+
+
 
                      #---------------------------------------------------------------------#
                      #     Copy the results to the arrays.                                 #
                      #---------------------------------------------------------------------#
-                     ts.growth.plot$dbh[p,m,u] = median.dlndbhdt$q
-                     ts.growth.plot$agb[p,m,u] = median.dlnagbdt$q
-                     ts.growth.plot$ba [p,m,u] = median.dlnbadt$q
+                     ts.growth.plot$dbh[p,m,u] = mean.dlndbhdt
+                     ts.growth.plot$agb[p,m,u] = mean.dlnagbdt
+                     ts.growth.plot$ba [p,m,u] = mean.dlnbadt
                      #---------------------------------------------------------------------#
                   }#end if
                   #------------------------------------------------------------------------#
@@ -1095,31 +1111,28 @@ for (place in myplaces){
                      #     Growth rates are found only for established cohorts.            #
                      #---------------------------------------------------------------------#
                      if (any(s.cs2)){
-                        #----- Estimate the median of this population. --------------------#
-                        dlndbhdt        = dlndbhdtconow [s.cs2]
-                        dlnagbdt        = dlnagbdtconow [s.cs2]
-                        dlnbadt         = dlnbadtconow  [s.cs2]
-                        wgt             = w.nplant      [s.cs2]
-                        median.dlndbhdt = weighted.quantile( x  = dlndbhdtconow [s.cs2]
-                                                           , w  = w.nplant      [s.cs2]
-                                                           , qu = 0.50
-                                                           )#end 
-                        median.dlnagbdt = weighted.quantile( x  = dlnagbdtconow [s.cs2]
-                                                           , w  = w.nplant      [s.cs2]
-                                                           , qu = 0.50
-                                                           )#end 
-                        median.dlnbadt  = weighted.quantile( x  = dlnbadtconow  [s.cs2]
-                                                           , w  = w.nplant      [s.cs2]
-                                                           , qu = 0.50
-                                                           )#end 
+                        #----- Estimate the mean of this population. ----------------------#
+                        dlndbhdt      = dlndbhdtconow [s.cs2]
+                        dlnagbdt      = dlnagbdtconow [s.cs2]
+                        dlnbadt       = dlnbadtconow  [s.cs2]
+                        wgt           = w.nplant      [s.cs2]
+                        mean.dlndbhdt = weighted.mean( x  = dlndbhdtconow [s.cs2]
+                                                     , w  = w.nplant      [s.cs2]
+                                                     )#end 
+                        mean.dlnagbdt = weighted.mean( x  = dlnagbdtconow [s.cs2]
+                                                     , w  = w.nplant      [s.cs2]
+                                                     )#end 
+                        mean.dlnbadt  = weighted.mean( x  = dlnbadtconow  [s.cs2]
+                                                     , w  = w.nplant      [s.cs2]
+                                                     )#end 
                         #------------------------------------------------------------------#
 
                         #------------------------------------------------------------------#
                         #     Copy the results to the arrays.                              #
                         #------------------------------------------------------------------#
-                        ts.growth.size$dbh[p,d,m,u] = median.dlndbhdt$q
-                        ts.growth.size$agb[p,d,m,u] = median.dlnagbdt$q
-                        ts.growth.size$ba [p,d,m,u] = median.dlnbadt$q
+                        ts.growth.size$dbh[p,d,m,u] = mean.dlndbhdt
+                        ts.growth.size$agb[p,d,m,u] = mean.dlnagbdt
+                        ts.growth.size$ba [p,d,m,u] = mean.dlnbadt
                         #------------------------------------------------------------------#
                      }#end if
                      #---------------------------------------------------------------------#
@@ -1457,8 +1470,11 @@ for (place in myplaces){
                   ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                   if (any(is.finite(ts.plot.now))){
                      boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
-                     ci.now   = boot.ci(boot.out=boot.now,conf=0.95,type="perc")
-                     if (length(ci.now$percent) == 5){
+                     ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                                   ,silent=TRUE)
+                     if ("try-error" %in% is(ci.now)){
+                        warning("Failed using bootstrap...")
+                     }else if (length(ci.now$percent) == 5){
                         ms.q025.plot[p,i] = ci.now$percent[4]
                         ms.q975.plot[p,i] = ci.now$percent[5]
                      }else{
@@ -1484,9 +1500,9 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Save plot and size.                                                      #
             #------------------------------------------------------------------------------#
-            ms.this.plot[[v.now]] = list( mean = ms.mean.plot
-                                        , q025 = ms.q025.plot
-                                        , q975 = ms.q975.plot
+            ms.this.plot[[v.now]] = list( expected = ms.mean.plot
+                                        , q025     = ms.q025.plot
+                                        , q975     = ms.q975.plot
                                         )#end list
             #------------------------------------------------------------------------------#
             dummy = assign(paste("ms",recr.rates[r],"plot",sep="."), ms.this.plot)
@@ -1532,8 +1548,11 @@ for (place in myplaces){
                   ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                   if (any(is.finite(ts.plot.now))){
                      boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
-                     ci.now   = boot.ci(boot.out=boot.now,conf=0.95,type="perc")
-                     if (length(ci.now$percent) == 5){
+                     ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                                   ,silent=TRUE)
+                     if ("try-error" %in% is(ci.now)){
+                        warning("Failed using bootstrap...")
+                     }else if (length(ci.now$percent) == 5){
                         ms.q025.plot[p,i] = ci.now$percent[4]
                         ms.q975.plot[p,i] = ci.now$percent[5]
                      }else{
@@ -1548,8 +1567,11 @@ for (place in myplaces){
                      ms.mean.size[p,d,i] = mean(ts.size.now,na.rm=TRUE) 
                      if (any(is.finite(ts.size.now))){
                         boot.now = boot   (data=ts.size.now,statistic=mean.fun,R=n.boot)
-                        ci.now   = boot.ci(boot.out=boot.now,conf=0.95,type="perc")
-                        if (length(ci.now$percent) == 5){
+                        ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                                      ,silent=TRUE)
+                        if ("try-error" %in% is(ci.now)){
+                           warning("Failed using bootstrap...")
+                        }else if (length(ci.now$percent) == 5){
                            ms.q025.size[p,d,i] = ci.now$percent[4]
                            ms.q975.size[p,d,i] = ci.now$percent[5]
                         }else{
@@ -1581,13 +1603,13 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Save plot and size.                                                      #
             #------------------------------------------------------------------------------#
-            ms.this.plot[[v.now]] = list( mean = ms.mean.plot
-                                        , q025 = ms.q025.plot
-                                        , q975 = ms.q975.plot
+            ms.this.plot[[v.now]] = list( expected = ms.mean.plot
+                                        , q025     = ms.q025.plot
+                                        , q975     = ms.q975.plot
                                         )#end list
-            ms.this.size[[v.now]] = list( mean = ms.mean.size
-                                        , q025 = ms.q025.size
-                                        , q975 = ms.q975.size
+            ms.this.size[[v.now]] = list( expected = ms.mean.size
+                                        , q025     = ms.q025.size
+                                        , q975     = ms.q975.size
                                         )#end list
             #------------------------------------------------------------------------------#
             dummy = assign(paste("ms",mort.rates[r],"plot",sep="."), ms.this.plot)
@@ -1633,8 +1655,11 @@ for (place in myplaces){
                   ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                   if (any(is.finite(ts.plot.now))){
                      boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
-                     ci.now   = boot.ci(boot.out=boot.now,conf=0.95,type="perc")
-                     if (length(ci.now$percent) == 5){
+                     ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                                   ,silent=TRUE)
+                     if ("try-error" %in% is(ci.now)){
+                        warning("Failed using bootstrap...")
+                     }else if (length(ci.now$percent) == 5){
                         ms.q025.plot[p,i] = ci.now$percent[4]
                         ms.q975.plot[p,i] = ci.now$percent[5]
                      }else{
@@ -1649,8 +1674,11 @@ for (place in myplaces){
                      ms.mean.size[p,d,i] = mean(ts.size.now,na.rm=TRUE) 
                      if (any(is.finite(ts.size.now))){
                         boot.now = boot   (data=ts.size.now,statistic=mean.fun,R=n.boot)
-                        ci.now   = boot.ci(boot.out=boot.now,conf=0.95,type="perc")
-                        if (length(ci.now$percent) == 5){
+                        ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                                      ,silent=TRUE)
+                        if ("try-error" %in% is(ci.now)){
+                           warning("Failed using bootstrap...")
+                        }else if (length(ci.now$percent) == 5){
                            ms.q025.size[p,d,i] = ci.now$percent[4]
                            ms.q975.size[p,d,i] = ci.now$percent[5]
                         }else{
@@ -1671,13 +1699,13 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Save plot and size.                                                      #
             #------------------------------------------------------------------------------#
-            ms.this.plot[[v.now]] = list( mean = ms.mean.plot
-                                        , q025 = ms.q025.plot
-                                        , q975 = ms.q975.plot
+            ms.this.plot[[v.now]] = list( expected = ms.mean.plot
+                                        , q025     = ms.q025.plot
+                                        , q975     = ms.q975.plot
                                         )#end list
-            ms.this.size[[v.now]] = list( mean = ms.mean.size
-                                        , q025 = ms.q025.size
-                                        , q975 = ms.q975.size
+            ms.this.size[[v.now]] = list( expected = ms.mean.size
+                                        , q025     = ms.q025.size
+                                        , q975     = ms.q975.size
                                         )#end list
             #------------------------------------------------------------------------------#
             dummy = assign(paste("ms",growth.rates[r],"plot",sep="."), ms.this.plot)
@@ -1771,24 +1799,22 @@ for (place in myplaces){
 
 
             #------------------------------------------------------------------------------#
-            #     Create the plot-level structure.  Here the median and quantiles have a   #
-            # somewhat different number, based on the number of cycles we run (median      #
-            # amongst each cycle).                                                         #
+            #     Create the plot-level structure.                                         #
             #------------------------------------------------------------------------------#
             ed2[[ed2.plot]][[v.now]]               = list()
-            #----- "Borrow" the structure from the sta counterpart. ------------------------#
+            #----- "Borrow" the structure from the sta counterpart. -----------------------#
             ed2[[ed2.plot]][[v.now]]$global        = NA * sta[[sta.plot]][[v.now]]$global
-            ed2[[ed2.plot]][[v.now]]$median        = NA * sta[[sta.plot]][[v.now]]$median
+            ed2[[ed2.plot]][[v.now]]$expected      = NA * sta[[sta.plot]][[v.now]]$expected
             ed2[[ed2.plot]][[v.now]]$q025          = NA * sta[[sta.plot]][[v.now]]$q025
             ed2[[ed2.plot]][[v.now]]$q975          = NA * sta[[sta.plot]][[v.now]]$q975
             #----- Save the global variables. ---------------------------------------------#
-            ed2[[ed2.plot]][[v.now]]$global[4,yyy] = ms.plot$mean[npft+1,yyy]
-            ed2[[ed2.plot]][[v.now]]$global[5,yyy] = ms.plot$q025[npft+1,yyy]
-            ed2[[ed2.plot]][[v.now]]$global[6,yyy] = ms.plot$q975[npft+1,yyy]
+            ed2[[ed2.plot]][[v.now]]$global  [1,yyy] = ms.plot$expected[npft+1,yyy]
+            ed2[[ed2.plot]][[v.now]]$global  [2,yyy] = ms.plot$q025    [npft+1,yyy]
+            ed2[[ed2.plot]][[v.now]]$global  [3,yyy] = ms.plot$q975    [npft+1,yyy]
             #----- Save the PFT statistics. -----------------------------------------------#
-            ed2[[ed2.plot]][[v.now]]$median[ ,yyy] = ms.plot$mean[mypfts,yyy]
-            ed2[[ed2.plot]][[v.now]]$q025  [ ,yyy] = ms.plot$q025[mypfts,yyy]
-            ed2[[ed2.plot]][[v.now]]$q975  [ ,yyy] = ms.plot$q975[mypfts,yyy]
+            ed2[[ed2.plot]][[v.now]]$expected[ ,yyy] = ms.plot$expected[mypfts,yyy]
+            ed2[[ed2.plot]][[v.now]]$q025    [ ,yyy] = ms.plot$q025    [mypfts,yyy]
+            ed2[[ed2.plot]][[v.now]]$q975    [ ,yyy] = ms.plot$q975    [mypfts,yyy]
             #------------------------------------------------------------------------------#
 
 
@@ -1806,24 +1832,22 @@ for (place in myplaces){
 
 
                #---------------------------------------------------------------------------#
-               #     Create the plot-level structure.  Here the median and quantiles have  #
-               # a somewhat different number, based on the number of cycles we run (median #
-               # amongst each cycle).                                                      #
+               #     Create the plot-level structure.                                      #
                #---------------------------------------------------------------------------#
                ed2[[ed2.size]][[v.now]]        = list()
                #----- "Borrow" the structure from the sta counterpart. --------------------#
-               ed2[[ed2.size]][[v.now]]$global = NA * sta[[sta.size]][[v.now]]$global
-               ed2[[ed2.size]][[v.now]]$median = NA * sta[[sta.size]][[v.now]]$median
-               ed2[[ed2.size]][[v.now]]$q025   = NA * sta[[sta.size]][[v.now]]$q025
-               ed2[[ed2.size]][[v.now]]$q975   = NA * sta[[sta.size]][[v.now]]$q975
+               ed2[[ed2.size]][[v.now]]$global   = NA * sta[[sta.size]][[v.now]]$global
+               ed2[[ed2.size]][[v.now]]$expected = NA * sta[[sta.size]][[v.now]]$expected
+               ed2[[ed2.size]][[v.now]]$q025     = NA * sta[[sta.size]][[v.now]]$q025
+               ed2[[ed2.size]][[v.now]]$q975     = NA * sta[[sta.size]][[v.now]]$q975
                #----- Save the global variables. ------------------------------------------#
-               ed2[[ed2.size]][[v.now]]$global[4,,yyy] = ms.size$mean[npft+1,,yyy]
-               ed2[[ed2.size]][[v.now]]$global[5,,yyy] = ms.size$q025[npft+1,,yyy]
-               ed2[[ed2.size]][[v.now]]$global[6,,yyy] = ms.size$q975[npft+1,,yyy]
+               ed2[[ed2.size]][[v.now]]$global[1,,yyy] = ms.size$expected[npft+1,,yyy]
+               ed2[[ed2.size]][[v.now]]$global[2,,yyy] = ms.size$q025    [npft+1,,yyy]
+               ed2[[ed2.size]][[v.now]]$global[3,,yyy] = ms.size$q975    [npft+1,,yyy]
                #----- Save the PFT statistics. --------------------------------------------#
-               ed2[[ed2.size]][[v.now]]$median[ ,,yyy] = ms.size$mean[mypfts,,yyy]
-               ed2[[ed2.size]][[v.now]]$q025  [ ,,yyy] = ms.size$q025[mypfts,,yyy]
-               ed2[[ed2.size]][[v.now]]$q975  [ ,,yyy] = ms.size$q975[mypfts,,yyy]
+               ed2[[ed2.size]][[v.now]]$expected[ ,,yyy] = ms.size$expected[mypfts,,yyy]
+               ed2[[ed2.size]][[v.now]]$q025    [ ,,yyy] = ms.size$q025    [mypfts,,yyy]
+               ed2[[ed2.size]][[v.now]]$q975    [ ,,yyy] = ms.size$q975    [mypfts,,yyy]
                #---------------------------------------------------------------------------#
             }#end if
             #------------------------------------------------------------------------------#
@@ -1844,6 +1868,18 @@ for (place in myplaces){
 
 
 
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Make the RData file name, then we check whether we must read the files again  #
+      # or use the stored RData.                                                           #
+      #------------------------------------------------------------------------------------#
+      path.data  = paste(here,place,"rdata_census",sep="/")
+      if (! file.exists(path.data)) dir.create(path.data)
+      ed22.rdata = paste(path.data,paste("census_",place,".RData",sep=""),sep="/")
+      save(list=c("ed2"),file=ed22.rdata)
+      #------------------------------------------------------------------------------------#
 
 
 
@@ -1901,13 +1937,13 @@ for (place in myplaces){
 
             #----- Load the modelled rates. -----------------------------------------------#
             sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-            sta.median   = 100. * sta.mod[4,,]
-            sta.q025     = 100. * sta.mod[5,,]
-            sta.q975     = 100. * sta.mod[6,,]
+            sta.expected = 100. * sta.mod[1,,]
+            sta.q025     = 100. * sta.mod[2,,]
+            sta.q975     = 100. * sta.mod[3,,]
             ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]$global
-            ed2.median   = 100. * ed2.mod[4,,]
-            ed2.q025     = 100. * ed2.mod[5,,]
-            ed2.q975     = 100. * ed2.mod[6,,]
+            ed2.expected = 100. * ed2.mod[1,,]
+            ed2.q025     = 100. * ed2.mod[2,,]
+            ed2.q975     = 100. * ed2.mod[3,,]
             #------------------------------------------------------------------------------#
 
 
@@ -1986,7 +2022,7 @@ for (place in myplaces){
                          )#end legend
                   #------------------------------------------------------------------------#
                }else{
-                  yuse   = c(sta.q025,sta.q975,ed2.median)
+                  yuse   = c(sta.q025,sta.q975,ed2.expected)
                   ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
 
 
@@ -2068,8 +2104,8 @@ for (place in myplaces){
                   #----- Plot the taxon rate with confidence interval. --------------------#
                   epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col,angle=c(-45,45)
                           ,density=40,lty="solid",lwd=1.0)
-                  lines(x=x.dbh,y=sta.median[,y],type="o",col=col.sta[1],pch=16,lwd=2.0)
-                  lines(x=x.dbh,y=ed2.median[,y],type="o",col=col.ed2[1],pch=16,lwd=2.0)
+                  lines(x=x.dbh,y=sta.expected[,y],type="o",col=col.sta[1],pch=16,lwd=2.0)
+                  lines(x=x.dbh,y=ed2.expected[,y],type="o",col=col.ed2[1],pch=16,lwd=2.0)
                }#end for
                #---------------------------------------------------------------------------#
 
@@ -2171,17 +2207,17 @@ for (place in myplaces){
 
             #----- Load the modelled rates. -----------------------------------------------#
             sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-            sta.median   = 100. * sta.mod[4,2:n.census]
-            sta.q025     = 100. * sta.mod[5,2:n.census]
-            sta.q975     = 100. * sta.mod[6,2:n.census]
-            ed2.median   = list()
+            sta.expected = 100. * sta.mod[1,-1]
+            sta.q025     = 100. * sta.mod[2,-1]
+            sta.q975     = 100. * sta.mod[3,-1]
+            ed2.expected = list()
             ed2.q025     = list()
             ed2.q975     = list()
             for (r in sequence(nrate)){
                ed2.mod         = ed2[[ed2.rate[r]]][[indiv[i]]]$global
-               ed2.median[[r]] = 100. * ed2.mod[4,2:n.census]
-               ed2.q025  [[r]] = 100. * ed2.mod[5,2:n.census]
-               ed2.q975  [[r]] = 100. * ed2.mod[6,2:n.census]
+               ed2.expected[[r]] = 100. * ed2.mod[1,-1]
+               ed2.q025    [[r]] = 100. * ed2.mod[2,-1]
+               ed2.q975    [[r]] = 100. * ed2.mod[3,-1]
             }#end for
             #------------------------------------------------------------------------------#
 
@@ -2233,7 +2269,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Find the plot limit for the y scale.                                  #
                #---------------------------------------------------------------------------#
-               yuse   = c(sta.q025,sta.q975,unlist(ed2.median))
+               yuse   = c(sta.q025,sta.q975,unlist(ed2.expected))
                ylimit = pretty.xylim(u=yuse,fracexp=0.,is.log=ylog)
                #---------------------------------------------------------------------------#
             }#end if
@@ -2325,15 +2361,15 @@ for (place in myplaces){
 
                #----- Plotting window and grid. -------------------------------------------#
                par(mar=c(5,4,4,2)+0.1)
-               plot(x=x.years,y=sta.median,xlim=xlimit,ylim=ylimit,type="n",main=letitre
+               plot(x=x.years,y=sta.expected,xlim=xlimit,ylim=ylimit,type="n",main=letitre
                    ,xlab=lex,ylab=ley,log=plog,cex.main=0.7)
                if (plotgrid) grid(col=grid.colour,lty="solid")
                #----- Plot the taxon rate with confidence interval. -----------------------#
                epolygon(x=plot.poly$x,y=plot.poly$y,col=plot.poly$col,angle=c(90,angle)
                        ,density=c(40,dens),lty="solid",lwd=1.0)
-               lines(x=x.years,y=sta.median,type="o",col=col.sta[1],pch=16,lwd=2.0)
+               lines(x=x.years,y=sta.expected,type="o",col=col.sta[1],pch=16,lwd=2.0)
                for (r in 1:nrate){
-                  lines(x=x.years,y=ed2.median[[r]],type="o",col=col.ed2[r,1]
+                  lines(x=x.years,y=ed2.expected[[r]],type="o",col=col.ed2[r,1]
                        ,pch=16,lwd=2.0)
                }#end for
                #---------------------------------------------------------------------------#
@@ -2483,17 +2519,17 @@ for (place in myplaces){
 
                      #----- Load the modelled rates. --------------------------------------#
                      sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-                     sta.median   = 100. * sta.mod[4,d,2:n.census]
-                     sta.q025     = 100. * sta.mod[5,d,2:n.census]
-                     sta.q975     = 100. * sta.mod[6,d,2:n.census]
-                     ed2.median   = list()
+                     sta.expected = 100. * sta.mod[1,d,-1]
+                     sta.q025     = 100. * sta.mod[2,d,-1]
+                     sta.q975     = 100. * sta.mod[3,d,-1]
+                     ed2.expected = list()
                      ed2.q025     = list()
                      ed2.q975     = list()
                      for (r in 1:nrate){
-                        ed2.mod           = ed2[[ed2.rate[r]]][[indiv[i]]]$global
-                        ed2.median[[r]]   = 100. * ed2.mod[4,d,2:n.census]
-                        ed2.q025  [[r]]   = 100. * ed2.mod[5,d,2:n.census]
-                        ed2.q975  [[r]]   = 100. * ed2.mod[6,d,2:n.census]
+                        ed2.mod             = ed2[[ed2.rate[r]]][[indiv[i]]]$global
+                        ed2.expected[[r]]   = 100. * ed2.mod[1,d,-1]
+                        ed2.q025    [[r]]   = 100. * ed2.mod[2,d,-1]
+                        ed2.q975    [[r]]   = 100. * ed2.mod[3,d,-1]
                      }#end for
                      #---------------------------------------------------------------------#
 
@@ -2528,7 +2564,7 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         #     Find the plot limit for the y scale.                         #
                         #------------------------------------------------------------------#
-                        yuse   = c(ed2.median[d,],sta.q025,sta.q975)
+                        yuse   = c(ed2.expected[d,],sta.q025,sta.q975)
                         ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
                         #------------------------------------------------------------------#
 
@@ -2564,10 +2600,10 @@ for (place in myplaces){
                      #----- Plot the taxon rate with confidence interval. -----------------#
                      epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
                              ,angle=c(90,angle),density=c(40,dens),lty="solid",lwd=1.0)
-                     lines(x=x.years,y=sta.median,type="o",pch=16,lwd=2.0
+                     lines(x=x.years,y=sta.expected,type="o",pch=16,lwd=2.0
                           ,col=col.sta[1])
                      for (r in sequence(nrate)){
-                        lines(x=x.years,y=ed2.median[[r]],type="o",pch=16,lwd=2.0
+                        lines(x=x.years,y=ed2.expected[[r]],type="o",pch=16,lwd=2.0
                              ,col=col.ed2[r,1])
                      }#end for
                      #---------------------------------------------------------------------#
@@ -2669,13 +2705,13 @@ for (place in myplaces){
 
             #----- Load the modelled rates. -----------------------------------------------#
             sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-            sta.median   = 100. * sta.mod[4,2:n.census]
-            sta.q025     = 100. * sta.mod[5,2:n.census]
-            sta.q975     = 100. * sta.mod[6,2:n.census]
+            sta.expected = 100. * sta.mod[1,-1]
+            sta.q025     = 100. * sta.mod[2,-1]
+            sta.q975     = 100. * sta.mod[3,-1]
             ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]$global
-            ed2.median   = 100. * ed2.mod[4,2:n.census]
-            ed2.q025     = 100. * ed2.mod[5,2:n.census]
-            ed2.q975     = 100. * ed2.mod[6,2:n.census]
+            ed2.expected = 100. * ed2.mod[1,-1]
+            ed2.q025     = 100. * ed2.mod[2,-1]
+            ed2.q975     = 100. * ed2.mod[3,-1]
             #------------------------------------------------------------------------------#
 
 
@@ -2721,7 +2757,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Find the plot limit for the y scale.                                  #
                #---------------------------------------------------------------------------#
-               yuse   = c(sta.q025,sta.q975,ed2.median)
+               yuse   = c(sta.q025,sta.q975,ed2.expected)
                ylimit = pretty.xylim(u=yuse,fracexp=scalleg,is.log=ylog)
                #---------------------------------------------------------------------------#
             }#end if
@@ -2814,14 +2850,14 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                par(mar=c(5,4,4,2)+0.1)
                #----- Plotting window and grid. -------------------------------------------#
-               plot(x=x.years,y=sta.median,xlim=xlimit,ylim=ylimit,type="n",main=letitre
+               plot(x=x.years,y=sta.expected,xlim=xlimit,ylim=ylimit,type="n",main=letitre
                    ,xlab=lex,ylab=ley,log=plog,cex.main=0.7)
                if (plotgrid) grid(col=grid.colour,lty="solid")
                #----- Plot the taxon rate with confidence interval. -----------------------#
                epolygon(x=plot.poly$x,y=plot.poly$y,col=plot.poly$col,angle=c(-45,45)
                        ,density=40,lty="solid",lwd=1.0)
-               lines(x=x.years,y=sta.median,type="o",col=col.sta[1],pch=16,lwd=2.0)
-               lines(x=x.years,y=ed2.median,type="o",col=col.ed2[1],pch=16,lwd=2.0)
+               lines(x=x.years,y=sta.expected,type="o",col=col.sta[1],pch=16,lwd=2.0)
+               lines(x=x.years,y=ed2.expected,type="o",col=col.ed2[1],pch=16,lwd=2.0)
 
 
                #----- Close the device. ---------------------------------------------------#
@@ -2862,13 +2898,13 @@ for (place in myplaces){
 
                #----- Load the modelled rates. --------------------------------------------#
                sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-               sta.median   = 100. * sta.mod[4,,2:n.census]
-               sta.q025     = 100. * sta.mod[5,,2:n.census]
-               sta.q975     = 100. * sta.mod[6,,2:n.census]
+               sta.expected = 100. * sta.mod[1,,-1]
+               sta.q025     = 100. * sta.mod[2,,-1]
+               sta.q975     = 100. * sta.mod[3,,-1]
                ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]$global
-               ed2.median   = 100. * ed2.mod[4,,2:n.census]
-               ed2.q025     = 100. * ed2.mod[5,,2:n.census]
-               ed2.q975     = 100. * ed2.mod[6,,2:n.census]
+               ed2.expected = 100. * ed2.mod[1,,-1]
+               ed2.q025     = 100. * ed2.mod[2,,-1]
+               ed2.q975     = 100. * ed2.mod[3,,-1]
                #---------------------------------------------------------------------------#
 
 
@@ -3001,7 +3037,7 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         #     Find the plot limit for the y scale.                         #
                         #------------------------------------------------------------------#
-                        yuse   = c(ed2.median[d,],sta.q025[d,],sta.q975[d,])
+                        yuse   = c(ed2.expected[d,],sta.q025[d,],sta.q975[d,])
                         ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
                         #------------------------------------------------------------------#
 
@@ -3037,9 +3073,9 @@ for (place in myplaces){
                      #----- Plot the taxon rate with confidence interval. -----------------#
                      epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col,angle=c(-45,45)
                              ,density=40,lty="solid",lwd=1.0)
-                     lines(x=x.years,y=sta.median[d,],type="o",pch=16,lwd=2.0
+                     lines(x=x.years,y=sta.expected[d,],type="o",pch=16,lwd=2.0
                           ,col=col.sta[1])
-                     lines(x=x.years,y=ed2.median[d,],type="o",pch=16,lwd=2.0
+                     lines(x=x.years,y=ed2.expected[d,],type="o",pch=16,lwd=2.0
                           ,col=col.ed2[1])
                      #---------------------------------------------------------------------#
                   }#end for (d in 1:n.dbh)

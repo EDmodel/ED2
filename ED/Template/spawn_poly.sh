@@ -25,12 +25,12 @@ shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with default pseudo past drivers. ---------------------------------------------#
 scenariopathdef='/n/moorcroft_data/mlongo/data/ed2_data/realisation_scen_driver'
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
-copy2scratch='n'
+copy2scratch='y'
 #------------------------------------------------------------------------------------------#
 #    In case we should copy, this is the source where the data is organised to go.  This   #
 # will override sitemetdef and scenariopath.                                               #
 #------------------------------------------------------------------------------------------#
-packdatasrc='/n/moorcroft_data/mlongo/data/tower_scratch'
+packdatasrc='/n/nss2b/moorcroft_lab/mlongo/data/2scratch'
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -47,7 +47,6 @@ dateh='01'    # Day
 timeh='0000'  # Hour
 #----- Default tolerance. -----------------------------------------------------------------#
 toldef='0.01'
-
 #------------------------------------------------------------------------------------------#
 #    Name of the unrestricted_parallel scripts:                                            #
 # callunpa: script that calls callserial.sh for unrestricted_parallel runs.                #
@@ -81,9 +80,9 @@ execname='ed_2.1-opt'
 #----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
-   sitemet='/scratch/mlongo/met_driver/site_met_driver'
-   scenariopath='/scratch/mlongo/met_driver/realisation_scen_driver'
-   shefpath='/scratch/mlongo/met_driver/sheffield'
+   sitemet='/scratch/mlongo/site_met_driver'
+   scenariopath='/scratch/mlongo/wmo+eft_driver'
+   shefpath='/scratch/mlongo/sheff_met_driver'
 else
    sitemet=${sitemetdef}
    scenariopath=${scenariopathdef}
@@ -242,81 +241,82 @@ do
    initmode=`echo ${oi}     | awk '{print $13}'`
    iscenario=`echo ${oi}    | awk '{print $14}'`
    isizepft=`echo ${oi}     | awk '{print $15}'`
-   polyisoil=`echo ${oi}    | awk '{print $16}'`
-   polyntext=`echo ${oi}    | awk '{print $17}'`
-   polysand=`echo ${oi}     | awk '{print $18}'`
-   polyclay=`echo ${oi}     | awk '{print $19}'`
-   polydepth=`echo ${oi}    | awk '{print $20}'`
-   polysoilbc=`echo ${oi}   | awk '{print $21}'`
-   polysldrain=`echo ${oi}  | awk '{print $22}'`
-   polycol=`echo ${oi}      | awk '{print $23}'`
-   slzres=`echo ${oi}       | awk '{print $24}'`
-   queue=`echo ${oi}        | awk '{print $25}'`
-   metdriver=`echo ${oi}    | awk '{print $26}'`
-   dtlsm=`echo ${oi}        | awk '{print $27}'`
-   vmfactc3=`echo ${oi}     | awk '{print $28}'`
-   vmfactc4=`echo ${oi}     | awk '{print $29}'`
-   mphototrc3=`echo ${oi}   | awk '{print $30}'`
-   mphototec3=`echo ${oi}   | awk '{print $31}'`
-   mphotoc4=`echo ${oi}     | awk '{print $32}'`
-   bphotoblc3=`echo ${oi}   | awk '{print $33}'`
-   bphotonlc3=`echo ${oi}   | awk '{print $34}'`
-   bphotoc4=`echo ${oi}     | awk '{print $35}'`
-   kwgrass=`echo ${oi}      | awk '{print $36}'`
-   kwtree=`echo ${oi}       | awk '{print $37}'`
-   gammac3=`echo ${oi}      | awk '{print $38}'`
-   gammac4=`echo ${oi}      | awk '{print $39}'`
-   d0grass=`echo ${oi}      | awk '{print $40}'`
-   d0tree=`echo ${oi}       | awk '{print $41}'`
-   alphac3=`echo ${oi}      | awk '{print $42}'`
-   alphac4=`echo ${oi}      | awk '{print $43}'`
-   klowco2=`echo ${oi}      | awk '{print $44}'`
-   decomp=`echo ${oi}       | awk '{print $45}'`
-   rrffact=`echo ${oi}      | awk '{print $46}'`
-   growthresp=`echo ${oi}   | awk '{print $47}'`
-   lwidthgrass=`echo ${oi}  | awk '{print $48}'`
-   lwidthbltree=`echo ${oi} | awk '{print $49}'`
-   lwidthnltree=`echo ${oi} | awk '{print $50}'`
-   q10c3=`echo ${oi}        | awk '{print $51}'`
-   q10c4=`echo ${oi}        | awk '{print $52}'`
-   h2olimit=`echo ${oi}     | awk '{print $53}'`
-   imortscheme=`echo ${oi}  | awk '{print $54}'`
-   ddmortconst=`echo ${oi}  | awk '{print $55}'`
-   isfclyrm=`echo ${oi}     | awk '{print $56}'`
-   icanturb=`echo ${oi}     | awk '{print $57}'`
-   ubmin=`echo ${oi}        | awk '{print $58}'`
-   ugbmin=`echo ${oi}       | awk '{print $59}'`
-   ustmin=`echo ${oi}       | awk '{print $60}'`
-   gamm=`echo ${oi}         | awk '{print $61}'`
-   gamh=`echo ${oi}         | awk '{print $62}'`
-   tprandtl=`echo ${oi}     | awk '{print $63}'`
-   ribmax=`echo ${oi}       | awk '{print $64}'`
-   atmco2=`echo ${oi}       | awk '{print $65}'`
-   thcrit=`echo ${oi}       | awk '{print $66}'`
-   smfire=`echo ${oi}       | awk '{print $67}'`
-   ifire=`echo ${oi}        | awk '{print $68}'`
-   fireparm=`echo ${oi}     | awk '{print $69}'`
-   ipercol=`echo ${oi}      | awk '{print $70}'`
-   runoff=`echo ${oi}       | awk '{print $71}'`
-   imetrad=`echo ${oi}      | awk '{print $72}'`
-   ibranch=`echo ${oi}      | awk '{print $73}'`
-   icanrad=`echo ${oi}      | awk '{print $74}'`
-   crown=`echo   ${oi}      | awk '{print $75}'`
-   ltransvis=`echo ${oi}    | awk '{print $76}'`
-   lreflectvis=`echo ${oi}  | awk '{print $77}'`
-   ltransnir=`echo ${oi}    | awk '{print $78}'`
-   lreflectnir=`echo ${oi}  | awk '{print $79}'`
-   orienttree=`echo ${oi}   | awk '{print $80}'`
-   orientgrass=`echo ${oi}  | awk '{print $81}'`
-   clumptree=`echo ${oi}    | awk '{print $82}'`
-   clumpgrass=`echo ${oi}   | awk '{print $83}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $84}'`
-   igndvap=`echo ${oi}      | awk '{print $85}'`
-   iphen=`echo ${oi}        | awk '{print $86}'`
-   iallom=`echo ${oi}       | awk '{print $87}'`
-   ibigleaf=`echo ${oi}     | awk '{print $88}'`
-   irepro=`echo ${oi}       | awk '{print $89}'`
-   treefall=`echo ${oi}     | awk '{print $90}'`
+   iage=`echo ${oi}         | awk '{print $16}'`
+   polyisoil=`echo ${oi}    | awk '{print $17}'`
+   polyntext=`echo ${oi}    | awk '{print $18}'`
+   polysand=`echo ${oi}     | awk '{print $19}'`
+   polyclay=`echo ${oi}     | awk '{print $20}'`
+   polydepth=`echo ${oi}    | awk '{print $21}'`
+   polysoilbc=`echo ${oi}   | awk '{print $22}'`
+   polysldrain=`echo ${oi}  | awk '{print $23}'`
+   polycol=`echo ${oi}      | awk '{print $24}'`
+   slzres=`echo ${oi}       | awk '{print $25}'`
+   queue=`echo ${oi}        | awk '{print $26}'`
+   metdriver=`echo ${oi}    | awk '{print $27}'`
+   dtlsm=`echo ${oi}        | awk '{print $28}'`
+   vmfactc3=`echo ${oi}     | awk '{print $29}'`
+   vmfactc4=`echo ${oi}     | awk '{print $30}'`
+   mphototrc3=`echo ${oi}   | awk '{print $31}'`
+   mphototec3=`echo ${oi}   | awk '{print $32}'`
+   mphotoc4=`echo ${oi}     | awk '{print $33}'`
+   bphotoblc3=`echo ${oi}   | awk '{print $34}'`
+   bphotonlc3=`echo ${oi}   | awk '{print $35}'`
+   bphotoc4=`echo ${oi}     | awk '{print $36}'`
+   kwgrass=`echo ${oi}      | awk '{print $37}'`
+   kwtree=`echo ${oi}       | awk '{print $38}'`
+   gammac3=`echo ${oi}      | awk '{print $39}'`
+   gammac4=`echo ${oi}      | awk '{print $40}'`
+   d0grass=`echo ${oi}      | awk '{print $41}'`
+   d0tree=`echo ${oi}       | awk '{print $42}'`
+   alphac3=`echo ${oi}      | awk '{print $43}'`
+   alphac4=`echo ${oi}      | awk '{print $44}'`
+   klowco2=`echo ${oi}      | awk '{print $45}'`
+   decomp=`echo ${oi}       | awk '{print $46}'`
+   rrffact=`echo ${oi}      | awk '{print $47}'`
+   growthresp=`echo ${oi}   | awk '{print $48}'`
+   lwidthgrass=`echo ${oi}  | awk '{print $49}'`
+   lwidthbltree=`echo ${oi} | awk '{print $50}'`
+   lwidthnltree=`echo ${oi} | awk '{print $51}'`
+   q10c3=`echo ${oi}        | awk '{print $52}'`
+   q10c4=`echo ${oi}        | awk '{print $53}'`
+   h2olimit=`echo ${oi}     | awk '{print $54}'`
+   imortscheme=`echo ${oi}  | awk '{print $55}'`
+   ddmortconst=`echo ${oi}  | awk '{print $56}'`
+   isfclyrm=`echo ${oi}     | awk '{print $57}'`
+   icanturb=`echo ${oi}     | awk '{print $58}'`
+   ubmin=`echo ${oi}        | awk '{print $59}'`
+   ugbmin=`echo ${oi}       | awk '{print $60}'`
+   ustmin=`echo ${oi}       | awk '{print $61}'`
+   gamm=`echo ${oi}         | awk '{print $62}'`
+   gamh=`echo ${oi}         | awk '{print $63}'`
+   tprandtl=`echo ${oi}     | awk '{print $64}'`
+   ribmax=`echo ${oi}       | awk '{print $65}'`
+   atmco2=`echo ${oi}       | awk '{print $66}'`
+   thcrit=`echo ${oi}       | awk '{print $67}'`
+   smfire=`echo ${oi}       | awk '{print $68}'`
+   ifire=`echo ${oi}        | awk '{print $69}'`
+   fireparm=`echo ${oi}     | awk '{print $70}'`
+   ipercol=`echo ${oi}      | awk '{print $71}'`
+   runoff=`echo ${oi}       | awk '{print $72}'`
+   imetrad=`echo ${oi}      | awk '{print $73}'`
+   ibranch=`echo ${oi}      | awk '{print $74}'`
+   icanrad=`echo ${oi}      | awk '{print $75}'`
+   crown=`echo   ${oi}      | awk '{print $76}'`
+   ltransvis=`echo ${oi}    | awk '{print $77}'`
+   lreflectvis=`echo ${oi}  | awk '{print $78}'`
+   ltransnir=`echo ${oi}    | awk '{print $79}'`
+   lreflectnir=`echo ${oi}  | awk '{print $80}'`
+   orienttree=`echo ${oi}   | awk '{print $81}'`
+   orientgrass=`echo ${oi}  | awk '{print $82}'`
+   clumptree=`echo ${oi}    | awk '{print $83}'`
+   clumpgrass=`echo ${oi}   | awk '{print $84}'`
+   ivegtdyn=`echo ${oi}     | awk '{print $85}'`
+   igndvap=`echo ${oi}      | awk '{print $86}'`
+   iphen=`echo ${oi}        | awk '{print $87}'`
+   iallom=`echo ${oi}       | awk '{print $88}'`
+   ibigleaf=`echo ${oi}     | awk '{print $89}'`
+   irepro=`echo ${oi}       | awk '{print $90}'`
+   treefall=`echo ${oi}     | awk '{print $91}'`
    #---------------------------------------------------------------------------------------#
 
 
@@ -436,6 +436,10 @@ do
    date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
    time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
    runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
+   if [ ${runt} != 'INITIAL' ]
+   then
+      runt='HISTORY'
+   fi
    #---------------------------------------------------------------------------------------#
 
 
@@ -446,7 +450,7 @@ do
    #     Determine which PFTs to use based on the "iata" code and isizepft.                #
    #---------------------------------------------------------------------------------------#
    case ${isizepft} in
-   0|1)
+   0|1|5)
       case ${polyiata} in
       tzi|zmh|nqn)
          pfts='6,7,9,10,11,16,17'
@@ -538,6 +542,7 @@ do
    #---------------------------------------------------------------------------------------#
    #      Choose the scenario to use.  Iscenario follows the following convention:         #
    # "default"    -- No scenario.  Use the tower/Sheffield data.                           #
+   # "inmet"      -- No scenario.  Use the INMET-based data.                               #
    # "rRRR_tTTT   -- Use scenarios, with rRRRR controlling the rainfall, and tTTTT         #
    #                 controlling temperature.                                              #
    #                                                                                       #
@@ -669,84 +674,168 @@ do
 
 
 
-
       #------------------------------------------------------------------------------------#
-      #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
-      # dataset, otherwise the site-level tower data is used.                              #
+      #     Check whether this is a true scenario or just the tower.                       #
       #------------------------------------------------------------------------------------#
-      case ${metdriver} in
-      Bananal)
-         metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Caxiuana)
-         metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Fazenda_Nossa_Senhora)
-         metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
-         metcyc1=1977
-         metcycf=2002
-         imetavg=1
-         ;;
-      Manaus_Km34)
-         metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Paracou)
-         metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Pe-de-Gigante)
-         metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Petrolina)
-         metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Rebio_Jaru)
-         metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
-         metcyc1=1977
-         metcycf=2002
-         imetavg=1
-         ;;
-      Santarem_Km67)
-         metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Santarem_Km77)
-         metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      Santarem_Km83)
-         metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
-         metcyc1=1972
-         metcycf=2011
-         imetavg=1
-         ;;
-      *)
-         echo 'Met driver: '${metdriver}
-         echo 'Sorry, this met driver is not valid for scenario runs'
-         exit 85
-         ;;
-      esac
+      if [ ${iscenario} == "eft" ]
+      then
+         #---------------------------------------------------------------------------------#
+         #     EFT.  This is actually the same thing as "default", for convenience placed  #
+         # as a scenario.                                                                  #
+         #---------------------------------------------------------------------------------#
+         case ${metdriver} in
+         Bananal)
+            metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
+            metcyc1=2004
+            metcycf=2006
+            imetavg=1
+            ;;
+         Caxiuana)
+            metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
+            metcyc1=1999
+            metcycf=2003
+            imetavg=1
+            ;;
+         Fazenda_Nossa_Senhora)
+            metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
+            metcyc1=1999
+            metcycf=2002
+            imetavg=1
+            ;;
+         Manaus_Km34)
+            metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
+            metcyc1=1999
+            metcycf=2005
+            imetavg=1
+            ;;
+         Paracou)
+            metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
+            metcyc1=2004
+            metcycf=2009
+            imetavg=1
+            ;;
+         Pe-de-Gigante)
+            metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
+            metcyc1=2001
+            metcycf=2003
+            imetavg=1
+            ;;
+         Petrolina)
+            metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
+            metcyc1=2004
+            metcycf=2011
+            imetavg=1
+            ;;
+         Rebio_Jaru)
+            metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
+            metcyc1=1999
+            metcycf=2002
+            imetavg=1
+            ;;
+         Santarem_Km67)
+            metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
+            metcyc1=2001
+            metcycf=2010
+            imetavg=1
+            ;;
+         Santarem_Km77)
+            metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
+            metcyc1=2001
+            metcycf=2005
+            imetavg=1
+            ;;
+         Santarem_Km83)
+            metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
+            metcyc1=2000
+            metcycf=2003
+            imetavg=1
+            ;;
+         *)
+            echo 'Met driver: '${metdriver}
+            echo 'Sorry, this met driver is not valid for scenario runs'
+            exit 85
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+      else
+         #---------------------------------------------------------------------------------#
+         #     INMET data, or any other scenario based on INMET. Years are fixed.          #
+         #---------------------------------------------------------------------------------#
+         case ${metdriver} in
+         Bananal)
+            metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Caxiuana)
+            metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Fazenda_Nossa_Senhora)
+            metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Manaus_Km34)
+            metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Paracou)
+            metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Pe-de-Gigante)
+            metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Petrolina)
+            metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Rebio_Jaru)
+            metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Santarem_Km67)
+            metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Santarem_Km77)
+            metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         Santarem_Km83)
+            metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
+            metcyc1=1972
+            metcycf=2011
+            imetavg=1
+            ;;
+         *)
+            echo 'Met driver: '${metdriver}
+            echo 'Sorry, this met driver is not valid for scenario runs'
+            exit 85
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+      fi
       #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#
@@ -1072,168 +1161,66 @@ do
    elif [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
-      case ${isizepft} in
-      0)
-         #----- Frankeinstein's understorey for those that have one. ----------------------#
-         case ${polyiata} in
-         hvd)
-            thissfilin=${bioinit}'/hvd_default.'
-            ;;
-         cax)
-            thissfilin=${bioinit}'/cax_default.'
-            ;;
-         s67)
-            thissfilin=${bioinit}'/s67_default.'
-            ;;
-         s83)
-            thissfilin=${bioinit}'/s83_default.'
-            ;;
-         m34)
-            thissfilin=${bioinit}'/m34_default.'
-            ;;
-         gyf)
-            thissfilin=${bioinit}'/gyf_default.'
-            ;;
-         pdg)
-            thissfilin=${bioinit}'/pdg_default.'
-            ;;
-         rja)
-            thissfilin=${bioinit}'/rja_default.'
-            ;;
-         fns)
-            thissfilin=${bioinit}'/fns_default.'
-            ;;
-         s77)
-            thissfilin=${bioinit}'/s77_default.'
-            ;;
-         pnz)
-            thissfilin=${bioinit}'/pnz_default.'
-            ;;
-         ban)
-            thissfilin=${bioinit}'/ban_default.'
-            ;;
-         *)
-            echo ' Polygon: '${polyname}
-            echo ' IATA: '${polyiata}
-            echo ' ISIZEPFT: '${isizepft}
-            echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
-            exit 59
-            ;;
-         esac
-         ;;
-      1)
-         #----- New Frankeinstein's under-storey for those that have one. -----------------#
-         case ${polyiata} in
-         hvd)
-            thissfilin=${bioinit}'/hvd_nounder.'
-            ;;
-         cax)
-            thissfilin=${bioinit}'/cax_nounder.'
-            ;;
-         s67)
-            thissfilin=${bioinit}'/s67_nounder.'
-            ;;
-         s83)
-            thissfilin=${bioinit}'/s83_nounder.'
-            ;;
-         m34)
-            thissfilin=${bioinit}'/m34_nounder.'
-            ;;
-         gyf)
-            thissfilin=${bioinit}'/gyf_nounder.'
-            ;;
-         pdg)
-            thissfilin=${bioinit}'/pdg_nounder.'
-            ;;
-         rja)
-            thissfilin=${bioinit}'/rja_nounder.'
-            ;;
-         fns)
-            thissfilin=${bioinit}'/fns_nounder.'
-            ;;
-         s77)
-            thissfilin=${bioinit}'/s77_nounder.'
-            ;;
-         pnz)
-            thissfilin=${bioinit}'/pnz_nounder.'
-            ;;
-         ban)
-            thissfilin=${bioinit}'/ban_nounder.'
-            ;;
-         *)
-            echo ' Polygon: '${polyname}
-            echo ' IATA: '${polyiata}
-            echo ' ISIZEPFT: '${isizepft}
-            echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
-            exit 59
-            ;;
-         esac
+
+      #------------------------------------------------------------------------------------#
+      #    Check how many PFTs to use.                                                     #
+      #------------------------------------------------------------------------------------#
+      case ${isizepft} in 
+      0|5)
+         pftname="pft05"
          ;;
       2)
-         #----- Same as default, but with only one grass and one tree. --------------------#
-         case ${polyiata} in
-         hvd)
-            thissfilin=${bioinit}'/hvd_twopft.'
-            ;;
-         ban)
-            thissfilin=${bioinit}'/ban_twopft.'
-            ;;
-         cax)
-            thissfilin=${bioinit}'/cax_twopft.'
-            ;;
-         s67)
-            thissfilin=${bioinit}'/s67_twopft.'
-            ;;
-         s83)
-            thissfilin=${bioinit}'/s83_twopft.'
-            ;;
-         m34)
-            thissfilin=${bioinit}'/m34_twopft.'
-            ;;
-         gyf)
-            thissfilin=${bioinit}'/gyf_twopft.'
-            ;;
-         pdg)
-            thissfilin=${bioinit}'/pdg_twopft.'
-            ;;
-         pnz)
-            thissfilin=${bioinit}'/pnz_twopft.'
-            ;;
-         rja)
-            thissfilin=${bioinit}'/rja_twopft.'
-            ;;
-         fns)
-            thissfilin=${bioinit}'/fns_twopft.'
-            ;;
-         s77)
-            thissfilin=${bioinit}'/s77_twopft.'
-            ;;
-         pnz)
-            thissfilin=${bioinit}'/pnz_twopft.'
-            ;;
-         ban)
-            thissfilin=${bioinit}'/ban_twopft.'
-            ;;
-         *)
-            echo ' Polygon: '${polyname}
-            echo ' IATA: '${polyiata}
-            echo ' ISIZEPFT: '${isizepft}
-            echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
-            exit 59
-            ;;
-         esac
-         ;;
-      *)
-         #----- Bad settings. -------------------------------------------------------------#
-         echo ' ISIZEPFT should be 0, 1, or 2 and yours is set to '${isizepft}'...'
-         exit 66
+         pftname="pft02"
          ;;
       esac
+      #------------------------------------------------------------------------------------#
+
+      #------------------------------------------------------------------------------------#
+      #     Check how many patches to use.                                                 #
+      #------------------------------------------------------------------------------------#
+      case ${iage} in
+      1)
+         agename="age01"
+         ;;
+      *)
+         agename="age00"
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Check whether the site has the PFT and age structure.                         #
+      #------------------------------------------------------------------------------------#
+      case ${polyiata} in
+      hvd|s77|fns)
+         thissfilin="${bioinit}/${polyiata}_default."
+         ;;
+      cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
+         thissfilin="${bioinit}/${polyiata}_${pftname}+${agename}."
+         ;;
+      *)
+         echo ' Polygon:  '${polyname}
+         echo ' IATA:     '${polyiata}
+         echo ' IAGE:     '${iage}
+         echo ' ISIZEPFT: '${isizepft}
+         echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
+         exit 59
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
    else
       thissfilin=${there}/${polyname}/histo/${polyname}
    fi
    #---------------------------------------------------------------------------------------#
 
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Replace the flags in ED2IN.                                                       #
+   #---------------------------------------------------------------------------------------#
    ED2IN=${here}'/'${polyname}'/ED2IN'
    sed -i s@paththere@${there}@g                ${ED2IN}
    sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
@@ -1338,6 +1325,7 @@ do
    sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
    sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
    sed -i s@mytreefall@${treefall}@g            ${ED2IN}
+   sed -i s@mymaxpatch@${iage}@g                ${ED2IN}
 
    #------ Soil variables. ----------------------------------------------------------------#
    sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}

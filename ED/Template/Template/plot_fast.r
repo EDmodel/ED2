@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath" # Current directory.
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"     
+here           = "thispath"    # Current directory.
+srcdir         = "thisrscpath"     
 outroot        = "thisoutroot"
 frqsum         = 3600.
 

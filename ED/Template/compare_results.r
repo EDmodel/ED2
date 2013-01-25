@@ -18,26 +18,29 @@ here    = getwd()                                #   Current directory
 srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"    #   Script directory
 outroot = paste(here,"structure_comp",sep="/")   #   Output directory
 
-sites          = c("gyf","s67","s83","pdg","pnz","ban","rja","m34")
-sites.pch.1st  = c(   24,   22,   23,   25,   21,   22,   21,   23)
-sites.pch.2nd  = c(    0,    0,    3,    0,    4,    4,    0,    0)
-sites.pch.leg  = c(   24,   22,    9,   25,   13,    7,   21,   23)
+sites          = c("gyf","s67","s83","pdg","pnz","ban","rja","m34","cax")
+sites.pch      = c(    2,    5,    9,   13,    4,    8,    1,    6,    0)
 
-size.struct = list( name    = c(             "sas",          "ble")
-                  , desc    = c(         "Size St",       "1 Size")
-                  , verbose = c(  "Size structure",  "Single size")
-                  , hue     = c(           "green",       "purple")
+size.struct = list( name    = c(               "sas",               "ble")
+                  , desc    = c(           "Size St",            "1 Size")
+                  , verbose = c(    "Size structure",       "Single size")
+                  , hue     = list( green  = c("#55AC00"     ,"chartreuse"    )
+                                  , olive  = c("olivedrab3"  ,"#DCFFA0"       )
+                                  , purple = c("purple3"     ,"mediumpurple1" )
+                                  , indigo = c("slateblue2"  ,"#CDC5FF"       )
+                                  )#end list
                   )#end list
-pft.struct  = list( name    = c(           "pft05",       "pft02")
-                  , desc    = c(           "3T+2G",       "1T+1G")
-                  , verbose = c( "Niche structure",  "Single PFT")
-                  , sat     = c(                 1,             2)
+pft.struct  = list( name    = c(             "pft05",             "pft02")
+                  , desc    = c(             "3T+2G",             "1T+1G")
+                  , verbose = c( "Succesion struct.",  "Single succesion")
+                  , sat     = c(                   1,                   2)
                   )#end list
-age.struct  = list( name    = c(           "age00",       "age01")
-                  , desc    = c(          "Age St",       "1 Age")
-                  , verbose = c(   "Age structure",  "Single age")
-                  , bg      = c(                NA,       "white")
-                  , lty     = c(           "solid",      "dashed")
+age.struct  = list( name    = c(            "iage25",            "iage01")
+                  , desc    = c(            "Age St",             "1 Age")
+                  , verbose = c(     "Age structure",        "Single age")
+                  , cex     = c(                 2.0,                 1.3)
+                  , lwd     = c(                 2.5,                 2.0)
+                  , lty     = c(             "solid",            "dashed")
                   )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -57,15 +60,18 @@ byeold         = TRUE                  # Remove old files of the given format?
 
 depth          = 96                    # PNG resolution, in pixels per inch
 paper          = "letter"              # Paper size, to define the plot shape
-ptsz           = 14                    # Font size.
+ptsz           = 18                    # Font size.
 lwidth         = 2.5                   # Line width
 plotgrid       = TRUE                  # Should I plot the grid in the background? 
 
 legwhere       = "topleft"             # Where should I place the legend?
 inset          = 0.01                  # Inset between legend and edge of plot region.
-legbg          = "white"               # Legend background colour.
 fracexp        = 0.40                  # Expansion factor for y axis (to fit legend)
 cex.main       = 0.8                   # Scale coefficient for the title
+ibackground    = 2                     # Make figures compatible to which background?
+                                       # 0 -- white
+                                       # 1 -- black
+                                       # 2 -- dark grey
 #------------------------------------------------------------------------------------------#
 
 
@@ -86,6 +92,12 @@ cex.main       = 0.8                   # Scale coefficient for the title
 
 
 
+#----- Load some packages. ----------------------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
+
+
+
 #------------------------------------------------------------------------------------------#
 #     Eddy flux comparisons.                                                               #
 #------------------------------------------------------------------------------------------#
@@ -94,8 +106,8 @@ compvar[[ 1]] = list( vnam       = "ustar"
                     , symbol     = expression(u^symbol("\052"))
                     , desc       = "Friction velocity"
                     , unit       = "[m/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("mediumpurple1","purple4")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(purple.bg,purple.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -103,8 +115,8 @@ compvar[[ 2]] = list( vnam       = "cflxca"
                     , symbol     = expression(F(CO[2]))
                     , desc       = "Carbon dioxide flux"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("chartreuse2","darkgreen")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(green.bg,green.fg)
                     , leg.corner = "bottomright"
                     , sunvar     = FALSE
                     )#end list
@@ -112,8 +124,8 @@ compvar[[ 3]] = list( vnam       = "cflxst"
                     , symbol     = expression(S(CO[2]))
                     , desc       = "Carbon dioxide storage"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("lightgoldenrod3","darkorange1")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(orange.bg,orange.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -121,8 +133,8 @@ compvar[[ 4]] = list( vnam       = "nee"
                     , symbol     = expression(NEE)
                     , desc       = "Net ecosystem exchange"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("chartreuse","chartreuse4")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(green.bg,green.fg)
                     , leg.corner = "bottomright"
                     , sunvar     = FALSE
                     )#end list
@@ -130,8 +142,8 @@ compvar[[ 5]] = list( vnam       = "nep"
                     , symbol     = expression(NEP)
                     , desc       = "Net ecosystem productivity"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("olivedrab2","darkolivegreen4")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(olive.bg,olive.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -139,8 +151,8 @@ compvar[[ 6]] = list( vnam       = "reco"
                     , symbol     = expression(R[Eco])
                     , desc       = "Ecosystem respiration"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("yellow3","peru")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(yellow.bg,yellow.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -148,8 +160,8 @@ compvar[[ 7]] = list( vnam       = "gpp"
                     , symbol     = expression(GPP)
                     , desc       = "Gross primary productivity"
                     , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("green3","darkgreen")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(green.bg,green.fg)
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
                     )#end list
@@ -157,8 +169,8 @@ compvar[[ 8]] = list( vnam       = "parup"
                     , symbol     = expression(PAR^symbol("\335"))
                     , desc       = "Outgoing PAR"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("chartreuse4","darkolivegreen1")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(olive.bg,olive.fg)
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
                     )#end list
@@ -166,8 +178,8 @@ compvar[[ 9]] = list( vnam       = "rshortup"
                     , symbol     = expression(SW^symbol("\335"))
                     , desc       = "Outgoing shortwave radiation"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("royalblue4","deepskyblue")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(indigo.bg,indigo.fg)
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
                     )#end list
@@ -175,8 +187,8 @@ compvar[[10]] = list( vnam       = "rnet"
                     , symbol     = expression(R[Net])
                     , desc       = "Net radiation"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("gold","orangered")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(sky.bg,sky.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -184,8 +196,8 @@ compvar[[11]] = list( vnam       = "rlongup"
                     , symbol     = expression(LW^symbol("\335"))
                     , desc       = "Outgoing longwave radiation"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("gold","orangered")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(red.bg,red.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -193,8 +205,8 @@ compvar[[12]] = list( vnam       = "hflxca"
                     , symbol     = expression(F(theta))
                     , desc       = "Sensible heat flux"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("orange1","chocolate4")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(orange.bg,orange.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -202,8 +214,8 @@ compvar[[13]] = list( vnam       = "wflxca"
                     , symbol     = expression(F(H[2]*O))
                     , desc       = "Water vapour flux"
                     , unit       = "[kg/m2/day]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("deepskyblue","royalblue4")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(blue.bg,blue.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
@@ -312,12 +324,6 @@ good[[ 9]] = list( vnam      = "norm.lnlike"
 #------------------------------------------------------------------------------------------#
 
 
-
-#----- Load some packages. ----------------------------------------------------------------#
-source(file.path(srcdir,"load.everything.r"))
-#------------------------------------------------------------------------------------------#
-
-
 #----- Set how many formats we must output. -----------------------------------------------#
 outform = tolower(outform)
 nout    = length(outform)
@@ -333,8 +339,7 @@ egrid.key   = expand.grid( size             = size.struct$name
                          , age              = age.struct$name
                          , stringsAsFactors = FALSE
                          )#end expand.grid
-suffix.key  = apply( X = egrid.key[,2:3],MARGIN=1,FUN=paste,collapse="+")
-simul.key   = apply( X = cbind(egrid.key[,1],suffix.key),MARGIN=1,FUN=paste,collapse="_")
+simul.key   = apply( X = egrid.key[,c(1,3,2)],MARGIN=1,FUN=paste,collapse="_")
 #----- Description. -----------------------------------------------------------------------#
 simleg.key  = apply( X        = expand.grid( size.struct$desc
                                            , pft.struct$desc
@@ -349,18 +354,20 @@ n.size        = length(size.struct$name)
 n.pft         = length(pft.struct$name )
 n.age         = length(age.struct$name )
 my.rainbow    = array(data=NA,dim=c(n.size,n.pft,n.age))
-my.background = c(aperm(a=array(age.struct$bg,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
 for (n in 1:n.size){
-   n.rbow          = n.pft*n.age
-   this.hue        = get(paste("hue",size.struct$hue[n],sep="."))
-   my.rainbow[n,,] = rev(this.hue(n=n.rbow+1)[-n.rbow+1])
+   my.rainbow[n,,1] = size.struct$hue[[2*n-1]]
+   my.rainbow[n,,2] = size.struct$hue[[2*n  ]]
 }#end for
 simcol.key     = c(unlist(my.rainbow))
 simfg.key      = rep(my.rainbow[,,1],times=n.age)
-simbg.key      = rep(my.rainbow[,,2],times=n.age)
-sel            = ! is.na(my.background)
-simbg.key[sel] = my.background[sel]
 simlty.key     = c(aperm(a=array(age.struct$lty,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
+simcex.key     = c(aperm(a=array(age.struct$cex,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
+simlwd.key     = c(aperm(a=array(age.struct$lwd,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
+#----- Force big leaf to be without size structure. ---------------------------------------#
+ble = egrid.key$size == "ble"
+simlty.key[ble] = age.struct$lty[2]
+simcex.key[ble] = age.struct$cex[2]
+simlwd.key[ble] = age.struct$lwd[2]
 #------------------------------------------------------------------------------------------#
 
 
@@ -369,15 +376,15 @@ simlty.key     = c(aperm(a=array(age.struct$lty,dim=c(n.age,n.size,n.pft)),perm=
 #     Some big leaf simulations are unecessary: big leaf cannot have age structure.        #
 # Remove these simulations from the list.                                                  #
 #------------------------------------------------------------------------------------------#
-bye           = intersect(which(egrid.key$size == "ble"),which(egrid.key$age == "age00"))
+bye           = intersect(which(egrid.key$size == "ble"),which(egrid.key$age == "iage01"))
 egrid.key     = egrid.key [-bye,]
-suffix.key    = suffix.key[-bye ]
 simul.key     = simul.key [-bye ]
 simleg.key    = simleg.key[-bye ]
 simcol.key    = simcol.key[-bye ]
 simfg.key     = simfg.key [-bye ]
-simbg.key     = simbg.key [-bye ]
 simlty.key    = simlty.key[-bye ]
+simcex.key    = simcex.key[-bye ]
+simlwd.key    = simlwd.key[-bye ]
 #------------------------------------------------------------------------------------------#
 
 
@@ -389,8 +396,9 @@ simul       = data.frame( name             = simul.key
                         , desc             = simleg.key
                         , colour           = simcol.key
                         , fgcol            = simfg.key
-                        , bgcol            = simbg.key
                         , lty              = simlty.key
+                        , cex              = simcex.key
+                        , lwd              = simlwd.key
                         , stringsAsFactors = FALSE
                         )#end data.frame
 #------------------------------------------------------------------------------------------#
@@ -398,15 +406,19 @@ simul       = data.frame( name             = simul.key
 
 
 #------ Create the legend summary. --------------------------------------------------------#
-mid     = ceiling (n.pft/2)
-col.pft = rev(hue.grey(n=n.pft*2))[rep(c(TRUE,FALSE),times=n.pft)]
-col.age = ifelse(is.na(age.struct$bg),"black",age.struct$bg)
+col.in.rgb = apply( X = my.rainbow[,,1], MARGIN = c(1,2), FUN = col2rgb)
+col.size   =          apply( X = col.in.rgb     , MARGIN = c(1,2), FUN = mean   )
+col.pft    = colMeans(apply( X = col.in.rgb     , MARGIN = c(1,3), FUN = mean   ))
+col.age    = mean    (apply( X = col.in.rgb     , MARGIN = c(1)  , FUN = mean   ))
+col.size   = rgb(red=col.size[1,],green=col.size[2,],blue=col.size[3,],maxColorValue=255)
+col.pft    = rgb(red=col.pft     ,green=col.pft     ,blue=col.pft     ,maxColorValue=255)
+col.age    = rgb(red=col.age     ,green=col.age     ,blue=col.age     ,maxColorValue=255)
 summ = list( desc = c(size.struct$verbose,pft.struct$verbose,age.struct$verbose)
-           , col  = c(my.rainbow[,mid,1],col.pft,rep("black",times=n.age))
-           , bg   = c(my.rainbow[,mid,2],col.pft,col.age)
+           , col  = c(col.size,col.pft,rep(col.age,times=n.age))
            , pch  = rep(22,times=n.size+n.age+n.pft)
            , lty  = c(rep("solid",times=n.size+n.pft),age.struct$lty)
-           , cex  = 2.0
+           , cex  = c(rep(mean(age.struct$cex),times=n.size+n.pft),age.struct$cex)
+           , lwd  = c(rep(mean(age.struct$lwd),times=n.size+n.pft),age.struct$lwd)
            )#end summ
 #------------------------------------------------------------------------------------------#
 
@@ -628,7 +640,7 @@ for (p in 1:nsites){
    #---------------------------------------------------------------------------------------#
    for (s in 1:nsimul){
       cat("    * Simulation: ",simul$desc[s],"...","\n")
-      sim.name = paste("t",iata,"_",simul$name[s],sep="")
+      sim.name = paste("e",iata,"_",simul$name[s],sep="")
       sim.path = paste(here,sim.name,sep="/")
       sim.file = paste(sim.path,"rdata_hour",paste("comp-",sim.name,".RData",sep="")
                       ,sep="/")
@@ -705,24 +717,14 @@ for (g in good.loop){
             ee = sequence(nseason-1)
 
             #----- Find the components. ---------------------------------------------------#
-            sfac[   dd,     ee] = tapply( X     = obs[[this.vnam]][sel]
-                                        , INDEX = list(obs$diel[sel],obs$season[sel])
-                                        , FUN   = sd
-                                        , na.rm = TRUE
-                                        )#end tapply
-            sfac[   dd,nseason] = tapply( X     = obs[[this.vnam]][sel]
-                                        , INDEX = obs$diel[sel]
-                                        , FUN   = sd
-                                        , na.rm = TRUE
-                                        )#end tapply
-            sfac[ndiel,     ee] = tapply( X     = obs[[this.vnam]][sel]
-                                        , INDEX = obs$season[sel]
-                                        , FUN   = sd
-                                        , na.rm = TRUE
-                                        )#end tapply
-            sfac[ndiel,nseason] = sd    ( x     = obs[[this.vnam]][sel]
-                                        , na.rm = TRUE
-                                        )#end sd
+            for (dd in sequence(ndiel)){
+               d.sel = obs$diel == dd | dd == ndiel
+               for (ee in sequence(nseason)){
+                  e.sel = obs$season == ee | ee == nseason
+                  sel   = p.sel & d.sel & e.sel
+                  if (any(sel)) sfac[dd,ee] = sd(obs[[this.vnam]][sel],na.rm=TRUE)
+               }#end for
+            }#end for
             #------------------------------------------------------------------------------#
          }#end if (norm.good)
          sfac = ifelse(sfac == 0.,NA,1/sfac)
@@ -769,7 +771,13 @@ for (g in good.loop){
             }else{
                web.range = range(c(0,web[,p,v.sel,d,nseason]),na.rm=TRUE)
             }#end if
-            web.lim   = pretty(web.range,n=4)
+            if (ptsz <= 11){
+               web.lim   = pretty(web.range,n=5)
+            }else if (ptsz <= 14){
+               web.lim   = pretty(web.range,n=4)
+            }else{
+               web.lim   = pretty(web.range,n=3)
+            }#end if
 
             #------------------------------------------------------------------------------#
             #     Webs by variable (all sites).                                            #
@@ -799,10 +807,11 @@ for (g in good.loop){
                #     Split the window into 3, and add site and simulation legends at the   #
                # bottom.                                                                   #
                #---------------------------------------------------------------------------#
+               par(par.user)
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
                par(oma = c(0.2,3,3.0,0))
-               layout(mat = rbind(2,1),height = c(5.0,1.0))
+               layout(mat = rbind(2,1),height = c(18,4))
                #---------------------------------------------------------------------------#
 
 
@@ -816,13 +825,12 @@ for (g in good.loop){
                       , inset   = 0.0
                       , legend  = summ$desc
                       , col     = summ$col
-                      , lwd     = 3.0
+                      , lwd     = max(summ$lwd)
                       , lty     = summ$lty
-                      , bg      = "white"
                       , ncol    = 3
                       , title   = expression(bold("Structure"))
-                      , pt.cex  = summ$cex
-                      , cex     = 1.0
+                      , cex     = if (ptsz <= 14){1.0}else{0.8}
+                      , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -833,10 +841,13 @@ for (g in good.loop){
                #---------------------------------------------------------------------------#
                radial.flex( lengths          = web[,p,v.sel,d,nseason]
                           , labels           = as.expression(compvar.sym[v.sel])
+                          , lab.col          = foreground
+                          , lab.bg           = background
                           , radlab           = FALSE
                           , start            = 90
                           , clockwise        = TRUE
                           , rp.type          = "p"
+                          , label.prop       = 1.15 * max(1,sqrt(ptsz / 14))
                           , main             = ""
                           , line.col         = simul$fgcol
                           , lty              = simul$lty
@@ -844,8 +855,10 @@ for (g in good.loop){
                           , show.grid        = TRUE
                           , show.grid.labels = 4
                           , show.radial.grid = TRUE
-                          , grid.col         = "grey66"
+                          , grid.col         = grid.colour
                           , radial.lim       = web.lim
+                          , radial.col       = foreground
+                          , radial.bg        = background
                           , poly.col         = NA
                           , mar              = c(2,1,2,1)+0.1
                           , cex.lab          = 0.5
@@ -930,6 +943,7 @@ for (g in good.loop){
                #     Split the window into 3, and add site and simulation legends at the   #
                # bottom.                                                                   #
                #---------------------------------------------------------------------------#
+               par(par.user)
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
                par(oma = c(0.2,3,3.0,0))
@@ -947,9 +961,8 @@ for (g in good.loop){
                       , inset   = 0.0
                       , legend  = summ$desc
                       , col     = summ$col
-                      , lwd     = 3.0
+                      , lwd     = max(summ$lwd)
                       , lty     = summ$lty
-                      , bg      = "white"
                       , ncol    = 3
                       , title   = expression(bold("Structure"))
                       , pt.cex  = summ$cex
@@ -975,7 +988,7 @@ for (g in good.loop){
                           , show.grid        = TRUE
                           , show.grid.labels = 4
                           , show.radial.grid = TRUE
-                          , grid.col         = "grey66"
+                          , grid.col         = grid.colour
                           , radial.lim       = web.lim
                           , poly.col         = NA
                           , mar              = c(2,1,2,1)+0.1
@@ -1225,9 +1238,10 @@ for (v in 1:ncompvar){
       #------------------------------------------------------------------------------------#
       if (length(unlist(obs.diel)) > 0){
          #---- Fix ranges. ----------------------------------------------------------------#
-         bias.range  = 1.04 * max(abs(bias.range))  * c(-1,1)
-         sigma.range = 1.04 * max(abs(sigma.range)) * c( 1,0)
-         r2.range    = range(c(1,1-sigma.range^2))
+         xy.range    = 1.04 * max(c(abs(bias.range),abs(sigma.range)))
+         bias.range  = 1.04 * xy.range  * c(-1,1)
+         sigma.range = 1.04 * xy.range  * c( 1,0)
+         r2.range    = range(1-xy.range^2,1)
          #---------------------------------------------------------------------------------#
 
 
@@ -1273,6 +1287,7 @@ for (v in 1:ncompvar){
             #     Split the window into 3, and add site and simulation legends at the      #
             # bottom.                                                                      #
             #------------------------------------------------------------------------------#
+            par(par.user)
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
             par(oma = c(0.2,3,3.0,0))
@@ -1289,13 +1304,14 @@ for (v in 1:ncompvar){
             legend ( x       = "bottom"
                    , inset   = 0.0
                    , legend  = toupper(sites.key)
-                   , col     = "black"
-                   , pch     = sites.pch.leg
-                   , bg      = "white"
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = sites.pch
                    , ncol    = min(4,pretty.box(nsites)$ncol)
                    , title   = expression(bold("Sites"))
-                   , pt.cex  = 2.0
-                   , cex     = 1.2
+                   , pt.cex  = mean(unique(summ$cex))
+                   , cex     = 1.0
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1310,14 +1326,15 @@ for (v in 1:ncompvar){
                    , inset   = 0.0
                    , legend  = summ$desc
                    , col     = summ$col
-                   , pt.bg   = summ$bg
+                   , pt.bg   = summ$col
+                   , pt.cex  = summ$cex
+                   , pt.lwd  = summ$lwd
                    , pch     = summ$pch
-                   , border  = "black"
-                   , bg      = "white"
+                   , border  = foreground
                    , ncol    = 3
                    , title   = expression(bold("Structure"))
-                   , pt.cex  = summ$cex
-                   , cex     = 1.2
+                   , cex     = 1.0
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1335,52 +1352,34 @@ for (v in 1:ncompvar){
                   #------------------------------------------------------------------------#
                   #     We call skill twice for each site in case the site has two PCHs.   #
                   #------------------------------------------------------------------------#
-                  myskill = skill.plot( obs         = obs.diel[[iata]]
-                                      , mod         = mod.diel[[iata]]
-                                      , mod.options = list( col = simul$fgcol
-                                                          , bg  = simul$bgcol
-                                                          , pch = sites.pch.1st[p]
-                                                          , cex = 3.0
-                                                          , lty = "solid"
-                                                          , lwd = 2.0
-                                                          )#end list
-                                      , main         = ""
-                                      , bias.lim     = bias.range
-                                      , r2.lim       = r2.range
-                                      , rmse.options = list( col = "darkorange1"
-                                                           , lty = "dotdash"
-                                                           , lwd = 1.2
-                                                           )#end list
-                                      , cex.xyzlab   = 1.4
-                                      , cex.xyzat    = 1.4
-                                      , skill        = myskill
-                                      , normalise    = TRUE
-                                      , mar          = c(5,4,4,3)+0.1
+                  myskill = skill.plot( obs           = obs.diel[[iata]]
+                                      , obs.options   = list( col = foreground
+                                                            , cex = 2.0
+                                                            )#end list
+                                      , mod           = mod.diel[[iata]]
+                                      , mod.options   = list( col = simul$fgcol
+                                                            , bg  = simul$fgcol
+                                                            , pch = sites.pch[p]
+                                                            , cex = simul$cex
+                                                            , lty = "solid"
+                                                            , lwd = simul$lwd
+                                                            )#end list
+                                      , main           = ""
+                                      , bias.lim       = bias.range
+                                      , r2.lim         = r2.range
+                                      , r2.options     = list( col = grid.colour)
+                                      , nobias.options = list( col = khaki.mg   )
+                                      , rmse.options   = list( col = orange.mg
+                                                             , lty = "dotdash"
+                                                             , lwd = 1.2
+                                                             , bg  = background
+                                                             )#end list
+                                      , cex.xyzlab     = 1.4
+                                      , cex.xyzat      = 1.4
+                                      , skill          = myskill
+                                      , normalise      = TRUE
+                                      , mar            = c(5,4,4,3)+0.1
                                       )#end skill.plot
-                  if (sites.pch.2nd[p] != 0){
-                     myskill = skill.plot( obs          = obs.diel[[iata]]
-                                         , mod          = mod.diel[[iata]]
-                                         , mod.options  = list( col = simul$fgcol
-                                                              , bg  = simul$bgcol
-                                                              , pch = sites.pch.2nd[p]
-                                                              , cex = 3.0
-                                                              , lty = "solid"
-                                                              , lwd = 2.0
-                                                              )#end list
-                                         , main         = ""
-                                         , bias.lim     = bias.range
-                                         , r2.lim       = r2.range
-                                         , rmse.options = list( col = "darkorange1"
-                                                              , lty = "dotdash"
-                                                              , lwd = 1.2
-                                                              )#end list
-                                         , cex.xyzlab   = 1.4
-                                         , cex.xyzat    = 1.4
-                                         , skill        = myskill
-                                         , normalise    = TRUE
-                                         , mar          = c(5,4,4,3)+0.1
-                                         )#end skill.plot
-                  }#end if (sites.pch.2nd[p] != 0)
                   #------------------------------------------------------------------------#
                }#end if (length(obs.diel[[iata]] > 0)
                #---------------------------------------------------------------------------#
@@ -1455,6 +1454,7 @@ for (v in 1:ncompvar){
             #     Split the window into 3, and add site and simulation legends at the      #
             # bottom.                                                                      #
             #------------------------------------------------------------------------------#
+            par(par.user)
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
             par(oma = c(0.2,3,3.0,0))
@@ -1471,13 +1471,14 @@ for (v in 1:ncompvar){
             legend ( x       = "bottom"
                    , inset   = 0.0
                    , legend  = toupper(sites.key)
-                   , col     = "black"
-                   , pch     = sites.pch.leg
-                   , bg      = "white"
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = sites.pch
                    , ncol    = min(4,pretty.box(nsites)$ncol)
                    , title   = expression(bold("Sites"))
                    , pt.cex  = 2.0
                    , cex     = 1.0
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1492,14 +1493,15 @@ for (v in 1:ncompvar){
                    , inset   = 0.0
                    , legend  = summ$desc
                    , col     = summ$col
-                   , pt.bg   = summ$bg
+                   , pt.bg   = summ$col
+                   , pt.cex  = summ$cex
+                   , pt.lwd  = summ$lwd
                    , pch     = summ$pch
-                   , border  = "black"
-                   , bg      = "white"
+                   , border  = foreground
                    , ncol    = 3
                    , title   = expression(bold("Structure"))
-                   , pt.cex  = summ$cex
                    , cex     = 1.0
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1521,26 +1523,20 @@ for (v in 1:ncompvar){
                                         , add        = add
                                         , pos.corr   = NA
                                         , pt.col     = simul$fgcol
-                                        , pt.bg      = simul$bgcol
-                                        , pt.pch     = sites.pch.1st[p]
-                                        , pt.cex     = 2.0
+                                        , pt.bg      = simul$fgcol
+                                        , pt.pch     = sites.pch[p]
+                                        , pt.cex     = simul$cex
+                                        , pt.lwd     = simul$lwd
+                                        , obs.col    = foreground
+                                        , gamma.col  = sky.mg
+                                        , gamma.bg   = background
+                                        , sd.col     = grey.fg
+                                        , sd.obs.col = yellow.mg
+                                        , corr.col   = foreground
                                         , main       = ""
                                         , normalise  = TRUE
                                         )#end taylor.plot
                   add = TRUE
-                  if (sites.pch.2nd[p] != 0){
-                     mytaylor = taylor.plot( obs        = obs.diel[[iata]]
-                                           , mod        = mod.diel[[iata]]
-                                           , add        = add
-                                           , pos.corr   = NA
-                                           , pt.col     = simul$fgcol
-                                           , pt.pch     = sites.pch.2nd[p]
-                                           , pt.cex     = 2.0
-                                           , main       = ""
-                                           , normalise  = TRUE
-                                           )#end taylor.plot
-                  }#end if (sites.pch.2nd[p] != 0)
-                  #------------------------------------------------------------------------#
                }#end if (length(obs.diel[[iata]]) > 0.)
                #---------------------------------------------------------------------------#
             }#end for (p in 1:nsites)
@@ -1705,6 +1701,7 @@ for (v in 1:ncompvar){
             #     Split the window into several smaller windows.  Add a bottom row to fit  #
             # the legend.                                                                  #
             #------------------------------------------------------------------------------#
+            par(par.user)
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
             par(oma = c(0.2,3,4,0))
@@ -1723,11 +1720,11 @@ for (v in 1:ncompvar){
                    , inset   = 0.0
                    , legend  = simleg.key
                    , fill    = simcol.key
-                   , border  = "black"
-                   , bg      = "white"
+                   , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
                    , cex     = 1.0
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1767,7 +1764,7 @@ for (v in 1:ncompvar){
                if (left  ) axis(side=2)
                box()
                title(main=lesub)
-               if (plotgrid) abline(h=axTicks(2),v=xlines,col="grey83",lty="solid")
+               if (plotgrid) abline(h=axTicks(2),v=xlines,col=grid.colour,lty="solid")
                #---------------------------------------------------------------------------#
 
 
@@ -1775,13 +1772,13 @@ for (v in 1:ncompvar){
                #---------------------------------------------------------------------------#
                #     Add the bar plot.                                                     #
                #---------------------------------------------------------------------------#
-               xbp = barplot(height=stat[d,e,,op],col=colstat,beside=TRUE,border="grey22"
+               xbp = barplot(height=stat[d,e,,op],col=colstat,beside=TRUE,border=grey.fg
                             ,add=TRUE,axes=FALSE,axisnames=FALSE,xpd=FALSE)
                text   (x=xat,y=y.nobs,labels=nobs.good[d,e,op],cex=0.7)
                if (this.good %in% c("r.squared")){
                   ybp = y.r2 - 100 * ( orig.stat[d,e,,op] >= -1.0)
                   text(x=xbp,y=ybp,labels=rep("*",times=length(ybp))
-                      ,font=2,col="saddlebrown")
+                      ,font=2,col="sandybrown")
                }#end if
                #---------------------------------------------------------------------------#
             }#end for
@@ -1868,6 +1865,7 @@ for (v in 1:ncompvar){
             #     Split the window into several smaller windows.  Add a bottom row to fit  #
             # the legend.                                                                  #
             #------------------------------------------------------------------------------#
+            par(par.user)
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
             layout(mat = rbind(2,1), height = c(5,1))
@@ -1883,11 +1881,11 @@ for (v in 1:ncompvar){
                    , inset   = 0.0
                    , legend  = simleg.key
                    , fill    = simcol.key
-                   , border  = "black"
-                   , bg      = "white"
+                   , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
                    , cex     = 0.7
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1906,7 +1904,7 @@ for (v in 1:ncompvar){
             axis(side=1,at=xat,labels=toupper(sites.key[op]))
             axis(side=2)
             box()
-            if (plotgrid) abline(h=axTicks(2),v=xlines,col="grey83",lty="solid")
+            if (plotgrid) abline(h=axTicks(2),v=xlines,col=grid.colour,lty="solid")
             #------------------------------------------------------------------------------#
 
 
@@ -1914,12 +1912,12 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             #     Add the bar plot.                                                        #
             #------------------------------------------------------------------------------#
-            barplot(height=stat[d,nseason,,op],col=colstat,beside=TRUE,border="grey22"
+            barplot(height=stat[d,nseason,,op],col=colstat,beside=TRUE,border=grey.fg
                    ,add=TRUE,axes=FALSE,axisnames=FALSE,xpd=FALSE)
-            text(x=xat,y=y.nobs,labels=nobs.good[d,nseason,op],cex=0.9,col="grey22")
+            text(x=xat,y=y.nobs,labels=nobs.good[d,nseason,op],cex=0.9,col=grey.fg)
             if (this.good %in% c("r.squared")){
                ybp = y.r2 - 100 * ( orig.stat[d,nseason,,op] >= -1.0)
-               text(x=xbp,y=ybp,labels=rep("*",times=length(ybp)),font=2,col="saddlebrown")
+               text(x=xbp,y=ybp,labels=rep("*",times=length(ybp)),font=2,col="sandybrown")
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -2007,6 +2005,7 @@ for (v in 1:ncompvar){
                #     Split the window into several smaller windows.  Add a bottom row to   #
                # fit the legend.                                                           #
                #---------------------------------------------------------------------------#
+               par(par.user)
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
                par(oma = c(0.2,3,4,0))
@@ -2025,11 +2024,11 @@ for (v in 1:ncompvar){
                       , inset   = 0.0
                       , legend  = simleg.key
                       , fill    = simcol.key
-                      , border  = "black"
-                      , bg      = "white"
+                      , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
                       , cex     = 1.0
+                      , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -2062,7 +2061,7 @@ for (v in 1:ncompvar){
                   if (left  ) axis(side=2)
                   box()
                   title(main=lesub)
-                  if (plotgrid) grid(col="grey83",lty="solid")
+                  if (plotgrid) grid(col=grid.colour,lty="solid")
                   #------------------------------------------------------------------------#
 
 
@@ -2161,6 +2160,7 @@ for (v in 1:ncompvar){
                #     Split the window into several smaller windows.  Add a bottom row to   #
                # fit the legend.                                                           #
                #---------------------------------------------------------------------------#
+               par(par.user)
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
                layout(mat=rbind(2,1),height=c(5,1))
@@ -2176,11 +2176,11 @@ for (v in 1:ncompvar){
                       , inset   = 0.0
                       , legend  = simleg.key
                       , fill    = simcol.key
-                      , border  = "black"
-                      , bg      = "white"
+                      , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
                       , cex     = 1.0
+                      , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -2197,7 +2197,7 @@ for (v in 1:ncompvar){
                axis(side=1)
                axis(side=2)
                box()
-               if (plotgrid) grid(col="grey83",lty="solid")
+               if (plotgrid) grid(col=grid.colour,lty="solid")
                #---------------------------------------------------------------------------#
 
 
