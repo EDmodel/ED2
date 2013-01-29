@@ -34,27 +34,208 @@ module soil_coms
    integer, parameter :: ed_nvtyp = 21
 #endif
 
-   !---------------------------------------------------------------------------------------!
+   !=======================================================================================!
+   !=======================================================================================!
    !    The following variables are assigned through the namelist.                         !
    !---------------------------------------------------------------------------------------!
-   integer                                    :: isoilbc        ! Bottom layer bnd. cond.
-   integer, dimension(maxgrds)                :: isoilflg       ! Soil initialization flag.
-   integer                                    :: nslcon         ! Default soil texture
-   integer                                    :: isoilcol       ! Default soil texture
-   real                                       :: slxclay        ! Clay soil fraction
-   real                                       :: slxsand        ! Sand soil fraction
-   real                                       :: zrough         ! Default soil roughness.
-   real, dimension(nzgmax)                    :: slmstr         ! Initial soil moist. frac.
-   real, dimension(nzgmax)                    :: stgoff         ! Initial soil temp. offset
-   real, dimension(nzgmax)                    :: slz            ! Soil levels.
-   character(len=str_len), dimension(maxgrds) :: veg_database   ! Land/sea mask database
-   character(len=str_len), dimension(maxgrds) :: soil_database  ! Soil texture database
-   character(len=str_len)                     :: soilstate_db   ! Soil state database.
-   character(len=str_len)                     :: soildepth_db   ! Soil depth database.
+   !---------------------------------------------------------------------------------------!
+   ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.  Choose  !
+   !            the option according to the site characteristics.                          !
+   !            0.  Flat bedrock.  Flux from the bottom of the bottommost layer is zero.   !
+   !            1.  Gravitational flow (free drainage).  The flux from the bottom of the   !
+   !                bottommost layer is due to gradient of height only.                    !
+   !            2.  Lateral drainage.  Similar to free drainage, but the gradient is       !
+   !                reduced by the slope not being completely vertical.  The reduction is  !
+   !                controlled by variable SLDRAIN.  In the future options 0, 1, and 2 may !
+   !                be combined into a single option.                                      !
+   !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
+   !                always at saturation.                                                  !
+   !---------------------------------------------------------------------------------------!
+   integer                                    :: isoilbc
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! SLDRAIN      -- This is used only when ISOILBC is set to 2.  In this case SLDRAIN is  !
+   !                 the equivalent slope that will slow down drainage.  If this is set to !
+   !                 zero, then lateral drainage reduces to flat bedrock, and if this is   !
+   !                 set to 90, then lateral drainage becomes free drainage.  SLDRAIN must !
+   !                 be between 0 and 90.                                                  !
+   !                                                                                       !
+   ! SLDRAIN8     -- These are auxiliary variables derived from sldrain.  SIN_SLDRAIN is   !
+   ! SIN_SLDRAIN     the sine of the slope, and SLDRAIN8 and SIN_SLDRAIN8 are the double   !
+   ! SIN_SLDRAIN8    precision versions of SLDRAIN and SIN_SLDRAIN.                        !
+   !---------------------------------------------------------------------------------------!
+   real                                       :: sldrain
+   real(kind=8)                               :: sldrain8
+   real                                       :: sin_sldrain
+   real(kind=8)                               :: sin_sldrain8
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ISOILFLG -- this controls which soil type input you want to use.                      !
+   !             1. Read in from a dataset I will provide in the SOIL_DATABASE variable a  !
+   !                few lines below.                                                       !
+   !                  below.                                                               !
+   !             2. No data available, I will use constant values I will provide in        !
+   !                NSLCON or by prescribing the fraction of sand and clay (see SLXSAND    !
+   !                and SLXCLAY).                                                          !
+   !---------------------------------------------------------------------------------------!
+   integer, dimension(maxgrds)                :: isoilflg
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! NSLCON -- ED-2 Soil classes that the model will use when ISOILFLG is set to 2.        !
+   !           Possible values are:                                                        !
+   !---------------------------------------------------------------------------------------!
+   !   1 -- sand                |   7 -- silty clay loam     |  13 -- bedrock              !
+   !   2 -- loamy sand          |   8 -- clayey loam         |  14 -- silt                 !
+   !   3 -- sandy loam          |   9 -- sandy clay          |  15 -- heavy clay           !
+   !   4 -- silt loam           |  10 -- silty clay          |  16 -- clayey sand          !
+   !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
+   !   6 -- sandy clay loam     |  12 -- peat                                              !
+   !---------------------------------------------------------------------------------------!
+   integer                                    :: nslcon
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
+   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
+   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
+   !             and near infra-red.                                                       !
+   !---------------------------------------------------------------------------------------!
+   !                                                                                       !
+   !       |-----------------------------------------------------------------------|       !
+   !       |       |   Dry soil  |  Saturated  |       |   Dry soil  |  Saturated  |       !
+   !       | Class |-------------+-------------| Class +-------------+-------------|       !
+   !       |       |  VIS |  NIR |  VIS |  NIR |       |  VIS |  NIR |  VIS |  NIR |       !
+   !       |-------+------+------+------+------+-------+------+------+------+------|       !
+   !       |     1 | 0.36 | 0.61 | 0.25 | 0.50 |    11 | 0.24 | 0.37 | 0.13 | 0.26 |       !
+   !       |     2 | 0.34 | 0.57 | 0.23 | 0.46 |    12 | 0.23 | 0.35 | 0.12 | 0.24 |       !
+   !       |     3 | 0.32 | 0.53 | 0.21 | 0.42 |    13 | 0.22 | 0.33 | 0.11 | 0.22 |       !
+   !       |     4 | 0.31 | 0.51 | 0.20 | 0.40 |    14 | 0.20 | 0.31 | 0.10 | 0.20 |       !
+   !       |     5 | 0.30 | 0.49 | 0.19 | 0.38 |    15 | 0.18 | 0.29 | 0.09 | 0.18 |       !
+   !       |     6 | 0.29 | 0.48 | 0.18 | 0.36 |    16 | 0.16 | 0.27 | 0.08 | 0.16 |       !
+   !       |     7 | 0.28 | 0.45 | 0.17 | 0.34 |    17 | 0.14 | 0.25 | 0.07 | 0.14 |       !
+   !       |     8 | 0.27 | 0.43 | 0.16 | 0.32 |    18 | 0.12 | 0.23 | 0.06 | 0.12 |       !
+   !       |     9 | 0.26 | 0.41 | 0.15 | 0.30 |    19 | 0.10 | 0.21 | 0.05 | 0.10 |       !
+   !       |    10 | 0.25 | 0.39 | 0.14 | 0.28 |    20 | 0.08 | 0.16 | 0.04 | 0.08 |       !
+   !       |-----------------------------------------------------------------------|       !
+   !                                                                                       !
+   !   Soil type 21 is a special case in which we use the albedo method that used to be    !
+   ! the default in ED-2.1.                                                                !
+   !---------------------------------------------------------------------------------------!
+   integer                                    :: isoilcol
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are used to define the soil properties when you don't want to use !
+   ! the standard soil classes.                                                            !
+   !                                                                                       !
+   ! SLXCLAY -- Prescribed fraction of clay  [0-1]                                         !
+   ! SLXSAND -- Prescribed fraction of sand  [0-1].                                        !
+   !                                                                                       !
+   !     They are used only when ISOILFLG is 2, both values are between 0. and 1., and     !
+   ! theira sum doesn't exceed 1.  Otherwise standard ED values will be used instead.      !
+   !---------------------------------------------------------------------------------------!
+   real                                       :: slxclay
+   real                                       :: slxsand
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  ZROUGH -- constant roughness, in metres, if for all domain                           !
+   !---------------------------------------------------------------------------------------!
+   real                                       :: zrough
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Soil grid and initial conditions if no file is provided:                           !
+   !                                                                                       !
+   ! SLZ     - soil depth in m.  Values must be negative and go from the deepest layer to  !
+   !           the top.                                                                    !
+   ! SLMSTR  - this is the initial soil moisture, now given as the soil moisture index.    !
+   !           Values can be fraction, in which case they will be linearly interpolated    !
+   !           between the special points (e.g. 0.5 will put soil moisture half way        !
+   !           between the wilting point and field capacity).                              !
+   !              -1 = dry air soil moisture                                               !
+   !               0 = wilting point                                                       !
+   !               1 = field capacity                                                      !
+   !               2 = porosity (saturation)                                               !
+   ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset)    !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(nzgmax)                    :: slz
+   real, dimension(nzgmax)                    :: slmstr
+   real, dimension(nzgmax)                    :: stgoff
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Input databases                                                                      !
+   !  VEG_DATABASE     -- vegetation database, used only to determine the land/water mask. !
+   !                      Fill with the path and the prefix.                               !
+   !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
+   !                      path and the prefix.                                             !
+   !  SOILSTATE_DB     -- Dataset in case you want to provide the initial conditions of    !
+   !                      soil temperature and moisture.                                   !
+   !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
+   !---------------------------------------------------------------------------------------!
+   character(len=str_len), dimension(maxgrds) :: veg_database
+   character(len=str_len), dimension(maxgrds) :: soil_database
+   character(len=str_len)                     :: soilstate_db
+   character(len=str_len)                     :: soildepth_db
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ISOILSTATEINIT -- Variable controlling how to initialise the soil temperature and     !
+   !                   moisture                                                            !
+   !                   0.  Use SLMSTR and STGOFF.                                          !
+   !                   1.  Read from SOILSTATE_DB.                                         !
+   ! ISOILDEPTHFLG  -- Variable controlling how to initialise soil depth                   !
+   !                   0.  Constant, always defined by the first SLZ layer.                !
+   !                   1.  Read from SOILDEPTH_DB.                                         !
+   !---------------------------------------------------------------------------------------!
    integer                                    :: isoilstateinit ! Soil state initial cond. 
    integer                                    :: isoildepthflg  ! Soil depth initial cond. 
-   real                                       :: runoff_time    ! Default runoff time scale.
    !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! RUNOFF_TIME -- In case a temporary surface water (TSW) is created, this is the "e-    !
+   !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
+   !                want runoff to happen, set this to 0.                                  !
+   !---------------------------------------------------------------------------------------!
+   real                                       :: runoff_time
+   !---------------------------------------------------------------------------------------!
+
+   !=======================================================================================!
+   !=======================================================================================!
 
 
    !---------------------------------------------------------------------------------------!

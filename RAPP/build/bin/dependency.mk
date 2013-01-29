@@ -21,7 +21,7 @@ mod_interp.o: mod_ioopts.mod mod_maxdims.mod
 mod_ioopts.o: mod_maxdims.mod mod_time.mod
 mod_model.o: mod_maxdims.mod mod_time.mod
 mod_namelist.o: mod_maxdims.mod
-mod_ncdf_globio.o: mod_ioopts.mod mod_netcdf.mod mod_time.mod 
+mod_ncdf_globio.o: mod_ioopts.mod mod_ mod_time.mod 
 mod_ncdf_globio.o: rconstants.mod
 mod_ncep.o: mod_ioopts.mod mod_maxdims.mod mod_time.mod
 mod_netcdf.o: mod_maxdims.mod mod_time.mod 
@@ -31,15 +31,15 @@ ncep_alloc.o: rconstants.mod
 ncep_coordinates.o: mod_grid.mod mod_ioopts.mod mod_model.mod
 ncep_fill_infotable.o: an_header.mod mod_interp.mod mod_ioopts.mod
 ncep_fill_infotable.o: mod_maxdims.mod mod_model.mod mod_ncdf_globio.mod
-ncep_fill_infotable.o: mod_ncep.mod mod_netcdf.mod 
+ncep_fill_infotable.o: mod_ncep.mod mod_ 
 ncep_loadvars.o: an_header.mod mod_grid.mod mod_ioopts.mod mod_maxdims.mod
-ncep_loadvars.o: mod_model.mod mod_ncdf_globio.mod mod_ncep.mod mod_netcdf.mod
+ncep_loadvars.o: mod_model.mod mod_ncdf_globio.mod mod_ncep.mod mod_
 ncep_loadvars.o:  therm_lib.mod
 ncep_output.o:  hdf5_utils.mod mod_grid.mod mod_interp.mod
 ncep_output.o: mod_ioopts.mod mod_maxdims.mod mod_model.mod mod_ncep.mod
 ncep_output.o: mod_time.mod
 ncepcio.o: mod_ioopts.mod mod_maxdims.mod mod_model.mod mod_ncdf_globio.mod
-ncepcio.o: mod_netcdf.mod  rconstants.mod
+ncepcio.o: mod_  rconstants.mod
 dateutils.o: mod_time.mod rconstants.mod
 great_circle.o: rconstants.mod
 hdf5_utils.o:  hdf5_coms.mod
@@ -56,7 +56,7 @@ mod_model.mod: mod_model.o
 mod_namelist.mod: mod_namelist.o
 mod_ncdf_globio.mod: mod_ncdf_globio.o
 mod_ncep.mod: mod_ncep.o
-mod_netcdf.mod: mod_netcdf.o
+mod_: mod_netcdf.o
 mod_time.mod: mod_time.o
 rconstants.mod: rconstants.o
 therm_lib.mod: therm_lib.o

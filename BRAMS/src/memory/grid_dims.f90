@@ -42,8 +42,8 @@ module grid_dims
    !   MAXMACH - Maximum number of cores on a parallel run.                                !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: maxgrds =    8
-   integer, parameter :: nxpmax  =  600
-   integer, parameter :: nypmax  =  600
+   integer, parameter :: nxpmax  =  666
+   integer, parameter :: nypmax  =  666
    integer, parameter :: nzpmax  =  132
    integer, parameter :: nzgmax  =  100
    integer, parameter :: maxsclr =  150

@@ -69,6 +69,7 @@ Module mem_leaf
       real, dimension(:,:,:), pointer :: can_rvap     & ! Vapour Mixing ratio   [    kg/kg]
                                        , can_theta    & ! Potential temperature [        K]
                                        , can_theiv    & ! Theta_Eiv             [        K]
+                                       , can_vpdef    & ! Vapour press. deficit [       Pa]
                                        , can_prss     & ! Pressure              [       Pa]
                                        , can_co2      ! ! CO2 mixing ratio      [ µmol/mol]
 
@@ -167,9 +168,17 @@ Module mem_leaf
                                           ! 3. Test # 3 of Mahfouf and Noilhan (1991)
                                           ! 4. Test # 4 of Mahfouf and Noilhan (1991)
    integer                 :: isoilbc     ! Bottom soil boundary condition.
-                                          !    0. Bedrock
-                                          !    1. Free drainage
-                                          !    2. Half drainage
+                                          !    0. Flat Bedrock (zero flow)
+                                          !    1. Free drainage (gravity flow)
+                                          !    2. Sink hole drainage (BC at -3.1MPa+z)
+                                          !    3. Water table (BC at field capacity) 
+                                          !    4. Aquifer (BC at porosity)
+                                          !    5. Lateral drainage (gravity flow at slope)
+                                          !       This requires sldrain, in future options
+                                          !       0, 1, and 5 could be merged.
+   real                    :: sldrain     ! Slope for lateral drainage in degrees.  Values
+                                          !       can range between 0 (flat bedrock) and 90
+                                          !       degrees (free drainage).
    integer                 :: ipercol     ! Percolation scheme:
                                           !    0. Original method, from LEAF-3.  Shed liquid 
                                           !       in excess of a 1:9 liquid-to-ice ratio 
@@ -257,6 +266,7 @@ Module mem_leaf
       allocate (leaf%can_rvap         (    nx,ny,np))
       allocate (leaf%can_theta        (    nx,ny,np))
       allocate (leaf%can_theiv        (    nx,ny,np))
+      allocate (leaf%can_vpdef        (    nx,ny,np))
       allocate (leaf%can_prss         (    nx,ny,np))
       allocate (leaf%can_co2          (    nx,ny,np))
 
@@ -355,6 +365,7 @@ Module mem_leaf
       nullify(leaf%can_rvap         )
       nullify(leaf%can_theta        )
       nullify(leaf%can_theiv        )
+      nullify(leaf%can_vpdef        )
       nullify(leaf%can_prss         )
       nullify(leaf%can_co2          )
 
@@ -452,6 +463,7 @@ Module mem_leaf
       if (associated(leaf%can_rvap         ))  leaf%can_rvap         = 0.0
       if (associated(leaf%can_theta        ))  leaf%can_theta        = 0.0
       if (associated(leaf%can_theiv        ))  leaf%can_theiv        = 0.0
+      if (associated(leaf%can_vpdef        ))  leaf%can_vpdef        = 0.0
       if (associated(leaf%can_prss         ))  leaf%can_prss         = 0.0
       if (associated(leaf%can_co2          ))  leaf%can_co2          = 0.0
 
@@ -547,6 +559,7 @@ Module mem_leaf
       if (associated(leaf%can_rvap         ))  deallocate(leaf%can_rvap         )
       if (associated(leaf%can_theta        ))  deallocate(leaf%can_theta        )
       if (associated(leaf%can_theiv        ))  deallocate(leaf%can_theiv        )
+      if (associated(leaf%can_vpdef        ))  deallocate(leaf%can_vpdef        )
       if (associated(leaf%can_prss         ))  deallocate(leaf%can_prss         )
       if (associated(leaf%can_co2          ))  deallocate(leaf%can_co2          )
 
@@ -774,6 +787,10 @@ Module mem_leaf
       if (associated(leaf%can_theiv))                                                      &
          call vtables2(leaf%can_theiv,leafm%can_theta,ng,npts,imean                        &
                       ,'CAN_THEIV :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%can_vpdef))                                                      &
+         call vtables2(leaf%can_vpdef,leafm%can_vpdef,ng,npts,imean                        &
+                      ,'CAN_VPDEF :6:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_prss))                                                       &
          call vtables2(leaf%can_prss,leafm%can_prss,ng,npts,imean                          &

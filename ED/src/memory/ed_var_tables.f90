@@ -59,6 +59,7 @@
 !     !  44  : rank 2 : cohort, pft                         !                              !
 !     !  46  : rank 2 : cohort, dbh                         !                              !
 !     !  47  : rank 2 : cohort, age                         !                              !
+!     !  48  : rank 2 : cohort, mort                        !                              !
 !     !  49  : rank 2 : cohort, nmonths+1                   !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
@@ -123,7 +124,7 @@ module ed_var_tables
       character (len=64)  :: dimlab
       logical             :: vector_allocated
       !----- Multiple pointer defs (maxptrs) ----------------------------------------------!
-      type(var_table_vector), allocatable, dimension(:) :: vt_vector
+      type(var_table_vector), pointer, dimension(:) :: vt_vector
    end type var_table
    !---------------------------------------------------------------------------------------!
 
@@ -1559,32 +1560,31 @@ module ed_var_tables
       !      I actually don't know why, but the typical "if (allocated(vt%vt_vector))"     !
       ! doesn't work here, so instead we save a logical test...                            !
       !------------------------------------------------------------------------------------!
-      if (.not. vt%vector_allocated) return
+      if (vt%vector_allocated) then
+         !---------------------------------------------------------------------------------!
+         !     Go through all pointer elements and nullify those associated with vari-     !
+         ! ables.  We must do that before we deallocate so only the pointers, not the true !
+         ! arrays, are deallocated.                                                        !
+         !---------------------------------------------------------------------------------!
+         do iptr=1,vt%nptrs
+            if (associated(vt%vt_vector(iptr)%var_rp)) nullify(vt%vt_vector(iptr)%var_rp)
+            if (associated(vt%vt_vector(iptr)%var_ip)) nullify(vt%vt_vector(iptr)%var_ip)
+            if (associated(vt%vt_vector(iptr)%var_cp)) nullify(vt%vt_vector(iptr)%var_cp)
+            if (associated(vt%vt_vector(iptr)%var_dp)) nullify(vt%vt_vector(iptr)%var_dp)
+            if (associated(vt%vt_vector(iptr)%sca_rp)) nullify(vt%vt_vector(iptr)%sca_rp)
+            if (associated(vt%vt_vector(iptr)%sca_ip)) nullify(vt%vt_vector(iptr)%sca_ip)
+            if (associated(vt%vt_vector(iptr)%sca_cp)) nullify(vt%vt_vector(iptr)%sca_cp)
+            if (associated(vt%vt_vector(iptr)%sca_dp)) nullify(vt%vt_vector(iptr)%sca_dp)
+         end do
+         deallocate(vt%vt_vector)
+      end if
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      !     Go through all pointer elements and nullify those associated with variables.   !
-      ! We must do that before we deallocate so only the pointers, not the true arrays,    !
-      ! are deallocated.                                                                   !
+      !      Now it's safe to nullify; we also update the logical flag...                  !
       !------------------------------------------------------------------------------------!
-      do iptr=1,vt%nptrs
-         if (associated(vt%vt_vector(iptr)%var_rp)) nullify(vt%vt_vector(iptr)%var_rp)
-         if (associated(vt%vt_vector(iptr)%var_ip)) nullify(vt%vt_vector(iptr)%var_ip)
-         if (associated(vt%vt_vector(iptr)%var_cp)) nullify(vt%vt_vector(iptr)%var_cp)
-         if (associated(vt%vt_vector(iptr)%var_dp)) nullify(vt%vt_vector(iptr)%var_dp)
-         if (associated(vt%vt_vector(iptr)%sca_rp)) nullify(vt%vt_vector(iptr)%sca_rp)
-         if (associated(vt%vt_vector(iptr)%sca_ip)) nullify(vt%vt_vector(iptr)%sca_ip)
-         if (associated(vt%vt_vector(iptr)%sca_cp)) nullify(vt%vt_vector(iptr)%sca_cp)
-         if (associated(vt%vt_vector(iptr)%sca_dp)) nullify(vt%vt_vector(iptr)%sca_dp)
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Now it's safe to deallocate, just remind to update the logical flag...        !
-      !------------------------------------------------------------------------------------!
-      deallocate(vt%vt_vector)
+      nullify(vt%vt_vector)
       vt%vector_allocated = .false.
       !------------------------------------------------------------------------------------!
 

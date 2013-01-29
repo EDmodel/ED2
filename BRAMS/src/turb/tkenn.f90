@@ -244,8 +244,8 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          patchloop: do p=1,m4
             if (patch_area(i,j,p) < min_patch_area) cycle patchloop
             z0w    =    z0w + patchz0(i,j,p) * patch_area(i,j,p)
-            ustarw = ustarw + ustar(i,j,p)   * patch_area(i,j,p)
-            tstarw = tstarw + tstar(i,j,p)   * patch_area(i,j,p)
+            ustarw = ustarw + ustar  (i,j,p) * patch_area(i,j,p)
+            tstarw = tstarw + tstar  (i,j,p) * patch_area(i,j,p)
          end do patchloop
          ustarw = max(ustarw,ustmin)
          !---------------------------------------------------------------------------------!

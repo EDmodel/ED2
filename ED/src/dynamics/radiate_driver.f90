@@ -252,6 +252,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    integer                                       :: colour
    integer                                       :: k
    integer                                       :: ksn
+   integer                                       :: tuco_leaf
    real                                          :: fcpct
    real                                          :: albedo_soil_par
    real                                          :: albedo_soil_nir
@@ -305,6 +306,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: upward_lw_above_incid
    real                                          :: downward_rshort_below_beam
    real                                          :: downward_rshort_below_diffuse
+   real                                          :: upward_rshort_above_beam
+   real                                          :: upward_rshort_above_diffuse
    real                                          :: surface_absorbed_longwave_surf
    real                                          :: surface_absorbed_longwave_incid
    real                                          :: nir_v_beam
@@ -395,6 +398,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       !------------------------------------------------------------------------------------!
       cohort_count = 0
       tuco         = 0
+      tuco_leaf    = 0
       !------------------------------------------------------------------------------------!
 
 
@@ -456,22 +460,30 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
                !----- This will eventually have the index of the tallest used cohort. -----!
                tuco = ico
+               !---------------------------------------------------------------------------!
 
                cohort_count                          = cohort_count + 1
                pft_array              (cohort_count) = cpatch%pft(ico)
+
+
+
                !---------------------------------------------------------------------------!
                !     Here we only tell the true LAI if the leaf is resolvable, and the     !
-               ! true WAI if the wood is resolvable.                                       !
+               ! true WAI if the wood is resolvable.  Also, for photosynthesis, we must    !
+               ! keep track of the tallest cohort that has leaves (we track the array      !
+               ! counters because we will extract the information directly from the        !
+               ! arrays.                                                                   !
                !---------------------------------------------------------------------------!
                if (cpatch%leaf_resolvable(ico)) then
-                  lai_array              (cohort_count) = dble(cpatch%lai(ico))
+                  tuco_leaf                 = cohort_count
+                  lai_array  (cohort_count) = dble(cpatch%lai(ico))
                else
-                  lai_array              (cohort_count) = 0.d0
+                  lai_array  (cohort_count) = 0.d0
                end if
                if (cpatch%wood_resolvable(ico)) then
-                  wai_array              (cohort_count) = dble(cpatch%wai(ico))
+                  wai_array  (cohort_count) = dble(cpatch%wai(ico))
                else
-                  wai_array              (cohort_count) = 0.d0
+                  wai_array  (cohort_count) = 0.d0
                end if
                !---------------------------------------------------------------------------!
 
@@ -487,6 +499,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                light_level_array      (cohort_count) = 0.d0
                light_beam_level_array (cohort_count) = 0.d0
                light_diff_level_array (cohort_count) = 0.d0
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !      Decide whether to assume infinite crown, or the crown area allometry !
@@ -538,17 +551,37 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             !------------------------------------------------------------------------------!
             !     Check whether the cohort is resolvable or not.                           !
             !------------------------------------------------------------------------------!
-            if (cpatch%leaf_resolvable(1) .or. cpatch%wood_resolvable(1)) then
+           if (cpatch%leaf_resolvable(1) .or. cpatch%wood_resolvable(1)) then
                tuco = 1 !---- Dummy variable. ---------------------------------------------!
 
+
+
                !---------------------------------------------------------------------------!
-               !     Patch/cohort has enough leaf or wood.  Find the number of layers for  !
-               ! the radiation scheme.                                                     !
+               !     Here we only tell the true LAI if the leaf is resolvable, and the     !
+               ! true   !
+               ! WAI if the wood is resolvable.  Also, for photosynthesis, we must keep track !
+               ! of the tallest cohort that has leaves (we track the array counters because   !
+               ! we will extract the information directly from the arrays.                    !
                !---------------------------------------------------------------------------!
-               cohort_count = ceiling( (cpatch%lai(1) + cpatch%wai(1)) / tai_lyr_max )
-               bl_lai_each  = cpatch%lai(1) / real(cohort_count)
-               bl_wai_each  = cpatch%wai(1) / real(cohort_count) 
+               if (cpatch%leaf_resolvable(1) .and. cpatch%wood_resolvable(1)) then
+                  cohort_count = ceiling( (cpatch%lai(1) + cpatch%wai(1)) / tai_lyr_max )
+                  bl_lai_each  = cpatch%lai(1) / real(cohort_count)
+                  bl_wai_each  = cpatch%wai(1) / real(cohort_count) 
+                  tuco_leaf    = cohort_count
+               elseif (cpatch%leaf_resolvable(1)) then
+                  cohort_count = ceiling( cpatch%lai(1) / tai_lyr_max )
+                  bl_lai_each  = cpatch%lai(1) / real(cohort_count)
+                  bl_wai_each  = 0.0
+                  tuco_leaf    = cohort_count
+               elseif (cpatch%wood_resolvable(1)) then
+                  cohort_count = ceiling( cpatch%wai(1) / tai_lyr_max )
+                  bl_lai_each  = 0.0
+                  bl_wai_each  = cpatch%wai(1) / real(cohort_count)
+               end if
                !---------------------------------------------------------------------------!
+
+
+
 
                !---------------------------------------------------------------------------!
                !     Loop over all layers, and assign equal amounts of LAI and WAI such    !
@@ -641,7 +674,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             fcpct           = max(0., 0.11 - 0.40 * csite%soil_water(mzg,ipa))
             albedo_soil_par = min(soilcol(colour)%alb_vis_dry                              &
                                  ,soilcol(colour)%alb_vis_wet  + fcpct)
-            albedo_soil_nir = min(soilcol(colour)%alb_nir_dry                             &
+            albedo_soil_nir = min(soilcol(colour)%alb_nir_dry                              &
                                  ,soilcol(colour)%alb_nir_wet  + fcpct)
             !------------------------------------------------------------------------------!
          end select
@@ -900,16 +933,31 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
             ! enough.                                                                      !
             !------------------------------------------------------------------------------!
-            ipft      = pft_array(cohort_count)
-            wleaf_vis = sngloff( clumping_factor(ipft) * (1.d0 - leaf_scatter_vis(ipft))   &
-                               * LAI_array(cohort_count)                                   &
-                               / ( clumping_factor(ipft) * (1.d0 - leaf_scatter_vis(ipft)) &
-                                 * LAI_array(cohort_count)                                 &
-                                 + (1.d0 - wood_scatter_vis(ipft))                         &
-                                 * WAI_array(cohort_count) )                               &
-                               , tiny_offset)
-            csite%par_l_beam_max(ipa)    = par_v_beam_array(cohort_count)    * wleaf_vis
-            csite%par_l_diffuse_max(ipa) = par_v_diffuse_array(cohort_count) * wleaf_vis
+            if (tuco_leaf /= 0) then
+               ipft      = pft_array(tuco_leaf)
+               wleaf_vis = sngloff( clumping_factor(ipft)                                  &
+                                  * (1.d0 - leaf_scatter_vis(ipft))                        &
+                                  * LAI_array(tuco_leaf)                                   &
+                                  / ( clumping_factor(ipft)                                &
+                                    * (1.d0 - leaf_scatter_vis(ipft))                      &
+                                    * LAI_array(tuco_leaf)                                 &
+                                    + (1.d0 - wood_scatter_vis(ipft))                      &
+                                    * WAI_array(tuco_leaf) )                               &
+                                  , tiny_offset)
+               csite%par_l_beam_max(ipa)    = par_v_beam_array(tuco_leaf)    * wleaf_vis   &
+                                            / LAI_array(tuco_leaf)
+               csite%par_l_diffuse_max(ipa) = par_v_diffuse_array(tuco_leaf) * wleaf_vis   &
+                                            / LAI_array(tuco_leaf)
+            end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Above-canopy upwelling radiation. --------------------------------------!
+            upward_rshort_above_beam    = upward_par_above_beam                            &
+                                        + upward_nir_above_beam
+            upward_rshort_above_diffuse = upward_par_above_diffuse                         &
+                                        + upward_nir_above_diffuse
             !------------------------------------------------------------------------------!
 
 
@@ -924,37 +972,46 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
             !----- Soil+sfcwater+veg albedo (different for diffuse and beam radiation). ---!
-            csite%albedo_beam(ipa)    = ( upward_par_above_beam                            &
-                                        + upward_nir_above_beam )                          &
+            csite%albedo_beam(ipa)    = upward_rshort_above_beam                           &
                                       / sngloff( par_beam_norm + nir_beam_norm             &
                                                , tiny_offset )
-            csite%albedo_diffuse(ipa) = ( upward_par_above_diffuse                         &
-                                        + upward_nir_above_diffuse )                       &
+            csite%albedo_diffuse(ipa) = upward_rshort_above_diffuse                        &
                                       / sngloff( par_diff_norm + nir_diff_norm             &
                                                , tiny_offset )
-            csite%albedo(ipa) = ( upward_par_above_beam    + upward_nir_above_beam         &
-                                + upward_par_above_diffuse + upward_nir_above_diffuse )
+            csite%albedo(ipa)         = ( upward_rshort_above_beam                         &
+                                        + upward_rshort_above_diffuse )
             !------------------------------------------------------------------------------!
          else
 
             !----- The code expects values for these, even when it is not daytime. --------!
-            downward_par_below_beam       = par_beam_norm
-            downward_par_below_diffuse    = par_diff_norm
-            downward_nir_below_beam       = nir_beam_norm
-            downward_nir_below_diffuse    = nir_diff_norm
-            downward_rshort_below_beam    = par_beam_norm + nir_beam_norm
-            downward_rshort_below_diffuse = par_diff_norm + nir_diff_norm
-            csite%albedo_beam         (ipa) = ( albedo_ground_par * par_beam_norm          &
-                                              + albedo_ground_nir * nir_beam_norm )        &
+            downward_par_below_beam         = par_beam_norm
+            downward_par_below_diffuse      = par_diff_norm
+            downward_nir_below_beam         = nir_beam_norm
+            downward_nir_below_diffuse      = nir_diff_norm
+            downward_rshort_below_beam      = par_beam_norm + nir_beam_norm
+            downward_rshort_below_diffuse   = par_diff_norm + nir_diff_norm
+            upward_par_above_beam           = albedo_ground_par * par_beam_norm
+            upward_par_above_diffuse        = albedo_ground_par * par_diff_norm
+            upward_nir_above_beam           = albedo_ground_nir * nir_beam_norm
+            upward_nir_above_diffuse        = albedo_ground_nir * nir_diff_norm
+            upward_rshort_above_beam        = upward_par_above_beam                        &
+                                            + upward_nir_above_beam
+            upward_rshort_above_diffuse     = upward_par_above_diffuse                     &
+                                            + upward_nir_above_diffuse
+            csite%albedo_beam         (ipa) = ( upward_par_above_beam                      &
+                                              + upward_nir_above_beam )                    &
                                             / ( par_beam_norm + nir_beam_norm )
-            csite%albedo_diffuse      (ipa) = ( albedo_ground_par * par_diff_norm          &
-                                              + albedo_ground_nir * nir_diff_norm )        &
+            csite%albedo_diffuse      (ipa) = ( upward_par_above_diffuse                   &
+                                              + upward_nir_above_diffuse )                 &
                                             / ( par_diff_norm + nir_diff_norm )
-            csite%albedo              (ipa) = albedo_ground_par * par_beam_norm            &
-                                            + albedo_ground_nir * nir_beam_norm            &
-                                            + albedo_ground_par * par_diff_norm            &
-                                            + albedo_ground_nir * nir_diff_norm
+            csite%albedo              (ipa) = ( upward_rshort_above_beam                   &
+                                              + upward_rshort_above_diffuse )
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
          !     Absorption rates of PAR, rshort, and rlong of the vegetation.  Here we      !
@@ -1163,21 +1220,29 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          downward_nir_below_diffuse      = nir_diff_norm
          downward_rshort_below_beam      = par_beam_norm + nir_beam_norm
          downward_rshort_below_diffuse   = par_diff_norm + nir_diff_norm
+
+         upward_par_above_beam           = albedo_ground_par * par_beam_norm
+         upward_par_above_diffuse        = albedo_ground_par * par_diff_norm
+         upward_nir_above_beam           = albedo_ground_nir * nir_beam_norm
+         upward_nir_above_diffuse        = albedo_ground_nir * nir_diff_norm
+         upward_rshort_above_beam        = upward_par_above_beam                           &
+                                         + upward_nir_above_beam
+         upward_rshort_above_diffuse     = upward_par_above_diffuse                        &
+                                         + upward_nir_above_diffuse
+
          surface_absorbed_longwave_surf  = - emissivity * stefan * T_surface**4
          surface_absorbed_longwave_incid = emissivity
-         csite%albedo_beam         (ipa) = ( albedo_ground_par * par_beam_norm             &
-                                           + albedo_ground_nir * nir_beam_norm )           &
+
+         csite%albedo_beam         (ipa) = ( upward_par_above_beam                         &
+                                           + upward_nir_above_beam )                       &
                                          / ( par_beam_norm + nir_beam_norm )
-         csite%albedo_diffuse      (ipa) = ( albedo_ground_par * par_diff_norm             &
-                                           + albedo_ground_nir * nir_diff_norm )           &
+         csite%albedo_diffuse      (ipa) = ( upward_par_above_diffuse                      &
+                                           + upward_nir_above_diffuse )                    &
                                          / ( par_diff_norm + nir_diff_norm )
-         csite%albedo              (ipa) = albedo_ground_par * par_beam_norm               &
-                                         + albedo_ground_nir * nir_beam_norm               &
-                                         + albedo_ground_par * par_diff_norm               &
-                                         + albedo_ground_nir * nir_diff_norm  
+         csite%albedo              (ipa) = ( upward_rshort_above_beam                      &
+                                           + upward_rshort_above_diffuse )
          csite%rlongup             (ipa) = - surface_absorbed_longwave_surf
          csite%rlong_albedo        (ipa) = 1.0 - surface_absorbed_longwave_incid
-      
       end if
       
       !----- Absorption rate of short wave by the soil. -----------------------------------!
@@ -1185,7 +1250,11 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                   + downward_nir_below_beam    * abs_ground_nir
       csite%rshort_g_diffuse(ipa) = downward_par_below_diffuse * abs_ground_par            &
                                   + downward_nir_below_diffuse * abs_ground_nir
-      
+      csite%parup           (ipa) = upward_par_above_beam                                  &
+                                  + upward_par_above_diffuse
+      csite%nirup           (ipa) = upward_nir_above_beam                                  &
+                                  + upward_nir_above_diffuse
+
       !----- Incident radiation at the ground. --------------------------------------------!
       csite%par_b_beam      (ipa) = downward_par_below_beam
       csite%nir_b_beam      (ipa) = downward_nir_below_beam
@@ -1495,11 +1564,15 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
          csite%nir_b_beam      (ipa) = 0.
          csite%nir_b_diffuse   (ipa) = 0.
          csite%nir_b           (ipa) = 0.
+         csite%parup           (ipa) = 0.
+         csite%nirup           (ipa) = 0.
+         csite%rshortup        (ipa) = 0.
+         csite%rnet            (ipa) = 0.
          !----- Absorption rate of short wave by the surface water. -----------------------!
          do k=1,csite%nlev_sfcwater(ipa)
-            csite%rshort_s_beam(k,ipa)    = 0.
+            csite%rshort_s_beam   (k,ipa) = 0.
             csite%rshort_s_diffuse(k,ipa) = 0.
-            csite%rshort_s(k,ipa)         = 0.
+            csite%rshort_s        (k,ipa) = 0.
          end do
          csite%rlong_s_incid(ipa) = 0.
          csite%rlong_g_incid(ipa) = 0.
@@ -1544,23 +1617,31 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
                                          + cpatch%rlong_w_surf(ico)
          end if
       end do
-      csite%par_l_beam_max(ipa)    = csite%par_l_beam_max(ipa)    * rshort
-      csite%par_l_diffuse_max(ipa) = csite%par_l_diffuse_max(ipa) * rshort
-      csite%par_l_max(ipa)         = csite%par_l_beam_max(ipa)                             &
-                                   + csite%par_l_diffuse_max(ipa)
+      csite%par_l_beam_max    (ipa)      = csite%par_l_beam_max    (ipa) * rshort
+      csite%par_l_diffuse_max (ipa)      = csite%par_l_diffuse_max (ipa) * rshort
+      csite%par_l_max         (ipa)      = csite%par_l_beam_max    (ipa)                   &
+                                         + csite%par_l_diffuse_max (ipa)
 
-      csite%rshort_g_beam(ipa)    = csite%rshort_g_beam(ipa)    * rshort
-      csite%rshort_g_diffuse(ipa) = csite%rshort_g_diffuse(ipa) * rshort
-      csite%rshort_g(ipa)         = csite%rshort_g_beam(ipa) + csite%rshort_g_diffuse(ipa)
+      csite%rshort_g_beam     (ipa)      = csite%rshort_g_beam     (ipa) * rshort
+      csite%rshort_g_diffuse  (ipa)      = csite%rshort_g_diffuse  (ipa) * rshort
+      csite%rshort_g          (ipa)      = csite%rshort_g_beam     (ipa)                   &
+                                         + csite%rshort_g_diffuse  (ipa)
 
-      csite%par_b_beam(ipa)    = csite%par_b_beam(ipa)    * rshort
-      csite%par_b_diffuse(ipa) = csite%par_b_diffuse(ipa) * rshort
-      csite%par_b(ipa)         = csite%par_b_beam(ipa) + csite%par_b_diffuse(ipa)
-
-      csite%nir_b_beam(ipa)    = csite%nir_b_beam(ipa)    * rshort
-      csite%nir_b_diffuse(ipa) = csite%nir_b_diffuse(ipa) * rshort
-      csite%nir_b(ipa)         = csite%nir_b_beam(ipa) + csite%nir_b_diffuse(ipa)
-
+      csite%par_b_beam        (ipa)      = csite%par_b_beam        (ipa) * rshort
+      csite%par_b_diffuse     (ipa)      = csite%par_b_diffuse     (ipa) * rshort
+      csite%par_b             (ipa)      = csite%par_b_beam        (ipa)                   &
+                                         + csite%par_b_diffuse     (ipa)
+      csite%nir_b_beam        (ipa)      = csite%nir_b_beam        (ipa) * rshort
+      csite%nir_b_diffuse     (ipa)      = csite%nir_b_diffuse     (ipa) * rshort
+      csite%nir_b             (ipa)      = csite%nir_b_beam        (ipa)                   &
+                                         + csite%nir_b_diffuse     (ipa)
+      csite%parup             (ipa)      = csite%parup             (ipa) * rshort
+      csite%nirup             (ipa)      = csite%nirup             (ipa) * rshort
+      csite%rshortup          (ipa)      = csite%parup             (ipa)                   &
+                                         + csite%nirup             (ipa)
+      csite%rnet              (ipa)      = rshort + rlong                                  &
+                                         - csite%rshortup          (ipa)                   &
+                                         - csite%rlongup           (ipa)
       !----- Absorption rate of short wave by the surface water. --------------------------!
       do k=1,csite%nlev_sfcwater(ipa)
          csite%rshort_s_beam(k,ipa)    = csite%rshort_s_beam   (k,ipa) * rshort

@@ -66,7 +66,7 @@ endif
 
 iodim=max(100000,4*no*no)
 MOF=IODIM/(NO*NO)
-
+ 
    allocate(dato(iodim+mof+mof))
 
 !     temp grid (Q) - smoothing only applied to topo
@@ -80,7 +80,7 @@ endif
 NIQ=INT(FLOAT(NNXP(NGR)-1)*DELTAXN(NGR)/DELTAXQ)+4
 NJQ=INT(FLOAT(NNYP(NGR)-1)*DELTAYN(NGR)/DELTAYQ)+4
 
-!     interpollated raw data grid (P)
+!     interpolated raw data grid (P)
 NP=MIN(10,MAX(1,INT(DELTAXQ/(DELTALLO*spcon))))
 DELTAXP=DELTAXQ/FLOAT(NP)
 DELTAYP=DELTAYQ/FLOAT(NP)
@@ -90,7 +90,7 @@ CALL SFCOPQR(NO,MOF,NP,NIQ,NJQ,N2,N3,XTN(1,NGR),YTN(1,NGR)  &
      ,ERAD,DELTALLO,DELTAXP,DELTAYP,DELTAXQ,DELTAYQ,IBLKSIZO  &
      ,ISBEGO,IWBEGO,DATO(1),VT2DA,VT2DB,DATR  &
      ,OFN,offlat,offlon,VNAM,NGR,itopsflg(ngr),iz0flg(ngr))
-
+if (allocated(dato)) write (unit=*,fmt='(a,1x,i13)') 'SIZE(DATO) =',size(dato)
 deallocate(dato)
 
 RETURN

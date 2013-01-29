@@ -30,6 +30,7 @@ subroutine landuse_init
    type(polygontype)     , pointer            :: cpoly
    type(sitetype)        , pointer            :: csite
    type(lutime)          , pointer            :: clutime
+   type(lutime)          , pointer            :: onelutime
    character(len=str_len), dimension(maxlist) :: full_list
    character(len=str_len), dimension(maxlist) :: lu_list
    real                  , dimension(maxlist) :: llon_list
@@ -336,9 +337,10 @@ subroutine landuse_init
 
                   !----- Disturbances. ----------------------------------------------------!
                   do iyear = 1,cpoly%num_landuse_years(isi)
-                     clutime => cpoly%clutimes(iyear,isi)
-                     clutime%landuse_year            = clutime%landuse_year 
-                     clutime%landuse(1:num_lu_trans) = clutime%landuse(1:num_lu_trans)
+                     clutime   => cpoly%clutimes(iyear,isi)
+                     onelutime => cpoly%clutimes(iyear,1)
+                     clutime%landuse_year            = onelutime%landuse_year 
+                     clutime%landuse(1:num_lu_trans) = onelutime%landuse(1:num_lu_trans)
                   end do
 
                end do siteloop

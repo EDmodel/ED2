@@ -9,10 +9,11 @@ yearend        = thisyearz         # Maximum year to consider
 region         = "thispoly"   # Region name.
 myplaces       = c("thispoly")
 sasday         = 15
-outform        = "png"          # Formats for output file.  Supported formats are:
+outform        = thisoutform           # Formats for output file.  Supported formats are:
                                  #   - "X11" - for printing on screen
                                  #   - "eps" - for postscript printing
                                  #   - "png" - for PNG printing
+                                 #   - "pdf" - for PDF printing
 
 byeold         = TRUE           # Remove old files of the given format?
 
@@ -636,7 +637,10 @@ for (l in 1:nplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
             ylimit  = range(thisvar[,selpft],na.rm=TRUE)
             letitre = paste(description,p$lieu,sep=" - ")
@@ -775,7 +779,10 @@ for (l in 1:nplaces){
                      ,pointsize=ptsz,res=depth)
                }else if(outform[o] == "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=paper)
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
                #----- Define the labels and colours. --------------------------------------#
@@ -854,7 +861,10 @@ for (l in 1:nplaces){
                   ,pointsize=ptsz,res=depth)
             }else if(outform[o] == "eps"){
                postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=paper)
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
             letitre = paste(theme," - ",p$lieu,

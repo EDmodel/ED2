@@ -2004,6 +2004,34 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='vegetation class'
       cdunits='#'
 
+   case ('scolour','scolour_bp')
+
+      irecind = 1
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
+
+      select case (trim(cvar))
+      case ('scolour_bp')
+         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
+             ,a(irecind),b,flnm)
+
+         irecind = irecind + irecsize
+      end select
+
+      ierr = RAMS_getvar('SOIL_COLOR',idim_type,ngrd   &
+           ,a(irecind),b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+      call RAMS_comp_vegclass(irecsize,1,1,a(irecind))
+      select case (trim(cvar))
+      case ('scolour')
+         ivar_type = 7
+      case ('scolour_bp')
+         ivar_type = 2
+         call RAMS_comp_bigpatch(nnxp(ngrd),nnyp(ngrd),1,npat  &
+            ,a(irecind),a(1),b)
+      end select
+      cdname='soil colour class'
+      cdunits='#'
+
    case ('ndvi','ndvi_bp')
 
       irecind = 1
@@ -2183,6 +2211,35 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname=' total leaf area index'
       cdunits=''
 
+
+   case ('vegalb','vegalb_ps')
+
+      irecind = 1
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
+
+      select case (trim(cvar))
+      case ('tai_ps')
+         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
+              ,a(irecind),b,flnm)
+
+         irecind = irecind + irecsize
+      end select
+
+      ierr = RAMS_getvar('VEG_ALBEDO',idim_type,ngrd   &
+           ,a(irecind),b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      select case (trim(cvar))
+      case ('vegalb')
+         ivar_type = 7
+      case ('vegalb_ps')
+         ivar_type = 2
+         call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npat,a)
+      end select
+
+      cdname='vegetation albedo'
+      cdunits=''
+
    case ('ustar')
       ivar_type = 7
       ierr = RAMS_getvar('USTAR',idim_type,ngrd,a,b,flnm)
@@ -2297,7 +2354,7 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='vegetation roughness'
       cdunits='m'
 
-   case ('vegdisp','veg_disp_ps')
+   case ('vegdisp','vegdisp_ps')
 
       irecind = 1
       irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
@@ -2310,19 +2367,47 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
          irecind = irecind + irecsize
       end select
 
-      ierr = RAMS_getvar('VEG_DISP',idim_type,ngrd   &
+      ierr = RAMS_getvar('VEG_DISPLACE',idim_type,ngrd   &
            ,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
 
       select case (trim(cvar))
       case ('vegdisp')
          ivar_type = 7
-      case ('veg_disp_ps')
+      case ('vegdisp_ps')
          ivar_type = 2
          call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npat,a)
       end select
 
       cdname='vegetation displacement height'
+      cdunits='m'
+
+   case ('veghgt','veghgt_ps')
+
+      irecind = 1
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
+
+      select case (trim(cvar))
+      case ('veg_disp_ps')
+         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
+              ,a(irecind),b,flnm)
+
+         irecind = irecind + irecsize
+      end select
+
+      ierr = RAMS_getvar('VEG_HEIGHT',idim_type,ngrd   &
+           ,a(irecind),b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      select case (trim(cvar))
+      case ('veghgt')
+         ivar_type = 7
+      case ('veghgt_ps')
+         ivar_type = 2
+         call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npat,a)
+      end select
+
+      cdname='vegetation height'
       cdunits='m'
 
    case ('patch_wetind')

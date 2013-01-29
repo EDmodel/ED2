@@ -25,8 +25,11 @@ module rk4_driver
       use met_driver_coms        , only : met_driv_state       ! ! structure
       use grid_coms              , only : nzg                  & ! intent(in)
                                         , nzs                  ! ! intent(in)
-      use ed_misc_coms           , only : current_time         ! ! intent(in)
+      use ed_misc_coms           , only : current_time         & ! intent(in)
+                                        , dtlsm                ! ! intent(in)
       use therm_lib              , only : tq2enthalpy          ! ! function
+      use budget_utils           , only : update_budget        & ! function
+                                        , compute_budget       ! ! function
       implicit none
 
       !----------- Use MPI timing calls, need declarations --------------------------------!
@@ -44,6 +47,7 @@ module rk4_driver
       integer                                 :: ipa
       integer                                 :: iun
       integer                                 :: nsteps
+      integer                                 :: imon
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_netrad
       real                                    :: ecurr_loss2atm
@@ -70,6 +74,16 @@ module rk4_driver
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
             cmet  => cpoly%met(isi)
+
+
+            !------------------------------------------------------------------------------!
+            !     Update the monthly rainfall.                                             !
+            !------------------------------------------------------------------------------!
+            imon                             = current_time%month
+            cpoly%avg_monthly_pcpg(imon,isi) = cpoly%avg_monthly_pcpg(imon,isi)            &
+                                             + cmet%pcpg * dtlsm
+            !------------------------------------------------------------------------------!
+
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
@@ -136,12 +150,12 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)         &
                                       ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv       &
-                                      ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv            &
-                                      ,cmet%atm_co2,cmet%geoht,cmet%exner,cmet%pcpg        &
-                                      ,cmet%qpcpg,cmet%dpcpg,cmet%prss,cmet%rshort         &
-                                      ,cmet%rlong,cmet%par_beam,cmet%par_diffuse           &
-                                      ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht           &
-                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)              &
+                                      ,cmet%atm_vpdef,cmet%atm_theta,cmet%atm_tmp          &
+                                      ,cmet%atm_shv,cmet%atm_co2,cmet%geoht,cmet%exner     &
+                                      ,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss           &
+                                      ,cmet%rshort,cmet%rlong,cmet%par_beam                &
+                                      ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse     &
+                                      ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)   &
                                       ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)       &
                                       ,cgrid%lat(ipy),cgrid%cosz(ipy))
                !---------------------------------------------------------------------------!
@@ -215,9 +229,11 @@ module rk4_driver
                                   ,old_can_prss)
                !---------------------------------------------------------------------------!
             end do patchloop
+            !------------------------------------------------------------------------------!
          end do siteloop
-
+         !---------------------------------------------------------------------------------!
       end do polygonloop
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine rk4_timestep
@@ -360,6 +376,7 @@ module rk4_driver
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : thetaeiv             & ! subroutine
+                                      , vpdefil              & ! subroutine
                                       , uextcm2tl            & ! subroutine
                                       , cmtl2uext            & ! subroutine
                                       , qslif                ! ! function
@@ -398,9 +415,11 @@ module rk4_driver
       real(kind=8)                    :: gnd_water
       real(kind=8)                    :: psiplusz
       real(kind=8)                    :: mcheight
+      real(kind=4)                    :: step_waterdef
       real(kind=4)                    :: can_rvap
       !----- Local contants ---------------------------------------------------------------!
-      real        , parameter         :: tendays_sec=10.*day_sec
+      real        , parameter         :: tendays_sec    = 10. * day_sec
+      real        , parameter         :: thirtydays_sec = 30. * day_sec
       !----- External function ------------------------------------------------------------!
       real        , external          :: sngloff
       !------------------------------------------------------------------------------------!
@@ -423,10 +442,6 @@ module rk4_driver
       csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
       csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
 
-
-
-
-
       !------------------------------------------------------------------------------------!
       !    Find the ice-vapour equivalent potential temperature.  This is done outside the !
       ! integrator because it is an iterative method and currently we are not using it as  !
@@ -436,6 +451,13 @@ module rk4_driver
       csite%can_theiv(ipa)        = thetaeiv(csite%can_theta (ipa), csite%can_prss(ipa)    &
                                             ,csite%can_temp  (ipa), can_rvap               &
                                             ,can_rvap             )
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Find the vapour pressure deficit, which is diagnostic only.                     !
+      !------------------------------------------------------------------------------------!
+      csite%can_vpdef(ipa)        = vpdefil(csite%can_prss(ipa),csite%can_temp(ipa)        &
+                                           ,csite%can_shv(ipa) ,.true.)
       !------------------------------------------------------------------------------------!
 
       csite%ggbare(ipa)           = sngloff(initp%ggbare          ,tiny_offset)
@@ -496,8 +518,16 @@ module rk4_driver
          !---------------------------------------------------------------------------------!
          !     These variables are integrated here, since they don't change with time.     !
          !---------------------------------------------------------------------------------!
+         csite%avg_parup          (ipa) = csite%avg_parup          (ipa)                   &
+                                        + csite%parup              (ipa) * sngl(hdid)
+         csite%avg_nirup          (ipa) = csite%avg_parup          (ipa)                   &
+                                        + csite%nirup              (ipa) * sngl(hdid)
+         csite%avg_rshortup       (ipa) = csite%avg_rshortup       (ipa)                   &
+                                        + csite%rshortup           (ipa) * sngl(hdid)
          csite%avg_rlongup        (ipa) = csite%avg_rlongup        (ipa)                   &
                                         + csite%rlongup            (ipa) * sngl(hdid)
+         csite%avg_rnet           (ipa) = csite%avg_rnet           (ipa)                   &
+                                        + csite%rnet               (ipa) * sngl(hdid)
          csite%avg_albedo         (ipa) = csite%avg_albedo         (ipa)                   &
                                         + csite%albedo             (ipa) * sngl(hdid)
          csite%avg_albedo_beam    (ipa) = csite%avg_albedo_beam    (ipa)                   &
@@ -538,6 +568,15 @@ module rk4_driver
       ! functions, preserve this variable and its dependencies in all contexts.            !
       !------------------------------------------------------------------------------------!
       csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Update the water deficit.  This is done as a 30-day running average.           !
+      !------------------------------------------------------------------------------------!
+      step_waterdef                   = sngloff(initp%water_deficit,tiny_offset)
+      csite%avg_monthly_waterdef(ipa) = csite%avg_monthly_waterdef(ipa) + step_waterdef
       !------------------------------------------------------------------------------------!
 
 
@@ -710,6 +749,16 @@ module rk4_driver
 
 
                   !------------------------------------------------------------------------!
+                  !     Find the leaf-level vapour pressure deficit using canopy pressure  !
+                  ! and humitdity, but leaf temperature.                                   !
+                  !------------------------------------------------------------------------!
+                  cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                  &
+                                                  , cpatch%leaf_temp(ico)                  &
+                                                  , csite%can_shv   (ipa), .true.)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
                   !     Copy the conductances.                                             !
                   !------------------------------------------------------------------------!
                   cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico), tiny_offset)
@@ -746,6 +795,17 @@ module rk4_driver
                   !------------------------------------------------------------------------!
                   cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
                   !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Find the leaf-level vapour pressure deficit using canopy pressure  !
+                  ! and humitdity, but leaf temperature.                                   !
+                  !------------------------------------------------------------------------!
+                  cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                  &
+                                                  , cpatch%leaf_temp(ico)                  &
+                                                  , csite%can_shv   (ipa), .true.)
+                  !------------------------------------------------------------------------!
+
 
                   !----- Set water demand and conductances to zero. -----------------------!
                   cpatch%psi_open  (ico) = 0.0
@@ -849,6 +909,18 @@ module rk4_driver
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
                cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
+               ! and humitdity, but leaf temperature.                                      !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
+                                               , cpatch%leaf_temp(ico)                     &
+                                               , csite%can_shv   (ipa), .true.)
+               !---------------------------------------------------------------------------!
+
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
@@ -904,6 +976,18 @@ module rk4_driver
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
                cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
+               ! and humitdity, but leaf temperature.                                      !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
+                                               , cpatch%leaf_temp(ico)                     &
+                                               , csite%can_shv   (ipa), .true.)
+               !---------------------------------------------------------------------------!
+
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
@@ -946,6 +1030,20 @@ module rk4_driver
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
                cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
+               ! and humitdity, but leaf temperature.                                      !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
+                                               , cpatch%leaf_temp(ico)                     &
+                                               , csite%can_shv   (ipa), .true.)
+               !---------------------------------------------------------------------------!
+
+
+
                !----- Convert the wind. ---------------------------------------------------!
                cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -998,6 +1096,19 @@ module rk4_driver
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
                cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
+               ! and humitdity, but leaf temperature.                                      !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
+                                               , cpatch%leaf_temp(ico)                     &
+                                               , csite%can_shv   (ipa), .true.)
+               !---------------------------------------------------------------------------!
+
+
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
@@ -1031,6 +1142,19 @@ module rk4_driver
                ! then convert it to specific humidity.                                     !
                !---------------------------------------------------------------------------!
                cpatch%lint_shv  (ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
+               ! and humitdity, but leaf temperature.                                      !
+               !---------------------------------------------------------------------------!
+               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
+                                               , cpatch%leaf_temp(ico)                     &
+                                               , csite%can_shv   (ipa), .true.)
+               !---------------------------------------------------------------------------!
+
+
                !----- Copy the meteorological wind to here. -------------------------------!
                cpatch%veg_wind  (ico) = sngloff(rk4site%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!

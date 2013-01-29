@@ -294,6 +294,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, area_indices, ed_biomass
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
+  use budget_utils     , only : update_budget
   implicit none
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
@@ -425,7 +426,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
-                 call is_resolvable(csite,ipa,ico,cpoly%green_leaf_factor(:,isi))
+                 call is_resolvable(csite,ipa,ico)
 
               enddo
              
@@ -457,6 +458,7 @@ subroutine event_planting(pft,density8)
        filltab_alltypes 
   use pft_coms, only:sla,qsw,q,hgt_min
   use disturbance_utils,only: plant_patch
+  use budget_utils     , only : update_budget
   implicit none
   integer(kind=4),intent(in) :: pft
   real(kind=8),intent(in) :: density8
@@ -524,6 +526,7 @@ subroutine event_fertilize(rval8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
   use disturbance_utils,only: plant_patch
+  use budget_utils     , only : update_budget
   real(kind=8),intent(in),dimension(5) :: rval8
 
   real :: nh4,no3,p,k,ca
@@ -579,7 +582,7 @@ subroutine event_fertilize(rval8)
 
   end do
 
-end subroutine
+end subroutine event_fertilize
 
 subroutine event_irrigate(rval8)
   use grid_coms, only : ngrids,nzg
@@ -693,6 +696,7 @@ subroutine event_till(rval8)
   use decomp_coms, only: f_labile
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
+  use budget_utils     , only : update_budget
   implicit none
   real(kind=8),intent(in) :: rval8
 
@@ -771,6 +775,7 @@ subroutine event_till(rval8)
                  cpatch%leaf_water(ico)       = 0.0
                  cpatch%leaf_fliq(ico)        = 0.0
                  cpatch%leaf_temp(ico)        = csite%can_temp(ipa)
+                 cpatch%leaf_vpdef(ico)       = csite%can_vpdef(ipa)
                  cpatch%wood_water(ico)       = 0.0
                  cpatch%wood_fliq(ico)        = 0.0
                  cpatch%wood_temp(ico)        = csite%can_temp(ipa)
@@ -820,7 +825,7 @@ end subroutine event_till
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
 !!$              cpatch%bdead(ico)   = dbh2bd(cpatch%dbh(ico),pft)
-!!$              cpatch%bleaf(ico)   = dbh2bl(cpatch%dbh(ico),pft)
+!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
 !!$              cpatch%balive(ico)  = cpatch%bleaf(ico)* &

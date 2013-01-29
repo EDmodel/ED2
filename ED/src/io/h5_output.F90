@@ -181,11 +181,11 @@ subroutine h5_output(vtype)
       !------------------------------------------------------------------------------------!
       !     Print a check about the file status.                                           !
       !------------------------------------------------------------------------------------!
-      if (verbose) then
-         write (unit=*,fmt='(a,1x,a,2(a,1x,i6),a,1x,l,a)')                                 &
-               '  * HDF5.  Type:',trim(vtype),'. Node:',mynum,'. Grid: ',ngr               &
-              ,'. New File:',new_file,'...'
-      end if
+!      if (verbose) then
+!         write (unit=*,fmt='(a,1x,a,2(a,1x,i6),a,1x,l,a)')                                 &
+!               '  * HDF5.  Type:',trim(vtype),'. Node:',mynum,'. Grid: ',ngr               &
+!              ,'. New File:',new_file,'...'
+!      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -284,7 +284,8 @@ subroutine h5_output(vtype)
             outhour  = itimea*100
 
          case default
-            if (nrec_fast == 1) then
+            if (nrec_fast == 1 .or. nrec_fast == 0 ) then
+
                !----- Single file per output. ---------------------------------------------!
                call makefnam(anamel,ffilout,time,iyeara,imontha,idatea,itimea*100,vnam     &
                             ,cgrid,'h5 ')
@@ -316,8 +317,6 @@ subroutine h5_output(vtype)
             end if           
          end select
          !---------------------------------------------------------------------------------!
-
-
 
          !---------------------------------------------------------------------------------!
          !     Check whether the file exists, and stop the run if the user doesn't want    !

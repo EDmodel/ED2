@@ -27,6 +27,7 @@ subroutine apply_forestry(cpoly, isi, year)
    use grid_coms            , only : nzg                        & ! intent(in)
                                    , nzs                        ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf                   ! ! intent(in)
+   use budget_utils         , only : update_budget              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)             , target      :: cpoly
@@ -91,8 +92,12 @@ subroutine apply_forestry(cpoly, isi, year)
          end if
       end do find_lu_year
    else
+      write(unit=*,fmt='(a,1x,i6)') ' YEAR         =',year
+      write(unit=*,fmt='(a,1x,i6)') ' USEYEAR      =',useyear
+      write(unit=*,fmt='(a,1x,i6)') ' LANDUSE_YEAR =',cpoly%clutimes(1,isi)%landuse_year
+      write(unit=*,fmt='(a,1x,i6)') ' NUM_YEARS    =',cpoly%num_landuse_years(isi)
       call fatal_error('Invalid initial year when using land-use disturbance'              &
-                      &,'apply_forestry','forestry.f90')
+                      ,'apply_forestry','forestry.f90')
    end if
 
    clutime => cpoly%clutimes(useyear,isi)
@@ -757,6 +762,7 @@ subroutine norm_harv_patch(csite,newp)
    csite%sum_chd(newp)                     = csite%sum_chd(newp)             * area_fac
    csite%can_theta(newp)                   = csite%can_theta(newp)           * area_fac
    csite%can_theiv(newp)                   = csite%can_theiv(newp)           * area_fac
+   csite%can_vpdef(newp)                   = csite%can_vpdef(newp)           * area_fac
    csite%can_prss(newp)                    = csite%can_prss(newp)            * area_fac
    csite%can_co2(newp)                     = csite%can_co2(newp)             * area_fac
    csite%can_shv(newp)                     = csite%can_shv(newp)             * area_fac
@@ -765,6 +771,7 @@ subroutine norm_harv_patch(csite,newp)
    csite%ggveg(newp)                       = csite%ggveg(newp)               * area_fac
    csite%rough(newp)                       = csite%rough(newp)               * area_fac
    csite%mean_rh(newp)                     = csite%mean_rh(newp)             * area_fac
+   csite%mean_cwd_rh(newp)                 = csite%mean_cwd_rh(newp)         * area_fac
    csite%today_A_decomp(newp)              = csite%today_A_decomp(newp)      * area_fac
    csite%today_Af_decomp(newp)             = csite%today_Af_decomp(newp)     * area_fac
    csite%repro(1:n_pft,newp)               = csite%repro(1:n_pft,newp)       * area_fac

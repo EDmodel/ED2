@@ -91,8 +91,10 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                    , dslzti8               & ! intent(in)
                                    , slcons18              & ! intent(in)
                                    , slzt8                 & ! intent(in)
+                                   , dslzt8                & ! intent(in)
                                    , ss                    & ! intent(in)
                                    , isoilbc               & ! intent(in)
+                                   , sin_sldrain8          & ! intent(in)
                                    , freezecoef8           ! ! intent(in)
    use ed_misc_coms         , only : dtlsm                 & ! intent(in)
                                    , current_time          & ! intent(in)
@@ -371,37 +373,24 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
 
    case (2)
       !------------------------------------------------------------------------------------!
-      !     Super drainage.   Make the water potential at the layer beneath to be at dry   !
-      ! air soil, and find the corresponding hydraulic conductivity.                       !
+      !     Lateral drainage (or reduced drainage).  Find the equivalent depth of the      !
+      ! layer beneath as a function of the slope (sldrain), and assume the soil moisture   !
+      ! and matric potential to be the same as the bottom layer.  Notice that when sldrain !
+      ! is zero this becomes the flat bedrock condition, and when sldrain is 90 degrees,   !
+      ! then it becomes free drainage.                                                     !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = soil8(nsoil)%soilcp
+      initp%soil_water   (kben) = initp%soil_water   (klsl)
       initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
 
       wgpfrac                   = min(initp%soil_water(kben)/soil8(nsoil)%slmsts, 1.d0)
-      rk4aux%hydcond     (kben) = slcons18(kben,nsoil)                                     &
-                                * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-      rk4aux%psiplusz    (kben) = slzt8(kben) + soil8(nsoil)%slpots                        &
-                                              / wgpfrac ** soil8(nsoil)%slbs
+      rk4aux%hydcond     (kben) = rk4aux%hydcond     (klsl)
+      rk4aux%psiplusz    (kben) = slzt8(klsl) - dslzt8(klsl) * sin_sldrain8                &
+                                + soil8(nsoil)%slpots / wgpfrac ** soil8(nsoil)%slbs
       rk4aux%drysoil     (kben) = .false.
       rk4aux%satsoil     (kben) = .false.
       !------------------------------------------------------------------------------------!
 
    case (3)
-      !------------------------------------------------------------------------------------!
-      !     Make the soil moisture in the layer beneath to be at field capacity.           !
-      !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = soil8(nsoil)%slmsts
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-
-      wgpfrac                   = min(initp%soil_water(kben)/soil8(nsoil)%sfldcap, 1.d0)
-      rk4aux%hydcond     (kben) = slcons18(kben,nsoil)                                     &
-                                * wgpfrac ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
-      rk4aux%psiplusz    (kben) = slzt8(kben) + soil8(nsoil)%slpots                        &
-                                              / wgpfrac ** soil8(nsoil)%slbs
-      rk4aux%drysoil     (kben) = .false.
-      rk4aux%satsoil     (kben) = .false.
-
-   case (4)
       !------------------------------------------------------------------------------------!
       !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
       !------------------------------------------------------------------------------------!
@@ -415,6 +404,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                                               / wgpfrac ** soil8(nsoil)%slbs
       rk4aux%drysoil     (kben) = .false.
       rk4aux%satsoil     (kben) = .false.
+
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -427,7 +417,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt)
                          ,ddewgnd,throughfall_tot,qthroughfall_tot,dthroughfall_tot        &
                          ,wshed_tot,qwshed_tot,dwshed_tot,dt)
    !---------------------------------------------------------------------------------------!
-
+   
 
 
 
@@ -858,7 +848,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , fast_diagnostics     ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use pft_coms              , only : water_conductance    ! ! intent(in)
-
+   use budget_utils          , only : compute_netrad       ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)     , target      :: csite             ! Current site
@@ -917,12 +907,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: transp_tot        ! Total transpiration (water)
    real(kind=8)                     :: qtransp_tot       ! Total transpiration (energy)
    real(kind=8)                     :: cflxlc_tot        ! Total leaf -> CAS CO2 flux
+   real(kind=8)                     :: cflxwc_tot        ! Total wood -> CAS CO2 flux
    real(kind=8)                     :: wflxlc_tot        ! Leaf -> CAS evaporation (water)
    real(kind=8)                     :: wflxwc_tot        ! Wood -> CAS evaporation (water)
    real(kind=8)                     :: qwflxlc_tot       ! Leaf -> CAS evaporation (energy)
    real(kind=8)                     :: qwflxwc_tot       ! Wood -> CAS evaporation (energy)
    real(kind=8)                     :: rho_ustar         !
-   real(kind=8)                     :: storage_decay     !
    real(kind=8)                     :: leaf_flux         !
    real(kind=8)                     :: min_leaf_water    !
    real(kind=8)                     :: max_leaf_water    !
@@ -947,7 +937,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: max_dwdt,dwdt     ! Used for capping leaf evap 
    !----- Functions -----------------------------------------------------------------------!
    real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
-   real(kind=4), external           :: compute_netrad    ! Net radiation.
    !---------------------------------------------------------------------------------------!
 
 
@@ -955,8 +944,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !----- First step, we assign the pointer for the current patch. ------------------------!
    cpatch => csite%patch(ipa)
    !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !    Computing the fluxes from atmosphere to canopy.                                    !
@@ -1202,10 +1189,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------! 
    !    Heterotrophic respiration is a patch-level variable, so we initialise the total    !
    ! vegetation to canopy carbon flux with the total heterotrophic respiration due to the  !
-   ! coarse wood debris, and remove that from the ground to canopy carbon flux to avoid    !
+   ! coarse woody debris, and remove that from the ground to canopy carbon flux to avoid   !
    ! double counting.                                                                      !
    !---------------------------------------------------------------------------------------! 
-   cflxlc_tot       = initp%cwd_rh
+   cflxlc_tot       = 0.d0
+   cflxwc_tot       = initp%cwd_rh
    cflxgc           = initp%rh - initp%cwd_rh
    !---------------------------------------------------------------------------------------!
   
@@ -1214,12 +1202,16 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       cflxgc = cflxgc + initp%root_resp(ico)
 
       !------------------------------------------------------------------------------------!
-      !    Calculate 'decay' term of storage.                                              !
+      !    Add the respiration terms according to their "source".                          !
+      ! Ground -> CAS : root respiration and non-CWD heterotrophic respiration.            !
+      ! Wood   -> CAS : CWD respiration, Growth respiration, and storage (the latter due   !
+      !                 to lack of a better place to put).                                 !
+      ! Leaf   -> CAS : Leaf respiration, Virtual leaf respiration - GPP.                  !
       !------------------------------------------------------------------------------------!
-      storage_decay = initp%growth_resp(ico) + initp%storage_resp(ico)                     &
-                    + initp%vleaf_resp(ico)
-      cflxlc_tot    = cflxlc_tot + storage_decay
+      cflxlc_tot    = cflxlc_tot + initp%vleaf_resp(ico)
+      cflxwc_tot    = cflxwc_tot + initp%growth_resp(ico) + initp%storage_resp(ico)
       !------------------------------------------------------------------------------------!
+
 
 
 
@@ -1239,6 +1231,26 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ipft  = cpatch%pft(ico)
          kroot = cpatch%krdepth(ico)
 
+
+         !---------------------------------------------------------------------------------!
+         !     Calculate interception by leaves by scaling the intercepted water by the    !
+         ! LAI of each cohort.  If this causes excess of water/ice over the leaf surface,  !
+         ! no problem, the water will shed at adjust_veg_properties.                       !
+         !                                                                                 !
+         ! IMPORTANT, according to RGK, this block must come before the dt < -8000. block  !
+         !            because hybrid predictive capping needs leaf_intercepted.            !
+         !---------------------------------------------------------------------------------!
+         wshed             = 0.d0
+         qwshed            = 0.d0
+         dwshed            = 0.d0
+         leaf_intercepted  = intercepted_max  * initp%lai(ico) * taii
+         leaf_qintercepted = qintercepted_max * initp%lai(ico) * taii
+         throughfall       = 0.d0
+         qthroughfall      = 0.d0
+         dthroughfall      = 0.d0
+         !---------------------------------------------------------------------------------!
+      
+      
 
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
          leaf_flux = initp%gpp(ico) - initp%leaf_resp(ico)
@@ -1299,17 +1311,18 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
                   max_dwdt = initp%leaf_water(ico)/dt
                   
-                  max_leaf_water = rk4leaf_maxwhc*initp%lai(ico)
-
                   !------------------------------------------------------------------------!
                   !     If we ever have shedding, force wshed to cap out at that maximum   !
                   ! leaf water.  Assume this process happens before evaporation.           !
                   !------------------------------------------------------------------------!
-                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
-                                    - max_leaf_water) / dt)
-                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
-                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
-                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
+!! TURNIGN OFF SHEDDING FOR NOW
+!!
+
+!!                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
+!!                                    - max_leaf_water) / dt)
+!!                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
+!!                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
+!!                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
                   !------------------------------------------------------------------------!
 
 
@@ -1398,23 +1411,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          flux_area = effarea_heat * initp%lai(ico)
          hflxlc    = flux_area    * initp%leaf_gbh(ico)                                    &
                    * (initp%leaf_temp(ico) - initp%can_temp)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate interception by leaves by scaling the intercepted water by the    !
-         ! LAI of each cohort.  If this causes excess of water/ice over the leaf surface,  !
-         ! no problem, the water will shed at adjust_veg_properties.                       !
-         !---------------------------------------------------------------------------------!
-         wshed             = 0.d0
-         qwshed            = 0.d0
-         dwshed            = 0.d0
-         leaf_intercepted  = intercepted_max  * initp%lai(ico) * taii
-         leaf_qintercepted = qintercepted_max * initp%lai(ico) * taii
-         throughfall       = 0.d0
-         qthroughfall      = 0.d0
-         dthroughfall      = 0.d0
          !---------------------------------------------------------------------------------!
 
 
@@ -1524,10 +1520,33 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       !               throughfall.  Later on, these "unsafe" cohorts will have their wood  !
       !               energy set to equilibrium with the canopy air space (temperature).   !
       !------------------------------------------------------------------------------------!
+
+
       if (initp%wood_resolvable(ico)) then
 
          !------ Define some aliases to indices -------------------------------------------!
          ipft  = cpatch%pft(ico)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Calculate interception by wood by scaling the intercepted water by the      !
+         ! WAI of each cohort.  If this causes excess of water/ice over the wood surface,  !
+         ! no problem, the water will shed at adjust_veg_properties.                       !
+         !                                                                                 !
+         ! IMPORTANT, according to RGK, this block must come before the dt < -8000. block  !
+         !            because hybrid predictive capping needs wood_intercepted.            !
+         !---------------------------------------------------------------------------------!
+         wshed             = 0.d0
+         qwshed            = 0.d0
+         dwshed            = 0.d0
+         wood_intercepted  = intercepted_max  * initp%wai(ico) * taii
+         wood_qintercepted = qintercepted_max * initp%wai(ico) * taii
+         throughfall       = 0.d0
+         qthroughfall      = 0.d0
+         dthroughfall      = 0.d0
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !     Define the minimum wood water to be considered, and the maximum amount      !
@@ -1597,6 +1616,37 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !---------------------------------------------------------------------------------!
 
 
+              !---------------------------------------------------------------------------!
+               !       This is called by the hybrid solver only.                           !
+               !---------------------------------------------------------------------------!
+               if (dt>-8000.d0) then
+
+                  max_dwdt = initp%wood_water(ico)/dt
+
+                  !------------------------------------------------------------------------!
+                  !     If we ever have shedding, force wshed to cap out at that maximum   !
+                  ! leaf water.  Assume this process happens before evaporation.           !
+                  !------------------------------------------------------------------------!
+!! TURNIGN OFF SHEDDING FOR NOW
+!!
+
+!!                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
+!!                                    - max_wood_water) / dt)
+!!                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
+!!                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
+!!                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Then constrain the amount that can be evaporated. ----------------!
+                  wflxwc = min(wflxwc,max_dwdt+wood_intercepted-wshed)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+
+
+
 
          !---------------------------------------------------------------------------------!
          !   Calculate wood-to-canopy sensible heat flux.  Consider the full circumference !
@@ -1605,23 +1655,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          flux_area = pi18 * initp%wai(ico)
          hflxwc    = flux_area * initp%wood_gbh(ico)                                       &
                    * (initp%wood_temp(ico) - initp%can_temp)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate interception by wood by scaling the intercepted water by the      !
-         ! WAI of each cohort.  If this causes excess of water/ice over the wood surface,  !
-         ! no problem, the water will shed at adjust_veg_properties.                       !
-         !---------------------------------------------------------------------------------!
-         wshed             = 0.d0
-         qwshed            = 0.d0
-         dwshed            = 0.d0
-         wood_intercepted  = intercepted_max  * initp%wai(ico) * taii
-         wood_qintercepted = qintercepted_max * initp%wai(ico) * taii
-         throughfall       = 0.d0
-         qthroughfall      = 0.d0
-         dthroughfall      = 0.d0
          !---------------------------------------------------------------------------------!
 
 
@@ -1731,17 +1764,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    dinitp%can_enthalpy = ( hflxgc + hflxlc_tot + hflxwc_tot                                &
                          + qwflxgc - qdewgndflx + qwflxlc_tot + qwflxwc_tot + qtransp_tot  &
-                         + eflxac                                   ) * hcapcani
+                         + eflxac                                     ) * hcapcani
    dinitp%can_shv      = ( wflxgc - dewgndflx + wflxlc_tot                                 &
-                         + wflxwc_tot + transp_tot +  wflxac        ) * wcapcani
-   dinitp%can_co2      = ( cflxgc + cflxlc_tot + cflxac             ) * ccapcani
+                         + wflxwc_tot + transp_tot +  wflxac          ) * wcapcani
+   dinitp%can_co2      = ( cflxgc + cflxlc_tot + cflxwc_tot  + cflxac ) * ccapcani
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    if (.false.) then 
    !if (dt>-8000.d0) then
 
-      a = ( cflxgc + cflxlc_tot                                                            &
+      a = ( cflxgc + cflxlc_tot + cflxwc_tot                                               &
           + initp%can_rhos*initp%ggbare*mmdryi8*rk4site%atm_co2) * ccapcani
       
       b  = (initp%can_rhos*initp%ggbare*mmdryi8) * ccapcani
@@ -1756,12 +1789,21 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
              * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +     &
                 c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
       
-      dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxac) * ccapcani
+      dinitp%can_co2 = ( cflxgc + cflxlc_tot + cflxwc_tot + cflxac) * ccapcani
 
    end if
    !---------------------------------------------------------------------------------------!
 
    initp%wflxac = wflxac
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Water deficit.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   dinitp%water_deficit = - (wflxac + rk4site%pcpg)
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Integrate diagnostic variables - These are not activated unless fast file-type    !
@@ -1771,7 +1813,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
       dinitp%avg_carbon_ac    = cflxac                       ! Carbon flx,  Atmo->Canopy
-      dinitp%avg_carbon_st    = cflxgc + cflxlc_tot + cflxac ! Carbon storage flux
+      dinitp%avg_carbon_st    = cflxgc     + cflxwc_tot                                    &
+                              + cflxlc_tot + cflxac          ! Carbon storage flux
       dinitp%avg_sensible_ac  = hflxac                       ! Sens. heat,  Atmo->Canopy
       dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
@@ -1836,7 +1879,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%co2budget_loss2atm = - cflxac
       dinitp%ebudget_loss2atm   = - eflxac
       dinitp%wbudget_loss2atm   = - wflxac
-      dinitp%co2budget_storage  = dinitp%co2budget_storage + cflxgc + cflxlc_tot + cflxac
+      dinitp%co2budget_storage  = dinitp%co2budget_storage                                 &
+                                + cflxgc + cflxlc_tot + cflxwc_tot + cflxac
       dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
       dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad         &
                                 + rk4site%qpcpg - dinitp%ebudget_loss2atm

@@ -412,10 +412,9 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
-   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
-   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
-   !             and near infra-red.                                                       !
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes.  Soil classes are from 1 to 20       !
+   !             (1 = lightest; 20 = darkest).  The values are the same as CLM-4.0.  The   !
+   !             table is the albedo for visible and near infra-red.                       !
    !---------------------------------------------------------------------------------------!
    !                                                                                       !
    !       |-----------------------------------------------------------------------|       !
@@ -552,20 +551,32 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.  If      !
-   !            unsure, use 0 for short-term simulations (couple of days), and 1 for long- !
-   !            -term simulations (months to years).                                       !
-   !            0.  Bedrock.  Flux from the bottom of the bottommost layer is set to 0.    !
-   !            1.  Gravitational flow.  The flux from the bottom of the bottommost layer  !
-   !                is due to gradient of height only.                                     !
-   !            2.  Super drainage.  Soil moisture of the ficticious layer beneath the     !
-   !                bottom is always at dry air soil moisture.                             !
-   !            3.  Half-way.  Assume that the fictious layer beneath the bottom is always !
-   !                at field capacity.                                                     !
-   !            4.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
+   ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.  Choose  !
+   !            the option according to the site characteristics.                          !
+   !            0.  Flat bedrock.  Flux from the bottom of the bottommost layer is zero.   !
+   !            1.  Gravitational flow (free drainage).  The flux from the bottom of the   !
+   !                bottommost layer is due to gradient of height only.                    !
+   !            2.  Lateral drainage.  Similar to free drainage, but the gradient is       !
+   !                reduced by the slope not being completely vertical.  The reduction is  !
+   !                controlled by variable SLDRAIN.  In the future options 0, 1, and 5 may !
+   !                be combined into a single option.                                      !
+   !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
    !                always at saturation.                                                  !
    !---------------------------------------------------------------------------------------!
    NL%ISOILBC        = mysoilbc
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! SLDRAIN -- This is used only when ISOILBC is set to 2.  In this case SLDRAIN is the   !
+   !            equivalent slope that will slow down drainage.  If this is set to zero,    !
+   !            then lateral drainage reduces to flat bedrock, and if this is set to 90,   !
+   !            then lateral drainage becomes free drainage.  SLDRAIN must be between 0    !
+   !            and 90.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   NL%SLDRAIN        = mysldrain
    !---------------------------------------------------------------------------------------!
 
 
@@ -684,6 +695,19 @@ $ED_NL
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = myallom
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !
+   !           grass scheme is now available where bdead = 0, height is a function of bleaf!
+   !           and growth happens daily.  ALS (3/3/12)                                     !
+   ! 0: grasses behave like trees as in ED2.1 (old scheme)                                 !
+   !                                                                                       !
+   ! 1: new grass scheme as described above                                                !
+   !---------------------------------------------------------------------------------------!
+   NL%IGRASS          = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -828,11 +852,18 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! DECOMP_SCHEME -- This specifies the dependence of soil decomposition on temperature.  !
-   !                  0.  ED-2.0 default, the original exponential                         !
+   !                  0.  ED-2.1 default, the original exponential (low temperature        !
+   !                      limitation only).                                                !
    !                  1.  Lloyd and Taylor (1994) model                                    !
    !                      [[option 1 requires parameters to be set in xml]]                !
+   !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
+   !                      reaches a maximum at around 38C (using the default parameters),  !
+   !                      then quickly falls to zero at around 50C.  It applies a similar  !
+   !                      function for soil moisture, which allows higher decomposition    !
+   !                      rates when it is close to the optimal, plumetting when it is     !
+   !                      almost saturated.                                                !
    !---------------------------------------------------------------------------------------!
-   NL%DECOMP_SCHEME   = 0
+   NL%DECOMP_SCHEME   = mydecomp
    !---------------------------------------------------------------------------------------!
 
 
@@ -856,6 +887,33 @@ $ED_NL
    !                      matric potentials at wilting point and field capacity.  This is  !
    !---------------------------------------------------------------------------------------!
    NL%H2O_PLANT_LIM   = myh2olimit
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  IDDMORT_SCHEME -- This flag determines whether storage should be accounted in the    !
+   !                    carbon balance.                                                    !
+   !                    0 -- Carbon balance is done in terms of fluxes only.  This is the  !
+   !                         default in ED-2.1                                             !
+   !                    1 -- Carbon balance is offset by the storage pool.  Plants will be !
+   !                         in negative carbon balance only when they run out of storage  !
+   !                         and are still losing more carbon than gaining.                !
+   !                                                                                       !
+   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !                    and soil moisture to the density-dependent mortality rate.  Values !
+   !                    range from 0 (soil moisture only) to 1 (light only).               !
+   !                                                                                       !
+   !                                    mort1                                              !
+   !                  mu_DD = -------------------------                                    !
+   !                            1 + exp [ mort2 * cr ]                                     !
+   !                                                                                       !
+   !                                 CB                      CB                            !
+   !                  cr    = k ------------- + (1 - k) -------------                      !
+   !                             CB_lightmax             CB_watermax                       !
+   !---------------------------------------------------------------------------------------!
+   NL%IDDMORT_SCHEME  = mymortscheme
+   NL%DDMORT_CONST    = myddmortconst
    !---------------------------------------------------------------------------------------!
 
 
@@ -987,16 +1045,25 @@ $ED_NL
    !                       often  will never allow fires.                                  !
    !                   2.  Fire will be triggered with enough biomass and the total soil   !
    !                       water at the top 75 cm falls below a threshold.                 !
+   !                   3.  Fire will be triggered with enough biomass and accumulated      !
+   !                       water deficit exceeds the threshold given by SM_FIRE times.     !
+   !                       the total precipitation of the past 12 months.  This method     !
+   !                       does not directly depend on soil texture.                       !
    ! FIRE_PARAMETER -- If fire happens, this will control the intensity of the disturbance !
    !                   given the amount of fuel (currently the total above-ground          !
    !                   biomass).                                                           !
-   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2.  The sign here matters.    !
-   !                   >= 0. - Minimum relative soil moisture above dry air of the top 1m  !
-   !                           that will prevent fires to happen.                          !
-   !                   <  0. - Minimum mean soil moisture potential in MPa of the top 1m   !
-   !                           that will prevent fires to happen.  The dry air soil        !
-   !                           potential is defined as -3.1 MPa, so make sure SM_FIRE is   !
-   !                           greater than this value.                                    !
+   ! SM_FIRE        -- This is used only when INCLUDE_FIRE = 2 or 3, and it has different  !
+   !                   meanings.  The sign here matters.                                   !
+   !                   When INCLUDE_FIRE = 2:                                              !
+   !                      >= 0. - Minimum relative soil moisture above dry air of the top  !
+   !                              1m that will prevent fires to happen.                    !
+   !                      <  0. - Minimum mean soil moisture potential in MPa of the top   !
+   !                              1m that will prevent fires to happen.  The dry air soil  !
+   !                              potential is defined as -3.1 MPa, so make sure SM_FIRE   !
+   !                              is greater than this value.                              !
+   !                   When INCLUDE_FIRE = 3, values between 0 and 2 are allowed.  This is !
+   !                   the minimum water deficit relative to the total rainfall, over the  !
+   !                   past 12 months, to trigger fires.                                   !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = myfire
    NL%FIRE_PARAMETER  = myfuel
@@ -1018,12 +1085,14 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! ICANTURB -- This flag controls the canopy roughness.                                  !
-   !             0.  Based on Leuning et al. (1995), wind is computed using the similarity !
-   !                 theory for the top cohort, and they are extinguished with cumulative  !
-   !                 LAI.  If using CROWN_MOD 1 or 2, this will use local LAI and average  !
-   !                 by crown area.                                                        !
-   !             1.  The default ED-2.1 scheme, except that it uses the zero-plane         !
-   !                 displacement height.                                                  !
+   !             0.  Based on Leuning et al. (1995) and LEAF-3 (Walko et al. 2000).        !
+   !                 Roughness and displacement height are found using simple relations    !
+   !                 with vegetation height; wind is computed using the similarity theory  !
+   !                 for the top cohort, then it is assumed that wind extinguishes follow- !
+   !                 ing an exponential decay with "perceived" cumulative LAI (local LAI   !
+   !                 with finite crown area).                                              !
+   !             1.  The default ED-2.1 scheme, similar to option 0, but the wind profile  !
+   !                 is not based on LAI, instead it used the cohort height.               !
    !             2.  This uses the method of Massman (1997) using constant drag and no     !
    !                 sheltering factor.                                                    !
    !             3.  This is also based on Massman (1997), but with the option of varying  !
@@ -1211,7 +1280,7 @@ $ED_NL
    !                              TREEFALL_DISTURBANCE_RATE is internally adjusted so the  !
    !                              average patch age is still 1/TREEFALL_DISTURBANCE_RATE   !
    !---------------------------------------------------------------------------------------!
-   NL%TREEFALL_DISTURBANCE_RATE  = 0.014
+   NL%TREEFALL_DISTURBANCE_RATE  = mytreefall
    NL%TIME2CANOPY    = 0.
    !---------------------------------------------------------------------------------------!
 
@@ -1350,6 +1419,27 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IEDCNFGF   = 'config.xml'
    NL%EVENT_FILE = 'myevents.xml'
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Census variables.  This is going to create unique census statuses to cohorts, to  !
+   ! better compare the model with census observations.  In case you don't intend to       !
+   ! compare the model with census data, set up DT_CENSUS to 1., otherwise you may reduce  !
+   ! cohort fusion.                                                                        !
+   ! DT_CENSUS       -- Time between census, in months.  Currently the maximum is 60       !
+   !                     months, to avoid excessive memory allocation.  Every time the     !
+   !                    simulation reaches the census time step, all census tags will be   !
+   !                    reset.                                                             !
+   ! YR1ST_CENSUS    -- In which year was the first census conducted?                      !
+   ! MON1ST_CENSUS   -- In which month was the first census conducted?                     !
+   ! MIN_RECRUIT_DBH -- Minimum DBH that is measured in the census, in cm.                 !
+   !---------------------------------------------------------------------------------------!
+   NL%DT_CENSUS       = mydtcensus
+   NL%YR1ST_CENSUS    = myyr1stcensus
+   NL%MON1ST_CENSUS   = mymon1stcensus
+   NL%MIN_RECRUIT_DBH = myminrecruitdbh
    !---------------------------------------------------------------------------------------!
 
 

@@ -17,7 +17,7 @@ RAPP_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/RAPP
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
 HDF5_INCS=
-HDF5_LIBS= -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+HDF5_LIBS=-lm -lz -lhdf5 -lhdf5_fortran -lhdf5_hl
 
 #------------------------------------------------------------------------------------------#
 #    NetCDF libraries. You don't have to include them if you don't want to use anything in #
@@ -109,9 +109,9 @@ ifeq ($(KIND_COMP),D)
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -Vaxlib -traceback -axP
-   C_OPTS= -O3 -DLITTLE -traceback
-   LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -axP
+   F_OPTS= -FR -O3 -recursive -traceback -static
+   C_OPTS= -O3 -DLITTLE -traceback -static
+   LOADER_OPTS= -FR -O3  -traceback
    C_LOADER_OPTS=-v -traceback
    #---------------------------------------------------------------------------------------#
 endif
