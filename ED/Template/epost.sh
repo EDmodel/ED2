@@ -44,7 +44,7 @@ background=0                   # 0 -- White
 #----- Trim the year comparison for tower years only? -------------------------------------#
 efttrim="TRUE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
-rscpath="/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/R-utils"
+rscpath="${HOME}/EDBRAMS/R-utils"
 #------------------------------------------------------------------------------------------#
 
 
@@ -107,7 +107,7 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 if [ ${myself} == "mlongo" ]
 then
-   rscpath="/n/moorcroft_data/mlongo/util/Rsc"
+   rscpath="/n/gstore/Labs/moorcroft_lab_protected/mlongo/util/Rsc"
 fi
 #------------------------------------------------------------------------------------------#
 

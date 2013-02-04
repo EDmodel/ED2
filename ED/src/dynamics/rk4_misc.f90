@@ -51,7 +51,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
    real(kind=8)                       :: rsat
-   real(kind=8)                       :: sum_sfcw_mass
    integer                            :: ico
    integer                            :: ipft
    integer                            :: k
@@ -165,9 +164,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! which is saved as J/kg outside the integration, but must be converted to J/m² because !
    ! this linearises the differential equations and make the solution more stable.         !
    !---------------------------------------------------------------------------------------!
-   targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
-   ksn                   = targetp%nlev_sfcwater
-   sum_sfcw_mass  = 0.d0
+   targetp%nlev_sfcwater    = sourcesite%nlev_sfcwater(ipa)
+   ksn                      = targetp%nlev_sfcwater
+   targetp%total_sfcw_mass  = 0.d0
    do k = 1, nzs
       targetp%sfcwater_mass(k)    = max(0.d0,dble(sourcesite%sfcwater_mass(k,ipa)))
       targetp%sfcwater_depth(k)   = dble(sourcesite%sfcwater_depth(k,ipa))
@@ -175,13 +174,13 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                   * dble(sourcesite%sfcwater_mass(k,ipa))
       targetp%sfcwater_tempk(k)   = dble(sourcesite%sfcwater_tempk(k,ipa))
       targetp%sfcwater_fracliq(k) = dble(sourcesite%sfcwater_fracliq(k,ipa))
-      sum_sfcw_mass  = sum_sfcw_mass  + targetp%sfcwater_mass (k)
+      targetp%total_sfcw_mass     = targetp%total_sfcw_mass  + targetp%sfcwater_mass (k)
    end do
    !----- Define the temporary surface water flag. ----------------------------------------!
    if (targetp%nlev_sfcwater == 0) then
       !----- No layer. --------------------------------------------------------------------!
       targetp%flag_sfcwater = 0
-   elseif (sum_sfcw_mass < rk4water_stab_thresh) then
+   elseif (targetp%total_sfcw_mass < rk4water_stab_thresh) then
       !----- There is water, but the amount is very small. --------------------------------!
       targetp%flag_sfcwater = 1
    else
@@ -576,6 +575,9 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    use soil_coms             , only : soil8                 & ! intent(in)
                                     , dslz8                 & ! intent(in)
                                     , dslzi8                & ! intent(in)
+                                    , soil_rough8           & ! intent(in)
+                                    , ny07_eq04_a8          & ! intent(in)
+                                    , ny07_eq04_m8          & ! intent(in)
                                     , matric_potential8     ! ! function
    use grid_coms             , only : nzg                   & ! intent(in)
                                     , nzs                   ! ! intent(in)
@@ -593,11 +595,12 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , cpdry8                & ! intent(in)
                                     , cph2o8                & ! intent(in)
                                     , wdns8                 & ! intent(in)
+                                    , fsdns8                & ! intent(in)
+                                    , fsdnsi8               & ! intent(in)
                                     , rdryi8                & ! intent(in)
                                     , rdry8                 & ! intent(in)
                                     , epim18                & ! intent(in)
-                                    , toodry8               & ! intent(in)
-                                    , t3ple8                ! ! intent(in)
+                                    , toodry8               ! ! intent(in)
    use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
    use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
    implicit none
@@ -633,6 +636,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    real(kind=8)                     :: rk4min_wood_water
    real(kind=8)                     :: wgt_leaf
    real(kind=8)                     :: wgt_wood
+   real(kind=8)                     :: bulk_sfcw_dens
    !---------------------------------------------------------------------------------------!
 
    !----- Then we define some logicals to make the code cleaner. --------------------------!
@@ -734,6 +738,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    ok_sfcw = .true.
    ksn = initp%nlev_sfcwater
    initp%total_sfcw_depth = 0.d0
+   initp%total_sfcw_mass  = 0.d0
    sfcwloop: do k=1,ksn
       if (initp%sfcwater_mass(k) < rk4min_sfcw_mass) then 
          !---------------------------------------------------------------------------------!
@@ -804,6 +809,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          call uint2tl8(int_sfcw_energy,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
       end if
       initp%total_sfcw_depth = initp%total_sfcw_depth + initp%sfcwater_depth(k)
+      initp%total_sfcw_mass  = initp%total_sfcw_mass  + initp%sfcwater_mass (k)
    end do sfcwloop
    !---------------------------------------------------------------------------------------!
    !    For non-existent layers of temporary surface water, we copy the temperature and    !
@@ -823,9 +829,25 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Update the fraction of the canopy covered in snow.                                !
+   !     Update the fraction of the canopy covered in snow.  I could not find any          !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
    !---------------------------------------------------------------------------------------!
-   initp%snowfac = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+   ! initp%snowfac = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+   if (initp%total_sfcw_mass > rk4tiny_sfcw_mass) then
+      bulk_sfcw_dens = max( fsdns8                                                         &
+                          , min( wdns8, initp%total_sfcw_mass / initp%total_sfcw_depth ) )
+      initp%snowfac  = max( 0.d0, min( 9.9d-1                                              &
+                          , tanh( initp%total_sfcw_depth                                   &
+                                / ( ny07_eq04_a8 * soil_rough8                             &
+                                  * (bulk_sfcw_dens * fsdnsi8) ** ny07_eq04_m8 ) ) ) )
+   else
+      initp%snowfac  = 0.d0
+   end if
    !---------------------------------------------------------------------------------------!
 
 

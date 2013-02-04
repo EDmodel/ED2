@@ -2,18 +2,13 @@
 !==========================================================================================!
 !     This sub-routine solves the long-wave radiation method using the multiple-scatter-   !
 ! ing model.  We consider the finite crown area when computing the layer transmittance.    !
-! Contrary to short-wave radiation, and contrary to the two-stream model, we don't         !
-! normalise long-wave radiation, nor do we split into incident and surface.  Splitting     !
-! into PAR and NIR is fine, because we are dealing with two different parts of the         !
-! spectrum, but celestial and surface radiation interact in the canopy and we cannot       !
-! really tear them apart.  Therefore we dump all the LW radiation into one array (which    !
-! will be the rlong_v_incid), whilst the other is always set to 0.                         !
+! Contrary to short-wave radiation, we don't normalise long-wave radiation.                !
 !                                                                                          !
 ! References:                                                                              !
 !                                                                                          !
 ! Zhao, W., R. J. Qualls, 2006: Modeling of long-wave and net radiation energy             !
 !    distribution within a homogeneous plant canopy via multiple scattering processes.     !
-!    Water Resources Res., 42, W08435, doi: 10.1029/2005WR004581. (ZQ06)                   !               !
+!    Water Resources Res., 42, W08435, doi: 10.1029/2005WR004581. (ZQ06)                   !
 !                                                                                          !
 ! Oleson, K. W., and co-authors, 2004: Technical description of the community land model   !
 !   (CLM). NCAR Technical note NCAR/TN-461+STR. 186pp. (CLM04)                             !
@@ -23,14 +18,14 @@
 !                                                                                          !
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai       &
+subroutine lw_multiple_scatter(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai      &
                               ,leaf_temp,wood_temp,tir_flip,dw_tirlo,uw_tirlo,uw_tirhi)
    use ed_max_dims          , only : n_pft                   ! ! intent(in)
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : clumping_factor         & ! intent(in)
                                    , orient_factor           & ! intent(in)
-                                   , leaf_emis               & ! intent(in)
-                                   , wood_emis               & ! intent(in)
+                                   , leaf_emiss_tir          & ! intent(in)
+                                   , wood_emiss_tir          & ! intent(in)
                                    , phi1                    & ! intent(in)
                                    , phi2                    & ! intent(in)
                                    , mu_bar                  & ! intent(in)
@@ -41,7 +36,7 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4)                              , intent(in)  :: grnd_emis4
+   real(kind=4)                              , intent(in)  :: grnd_emiss4
    real(kind=4)                              , intent(in)  :: grnd_temp4
    real(kind=4)                              , intent(in)  :: rlong_top4
    integer                                   , intent(in)  :: ncoh
@@ -86,7 +81,7 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
    real(kind=8), dimension(2*ncoh+2)                       :: lwvec
    real(kind=8), dimension(2*ncoh+2)                       :: cvec
    real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: amat
-   real(kind=8)                                            :: grnd_emis
+   real(kind=8)                                            :: grnd_emiss
    real(kind=8)                                            :: grnd_temp
    real(kind=8)                                            :: rlong_top
    real(kind=8)                                            :: ext_diff1
@@ -108,9 +103,9 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
    !---------------------------------------------------------------------------------------!
    !     Convert some properties to double precision.                                      !
    !---------------------------------------------------------------------------------------!
-   grnd_emis = dble(grnd_emis4)
-   grnd_temp = dble(grnd_temp4)
-   rlong_top = dble(rlong_top4)
+   grnd_emiss = dble(grnd_emiss4)
+   grnd_temp  = dble(grnd_temp4 )
+   rlong_top  = dble(rlong_top4 )
    !---------------------------------------------------------------------------------------!
 
 
@@ -174,7 +169,8 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
 
 
       !----- Layer emissivity. ------------------------------------------------------------!
-      epsil(i) = leaf_weight(i) * leaf_emis(ipft) + wood_weight(i) * wood_emis(ipft)
+      epsil(i) = leaf_weight(i) * leaf_emiss_tir(ipft)                                     &
+               + wood_weight(i) * wood_emiss_tir(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -199,7 +195,7 @@ subroutine lw_multiple_scatter(grnd_emis4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai
    tau  (ncoh+1) = 1.d0
    r         (0) = 1.d0
    r    (ncoh+1) = 0.d0
-   epsil     (0) = grnd_emis
+   epsil     (0) = grnd_emiss
    epsil(ncoh+1) = 0.d0
    omr(:)        = 1.d0 - r    (:)
    omt(:)        = 1.d0 - tau  (:)
@@ -381,10 +377,9 @@ end subroutine lw_multiple_scatter
 subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,cai    &
                               ,par_beam_flip,par_diff_flip,sw_abs_beam_flip                &
                               ,sw_abs_diff_flip,dw_parlo_beam,dw_parlo_diff                &
-                              ,uw_parhi_beam,uw_parhi_diff,dw_nirlo_beam                   &
-                              ,dw_nirlo_diff,uw_nirhi_beam,uw_nirhi_diff                   &
+                              ,uw_parhi_diff,dw_nirlo_beam,dw_nirlo_diff,uw_nirhi_diff     &
                               ,par_beam_level,par_diff_level,light_level,light_beam_level  &
-                              ,light_diff_level,lambda_out,lambda_tot)
+                              ,light_diff_level)
    use ed_max_dims          , only : n_pft                   ! ! intent(in)
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : clumping_factor         & ! intent(in)
@@ -421,9 +416,7 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
    real(kind=4), dimension(ncoh)             , intent(out) :: par_diff_flip
    real(kind=4), dimension(ncoh)             , intent(out) :: sw_abs_beam_flip
    real(kind=4), dimension(ncoh)             , intent(out) :: sw_abs_diff_flip
-   real(kind=4)                              , intent(out) :: uw_parhi_beam
    real(kind=4)                              , intent(out) :: uw_parhi_diff
-   real(kind=4)                              , intent(out) :: uw_nirhi_beam
    real(kind=4)                              , intent(out) :: uw_nirhi_diff
    real(kind=4)                              , intent(out) :: dw_parlo_beam
    real(kind=4)                              , intent(out) :: dw_parlo_diff
@@ -434,8 +427,6 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
    real(kind=8), dimension(ncoh)             , intent(out) :: light_level
    real(kind=8), dimension(ncoh)             , intent(out) :: light_beam_level
    real(kind=8), dimension(ncoh)             , intent(out) :: light_diff_level
-   real(kind=8), dimension(ncoh)             , intent(out) :: lambda_out
-   real(kind=8)                              , intent(out) :: lambda_tot
    !----- Local variables. ----------------------------------------------------------------!
    integer                                                 :: ipft
    integer                                                 :: iband
@@ -543,8 +534,6 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
       !------------------------------------------------------------------------------------!
       proj_area     = phi1(ipft) + phi2(ipft) * mu
       lambda    (i) = proj_area / mu
-      lambda_out(i) = lambda(i) * locetai(i) / (lai(i) + wai(i))
-      lambda_tot    = lambda_tot + lambda(i)
       !------------------------------------------------------------------------------------!
 
 
@@ -560,7 +549,7 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
 
       !------------------------------------------------------------------------------------!
       !     The layer transmittance coefficient for diffuse radiation is defined in a      !
-      ! similar way from equation (2) of ZQ05.  We must integrate the contribution coming  !
+      ! similar way from equation (2) of ZQ06.  We must integrate the contribution coming  !
       ! from each hemispheric direction.  Again, we must consider the finite crown area.   !
       !     The integral can be solved analytically for our case, with the help of the     !
       ! handy http://www.integrals.com website, of course ;-).                             !
@@ -602,14 +591,6 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
    tau_diff(ncoh+1) = 1.d0
    omt_beam(:)      = 1.d0 - tau_beam(:)
    omt_diff(:)      = 1.d0 - tau_diff(:)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the average lambda.                                                          !
-   !---------------------------------------------------------------------------------------!
-   lambda_tot = lambda_tot / sum(lai(:) + wai(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -903,7 +884,6 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
          !------ Save the fluxes reaching the surface and leaving the top. ----------------!
          dw_parlo_beam = sngloff(beam_down      (1), tiny_offset)
          dw_parlo_diff = sngloff(swd            (1), tiny_offset)
-         uw_parhi_beam = 0.d0
          uw_parhi_diff = sngloff(swu         (ncoh), tiny_offset)
          !---------------------------------------------------------------------------------!
 
@@ -941,7 +921,6 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
          !------ Save the fluxes reaching the surface and leaving the top. ----------------!
          dw_nirlo_beam = sngloff(beam_down      (1), tiny_offset)
          dw_nirlo_diff = sngloff(swd            (1), tiny_offset)
-         uw_nirhi_beam = 0.d0
          uw_nirhi_diff = sngloff(swu         (ncoh), tiny_offset)
          !---------------------------------------------------------------------------------!
       end select

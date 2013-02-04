@@ -2031,30 +2031,52 @@ end subroutine normal_accfluxes
 !==========================================================================================!
 !     This sub-routine decides whether this patch should be solved or not.                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai    &
-                          ,sfcwater_nlev,sfcwater_depth,initial)
-   use leaf_coms, only : min_patch_area  & ! intent(in)
-                       , tai_max         & ! intent(in)
-                       , tai_min         & ! intent(in)
-                       , snowfac_max     & ! intent(in)
-                       , snowfac         & ! intent(inout)
-                       , resolvable      ! ! intent(inout)
+subroutine leaf3_solve_veg(ip,mzs,leaf_class,soil_rough,patch_area,veg_fracarea,veg_tai    &
+                          ,sfcwater_nlev,sfcwater_mass,sfcwater_depth,initial)
+   use leaf_coms , only : min_patch_area    & ! intent(in)
+                        , min_sfcwater_mass & ! intent(in)
+                        , tai_max           & ! intent(in)
+                        , tai_min           & ! intent(in)
+                        , snowfac_max       & ! intent(in)
+                        , ny07_eq04_a       & ! intent(in)
+                        , ny07_eq04_m       & ! intent(in)
+                        , snowfac           & ! intent(inout)
+                        , resolvable        ! ! intent(inout)
+   use rconstants, only : wdns              & ! intent(in)
+                        , fsdns             & ! intent(in)
+                        , fsdnsi            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                , intent(in) :: ip
    integer                , intent(in) :: mzs
    real                   , intent(in) :: leaf_class
-   real                   , intent(in) :: veg_height
+   real                   , intent(in) :: soil_rough
    real                   , intent(in) :: patch_area
    real                   , intent(in) :: veg_fracarea
    real                   , intent(in) :: veg_tai
    real                   , intent(in) :: sfcwater_nlev
+   real   , dimension(mzs), intent(in) :: sfcwater_mass
    real   , dimension(mzs), intent(in) :: sfcwater_depth
    logical                , intent(in) :: initial
    !----- Local variables. ----------------------------------------------------------------!
    integer                             :: nveg
    integer                             :: k
    integer                             :: ksn
+   real                                :: total_sfcw_depth
+   real                                :: total_sfcw_mass
+   real                                :: bulk_sfcw_dens
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the fraction of the canopy covered in snow.  I could not find any            !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
    !---------------------------------------------------------------------------------------!
 
 
@@ -2062,11 +2084,22 @@ subroutine leaf3_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,
    !     Find the area covered by snow.  This should be done every time.                   !
    !---------------------------------------------------------------------------------------!
    ksn     = nint(sfcwater_nlev)
-   snowfac = 0.
+   total_sfcw_depth = 0.0
+   total_sfcw_mass  = 0.0
    do k=1,ksn
-      snowfac = snowfac + sfcwater_depth(k)
+      total_sfcw_depth = total_sfcw_depth + sfcwater_depth(k)
+      total_sfcw_mass  = total_sfcw_mass  + sfcwater_mass (k)
    end do
-   snowfac = min(.99, snowfac / max(.001,veg_height))
+   if (total_sfcw_mass > min_sfcwater_mass) then
+      bulk_sfcw_dens = max( fsndens, min( wdns, total_sfcw_mass / total_sfcw_depth))
+      snowfac        = max( 0.0, min( 0.99                                                 &
+                              , tanh( total_sfcw_depth                                     &
+                                    / ( ny07_eq04_a * max(0.001,soil_rough)                &
+                                      * (bulk_sfcw_dens * fsndensi) ** ny07_eq04_m ) ) ) )
+   else
+      snowfac = 0.0
+   end if
+   ! snowfac = min(.99, total_sfcw_depth / max(.001,veg_height))
    !---------------------------------------------------------------------------------------!
 
 

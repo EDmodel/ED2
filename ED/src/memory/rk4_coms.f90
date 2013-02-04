@@ -53,6 +53,7 @@ module rk4_coms
 
       !----- Total depth of temporary surface water / snow. -------------------------------!
       real(kind=8)                        :: total_sfcw_depth
+      real(kind=8)                        :: total_sfcw_mass
       !------------------------------------------------------------------------------------!
 
 
@@ -991,6 +992,7 @@ module rk4_coms
       y%veg_rough                      = 0.d0
       y%opencan_frac                   = 0.d0
       y%total_sfcw_depth               = 0.d0
+      y%total_sfcw_mass                = 0.d0
       y%snowfac                        = 0.d0
       y%ggbare                         = 0.d0
       y%ggveg                          = 0.d0

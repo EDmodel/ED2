@@ -58,14 +58,18 @@ module canopy_struct_dynamics
    !    Please also refer to the original paper by Massman for information regarding the   !
    !    basic principles of the closure scheme.                                            !
    !                                                                                       !
+   !                                                                                       !
    !    Massman, W.J., 1997: An analytical one-Dimensional model of momentum transfer by   !
-   !        vegetation of arbitrary structure. Boundary Layer Meteorology, 83, 407-421.    !
+   !        vegetation of arbitrary structure. Boundary-Layer Meteorol., 83, 407-421.      !
+   !    Wohlfahrt, G., and A. Cernusca, 2002: Momentum transfer by a mountain meadow       !
+   !        canopy: a simulation analysis based on Massman's (1997) model.  Boundary-Layer !
+   !        Meteorol., 103, 391-407.                                                       !
    !                                                                                       !
    ! 3.  This is related to option 2, but using a second-order clousure.                   !
    !                                                                                       !
    !    Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order     !
    !        closure model turbulence statistics and the Lagrangian time scale within and   !
-   !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
+   !        above plant canopies of arbitrary structure.  Boundary-Layer Meteorol., 91,    !
    !        81-107.                                                                        !
    !                                                                                       !
    ! 4.  This option is almost the same as option 0, except that the ground conductance    !
@@ -86,14 +90,21 @@ module canopy_struct_dynamics
                                   , patchtype            ! ! structure
       use met_driver_coms  , only : met_driv_state       ! ! structure
       use grid_coms        , only : nzg                  ! ! intent(in)
-      use rk4_coms         , only : ibranch_thermo       ! ! intent(in)
+      use rk4_coms         , only : ibranch_thermo       & ! intent(in)
+                                  , rk4_tolerance        ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
                                   , ustmin               & ! intent(in)
                                   , ugbmin               & ! intent(in)
                                   , ubmin                & ! intent(in)
+                                  , vh2vr                & ! intent(in)
+                                  , vh2dh                & ! intent(in)
+                                  , veg_height_min       & ! intent(in)
                                   , gamh                 & ! intent(in)
                                   , exar                 & ! intent(in)
                                   , cdrag0               & ! intent(in)
+                                  , cdrag1               & ! intent(in)
+                                  , cdrag2               & ! intent(in)
+                                  , cdrag3               & ! intent(in)
                                   , pm0                  & ! intent(in)
                                   , c1_m97               & ! intent(in)
                                   , c2_m97               & ! intent(in)
@@ -133,7 +144,9 @@ module canopy_struct_dynamics
                                   , twothirds            & ! intent(in)
                                   , kin_visci            & ! intent(in)
                                   , cpdry                & ! intent(in)
-                                  , cph2o                ! ! intent(in)
+                                  , cph2o                & ! intent(in)
+                                  , lnexp_min            & ! intent(in)
+                                  , lnexp_max            ! ! intent(in)
       use soil_coms        , only : snow_rough           & ! intent(in)
                                   , soil_rough           ! ! intent(in)
       use pft_coms         , only : is_grass             ! ! intent(in)
@@ -230,6 +243,7 @@ module canopy_struct_dynamics
       real           :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
       logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
       real           :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
+      real           :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
@@ -289,8 +303,9 @@ module canopy_struct_dynamics
          end if
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
-         csite%rough(ipa) = soil_rough * (1.0 - csite%snowfac(ipa))                        &
-                          + snow_rough * csite%snowfac(ipa)
+         csite%rough       (ipa) = soil_rough * (1.0 - csite%snowfac(ipa))                 &
+                                 + snow_rough * csite%snowfac(ipa)
+         csite%veg_displace(ipa) = vh2dh * csite%rough(ipa) / vh2vr
          !---------------------------------------------------------------------------------!
 
 
@@ -892,39 +907,50 @@ module canopy_struct_dynamics
          ! need the full integral of the leaf area density before we determine these       !
          ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
-         !----- Constant drag. ------------------------------------------------------------!
-         cdrag   (:) = cdrag0
-         ldga_bk     = 0.0
          !----- Decide whether to apply the sheltering effect or not. ---------------------!
          select case (icanturb)
          case (2)
+            !----- Drag when there are no plants. -----------------------------------------!
+            cdrag   (:) = cdrag1 + 0.5 * cdrag2
+            ldga_bk     = 0.0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
                !     Add the contribution of this layer to Massman's zeta (which we call   !
                ! cumldrag here to not confuse with the other zeta from the similarity      !
                ! theory).  We integrate in three steps so we save the value in the middle  !
                ! of the layer.                                                             !
-               !     Notice that pshelter is multiplying rather than dividing.  This is a  !
-               ! typo in M97 according to personal communication between Ryan and Massman. !
+               !                                                                           !
+               !     We use a re-fit of the original equation by Wohlfahrt and Cernusca    !
+               ! (2002) because it is simpler and because the coefficients listed in the   !
+               ! paper do not yield to the results shown in their fig. 3 (probably a typo) !
+               ! Their cdeff is cdrag / pshelter, here we fix pshelter = 1 and dump the    !
+               ! ratio to cdrag.                                                           !
                !---------------------------------------------------------------------------!
+               c3_lad       = max(lnexp_min,min(lnexp_max,cdrag3 * lad(k)))
+               cdrag   (k)  = cdrag1 + cdrag2 / (1.0 + exp(c3_lad))
                pshelter(k)  = 1.
-               lyrhalf      = 0.5 * lad(k) * cdrag(k) * pshelter(k) * dzcan(k)
+               lyrhalf      = 0.5 * lad(k) * cdrag(k) / pshelter(k) * dzcan(k)
                cumldrag(k)  = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.0 * lyrhalf
                !---------------------------------------------------------------------------!
             end do
          case (3)
+            !----- Constant drag. ---------------------------------------------------------!
+            cdrag   (:) = cdrag0
+            ldga_bk     = 0.0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
                !     Add the contribution of this layer to Massman's zeta (which we call   !
                ! cumldrag here to not confuse with the other zeta from the similarity      !
                ! theory).  We integrate in three steps so we save the value in the middle  !
                ! of the layer.                                                             !
-               !     Notice that pshelter is multiplying rather than dividing.  This is a  !
-               ! typo in M97 according to personal communication between Ryan and Massman. !
+               !     Notice that pshelter is the inverse of the parametrisation shown in   !
+               ! Massman (1997) (a typo according to personal communication between Ryan   !
+               ! and Massman), since the shelter factor should be always >= 1.             !
+               ! Alpha_m97 is no longer 0.4 * h, but 5 so it becomes a constant.           !
                !---------------------------------------------------------------------------!
-               pshelter(k)  = 1. / (1. + alpha_m97 * lad(k))
-               lyrhalf      = 0.5 * lad(k) * cdrag(k) * pshelter(k) * dzcan(k)
+               pshelter(k)  = 1. + alpha_m97 * lad(k)
+               lyrhalf      = 0.5 * lad(k) * cdrag(k) / pshelter(k) * dzcan(k)
                cumldrag(k)  = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.0 * lyrhalf
                !---------------------------------------------------------------------------!
@@ -961,15 +987,17 @@ module canopy_struct_dynamics
             d0ohgt = d0ohgt - dzcan(k) / htop                                              &
                             * exp(-2.0 * nn * (1.0 - cumldrag(k) / cumldrag(zcan)))
          end do
-         z0ohgt = (1.0 - d0ohgt) * exp(- vonk / ustarouh + infunc)
+         z0ohgt = (1.0 - d0ohgt) * min(1.0, exp(- vonk / ustarouh + infunc))
          !---------------------------------------------------------------------------------!
 
 
 
 
          !----- Find the actual displacement height and roughness. ------------------------!
-         csite%veg_displace(ipa) = max(0.,d0ohgt) * csite%veg_height(ipa)
-         csite%rough(ipa)        = max(soil_rough, z0ohgt * csite%veg_height(ipa))
+         csite%veg_displace(ipa) = max( vh2dh  * veg_height_min                            &
+                                      , d0ohgt * csite%veg_height(ipa) )
+         csite%rough       (ipa) = max( vh2vr  * veg_height_min                            &
+                                      , z0ohgt * csite%veg_height(ipa) )
          !---------------------------------------------------------------------------------!
 
 
@@ -1297,13 +1325,16 @@ module canopy_struct_dynamics
    !    basic principles of the closure scheme.                                            !
    !                                                                                       !
    !    Massman, W.J., 1997: An analytical one-Dimensional model of momentum transfer by   !
-   !        vegetation of arbitrary structure. Boundary Layer Meteorology, 83, 407-421.    !
+   !        vegetation of arbitrary structure. Boundary-Layer Meteorol., 83, 407-421.      !
+   !    Wohlfahrt, G., and A. Cernusca, 2002: Momentum transfer by a mountain meadow       !
+   !        canopy: a simulation analysis based on Massman's (1997) model.  Boundary-Layer !
+   !        Meteorol., 103, 391-407.                                                       !
    !                                                                                       !
    ! 3.  This is related to option 2, but using a second-order clousure.                   !
    !                                                                                       !
    !    Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order     !
    !        closure model turbulence statistics and the Lagrangian time scale within and   !
-   !        above plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91,  !
+   !        above plant canopies of arbitrary structure.  Boundary-Layer Meteorol., 91,    !
    !        81-107.                                                                        !
    !                                                                                       !
    ! 4.  This option is almost the same as option 1, except that the ground conductance is !
@@ -1321,6 +1352,7 @@ module canopy_struct_dynamics
                                   , sitetype             & ! structure
                                   , patchtype            ! ! structure
       use rk4_coms         , only : rk4patchtype         & ! structure
+                                  , rk4eps               & ! structure
                                   , rk4site              & ! intent(in)
                                   , tiny_offset          & ! intent(in)
                                   , ibranch_thermo       & ! intent(in)
@@ -1335,9 +1367,15 @@ module canopy_struct_dynamics
                                   , ustmin8              & ! intent(in)
                                   , ugbmin8              & ! intent(in)
                                   , ubmin8               & ! intent(in)
+                                  , vh2vr8               & ! intent(in)
+                                  , vh2dh8               & ! intent(in)
+                                  , veg_height_min8      & ! intent(in)
                                   , exar8                & ! intent(in)
                                   , gamh8                & ! intent(in)
                                   , cdrag08              & ! intent(in)
+                                  , cdrag18              & ! intent(in)
+                                  , cdrag28              & ! intent(in)
+                                  , cdrag38              & ! intent(in)
                                   , pm08                 & ! intent(in)
                                   , c1_m978              & ! intent(in)
                                   , c2_m978              & ! intent(in)
@@ -1375,7 +1413,9 @@ module canopy_struct_dynamics
                                   , srthree8             & ! intent(in)
                                   , onethird8            & ! intent(in)
                                   , twothirds8           & ! intent(in)
-                                  , kin_visci8           ! ! intent(in)
+                                  , kin_visci8           & ! intent(in)
+                                  , lnexp_min8           & ! intent(in)
+                                  , lnexp_max8           ! ! intent(in)
       use soil_coms        , only : snow_rough8          & ! intent(in)
                                   , soil_rough8          ! ! intent(in)
       use pft_coms         , only : is_grass             ! ! intent(in)
@@ -1454,6 +1494,7 @@ module canopy_struct_dynamics
       real(kind=8)   :: stab_clm4    ! Stability parameter (CLM4, eq. 5.104)    [      ---]
       logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
       real(kind=8)   :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
+      real(kind=8)   :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
@@ -1480,8 +1521,10 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       if (cpatch%ncohorts == 0) then
 
-         !----- Calculate the surface roughness inside the canopy. ------------------------!
-         initp%rough = soil_rough8 *(1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
+         !----- Calculate the surface roughness and displacement height. ------------------!
+         initp%rough        = soil_rough8 *(1.d0 - initp%snowfac)                          &
+                            + snow_rough8 * initp%snowfac
+         initp%veg_displace = vh2dh8 * initp%rough / vh2vr8
          
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
@@ -2069,8 +2112,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          select case (icanturb)
          case (2)
-            !----- Constant drag and no sheltering factor. --------------------------------!
-            cdrag8   (:) = cdrag08
+            !----- Drag when there are no plants. -----------------------------------------!
+            cdrag8  (:)  = cdrag18 + 5.d-1 * cdrag28
             ldga_bk      = 0.d0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
@@ -2078,30 +2121,38 @@ module canopy_struct_dynamics
                ! cumldrag here to not confuse with the other zeta from the similarity      !
                ! theory.  We integrate in three steps so we save the value in the middle   !
                ! of the layer.                                                             !
-               !     Notice that pshelter is multiplying rather than dividing.  This is a  !
-               ! typo in M97 according to personal communication between Ryan and Massman. !
+               !                                                                           !
+               !     We use a re-fit of the original equation by Wohlfahrt and Cernusca    !
+               ! (2002) because it is simpler and because the coefficients listed in the   !
+               ! paper do not yield to the results shown in their fig. 3 (probably a typo) !
+               ! Their cdeff is cdrag / pshelter, here we fix pshelter = 1 and dump the    !
+               ! ratio to cdrag.                                                           !
                !---------------------------------------------------------------------------!
+               c3_lad       = max(lnexp_min8,min(lnexp_max8,cdrag38 * lad8(k)))
+               cdrag8   (k) = cdrag18 + cdrag28 / (1.d0 + exp(c3_lad))
                pshelter8(k) = 1.d0
-               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) * pshelter8(k) * dzcan8(k)
+               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) / pshelter8(k) * dzcan8(k)
                cumldrag8(k) = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.d0 * lyrhalf
                !---------------------------------------------------------------------------!
             end do
          case (3)
-            !----- Apply sheltering factor. -----------------------------------------------!
+            !----- Constant drag. ---------------------------------------------------------!
             cdrag8   (:) = cdrag08
             ldga_bk      = 0.d0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
                !     Add the contribution of this layer to Massman's zeta (which we call   !
                ! cumldrag here to not confuse with the other zeta from the similarity      !
-               ! theory.  We integrate in three steps so we save the value in the middle   !
+               ! theory).  We integrate in three steps so we save the value in the middle  !
                ! of the layer.                                                             !
-               !     Notice that pshelter is multiplying rather than dividing.  This is a  !
-               ! typo in M97 according to personal communication between Ryan and Massman. !
+               !     Notice that pshelter is the inverse of the parametrisation shown in   !
+               ! Massman (1997) (a typo according to personal communication between Ryan   !
+               ! and Massman), since the shelter factor should be always >= 1.             !
+               ! Alpha_m97 is no longer 0.4 * h, but 5 so it becomes a constant.           !
                !---------------------------------------------------------------------------!
-               pshelter8(k) = 1.d0 / (1.d0 + alpha_m97_8 * lad8(k))
-               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) * pshelter8(k) * dzcan8(k)
+               pshelter8(k) = 1.d0 + alpha_m97_8 * lad8(k)
+               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) / pshelter8(k) * dzcan8(k)
                cumldrag8(k) = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.d0 * lyrhalf
                !---------------------------------------------------------------------------!
@@ -2138,15 +2189,15 @@ module canopy_struct_dynamics
             d0ohgt = d0ohgt - dzcan8(k) / htop                                             &
                             * exp(-2.d0 * nn *(1.d0 - cumldrag8(k) / cumldrag8(zcan)))
          end do
-         z0ohgt = (1.d0 - d0ohgt) * exp(- vonk8 / ustarouh + infunc_8)
+         z0ohgt = (1.d0 - d0ohgt) * min(1.d0,exp(- vonk8 / ustarouh + infunc_8))
          !---------------------------------------------------------------------------------!
 
 
 
 
          !----- Find the actual displacement height and roughness. ------------------------!
-         initp%veg_displace = max(0.d0,d0ohgt) * initp%veg_height
-         initp%rough        = max(soil_rough8, z0ohgt * initp%veg_height)
+         initp%veg_displace = max( vh2dh8 * veg_height_min8, d0ohgt * initp%veg_height)
+         initp%rough        = max( vh2vr8 * veg_height_min8, z0ohgt * initp%veg_height)
          !---------------------------------------------------------------------------------!
 
 

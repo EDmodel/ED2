@@ -3,38 +3,39 @@
 ! Model 2, when run in coupled mode.                                                       !
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_driver()
-   use grid_coms     , only : ngrids              & ! intent(in)
-                            , time                & ! intent(in)
-                            , timmax              ! ! intent(in)
-   use ed_state_vars , only : allocate_edglobals  & ! subroutine
-                            , filltab_alltypes    & ! subroutine
-                            , edgrid_g            ! ! subroutine
-   use ed_misc_coms  , only : fast_diagnostics    & ! intent(in)
-                            , iyeara              & ! intent(in)
-                            , imontha             & ! intent(in)
-                            , idatea              & ! intent(in)
-                            , itimea              & ! intent(in)
-                            , runtype             & ! intent(in)
-                            , ifoutput            & ! intent(in)
-                            , idoutput            & ! intent(in)
-                            , imoutput            & ! intent(in)
-                            , iqoutput            & ! intent(in)
-                            , isoutput            & ! intent(in)
-                            , iyoutput            & ! intent(in)
-                            , writing_long        & ! intent(in)
-                            , writing_eorq        & ! intent(in)
-                            , writing_dcyc        & ! intent(in)
-                            , runtype             ! ! intent(in)
-   use ed_work_vars  , only : ed_dealloc_work     & ! subroutine
-                            , work_e              ! ! intent(inout)
-   use soil_coms     , only : alloc_soilgrid      ! ! subroutine
-   use ed_node_coms  , only : mynum               & ! intent(in)
-                            , nnodetot            & ! intent(in)
-                            , sendnum             & ! intent(in)
-                            , recvnum             ! ! intent(in)
-   use io_params     , only : ioutput             ! ! intent(in)
-   use rk4_coms      , only : checkbudget         ! ! intent(in)
-   use phenology_aux , only : first_phenology     ! ! subroutine
+   use grid_coms     , only : ngrids                & ! intent(in)
+                            , time                  & ! intent(in)
+                            , timmax                ! ! intent(in)
+   use ed_state_vars , only : allocate_edglobals    & ! subroutine
+                            , filltab_alltypes      & ! subroutine
+                            , edgrid_g              ! ! subroutine
+   use ed_misc_coms  , only : fast_diagnostics      & ! intent(in)
+                            , iyeara                & ! intent(in)
+                            , imontha               & ! intent(in)
+                            , idatea                & ! intent(in)
+                            , itimea                & ! intent(in)
+                            , runtype               & ! intent(in)
+                            , ifoutput              & ! intent(in)
+                            , idoutput              & ! intent(in)
+                            , imoutput              & ! intent(in)
+                            , iqoutput              & ! intent(in)
+                            , isoutput              & ! intent(in)
+                            , iyoutput              & ! intent(in)
+                            , writing_long          & ! intent(in)
+                            , writing_eorq          & ! intent(in)
+                            , writing_dcyc          & ! intent(in)
+                            , runtype               ! ! intent(in)
+   use ed_work_vars  , only : ed_dealloc_work       & ! subroutine
+                            , work_e                ! ! intent(inout)
+   use soil_coms     , only : alloc_soilgrid        ! ! subroutine
+   use ed_node_coms  , only : mynum                 & ! intent(in)
+                            , nnodetot              & ! intent(in)
+                            , sendnum               & ! intent(in)
+                            , recvnum               ! ! intent(in)
+   use io_params     , only : ioutput               ! ! intent(in)
+   use rk4_coms      , only : checkbudget           ! ! intent(in)
+   use phenology_aux , only : first_phenology       ! ! subroutine
+   use average_utils , only : update_ed_yearly_vars ! ! sub-routine
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0

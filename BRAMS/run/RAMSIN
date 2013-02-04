@@ -1437,7 +1437,7 @@ $MODEL_OPTIONS
       !  ALBEDO -- constant albedo (fraction) if not running soil model                    !
       !  SEATMP -- constant sea surface temperature, in Kelvin, if ISSTFLG = 2.            !
       !------------------------------------------------------------------------------------!
-      ZROUGH   = .05,
+      ZROUGH   = .01,
       ALBEDO   = .2,
       SEATMP   = 298.,
       !------------------------------------------------------------------------------------!

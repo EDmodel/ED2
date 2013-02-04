@@ -1377,8 +1377,8 @@ module disturbance_utils
       csite%fmean_rshortup       (ipa) = csite%fmean_rshortup       (ipa) * area_fac
       csite%fmean_rnet           (ipa) = csite%fmean_rnet           (ipa) * area_fac
       csite%fmean_albedo         (ipa) = csite%fmean_albedo         (ipa) * area_fac
-      csite%fmean_albedo_beam    (ipa) = csite%fmean_albedo_beam    (ipa) * area_fac
-      csite%fmean_albedo_diff    (ipa) = csite%fmean_albedo_diff    (ipa) * area_fac
+      csite%fmean_albedo_par     (ipa) = csite%fmean_albedo_par     (ipa) * area_fac
+      csite%fmean_albedo_nir     (ipa) = csite%fmean_albedo_nir     (ipa) * area_fac
       csite%fmean_rlong_albedo   (ipa) = csite%fmean_rlong_albedo   (ipa) * area_fac
       csite%fmean_ustar          (ipa) = csite%fmean_ustar          (ipa) * area_fac
       csite%fmean_tstar          (ipa) = csite%fmean_tstar          (ipa) * area_fac
@@ -1642,11 +1642,11 @@ module disturbance_utils
       csite%fmean_albedo         (np) = csite%fmean_albedo         (np)                    &
                                       + csite%fmean_albedo         (cp)                    &
                                       * area_fac 
-      csite%fmean_albedo_beam    (np) = csite%fmean_albedo_beam    (np)                    &
-                                      + csite%fmean_albedo_beam    (cp)                    &
+      csite%fmean_albedo_par     (np) = csite%fmean_albedo_par     (np)                    &
+                                      + csite%fmean_albedo_par     (cp)                    &
                                       * area_fac 
-      csite%fmean_albedo_diff    (np) = csite%fmean_albedo_diff    (np)                    &
-                                      + csite%fmean_albedo_diff    (cp)                    &
+      csite%fmean_albedo_nir     (np) = csite%fmean_albedo_nir     (np)                    &
+                                      + csite%fmean_albedo_nir     (cp)                    &
                                       * area_fac 
       csite%fmean_rlong_albedo   (np) = csite%fmean_rlong_albedo   (np)                    &
                                       + csite%fmean_rlong_albedo   (cp)                    &
@@ -1831,11 +1831,11 @@ module disturbance_utils
          csite%dmean_albedo         (    np) = csite%dmean_albedo         (    np)         &
                                              + csite%dmean_albedo         (    cp)         &
                                              * area_fac
-         csite%dmean_albedo_beam    (    np) = csite%dmean_albedo_beam    (    np)         &
-                                             + csite%dmean_albedo_beam    (    cp)         &
+         csite%dmean_albedo_par     (    np) = csite%dmean_albedo_par     (    np)         &
+                                             + csite%dmean_albedo_par     (    cp)         &
                                              * area_fac
-         csite%dmean_albedo_diff    (    np) = csite%dmean_albedo_diff    (    np)         &
-                                             + csite%dmean_albedo_diff    (    cp)         &
+         csite%dmean_albedo_nir     (    np) = csite%dmean_albedo_nir     (    np)         &
+                                             + csite%dmean_albedo_nir     (    cp)         &
                                              * area_fac
          csite%dmean_rlong_albedo   (    np) = csite%dmean_rlong_albedo   (    np)         &
                                              + csite%dmean_rlong_albedo   (    cp)         &
@@ -2045,11 +2045,11 @@ module disturbance_utils
          csite%mmean_albedo         (    np) = csite%mmean_albedo         (    np)         &
                                              + csite%mmean_albedo         (    cp)         &
                                              * area_fac
-         csite%mmean_albedo_beam    (    np) = csite%mmean_albedo_beam    (    np)         &
-                                             + csite%mmean_albedo_beam    (    cp)         &
+         csite%mmean_albedo_par     (    np) = csite%mmean_albedo_par     (    np)         &
+                                             + csite%mmean_albedo_par     (    cp)         &
                                              * area_fac
-         csite%mmean_albedo_diff    (    np) = csite%mmean_albedo_diff    (    np)         &
-                                             + csite%mmean_albedo_diff    (    cp)         &
+         csite%mmean_albedo_nir     (    np) = csite%mmean_albedo_nir     (    np)         &
+                                             + csite%mmean_albedo_nir     (    cp)         &
                                              * area_fac
          csite%mmean_rlong_albedo   (    np) = csite%mmean_rlong_albedo   (    np)         &
                                              + csite%mmean_rlong_albedo   (    cp)         &
@@ -2304,11 +2304,11 @@ module disturbance_utils
          csite%qmean_albedo         (  :,np) = csite%qmean_albedo         (  :,np)         &
                                              + csite%qmean_albedo         (  :,cp)         &
                                              * area_fac
-         csite%qmean_albedo_beam    (  :,np) = csite%qmean_albedo_beam    (  :,np)         &
-                                             + csite%qmean_albedo_beam    (  :,cp)         &
+         csite%qmean_albedo_par     (  :,np) = csite%qmean_albedo_par     (  :,np)         &
+                                             + csite%qmean_albedo_par     (  :,cp)         &
                                              * area_fac
-         csite%qmean_albedo_diff    (  :,np) = csite%qmean_albedo_diff    (  :,np)         &
-                                             + csite%qmean_albedo_diff    (  :,cp)         &
+         csite%qmean_albedo_nir     (  :,np) = csite%qmean_albedo_nir     (  :,np)         &
+                                             + csite%qmean_albedo_nir     (  :,cp)         &
                                              * area_fac
          csite%qmean_rlong_albedo   (  :,np) = csite%qmean_rlong_albedo   (  :,np)         &
                                              + csite%qmean_rlong_albedo   (  :,cp)         &

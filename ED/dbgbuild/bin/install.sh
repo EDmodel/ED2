@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 if [ 'x'${1} == 'xclean' ]
 then
   make OPT=opt clean

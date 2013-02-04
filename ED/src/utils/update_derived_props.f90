@@ -60,6 +60,14 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                   , ez                         & ! intent(in)
                                   , vh2vr                      & ! intent(in)
                                   , vh2dh                      ! ! intent(in)
+   use soil_coms           , only : soil_rough                 & ! intent(in)
+                                  , ny07_eq04_a                & ! intent(in)
+                                  , ny07_eq04_m                & ! intent(in)
+                                  , tiny_sfcwater_mass         ! ! intent(in)
+   use consts_coms         , only : wdns                       & ! intent(in)
+                                  , fsdns                      & ! intent(in)
+                                  , fsdnsi                     ! ! intent(in)
+   
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -71,6 +79,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    type(patchtype) , pointer    :: cpatch
    real                         :: weight
    real                         :: weight_sum
+   real                         :: total_sfcw_mass
+   real                         :: bulk_sfcw_dens
    integer                      :: ico
    integer                      :: k
    integer                      :: ksn
@@ -81,9 +91,12 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Find the total snow depth. ------------------------------------------------------!
    ksn = csite%nlev_sfcwater(ipa)
    csite%total_sfcw_depth(ipa) = 0.
+   total_sfcw_mass             = 0.
    do k=1,ksn
       csite%total_sfcw_depth(ipa) = csite%total_sfcw_depth(ipa)                            &
                                   + csite%sfcwater_depth(k,ipa)
+      total_sfcw_mass             = total_sfcw_mass                                        &
+                                  + csite%sfcwater_mass(k,ipa)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -163,8 +176,26 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
 
 
-   !----- Find the fraction of vegetation buried in snow. ---------------------------------!
-   csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   !---------------------------------------------------------------------------------------!
+   !     Find the fraction of the canopy covered in snow.  I could not find any            !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
+   !---------------------------------------------------------------------------------------!
+   ! csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   if (total_sfcw_mass > tiny_sfcwater_mass) then
+      bulk_sfcw_dens     = max( fsdns, min( wdns                                           &
+                              , total_sfcw_mass / csite%total_sfcw_depth(ipa)))
+      csite%snowfac(ipa) = max( 0.0, min( 0.99                                             &
+                              , tanh( csite%total_sfcw_depth(ipa)                          &
+                                    / ( ny07_eq04_a * soil_rough                           &
+                                      * (bulk_sfcw_dens * fsdnsi) ** ny07_eq04_m ) ) ) )
+   else
+      csite%snowfac(ipa) = 0.0
+   end if
    !---------------------------------------------------------------------------------------!
 
 

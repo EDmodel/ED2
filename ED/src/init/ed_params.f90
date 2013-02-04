@@ -464,15 +464,16 @@ subroutine init_can_rad_params()
                                     , leaf_scatter_vis            & ! intent(out)
                                     , leaf_reflect_vis            & ! intent(out)
                                     , leaf_trans_vis              & ! intent(out)
+                                    , leaf_scatter_tir            & ! intent(out)
                                     , leaf_backscatter_vis        & ! intent(out)
                                     , leaf_backscatter_nir        & ! intent(out)
                                     , leaf_backscatter_tir        & ! intent(out)
+                                    , leaf_emiss_tir              & ! intent(out)
                                     , clumping_factor             & ! intent(out)
                                     , orient_factor               & ! intent(out)
                                     , phi1                        & ! intent(out)
                                     , phi2                        & ! intent(out)
                                     , mu_bar                      & ! intent(out)
-                                    , leaf_emis                   & ! intent(out)
                                     , wood_reflect_nir            & ! intent(out)
                                     , wood_trans_nir              & ! intent(out)
                                     , wood_scatter_nir            & ! intent(out)
@@ -481,10 +482,11 @@ subroutine init_can_rad_params()
                                     , wood_scatter_vis            & ! intent(out)
                                     , wood_reflect_vis            & ! intent(out)
                                     , wood_trans_vis              & ! intent(out)
+                                    , wood_scatter_tir            & ! intent(out)
                                     , wood_backscatter_vis        & ! intent(out)
                                     , wood_backscatter_nir        & ! intent(out)
                                     , wood_backscatter_tir        & ! intent(out)
-                                    , wood_emis                   & ! intent(out)
+                                    , wood_emiss_tir              & ! intent(out)
                                     , fvis_beam_def               & ! intent(out)
                                     , fvis_diff_def               & ! intent(out)
                                     , fnir_beam_def               & ! intent(out)
@@ -558,23 +560,23 @@ subroutine init_can_rad_params()
    !      Emissivity on Thermal infra-red (TIR).                                           !
    !---------------------------------------------------------------------------------------!
    !----- Leaves. -------------------------------------------------------------------------!
-   leaf_emis(1)     = 9.60d-1
-   leaf_emis(2:4)   = 9.50d-1
-   leaf_emis(5)     = 9.60d-1
-   leaf_emis(6:8)   = 9.70d-1
-   leaf_emis(9:11)  = 9.50d-1
-   leaf_emis(12:15) = 9.60d-1
-   leaf_emis(16)    = 9.60d-1
-   leaf_emis(17)    = 9.70d-1
+   leaf_emiss_tir(1)     = 9.60d-1
+   leaf_emiss_tir(2:4)   = 9.50d-1
+   leaf_emiss_tir(5)     = 9.60d-1
+   leaf_emiss_tir(6:8)   = 9.70d-1
+   leaf_emiss_tir(9:11)  = 9.50d-1
+   leaf_emiss_tir(12:15) = 9.60d-1
+   leaf_emiss_tir(16)    = 9.60d-1
+   leaf_emiss_tir(17)    = 9.70d-1
    !----- Branches. -----------------------------------------------------------------------!
-   wood_emis(1)     = 9.60d-1
-   wood_emis(2:4)   = 9.00d-1
-   wood_emis(5)     = 9.60d-1
-   wood_emis(6:8)   = 9.00d-1
-   wood_emis(9:11)  = 9.00d-1
-   wood_emis(12:15) = 9.60d-1
-   wood_emis(16)    = 9.60d-1
-   wood_emis(17)    = 9.00d-1
+   wood_emiss_tir(1)     = 9.60d-1
+   wood_emiss_tir(2:4)   = 9.00d-1
+   wood_emiss_tir(5)     = 9.60d-1
+   wood_emiss_tir(6:8)   = 9.00d-1
+   wood_emiss_tir(9:11)  = 9.00d-1
+   wood_emiss_tir(12:15) = 9.60d-1
+   wood_emiss_tir(16)    = 9.60d-1
+   wood_emiss_tir(17)    = 9.00d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -730,6 +732,9 @@ subroutine init_can_rad_params()
       !----- Near infrared (NIR). ---------------------------------------------------------!
       leaf_scatter_nir(ipft) = leaf_reflect_nir(ipft) + leaf_trans_nir(ipft)
       wood_scatter_nir(ipft) = wood_reflect_nir(ipft) + wood_trans_nir(ipft)
+      !----- Thermal infrared (TIR). ------------------------------------------------------!
+      leaf_scatter_tir(ipft) = 1.d0 - leaf_emiss_tir(ipft)
+      wood_scatter_tir(ipft) = 1.d0 - wood_emiss_tir(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -873,6 +878,7 @@ subroutine init_can_air_params()
                              , gbhmos_min            & ! intent(out)
                              , gbhmos_min8           & ! intent(out)
                              , veg_height_min        & ! intent(out)
+                             , veg_height_min8       & ! intent(out)
                              , minimum_canopy_depth  & ! intent(out)
                              , minimum_canopy_depth8 & ! intent(out)
                              , exar                  & ! intent(out)
@@ -883,8 +889,12 @@ subroutine init_can_air_params()
                              , ugbmin8               & ! intent(out)
                              , ubmin8                & ! intent(out)
                              , ez8                   & ! intent(out)
+                             , vh2vr8                & ! intent(out)
                              , vh2dh8                & ! intent(out)
                              , cdrag0                & ! intent(out)
+                             , cdrag1                & ! intent(out)
+                             , cdrag2                & ! intent(out)
+                             , cdrag3                & ! intent(out)
                              , pm0                   & ! intent(out)
                              , c1_m97                & ! intent(out)
                              , c2_m97                & ! intent(out)
@@ -898,6 +908,9 @@ subroutine init_can_air_params()
                              , cs_dense0             & ! intent(out)
                              , gamma_clm4            & ! intent(out)
                              , cdrag08               & ! intent(out)
+                             , cdrag18               & ! intent(out)
+                             , cdrag28               & ! intent(out)
+                             , cdrag38               & ! intent(out)
                              , pm08                  & ! intent(out)
                              , c1_m978               & ! intent(out)
                              , c2_m978               & ! intent(out)
@@ -1175,14 +1188,22 @@ subroutine init_can_air_params()
    ! Weil (1999).  Full reference:                                                         !
    !                                                                                       !
    ! Massman, W. J., 1997: An analytical one-dimensional model of momentum transfer by     !
-   !    vegetation of arbitrary structure.  Boundary Layer Meteorology, 83, 407-421.       !
+   !    vegetation of arbitrary structure.  Boundary-Layer Meteorol., 83, 407-421.         !
    !                                                                                       !
    ! Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order clos-  !
    !    ure model turbulence statistics and the Lagrangian time scale within and above     !
-   !    plant canopies of arbitrary structure.  Boundary Layer Meteorology, 91, 81-107.    !
+   !    plant canopies of arbitrary structure.  Boundary-Layer Meteorol., 91, 81-107.      !
+   !                                                                                       !
+   ! Wohlfahrt, G., and A. Cernusca, 2002: Momentum transfer by a mountain meadow canopy:  !
+   !    a simulation analysis based on Massman's (1997) model.  Boundary-Layer Meteorol.,  !
+   !    103, 391-407.
    !---------------------------------------------------------------------------------------!
    !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
    cdrag0    = 0.2
+   !----- Values from re-fit of the data used by WC02. ------------------------------------!
+   cdrag1    = 0.086
+   cdrag2    = 1.192
+   cdrag3    = 0.480
    !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
    pm0       = 1.0
    !----- Surface drag parameters (Massman 1997). -----------------------------------------!
@@ -1249,12 +1270,14 @@ subroutine init_can_air_params()
 
 
    !----- Set the double precision variables. ---------------------------------------------!
+   veg_height_min8       = dble(veg_height_min      )
    minimum_canopy_depth8 = dble(minimum_canopy_depth)
    exar8                 = dble(exar                )
    ubmin8                = dble(ubmin               )
    ugbmin8               = dble(ugbmin              )
    ustmin8               = dble(ustmin              )
    ez8                   = dble(ez                  )
+   vh2vr8                = dble(vh2vr               )
    vh2dh8                = dble(vh2dh               )
    bl798                 = dble(bl79                )
    csm8                  = dble(csm                 )
@@ -1278,25 +1301,28 @@ subroutine init_can_air_params()
    atetf8                = dble(atetf               )
    z0moz0h8              = dble(z0moz0h             )
    z0hoz0m8              = dble(z0hoz0m             )
-   aflat_lami8           = dble(aflat_lami          ) 
-   nflat_lami8           = dble(nflat_lami          ) 
-   aflat_turb8           = dble(aflat_turb          ) 
-   nflat_turb8           = dble(nflat_turb          ) 
-   bflat_lami8           = dble(bflat_lami          ) 
-   mflat_lami8           = dble(mflat_lami          ) 
-   bflat_turb8           = dble(bflat_turb          ) 
-   mflat_turb8           = dble(mflat_turb          ) 
-   ocyli_lami8           = dble(ocyli_lami          ) 
-   acyli_lami8           = dble(acyli_lami          ) 
-   ncyli_lami8           = dble(ncyli_lami          ) 
-   ocyli_turb8           = dble(ocyli_turb          ) 
-   acyli_turb8           = dble(acyli_turb          ) 
-   ncyli_turb8           = dble(ncyli_turb          ) 
-   bcyli_lami8           = dble(bcyli_lami          ) 
-   mcyli_lami8           = dble(mcyli_lami          ) 
-   bcyli_turb8           = dble(bcyli_turb          ) 
-   mcyli_turb8           = dble(mcyli_turb          ) 
+   aflat_lami8           = dble(aflat_lami          )
+   nflat_lami8           = dble(nflat_lami          )
+   aflat_turb8           = dble(aflat_turb          )
+   nflat_turb8           = dble(nflat_turb          )
+   bflat_lami8           = dble(bflat_lami          )
+   mflat_lami8           = dble(mflat_lami          )
+   bflat_turb8           = dble(bflat_turb          )
+   mflat_turb8           = dble(mflat_turb          )
+   ocyli_lami8           = dble(ocyli_lami          )
+   acyli_lami8           = dble(acyli_lami          )
+   ncyli_lami8           = dble(ncyli_lami          )
+   ocyli_turb8           = dble(ocyli_turb          )
+   acyli_turb8           = dble(acyli_turb          )
+   ncyli_turb8           = dble(ncyli_turb          )
+   bcyli_lami8           = dble(bcyli_lami          )
+   mcyli_lami8           = dble(mcyli_lami          )
+   bcyli_turb8           = dble(bcyli_turb          )
+   mcyli_turb8           = dble(mcyli_turb          )
    cdrag08               = dble(cdrag0              )
+   cdrag18               = dble(cdrag1              )
+   cdrag28               = dble(cdrag2              )
+   cdrag38               = dble(cdrag3              )
    pm08                  = dble(pm0                 )
    c1_m978               = dble(c1_m97              )
    c2_m978               = dble(c2_m97              )
@@ -1852,8 +1878,8 @@ subroutine init_decomp_params()
    rh_low_temp    = 18.0 + t00
    rh_high_temp   = 45.0 + t00
    rh_decay_dry   = 12.0
-   rh_decay_wet   = 36.0
-   rh_dry_smoist  = 0.48
+   rh_decay_wet   = 24.0
+   rh_dry_smoist  = 0.40
    rh_wet_smoist  = 0.98
    !---------------------------------------------------------------------------------------!
 
@@ -4188,10 +4214,14 @@ subroutine init_soil_coms
                              , dewmax                & ! intent(out)
                              , soil_rough            & ! intent(out)
                              , snow_rough            & ! intent(out)
+                             , ny07_eq04_a           & ! intent(out)
+                             , ny07_eq04_m           & ! intent(out)
                              , tiny_sfcwater_mass    & ! intent(out)
                              , infiltration_method   & ! intent(out)
                              , soil_rough8           & ! intent(out)
                              , snow_rough8           & ! intent(out)
+                             , ny07_eq04_a8          & ! intent(out)
+                             , ny07_eq04_m8          & ! intent(out)
                              , freezecoef            & ! intent(out)
                              , freezecoef8           & ! intent(out)
                              , sldrain               & ! intent(out)
@@ -4237,12 +4267,29 @@ subroutine init_soil_coms
    water_stab_thresh   = 5.0    ! Minimum water mass to be considered stable     [   kg/m2]
    snowmin             = 5.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
    dewmax              = 3.0e-5 ! Maximum dew flux rate (deprecated)             [ kg/m2/s]
-   soil_rough          = 0.05   ! Soil roughness height                          [       m]
-   snow_rough          = 0.001  ! Snowcover roughness height                     [       m]
+   soil_rough          = 0.01   ! Soil roughness height                          [       m]
+   snow_rough          = 0.0024 ! Snowcover roughness height                     [       m]
    tiny_sfcwater_mass  = 1.0e-3 ! Minimum allowed mass in temporary layers       [   kg/m2]
    infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
    freezecoef          = 7.0    ! Coeff. for infiltration of frozen water        [     ---]
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for fraction covered with snow, which is based on:                     !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
+   !                                                                                       !
+   !    These are the parameters in equation 4.  Fresh snow density is defined at          !
+   ! consts_coms.f90                                                                       !
+   !---------------------------------------------------------------------------------------!
+   ny07_eq04_a = 2.5   ! the coefficient next to soil roughness.
+   ny07_eq04_m = 1.0   ! m
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -4613,9 +4660,11 @@ subroutine init_soil_coms
       soil8(nsoil)%slpotld   = dble(soil(nsoil)%slpotld  )
       soil8(nsoil)%slpotfr   = dble(soil(nsoil)%slpotfr  )
    end do
-   soil_rough8 = dble(soil_rough)
-   snow_rough8 = dble(snow_rough)
-   freezecoef8 = dble(freezecoef)
+   soil_rough8  = dble(soil_rough )
+   snow_rough8  = dble(snow_rough )
+   ny07_eq04_a8 = dble(ny07_eq04_a)
+   ny07_eq04_m8 = dble(ny07_eq04_m) 
+   freezecoef8  = dble(freezecoef )
 
    !---------------------------------------------------------------------------------------!
    !     Find the double precision version of the drainage slope, and find and save the    !

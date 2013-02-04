@@ -242,16 +242,20 @@ module soil_coms
    !    These following variables will behave as parameters, but they are initialized at   !
    ! init_soil_coms (ed_params.f90), or through the XML config file.                       !
    !---------------------------------------------------------------------------------------!
-   real         :: soil_rough          ! soil roughness height                   [       m]
-   real         :: snow_rough          ! snowcover roughness height              [       m]
+   real(kind=4) :: soil_rough          ! soil roughness height                   [       m]
+   real(kind=4) :: snow_rough          ! snowcover roughness height              [       m]
+   real(kind=4) :: ny07_eq04_a         ! parameter a for snow fraction           [     ---]
+   real(kind=4) :: ny07_eq04_m         ! parameter m for snow fraction           [     ---]
    real(kind=8) :: soil_rough8         ! soil roughness height                   [       m]
    real(kind=8) :: snow_rough8         ! snowcover roughness height              [       m]
-   real         :: dewmax              ! Maximum dew flux rate (deprecated)      [ kg/m2/s]
-   real         :: water_stab_thresh   ! stability threshold for RK4 integrator  [   kg/m2]
-   real         :: tiny_sfcwater_mass  ! Min. mass allowed in temporary layers   [   kg/m2]
-   real         :: snowmin             ! Min. snow mass needed to create new lyr [   kg/m2]
+   real(kind=8) :: ny07_eq04_a8        ! parameter a for snow fraction           [     ---]
+   real(kind=8) :: ny07_eq04_m8        ! parameter m for snow fraction           [     ---]
+   real(kind=4) :: dewmax              ! Maximum dew flux rate (deprecated)      [ kg/m2/s]
+   real(kind=4) :: water_stab_thresh   ! stability threshold for RK4 integrator  [   kg/m2]
+   real(kind=4) :: tiny_sfcwater_mass  ! Min. mass allowed in temporary layers   [   kg/m2]
+   real(kind=4) :: snowmin             ! Min. snow mass needed to create new lyr [   kg/m2]
    integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
-   real         :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
+   real(kind=4) :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
    real(kind=8) :: freezecoef8         ! Coeff. for infiltration of frozen water [     ---]
    !---------------------------------------------------------------------------------------!
 

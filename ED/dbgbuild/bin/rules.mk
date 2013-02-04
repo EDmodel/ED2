@@ -531,7 +531,7 @@ update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
 utils_c.o: $(ED_UTILS)/utils_c.c
 	/bin/rm -f $(<F:.c=.c)
 	/bin/cp -f $< $(<F:.c=.c)
-	$(CXX_COMMAND) $<
+	$(CXX_COMMAND) $(<F:.c=.c)
 
 utils_f.o: $(ED_UTILS)/utils_f.f90
 	/bin/rm -f $(<F:.f90=.f90)

@@ -233,7 +233,7 @@ module leaf_coms
    real(kind=4), parameter :: z0fac_water     = .016 / grav ! Coefficient before ustar²
    real(kind=4), parameter :: min_waterrough  = .0001       ! Min. water roughness height
    real(kind=4), parameter :: waterrough      = .0001       ! Water roughness height
-   real(kind=4), parameter :: snowrough       = .001        ! Snow roughness height
+   real(kind=4), parameter :: snowrough       = .0024       ! Snow roughness height
    !----- Double precision version of some variables above. -------------------------------!
    real(kind=8), parameter :: z0fac_water8    = dble(z0fac_water   )
    real(kind=8), parameter :: min_waterrough8 = dble(min_waterrough)
@@ -411,6 +411,22 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    real(kind=4)              , parameter :: ggsoil0 = 1. / 38113.
    real(kind=4)              , parameter :: kksoil  = 13.515
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for fraction covered with snow, which is based on:                     !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
+   !                                                                                       !
+   !    These are the parameters in equation 4.  Fresh snow density is defined at          !
+   ! consts_coms.f90                                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)              , parameter :: ny07_eq04_a = 2.5
+   real(kind=4)              , parameter :: ny07_eq04_m = 1.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1008,7 +1024,7 @@ module leaf_coms
    ! the unlikely case in which Newton's method fails, switch back to modified Regula      !
    ! Falsi method (Illinois).                                                              !
    !---------------------------------------------------------------------------------------!
-   real function zoobukhov(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+   real function zoobukhov(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
       use therm_lib, only : toler  & ! intent(in)
                           , maxfpo & ! intent(in)
                           , maxit  ! ! intent(in)
@@ -1016,12 +1032,12 @@ module leaf_coms
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real   , intent(in) :: rib       ! Bulk Richardson number                    [   ---]
-      real   , intent(in) :: zref      ! Reference height                          [     m]
+      real   , intent(in) :: zstar     ! Reference height                          [     m]
       real   , intent(in) :: rough     ! Roughness length scale                    [     m]
-      real   , intent(in) :: zoz0m     ! zref/roughness(momentum)                  [   ---]
-      real   , intent(in) :: lnzoz0m   ! ln[zref/roughness(momentum)]              [   ---]
-      real   , intent(in) :: zoz0h     ! zref/roughness(heat)                      [   ---]
-      real   , intent(in) :: lnzoz0h   ! ln[zref/roughness(heat)]                  [   ---]
+      real   , intent(in) :: zoz0m     ! zstar/roughness(momentum)                 [   ---]
+      real   , intent(in) :: lnzoz0m   ! ln[zstar/roughness(momentum)]             [   ---]
+      real   , intent(in) :: zoz0h     ! zstar/roughness(heat)                     [   ---]
+      real   , intent(in) :: lnzoz0h   ! ln[zstar/roughness(heat)]                 [   ---]
       logical, intent(in) :: stable    ! Flag... This surface layer is stable      [   T|F]
       !----- Local variables. -------------------------------------------------------------!
       real                :: ribuse    ! Richardson number to use                  [   ---]
@@ -1040,6 +1056,7 @@ module leaf_coms
       real                :: funa      ! Smallest guess function.                  [   ---]
       real                :: funz      ! Largest guess function.                   [   ---]
       real                :: delta     ! Aux. var --- 2nd guess for bisection      [   ---]
+      real                :: coeff     ! RiB * zstar / (Pr * (zstar - z0))         [   ---]
       real                :: zetamin   ! Minimum zeta for stable case.             [   ---]
       real                :: zetamax   ! Maximum zeta for unstable case.           [   ---]
       real                :: zetasmall ! Zeta dangerously close to zero            [   ---]
@@ -1065,14 +1082,14 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       select case (istar)
       case (2,4)
-         ribuse = min(rib, (1.0 - toler) * tprandtl / (beta_s * (1.0 - min(z0moz,z0hoz))))
+         ribuse = min(rib, (1.0 - toler) * tprandtl / beta_s)
 
          !---------------------------------------------------------------------------------!
-         !    Stable case, using Oncley and Dudhia, we can solve it analytically.          !
+         !    Stable case, use Oncley and Dudhia, we can solve it analytically.            !
          !---------------------------------------------------------------------------------!
-         if (stable .and. istar == 2) then
-            zoobukhov = ribuse * min(lnzoz0m,lnzoz0h)                                      &
-                      / (tprandtl - beta_s * (1.0 - min(z0moz,z0hoz)) *ribuse)
+         if (stable .and. isfclyrm == 2) then
+            zoobukhov = ribuse * zstar * min(lnzoz0m,lnzoz0h)                              &
+                      / ( (zstar-rough) * (tprandtl - beta_s * ribuse) )
             return
          end if
          !---------------------------------------------------------------------------------!
@@ -1083,17 +1100,26 @@ module leaf_coms
 
 
 
+
+      !------------------------------------------------------------------------------------!
+      !     Define the coefficient Ri * zstar / [Pr * (zstar-z0)]                          !
+      !------------------------------------------------------------------------------------!
+      coeff = ribuse * zstar / (tprandtl * (zstar - rough))
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !     If the bulk Richardson number is zero or almost zero, then we rather just      !
       ! assign z/L to be the one similar to Oncley and Dudhia (1995).  This saves time and !
       ! also avoids the risk of having zeta with the opposite sign.                        !
       !------------------------------------------------------------------------------------!
-      zetasmall = ribuse * min(lnzoz0m,lnzoz0h)
+      zetasmall = coeff * min(lnzoz0m,lnzoz0h)
       if (ribuse <= 0. .and. zetasmall > - z0moz0h * toler) then
-         zoobukhov = zetasmall / tprandtl
+         zoobukhov = zetasmall
          return
       elseif (ribuse > 0. .and. zetasmall < z0moz0h * toler) then
-         zoobukhov = zetasmall / (tprandtl - beta_s * (1.0 - min(z0moz,z0hoz)) * ribuse)
+         zoobukhov = zetasmall / (1.0 - beta_s * ribuse / tprandtl)
          return
       else
          zetamin    =  toler
@@ -1105,37 +1131,40 @@ module leaf_coms
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       !write(unit=89,fmt='(60a1)') ('-',itn=1,60)
       !write(unit=89,fmt='(5(a,1x,f11.4,1x),a,l1)')                                         &
-      !   'Input values: Rib =',rib,'zref=',zref,'rough=',rough,'zoz0=',zoz0                &
+      !   'Input values: Rib =',rib,'zstar=',zstar,'rough=',rough,'zoz0=',zoz0              &
       !           ,'lnzoz0=',lnzoz0,'stable=',stable
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
 
-      !----- Defining some values that won't change during the iterative method. ----------!
-      z0moz = 1. / zoz0m
-      z0hoz = 1. / zoz0h
 
       !------------------------------------------------------------------------------------!
       !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
       ! Ri is too positive.                                                                !
       !------------------------------------------------------------------------------------!
-      zetaa = ribuse * lnzoz0m / tprandtl
+      zetaa = zetasmall
+      !------------------------------------------------------------------------------------!
 
-      !----- Finding the function and its derivative. -------------------------------------!
+
+
+      !----- Find the function and its derivative. ----------------------------------------!
       zeta0m   = zetaa * z0moz
       zeta0h   = zetaa * z0hoz
       fm       = lnzoz0m - psim(zetaa,stable) + psim(zeta0m,stable)
       fh       = lnzoz0h - psih(zetaa,stable) + psih(zeta0h,stable)
       dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaa,stable)
       dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaa,stable)
-      funa     = ribuse * fm * fm / (tprandtl * fh) - zetaa
-      deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                   &
-               / (tprandtl * fh * fh) - 1.
+      funa     = coeff * fm * fm / fh - zetaa
+      deriv    = coeff * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / (fh * fh) - 1.
+      !------------------------------------------------------------------------------------!
 
-      !----- Copying just in case it fails at the first iteration. ------------------------!
+
+      !----- Copy just in case it fails at the first iteration. ---------------------------!
       zetaz = zetaa
       fun   = funa
+      !------------------------------------------------------------------------------------!
+
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1167,21 +1196,25 @@ module leaf_coms
             exit newloop
          end if
 
-         !----- Copying the previous guess ------------------------------------------------!
+         !----- Copy the previous guess ---------------------------------------------------!
          zetaa = zetaz
          funa  = fun
-         !----- New guess, its function and derivative evaluation -------------------------!
-         zetaz = zetaa - fun/deriv
+         !---------------------------------------------------------------------------------!
 
+
+         !----- New guess, its function and derivative evaluation -------------------------!
+         zetaz    = zetaa - fun/deriv
          zeta0m   = zetaz * z0moz
          zeta0h   = zetaz * z0hoz
          fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
          fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
          dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaz,stable)
          dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaz,stable)
-         fun      = ribuse * fm * fm / (tprandtl * fh) - zetaz
-         deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                &
-                  / (tprandtl * fh * fh) - 1.
+         fun      = coeff * fm * fm / fh - zetaz
+         deriv    = coeff * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / (fh * fh) - 1.
+         !---------------------------------------------------------------------------------!
+
+
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1200,6 +1233,11 @@ module leaf_coms
             return
          end if
       end do newloop
+      !------------------------------------------------------------------------------------!
+
+
+
+
 
       !------------------------------------------------------------------------------------!
       !     If we reached this point then it's because Newton's method failed or it has    !
@@ -1244,7 +1282,7 @@ module leaf_coms
             zeta0h   = zetaz * z0hoz
             fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
             fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
-            funz     = ribuse * fm * fm / (tprandtl * fh) - zetaz
+            funz     = coeff * fm * fm / fh - zetaz
             zside    = funa * funz < 0.0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1259,7 +1297,7 @@ module leaf_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(a)') '    No second guess for you...'
             write (unit=*,fmt='(a)') '=================================================='
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref   ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar  =',zstar  ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
             write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse =',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
@@ -1282,12 +1320,13 @@ module leaf_coms
          converged = abs(zoobukhov-zetaa) < toler * abs(zoobukhov)
          if (converged) exit bisloop
 
-         !------ Finding the new function -------------------------------------------------!
+         !------ Update function evaluation. ----------------------------------------------!
          zeta0m   = zoobukhov * z0moz
          zeta0h   = zoobukhov * z0hoz
          fm       = lnzoz0m - psim(zoobukhov,stable) + psim(zeta0m,stable)
          fh       = lnzoz0h - psih(zoobukhov,stable) + psih(zeta0h,stable)
-         fun      = ribuse * fm * fm / (tprandtl * fh) - zoobukhov
+         fun      = coeff * fm * fm / fh - zoobukhov
+         !---------------------------------------------------------------------------------!
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1297,20 +1336,20 @@ module leaf_coms
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
-         !------ Defining my new interval based on the intermediate value theorem. --------!
+         !------ Define new interval based on the intermediate value theorem. -------------!
          if (fun*funa < 0. ) then
             zetaz = zoobukhov
             funz  = fun
             !----- If we are updating zside again, modify aside (Illinois method) ---------!
             if (zside) funa = funa * 0.5
-            !----- We just updated zside, setting zside to true. --------------------------!
+            !----- We just updated zside, set zside to true. ------------------------------!
             zside = .true.
          else
             zetaa = zoobukhov
             funa  = fun
             !----- If we are updating aside again, modify aside (Illinois method) ---------!
             if (.not. zside) funz = funz * 0.5
-            !----- We just updated aside, setting aside to true. --------------------------!
+            !----- We just updated aside, set aside to true. ------------------------------!
             zside = .false.
          end if
       end do bisloop
@@ -1324,7 +1363,7 @@ module leaf_coms
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar           [     m] =',zstar
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
          write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0m         [   ---] =',lnzoz0m

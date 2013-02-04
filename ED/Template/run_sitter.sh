@@ -37,7 +37,7 @@ situtils="${here}/sit_utils"
 
 
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
+bioinit='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/site_bio_data'
 #------------------------------------------------------------------------------------------#
 
 
@@ -87,7 +87,7 @@ fixqueue=0
 #  potveg  -- Path where to look for initialisation files in case waitpot = 'y'.           #
 #------------------------------------------------------------------------------------------#
 waitpot='n'
-potveg='/n/moorcroft_data/data/ed2_data/restarts_sci_006/potveg'
+potveg='/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/potveg'
 #------------------------------------------------------------------------------------------#
 
 
@@ -96,7 +96,7 @@ potveg='/n/moorcroft_data/data/ed2_data/restarts_sci_006/potveg'
 # restart     -- Path to where to copy restart files in case copyrestart = 'y'.            #
 #------------------------------------------------------------------------------------------#
 copyrestart='n'
-restart='/n/moorcroft_data/mlongo/ed2_data/restarts_XXX'
+restart='/n/gstore/Labs/moorcroft_lab_protected/mlongo/ed2_data/restarts_XXX'
 #------------------------------------------------------------------------------------------#
 
 
@@ -115,7 +115,7 @@ situation="${situtils}/situation.txt"
 
 
 #------ Calculator. -----------------------------------------------------------------------#
-ccc='/n/Moorcroft_Lab/Users/mlongo/util/calc.sh'  # Calculator
+ccc="${HOME}/util/calc.sh"  # Calculator
 #------------------------------------------------------------------------------------------#
 
 

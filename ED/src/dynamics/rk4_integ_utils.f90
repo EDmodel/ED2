@@ -1228,6 +1228,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%veg_rough        = sourcep%veg_rough
    targetp%opencan_frac     = sourcep%opencan_frac
    targetp%total_sfcw_depth = sourcep%total_sfcw_depth
+   targetp%total_sfcw_mass  = sourcep%total_sfcw_mass
    targetp%snowfac          = sourcep%snowfac
 
    targetp%ggbare           = sourcep%ggbare

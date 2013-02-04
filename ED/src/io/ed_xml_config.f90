@@ -334,8 +334,12 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('diffuse_backscatter_vis','pft',i,rval,texist)
            if(texist) leaf_backscatter_vis(myPFT) = real(rval)
            call getConfigREAL  ('emis_v','pft',i,rval,texist)
-           if(texist) leaf_emis(myPFT) = rval
-           
+           if(texist) leaf_emiss_tir(myPFT) = rval
+           call getConfigREAL  ('leaf_emiss_tir','pft',i,rval,texist)
+           if(texist) leaf_emiss_tir(myPFT) = rval
+              call getConfigREAL  ('wood_emiss_tir','pft',i,rval,texist)
+           if(texist) wood_emiss_tir(myPFT) = rval
+        
 
 !!! PFT VARIABLES THAT ARE ACTUALLY IN DECOMP
            call getConfigREAL  ('f_labile','pft',i,rval,texist)
@@ -1033,7 +1037,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("water_conductance",water_conductance(i))
         call putConfigREAL8("leaf_scatter_vis",leaf_scatter_vis(i))
         call putConfigREAL8("diffuse_backscatter_vis",leaf_backscatter_vis(i))
-        call putConfigREAL8("emis_v",leaf_emis(i))
+        call putConfigREAL8("emis_v",leaf_emiss_tir(i))
         call putConfigREAL("f_labile",f_labile(i))
         call libxml2f90_ll_closetag("pft")
      endif

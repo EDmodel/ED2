@@ -208,6 +208,8 @@ Module rconstants
    real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
    real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m³]
    real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m³/kg]
+   real, parameter :: fsdns    = 1.000e2      ! Fresh snow density              [    kg/m³]
+   real, parameter :: fsdnsi   = 1./fsdns     ! Inverse of liquid water density [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
@@ -418,6 +420,8 @@ Module rconstants
    real(kind=8), parameter :: idnsi8          = dble(idnsi         )
    real(kind=8), parameter :: fdns8           = dble(fdns          )
    real(kind=8), parameter :: fdnsi8          = dble(fdnsi         )
+   real(kind=8), parameter :: fsdns8          = dble(fsdns         )
+   real(kind=8), parameter :: fsdnsi8         = dble(fsdnsi        )
    real(kind=8), parameter :: cice8           = dble(cice          )
    real(kind=8), parameter :: cicei8          = dble(cicei         )
    real(kind=8), parameter :: t3ple8          = dble(t3ple         )

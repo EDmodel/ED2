@@ -2909,6 +2909,7 @@ module fuse_fiss_utils
       real                                :: light_toler     ! Light level Relative toler.
       real                                :: old_area        ! For area conservation check
       real                                :: new_area        ! For area conservation check
+      real                                :: now_area        ! Area for LAI80
       real                                :: old_lai_tot     ! Old total LAI
       real                                :: old_nplant_tot  ! Old total nplant
       real                                :: new_lai_tot     ! New total LAI
@@ -3442,6 +3443,27 @@ module fuse_fiss_utils
                   if (npatches_new <= abs(maxpatch)) exit mainfuseloopa
                   !------------------------------------------------------------------------!
 
+
+
+                  !------------------------------------------------------------------------!
+                  !     Find the LAI that corresponds to 80% of the maximum LAI, to        !
+                  ! avoid relaxing too much for forests.                                   !
+                  !------------------------------------------------------------------------!
+                  dark_lai80 = 0.
+                  now_area   = 0.
+                  do ipa=1,csite%npatches
+                     if (fuse_table(ipa)) then
+                        now_area   = now_area + csite%area(ipa)
+                        dark_lai80 = dark_lai80                                            &
+                                   + 0.80 * sum(csite%cumlai_profile(:,1,ipa))             &
+                                   * csite%area(ipa)
+                     end if
+                  end do
+                  if (now_area > 0.) dark_lai80 = dark_lai80 / now_area
+                  !------------------------------------------------------------------------!
+
+
+
                   !----- Increment tolerance ----------------------------------------------!
                   sunny_toler =     sunny_toler * sunny_cumlai_mult
                   dark_toler  = max(dark_toler  * dark_cumlai_mult , dark_lai80 )
@@ -3764,6 +3786,25 @@ module fuse_fiss_utils
                if ( (.not. dont_force_fuse) .and. npatches_new <= abs(maxpatch)) then
                   exit mainfuseloop
                end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Find the LAI that corresponds to 80% of the maximum LAI, to           !
+               ! avoid relaxing too much for forests.                                      !
+               !---------------------------------------------------------------------------!
+               dark_lai80 = 0.
+               now_area   = 0.
+               do ipa=1,csite%npatches
+                  if (fuse_table(ipa)) then
+                     now_area   = now_area + csite%area(ipa)
+                     dark_lai80 = dark_lai80                                               &
+                                + 0.80 * sum(csite%cumlai_profile(:,1,ipa))                &
+                                * csite%area(ipa)
+                  end if
+               end do
+               if (now_area > 0.) dark_lai80 = dark_lai80 / now_area
                !---------------------------------------------------------------------------!
 
                !----- Increment tolerance -------------------------------------------------!
@@ -4419,14 +4460,14 @@ module fuse_fiss_utils
                                                  + csite%fmean_albedo             (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-      csite%fmean_albedo_beam           (recp) = ( csite%fmean_albedo_beam        (recp)   &
+      csite%fmean_albedo_par            (recp) = ( csite%fmean_albedo_par         (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%fmean_albedo_beam        (donp)   &
+                                                 + csite%fmean_albedo_par         (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-      csite%fmean_albedo_diff           (recp) = ( csite%fmean_albedo_diff        (recp)   &
+      csite%fmean_albedo_nir            (recp) = ( csite%fmean_albedo_nir         (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%fmean_albedo_diff        (donp)   &
+                                                 + csite%fmean_albedo_nir         (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
       csite%fmean_rlong_albedo          (recp) = ( csite%fmean_rlong_albedo       (recp)   &
@@ -4759,14 +4800,14 @@ module fuse_fiss_utils
                                                  + csite%dmean_albedo             (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%dmean_albedo_beam        (recp) = ( csite%dmean_albedo_beam        (recp)   &
+         csite%dmean_albedo_par         (recp) = ( csite%dmean_albedo_par         (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%dmean_albedo_beam        (donp)   &
+                                                 + csite%dmean_albedo_par         (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%dmean_albedo_diff        (recp) = ( csite%dmean_albedo_diff        (recp)   &
+         csite%dmean_albedo_nir         (recp) = ( csite%dmean_albedo_nir         (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%dmean_albedo_diff        (donp)   &
+                                                 + csite%dmean_albedo_nir         (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%dmean_rlong_albedo       (recp) = ( csite%dmean_rlong_albedo       (recp)   &
@@ -5187,14 +5228,14 @@ module fuse_fiss_utils
                                                  + csite%mmean_albedo             (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%mmean_albedo_beam        (recp) = ( csite%mmean_albedo_beam        (recp)   &
+         csite%mmean_albedo_par         (recp) = ( csite%mmean_albedo_par         (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%mmean_albedo_beam        (donp)   &
+                                                 + csite%mmean_albedo_par         (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%mmean_albedo_diff        (recp) = ( csite%mmean_albedo_diff        (recp)   &
+         csite%mmean_albedo_nir         (recp) = ( csite%mmean_albedo_nir         (recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%mmean_albedo_diff        (donp)   &
+                                                 + csite%mmean_albedo_nir         (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%mmean_rlong_albedo       (recp) = ( csite%mmean_rlong_albedo       (recp)   &
@@ -5669,14 +5710,14 @@ module fuse_fiss_utils
                                                  + csite%qmean_albedo           (:,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%qmean_albedo_beam      (:,recp) = ( csite%qmean_albedo_beam      (:,recp)   &
+         csite%qmean_albedo_par       (:,recp) = ( csite%qmean_albedo_par       (:,recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%qmean_albedo_beam      (:,donp)   &
+                                                 + csite%qmean_albedo_par       (:,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
-         csite%qmean_albedo_diff      (:,recp) = ( csite%qmean_albedo_diff      (:,recp)   &
+         csite%qmean_albedo_nir       (:,recp) = ( csite%qmean_albedo_nir       (:,recp)   &
                                                  * csite%area                     (recp)   &
-                                                 + csite%qmean_albedo_diff      (:,donp)   &
+                                                 + csite%qmean_albedo_nir       (:,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%qmean_rlong_albedo     (:,recp) = ( csite%qmean_rlong_albedo     (:,recp)   &
