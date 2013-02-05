@@ -23,7 +23,8 @@ subroutine count_pft_xml_config(filename,maxpft)
   character(1),allocatable    ::  readstring(:)
   allocate(readstring(10))
   deallocate(readstring)
-print*,'count xml pft : ',trim(filename)
+!print*,'count xml pft : ',trim(filename)
+print*,'Counting PFT(s) in XML: ',trim(filename)
   !! Open File and Init
   call libxml2f90__setformat(1) !set to pure XML but with blank removal
   call libxml2f90__readin_file(trim(filename),'CONFIG')
@@ -195,7 +196,7 @@ recursive subroutine read_ed_xml_config(filename)
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
   call libxml2f90__ll_exist('DOWN','pft',npft)    !get number of pft tags
-  print*,"NPFT = ",npft
+!  print*,"NPFT = ",npft ! not needed, already printed in log file
   print*,"PFT's READ FROM FILE ::",npft
   if(npft .ge. 1) then
      do i=1,npft
@@ -209,6 +210,9 @@ recursive subroutine read_ed_xml_config(filename)
 !           else
 !              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
            endif
+           !
+           ! *** Read data from XML config file and update parameter values ***
+           !
            call getConfigINT('include_pft_ag','pft',i,ival,texist)
            if(texist) include_pft_ag(myPFT) = ival == 1
            call getConfigSTRING('name','pft',i,cval,texist)
@@ -282,8 +286,12 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_lt','pft',i,rval,texist)
            if(texist) treefall_s_ltht(myPFT) = real(rval)
+           ! Dark respiration factor (Rd0 = Rd/Vm0) is being depreciated
            call getConfigREAL  ('dark_respiration_factor','pft',i,rval,texist)
            if(texist) dark_respiration_factor(myPFT) = real(rval)
+           ! Read in base leaf respiration Rd0 from XML file in place of Dark Resp Factor
+           call getConfigREAL  ('Rd0','pft',i,rval,texist)
+           if(texist) Rd0(myPFT) = real(rval)
            call getConfigREAL  ('qsw','pft',i,rval,texist)
            if(texist) qsw(myPFT) = real(rval)
            call getConfigREAL  ('sapwood_ratio','pft',i,rval,texist)
@@ -340,8 +348,15 @@ recursive subroutine read_ed_xml_config(filename)
 !!! PFT VARIABLES THAT ARE ACTUALLY IN DECOMP
            call getConfigREAL  ('f_labile','pft',i,rval,texist)
            if(texist) f_labile(myPFT) = real(rval)
-
-           print*,i,myPFT,trim(cval),SLA(myPFT)
+           
+           ! ***** Print select PFT info to the log *****
+           !print*,i,myPFT,trim(cval),SLA(myPFT)
+           print*,i,myPFT,trim(cval)," SLA: ",SLA(myPFT)
+           print*,i,myPFT,trim(cval)," Vm0: ",Vm0(myPFT) 
+           print*,i,myPFT,trim(cval)," quantum_eff.: ",Vm0(myPFT)
+           print*,i,myPFT,trim(cval)," Stomatal Slope: ",stomatal_slope(myPFT)
+           print*,i,myPFT,trim(cval)," Rd0: ",Rd0(myPFT)
+           print*,i,myPFT,trim(cval)," root_respiration_factor: ",root_respiration_factor(myPFT)
         else
            print*,"INVALID PFT READ FROM CONFIG FILE ::", myPFT
         endif
@@ -1013,6 +1028,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("treefall_gt",treefall_s_gtht(i))
         call putConfigREAL("treefall_lt",treefall_s_ltht(i))
         call putConfigREAL("dark_respiration_factor",dark_respiration_factor(i))
+        call putConfigREAL("Rd0",Rd0(i))
         call putConfigREAL("qsw",qsw(i))
         call putConfigREAL("c2n_leaf",c2n_leaf(i))
         call putConfigREAL("c2n_recruit",c2n_recruit(i))
