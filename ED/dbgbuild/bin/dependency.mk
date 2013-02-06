@@ -61,8 +61,6 @@ mortality.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 mortality.o: ed_state_vars.mod pft_coms.mod
 multiple_scatter.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 multiple_scatter.o: rk4_coms.mod
-old_twostream_rad.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
-old_twostream_rad.o: rk4_coms.mod
 phenology_aux.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_state_vars.mod
 phenology_aux.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod phenology_coms.mod
 phenology_aux.o: soil_coms.mod
@@ -106,7 +104,7 @@ structural_growth.o: detailed_coms.mod ed_max_dims.mod ed_misc_coms.mod
 structural_growth.o: ed_state_vars.mod ed_therm_lib.mod pft_coms.mod
 structural_growth.o: physiology_coms.mod
 twostream_rad.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
-twostream_rad.o: rk4_coms.mod
+twostream_rad.o: ed_misc_coms.mod rk4_coms.mod
 vegetation_dynamics.o: average_utils.mod consts_coms.mod disturbance_utils.mod
 vegetation_dynamics.o: ed_misc_coms.mod ed_state_vars.mod fuse_fiss_utils.mod
 vegetation_dynamics.o: grid_coms.mod growth_balive.mod mem_polygons.mod
@@ -254,7 +252,7 @@ update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: decomp_coms.mod ed_max_dims.mod ed_misc_coms.mod
 update_derived_props.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
 update_derived_props.o: grid_coms.mod pft_coms.mod soil_coms.mod therm_lib.mod
-utils_c.o: /n/gstore/Labs/moorcroft_lab_protected/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
+utils_c.o: ../../../../EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o
 an_header.mod: an_header.o

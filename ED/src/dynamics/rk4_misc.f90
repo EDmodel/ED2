@@ -3628,6 +3628,8 @@ subroutine print_rk4patch(y,csite,ipa)
    real(kind=4)                    :: pss_wai
    !---------------------------------------------------------------------------------------!
 
+   cpatch => csite%patch(ipa)
+
 
 
    !----- Find the total patch LAI and WAI. -----------------------------------------------!
@@ -3649,8 +3651,6 @@ subroutine print_rk4patch(y,csite,ipa)
    y_can_theiv = thetaeiv8(y%can_theta,y%can_prss,y%can_temp,y_can_rvap,y_can_rvap)
    y_can_vpdef = vpdefil8 (y%can_prss,y%can_temp,y%can_shv,.true.)
    !---------------------------------------------------------------------------------------!
-
-   cpatch => csite%patch(ipa)
 
    write(unit=*,fmt='(80a)') ('=',k=1,80)
    write(unit=*,fmt='(80a)') ('=',k=1,80)

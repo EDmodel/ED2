@@ -30,7 +30,7 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
                                    , leaf_backscatter_tir    & ! intent(in)
                                    , wood_backscatter_tir    ! ! intent(in)
    use consts_coms          , only : stefan8                 ! ! intent(in)
-
+   use ed_misc_coms         , only : current_time            ! ! intent(in)
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -66,19 +66,18 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    real(kind=8), dimension(ncoh+1)                         :: gamm_minus
    real(kind=8), dimension(ncoh+1)                         :: down
    real(kind=8), dimension(ncoh+1)                         :: up
-   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: xmat
+   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: mmat
    real(kind=8), dimension(2*ncoh+2)                       :: yvec
-   real(kind=8), dimension(2*ncoh+2)                       :: gvec
-   real(kind=8)                                            :: elai
-   real(kind=8)                                            :: tai
-   real(kind=8)                                            :: etai
-   real(kind=8)                                            :: mu
-   real(kind=8)                                            :: leaf_weight
-   real(kind=8)                                            :: wood_weight
-   real(kind=8)                                            :: beta
-   real(kind=8)                                            :: epsil
-   real(kind=8)                                            :: iota
-   real(kind=8)                                            :: lambda
+   real(kind=8), dimension(2*ncoh+2)                       :: xvec
+   real(kind=8), dimension(ncoh+1)                         :: elai
+   real(kind=8), dimension(ncoh+1)                         :: etai
+   real(kind=8), dimension(ncoh+1)                         :: mu
+   real(kind=8), dimension(ncoh+1)                         :: leaf_weight
+   real(kind=8), dimension(ncoh+1)                         :: wood_weight
+   real(kind=8), dimension(ncoh+1)                         :: beta
+   real(kind=8), dimension(ncoh+1)                         :: epsil
+   real(kind=8), dimension(ncoh+1)                         :: iota
+   real(kind=8), dimension(ncoh+1)                         :: lambda
    real(kind=8)                                            :: iota_g
    real(kind=8)                                            :: black_g
    real(kind=8)                                            :: down_sky
@@ -117,9 +116,8 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    do i=1,ncoh
       ipft = pft(i)
       !----- Area indices, correct LAI by clumping factor. --------------------------------!
-      elai = clumping_factor(ipft) * lai(i)
-      tai  =  lai(i) + wai(i)
-      etai = elai    + wai(i)
+      elai(i) = clumping_factor(ipft) * lai(i)
+      etai(i) = elai(i) + wai(i)
       !------------------------------------------------------------------------------------!
 
 
@@ -127,8 +125,8 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !------------------------------------------------------------------------------------!
       !    The weighting factors are defined by the relative LAI and WAI areas.            !
       !------------------------------------------------------------------------------------!
-      leaf_weight  =  elai / etai
-      wood_weight  = 1.d0 -  leaf_weight
+      leaf_weight(i)  =  elai(i) / etai(i)
+      wood_weight(i)  = 1.d0 -  leaf_weight(i)
       !------------------------------------------------------------------------------------!
 
 
@@ -137,7 +135,8 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !     mu is the corrected mu_bar to account for finite crown area, if it is          !
       ! provided, otherwise, it is just the same as mu_bar.                                !
       !------------------------------------------------------------------------------------!
-      mu = -etai / log( 1.d0 - cai(i) + cai(i) * exp ( -etai / ( cai(i)*mu_bar(ipft) ) ) )
+      mu(i) = - etai(i) / log( 1.d0 - cai(i)                                               &
+                             + cai(i) * exp ( - etai(i) / ( cai(i) * mu_bar(ipft) ) ) )
       !------------------------------------------------------------------------------------!
 
 
@@ -146,8 +145,8 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !      Black is the emission of a black body at the same temperature of the layer.   !
       !  We scale the emission with the weights.                                           !
       !------------------------------------------------------------------------------------!
-      black(i) = cai(i) * stefan8 * ( leaf_weight * leaf_temp(i) ** 4                      &
-                                    + wood_weight * wood_temp(i) ** 4 )
+      black(i) = cai(i) * stefan8 * ( leaf_weight(i) * leaf_temp(i) ** 4                      &
+                                    + wood_weight(i) * wood_temp(i) ** 4 )
       !------------------------------------------------------------------------------------!
 
 
@@ -156,7 +155,8 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !      iota is the single scattering albedo.  Because we assume absorptivity to be   !
       ! the same as emissivity, we use the latter to define it.                            !
       !------------------------------------------------------------------------------------!
-      iota = 1.d0 - ( leaf_weight * leaf_emiss_tir(i) + wood_weight * wood_emiss_tir(i) )
+      iota(i) = 1.d0 - ( leaf_weight(i) * leaf_emiss_tir(i)                                &
+                       + wood_weight(i) * wood_emiss_tir(i) )
       !------------------------------------------------------------------------------------!
 
 
@@ -164,15 +164,15 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !------------------------------------------------------------------------------------!
       !     Beta is the backward scattering of diffuse radiation. Epsil = 1 - 2*beta.      !
       !------------------------------------------------------------------------------------!
-      beta  = leaf_weight * leaf_backscatter_tir(ipft)                                     &
-            + wood_weight * wood_backscatter_tir(ipft)
-      epsil = 1.d0 - 2.d0 * beta
+      beta (i) = leaf_weight(i) * leaf_backscatter_tir(ipft)                               &
+               + wood_weight(i) * wood_backscatter_tir(ipft)
+      epsil(i) = 1.d0 - 2.d0 * beta(i)
       !------------------------------------------------------------------------------------!
 
 
 
       !----- lambda is the coefficient associated with the optical depth. -----------------!
-      lambda = sqrt( ( 1.d0 - epsil*iota ) * ( 1.d0 - iota ) ) / mu
+      lambda(i) = sqrt( ( 1.d0 - epsil(i) * iota(i) ) * ( 1.d0 - iota(i) ) ) / mu(i)
       !------------------------------------------------------------------------------------!
 
 
@@ -181,8 +181,10 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !    gamm_plus and gamm_minus are the coefficients that relate upwelling and down-   !
       ! welling radiation.                                                                 !
       !------------------------------------------------------------------------------------!
-      gamm_plus (i) = 5.d-1 * ( 1.d0 + sqrt( ( 1.d0 - iota ) / ( 1.d0 - epsil*iota ) ) )
-      gamm_minus(i) = 5.d-1 * ( 1.d0 - sqrt( ( 1.d0 - iota ) / ( 1.d0 - epsil*iota ) ) )
+      gamm_plus (i) = 5.d-1 * ( 1.d0 + sqrt( ( 1.d0 -            iota(i) )                 &
+                                           / ( 1.d0 - epsil(i) * iota(i) ) ) )
+      gamm_minus(i) = 5.d-1 * ( 1.d0 - sqrt( ( 1.d0 -            iota(i) )                 &
+                                           / ( 1.d0 - epsil(i) * iota(i) ) ) )
       !------------------------------------------------------------------------------------!
 
 
@@ -190,8 +192,8 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !------------------------------------------------------------------------------------!
       !    expl_plus and expl_minus are the transmitivity of diffuse light.                !
       !------------------------------------------------------------------------------------!
-      expl_plus (i) = exp(   lambda * etai )
-      expl_minus(i) = exp( - lambda * etai )
+      expl_plus (i) = exp(   lambda(i) * etai(i) )
+      expl_minus(i) = exp( - lambda(i) * etai(i) )
       !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
@@ -201,11 +203,21 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    !---------------------------------------------------------------------------------------!
    !     Define some boundary conditions for the vector properties above.                  !
    !---------------------------------------------------------------------------------------!
-   black     (ncoh+1) = 0.d0
-   gamm_plus (ncoh+1) = 5.d-1
-   gamm_minus(ncoh+1) = 5.d-1
-   expl_plus (ncoh+1) = 1.d0
-   expl_minus(ncoh+1) = 1.d0
+   i              = ncoh+1
+   elai       (i) = 0.d0
+   etai       (i) = 0.d0
+   leaf_weight(i) = 5.d-1
+   wood_weight(i) = 5.d-1
+   mu         (i) = 1.d0
+   black      (i) = 0.d0
+   iota       (i) = 1.d0
+   beta       (i) = 0.d0
+   epsil      (i) = 1.d0 - 2.d0 * beta(i)
+   lambda     (i) = 0.d0
+   gamm_plus  (i) = 1.d0
+   gamm_minus (i) = 0.d0
+   expl_plus  (i) = 1.d0
+   expl_minus (i) = 1.d0
    !---------------------------------------------------------------------------------------!
 
 
@@ -215,14 +227,14 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    !     Fill in the right hand side vector (Y) and the matrix (X)                         !
    !---------------------------------------------------------------------------------------!
    !------ Initialise the vector and the matrix.  The matrix is a sparse one... -----------!
-   xmat(:,:)         = 0.d0
+   mmat(:,:)         = 0.d0
    yvec(:)           = 0.d0
    !------ Add the bottom and top boundary conditions. ------------------------------------!
-   xmat(1,1)         = (gamm_minus(1) - iota_g * gamm_plus (1)) * expl_minus(1)
-   xmat(1,2)         = (gamm_plus (1) - iota_g * gamm_minus(1)) * expl_plus (1)
-   xmat(nsiz,nsiz-1) = gamm_plus (ncoh+1)
-   xmat(nsiz,nsiz  ) = gamm_minus(ncoh+1)
-   yvec(1)           = iota_g * black(1) + (1.d0 - iota_g) * black_g
+   mmat(1,1)         = (gamm_minus(1) - iota_g * gamm_plus (1)) * expl_minus(1)
+   mmat(1,2)         = (gamm_plus (1) - iota_g * gamm_minus(1)) * expl_plus (1)
+   mmat(nsiz,nsiz-1) = gamm_plus (ncoh+1)
+   mmat(nsiz,nsiz  ) = gamm_minus(ncoh+1)
+   yvec(1)           = (1.d0 - iota_g) * black_g - (1.d0 - iota_g) * black(1)
    yvec(nsiz)        = down_sky - black(ncoh+1)
    do i=1,ncoh
       !----- Find auxiliary indices. ------------------------------------------------------!
@@ -243,14 +255,14 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !------------------------------------------------------------------------------------!
       !     Make elements of the tri-diagonal A array.                                     !
       !------------------------------------------------------------------------------------!
-      xmat(i2  ,i2m1) =   gamm_plus   (i)
-      xmat(i2  ,i2  ) =   gamm_minus  (i)
-      xmat(i2  ,i2p1) = - gamm_plus (ip1) * expl_minus(ip1)
-      xmat(i2  ,i2p2) = - gamm_minus(ip1) * expl_plus (ip1)
-      xmat(i2p1,i2  ) =   gamm_minus  (i)
-      xmat(i2p1,i2  ) =   gamm_plus   (i)
-      xmat(i2p1,i2p1) = - gamm_minus(ip1) * expl_minus(ip1)
-      xmat(i2p1,i2p2) = - gamm_plus (ip1) * expl_plus (ip1)
+      mmat(i2  ,i2m1) =   gamm_plus   (i)
+      mmat(i2  ,i2  ) =   gamm_minus  (i)
+      mmat(i2  ,i2p1) = - gamm_plus (ip1) * expl_minus(ip1)
+      mmat(i2  ,i2p2) = - gamm_minus(ip1) * expl_plus (ip1)
+      mmat(i2p1,i2m1) =   gamm_minus  (i)
+      mmat(i2p1,i2  ) =   gamm_plus   (i)
+      mmat(i2p1,i2p1) = - gamm_minus(ip1) * expl_minus(ip1)
+      mmat(i2p1,i2p2) = - gamm_plus (ip1) * expl_plus (ip1)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -261,7 +273,7 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    ! which is a lot cheaper than the regular Gauss elimination, but for the time being, we !
    ! go with a tested method.                                                              !
    !---------------------------------------------------------------------------------------!
-   call lisys_solver8(nsiz,xmat,yvec,gvec,sing)
+   call lisys_solver8(nsiz,mmat,yvec,xvec,sing)
    if (sing) then
       call fatal_error('LW radiation failed... The matrix is singular!'                    &
                       ,'lw_two_stream','twostream_rad.f90')
@@ -288,20 +300,14 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
       !      Retrieve the downward and upward diffuse (hemispheric) radiation, by using    !
       ! the solutions for full TAI                                                         !
       !------------------------------------------------------------------------------------!
-      down(i) = gvec(i2m1) * gamm_plus (i) * expl_minus(i)                                 &
-              + gvec  (i2) * gamm_minus(i) * expl_plus (i)                                 &
+      down(i) = xvec(i2m1) * gamm_plus (i) * expl_minus(i)                                 &
+              + xvec  (i2) * gamm_minus(i) * expl_plus (i)                                 &
               + black  (i)
-      up  (i) = gvec(i2m1) * gamm_minus(i) * expl_plus (i)                                 &
-              + gvec  (i2) * gamm_plus (i) * expl_minus(i)                                 &
+      up  (i) = xvec(i2m1) * gamm_minus(i) * expl_minus(i)                                 &
+              + xvec  (i2) * gamm_plus (i) * expl_plus (i)                                 &
               + black  (i)
       !------------------------------------------------------------------------------------!
    end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Save the fluxes that we will use outside this sub-routine.                        !
    !---------------------------------------------------------------------------------------!
 
 
@@ -374,6 +380,7 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
                                    , nir_beam_norm           & ! intent(in)
                                    , nir_diff_norm           & ! intent(in)
                                    , cosz_min8               ! ! intent(in)
+   use ed_misc_coms         , only : current_time            ! ! intent(in)
 
    implicit none
 
@@ -424,36 +431,35 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
    real(kind=8), dimension(ncoh+1)                         :: down0
    real(kind=8), dimension(ncoh+1)                         :: down
    real(kind=8), dimension(ncoh+1)                         :: up
-   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: xmat
+   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: mmat
    real(kind=8), dimension(2*ncoh+2)                       :: yvec
-   real(kind=8), dimension(2*ncoh+2)                       :: gvec
+   real(kind=8), dimension(2*ncoh+2)                       :: xvec
    real(kind=8), dimension(n_pft)                          :: leaf_scatter
    real(kind=8), dimension(n_pft)                          :: wood_scatter
    real(kind=8), dimension(n_pft)                          :: leaf_backscatter
    real(kind=8), dimension(n_pft)                          :: wood_backscatter
-   real(kind=8)                                            :: elai
-   real(kind=8)                                            :: tai
-   real(kind=8)                                            :: etai
-   real(kind=8)                                            :: mu
-   real(kind=8)                                            :: mu0
-   real(kind=8)                                            :: leaf_weight
-   real(kind=8)                                            :: wood_weight
-   real(kind=8)                                            :: beta0
-   real(kind=8)                                            :: beta
-   real(kind=8)                                            :: epsil
-   real(kind=8)                                            :: epsil0
-   real(kind=8)                                            :: iota
-   real(kind=8)                                            :: lambda
+   real(kind=8), dimension(ncoh+1)                         :: elai
+   real(kind=8), dimension(ncoh+1)                         :: etai
+   real(kind=8), dimension(ncoh+1)                         :: mu
+   real(kind=8), dimension(ncoh+1)                         :: mu0
+   real(kind=8), dimension(ncoh+1)                         :: leaf_weight
+   real(kind=8), dimension(ncoh+1)                         :: wood_weight
+   real(kind=8), dimension(ncoh+1)                         :: beta0
+   real(kind=8), dimension(ncoh+1)                         :: beta
+   real(kind=8), dimension(ncoh+1)                         :: epsil
+   real(kind=8), dimension(ncoh+1)                         :: epsil0
+   real(kind=8), dimension(ncoh+1)                         :: iota
+   real(kind=8), dimension(ncoh+1)                         :: lambda
+   real(kind=8), dimension(ncoh+1)                         :: iota_ratio
+   real(kind=8), dimension(ncoh+1)                         :: proj_area
+   real(kind=8), dimension(ncoh+1)                         :: a_aux
+   real(kind=8), dimension(ncoh+1)                         :: s_aux
    real(kind=8)                                            :: iota_g
    real(kind=8)                                            :: iota_g_par
    real(kind=8)                                            :: iota_g_nir
    real(kind=8)                                            :: down_sky
    real(kind=8)                                            :: down0_sky
    real(kind=8)                                            :: czen
-   real(kind=8)                                            :: iota_ratio
-   real(kind=8)                                            :: proj_area
-   real(kind=8)                                            :: a_aux
-   real(kind=8)                                            :: s_aux
    !----- External functions. -------------------------------------------------------------!
    real(kind=4)                              , external    :: sngloff
    !---------------------------------------------------------------------------------------!
@@ -503,6 +509,7 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          wood_backscatter(:) = wood_backscatter_vis(:)
          down_sky            = par_diff_norm
          down0_sky           = par_beam_norm
+         iota_g              = iota_g_par
          !---------------------------------------------------------------------------------!
       case (2)
          !---------------------------------------------------------------------------------!
@@ -514,6 +521,7 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          wood_backscatter(:) = wood_backscatter_nir(:)
          down_sky            = nir_diff_norm
          down0_sky           = nir_beam_norm
+         iota_g              = iota_g_nir
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -521,22 +529,22 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
 
 
       !------------------------------------------------------------------------------------!
-      !     Convert some leaf variables to double precision, then find some general        !
-      ! properties of leaves/branches.                                                     !
+      !     Find some general properties of leaves/branches and also direct radiation      !
+      ! properties.                                                                        !
       !------------------------------------------------------------------------------------!
-      do i=1,ncoh
+      directloop: do i=1,ncoh
          ipft      = pft(i)
 
          !----- Area indices, correct LAI by clumping factor. -----------------------------!
-         elai = clumping_factor(ipft) * lai(i)
-         etai = elai + wai(i)
+         elai(i) = clumping_factor(ipft) * lai(i)
+         etai(i) = elai(i) + wai(i)
          !---------------------------------------------------------------------------------!
 
 
 
          !----- The weighting factors are defined by the relative LAI and WAI areas. ------!
-         leaf_weight = elai / etai
-         wood_weight = 1.d0 - leaf_weight
+         leaf_weight(i) = elai(i) / etai(i)
+         wood_weight(i) = 1.d0 - leaf_weight(i)
          !---------------------------------------------------------------------------------!
 
 
@@ -545,10 +553,13 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !     We find the inverse optical depth of the direct radiation (mu0), following  !
          ! CLM10 (equation 3.3 and text after equation 3.3).                               !
          !---------------------------------------------------------------------------------!
-         proj_area = phi1(ipft) + phi2(ipft) * czen
-         mu0       = - etai / log( ( 1.d0 - cai(i) )                                       &
-                                 + cai(i) * exp( - proj_area * etai / ( cai(i) * czen ) ) )
+         proj_area(i) = phi1(ipft) + phi2(ipft) * czen
+         mu0      (i) = - etai(i)                                                          &
+                        / log( ( 1.d0 - cai(i) )                                           &
+                             + cai(i) * exp( - proj_area(i) * etai(i)                      &
+                                             / ( cai(i) * czen ) ) )
          !---------------------------------------------------------------------------------!
+
 
 
 
@@ -556,7 +567,8 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !     The inverse optical depth of the diffuse radiation (mu), same as in long-   !
          ! wave radiation.                                                                 !
          !---------------------------------------------------------------------------------!
-         mu = - etai / log( ( 1.d0 - cai(i) ) + cai(i) * exp( - etai / mu_bar(ipft) ) )
+         mu (i) = - etai(i) / log( ( 1.d0 - cai(i) )                                       &
+                                 + cai(i) * exp( - etai(i) / mu_bar(ipft) ) )
          !---------------------------------------------------------------------------------!
 
 
@@ -567,68 +579,19 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          ! because they are different for PAR and NIR, but in both cases they would cancel !
          ! out.  epsil0 = 1 - 2*beta0, no special definition...                            !
          !---------------------------------------------------------------------------------!
-         iota_ratio = 5.d-1 * ( 1.d0 / ( 1.d0 + phi2(ipft) * mu0 )                         &
-                            * ( 1.d0 - phi1(ipft) * mu0 / (1.d0 + phi2(ipft) * mu0 )       &
-                              * log ( ( 1.d0  + ( phi1(ipft) + phi2(ipft) ) * mu0 )        &
-                                    / ( phi1(ipft) * mu0 ) ) ) )
-         beta0      = iota_ratio * ( mu0 + mu ) / mu
-         epsil0     = 1.d0 - 2.d0 * beta0
+         iota_ratio(i) = 1.d0 / ( 2.d0 * ( 1.d0 + phi2(ipft) * mu0(i) ) )                  &
+                       * ( 1.d0 - phi1(ipft) * mu0(i) / ( 1.d0 + phi2(ipft) * mu0(i) )     &
+                                * log ( ( 1.d0  + ( phi1(ipft) + phi2(ipft) ) * mu0(i) )   &
+                                      / ( phi1(ipft) * mu0(i) ) ) )
+         beta0     (i) = iota_ratio(i) * ( 1.d0 + mu0(i) / mu(i) )
+         epsil0    (i) = 1.d0 - 2.d0 * beta0(i)
          !---------------------------------------------------------------------------------!
 
 
-         !----- Scattering coefficient. ---------------------------------------------------!
-         iota = leaf_weight * leaf_scatter(ipft) + wood_weight * wood_scatter(ipft)
+         !----- Expm0_minus is the transmissivity of direct radiation. --------------------!
+         expm0_minus(i) = exp( - etai  (i) / mu0 (i) )
          !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Beta is the backward scattering of diffuse radiation. Epsil = 1 - 2*beta.   !
-         !---------------------------------------------------------------------------------!
-         beta  = leaf_weight*leaf_backscatter(ipft) + wood_weight*wood_backscatter(ipft)
-         epsil = 1.d0 - 2.d0 * beta
-         !---------------------------------------------------------------------------------!
-
-
-
-         !----- lambda is the coefficient associated with the optical depth. --------------!
-         lambda = sqrt( ( 1.d0 - epsil * iota ) * ( 1.d0 - iota ) ) / mu
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Find some auxiliary variables to determine the right hand side.             !
-         !---------------------------------------------------------------------------------!
-         a_aux      = - ( ( 1.d0 - epsil * iota ) * iota / mu - epsil0 * iota / mu0 )      &
-                        * down0_sky / mu0
-         s_aux      =   ( ( 1.d0 - iota ) * epsil0 * iota / mu - iota / mu0 )              &
-                        * down0_sky / mu0
-         delta  (i) = ( a_aux + s_aux ) * mu0 * mu0                                        &
-                    / ( 2.d0 * ( 1.d0 - lambda * lambda * mu0 * mu0 ) )
-         upsilon(i) = ( a_aux - s_aux ) * mu0 * mu0                                        &
-                    / ( 2.d0 * ( 1.d0 - lambda * lambda * mu0 * mu0 ) )
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !    gamm_plus and gamm_minus are the coefficients that relate upwelling and      !
-         ! downwelling radiation.                                                          !
-         !---------------------------------------------------------------------------------!
-         gamm_plus (i) = 5.d-1 * ( 1.d0 + sqrt( ( 1.d0 - iota ) / ( 1.d0 - epsil*iota ) ) )
-         gamm_minus(i) = 5.d-1 * ( 1.d0 - sqrt( ( 1.d0 - iota ) / ( 1.d0 - epsil*iota ) ) )
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !    expl_plus and expl_minus are the transmitivity of diffuse light.             !
-         !---------------------------------------------------------------------------------!
-         expl_plus  (i) = exp(   lambda * etai )
-         expl_minus (i) = exp( - lambda * etai )
-         expm0_minus(i) = exp( - etai   / mu0  )
-         !---------------------------------------------------------------------------------!
-      end do
+      end do directloop
       !------------------------------------------------------------------------------------!
 
 
@@ -636,13 +599,19 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
       !------------------------------------------------------------------------------------!
       !     Define some boundary conditions for the vector properties above.               !
       !------------------------------------------------------------------------------------!
-      gamm_plus  (ncoh+1) = 5.d-1
-      gamm_minus (ncoh+1) = 5.d-1
-      expl_plus  (ncoh+1) = 1.d0
-      expl_minus (ncoh+1) = 1.d0
-      expm0_minus(ncoh+1) = 1.d0
-      delta      (ncoh+1) = 0.d0
-      upsilon    (ncoh+1) = 0.d0
+      i              = ncoh+1
+      elai       (i) = 0.d0
+      etai       (i) = 0.d0
+      leaf_weight(i) = 5.d-1
+      wood_weight(i) = 5.d-1
+      proj_area  (i) = 5.d-1
+      mu0        (i) = czen / proj_area(i)
+      mu         (i) = 1.d0
+      iota_ratio (i) = 5.d-1 * ( 1.d0 - 5.d-1 * mu0(i)                                     &
+                                      * log ( 1.d0  / ( 5.d-1 * mu0(i) ) + 1.d0 ) )
+      beta0      (i) = iota_ratio(i) * ( mu0(i) + mu(i) ) / mu(i)
+      epsil0     (i) = 1.d0 - 2.d0 * beta0(i)
+      expm0_minus(i) = 1.d0
       !------------------------------------------------------------------------------------!
 
 
@@ -652,8 +621,97 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
       !------------------------------------------------------------------------------------!
       down0(ncoh+1) = down0_sky
       do i = ncoh,1,-1
-         down0(i) = down0(i+1) * expm0_minus(i) 
+         ip1      = i + 1
+         down0(i) = down0(ip1) * expm0_minus(i) 
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the diffuse radiation properties.                                         !
+      !------------------------------------------------------------------------------------!
+      diffuseloop: do i=1,ncoh
+         !----- Scattering coefficient. ---------------------------------------------------!
+         iota      (i) = leaf_weight(i) * leaf_scatter(ipft)                               &
+                       + wood_weight(i) * wood_scatter(ipft)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Beta is the backward scattering of diffuse radiation. Epsil = 1 - 2*beta.   !
+         !---------------------------------------------------------------------------------!
+         beta  (i) = leaf_weight(i) * leaf_backscatter(ipft)                               &
+                   + wood_weight(i) * wood_backscatter(ipft)
+         epsil (i) = 1.d0 - 2.d0 * beta(i)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- lambda is the coefficient associated with the optical depth. --------------!
+         lambda(i) = sqrt( ( 1.d0 - epsil(i) * iota(i) ) * ( 1.d0 - iota(i) ) ) / mu(i)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find some auxiliary variables to determine the right hand side.             !
+         !---------------------------------------------------------------------------------!
+         a_aux  (i) = - ( ( 1.d0 - epsil(i) * iota(i) ) * iota(i) / mu(i)                  &
+                        + epsil0(i) * iota(i) / mu0(i) ) * down0(i+1) / mu0(i)
+         s_aux  (i) = - ( ( 1.d0 - iota (i) ) * epsil0(i) * iota(i) / mu(i)                &
+                        + iota(i) / mu0(i) ) * down0(i+1) / mu0(i)
+         delta  (i) = ( a_aux(i) + s_aux(i) ) * mu0(i) * mu0(i)                            &
+                    / ( 2.d0 * ( 1.d0 - lambda(i) * lambda(i) * mu0(i) * mu0(i) ) )
+         upsilon(i) = ( a_aux(i) - s_aux(i) ) * mu0(i) * mu0(i)                            &
+                    / ( 2.d0 * ( 1.d0 - lambda(i) * lambda(i) * mu0(i) * mu0(i) ) )
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    gamm_plus and gamm_minus are the coefficients that relate upwelling and      !
+         ! downwelling radiation.                                                          !
+         !---------------------------------------------------------------------------------!
+         gamm_plus (i) = 5.d-1 * ( 1.d0 + sqrt( ( 1.d0 -            iota(i) )              &
+                                              / ( 1.d0 - epsil(i) * iota(i) ) ) )
+         gamm_minus(i) = 5.d-1 * ( 1.d0 - sqrt( ( 1.d0 -            iota(i) )              &
+                                              / ( 1.d0 - epsil(i) * iota(i) ) ) )
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    expl_plus and expl_minus are the transmitivity of diffuse light.             !
+         !---------------------------------------------------------------------------------!
+         expl_plus  (i) = exp(   lambda(i) * etai(i) )
+         expl_minus (i) = exp( - lambda(i) * etai(i) )
+         !---------------------------------------------------------------------------------!
+      end do diffuseloop
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Define some boundary conditions for the vector properties above.               !
+      !------------------------------------------------------------------------------------!
+      i              = ncoh+1
+      iota       (i) = 1.d0
+      beta       (i) = 0.d0
+      epsil      (i) = 1.d0 - 2.d0 * beta(i)
+      lambda     (i) = 0.d0
+      a_aux      (i) = 0.d0
+      s_aux      (i) = 0.d0
+      delta      (i) = 0.d0
+      upsilon    (i) = 0.d0
+      a_aux      (i) = -  epsil0(i) * down0_sky / ( mu0(i) * mu0(i) )
+      s_aux      (i) = -  iota  (i) * down0_sky / ( mu0(i) * mu0(i) )
+      delta      (i) = 5.d-1 * ( a_aux(i) + s_aux(i) ) * mu0(i) * mu0(i)
+      upsilon    (i) = 5.d-1 * ( a_aux(i) - s_aux(i) ) * mu0(i) * mu0(i)
+      gamm_plus  (i) = 1.d0
+      gamm_minus (i) = 0.d0
+      expl_plus  (i) = 1.d0
+      expl_minus (i) = 1.d0
       !------------------------------------------------------------------------------------!
 
 
@@ -663,13 +721,13 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
       !     Fill in the right hand side vector (Y) and the matrix (X)                      !
       !------------------------------------------------------------------------------------!
       !------ Initialise the vector and the matrix.  The matrix is a sparse one... --------!
-      xmat(:,:)         = 0.d0
+      mmat(:,:)         = 0.d0
       yvec(:)           = 0.d0
       !------ Add the bottom and top boundary conditions. ---------------------------------!
-      xmat(1,1)         = (gamm_minus(1) - iota_g * gamm_plus (1)) * expl_minus(1)
-      xmat(1,2)         = (gamm_plus (1) - iota_g * gamm_minus(1)) * expl_plus (1)
-      xmat(nsiz,nsiz-1) = gamm_plus (ncoh+1)
-      xmat(nsiz,nsiz  ) = gamm_minus(ncoh+1)
+      mmat(1,1)         = (gamm_minus(1) - iota_g * gamm_plus (1)) * expl_minus(1)
+      mmat(1,2)         = (gamm_plus (1) - iota_g * gamm_minus(1)) * expl_plus (1)
+      mmat(nsiz,nsiz-1) = gamm_plus (ncoh+1)
+      mmat(nsiz,nsiz  ) = gamm_minus(ncoh+1)
       yvec(1)           = iota_g * down0_sky                                               &
                         - ( upsilon(1) - iota_g * delta(1) ) * expm0_minus(1)
       yvec(nsiz)        = down_sky - delta(ncoh+1)
@@ -692,14 +750,15 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !---------------------------------------------------------------------------------!
          !     Make elements of the tri-diagonal A array.                                  !
          !---------------------------------------------------------------------------------!
-         xmat(i2  ,i2m1) =   gamm_plus   (i)
-         xmat(i2  ,i2  ) =   gamm_minus  (i)
-         xmat(i2  ,i2p1) = - gamm_plus (ip1) * expl_minus(ip1)
-         xmat(i2  ,i2p2) = - gamm_minus(ip1) * expl_plus (ip1)
-         xmat(i2p1,i2  ) =   gamm_minus  (i)
-         xmat(i2p1,i2  ) =   gamm_plus   (i)
-         xmat(i2p1,i2p1) = - gamm_minus(ip1) * expl_minus(ip1)
-         xmat(i2p1,i2p2) = - gamm_plus (ip1) * expl_plus (ip1)
+         mmat(i2  ,i2m1) =   gamm_plus   (i)
+         mmat(i2  ,i2  ) =   gamm_minus  (i)
+         mmat(i2  ,i2p1) = - gamm_plus (ip1) * expl_minus(ip1)
+         mmat(i2  ,i2p2) = - gamm_minus(ip1) * expl_plus (ip1)
+         mmat(i2p1,i2m1) =   gamm_minus  (i)
+         mmat(i2p1,i2  ) =   gamm_plus   (i)
+         mmat(i2p1,i2p1) = - gamm_minus(ip1) * expl_minus(ip1)
+         mmat(i2p1,i2p2) = - gamm_plus (ip1) * expl_plus (ip1)
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
@@ -710,7 +769,7 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
       ! which is a lot cheaper than the regular Gauss elimination, but for the time being, !
       ! we go with a tested method.                                                        !
       !------------------------------------------------------------------------------------!
-      call lisys_solver8(nsiz,xmat,yvec,gvec,sing)
+      call lisys_solver8(nsiz,mmat,yvec,xvec,sing)
       if (sing) then
          call fatal_error('SW radiation failed... The matrix is singular!'                 &
                          ,'sw_two_stream','twostream_rad.f90')
@@ -737,11 +796,11 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !      Retrieve the downward and upward diffuse (hemispheric) radiation, by using !
          ! the solutions for full TAI                                                      !
          !---------------------------------------------------------------------------------!
-         down(i) = gvec(i2m1) * gamm_plus (i) * expl_minus (i)                             &
-                 + gvec  (i2) * gamm_minus(i) * expl_plus  (i)                             &
+         down(i) = xvec(i2m1) * gamm_plus (i) * expl_minus (i)                             &
+                 + xvec  (i2) * gamm_minus(i) * expl_plus  (i)                             &
                               + delta     (i) * expm0_minus(i)
-         up  (i) = gvec(i2m1) * gamm_minus(i) * expl_plus  (i)                             &
-                 + gvec  (i2) * gamm_plus (i) * expl_minus (i)                             &
+         up  (i) = xvec(i2m1) * gamm_minus(i) * expl_minus (i)                             &
+                 + xvec  (i2) * gamm_plus (i) * expl_plus  (i)                             &
                               + upsilon   (i) * expm0_minus(i)
          !---------------------------------------------------------------------------------!
       end do
@@ -823,6 +882,7 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          dw_nirlo_diff = sngloff(down           (1), tiny_offset)
          uw_nirhi_diff = sngloff(up        (ncoh+1), tiny_offset)
          !---------------------------------------------------------------------------------!
+
       end select
    end do bandloop
    !---------------------------------------------------------------------------------------!
