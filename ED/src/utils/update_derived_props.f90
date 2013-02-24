@@ -1034,7 +1034,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                                        ,csite%soil_fracliq(nzg,ipa)                        &
                                        ,csite%sfcwater_tempk(nlsw1,ipa)                    &
                                        ,csite%sfcwater_fracliq(nlsw1,ipa)                  &
-                                       ,csite%can_prss(ipa)                                &
+                                       ,csite%snowfac(ipa),csite%can_prss(ipa)             &
                                        ,csite%can_shv(ipa),csite%ground_shv(ipa)           &
                                        ,csite%ground_ssh(ipa),csite%ground_temp(ipa)       &
                                        ,csite%ground_fliq(ipa),csite%ggsoil(ipa))

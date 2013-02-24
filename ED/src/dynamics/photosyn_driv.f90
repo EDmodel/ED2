@@ -488,10 +488,10 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
 
 
             !----- GPP, averaged over frqstate. -------------------------------------------!
-            cpatch%gpp(ico)       = cpatch%lai(ico)                                        &
-                                  * ( cpatch%fs_open(ico) * cpatch%A_open(ico)             &
-                                    + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) ) &
-                                  + cpatch%leaf_respiration(ico)
+            cpatch%gpp(ico) = max(0., cpatch%lai(ico)                                      &
+                                    * ( cpatch%fs_open(ico) * cpatch%A_open(ico)           &
+                                      + (1. - cpatch%fs_open(ico)) * cpatch%A_closed(ico)) &
+                                    + cpatch%leaf_respiration(ico) )
             !----- The average must be in [kgC/plant/yr]. ---------------------------------!
             cpatch%fmean_gpp(ico) = cpatch%fmean_gpp(ico)                                  &
                                   + cpatch%gpp      (ico) * umols_2_kgCyr * dtlsm_o_frqsum &

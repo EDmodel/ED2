@@ -526,7 +526,8 @@ for (place in myplaces){
             #     Find the limit, make some room for the legend, and in case the field is  #
             # a constant, nudge the limits so the plot command will not complain.          #
             #------------------------------------------------------------------------------#
-            ylimit = pretty.xylim(u = thisvar[,selpft],fracexp=scalleg,is.log=plog)
+            xlimit = pretty.xylim(u = datum$toyear    ,fracexp=0.0,is.log=FALSE)
+            ylimit = pretty.xylim(u = thisvar[,selpft],fracexp=0.0,is.log=plog )
             if (plog){
                xylog    = "y"
                ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
@@ -539,14 +540,51 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
 
 
-
+            #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(description,lieu,sep=" - ")
             cols    = pft$colour[selpft]
             legs    = pft$name  [selpft]
-            par(par.user)
-            plot(x=datum$toyear,y=thisvar[,1],type="n",main=letitre,ylim=ylimit
-                ,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            #------------------------------------------------------------------------------#
 
+
+            #------------------------------------------------------------------------------#
+            #     Split the plot into two windows.                                         #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            layout(mat=rbind(2,1),heights=c(5,1))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      First plot: legend.                                                     #
+            #------------------------------------------------------------------------------#
+            par(mar=c(0.1,4.1,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x      = "bottom"
+                  , inset  = 0.0
+                  , legend = legs
+                  , col    = cols
+                  , lwd    = lwidth
+                  , ncol   = min(pretty.box(n.selpft)$ncol,3)
+                  , title  = expression(bold("Plant Functional Type"))
+                  , xpd    = TRUE
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Main plot.                                                              #
+            #------------------------------------------------------------------------------#
+            par(mar=c(4.1,4.1,4.1,2.1))
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+            axis(side=1)
+            axis(side=2)
+            box()
+            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -554,25 +592,20 @@ for (place in myplaces){
                       ,col    = grid.colour,border=NA)
                }#end for
             }#end if
-            
+            #----- Plot grid. -------------------------------------------------------------#
             if (plotgrid){ 
                abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
+            #----- Plot lines. ------------------------------------------------------------#
             for (n in 1:(npft+1)){
                if (selpft[n]){
                   lines(datum$toyear,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
                }#end if
             }#end for
-            legend( x      = legwhere
-                  , inset  = inset
-                  , bg     = background
-                  , legend = legs
-                  , col    = cols
-                  , lwd    = lwidth
-                  , ncol   = min(pretty.box(n.selpft)$ncol,3)
-                  , title  = expression(bold("Plant Functional Type"))
-                  )#end legend
+            #------------------------------------------------------------------------------#
 
+
+            #----- Close the device. ------------------------------------------------------#
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
@@ -580,6 +613,7 @@ for (place in myplaces){
                dev.off()
             }#end if
             dummy=clean.tmp()
+            #------------------------------------------------------------------------------#
          } #end for outform
       }#end if (tseragbpft)
    } #end for tseries
@@ -633,6 +667,7 @@ for (place in myplaces){
          #     Find the limit, make some room for the legend, and in case the field is a   #
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
+         xlimit = pretty.xylim(u=datum$toyear     ,fracexp=0.0,is.log=FALSE)
          ylimit = pretty.xylim(u=thisvar[,,pftuse],fracexp=scalleg,is.log=plog)
          if (plog){
             xylog    = "y"
@@ -645,16 +680,19 @@ for (place in myplaces){
          }#end if
          #---------------------------------------------------------------------------------#
 
+
+
+         #---------------------------------------------------------------------------------#
+         #       Loop over plant functional types.                                         #
+         #---------------------------------------------------------------------------------#
          for (p in pftuse){
-
-            cpp = substring(100+p,2,3)
-            pftlab = paste("pft-",cpp,sep="")
-
+            pftlab = paste("pft-",sprintf("%2.2i",p),sep="")
             cat("        - ",pft$name[p],"\n")
 
 
             #----- Loop over output formats. ----------------------------------------------#
             for (o in 1:nout){
+               #----- Open file. ----------------------------------------------------------#
                fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
                if(outform[o] == "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
@@ -668,11 +706,54 @@ for (place in myplaces){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
+               #---------------------------------------------------------------------------#
 
+
+
+               #-----  Plot annotation. ---------------------------------------------------#
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the plot into two windows.                                      #
+               #---------------------------------------------------------------------------#
                par(par.user)
-               plot(x=datum$toyear,y=thisvar[,1,p],type="n",main=letitre,ylim=ylimit
-                   ,xlab="Time",ylab=unit,cex.main=0.7,log=xylog)
+               layout(mat=rbind(2,1),heights=c(5,1))
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      First plot: legend.                                                  #
+               #---------------------------------------------------------------------------#
+               par(mar=c(0.1,4.1,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , bg     = background
+                     , legend = dbhnames
+                     , col    = dbhcols
+                     , ncol   = min(pretty.box(ndbh+1)$ncol,3)
+                     , title  = expression(bold("DBH class"))
+                     , lwd    = lwidth
+                     , xpd    = TRUE
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Main plot.                                                           #
+               #---------------------------------------------------------------------------#
+               par(mar=c(4.1,4.1,4.1,2.1))
+               plot.new()
+               plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+               axis(side=1)
+               axis(side=2)
+               box()
+               title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -680,22 +761,18 @@ for (place in myplaces){
                          ,col    = grid.colour,border=NA)
                   }#end for
                }#end if
+               #----- Plot grid. ----------------------------------------------------------#
                if (plotgrid){ 
                   abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
+               #----- Plot lines. ---------------------------------------------------------#
                for (d in seq(from=1,to=ndbh+1,by=1)){
                   lines(datum$toyear,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
                }#end for
-               legend( x      = legwhere
-                     , inset  = inset
-                     , bg     = background
-                     , legend = dbhnames
-                     , col    = dbhcols
-                     , ncol   = min(pretty.box(ndbh+1)$ncol,3)
-                     , title  = expression(bold("DBH class"))
-                     , lwd    = lwidth
-                     )#end legend
+               #---------------------------------------------------------------------------#
 
+
+               #----- Close the device. ---------------------------------------------------#
                if (outform[o] == "x11"){
                   locator(n=1)
                   dev.off()
@@ -703,9 +780,13 @@ for (place in myplaces){
                   dev.off()
                }#end if
                dummy=clean.tmp()
-            } #end for outform
+               #---------------------------------------------------------------------------#
+            }#end for outform
+            #------------------------------------------------------------------------------#
          }#end for (p in pftuse)
+         #---------------------------------------------------------------------------------#
       }#end if (tseragbpft)
+      #------------------------------------------------------------------------------------#
    } #end for tseries
    #---------------------------------------------------------------------------------------#
 
@@ -927,7 +1008,8 @@ for (place in myplaces){
             #     Find the limit, make some room for the legend, and in case the field is  #
             # a constant, nudge the limits so the plot command will not complain.          #
             #------------------------------------------------------------------------------#
-            ylimit = pretty.xylim(u=thisvar[,sellu],fracexp=scalleg,is.log=plog)
+            xlimit = pretty.xylim(u = datum$toyear ,fracexp=0.0,is.log=FALSE)
+            ylimit = pretty.xylim(u=thisvar[,sellu],fracexp=0.0,is.log=plog)
             if (plog){
                xylog    = "y"
                ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
@@ -939,13 +1021,53 @@ for (place in myplaces){
             }#end if
             #------------------------------------------------------------------------------#
 
+
+
+            #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(description,lieu,sep=" - ")
             cols    = lucols[sellu]
             legs    = lunames[sellu]
-            par(par.user)
-            plot(datum$toyear,thisvar[,1],type="n",main=letitre,ylim=ylimit
-                ,xlab="Year",ylab=unit,cex.main=0.7)
+            #------------------------------------------------------------------------------#
 
+
+            #------------------------------------------------------------------------------#
+            #     Split the plot into two windows.                                         #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            layout(mat=rbind(2,1),heights=c(5,1))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      First plot: legend.                                                     #
+            #------------------------------------------------------------------------------#
+            par(mar=c(0.1,4.1,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x      = "bottom"
+                  , inset  = 0.0
+                  , legend = legs
+                  , col    = cols
+                  , lwd    = lwidth
+                  , ncol   = min(3,pretty.box(n.sellu)$ncol)
+                  , title  = expression(bold("Land use type"))
+                  , xpd    = TRUE
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Main plot.                                                              #
+            #------------------------------------------------------------------------------#
+            par(mar=c(4.1,4.1,4.1,2.1))
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+            axis(side=1)
+            axis(side=2)
+            box()
+            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -953,24 +1075,20 @@ for (place in myplaces){
                       ,col    = grid.colour,border=NA)
                }#end for
             }#end if
+            #----- Plot grid. -------------------------------------------------------------#
             if (plotgrid){ 
                abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
+            #----- Plot lines. ------------------------------------------------------------#
             for (n in 1:(nlu+1)){
                if (sellu[n]){
                   lines(datum$toyear,thisvar[,n],type="l",col=lucols[n],lwd=lwidth)
                }#end if
             }#end for
-            legend( x      = legwhere
-                  , inset  = inset
-                  , bg     = background
-                  , legend = legs
-                  , col    = cols
-                  , lwd    = lwidth
-                  , ncol   = min(3,pretty.box(n.sellu)$ncol)
-                  , title  = expression(bold("Land use type"))
-                  )#end legend
+            #------------------------------------------------------------------------------#
 
+
+            #----- Close the device. ------------------------------------------------------#
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
@@ -978,9 +1096,12 @@ for (place in myplaces){
                dev.off()
             }#end if
             dummy=clean.tmp()
-         } #end for outform
+            #------------------------------------------------------------------------------#
+         }#end for outform
+         #---------------------------------------------------------------------------------#
       }#end if (tseragbpft)
-   } #end for tseries
+      #------------------------------------------------------------------------------------#
+   }#end for tseries
    #---------------------------------------------------------------------------------------#
 
 
@@ -1011,34 +1132,81 @@ for (place in myplaces){
          #     Find the limit, make some room for the legend, and in case the field is a   #
          #  constant, nudge the limits so the plot command will not complain.              #
          #---------------------------------------------------------------------------------#
+         xlimit   = pretty.xylim(u=datum$toyear,fracexp=0.0,is.log=FALSE)
          ylimit  = NULL
+         n       = 0
          for (jlu in 1:nlu){
             for (ilu in 1:nlu){
+               n = n + 1
                if (seldist[ilu,jlu]){
-                  ylimit = range(c(ylimit,datum$dist[,ilu,jlu]),na.rm=TRUE)
+                  ylimit = c(ylimit,lu$dist[,ilu,jlu])
+                  cols   = c(cols,distcols[n])
+                  legs   = c(legs,distnames[n])
                }#end if
             }#end for
          }#end for
-         ylimit   = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=FALSE)
-         ydrought = c( ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit) )
+         ylimit   = pretty.xylim(u=ylimit,fracexp=0.0,is.log=FALSE)
+         ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
          #---------------------------------------------------------------------------------#
 
+
+
+         #----- Plot settings. ------------------------------------------------------------#
          letitre = paste("Disturbance rates",lieu,sep=" - ")
-         cols    = NULL
-         legs    = NULL
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Split the plot into two windows.                                            #
+         #---------------------------------------------------------------------------------#
          par(par.user)
-         plot(datum$toyear,datum$dist[,1,1],type="n",main=letitre,ylim=ylimit
-             ,xlab="Year",ylab="[1/yr]",cex.main=0.7)
-            if (drought.mark){
-               for (n in 1:ndrought){
-                  rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
-                      ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = grid.colour,border=NA)
-               }#end for
-            }#end if
-            if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
-            }#end if
+         layout(mat=rbind(2,1),heights=c(5,1))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      First plot: legend.                                                        #
+         #---------------------------------------------------------------------------------#
+         par(mar=c(0.1,4.1,0.1,2.1))
+         plot.new()
+         plot.window(xlim=c(0,1),ylim=c(0,1))
+         legend( x      = "bottom"
+               , inset  = 0.0
+               , bg     = background
+               , legend = legs
+               , col    = cols
+               , lwd    = lwidth
+               , ncol   = min(3,pretty.box(n)$ncol)
+               , title  = expression(bold("Transition"))
+               , xpd    = TRUE
+               )#end legend
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Main plot.                                                                 #
+         #---------------------------------------------------------------------------------#
+         par(mar=c(4.1,4.1,4.1,2.1))
+         plot.new()
+         plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+         axis(side=1)
+         axis(side=2)
+         box()
+         title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+         if (drought.mark){
+            for (n in 1:ndrought){
+               rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                   ,xright = drought[[n]][2],ytop    = ydrought[2]
+                   ,col    = grid.colour,border=NA)
+            }#end for
+         }#end if
+         #----- Plot grid. ----------------------------------------------------------------#
+         if (plotgrid){ 
+            abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
+         }#end if
+         #----- Plot lines. ---------------------------------------------------------------#
          n = 0
          for (jlu in 1:nlu){
             for (ilu in 1:nlu){
@@ -1046,21 +1214,15 @@ for (place in myplaces){
                if (seldist[ilu,jlu]){
                   cols = c(cols,distcols[n])
                   legs = c(legs,distnames[n])
-                  lines(datum$toyear,datum$dist[,ilu,jlu],type="l"
+                  lines(datum$toyear,lu$dist[,ilu,jlu],type="l"
                        ,col=distcols[n],lwd=lwidth)
                }#end if
             }#end for
          }#end for
-         legend(x      = legwhere
-               ,inset  = inset
-               ,bg     = background
-               ,legend = legs
-               ,col    = cols
-               ,lwd    = lwidth
-               , ncol  = min(3,pretty.box(n)$ncol)
-               , title = expression(bold("Transition"))
-               )#end legend
+         #---------------------------------------------------------------------------------#
 
+
+         #----- Close the device. ---------------------------------------------------------#
          if (outform[o] == "x11"){
             locator(n=1)
             dev.off()
@@ -1068,6 +1230,7 @@ for (place in myplaces){
             dev.off()
          }#end if
          dummy=clean.tmp()
+         #---------------------------------------------------------------------------------#
       } #end for outform
       #------------------------------------------------------------------------------------#
    }#end if
@@ -1116,12 +1279,13 @@ for (place in myplaces){
          #     Find the limit, make some room for the legend, and in case the field is a   #
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
+         xlimit   = pretty.xylim(u=datum$toyear,fracexp=0.0,is.log=FALSE)
          ylimit    = NULL
          for (l in 1:nlayers){
             thisvar = ymean[[vnames[l]]]
             ylimit  = range(c(ylimit,thisvar),na.rm=TRUE)
          }#end for
-         ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=plog)
+         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
          if (plog) {
             xylog    = "y"
             ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
@@ -1141,6 +1305,7 @@ for (place in myplaces){
 
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
+            #------ Open file. ------------------------------------------------------------#
             fichier = paste(outdir,"/",prefix,"-",suffix,".",outform[o],sep="")
             if(outform[o] == "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
@@ -1154,15 +1319,52 @@ for (place in myplaces){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
+            #------------------------------------------------------------------------------#
 
-            #----- Load variable ----------------------------------------------------------#
-            thisvar = ymean[[vnames[1]]]
 
+
+            #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(" Time series: ",group,"\n",lieu,sep="")
+            #------------------------------------------------------------------------------#
 
+
+            #------------------------------------------------------------------------------#
+            #     Split the plot into two windows.                                         #
+            #------------------------------------------------------------------------------#
             par(par.user)
-            plot(x=datum$toyear,y=thisvar,type="n",main=letitre,xlab="Year"
-                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,cex.main=cex.main)
+            layout(mat=rbind(2,1),heights=c(5,1))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      First plot: legend.                                                     #
+            #------------------------------------------------------------------------------#
+            par(mar=c(0.1,4.1,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x      = "bottom"
+                  , inset  = 0.0
+                  , legend = description
+                  , col    = lcolours
+                  , lwd    = llwd
+                  , ncol   = min(3,pretty.box(nlayers)$ncol)
+                  , xpd    = TRUE
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Main plot.                                                              #
+            #------------------------------------------------------------------------------#
+            par(mar=c(4.1,4.1,4.1,2.1))
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+            axis(side=1)
+            axis(side=2)
+            box()
+            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1170,21 +1372,20 @@ for (place in myplaces){
                       ,col    = grid.colour,border=NA)
                }#end for
             }#end if
+            #----- Plot grid. -------------------------------------------------------------#
             if (plotgrid){ 
                abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
+            #----- Plot lines. ------------------------------------------------------------#
             for (l in 1:nlayers){
                thisvar = ymean[[vnames[l]]]
                points(x=datum$toyear,y=thisvar,col=lcolours[l],lwd=llwd[l],type=ltype
                      ,pch=16,cex=0.8)
             }#end for
-            legend( x      = legpos
-                  , inset  = inset
-                  , legend = description
-                  , col    = lcolours
-                  , lwd    = llwd
-                  , ncol   = min(3,pretty.box(nlayers)$ncol)
-                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+            #----- Close the device. ------------------------------------------------------#
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
@@ -1242,6 +1443,7 @@ for (place in myplaces){
 
          #----- Define the number of layers. ----------------------------------------------#
          nlayers   = length(vnames)
+         xlimit    = range(thisday)
          ylimit    = NULL
          for (l in 1:nlayers){
             thisvar = umean[[vnames[l]]]
@@ -1264,6 +1466,7 @@ for (place in myplaces){
 
             #----- Loop over formats. -----------------------------------------------------#
             for (o in 1:nout){
+               #------ Open file. ---------------------------------------------------------#
                fichier = paste(outtheme,"/",prefix,"-",cyear,"-",suffix,".",outform[o]
                               ,sep="")
                if(outform[o] == "x11"){
@@ -1278,34 +1481,75 @@ for (place in myplaces){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
+               #---------------------------------------------------------------------------#
 
-               #----- Load variable -------------------------------------------------------#
-               thisvar = umean[[vnames[1]]]
-               thisvar = cbind(thisvar[,ndcycle],thisvar)
 
-               letitre = paste(group," - Mean diurnal cycle - ",cyear,"\n",lieu,sep="")
 
+               #----- Plot settings. ------------------------------------------------------#
+               letitre = paste(group," - ",lieu,"\n"
+                              ,"Mean diurnal cycle - ",cyear,sep="")
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the plot into two windows.                                      #
+               #---------------------------------------------------------------------------#
                par(par.user)
-               plot(x=thisday,y=thisvar[yy,],type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,xaxt="n"
-                   ,cex.main=cex.main)
-               axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
-               if (plotgrid){ 
-                  abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
-               }#end if
-               for (l in 1:nlayers){
-                  thisvar = umean[[vnames[l]]]
-                  thisvar = cbind(thisvar[,ndcycle],thisvar)
-                  points(x=thisday,y=thisvar[yy,],col=lcolours[l]
-                        ,lwd=llwd[l],type=ltype,pch=16)
-               }#end for
-               legend( x      = legpos
-                     , inset  = inset
+               layout(mat=rbind(2,1),heights=c(5,1))
+               #------------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      First plot: legend.                                                  #
+               #---------------------------------------------------------------------------#
+               par(mar=c(0.1,4.1,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x      = "bottom"
+                     , inset  = 0.0
                      , legend = description
                      , col    = lcolours
                      , lwd    = llwd
                      , ncol   = min(3,pretty.box(nlayers)$ncol)
+                     , xpd    = TRUE
                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Main plot.                                                           #
+               #---------------------------------------------------------------------------#
+               par(mar=c(4.1,4.1,4.1,2.1))
+               plot.new()
+               plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+               axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
+               axis(side=2)
+               box()
+               title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+               if (drought.mark){
+                  for (n in 1:ndrought){
+                     rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                         ,xright = drought[[n]][2],ytop    = ydrought[2]
+                         ,col    = grid.colour,border=NA)
+                  }#end for
+               }#end if
+               #----- Plot grid. ----------------------------------------------------------#
+               if (plotgrid){ 
+                  abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
+               }#end if
+               #----- Plot lines. ---------------------------------------------------------#
+               for (l in 1:nlayers){
+                  thisvar = umean[[vnames[l]]]
+                  thisvar = cbind(thisvar[,ndcycle],thisvar)
+                  points(x=thisday,y=thisvar[pmon,],col=lcolours[l]
+                        ,lwd=llwd[l],type=ltype,pch=16)
+               }#end for
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
                if (outform[o] == "x11"){
                   locator(n=1)
                   dev.off()
@@ -1314,7 +1558,7 @@ for (place in myplaces){
                }#end if
                dummy=clean.tmp()
                #---------------------------------------------------------------------------#
-            }#end for outform
+            } #end for outform
             #------------------------------------------------------------------------------#
          }#end for pmon
          #---------------------------------------------------------------------------------#

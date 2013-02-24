@@ -387,7 +387,7 @@ subroutine reproduction(cgrid, month)
                if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
                   call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
-                                   ,cpoly%lsl(isi))
+                                   ,cpoly%lsl(isi),.false.)
                   call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
                end if
 

@@ -547,7 +547,7 @@ module fuse_fiss_utils
    ! to live with that and accept life is not always fair with those with limited          !
    ! computational resources.                                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_cohorts(csite,ipa, green_leaf_factor, lsl)
+   subroutine fuse_cohorts(csite,ipa, green_leaf_factor, lsl, fuse_initial)
 
       use ed_state_vars       , only : sitetype            & ! Structure
                                      , patchtype           ! ! Structure
@@ -574,6 +574,7 @@ module fuse_fiss_utils
       integer                , intent(in)  :: ipa               ! Current patch ID
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
       integer                , intent(in)  :: lsl               ! Lowest soil level
+      logical                , intent(in)  :: fuse_initial      ! Initialisation step?
       !----- Local variables --------------------------------------------------------------!
       logical, dimension(:)  , allocatable :: fuse_table     ! Flag, remaining cohorts
       type(patchtype)        , pointer     :: cpatch         ! Current patch
@@ -730,12 +731,13 @@ module fuse_fiss_utils
                      !----- Proceed with fusion -------------------------------------------!
                      call fuse_2_cohorts(cpatch,donc,recc,newn                             &
                                         ,green_leaf_factor(cpatch%pft(donc))               &
-                                        ,csite%can_prss(ipa),csite%can_shv(ipa),lsl)
+                                        ,csite%can_prss(ipa),csite%can_shv(ipa),lsl        &
+                                        ,fuse_initial)
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
                      fuse_table(donc) = .false.
                      
-                     !----- Checking whether total size and LAI are conserved. ------------!
+                     !----- Check whether total size and LAI are conserved. ---------------!
                      new_size = cpatch%nplant(recc) * ( cpatch%balive(recc)                &
                                                       + cpatch%bdead(recc)                 &
                                                       + cpatch%bstorage(recc) )
@@ -1014,7 +1016,8 @@ module fuse_fiss_utils
    !  information from both cohorts.                                                       !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor,can_prss,can_shv,lsl)
+   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor,can_prss,can_shv,lsl &
+                            ,fuse_initial)
       use ed_state_vars      , only : patchtype              ! ! Structure
       use pft_coms           , only : q                      & ! intent(in), lookup table
                                     , qsw                    & ! intent(in), lookup table
@@ -1046,6 +1049,7 @@ module fuse_fiss_utils
       real            , intent(in) :: can_prss          ! Canopy air pressure
       real            , intent(in) :: can_shv           ! Canopy air specific humidity
       integer         , intent(in) :: lsl               ! Lowest soil level
+      logical         , intent(in) :: fuse_initial      ! Called from initialisation
       !----- Local variables --------------------------------------------------------------!
       integer                      :: imon              ! Month for cb loop
       integer                      :: t                 ! Time of day for dcycle loop
@@ -1360,7 +1364,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Not sure about the following variables.  From ed_state_vars, I would say that   !
       ! they should be averaged, not added because there it's written that these are per   !
-      ! plant.  But from the fuse_2_patches subroutine here it seems they are per unit  !
+      ! plant.  But from the fuse_2_patches subroutine here it seems they are per unit     !
       ! area.                                                                              !
       !------------------------------------------------------------------------------------!
       cpatch%growth_respiration(recc)  = newni *                                           &
@@ -1502,231 +1506,233 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Fast averages.                                                                  !
       !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !    Intensive variables, scaled by plant density.                                   !
-      !------------------------------------------------------------------------------------!
-      cpatch%fmean_gpp             (recc) = ( cpatch%fmean_gpp             (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_gpp             (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_npp             (recc) = ( cpatch%fmean_npp             (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_npp             (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_leaf_resp       (recc) = ( cpatch%fmean_leaf_resp       (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_leaf_resp       (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_root_resp       (recc) = ( cpatch%fmean_root_resp       (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_root_resp       (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_growth_resp     (recc) = ( cpatch%fmean_growth_resp     (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_growth_resp     (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_storage_resp    (recc) = ( cpatch%fmean_storage_resp    (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_storage_resp    (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_vleaf_resp      (recc) = ( cpatch%fmean_vleaf_resp      (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_vleaf_resp      (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_plresp          (recc) = ( cpatch%fmean_plresp          (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_plresp          (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_light_level     (recc) = ( cpatch%fmean_light_level     (recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_light_level     (donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_light_level_beam(recc) = ( cpatch%fmean_light_level_beam(recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_light_level_beam(donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      cpatch%fmean_light_level_diff(recc) = ( cpatch%fmean_light_level_diff(recc)          &
-                                            * cpatch%nplant                (recc)          &
-                                            + cpatch%fmean_light_level_diff(donc)          &
-                                            * cpatch%nplant                (donc) )        &
-                                          * newni
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Intensive variables, scaled by LAI.                                             !
-      !------------------------------------------------------------------------------------!
-      cpatch%fmean_leaf_gsw        (recc) = ( cpatch%fmean_leaf_gsw        (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_leaf_gsw        (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
-      cpatch%fmean_leaf_gbw        (recc) = ( cpatch%fmean_leaf_gbw        (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_leaf_gbw        (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
-      cpatch%fmean_fs_open         (recc) = ( cpatch%fmean_fs_open         (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_fs_open         (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
-      cpatch%fmean_fsw             (recc) = ( cpatch%fmean_fsw             (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_fsw             (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
-      cpatch%fmean_fsn             (recc) = ( cpatch%fmean_fsn             (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_fsn             (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
-      cpatch%fmean_psi_open        (recc) = ( cpatch%fmean_psi_open        (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_psi_open        (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
-      cpatch%fmean_psi_closed      (recc) = ( cpatch%fmean_psi_closed      (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_psi_closed      (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Intensive variables, scaled by WAI.                                             !
-      !------------------------------------------------------------------------------------!
-      cpatch%fmean_wood_gbw        (recc) = ( cpatch%fmean_wood_gbw        (recc)          &
-                                            * cpatch%wai                   (recc)          &
-                                            + cpatch%fmean_wood_gbw        (recc)          &
-                                            * cpatch%wai                   (recc) )        &
-                                          * newwaii
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    Extensive variables.                                                            !
-      !------------------------------------------------------------------------------------!
-      cpatch%fmean_leaf_energy     (recc) = cpatch%fmean_leaf_energy     (recc)            &
-                                          + cpatch%fmean_leaf_energy     (donc)
-      cpatch%fmean_leaf_water      (recc) = cpatch%fmean_leaf_water      (recc)            &
-                                          + cpatch%fmean_leaf_water      (donc)
-      cpatch%fmean_leaf_hcap       (recc) = cpatch%fmean_leaf_hcap       (recc)            &
-                                          + cpatch%fmean_leaf_hcap       (donc)
-      cpatch%fmean_wood_energy     (recc) = cpatch%fmean_wood_energy     (recc)            &
-                                          + cpatch%fmean_wood_energy     (donc)
-      cpatch%fmean_wood_water      (recc) = cpatch%fmean_wood_water      (recc)            &
-                                          + cpatch%fmean_wood_water      (donc)
-      cpatch%fmean_wood_hcap       (recc) = cpatch%fmean_wood_hcap       (recc)            &
-                                          + cpatch%fmean_wood_hcap       (donc)
-      cpatch%fmean_water_supply    (recc) = cpatch%fmean_water_supply    (recc)            &
-                                          + cpatch%fmean_water_supply    (donc)
-      cpatch%fmean_par_l           (recc) = cpatch%fmean_par_l           (recc)            &
-                                          + cpatch%fmean_par_l           (donc)
-      cpatch%fmean_par_l_beam      (recc) = cpatch%fmean_par_l_beam      (recc)            &
-                                          + cpatch%fmean_par_l_beam      (donc)
-      cpatch%fmean_par_l_diff      (recc) = cpatch%fmean_par_l_diff      (recc)            &
-                                          + cpatch%fmean_par_l_diff      (donc)
-      cpatch%fmean_rshort_l        (recc) = cpatch%fmean_rshort_l        (recc)            &
-                                          + cpatch%fmean_rshort_l        (donc)
-      cpatch%fmean_rlong_l         (recc) = cpatch%fmean_rlong_l         (recc)            &
-                                          + cpatch%fmean_rlong_l         (donc)
-      cpatch%fmean_sensible_lc     (recc) = cpatch%fmean_sensible_lc     (recc)            &
-                                          + cpatch%fmean_sensible_lc     (donc)
-      cpatch%fmean_vapor_lc        (recc) = cpatch%fmean_vapor_lc        (recc)            &
-                                          + cpatch%fmean_vapor_lc        (donc)
-      cpatch%fmean_transp          (recc) = cpatch%fmean_transp          (recc)            &
-                                          + cpatch%fmean_transp          (donc)
-      cpatch%fmean_intercepted_al  (recc) = cpatch%fmean_intercepted_al  (recc)            &
-                                          + cpatch%fmean_intercepted_al  (donc)
-      cpatch%fmean_wshed_lg        (recc) = cpatch%fmean_wshed_lg        (recc)            &
-                                          + cpatch%fmean_wshed_lg        (donc)
-      cpatch%fmean_rshort_w        (recc) = cpatch%fmean_rshort_w        (recc)            &
-                                          + cpatch%fmean_rshort_w        (donc)
-      cpatch%fmean_rlong_w         (recc) = cpatch%fmean_rlong_w         (recc)            &
-                                          + cpatch%fmean_rlong_w         (donc)
-      cpatch%fmean_sensible_wc     (recc) = cpatch%fmean_sensible_wc     (recc)            &
-                                          + cpatch%fmean_sensible_wc     (donc)
-      cpatch%fmean_vapor_wc        (recc) = cpatch%fmean_vapor_wc        (recc)            &
-                                          + cpatch%fmean_vapor_wc        (donc)
-      cpatch%fmean_intercepted_aw  (recc) = cpatch%fmean_intercepted_aw  (recc)            &
-                                          + cpatch%fmean_intercepted_aw  (donc)
-      cpatch%fmean_wshed_wg        (recc) = cpatch%fmean_wshed_wg        (recc)            &
-                                          + cpatch%fmean_wshed_wg        (donc)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      We update temperature and liquid water fraction.  We check whether the heat   !
-      ! capacity is non-zero.  If it is a normal number, use the standard thermodynamic    !
-      ! library, otherwise, average temperature, this is probably a blend of tiny cohorts  !
-      ! that couldn't be solved, or the wood is not solved.                                !
-      !------------------------------------------------------------------------------------!
-      !------ Leaf. -----------------------------------------------------------------------!
-      if ( cpatch%fmean_leaf_hcap(recc) > 0. ) then
-         !----- Update temperature and liquid fraction using standard thermodynamics. -----!
-         call uextcm2tl(cpatch%fmean_leaf_energy(recc),cpatch%fmean_leaf_water(recc)       &
-                       ,cpatch%fmean_leaf_hcap  (recc),cpatch%fmean_leaf_temp (recc)       &
-                       ,cpatch%fmean_leaf_fliq  (recc))
+      if (.not. fuse_initial) then
+         !---------------------------------------------------------------------------------!
+         !    Intensive variables, scaled by plant density.                                !
+         !---------------------------------------------------------------------------------!
+         cpatch%fmean_gpp             (recc) = ( cpatch%fmean_gpp             (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_gpp             (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_npp             (recc) = ( cpatch%fmean_npp             (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_npp             (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_leaf_resp       (recc) = ( cpatch%fmean_leaf_resp       (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_leaf_resp       (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_root_resp       (recc) = ( cpatch%fmean_root_resp       (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_root_resp       (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_growth_resp     (recc) = ( cpatch%fmean_growth_resp     (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_growth_resp     (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_storage_resp    (recc) = ( cpatch%fmean_storage_resp    (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_storage_resp    (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_vleaf_resp      (recc) = ( cpatch%fmean_vleaf_resp      (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_vleaf_resp      (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_plresp          (recc) = ( cpatch%fmean_plresp          (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_plresp          (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_light_level     (recc) = ( cpatch%fmean_light_level     (recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_light_level     (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_light_level_beam(recc) = ( cpatch%fmean_light_level_beam(recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_light_level_beam(donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_light_level_diff(recc) = ( cpatch%fmean_light_level_diff(recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_light_level_diff(donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
          !---------------------------------------------------------------------------------!
 
 
-         !----- Scale vapour pressure deficit using LAI. ----------------------------------!
-         cpatch%fmean_leaf_vpdef   (recc) = ( cpatch%fmean_leaf_vpdef      (recc)          &
-                                            * cpatch%lai                   (recc)          &
-                                            + cpatch%fmean_leaf_vpdef      (donc)          &
-                                            * cpatch%lai                   (donc) )        &
-                                          * newlaii
+
+
          !---------------------------------------------------------------------------------!
-      else
-         !----- None of the cohorts has leaf biomass use nplant to scale them. ------------!
-         cpatch%fmean_leaf_temp (recc) = ( cpatch%fmean_leaf_temp (recc)                   &
-                                         * cpatch%nplant          (recc)                   &
-                                         + cpatch%fmean_leaf_temp (donc)                   &
-                                         * cpatch%nplant          (donc) )                 &
-                                       * newni
-         cpatch%fmean_leaf_fliq (recc) = 0.0
-         cpatch%fmean_leaf_vpdef(recc) = ( cpatch%fmean_leaf_vpdef(recc)                   &
-                                         * cpatch%nplant          (recc)                   &
-                                         + cpatch%fmean_leaf_vpdef(donc)                   &
-                                         * cpatch%nplant          (donc) )                 &
-                                         * newni
+         !    Intensive variables, scaled by LAI.                                          !
          !---------------------------------------------------------------------------------!
-      end if
-      !------ Wood. -----------------------------------------------------------------------!
-      if ( cpatch%fmean_wood_hcap(recc) > 0. ) then
-         !----- Update temperature using the standard thermodynamics. ---------------------!
-         call uextcm2tl(cpatch%fmean_wood_energy(recc),cpatch%fmean_wood_water(recc)       &
-                       ,cpatch%fmean_wood_hcap  (recc),cpatch%fmean_wood_temp (recc)       &
-                       ,cpatch%fmean_wood_fliq  (recc))
+         cpatch%fmean_leaf_gsw        (recc) = ( cpatch%fmean_leaf_gsw        (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_leaf_gsw        (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
+         cpatch%fmean_leaf_gbw        (recc) = ( cpatch%fmean_leaf_gbw        (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_leaf_gbw        (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
+         cpatch%fmean_fs_open         (recc) = ( cpatch%fmean_fs_open         (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_fs_open         (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
+         cpatch%fmean_fsw             (recc) = ( cpatch%fmean_fsw             (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_fsw             (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
+         cpatch%fmean_fsn             (recc) = ( cpatch%fmean_fsn             (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_fsn             (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
+         cpatch%fmean_psi_open        (recc) = ( cpatch%fmean_psi_open        (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_psi_open        (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
+         cpatch%fmean_psi_closed      (recc) = ( cpatch%fmean_psi_closed      (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_psi_closed      (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
          !---------------------------------------------------------------------------------!
-      else                                                                               
-         !----- Wood temperature can't be found using uextcm2tl (singularity). ------------!
-         cpatch%fmean_wood_temp(recc) = ( cpatch%fmean_wood_temp(recc)                     &
-                                        * cpatch%nplant         (recc)                     &
-                                        + cpatch%fmean_wood_temp(donc)                     &
-                                        * cpatch%nplant         (donc) )                   &
-                                      * newni                 
-         cpatch%fmean_wood_fliq(recc) = 0.0
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Intensive variables, scaled by WAI.                                          !
+         !---------------------------------------------------------------------------------!
+         cpatch%fmean_wood_gbw        (recc) = ( cpatch%fmean_wood_gbw        (recc)       &
+                                               * cpatch%wai                   (recc)       &
+                                               + cpatch%fmean_wood_gbw        (recc)       &
+                                               * cpatch%wai                   (recc) )     &
+                                             * newwaii
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Extensive variables.                                                         !
+         !---------------------------------------------------------------------------------!
+         cpatch%fmean_leaf_energy     (recc) = cpatch%fmean_leaf_energy     (recc)         &
+                                             + cpatch%fmean_leaf_energy     (donc)
+         cpatch%fmean_leaf_water      (recc) = cpatch%fmean_leaf_water      (recc)         &
+                                             + cpatch%fmean_leaf_water      (donc)
+         cpatch%fmean_leaf_hcap       (recc) = cpatch%fmean_leaf_hcap       (recc)         &
+                                             + cpatch%fmean_leaf_hcap       (donc)
+         cpatch%fmean_wood_energy     (recc) = cpatch%fmean_wood_energy     (recc)         &
+                                             + cpatch%fmean_wood_energy     (donc)
+         cpatch%fmean_wood_water      (recc) = cpatch%fmean_wood_water      (recc)         &
+                                             + cpatch%fmean_wood_water      (donc)
+         cpatch%fmean_wood_hcap       (recc) = cpatch%fmean_wood_hcap       (recc)         &
+                                             + cpatch%fmean_wood_hcap       (donc)
+         cpatch%fmean_water_supply    (recc) = cpatch%fmean_water_supply    (recc)         &
+                                             + cpatch%fmean_water_supply    (donc)
+         cpatch%fmean_par_l           (recc) = cpatch%fmean_par_l           (recc)         &
+                                             + cpatch%fmean_par_l           (donc)
+         cpatch%fmean_par_l_beam      (recc) = cpatch%fmean_par_l_beam      (recc)         &
+                                             + cpatch%fmean_par_l_beam      (donc)
+         cpatch%fmean_par_l_diff      (recc) = cpatch%fmean_par_l_diff      (recc)         &
+                                             + cpatch%fmean_par_l_diff      (donc)
+         cpatch%fmean_rshort_l        (recc) = cpatch%fmean_rshort_l        (recc)         &
+                                             + cpatch%fmean_rshort_l        (donc)
+         cpatch%fmean_rlong_l         (recc) = cpatch%fmean_rlong_l         (recc)         &
+                                             + cpatch%fmean_rlong_l         (donc)
+         cpatch%fmean_sensible_lc     (recc) = cpatch%fmean_sensible_lc     (recc)         &
+                                             + cpatch%fmean_sensible_lc     (donc)
+         cpatch%fmean_vapor_lc        (recc) = cpatch%fmean_vapor_lc        (recc)         &
+                                             + cpatch%fmean_vapor_lc        (donc)
+         cpatch%fmean_transp          (recc) = cpatch%fmean_transp          (recc)         &
+                                             + cpatch%fmean_transp          (donc)
+         cpatch%fmean_intercepted_al  (recc) = cpatch%fmean_intercepted_al  (recc)         &
+                                             + cpatch%fmean_intercepted_al  (donc)
+         cpatch%fmean_wshed_lg        (recc) = cpatch%fmean_wshed_lg        (recc)         &
+                                             + cpatch%fmean_wshed_lg        (donc)
+         cpatch%fmean_rshort_w        (recc) = cpatch%fmean_rshort_w        (recc)         &
+                                             + cpatch%fmean_rshort_w        (donc)
+         cpatch%fmean_rlong_w         (recc) = cpatch%fmean_rlong_w         (recc)         &
+                                             + cpatch%fmean_rlong_w         (donc)
+         cpatch%fmean_sensible_wc     (recc) = cpatch%fmean_sensible_wc     (recc)         &
+                                             + cpatch%fmean_sensible_wc     (donc)
+         cpatch%fmean_vapor_wc        (recc) = cpatch%fmean_vapor_wc        (recc)         &
+                                             + cpatch%fmean_vapor_wc        (donc)
+         cpatch%fmean_intercepted_aw  (recc) = cpatch%fmean_intercepted_aw  (recc)         &
+                                             + cpatch%fmean_intercepted_aw  (donc)
+         cpatch%fmean_wshed_wg        (recc) = cpatch%fmean_wshed_wg        (recc)         &
+                                             + cpatch%fmean_wshed_wg        (donc)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      We update temperature and liquid water fraction.  We check whether the     !
+         ! heat capacity is non-zero.  If it is a normal number, use the standard thermo-  !
+         ! dynamic library, otherwise, average temperature, this is probably a blend of    !
+         ! tiny cohorts that couldn't be solved, or the wood is not solved.                !
+         !---------------------------------------------------------------------------------!
+         !------ Leaf. --------------------------------------------------------------------!
+         if ( cpatch%fmean_leaf_hcap(recc) > 0. ) then
+            !----- Update temperature and liquid fraction using standard thermodynamics. --!
+            call uextcm2tl(cpatch%fmean_leaf_energy(recc),cpatch%fmean_leaf_water(recc)    &
+                          ,cpatch%fmean_leaf_hcap  (recc),cpatch%fmean_leaf_temp (recc)    &
+                          ,cpatch%fmean_leaf_fliq  (recc))
+            !------------------------------------------------------------------------------!
+
+
+            !----- Scale vapour pressure deficit using LAI. -------------------------------!
+            cpatch%fmean_leaf_vpdef   (recc) = ( cpatch%fmean_leaf_vpdef      (recc)       &
+                                               * cpatch%lai                   (recc)       &
+                                               + cpatch%fmean_leaf_vpdef      (donc)       &
+                                               * cpatch%lai                   (donc) )     &
+                                             * newlaii
+            !------------------------------------------------------------------------------!
+         else
+            !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
+            cpatch%fmean_leaf_temp (recc) = ( cpatch%fmean_leaf_temp (recc)                &
+                                            * cpatch%nplant          (recc)                &
+                                            + cpatch%fmean_leaf_temp (donc)                &
+                                            * cpatch%nplant          (donc) )              &
+                                          * newni
+            cpatch%fmean_leaf_fliq (recc) = 0.0
+            cpatch%fmean_leaf_vpdef(recc) = ( cpatch%fmean_leaf_vpdef(recc)                &
+                                            * cpatch%nplant          (recc)                &
+                                            + cpatch%fmean_leaf_vpdef(donc)                &
+                                            * cpatch%nplant          (donc) )              &
+                                            * newni
+            !------------------------------------------------------------------------------!
+         end if
+         !------ Wood. --------------------------------------------------------------------!
+         if ( cpatch%fmean_wood_hcap(recc) > 0. ) then
+            !----- Update temperature using the standard thermodynamics. ------------------!
+            call uextcm2tl(cpatch%fmean_wood_energy(recc),cpatch%fmean_wood_water(recc)    &
+                          ,cpatch%fmean_wood_hcap  (recc),cpatch%fmean_wood_temp (recc)    &
+                          ,cpatch%fmean_wood_fliq  (recc))
+            !------------------------------------------------------------------------------!
+         else                                                                              
+            !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
+            cpatch%fmean_wood_temp(recc) = ( cpatch%fmean_wood_temp(recc)                  &
+                                           * cpatch%nplant         (recc)                  &
+                                           + cpatch%fmean_wood_temp(donc)                  &
+                                           * cpatch%nplant         (donc) )                &
+                                         * newni                 
+            cpatch%fmean_wood_fliq(recc) = 0.0
+            !------------------------------------------------------------------------------!
+         end if
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1737,7 +1743,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------!
-      if (writing_long) then
+      if (writing_long .and. (.not. fuse_initial)) then
 
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
@@ -2010,7 +2016,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Monthly means.                                                                  !
       !------------------------------------------------------------------------------------!
-      if (writing_eorq) then
+      if (writing_eorq .and. (.not. fuse_initial)) then
          !---------------------------------------------------------------------------------!
          !     First we merge the squares, as they require the means.                      !
          !---------------------------------------------------------------------------------!
@@ -2423,7 +2429,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------!
-      if (writing_dcyc) then
+      if (writing_dcyc .and. (.not. fuse_initial)) then
          !---------------------------------------------------------------------------------!
          !     First we merge the squares, as they require the means.                      !
          !---------------------------------------------------------------------------------!
@@ -2836,7 +2842,7 @@ module fuse_fiss_utils
    ! will need to live with that and accept life is not always fair with those with        !
    ! limited computational resources.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_patches(cgrid,ifm)
+   subroutine fuse_patches(cgrid,ifm,fuse_initial)
       use ed_state_vars       , only : edtype              & ! structure
                                      , polygontype         & ! structure
                                      , sitetype            & ! structure
@@ -2866,6 +2872,7 @@ module fuse_fiss_utils
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)          , target      :: cgrid           ! Current grid
       integer               , intent(in)  :: ifm             ! Current grid index
+      logical               , intent(in)  :: fuse_initial    ! Called from initialisation?
       !----- Local variables --------------------------------------------------------------!
       type(polygontype)     , pointer     :: cpoly           ! Current polygon
       type(polygontype)     , pointer     :: jpoly           ! Current polygon
@@ -3111,7 +3118,9 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
-                                     ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
+                                     ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
+                                     ,elim_nplant,elim_lai)
+                  !------------------------------------------------------------------------!
 
 
                   !----- Record the fusion if requested by the user. ----------------------!
@@ -3378,8 +3387,8 @@ module fuse_fiss_utils
                         !------------------------------------------------------------------!
                         call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss    &
                                            ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
-                                           ,cpoly%green_leaf_factor(:,isi),elim_nplant     &
-                                           ,elim_lai)
+                                           ,cpoly%green_leaf_factor(:,isi),fuse_initial    &
+                                           ,elim_nplant,elim_lai)
                         !------------------------------------------------------------------!
 
 
@@ -3729,7 +3738,8 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
-                                     ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
+                                     ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
+                                     ,elim_nplant,elim_lai)
                   !------------------------------------------------------------------------!
 
 
@@ -3949,7 +3959,7 @@ module fuse_fiss_utils
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
    subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,prss,lsl,ntext_soil,green_leaf_factor &
-                               ,elim_nplant,elim_lai)
+                            ,fuse_initial,elim_nplant,elim_lai)
       use ed_state_vars      , only : sitetype              & ! Structure 
                                     , patchtype             ! ! Structure
       use soil_coms          , only : soil                  & ! intent(in), lookup table
@@ -3981,6 +3991,7 @@ module fuse_fiss_utils
       integer, dimension(mzg), intent(in)  :: ntext_soil        ! Soil type
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
       real                   , intent(in)  :: prss              ! Sfc. air density
+      logical                , intent(in)  :: fuse_initial      ! Initialisation?
       real                   , intent(out) :: elim_nplant       ! Eliminated nplant 
       real                   , intent(out) :: elim_lai          ! Eliminated lai
       !----- Local variables --------------------------------------------------------------!
@@ -4342,324 +4353,327 @@ module fuse_fiss_utils
 
 
 
-      !------------------------------------------------------------------------------------! 
-      !    Sub-daily means.                                                                !
-      !------------------------------------------------------------------------------------! 
-      csite%fmean_rh                    (recp) = ( csite%fmean_rh                 (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rh                 (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_cwd_rh                (recp) = ( csite%fmean_cwd_rh             (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_cwd_rh             (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_nep                   (recp) = ( csite%fmean_nep                (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_nep                (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_rk4step               (recp) = ( csite%fmean_rk4step            (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rk4step            (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_available_water       (recp) = ( csite%fmean_available_water    (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_available_water    (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_can_theiv             (recp) = ( csite%fmean_can_theiv          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_can_theiv          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_can_theta             (recp) = ( csite%fmean_can_theta          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_can_theta          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_can_vpdef             (recp) = ( csite%fmean_can_vpdef          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_can_vpdef          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_can_shv               (recp) = ( csite%fmean_can_shv            (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_can_shv            (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_can_co2               (recp) = ( csite%fmean_can_co2            (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_can_co2            (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_can_prss              (recp) = ( csite%fmean_can_prss           (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_can_prss           (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_gnd_temp              (recp) = ( csite%fmean_gnd_temp           (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_gnd_temp           (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_gnd_shv               (recp) = ( csite%fmean_gnd_shv            (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_gnd_shv            (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_can_ggnd              (recp) = ( csite%fmean_can_ggnd           (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_can_ggnd           (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_rshort_gnd            (recp) = ( csite%fmean_rshort_gnd         (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rshort_gnd         (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_par_gnd               (recp) = ( csite%fmean_par_gnd            (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_par_gnd            (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_rlong_gnd             (recp) = ( csite%fmean_rlong_gnd          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rlong_gnd          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_rlongup               (recp) = ( csite%fmean_rlongup            (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rlongup            (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_parup                 (recp) = ( csite%fmean_parup              (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_parup              (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_nirup                 (recp) = ( csite%fmean_nirup              (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_nirup              (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_rshortup              (recp) = ( csite%fmean_rshortup           (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rshortup           (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_rnet                  (recp) = ( csite%fmean_rnet               (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rnet               (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_albedo                (recp) = ( csite%fmean_albedo             (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_albedo             (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_albedo_par            (recp) = ( csite%fmean_albedo_par         (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_albedo_par         (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_albedo_nir            (recp) = ( csite%fmean_albedo_nir         (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_albedo_nir         (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_rlong_albedo          (recp) = ( csite%fmean_rlong_albedo       (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_rlong_albedo       (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_ustar                 (recp) = ( csite%fmean_ustar              (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_ustar              (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_tstar                 (recp) = ( csite%fmean_tstar              (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_tstar              (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_qstar                 (recp) = ( csite%fmean_qstar              (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_qstar              (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_cstar                 (recp) = ( csite%fmean_cstar              (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_cstar              (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_carbon_ac             (recp) = ( csite%fmean_carbon_ac          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_carbon_ac          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_carbon_st             (recp) = ( csite%fmean_carbon_st          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_carbon_st          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_vapor_gc              (recp) = ( csite%fmean_vapor_gc           (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_vapor_gc           (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_vapor_ac              (recp) = ( csite%fmean_vapor_ac           (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_vapor_ac           (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_throughfall           (recp) = ( csite%fmean_throughfall        (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_throughfall        (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_runoff                (recp) = ( csite%fmean_runoff             (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_runoff             (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_drainage              (recp) = ( csite%fmean_drainage           (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_drainage           (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_sensible_gc           (recp) = ( csite%fmean_sensible_gc        (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sensible_gc        (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_sensible_ac           (recp) = ( csite%fmean_sensible_ac        (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sensible_ac        (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_qthroughfall          (recp) = ( csite%fmean_qthroughfall       (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_qthroughfall       (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_qrunoff               (recp) = ( csite%fmean_qrunoff            (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_qrunoff            (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_qdrainage             (recp) = ( csite%fmean_qdrainage          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_qdrainage          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_soil_energy         (:,recp) = ( csite%fmean_soil_energy      (:,recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_soil_energy      (:,donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_soil_water          (:,recp) = ( csite%fmean_soil_water       (:,recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_soil_water       (:,donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_smoist_gg           (:,recp) = ( csite%fmean_smoist_gg        (:,recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_smoist_gg        (:,donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_transloss           (:,recp) = ( csite%fmean_transloss        (:,recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_transloss        (:,donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_sensible_gg         (:,recp) = ( csite%fmean_sensible_gg      (:,recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sensible_gg      (:,donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
       !------------------------------------------------------------------------------------!
-
-
-
-
+      !    Sub-daily means.  This should be skipped during initialisation because all      !
+      ! averages will be zero.                                                             !
       !------------------------------------------------------------------------------------!
-      !      Now we find the derived properties for the canopy air space.                  !
-      !------------------------------------------------------------------------------------!
-      can_exner                   = press2exner (csite%fmean_can_prss(recp))
-      csite%fmean_can_temp (recp) = extheta2temp(can_exner,csite%fmean_can_theta (recp))
-      csite%fmean_can_rhos (recp) = idealdenssh ( csite%fmean_can_prss  (recp)             &
-                                                , csite%fmean_can_temp  (recp)             &
-                                                , csite%fmean_can_shv   (recp)             )
-      !------------------------------------------------------------------------------------!
+      if (.not. fuse_initial) then
+         csite%fmean_rh                   (recp) = ( csite%fmean_rh                (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rh                (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_cwd_rh               (recp) = ( csite%fmean_cwd_rh            (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_cwd_rh            (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_nep                  (recp) = ( csite%fmean_nep               (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_nep               (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rk4step              (recp) = ( csite%fmean_rk4step           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rk4step           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_available_water      (recp) = ( csite%fmean_available_water   (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_available_water   (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_can_theiv            (recp) = ( csite%fmean_can_theiv         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_can_theiv         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_can_theta            (recp) = ( csite%fmean_can_theta         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_can_theta         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_can_vpdef            (recp) = ( csite%fmean_can_vpdef         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_can_vpdef         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_can_shv              (recp) = ( csite%fmean_can_shv           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_can_shv           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_can_co2              (recp) = ( csite%fmean_can_co2           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_can_co2           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_can_prss             (recp) = ( csite%fmean_can_prss          (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_can_prss          (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_gnd_temp             (recp) = ( csite%fmean_gnd_temp          (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_gnd_temp          (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_gnd_shv              (recp) = ( csite%fmean_gnd_shv           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_gnd_shv           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_can_ggnd             (recp) = ( csite%fmean_can_ggnd          (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_can_ggnd          (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rshort_gnd           (recp) = ( csite%fmean_rshort_gnd        (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rshort_gnd        (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_par_gnd              (recp) = ( csite%fmean_par_gnd           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_par_gnd           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rlong_gnd            (recp) = ( csite%fmean_rlong_gnd         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rlong_gnd         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rlongup              (recp) = ( csite%fmean_rlongup           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rlongup           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_parup                (recp) = ( csite%fmean_parup             (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_parup             (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_nirup                (recp) = ( csite%fmean_nirup             (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_nirup             (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rshortup             (recp) = ( csite%fmean_rshortup          (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rshortup          (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rnet                 (recp) = ( csite%fmean_rnet              (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rnet              (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_albedo               (recp) = ( csite%fmean_albedo            (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_albedo            (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_albedo_par           (recp) = ( csite%fmean_albedo_par        (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_albedo_par        (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_albedo_nir           (recp) = ( csite%fmean_albedo_nir        (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_albedo_nir        (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rlong_albedo         (recp) = ( csite%fmean_rlong_albedo      (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rlong_albedo      (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_ustar                (recp) = ( csite%fmean_ustar             (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_ustar             (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_tstar                (recp) = ( csite%fmean_tstar             (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_tstar             (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_qstar                (recp) = ( csite%fmean_qstar             (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_qstar             (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_cstar                (recp) = ( csite%fmean_cstar             (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_cstar             (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_carbon_ac            (recp) = ( csite%fmean_carbon_ac         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_carbon_ac         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_carbon_st            (recp) = ( csite%fmean_carbon_st         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_carbon_st         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_vapor_gc             (recp) = ( csite%fmean_vapor_gc          (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_vapor_gc          (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_vapor_ac             (recp) = ( csite%fmean_vapor_ac          (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_vapor_ac          (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_throughfall          (recp) = ( csite%fmean_throughfall       (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_throughfall       (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_runoff               (recp) = ( csite%fmean_runoff            (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_runoff            (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_drainage             (recp) = ( csite%fmean_drainage          (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_drainage          (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_sensible_gc          (recp) = ( csite%fmean_sensible_gc       (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_sensible_gc       (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_sensible_ac          (recp) = ( csite%fmean_sensible_ac       (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_sensible_ac       (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_qthroughfall         (recp) = ( csite%fmean_qthroughfall      (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_qthroughfall      (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_qrunoff              (recp) = ( csite%fmean_qrunoff           (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_qrunoff           (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_qdrainage            (recp) = ( csite%fmean_qdrainage         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_qdrainage         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_soil_energy        (:,recp) = ( csite%fmean_soil_energy     (:,recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_soil_energy     (:,donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_soil_water         (:,recp) = ( csite%fmean_soil_water      (:,recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_soil_water      (:,donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_smoist_gg          (:,recp) = ( csite%fmean_smoist_gg       (:,recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_smoist_gg       (:,donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_transloss          (:,recp) = ( csite%fmean_transloss       (:,recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_transloss       (:,donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_sensible_gg        (:,recp) = ( csite%fmean_sensible_gg     (:,recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_sensible_gg     (:,donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         !---------------------------------------------------------------------------------!
 
 
 
-      !------------------------------------------------------------------------------------!
-      !      Find the soil mean temperature, liquid water fraction, and matric             !
-      ! potential.                                                                         !
-      !------------------------------------------------------------------------------------!
-      do iii=lsl,mzg
-         nsoil = ntext_soil(iii)
-         call uextcm2tl( csite%fmean_soil_energy(iii,recp)                                 &
-                       , csite%fmean_soil_water (iii,recp) * wdns                          &
-                       , soil(nsoil)%slcpd                                                 &
-                       , csite%fmean_soil_temp  (iii,recp)                                 &
-                       , csite%fmean_soil_fliq  (iii,recp))
 
-         csite%fmean_soil_mstpot(iii,recp)  =                                              &
+         !---------------------------------------------------------------------------------!
+         !      Now we find the derived properties for the canopy air space.               !
+         !---------------------------------------------------------------------------------!
+         can_exner                   = press2exner (csite%fmean_can_prss(recp))
+         csite%fmean_can_temp (recp) = extheta2temp(can_exner,csite%fmean_can_theta (recp))
+         csite%fmean_can_rhos (recp) = idealdenssh ( csite%fmean_can_prss  (recp)          &
+                                                   , csite%fmean_can_temp  (recp)          &
+                                                   , csite%fmean_can_shv   (recp)          )
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Find the soil mean temperature, liquid water fraction, and matric          !
+         ! potential.                                                                      !
+         !---------------------------------------------------------------------------------!
+         do iii=lsl,mzg
+            nsoil = ntext_soil(iii)
+            call uextcm2tl( csite%fmean_soil_energy(iii,recp)                              &
+                          , csite%fmean_soil_water (iii,recp) * wdns                       &
+                          , soil(nsoil)%slcpd                                              &
+                          , csite%fmean_soil_temp  (iii,recp)                              &
+                          , csite%fmean_soil_fliq  (iii,recp))
+
+            csite%fmean_soil_mstpot(iii,recp)  =                                           &
                                   matric_potential(nsoil,csite%fmean_soil_water (iii,recp))
-      end do
-      !------------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !     Find the temporary surface water properties.  They may not be available at all !
-      ! times, so we must check.                                                           !
-      !------------------------------------------------------------------------------------!
-      !----- Temporarily make energy extensive [J/m2]. ------------------------------------!
-      csite%fmean_sfcw_depth            (recp) = ( csite%fmean_sfcw_depth         (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sfcw_depth         (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_sfcw_energy           (recp) = ( csite%fmean_sfcw_energy        (recp)   &
-                                                 * csite%fmean_sfcw_mass          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sfcw_energy        (donp)   &
-                                                 * csite%fmean_sfcw_mass          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_sfcw_mass             (recp) = ( csite%fmean_sfcw_mass          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sfcw_mass          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      !----- Check whether there is enough surface water. ---------------------------------!
-      if (csite%fmean_sfcw_mass(recp) > tiny_sfcwater_mass) then
-         csite%fmean_sfcw_energy        (recp) =   csite%fmean_sfcw_energy        (recp)   &
-                                               /   csite%fmean_sfcw_mass          (recp)
-         call uint2tl( csite%fmean_sfcw_energy(recp)                                       &
-                     , csite%fmean_sfcw_temp  (recp)                                       &
-                     , csite%fmean_sfcw_fliq  (recp) )
-      else
-         csite%fmean_sfcw_mass  (recp)  = 0.
-         csite%fmean_sfcw_depth (recp)  = 0.
-         csite%fmean_sfcw_energy(recp)  = 0.
-         csite%fmean_sfcw_temp  (recp)  = csite%fmean_soil_temp(mzg,recp)
-         csite%fmean_sfcw_fliq  (recp)  = csite%fmean_soil_fliq(mzg,recp)
+         !---------------------------------------------------------------------------------!
+         !     Find the temporary surface water properties.  They may not be available at  !
+         ! all times, so we must check.                                                    !
+         !---------------------------------------------------------------------------------!
+         !----- Temporarily make energy extensive [J/m2]. ---------------------------------!
+         csite%fmean_sfcw_depth           (recp) = ( csite%fmean_sfcw_depth        (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_sfcw_depth        (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_sfcw_energy          (recp) = ( csite%fmean_sfcw_energy       (recp)  &
+                                                   * csite%fmean_sfcw_mass         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_sfcw_energy       (donp)  &
+                                                   * csite%fmean_sfcw_mass         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_sfcw_mass            (recp) = ( csite%fmean_sfcw_mass         (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_sfcw_mass         (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         !----- Check whether there is enough surface water. ------------------------------!
+         if (csite%fmean_sfcw_mass(recp) > tiny_sfcwater_mass) then
+            csite%fmean_sfcw_energy       (recp) =   csite%fmean_sfcw_energy       (recp)  &
+                                                 /   csite%fmean_sfcw_mass         (recp)
+            call uint2tl( csite%fmean_sfcw_energy(recp)                                    &
+                        , csite%fmean_sfcw_temp  (recp)                                    &
+                        , csite%fmean_sfcw_fliq  (recp) )
+         else
+            csite%fmean_sfcw_mass  (recp)  = 0.
+            csite%fmean_sfcw_depth (recp)  = 0.
+            csite%fmean_sfcw_energy(recp)  = 0.
+            csite%fmean_sfcw_temp  (recp)  = csite%fmean_soil_temp(mzg,recp)
+            csite%fmean_sfcw_fliq  (recp)  = csite%fmean_soil_fliq(mzg,recp)
+         end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
-
 
 
 
       !------------------------------------------------------------------------------------! 
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------! 
-      if (writing_long) then
+      if (writing_long .and. (.not. fuse_initial)) then
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_A_decomp           (donp)   &
@@ -4991,7 +5005,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Monthly means.                                                                  !
       !------------------------------------------------------------------------------------! 
-      if (writing_eorq) then
+      if (writing_eorq .and. (.not. fuse_initial)) then
          !---------------------------------------------------------------------------------!
          !    First we find the mean sum of squares, because they depend on the means too, !
          ! and the receptor values are lost after fusion.  All variables are intensive at  !
@@ -5473,7 +5487,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------! 
-      if (writing_dcyc) then
+      if (writing_dcyc .and. (.not. fuse_initial)) then
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
          ! original receptor data is lost after fusion takes place.                        !
@@ -5949,7 +5963,7 @@ module fuse_fiss_utils
          ! eliminate others.                                                               !
          !---------------------------------------------------------------------------------!
          if (cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-            call fuse_cohorts(csite,recp,green_leaf_factor,lsl)
+            call fuse_cohorts(csite,recp,green_leaf_factor,lsl,fuse_initial)
             call terminate_cohorts(csite,recp,elim_nplant,elim_lai)
             call split_cohorts(cpatch,green_leaf_factor,lsl)
          end if

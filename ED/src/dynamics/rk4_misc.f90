@@ -205,9 +205,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    k = max(1,ksn)
    call ed_grndvap8(ksn,targetp%soil_water(nzg),targetp%soil_tempk(nzg)                    &
                    ,targetp%soil_fracliq(nzg),targetp%sfcwater_tempk(k)                    &
-                   ,targetp%sfcwater_fracliq(k),targetp%can_prss,targetp%can_shv           &
-                   ,targetp%ground_shv,targetp%ground_ssh,targetp%ground_temp              &
-                   ,targetp%ground_fliq,targetp%ggsoil)
+                   ,targetp%sfcwater_fracliq(k),targetp%snowfac,targetp%can_prss           &
+                   ,targetp%can_shv,targetp%ground_shv,targetp%ground_ssh                  &
+                   ,targetp%ground_temp,targetp%ground_fliq,targetp%ggsoil)
    !---------------------------------------------------------------------------------------!
 
 
@@ -892,8 +892,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    if (ok_ground) then
       call ed_grndvap8(ksn,initp%soil_water(nzg),initp%soil_tempk(nzg)                     &
                       ,initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)                     &
-                      ,initp%sfcwater_fracliq(k),initp%can_prss,initp%can_shv              &
-                      ,initp%ground_shv,initp%ground_ssh,initp%ground_temp                 &
+                      ,initp%sfcwater_fracliq(k),initp%snowfac,initp%can_prss              &
+                      ,initp%can_shv,initp%ground_shv,initp%ground_ssh,initp%ground_temp   &
                       ,initp%ground_fliq,initp%ggsoil)
    end if
    !---------------------------------------------------------------------------------------!
@@ -3628,6 +3628,8 @@ subroutine print_rk4patch(y,csite,ipa)
    real(kind=4)                    :: pss_wai
    !---------------------------------------------------------------------------------------!
 
+   cpatch => csite%patch(ipa)
+
 
 
    !----- Find the total patch LAI and WAI. -----------------------------------------------!
@@ -3649,8 +3651,6 @@ subroutine print_rk4patch(y,csite,ipa)
    y_can_theiv = thetaeiv8(y%can_theta,y%can_prss,y%can_temp,y_can_rvap,y_can_rvap)
    y_can_vpdef = vpdefil8 (y%can_prss,y%can_temp,y%can_shv,.true.)
    !---------------------------------------------------------------------------------------!
-
-   cpatch => csite%patch(ipa)
 
    write(unit=*,fmt='(80a)') ('=',k=1,80)
    write(unit=*,fmt='(80a)') ('=',k=1,80)

@@ -491,6 +491,9 @@ subroutine init_can_rad_params()
                                     , fvis_diff_def               & ! intent(out)
                                     , fnir_beam_def               & ! intent(out)
                                     , fnir_diff_def               & ! intent(out)
+                                    , snow_albedo_vis             & ! intent(out)
+                                    , snow_albedo_nir             & ! intent(out)
+                                    , snow_emiss_tir              & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
@@ -825,6 +828,29 @@ subroutine init_can_rad_params()
                       / phi2(ipft)
       end if
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Optical properties for snow.  Values are a first guess, and a more thorough snow  !
+   ! model that takes snow age and snow melt into account (like in CLM-4 or ECHAM-5) are   !
+   ! very welcome.                                                                         !
+   !                                                                                       !
+   !  References for current snow values:                                                  !
+   !  Roesch, A., et al., 2002: Comparison of spectral surface albedos and their           !
+   !      impact on the general circulation model simulated surface climate.  J.           !
+   !      Geophys. Res.-Atmosph., 107(D14), 4221, 10.1029/2001JD000809.                    !
+   !      Average between minimum and maximum snow albedo on land, af = 0. and af=1.       !
+   !                                                                                       !
+   !  Oleson, K.W., et al., 2010: Technical description of version 4.0 of the              !
+   !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.                 !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   snow_albedo_vis = 0.518
+   snow_albedo_nir = 0.435
+   snow_emiss_tir  = 0.970
    !---------------------------------------------------------------------------------------!
 
 
@@ -4240,38 +4266,49 @@ subroutine init_soil_coms
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   integer            :: nsoil
-   integer            :: ifm
+   integer                 :: nsoil                  ! Soil texture flag
+   integer                 :: ifm                    ! Grid flag
+   real(kind=4)            :: ksand                  ! k-factor for sand (de Vries model)
+   real(kind=4)            :: ksilt                  ! k-factor for silt (de Vries model)
+   real(kind=4)            :: kclay                  ! k-factor for clay (de Vries model)
+   real(kind=4)            :: kair                   ! k-factor for air  (de Vries model)
+   real(kind=4)            :: slxsilt                ! Silt fraction
    !----- Local constants. ----------------------------------------------------------------!
-   real   , parameter :: fieldcp_K  =  0.1     ! hydraulic conduct. at field cap.  [mm/day]
-   real   , parameter :: soilcp_MPa = -3.1     ! soil-water pot. for air dry soil  [   MPa]
-   real   , parameter :: soilwp_MPa = -1.5     ! soil-water pot. at wil. point     [   MPa]
-   real   , parameter :: sand_hcapv =  2.128e6 ! Sand vol. heat capacity           [J/m3/K]
-   real   , parameter :: clay_hcapv =  2.385e6 ! Clay vol. heat capacity           [J/m3/K]
-   real   , parameter :: silt_hcapv =  2.286e6 ! Silt vol. heat capacity (*)       [J/m3/K]
-   real   , parameter :: air_hcapv  =  1.212e3 ! Air vol. heat capacity            [J/m3/K]
+   real(kind=4), parameter :: fieldcp_K   =  0.1     ! hydr. cond. at field cap.   [mm/day]
+   real(kind=4), parameter :: soilcp_MPa  = -3.1     ! Matric pot. - air dry soil  [   MPa]
+   real(kind=4), parameter :: soilwp_MPa  = -1.5     ! Matric pot. - wilting point [   MPa]
+   real(kind=4), parameter :: sand_hcapv  =  2.128e6 ! Sand vol. heat capacity     [J/m3/K]
+   real(kind=4), parameter :: clay_hcapv  =  2.385e6 ! Clay vol. heat capacity     [J/m3/K]
+   real(kind=4), parameter :: silt_hcapv  =  2.256e6 ! Silt vol. heat capacity (*) [J/m3/K]
+   real(kind=4), parameter :: air_hcapv   =  1.212e3 ! Air vol. heat capacity      [J/m3/K]
+   real(kind=4), parameter :: sand_thcond = 8.80     ! Sand thermal conduct.       [ W/m/K]
+   real(kind=4), parameter :: clay_thcond = 2.92     ! Clay thermal conduct.       [ W/m/K]
+   real(kind=4), parameter :: silt_thcond = 5.87     ! Silt thermal conduct.   (*) [ W/m/K]
+   real(kind=4), parameter :: air_thcond  = 0.025    ! Air thermal conduct.        [ W/m/K]
+   real(kind=4), parameter :: h2o_thcond  = 0.57     ! Water thermal conduct.      [ W/m/K]
    !---------------------------------------------------------------------------------------!
-   ! (*) If anyone has the heat capacity for silt, please feel free to add it in here, I   !
-   !     didn't find any.  Apparently no one knows, and I've seen in other models that     !
-   !     people just assume either the same as sand or the average.  Here I'm just using   !
-   !     halfway.  I think the most important thing is to take into account the soil and   !
-   !     the air, which are the most different.                                            !
+   ! (*) If anyone has the heat capacity and thermal conductivity for silt, please feel    !
+   !     free to add it in here, I didn't find any.  Apparently no one knows, and I've     !
+   !     seen in other models that people just assume either the same as sand or the       !
+   !     average.  Here I'm just using halfway.  I think the most important thing is to    !
+   !     take into account the soil and the air, which are the most different.             !
    !                                                                                       !
-   ! Sand (quartz), clay, and air heat capacities are derived from:                        !
-   ! Monteith and Unsworth, 2008: Environmental Physics.                                   !
-   !     Academic Press, Third Edition. Table 15.1, p. 292                                 !
+   ! Sand (quartz), clay, air, and water heat capacities and thermal conductivities values !
+   ! are from:                                                                             !
+   !     Monteith and Unsworth, 2008: Environmental Physics.                               !
+   !         Academic Press, Third Edition. Table 15.1, p. 292                             !
    !---------------------------------------------------------------------------------------!
 
 
    !----- Initialise some standard variables. ---------------------------------------------!
-   water_stab_thresh   = 5.0    ! Minimum water mass to be considered stable     [   kg/m2]
-   snowmin             = 5.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
-   dewmax              = 3.0e-5 ! Maximum dew flux rate (deprecated)             [ kg/m2/s]
-   soil_rough          = 0.01   ! Soil roughness height                          [       m]
-   snow_rough          = 0.0024 ! Snowcover roughness height                     [       m]
-   tiny_sfcwater_mass  = 1.0e-3 ! Minimum allowed mass in temporary layers       [   kg/m2]
-   infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
-   freezecoef          = 7.0    ! Coeff. for infiltration of frozen water        [     ---]
+   water_stab_thresh   = 5.0            ! Minimum mass to be considered stable    [   kg/m2]
+   snowmin             = 5.0            ! Minimum mass needed to create new layer [   kg/m2]
+   dewmax              = 3.0e-5         ! Maximum dew flux rate (deprecated)      [ kg/m2/s]
+   soil_rough          = 0.01           ! Soil roughness height                   [       m]
+   snow_rough          = 0.0024         ! Snowcover roughness height              [       m]
+   tiny_sfcwater_mass  = 1.0e-3         ! Minimum mass in temporary layers        [   kg/m2]
+   infiltration_method = 0              ! Infiltration method, used in rk4_derivs [     0|1]
+   freezecoef          = 7.0 * log(10.) ! Coeff. for infiltration of frozen water [     ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -4304,115 +4341,115 @@ subroutine init_soil_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! (1st line)          slpots        slmsts          slbs     slcpd        soilcp        !
-   ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
-   ! (3rd line)       soilcond2       sfldcap        albwet    albdry         xsand        !
-   ! (4th line)           xclay         xsilt       xrobulk     slden        soilld        !
-   ! (5th line)          soilfr       slpotwp       slpotfc   slpotld       slpotfr        !
+   ! (1st line)          slpots        slmsts          slbs      slcpd        soilcp       !
+   ! (2nd line)          soilwp        slcons       slcons0    thcond0       thcond1       !
+   ! (3rd line)         thcond2       thcond3       sfldcap      xsand         xclay       !
+   ! (4th line)           xsilt       xrobulk      slden        soilld        soilfr       !
+   ! (5th line)         slpotwp       slpotfc    slpotld       slpotfr                     !
    !---------------------------------------------------------------------------------------!
    soil = (/                                                                               &
       !----- 1. Sand. ---------------------------------------------------------------------!
-       soil_class( -0.049831046,     0.373250,     3.295000, 1342809.,  0.026183447        &
-                 ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
-                 ,      -2.7000,  0.132130936,        0.229,    0.352,        0.920        &
-                 ,        0.030,        0.050,        1200.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+       soil_class( -0.049831046,     0.373250,     3.295000,  1342809.,  0.026183447       &
+                 ,  0.032636854,  2.446421e-5,  0.000500000, 0.9546011,    0.5333047       &
+                 ,    0.6626306,   -0.4678112,  0.132130936,     0.920,        0.030       &
+                 ,        0.050,        1200.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
-      ,soil_class( -0.067406224,     0.385630,     3.794500, 1326165.,  0.041560499        &
-                 ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
-                 ,      -2.6000,  0.155181959,        0.212,    0.335,        0.825        &
-                 ,        0.060,        0.115,        1250.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.067406224,     0.385630,     3.794500,  1326165.,  0.041560499       &
+                 ,  0.050323046,  1.776770e-5,  0.000600000, 0.9279457,    0.5333047       &
+                 ,    0.6860126,   -0.4678112,  0.155181959,     0.825,        0.060       &
+                 ,        0.115,        1250.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
-      ,soil_class( -0.114261521,     0.407210,     4.629000, 1295982.,  0.073495043        &
-                 ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
-                 ,      -2.3100,  0.194037750,        0.183,    0.307,        0.660        &
-                 ,        0.110,        0.230,        1300.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.114261521,     0.407210,     4.629000,  1295982.,  0.073495043       &
+                 ,  0.085973722,  1.022660e-5,  0.000769000, 0.8826064,    0.5333047       &
+                 ,    0.7257838,   -0.4678112,  0.194037750,     0.660,        0.110       &
+                 ,        0.230,        1300.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 4. Silt loam. ----------------------------------------------------------------!
-      ,soil_class( -0.566500112,     0.470680,     5.552000, 1191975.,  0.150665475        &
-                 ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
-                 ,      -1.7400,  0.273082063,        0.107,    0.250,        0.200        &
-                 ,        0.160,        0.640,        1400.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.566500112,     0.470680,     5.552000,  1191975.,  0.150665475       &
+                 ,  0.171711257,  2.501101e-6,  0.000010600, 0.7666418,    0.5333047       &
+                 ,    0.8275072,   -0.4678112,  0.273082063,     0.200,        0.160       &
+                 ,        0.640,        1400.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 5. Loam. ---------------------------------------------------------------------!
-      ,soil_class( -0.260075834,     0.440490,     5.646000, 1245546.,  0.125192234        &
-                 ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
-                 ,      -1.8500,  0.246915025,        0.140,    0.268,        0.410        &
-                 ,        0.170,        0.420,        1350.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.260075834,     0.440490,     5.646000,  1245546.,  0.125192234       &
+                 ,  0.142369513,  4.532431e-6,  0.002200000, 0.8168244,    0.5333047       &
+                 ,    0.7834874,   -0.4678112,  0.246915025,     0.410,        0.170       &
+                 ,        0.420,        1350.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.116869181,     0.411230,     7.162000, 1304598.,  0.136417267        &
-                 ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
-                 ,      -1.9600,  0.249629687,        0.163,    0.260,        0.590        &
-                 ,        0.270,        0.140,        1350.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.116869181,     0.411230,     7.162000,  1304598.,  0.136417267       &
+                 ,  0.150969505,  6.593731e-6,  0.001500000, 0.8544779,    0.5333047       &
+                 ,    0.7504579,   -0.4678112,  0.249629687,     0.590,        0.270       &
+                 ,        0.140,        1350.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.627769194,     0.478220,     8.408000, 1193778.,  0.228171947        &
-                 ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
-                 ,      -1.2000,  0.333825332,        0.081,    0.195,        0.100        &
-                 ,        0.340,        0.560,        1500.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.627769194,     0.478220,     8.408000,  1193778.,  0.228171947       &
+                 ,  0.248747504,  1.435262e-6,  0.000107000, 0.7330059,    0.5333047       &
+                 ,    0.8570124,   -0.4678112,  0.333825332,     0.100,        0.340       &
+                 ,        0.560,        1500.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 8. Clayey loam. --------------------------------------------------------------!
-      ,soil_class( -0.281968114,     0.446980,     8.342000, 1249582.,  0.192624431        &
-                 ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
-                 ,      -1.5600,  0.301335491,        0.116,    0.216,        0.320        &
-                 ,        0.340,        0.340,        1450.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.281968114,     0.446980,     8.342000,  1249582.,  0.192624431       &
+                 ,  0.210137962,  2.717260e-6,  0.002200000, 0.7847168,    0.5333047       &
+                 ,    0.8116520,   -0.4678112,  0.301335491,     0.320,        0.340       &
+                 ,        0.340,        1450.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
-      ,soil_class( -0.121283019,     0.415620,     9.538000, 1311396.,  0.182198910        &
-                 ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
-                 ,      -1.6300,  0.286363001,        0.144,    0.216,        0.520        &
-                 ,        0.420,        0.060,        1450.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.121283019,     0.415620,     9.538000,  1311396.,  0.182198910       &
+                 ,  0.196607427,  4.314507e-6,  0.000002167, 0.8273339,    0.5333047       &
+                 ,    0.7742686,   -0.4678112,  0.286363001,     0.520,        0.420       &
+                 ,        0.060,        1450.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 10. Silty clay. --------------------------------------------------------------!
-      ,soil_class( -0.601312179,     0.479090,    10.461000, 1203168.,  0.263228486        &
-                 ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
-                 ,      -1.0900,  0.360319788,        0.068,    0.159,        0.060        &
-                 ,        0.470,        0.470,        1650.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.601312179,     0.479090,    10.461000,  1203168.,  0.263228486       &
+                 ,  0.282143846,  1.055191e-6,  0.000001033, 0.7164724,    0.5333047       &
+                 ,    0.8715154,   -0.4678112,  0.360319788,     0.060,        0.470       &
+                 ,        0.470,        1650.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 11. Clay. --------------------------------------------------------------------!
-      ,soil_class( -0.299226464,     0.454400,    12.460000, 1259466.,  0.259868987        &
-                 ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.353255209,        0.083,    0.140,        0.200        &
-                 ,        0.600,        0.200,        1700.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.299226464,     0.454400,    12.460000,  1259466.,  0.259868987       &
+                 ,  0.275459057,  1.307770e-6,  0.000001283, 0.7406805,    0.5333047       &
+                 ,    0.8502802,   -0.4678112,  0.353255209,     0.200,        0.600       &
+                 ,        0.200,        1700.,     1600.,        0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 12. Peat. --------------------------------------------------------------------!
-      ,soil_class( -0.534564359,     0.469200,     6.180000,  874000.,  0.167047523        &
-                 ,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,       0.4600        &
-                 ,       0.0000,  0.285709966,        0.070,    0.140,       0.2000        &
-                 ,       0.2000,       0.6000,         500.,     300.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.534564359,     0.469200,     6.180000,   874000.,  0.167047523       &
+                 ,  0.187868805,  2.357930e-6,  0.000008000, 0.7644011,    0.5333047       &
+                 ,    0.8294728,   -0.4678112,  0.285709966,    0.2000,       0.2000       &
+                 ,       0.6000,         500.,         300.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 13. Bedrock. -----------------------------------------------------------------!
-      ,soil_class(    0.0000000,     0.000000,     0.000000, 2130000.,  0.000000000        &
-                 ,  0.000000000,  0.000000e+0,  0.000000000,   4.6000,       0.0000        &
-                 ,       0.0000,  0.000000001,        0.320,    0.320,       0.0000        &
-                 ,       0.0000,       0.0000,           0.,       0.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class(    0.0000000,     0.000000,     0.000000,  2130000.,  0.000000000       &
+                 ,  0.000000000,  0.000000e+0,  0.000000000, 1.3917897,    0.5333047       &
+                 ,    0.2791318,   -0.4678112,  0.000000001,        0.0000        &
+                 ,       0.0000,       0.0000,           0.,        0.,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 14. Silt. --------------------------------------------------------------------!
-      ,soil_class( -1.047128548,     0.492500,     3.862500, 1143842.,  0.112299080        &
-                 ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
-                 ,      -1.7400,  0.245247642,        0.092,    0.265,        0.075        &
-                 ,        0.050,        0.875,        1400.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -1.047128548,     0.492500,     3.862500,  1143842.,  0.112299080       &
+                 ,  0.135518820,  2.046592e-6,  0.000010600, 0.7425839,    0.5333047       &
+                 ,    0.8486106,   -0.4678112,  0.245247642,     0.075,        0.050       &
+                 ,        0.875,        1400.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 15. Heavy clay. --------------------------------------------------------------!
-      ,soil_class( -0.322106879,     0.461200,    15.630000, 1264547.,  0.296806035        &
-                 ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.382110712,        0.056,    0.080,        0.100        &
-                 ,        0.800,        0.100,        1700.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.322106879,     0.461200,    15.630000,  1264547.,  0.296806035       &
+                 ,  0.310916364,  7.286705e-7,  0.000001283, 0.7057374,    0.5333047       &
+                 ,    0.8809321,   -0.4678112,  0.382110712,     0.100,        0.800       &
+                 ,        0.100,        1700.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 16. Clayey sand. -------------------------------------------------------------!
-      ,soil_class( -0.176502150,     0.432325,    11.230000, 1292163.,  0.221886929        &
-                 ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.320146708,        0.115,    0.175,        0.375        &
-                 ,        0.525,        0.100,        1700.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.176502150,     0.432325,    11.230000,  1292163.,  0.221886929       &
+                 ,  0.236704039,  2.426785e-6,  0.000001283, 0.7859325,    0.5333047       &
+                 ,    0.8105855,   -0.4678112,  0.320146708,     0.375,        0.525       &
+                 ,        0.100,        1700.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 17. Clayey silt. -------------------------------------------------------------!
-      ,soil_class( -0.438278332,     0.467825,    11.305000, 1228490.,  0.261376708        &
-                 ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.357014719,        0.075,    0.151,        0.125        &
-                 ,        0.525,        0.350,        1700.,    1600.,        0.000        &
-                 ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
+      ,soil_class( -0.438278332,     0.467825,    11.305000,  1228490.,  0.261376708       &
+                 ,  0.278711303,  1.174982e-6,  0.000001283, 0.7281197,    0.5333047       &
+                 ,    0.8612985,   -0.4678112,  0.357014719,     0.125,        0.525       &
+                 ,        0.350,        1700.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -4426,9 +4463,10 @@ subroutine init_soil_coms
    do ifm=1,ngrids
       if ( isoilflg(ifm)==2 .and. slxclay > 0. .and. slxsand > 0. .and.                    &
            (slxclay + slxsand) <= 1. ) then
+         slxsilt              = 1. - slxsand - slxclay
          soil(nslcon)%xsand   = slxsand
          soil(nslcon)%xclay   = slxclay
-         soil(nslcon)%xsilt   = 1. - slxsand - slxclay
+         soil(nslcon)%xsilt   = slxsilt
 
          !----- B exponent [unitless]. ----------------------------------------------------!
          soil(nslcon)%slbs    = 3.10 + 15.7*slxclay - 0.3*slxsand
@@ -4466,42 +4504,41 @@ subroutine init_soil_coms
          ! error is not too biased.                                                        !
          !---------------------------------------------------------------------------------!
          soil(nslcon)%slcpd   = (1. - soil(nslcon)%slmsts)                                 &
-                              * ( soil(nslcon)%xsand * sand_hcapv                          &
-                                + soil(nslcon)%xsilt * silt_hcapv                          &
-                                + soil(nslcon)%xclay * clay_hcapv )                        &
+                              * ( slxsand * sand_hcapv + slxsilt * silt_hcapv              &
+                                + slxclay * clay_hcapv )                                   &
                               + 0.5 * (soil(nslcon)%slmsts - soil(nslcon)%soilcp)          &
                               * air_hcapv
          !---------------------------------------------------------------------------------!
 
 
-
          !---------------------------------------------------------------------------------!
-         !     No, I'm not happy with that, but I am just trying to get some general sense !
-         ! of albedo for different texture.  In reality, soil albedo is a function of many !
-         ! things besides soil texture, like organic content, iron content, just to name a !
-         ! few.  Getting these kinds of information is almost impossible, though.  Here I  !
-         ! built a very weak linear model using robust linear model in R (rlm, package     !
-         ! MASS), using data from a few papers:                                            !
+         !      Thermal conductivity is the weighted average of thermal conductivities of  !
+         ! all materials, although a further weighting factor due to thermal gradient of   !
+         ! different materials.  We use the de Vries model described at:                   !
          !                                                                                 !
-         ! Idso, S. B., R. D. Jackson, R. J. Reginato, B. A. Kimball, F. S. Nakayama,      !
-         !      1975: The dependence of bare soil albedo on soil water content.  J. Appl.  !
-         !      Meteorol., 14, 109-113.  No sand/clay/silt fraction given, but it is a     !
-         !      loam soil, so I used the canonical loam fraction of sand and silt.         !
-         ! Matthias, A. D., A. Fimbres, E. E. Sano, D. F. Post, L. Accioly,                !
-         !      A. K . Batchily, L. G. Ferreira, 2000: Surface roughness effects on soil   !
-         !      albedo.  I used the average value for smooth soil and averaged across      !
-         !      zenith angles.                                                             !
-         ! Ten Berge, H.F.M., 1986: Heat and water transfer at the bare soil surface.      !
-         !      Aspects affecting thermal imagery. PhD. Thesis Agricultural University     !
-         !      Wageningen, The Netherlands.  I didn't find the actual thesis online, but  !
-         !      I found a table from the Italian Centre for Industrial Agriculture         !
-         !      Research and used the standard fraction of sand and clay for their soil    !
-         !      types.  http://agsys.cra-cin.it/tools/solarradiation/help/Albedo.html      !
+         ! Camillo, P., T.J. Schmugge, 1981: A computer program for the simulation of heat !
+         !     and moisture flow in soils, NASA-TM-82121, Greenbelt, MD, United States.    !
+         !                                                                                 !
+         ! Parlange, M.B., et al., 1998: Review of heat and water movement in field soils, !
+         !    Soil Till. Res., 47(1-2), 5-10.                                              !
+         !                                                                                 !
          !---------------------------------------------------------------------------------!
-         soil(nslcon)%albwet = 0.02982594 + 0.21343545 * soil(nslcon)%xsand                &
-                                          + 0.05314899 * soil(nslcon)%xsilt
-         soil(nslcon)%albdry = 0.02008580 + 0.34730650 * soil(nslcon)%xsand                &
-                                          + 0.25034280 * soil(nslcon)%xsilt
+         !---- The k-factors, assuming spherical particles. -------------------------------!
+         ksand = 3. * h2o_thcond / ( 2. * h2o_thcond + sand_thcond )
+         ksilt = 3. * h2o_thcond / ( 2. * h2o_thcond + silt_thcond )
+         kclay = 3. * h2o_thcond / ( 2. * h2o_thcond + clay_thcond )
+         kair  = 3. * h2o_thcond / ( 2. * h2o_thcond +  air_thcond )
+         !---- The conductivity coefficients. ---------------------------------------------!
+         soil(nslcon)%thcond0 = (1. - soil(nslcon)%slmsts )                                &
+                              * ( ksand * slxsand * sand_thcond                            &
+                                + ksilt * slxsilt * silt_thcond                            &
+                                + kclay * slxclay * clay_thcond )                          &
+                              + soil(nslcon)%slmsts * kair * air_thcond
+         soil(nslcon)%thcond1 = h2o_thcond - kair * air_thcond
+         soil(nslcon)%thcond2 = (1. - soil(nslcon)%slmsts )                                &
+                              * ( ksand * slxsand + ksilt * slxsilt + kclay * slxclay )    &
+                              + soil(nslcon)%slmsts * kair
+         soil(nslcon)%thcond3 = 1. - kair
          !---------------------------------------------------------------------------------!
       end if
    end do
@@ -4601,32 +4638,32 @@ subroutine init_soil_coms
    !---------------------------------------------------------------------------------------!
    !     Fill in the albedo information regarding the soil colour classes.                 !
    !---------------------------------------------------------------------------------------!
-   !                    |    Dry soil   |   Saturated   |                                  !
-   !   Soil class       |---------------+---------------|                                  !
-   !                    |   VIS |   NIR |   VIS |   NIR |                                  !
+   !                    |    Dry soil   |   Saturated   | Emis. |                          !
+   !   Soil class       |---------------+---------------|-------|                          !
+   !                    |   VIS |   NIR |   VIS |   NIR |   TIR |                          !
    !---------------------------------------------------------------------------------------!
-   soilcol = (/                                              & !
-       soilcol_class   (    0.36,   0.61,   0.25,   0.50  )  & ! 01 - Brightest
-      ,soilcol_class   (    0.34,   0.57,   0.23,   0.46  )  & ! 02
-      ,soilcol_class   (    0.32,   0.53,   0.21,   0.42  )  & ! 03
-      ,soilcol_class   (    0.31,   0.51,   0.20,   0.40  )  & ! 04
-      ,soilcol_class   (    0.30,   0.49,   0.19,   0.38  )  & ! 05
-      ,soilcol_class   (    0.29,   0.48,   0.18,   0.36  )  & ! 06
-      ,soilcol_class   (    0.28,   0.45,   0.17,   0.34  )  & ! 07
-      ,soilcol_class   (    0.27,   0.43,   0.16,   0.32  )  & ! 08
-      ,soilcol_class   (    0.26,   0.41,   0.15,   0.30  )  & ! 09
-      ,soilcol_class   (    0.25,   0.39,   0.14,   0.28  )  & ! 10
-      ,soilcol_class   (    0.24,   0.37,   0.13,   0.26  )  & ! 11
-      ,soilcol_class   (    0.23,   0.35,   0.12,   0.24  )  & ! 12
-      ,soilcol_class   (    0.22,   0.33,   0.11,   0.22  )  & ! 13
-      ,soilcol_class   (    0.20,   0.31,   0.10,   0.20  )  & ! 14
-      ,soilcol_class   (    0.18,   0.29,   0.09,   0.18  )  & ! 15
-      ,soilcol_class   (    0.16,   0.27,   0.08,   0.16  )  & ! 16
-      ,soilcol_class   (    0.14,   0.25,   0.07,   0.14  )  & ! 17
-      ,soilcol_class   (    0.12,   0.23,   0.06,   0.12  )  & ! 18
-      ,soilcol_class   (    0.10,   0.21,   0.05,   0.10  )  & ! 19
-      ,soilcol_class   (    0.08,   0.16,   0.04,   0.08  )  & ! 20 - Darkest
-      ,soilcol_class   (    0.00,   0.00,   0.00,   0.00  )  & ! 21 - ED-2.1, unused
+   soilcol = (/                                                     & !
+       soilcol_class   (    0.36,   0.61,   0.25,   0.50,   0.98 )  & ! 01 - Brightest
+      ,soilcol_class   (    0.34,   0.57,   0.23,   0.46,   0.98 )  & ! 02
+      ,soilcol_class   (    0.32,   0.53,   0.21,   0.42,   0.98 )  & ! 03
+      ,soilcol_class   (    0.31,   0.51,   0.20,   0.40,   0.98 )  & ! 04
+      ,soilcol_class   (    0.30,   0.49,   0.19,   0.38,   0.98 )  & ! 05
+      ,soilcol_class   (    0.29,   0.48,   0.18,   0.36,   0.98 )  & ! 06
+      ,soilcol_class   (    0.28,   0.45,   0.17,   0.34,   0.98 )  & ! 07
+      ,soilcol_class   (    0.27,   0.43,   0.16,   0.32,   0.98 )  & ! 08
+      ,soilcol_class   (    0.26,   0.41,   0.15,   0.30,   0.98 )  & ! 09
+      ,soilcol_class   (    0.25,   0.39,   0.14,   0.28,   0.98 )  & ! 10
+      ,soilcol_class   (    0.24,   0.37,   0.13,   0.26,   0.98 )  & ! 11
+      ,soilcol_class   (    0.23,   0.35,   0.12,   0.24,   0.98 )  & ! 12
+      ,soilcol_class   (    0.22,   0.33,   0.11,   0.22,   0.98 )  & ! 13
+      ,soilcol_class   (    0.20,   0.31,   0.10,   0.20,   0.98 )  & ! 14
+      ,soilcol_class   (    0.18,   0.29,   0.09,   0.18,   0.98 )  & ! 15
+      ,soilcol_class   (    0.16,   0.27,   0.08,   0.16,   0.98 )  & ! 16
+      ,soilcol_class   (    0.14,   0.25,   0.07,   0.14,   0.98 )  & ! 17
+      ,soilcol_class   (    0.12,   0.23,   0.06,   0.12,   0.98 )  & ! 18
+      ,soilcol_class   (    0.10,   0.21,   0.05,   0.10,   0.98 )  & ! 19
+      ,soilcol_class   (    0.08,   0.16,   0.04,   0.08,   0.98 )  & ! 20 - Darkest
+      ,soilcol_class   (    0.00,   0.00,   0.00,   0.00,   0.98 )  & ! 21 - ED-2.1, unused
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -4642,12 +4679,11 @@ subroutine init_soil_coms
       soil8(nsoil)%soilwp    = dble(soil(nsoil)%soilwp   )
       soil8(nsoil)%slcons    = dble(soil(nsoil)%slcons   )
       soil8(nsoil)%slcons0   = dble(soil(nsoil)%slcons0  )
-      soil8(nsoil)%soilcond0 = dble(soil(nsoil)%soilcond0)
-      soil8(nsoil)%soilcond1 = dble(soil(nsoil)%soilcond1)
-      soil8(nsoil)%soilcond2 = dble(soil(nsoil)%soilcond2)
+      soil8(nsoil)%thcond0   = dble(soil(nsoil)%thcond0  )
+      soil8(nsoil)%thcond1   = dble(soil(nsoil)%thcond1  )
+      soil8(nsoil)%thcond2   = dble(soil(nsoil)%thcond2  )
+      soil8(nsoil)%thcond3   = dble(soil(nsoil)%thcond3  )
       soil8(nsoil)%sfldcap   = dble(soil(nsoil)%sfldcap  )
-      soil8(nsoil)%albwet    = dble(soil(nsoil)%albwet   )
-      soil8(nsoil)%albdry    = dble(soil(nsoil)%albdry   )
       soil8(nsoil)%xsand     = dble(soil(nsoil)%xsand    )
       soil8(nsoil)%xclay     = dble(soil(nsoil)%xclay    )
       soil8(nsoil)%xsilt     = dble(soil(nsoil)%xsilt    )
@@ -5020,7 +5056,7 @@ subroutine init_rk4_params()
    rk4eps2     = rk4eps**2           ! square of the accuracy
    hmin        = 1.d-7               ! The minimum step size.
    print_diags = .false.             ! Flag to print the diagnostic check.
-   checkbudget = .false.             ! Flag to check CO2, water, and energy budgets every 
+   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every 
                                      !     time step and stop the run in case any of these 
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!

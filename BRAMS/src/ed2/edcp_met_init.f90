@@ -178,6 +178,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
             
             !----- Initialising surface snow/pond layers with nothing as default. ---------!
             csite%nlev_sfcwater(ipa) = 0
+            csite%snowfac      (ipa) = 0.
             do k=1,nzs
                csite%sfcwater_energy (k,ipa) = 0.
                csite%sfcwater_depth  (k,ipa) = 0.
@@ -194,8 +195,8 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
             ksnw1 = max(ksn,1)
             call ed_grndvap(ksn,ntext,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)  &
                            ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(ksnw1,ipa)    &
-                           ,csite%sfcwater_fracliq(ksnw1,ipa),csite%can_prss(ipa)          &
-                           ,csite%can_shv(ipa),csite%ground_shv(ipa)                       &
+                           ,csite%sfcwater_fracliq(ksnw1,ipa),csite%snowfac(ipa)           &
+                           ,csite%can_prss(ipa),csite%can_shv(ipa),csite%ground_shv(ipa)   &
                            ,csite%ground_ssh(ipa),csite%ground_temp(ipa)                   &
                            ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
 

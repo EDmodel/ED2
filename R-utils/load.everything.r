@@ -47,15 +47,19 @@ if (ibackground == 0){
 #------------------------------------------------------------------------------------------#
 #      Define the size of the titles and axes.                                             #
 #------------------------------------------------------------------------------------------#
-if (! "ptsz" %in% ls()) ptsz = 16
+if (! "ptsz" %in% ls()){
+   ptsz <<- 16
+}else{
+   ptsz <<- ptsz
+}#end if
 if (ptsz <= 14){
-   cex.main      <<- 1.2
-   cex.lab       <<- 1.0
-}else if (ptsz <= 16){
    cex.main      <<- 1.1
    cex.lab       <<- 1.0
+}else if (ptsz <= 16){
+   cex.main      <<- 0.9
+   cex.lab       <<- 1.0
 }else{
-   cex.main      <<- 1.0
+   cex.main      <<- 0.7
    cex.lab       <<- 0.9
 }#end if
 #------------------------------------------------------------------------------------------#
@@ -123,6 +127,7 @@ par.user <<- list( bg       = "transparent"
                  , fg       = foreground
                  , cex.main = cex.main
                  , cex.lab  = cex.lab
+                 , family   = "Helvetica"
                  )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -223,9 +228,10 @@ options(warn=warn.orig)
 
 
 #------------------------------------------------------------------------------------------#
-#       Get rid of the extremely annoying and unnecessary bell.                            #
+#       Get rid of the extremely annoying and unnecessary bell.  Also, force the system to #
+# use Helvetica as the default font family.                                                #
 #------------------------------------------------------------------------------------------#
-options(locatorBell=FALSE)
+options(locatorBell=FALSE,family="Helvetica")
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#

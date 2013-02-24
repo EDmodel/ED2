@@ -2376,16 +2376,17 @@ subroutine update_met_drivers(cgrid)
          !---------------------------------------------------------------------------------!
          if (cpoly%met(isi)%atm_tmp > (t3ple + 2.5)) then
             !----- Rain only. -------------------------------------------------------------!
+            fliq = 1.0
             fice = 0.0
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) *wdnsi
 
          elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.5) .and.                             &
                  cpoly%met(isi)%atm_tmp  > (t3ple + 2.0) ) then
             !------------------------------------------------------------------------------!
-            !     60% snow, 40% rain. (N.B. May not be appropriate for sub-tropical        !
-            ! regions where the level of the melting layer is higher...).                  !
+            !     Slight modification so the liquid fraction becomes continuous.           !
             !------------------------------------------------------------------------------!
-            fice  = 0.6
+            fliq  = min(1.0, 0.4 + 1.2 * (cpoly%met(isi)%atm_tmp - t3ple - 2.0))
+            fice  = 1.0 - fliq
             snden = 189.0
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
                                  * ((1.0-fice) * wdnsi + fice / snden)
@@ -2396,7 +2397,8 @@ subroutine update_met_drivers(cgrid)
             !     Increasing the fraction of snow. (N.B. May not be appropriate for        !
             ! sub-tropical regions where the level of the melting layer is higher...).     !
             !------------------------------------------------------------------------------!
-            fice  = min(1.0, 1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
+            fliq  = max(0.0, 0.2 * (cpoly%met(isi)%atm_tmp - t3ple))
+            fice  = 1.0 - fliq
             snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
                                  * ((1.0-fice) * wdnsi + fice / snden)
@@ -2404,12 +2406,14 @@ subroutine update_met_drivers(cgrid)
          elseif (cpoly%met(isi)%atm_tmp <= t3ple         .and.                             &
                  cpoly%met(isi)%atm_tmp > (t3ple - 15.0) ) then
             !----- Below freezing point, snow only. ---------------------------------------!
+            fliq  = 0.0
             fice  = 1.0
             snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
 
          else ! if (copy%met(isi)%atm_tmp < (t3ple - 15.0)) then
             !----- Below freezing point, snow only. ---------------------------------------!
+            fliq  = 0.0
             fice  = 1.0
             snden = 50.
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
@@ -2424,8 +2428,7 @@ subroutine update_met_drivers(cgrid)
          ! point) multiplied by the ice fraction.                                          !
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
-                              * ( (1.0-fice)                                               &
-                                * tl2uint(max(t3ple,cpoly%met(isi)%atm_tmp),1.0)           &
+                              * ( fliq * tl2uint(max(t3ple,cpoly%met(isi)%atm_tmp),1.0)    &
                                 + fice * tl2uint(min(t3ple,cpoly%met(isi)%atm_tmp),0.0) )
          !---------------------------------------------------------------------------------!
       end do siteloop

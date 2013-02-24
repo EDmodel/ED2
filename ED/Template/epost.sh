@@ -107,7 +107,7 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 if [ ${myself} == "mlongo" ]
 then
-   rscpath="/n/gstore/Labs/moorcroft_lab_protected/mlongo/util/Rsc"
+   rscpath="/n/home00/mlongo/util/Rsc"
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -633,7 +633,7 @@ do
 
          #----- Define the job name, and the names of the output files. -------------------#
          case ${script} in 
-         plot_budget)
+         plot_budget.r)
             epostout='pbdg_epost.out'
             epostsh='pbdg_epost.sh'
             epostlsf='pbdg_epost.lsf'

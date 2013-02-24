@@ -199,8 +199,8 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$parup                   = rep(NA,times=ntimes)
    emean$rnet                    = rep(NA,times=ntimes)
    emean$albedo                  = rep(NA,times=ntimes)
-   emean$albedo.beam             = rep(NA,times=ntimes)
-   emean$albedo.diff             = rep(NA,times=ntimes)
+   emean$albedo.par              = rep(NA,times=ntimes)
+   emean$albedo.nir              = rep(NA,times=ntimes)
    emean$rlong.albedo            = rep(NA,times=ntimes)
    emean$nplant                  = rep(NA,times=ntimes)
    emean$agb                     = rep(NA,times=ntimes)
@@ -455,8 +455,8 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$parup          = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$rnet           = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$albedo         = matrix(data=0,nrow=ntimes,ncol=ndcycle)
-   qmean$albedo.beam    = matrix(data=0,nrow=ntimes,ncol=ndcycle)
-   qmean$albedo.diff    = matrix(data=0,nrow=ntimes,ncol=ndcycle)
+   qmean$albedo.par     = matrix(data=0,nrow=ntimes,ncol=ndcycle)
+   qmean$albedo.nir     = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$rlong.albedo   = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$leaf.gsw       = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$leaf.gbw       = matrix(data=0,nrow=ntimes,ncol=ndcycle)
@@ -760,8 +760,8 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$parup          [idx ] = old.datum$emean$parup
    new.datum$emean$rnet           [idx ] = old.datum$emean$rnet
    new.datum$emean$albedo         [idx ] = old.datum$emean$albedo
-   new.datum$emean$albedo.beam    [idx ] = old.datum$emean$albedo.beam
-   new.datum$emean$albedo.diff    [idx ] = old.datum$emean$albedo.diff
+   new.datum$emean$albedo.par     [idx ] = old.datum$emean$albedo.par
+   new.datum$emean$albedo.nir     [idx ] = old.datum$emean$albedo.nir
    new.datum$emean$rlong.albedo   [idx ] = old.datum$emean$rlong.albedo
    new.datum$emean$paw            [idx ] = old.datum$emean$paw
    new.datum$emean$smpot          [idx ] = old.datum$emean$smpot
@@ -995,8 +995,8 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$parup         [idx,] = old.datum$qmean$parup
    new.datum$qmean$rnet          [idx,] = old.datum$qmean$rnet
    new.datum$qmean$albedo        [idx,] = old.datum$qmean$albedo
-   new.datum$qmean$albedo.beam   [idx,] = old.datum$qmean$albedo.beam
-   new.datum$qmean$albedo.diff   [idx,] = old.datum$qmean$albedo.diff
+   new.datum$qmean$albedo.par    [idx,] = old.datum$qmean$albedo.par
+   new.datum$qmean$albedo.nir    [idx,] = old.datum$qmean$albedo.nir
    new.datum$qmean$rlong.albedo  [idx,] = old.datum$qmean$rlong.albedo
    new.datum$qmean$leaf.gsw      [idx,] = old.datum$qmean$leaf.gsw
    new.datum$qmean$leaf.gbw      [idx,] = old.datum$qmean$leaf.gbw

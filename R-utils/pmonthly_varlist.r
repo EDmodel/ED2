@@ -16,6 +16,7 @@ tspftdbh[[n]]     = list( vnam     = "agb"
                         , sas      = TRUE
                         , bar.plot = TRUE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bgb"
@@ -28,6 +29,7 @@ tspftdbh[[n]]     = list( vnam     = "bgb"
                         , sas      = TRUE
                         , bar.plot = TRUE
                         , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "biomass"
@@ -40,6 +42,7 @@ tspftdbh[[n]]     = list( vnam     = "biomass"
                         , sas      = TRUE
                         , bar.plot = TRUE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "ba"
@@ -52,6 +55,7 @@ tspftdbh[[n]]     = list( vnam     = "ba"
                         , sas      = TRUE
                         , bar.plot = TRUE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "lai"
@@ -64,6 +68,7 @@ tspftdbh[[n]]     = list( vnam     = "lai"
                         , sas      = TRUE
                         , bar.plot = TRUE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "wai"
@@ -76,6 +81,7 @@ tspftdbh[[n]]     = list( vnam     = "wai"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "tai"
@@ -88,6 +94,7 @@ tspftdbh[[n]]     = list( vnam     = "tai"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "gpp"
@@ -100,6 +107,7 @@ tspftdbh[[n]]     = list( vnam     = "gpp"
                         , sas      = TRUE
                         , bar.plot = TRUE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "npp"
@@ -112,6 +120,7 @@ tspftdbh[[n]]     = list( vnam     = "npp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "mco"
@@ -124,6 +133,7 @@ tspftdbh[[n]]     = list( vnam     = "mco"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cba"
@@ -136,6 +146,7 @@ tspftdbh[[n]]     = list( vnam     = "cba"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "ldrop"
@@ -148,6 +159,7 @@ tspftdbh[[n]]     = list( vnam     = "ldrop"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "balive"
@@ -160,6 +172,7 @@ tspftdbh[[n]]     = list( vnam     = "balive"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bdead"
@@ -172,6 +185,7 @@ tspftdbh[[n]]     = list( vnam     = "bdead"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bleaf"
@@ -184,6 +198,7 @@ tspftdbh[[n]]     = list( vnam     = "bleaf"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "broot"
@@ -196,6 +211,7 @@ tspftdbh[[n]]     = list( vnam     = "broot"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bsapwood"
@@ -208,6 +224,7 @@ tspftdbh[[n]]     = list( vnam     = "bsapwood"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bstorage"
@@ -220,6 +237,7 @@ tspftdbh[[n]]     = list( vnam     = "bstorage"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bseeds"
@@ -232,6 +250,7 @@ tspftdbh[[n]]     = list( vnam     = "bseeds"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.resp"
@@ -244,6 +263,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.resp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "root.resp"
@@ -256,6 +276,7 @@ tspftdbh[[n]]     = list( vnam     = "root.resp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "growth.resp"
@@ -268,6 +289,7 @@ tspftdbh[[n]]     = list( vnam     = "growth.resp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "nplant"
@@ -280,6 +302,7 @@ tspftdbh[[n]]     = list( vnam     = "nplant"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "fs.open"
@@ -292,6 +315,7 @@ tspftdbh[[n]]     = list( vnam     = "fs.open"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.gsw"
@@ -304,6 +328,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.gsw"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.gbw"
@@ -316,6 +341,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.gbw"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "mort"
@@ -328,6 +354,7 @@ tspftdbh[[n]]     = list( vnam     = "mort"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "recr"
@@ -340,6 +367,7 @@ tspftdbh[[n]]     = list( vnam     = "recr"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "growth"
@@ -352,6 +380,7 @@ tspftdbh[[n]]     = list( vnam     = "growth"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.lai"
@@ -364,6 +393,7 @@ tspftdbh[[n]]     = list( vnam     = "census.lai"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.agb"
@@ -377,6 +407,7 @@ tspftdbh[[n]]     = list( vnam     = "census.agb"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.ba"
@@ -390,6 +421,7 @@ tspftdbh[[n]]     = list( vnam     = "census.ba"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "ncbmort"
@@ -402,6 +434,7 @@ tspftdbh[[n]]     = list( vnam     = "ncbmort"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "dimort"
@@ -414,6 +447,7 @@ tspftdbh[[n]]     = list( vnam     = "dimort"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbamax"
@@ -426,6 +460,7 @@ tspftdbh[[n]]     = list( vnam     = "cbamax"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbalight"
@@ -438,6 +473,7 @@ tspftdbh[[n]]     = list( vnam     = "cbalight"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbamoist"
@@ -450,6 +486,7 @@ tspftdbh[[n]]     = list( vnam     = "cbamoist"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbarel"
@@ -462,6 +499,7 @@ tspftdbh[[n]]     = list( vnam     = "cbarel"
                         , sas      = TRUE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "hflxlc"
@@ -474,6 +512,7 @@ tspftdbh[[n]]     = list( vnam     = "hflxlc"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "wflxlc"
@@ -486,6 +525,7 @@ tspftdbh[[n]]     = list( vnam     = "wflxlc"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "transp"
@@ -498,6 +538,7 @@ tspftdbh[[n]]     = list( vnam     = "transp"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = TRUE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "wue"
@@ -510,6 +551,7 @@ tspftdbh[[n]]     = list( vnam     = "wue"
                         , sas      = FALSE
                         , bar.plot = TRUE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.gpp"
@@ -522,6 +564,7 @@ tspftdbh[[n]]     = list( vnam     = "i.gpp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.npp"
@@ -534,6 +577,7 @@ tspftdbh[[n]]     = list( vnam     = "i.npp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.plant.resp"
@@ -546,6 +590,7 @@ tspftdbh[[n]]     = list( vnam     = "i.plant.resp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.mco"
@@ -558,6 +603,7 @@ tspftdbh[[n]]     = list( vnam     = "i.mco"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cba"
@@ -570,6 +616,7 @@ tspftdbh[[n]]     = list( vnam     = "i.cba"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cbamax"
@@ -582,6 +629,7 @@ tspftdbh[[n]]     = list( vnam     = "i.cbamax"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cbalight"
@@ -594,6 +642,7 @@ tspftdbh[[n]]     = list( vnam     = "i.cbalight"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cbamoist"
@@ -606,6 +655,7 @@ tspftdbh[[n]]     = list( vnam     = "i.cbamoist"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.hflxlc"
@@ -618,6 +668,7 @@ tspftdbh[[n]]     = list( vnam     = "i.hflxlc"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.wflxlc"
@@ -630,6 +681,7 @@ tspftdbh[[n]]     = list( vnam     = "i.wflxlc"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.transp"
@@ -642,6 +694,7 @@ tspftdbh[[n]]     = list( vnam     = "i.transp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "height"
@@ -654,6 +707,7 @@ tspftdbh[[n]]     = list( vnam     = "height"
                         , sas      = TRUE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.gpp"
@@ -666,6 +720,7 @@ tspftdbh[[n]]     = list( vnam     = "f.gpp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.plant.resp"
@@ -678,6 +733,7 @@ tspftdbh[[n]]     = list( vnam     = "f.plant.resp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.npp"
@@ -690,6 +746,7 @@ tspftdbh[[n]]     = list( vnam     = "f.npp"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.cba"
@@ -702,6 +759,7 @@ tspftdbh[[n]]     = list( vnam     = "f.cba"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.bstorage"
@@ -714,6 +772,7 @@ tspftdbh[[n]]     = list( vnam     = "f.bstorage"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.bleaf"
@@ -726,6 +785,7 @@ tspftdbh[[n]]     = list( vnam     = "f.bleaf"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.broot"
@@ -738,6 +798,7 @@ tspftdbh[[n]]     = list( vnam     = "f.broot"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.bseeds"
@@ -750,6 +811,7 @@ tspftdbh[[n]]     = list( vnam     = "f.bseeds"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.par"
@@ -762,6 +824,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.par"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
@@ -774,10 +837,11 @@ tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rlong"
-                        , desc     = "Absorbed LW - Leaf"
+                        , desc     = "Net absorbed LW - Leaf"
                         , e.unit   = "W/m2leaf"
                         , i.unit   = "W/m2leaf"
                         , plog     = FALSE
@@ -786,6 +850,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.rlong"
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = FALSE
+                        , scsout   = TRUE
                         )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -1560,10 +1625,10 @@ theme[[n]] = list( vnam      = c(          "rlong",  "rlongup",    "rlong.gnd")
                  , ymean     = TRUE
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c(         "albedo",     "albedo.beam",     "albedo.diff")
-                 , desc      = c("SW Albedo (Net)","SW Albedo (Beam)","SW Albedo (Diff)")
-                 , colour    = c(    "deepskyblue",       "orangered",       "slateblue")
-                 , lwd       = c(              2.5,               2.5,               2.5)
+theme[[n]] = list( vnam      = c(         "albedo", "albedo.par","albedo.nir")
+                 , desc      = c("SW Albedo (Net)", "PAR Albedo","NIR Albedo")
+                 , colour    = c(    "deepskyblue","chartreuse3", "orangered")
+                 , lwd       = c(              2.5,          2.5,         2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "albedo"
@@ -1636,6 +1701,7 @@ compmodel[[n]] = list( vnam   = "nep"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = FALSE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "gpp"
@@ -1654,6 +1720,7 @@ compmodel[[n]] = list( vnam   = "gpp"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = FALSE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.co2"
@@ -1672,6 +1739,7 @@ compmodel[[n]] = list( vnam   = "atm.co2"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "hflxca"
@@ -1690,6 +1758,7 @@ compmodel[[n]] = list( vnam   = "hflxca"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "wflxca"
@@ -1708,10 +1777,11 @@ compmodel[[n]] = list( vnam   = "wflxca"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rshort"
-                     , desc   = "Shortwave radiation"
+                     , desc   = "Incoming shortwave radiation"
                      , unit   = "W/m2"
                      , plotsd = TRUE
                      , colour = c(orange.fg,grey.fg)
@@ -1726,10 +1796,30 @@ compmodel[[n]] = list( vnam   = "rshort"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
+                     )#end list
+n              = n + 1
+compmodel[[n]] = list( vnam   = "par.tot"
+                     , desc   = "Incoming PAR"
+                     , unit   = "umol/m2/s"
+                     , plotsd = TRUE
+                     , colour = c(orange.fg,grey.fg)
+                     , errcol = c(orange.bg,grey.bg)
+                     , angle  = c(         45,     -45)
+                     , dens   = c(         40,      40)
+                     , lwd    = c(        2.5,     2.5)
+                     , shwd   = c(        1.0,     1.0)
+                     , type   = "o"
+                     , plog   = ""
+                     , legpos = "topleft"
+                     , mmean  = FALSE
+                     , qmean  = FALSE
+                     , emean  = FALSE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rlong"
-                     , desc   = "Longwave radiation"
+                     , desc   = "Incoming longwave radiation"
                      , unit   = "W/m2"
                      , plotsd = TRUE
                      , colour = c(blue.fg,grey.fg)
@@ -1744,6 +1834,7 @@ compmodel[[n]] = list( vnam   = "rlong"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.temp"
@@ -1762,6 +1853,7 @@ compmodel[[n]] = list( vnam   = "atm.temp"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.shv"
@@ -1780,6 +1872,7 @@ compmodel[[n]] = list( vnam   = "atm.shv"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rain"
@@ -1798,6 +1891,7 @@ compmodel[[n]] = list( vnam   = "rain"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.vels"
@@ -1816,6 +1910,7 @@ compmodel[[n]] = list( vnam   = "atm.vels"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.prss"
@@ -1834,6 +1929,7 @@ compmodel[[n]] = list( vnam   = "atm.prss"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "cflxca"
@@ -1852,6 +1948,7 @@ compmodel[[n]] = list( vnam   = "cflxca"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "cflxst"
@@ -1870,6 +1967,7 @@ compmodel[[n]] = list( vnam   = "cflxst"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "nee"
@@ -1888,6 +1986,7 @@ compmodel[[n]] = list( vnam   = "nee"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = FALSE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "ustar"
@@ -1906,6 +2005,7 @@ compmodel[[n]] = list( vnam   = "ustar"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "reco"
@@ -1924,6 +2024,7 @@ compmodel[[n]] = list( vnam   = "reco"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = FALSE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "albedo"
@@ -1942,10 +2043,11 @@ compmodel[[n]] = list( vnam   = "albedo"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = FALSE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rshortup"
-                     , desc   = "Upward SW Radiation"
+                     , desc   = "Outgoing SW Radiation"
                      , unit   = "W/m2"
                      , plotsd = TRUE
                      , colour = c(blue.fg,grey.fg)
@@ -1960,10 +2062,11 @@ compmodel[[n]] = list( vnam   = "rshortup"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rlongup"
-                     , desc   = "Upward LW Radiation"
+                     , desc   = "Outgoing LW Radiation"
                      , unit   = "W/m2"
                      , plotsd = TRUE
                      , colour = c(red.fg,grey.fg)
@@ -1978,10 +2081,11 @@ compmodel[[n]] = list( vnam   = "rlongup"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "parup"
-                     , desc   = "Upward PAR"
+                     , desc   = "Outgoing PAR"
                      , unit   = "umol/m2/s"
                      , plotsd = TRUE
                      , colour = c(green.fg,grey.fg)
@@ -1996,6 +2100,7 @@ compmodel[[n]] = list( vnam   = "parup"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rnet"
@@ -2014,6 +2119,7 @@ compmodel[[n]] = list( vnam   = "rnet"
                      , mmean  = TRUE
                      , qmean  = TRUE
                      , emean  = TRUE
+                     , scsout = TRUE
                      )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -2023,34 +2129,37 @@ compmodel[[n]] = list( vnam   = "rnet"
 n             = 0
 soilplot      = list()
 n             = n + 1
-soilplot[[n]] = list( vnam  = "soil.water"
-                    , desc  = "Soil moisture"
-                    , unit  = "m3/m3"
-                    , csch  = "imuitas"
-                    , pnlog = FALSE
-                    , mmean = TRUE
-                    , emean = TRUE
-                    , ymean = TRUE
+soilplot[[n]] = list( vnam   = "soil.water"
+                    , desc   = "Soil moisture"
+                    , unit   = "m3H2O/m3"
+                    , csch   = "imuitas"
+                    , pnlog  = FALSE
+                    , mmean  = TRUE
+                    , emean  = TRUE
+                    , ymean  = TRUE
+                    , scsout = TRUE
                     )#end list
 n             = n + 1
-soilplot[[n]] = list( vnam  = "soil.temp"
-                    , desc  = "Soil temperature"
-                    , unit  = "C"
-                    , csch  = "muitas"
-                    , pnlog = FALSE
-                    , mmean = TRUE
-                    , emean = TRUE
-                    , ymean = TRUE
+soilplot[[n]] = list( vnam   = "soil.temp"
+                    , desc   = "Soil temperature"
+                    , unit   = "C"
+                    , csch   = "muitas"
+                    , pnlog  = FALSE
+                    , mmean  = TRUE
+                    , emean  = TRUE
+                    , ymean  = TRUE
+                    , scsout = TRUE
                     )#end list
 n             = n + 1
-soilplot[[n]] = list( vnam  = "soil.mstpot"
-                    , desc  = "(Negative) Soil moisture potential"
-                    , unit  = "m"
-                    , csch  = "muitas"
-                    , pnlog = TRUE
-                    , mmean = TRUE
-                    , emean = TRUE
-                    , ymean = TRUE
+soilplot[[n]] = list( vnam   = "soil.mstpot"
+                    , desc   = "(Negative) Soil moisture potential"
+                    , unit   = "m"
+                    , csch   = "muitas"
+                    , pnlog  = TRUE
+                    , mmean  = TRUE
+                    , emean  = TRUE
+                    , ymean  = TRUE
+                    , scsout = TRUE
                     )#end list
 #------------------------------------------------------------------------------------------#
 

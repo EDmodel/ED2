@@ -81,7 +81,6 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
   real(kind=8)  :: veg_temp,leaf_temp,wood_temp
   real(kind=8)  :: eflxac
-  real(kind=8)  :: qwflxgc
   real(kind=8)  :: qwflxac
   real(kind=8)  :: hflxac
   real(kind=8)  :: qwflxlc,qwflxlc_tot
@@ -143,7 +142,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
   call ed_grndvap8(ksn,ynext%soil_water(nzg),ynext%soil_tempk(nzg)        &
        ,ynext%soil_fracliq(nzg),ycurr%sfcwater_tempk(k)                   &
-       ,ycurr%sfcwater_fracliq(k),ycurr%can_prss,ynext%can_shv            &
+       ,ycurr%sfcwater_fracliq(k),ycurr%snowfac,ycurr%can_prss,ynext%can_shv &
        ,ynext%ground_shv,ynext%ground_ssh,ynext%ground_temp               &
        ,ynext%ground_fliq,ynext%ggsoil)
   
@@ -263,7 +262,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   qc    = ynext%can_shv
   Tg    = ycurr%ground_temp
   gg    = ycurr%ggnet
-  mgc   = ycurr%wflxgc
+  mgc   = ycurr%wflxsc + ycurr%wflxgc
   ga    = ycurr%ggbare
   Ta    = rk4site%atm_theta*rk4site%atm_exner/cpdry8
   mac   = ycurr%wflxac
@@ -284,10 +283,13 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 !!       + sum(ycurr%wflxwc)*href &
 !!       - dc*rhoc*href*dqcdt)
 
-  ! USES ycurr HFLXGC
+  ! USES ycurr HFLXSC+HFLXGC
   B(id_tcan) = (1.d0/xc)*       &
-       (gg*rhoc*cpdry8*(ycurr%ground_temp-ycurr%can_temp) &
-       + mgc*(href+cph2o8*Tg)   &
+       ( ycurr%hflxsc           & 
+       + ycurr%hflxgc           &
+       + ycurr%qwflxsc          &
+       + ycurr%qwflxgc          &
+  !    + mgc*(href+cph2o8*Tg)   &
        + ga*rhoc*cpdry8*Ta      &
        + mac*href               &
        + mac*cph2o8*0.5d0*Ta     &
@@ -641,11 +643,8 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   ! Update eulerian based budget fluxes
   ! ============================================================
   
-  qwflxgc = ycurr%wflxgc * tq2enthalpy8(ycurr%ground_temp,1.d0,.true.)
-  
-  
   eflxac = hcapcan*(ynext%can_enthalpy-ycurr%can_enthalpy)/dtf  - &
-       (dydt%avg_sensible_gc + qwflxgc                          + &
+       (dydt%avg_sensible_gc + ycurr%qwflxsc + ycurr%qwflxgc    + &
        hflxlc_tot + qwflxlc_tot + qtransp_tot + hflxwc_tot + qwflxwc_tot)
 
 !  print*,hflxlc_tot,qwflxlc_tot,qtransp_tot,hflxwc_tot,qwflxwc_tot

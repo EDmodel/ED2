@@ -81,6 +81,7 @@ subroutine lw_multiple_scatter(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wa
    real(kind=8), dimension(2*ncoh+2)                       :: lwvec
    real(kind=8), dimension(2*ncoh+2)                       :: cvec
    real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: amat
+   real(kind=8)                                            :: temiss_four
    real(kind=8)                                            :: grnd_emiss
    real(kind=8)                                            :: grnd_temp
    real(kind=8)                                            :: rlong_top
@@ -175,9 +176,15 @@ subroutine lw_multiple_scatter(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wa
 
 
 
-      !----- Thermal emission. ------------------------------------------------------------!
-      source_lw(i) = epsil(i) * stefan8                                                    &
-                   * (leaf_weight(i) * leaf_temp(i) + wood_weight(i) * wood_temp(i)) ** 4
+      !------------------------------------------------------------------------------------!
+      !      Thermal emission.  The temperature is the weighted average where the weights  !
+      ! are the product between the area and the emissivity.                               !
+      !------------------------------------------------------------------------------------!
+      temiss_four  = ( leaf_weight(i) * leaf_emiss_tir(ipft) * leaf_temp(i) ** 4           &
+                     + wood_weight(i) * wood_emiss_tir(ipft) * wood_temp(i) ** 4 )         &
+                   / ( leaf_weight(i) * leaf_emiss_tir(ipft)                               &
+                     + wood_weight(i) * wood_emiss_tir(ipft) )
+      source_lw(i) = epsil(i) * stefan8 * temiss_four
       !------------------------------------------------------------------------------------!
 
 

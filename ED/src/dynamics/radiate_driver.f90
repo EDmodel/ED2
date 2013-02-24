@@ -213,15 +213,19 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                    , leaf_scatter_nir     & ! intent(in)
                                    , wood_scatter_nir     & ! intent(in)
                                    , leaf_emiss_tir       & ! intent(in)
-                                   , wood_emiss_tir       ! ! intent(in)
+                                   , wood_emiss_tir       & ! intent(in)
+                                   , snow_albedo_vis      & ! intent(in)
+                                   , snow_albedo_nir      & ! intent(in)
+                                   , snow_emiss_tir       ! ! intent(in)
    use soil_coms            , only : soil                 & ! intent(in)
-                                   , soilcol              & ! intent(in)
-                                   , emisg                ! ! intent(in)
-   use consts_coms          , only : stefan               ! ! intent(in)
+                                   , soilcol              ! ! intent(in)
+   use consts_coms          , only : stefan               & ! intent(in)
+                                   , lnexp_max            ! ! intent(in)
    use ed_max_dims          , only : n_pft                ! ! intent(in)
    use allometry            , only : h2crownbh            ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf             & ! intent(in)
-                                   , radfrq               ! ! intent(in)
+                                   , radfrq               & ! intent(in)
+                                   , current_time         ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -256,14 +260,17 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: fcpct
    real                                          :: albedo_soil_par
    real                                          :: albedo_soil_nir
+   real                                          :: albedo_damp_par
+   real                                          :: albedo_damp_nir
    real                                          :: albedo_sfcw_par
    real                                          :: albedo_sfcw_nir
-   real                                          :: rad_par
-   real                                          :: rad_nir
+   real                                          :: rad_sfcw_par
+   real                                          :: rad_sfcw_nir
+   real                                          :: sfcw_odepth
    real                                          :: fractrans_par
    real                                          :: fractrans_nir
-   real            , dimension(mzs)              :: fracabs_par
-   real            , dimension(mzs)              :: fracabs_nir
+   real            , dimension(mzs)              :: abs_sfcw_par
+   real            , dimension(mzs)              :: abs_sfcw_nir
    real                                          :: abs_ground_par
    real                                          :: abs_ground_nir
    real                                          :: albedo_ground_par
@@ -299,7 +306,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: downward_rshort_below_beam
    real                                          :: downward_rshort_below_diffuse
    real                                          :: upward_rshort_above_diffuse
-   real                                          :: surface_absorbed_longwave
+   real                                          :: surface_netabs_longwave
    real                                          :: nir_v_beam
    real                                          :: nir_v_diffuse
    real                                          :: wleaf_vis
@@ -310,6 +317,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: wwood_tir
    real                                          :: bl_lai_each
    real                                          :: bl_wai_each
+   real                                          :: ground_par_check
+   real                                          :: ground_nir_check
    !----- External function. --------------------------------------------------------------!
    real            , external                    :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
@@ -625,33 +634,24 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       !     Find the ground albedo as a function of soil water relative moisture of the    !
       ! top layer.                                                                         !
       !------------------------------------------------------------------------------------!
-      ! nsoil = ntext_soil(mzg)
-      ! select case (nsoil)
-      ! case (13)
-      !    !----- Bedrock, no soil moisture, use dry soil albedo. -------------------------!
-      !    alg = soil(nsoil)%albdry
-      ! case default
-      !    !-------------------------------------------------------------------------------!
-      !    !     Find relative soil moisture.  Not sure about this one, but I am assuming  !
-      !    ! that albedo won't change below the dry air soil moisture, and that should be  !
-      !    ! the dry value.                                                                !
-      !    !-------------------------------------------------------------------------------!
-      !    fcpct = max(0., min(1., (csite%soil_water(mzg,ipa) - soil(nsoil)%soilcp)        &
-      !                          / (soil(nsoil)%slmsts        - soil(nsoil)%soilcp) ) )
-      !    alg   = soil(nsoil)%albdry + fcpct * (soil(nsoil)%albwet - soil(nsoil)%albdry)
-      ! end select
       nsoil  = ntext_soil(mzg)
       colour = ncol_soil
       select case (nsoil)
       case (13)
          !----- Bedrock, use constants soil value for granite. ----------------------------!
-         albedo_soil_par = soil(nsoil)%albdry
-         albedo_soil_nir = soil(nsoil)%albdry
+         albedo_soil_par = soilcol(colour)%alb_vis_dry
+         albedo_soil_nir = soilcol(colour)%alb_nir_dry
+         !----- Damp soil, for temporary surface water albedo. ----------------------------!
+         albedo_damp_par = albedo_soil_par
+         albedo_damp_nir = albedo_damp_nir
       case (12)
          !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
          fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
-         albedo_soil_par   = max (0.07, 0.14 * (1.0 - fcpct))
-         albedo_soil_nir   = albedo_soil_par
+         albedo_soil_par = max (0.07, 0.14 * (1.0 - fcpct))
+         albedo_soil_nir = albedo_soil_par
+         !----- Damp soil, for temporary surface water albedo. ----------------------------!
+         albedo_damp_par = 0.14
+         albedo_damp_nir = 0.14
       case default
          select case (colour)
          case (21)
@@ -662,6 +662,9 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             fcpct           = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
             albedo_soil_par = max(0.14,0.31-0.34*fcpct)
             albedo_soil_nir = albedo_soil_par
+            !----- Damp soil, for temporary surface water albedo. -------------------------!
+            albedo_damp_par = 0.14
+            albedo_damp_nir = 0.14
          case default
             !------------------------------------------------------------------------------!
             !      Other soils, we use the soil numbers from CLM-4.  The colour class must !
@@ -672,6 +675,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             albedo_soil_par = min(soilcol(colour)%alb_vis_dry                              &
                                  ,soilcol(colour)%alb_vis_wet  + fcpct)
             albedo_soil_nir = min(soilcol(colour)%alb_nir_dry                              &
+                                 ,soilcol(colour)%alb_nir_wet  + fcpct)
+            !----- Damp soil, for temporary surface water albedo. -------------------------!
+            fcpct           = max(0., 0.11 - 0.40 * soil(nsoil)%slmsts)
+            albedo_damp_par = min(soilcol(colour)%alb_vis_dry                              &
+                                 ,soilcol(colour)%alb_vis_wet  + fcpct)
+            albedo_damp_nir = min(soilcol(colour)%alb_nir_dry                              &
                                  ,soilcol(colour)%alb_nir_wet  + fcpct)
             !------------------------------------------------------------------------------!
          end select
@@ -688,61 +697,89 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       ! is the surface temperature.  Otherwise, we pick the temporary surface water or     !
       ! snow layer.                                                                        !
       !------------------------------------------------------------------------------------!
-      rad_par           = 1.0
-      rad_nir           = 1.0
+      rad_sfcw_par      = 1.0
+      rad_sfcw_nir      = 1.0
       albedo_ground_par = 1.0
       albedo_ground_nir = 1.0
+      abs_sfcw_par      = 0.0
+      abs_sfcw_nir      = 0.0
       ksn               = csite%nlev_sfcwater(ipa)
       if (ksn == 0) then
-         emissivity = emisg(ntext_soil(mzg))
+         emissivity = soilcol(colour)%emiss_tir
          T_surface  = csite%soil_tempk(mzg,ipa)
       else
          !---------------------------------------------------------------------------------!
-         !      Sfcwater albedo ALS ranges from wet-soil value .14 for all-liquid to .5    !
-         ! for all-ice.  For the time being, we will leave the values constant, but we     !
-         ! should consider using different values for different bands.  CLM may be a good  !
-         ! starting point.                                                                 !
+         !      Sfcwater albedo ALS ranges from wet-soil value for all-liquid to typical   !
+         ! snow albedo for ice.  In the future, we should consider a more realistic snow   !
+         ! albedo model that takes snow age and snow melt into account.                    !
+         !                                                                                 !
+         !  Potential starting points:                                                     !
+         !                                                                                 !
+         !  Roesch, A., et al., 2002: Comparison of spectral surface albedos and their     !
+         !      impact on the general circulation model simulated surface climate.  J.     !
+         !      Geophys. Res.-Atmosph., 107(D14), 4221, 10.1029/2001JD000809.              !
+         !                                                                                 !
+         !  Oleson, K.W., et al., 2010: Technical description of version 4.0 of the        !
+         !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.           !
+         !                                                                                 !
          !---------------------------------------------------------------------------------!
-         albedo_sfcw_par = 0.5 - 0.36 * csite%sfcwater_fracliq(ksn,ipa)
-         albedo_sfcw_nir = albedo_sfcw_par
+         albedo_sfcw_par = albedo_damp_par + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * ( snow_albedo_vis - albedo_damp_par )
+         albedo_sfcw_nir = albedo_damp_nir + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * ( snow_albedo_nir - albedo_damp_nir )
+         !---------------------------------------------------------------------------------!
+
+
+
          !----- Fraction shortwave absorbed into sfcwater + soil. -------------------------!
-         rad_par = 1.0 - albedo_sfcw_par
-         rad_nir = 1.0 - albedo_sfcw_nir
-         
+         rad_sfcw_par = 1.0 - albedo_sfcw_par
+         rad_sfcw_nir = 1.0 - albedo_sfcw_nir
          do k = ksn,1,-1
-            
             !------------------------------------------------------------------------------!
             !      Fractrans is fraction of shortwave entering each sfcwater layer that    !
             ! gets transmitted through that layer.                                         !
             !------------------------------------------------------------------------------!
-            fractrans_par = exp(-20.0 * csite%sfcwater_depth(k,ipa))
+            sfcw_odepth   = min( lnexp_max,   20.0 * csite%sfcwater_depth(k,ipa)           &
+                                                   / csite%snowfac         (ipa) )
+            fractrans_par = exp( - sfcw_odepth )
             fractrans_nir = fractrans_par
-            
             !------------------------------------------------------------------------------!
-            !      Fracabs(k) is fraction of total incident shortwave (at top of top       !
+
+            !------------------------------------------------------------------------------!
+            !      abs_sfcw_???(k) is fraction of total incident shortwave (at top of top  !
             ! sfcwater layer) that is absorbed in each sfcwater layer.                     !
             !------------------------------------------------------------------------------!
-            fracabs_par(k) = rad_par * (1.0 - fractrans_par)
-            fracabs_nir(k) = rad_nir * (1.0 - fractrans_nir)
+            abs_sfcw_par(k) = rad_sfcw_par * (1.0 - fractrans_par) * csite%snowfac(ipa)
+            abs_sfcw_nir(k) = rad_sfcw_nir * (1.0 - fractrans_nir) * csite%snowfac(ipa)
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !      Rad is fraction of total incident shortwave (at top of top sfcwater     !
             ! layer) that remains at bottom of current sfcwater layer.                     !
             !------------------------------------------------------------------------------!
-            rad_par = rad_par * fractrans_par
-            rad_nir = rad_nir * fractrans_nir
+            rad_sfcw_par = rad_sfcw_par * fractrans_par
+            rad_sfcw_nir = rad_sfcw_nir * fractrans_nir
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !      Albedo_ground will ultimately be the albedo of the soil+sfcwater.  So   !
             ! subtract out whatever is being absorbed by sfcwater.                         !
             !------------------------------------------------------------------------------!
-            albedo_ground_par = albedo_ground_par - fracabs_par(k)
-            albedo_ground_nir = albedo_ground_nir - fracabs_nir(k)
+            albedo_ground_par = albedo_ground_par - abs_sfcw_par(k)
+            albedo_ground_nir = albedo_ground_nir - abs_sfcw_nir(k)
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
 
          !----- Long wave parameter if sfcwater exists. -----------------------------------!
-         emissivity = 1.0
-         T_surface  = csite%sfcwater_tempk(csite%nlev_sfcwater(ipa),ipa)
+         emissivity = snow_emiss_tir            *        csite%snowfac(ipa)                &
+                    + soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa) )
+         T_surface  = sqrt(sqrt( ( csite%sfcwater_tempk (ksn,ipa)** 4                      &
+                                 * snow_emiss_tir            *        csite%snowfac(ipa)   &
+                                 + csite%soil_tempk     (mzg,ipa)** 4                      &
+                                 * soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa))) &
+                               / emissivity ) )
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -752,8 +789,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       !------------------------------------------------------------------------------------!
       !     This is the fraction of below-canopy radiation that is absorbed by the ground. !
       !------------------------------------------------------------------------------------!
-      abs_ground_par = (1.0 - albedo_soil_par) * rad_par
-      abs_ground_nir = (1.0 - albedo_soil_nir) * rad_nir
+      abs_ground_par = (1.0 - albedo_soil_par)                                             &
+                     * (1.0 - csite%snowfac(ipa) + csite%snowfac(ipa) * rad_sfcw_par )
+      abs_ground_nir = (1.0 - albedo_soil_nir)                                             &
+                     * (1.0 - csite%snowfac(ipa) + csite%snowfac(ipa) * rad_sfcw_nir )
       !------------------------------------------------------------------------------------!
 
 
@@ -763,7 +802,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       albedo_ground_par = albedo_ground_par - abs_ground_par
       albedo_ground_nir = albedo_ground_nir - abs_ground_nir
       !------------------------------------------------------------------------------------!
-
 
 
 
@@ -780,15 +818,15 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          select case (icanrad)
          case (0) 
             !------------------------------------------------------------------------------!
-            !    Two-stream model.                                                         !
+            !    Original two-stream model.                                                !
             !------------------------------------------------------------------------------!
-            call lw_two_stream(emissivity,T_surface,rlong,cohort_count                     &
-                              ,pft_array(1:cohort_count),LAI_array(1:cohort_count)         &
-                              ,WAI_array(1:cohort_count),CA_array(1:cohort_count)          &
-                              ,leaf_temp_array(1:cohort_count)                             &
-                              ,wood_temp_array(1:cohort_count)                             &
-                              ,lw_v_array(1:cohort_count)                                  &
-                              ,downward_lw_below,upward_lw_below,upward_lw_above)
+            call old_lw_two_stream(emissivity,T_surface,rlong,cohort_count                 &
+                                  ,pft_array(1:cohort_count),LAI_array(1:cohort_count)     &
+                                  ,WAI_array(1:cohort_count),CA_array(1:cohort_count)      &
+                                  ,leaf_temp_array(1:cohort_count)                         &
+                                  ,wood_temp_array(1:cohort_count)                         &
+                                  ,lw_v_array(1:cohort_count)                              &
+                                  ,downward_lw_below,upward_lw_below,upward_lw_above)
             !------------------------------------------------------------------------------!
 
          case (1)
@@ -808,6 +846,19 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                     ,lw_v_array(1:cohort_count)                            &
                                     ,downward_lw_below,upward_lw_below,upward_lw_above)
             !------------------------------------------------------------------------------!
+
+         case (2) 
+            !------------------------------------------------------------------------------!
+            !    Updated two-stream model.                                                 !
+            !------------------------------------------------------------------------------!
+            call lw_two_stream(emissivity,T_surface,rlong,cohort_count                     &
+                              ,pft_array(1:cohort_count),LAI_array(1:cohort_count)         &
+                              ,WAI_array(1:cohort_count),CA_array(1:cohort_count)          &
+                              ,leaf_temp_array(1:cohort_count)                             &
+                              ,wood_temp_array(1:cohort_count)                             &
+                              ,lw_v_array(1:cohort_count)                                  &
+                              ,downward_lw_below,upward_lw_below,upward_lw_above)
+            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
 
@@ -820,8 +871,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
 
-         !----- Long wave absorbed by either soil or sfcwater. ----------------------------!
-         surface_absorbed_longwave = downward_lw_below - upward_lw_below
+         !----- Net long wave absorption by either soil or sfcwater. ----------------------!
+         surface_netabs_longwave = downward_lw_below - upward_lw_below
          !---------------------------------------------------------------------------------!
 
 
@@ -840,25 +891,25 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                !---------------------------------------------------------------------------!
                !    Two-stream model.                                                      !
                !---------------------------------------------------------------------------!
-               call sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi               &
-                                 ,cohort_count                                             &
-                                 ,pft_array(1:cohort_count)                                &
-                                 ,LAI_array(1:cohort_count)                                &
-                                 ,WAI_array(1:cohort_count)                                &
-                                 ,CA_array(1:cohort_count)                                 &
-                                 ,par_v_beam_array(1:cohort_count)                         &
-                                 ,par_v_diffuse_array(1:cohort_count)                      &
-                                 ,rshort_v_beam_array(1:cohort_count)                      &
-                                 ,rshort_v_diffuse_array(1:cohort_count)                   &
-                                 ,downward_par_below_beam                                  &
-                                 ,downward_par_below_diffuse                               &
-                                 ,upward_par_above_diffuse                                 &
-                                 ,downward_nir_below_beam                                  &
-                                 ,downward_nir_below_diffuse                               &
-                                 ,upward_nir_above_diffuse                                 &
-                                 ,beam_level_array,diff_level_array                        &
-                                 ,light_level_array,light_beam_level_array                 &
-                                 ,light_diff_level_array)
+               call old_sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi           &
+                                     ,cohort_count                                         &
+                                     ,pft_array(1:cohort_count)                            &
+                                     ,LAI_array(1:cohort_count)                            &
+                                     ,WAI_array(1:cohort_count)                            &
+                                     ,CA_array(1:cohort_count)                             &
+                                     ,par_v_beam_array(1:cohort_count)                     &
+                                     ,par_v_diffuse_array(1:cohort_count)                  &
+                                     ,rshort_v_beam_array(1:cohort_count)                  &
+                                     ,rshort_v_diffuse_array(1:cohort_count)               &
+                                     ,downward_par_below_beam                              &
+                                     ,downward_par_below_diffuse                           &
+                                     ,upward_par_above_diffuse                             &
+                                     ,downward_nir_below_beam                              &
+                                     ,downward_nir_below_diffuse                           &
+                                     ,upward_nir_above_diffuse                             &
+                                     ,beam_level_array,diff_level_array                    &
+                                     ,light_level_array,light_beam_level_array             &
+                                     ,light_diff_level_array)
                !---------------------------------------------------------------------------!
 
             case (1)
@@ -884,6 +935,30 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                        ,beam_level_array,diff_level_array                  &
                                        ,light_level_array,light_beam_level_array           &
                                        ,light_diff_level_array)
+               !---------------------------------------------------------------------------!
+            case (2)
+               !---------------------------------------------------------------------------!
+               !    Updated two-stream model.                                              !
+               !---------------------------------------------------------------------------!
+               call sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi               &
+                                 ,cohort_count                                             &
+                                 ,pft_array(1:cohort_count)                                &
+                                 ,LAI_array(1:cohort_count)                                &
+                                 ,WAI_array(1:cohort_count)                                &
+                                 ,CA_array(1:cohort_count)                                 &
+                                 ,par_v_beam_array(1:cohort_count)                         &
+                                 ,par_v_diffuse_array(1:cohort_count)                      &
+                                 ,rshort_v_beam_array(1:cohort_count)                      &
+                                 ,rshort_v_diffuse_array(1:cohort_count)                   &
+                                 ,downward_par_below_beam                                  &
+                                 ,downward_par_below_diffuse                               &
+                                 ,upward_par_above_diffuse                                 &
+                                 ,downward_nir_below_beam                                  &
+                                 ,downward_nir_below_diffuse                               &
+                                 ,upward_nir_above_diffuse                                 &
+                                 ,beam_level_array,diff_level_array                        &
+                                 ,light_level_array,light_beam_level_array                 &
+                                 ,light_diff_level_array)
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
@@ -1172,15 +1247,15 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          upward_rshort_above_diffuse     = upward_par_above_diffuse                        &
                                          + upward_nir_above_diffuse
 
-         surface_absorbed_longwave       = emissivity * stefan * T_surface**4
+         surface_netabs_longwave         = emissivity * (rlong - stefan * T_surface**4 )
 
          csite%albedo_par          (ipa) = upward_par_above_diffuse                        &
                                          / ( par_beam_norm + par_diff_norm )
          csite%albedo_nir          (ipa) = upward_nir_above_diffuse                        &
                                          / ( nir_beam_norm + nir_diff_norm )
          csite%albedo              (ipa) = upward_rshort_above_diffuse
-         csite%rlongup             (ipa) = - surface_absorbed_longwave
-         csite%rlong_albedo        (ipa) = (rlong - surface_absorbed_longwave)/rlong
+         csite%rlongup             (ipa) = rlong - surface_netabs_longwave
+         csite%rlong_albedo        (ipa) = csite%rlongup(ipa) / rlong
       end if
       
       !----- Absorption rate of short wave by the soil. -----------------------------------!
@@ -1202,20 +1277,20 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
       !----- Absorption rate of short wave by the surface water. --------------------------!
       do k=1,csite%nlev_sfcwater(ipa)
-         csite%rshort_s_beam   (k,ipa) = downward_par_below_beam    * fracabs_par(k)       &
-                                       + downward_nir_below_beam    * fracabs_nir(k)
-         csite%rshort_s_diffuse(k,ipa) = downward_par_below_diffuse * fracabs_par(k)       &
-                                       + downward_nir_below_beam    * fracabs_nir(k)
-         csite%par_s_beam      (k,ipa) = downward_par_below_beam    * fracabs_par(k)
-         csite%par_s_diffuse   (k,ipa) = downward_par_below_diffuse * fracabs_par(k)
+         csite%rshort_s_beam   (k,ipa) = downward_par_below_beam    * abs_sfcw_par(k)      &
+                                       + downward_nir_below_beam    * abs_sfcw_nir(k)
+         csite%rshort_s_diffuse(k,ipa) = downward_par_below_diffuse * abs_sfcw_par(k)      &
+                                       + downward_nir_below_beam    * abs_sfcw_nir(k)
+         csite%par_s_beam      (k,ipa) = downward_par_below_beam    * abs_sfcw_par(k)
+         csite%par_s_diffuse   (k,ipa) = downward_par_below_diffuse * abs_sfcw_par(k)
       end do
 
       !----- Long wave absorption rate at the surface. ------------------------------------!
       if (csite%nlev_sfcwater(ipa) == 0) then
          csite%rlong_s (ipa) = 0.0
-         csite%rlong_g (ipa) = surface_absorbed_longwave
+         csite%rlong_g (ipa) = surface_netabs_longwave
       else
-         csite%rlong_s (ipa) = surface_absorbed_longwave
+         csite%rlong_s (ipa) = surface_netabs_longwave
          csite%rlong_g (ipa) = 0.0
       end if
       !------------------------------------------------------------------------------------!

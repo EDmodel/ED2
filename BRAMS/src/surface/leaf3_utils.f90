@@ -1602,9 +1602,12 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
                         , gbh_2_gbw  & ! intent(in)
                         , gbh        & ! intent(in)
                         , gbw        ! ! intent(in)
-   use rconstants, only : gr_coeff   & ! intent(in)
-                        , th_diffi   & ! intent(in)
-                        , th_diff    ! ! intent(in)
+   use rconstants, only : t00        & ! intent(in)
+                        , grav       & ! intent(in)
+                        , kin_visc0  & ! intent(in)
+                        , dkin_visc  & ! intent(in)
+                        , th_diff0   & ! intent(in)
+                        , dth_diff   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                      :: iveg            ! Vegetation class           [      ---]
@@ -1616,6 +1619,10 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat      [   J/kg/K]
    !----- Local variables. ----------------------------------------------------------------!
    real(kind=4)                 :: lwidth          ! Leaf width                 [        m]
+   real(kind=4)                 :: kin_visc        ! Kinematic viscosity        [     m²/s]
+   real(kind=4)                 :: th_diff         ! Kinematic viscosity        [     m²/s]
+   real(kind=4)                 :: th_expan        ! Thermal expansion          [      1/K]
+   real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_visc²    [   1/K/m³]
    real(kind=4)                 :: grashof         ! Grashof number             [      ---]
    real(kind=4)                 :: reynolds        ! Reynolds number            [      ---]
    real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)   [      ---]
@@ -1632,11 +1639,32 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Compute kinematic viscosity, thermal diffusivity, and expansion coefficient as    !
+   ! functions of temperature.  Here we use the canopy air space temperature because       !
+   ! this is the representative temperature of the fluid.                                  !
+   !                                                                                       !
+   !     Kinematic viscosity and thermal diffusivity are determined from MU08, see         !
+   ! discussion on page 32.  Thermal expansion is assumed to be of an ideal gas (1/T),     !
+   ! like in Dufour and van Mieghem (1975), for example.                                   !
+   !---------------------------------------------------------------------------------------!
+   th_expan = 1.0 / can_temp
+   !----- kin_visc and th_diff are assumed linear functions of temperature. ---------------!
+   kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( can_temp - t00 ) )
+   th_diff  = th_diff0  * ( 1.0 + dth_diff  * ( can_temp - t00 ) )
+   !---------------------------------------------------------------------------------------!
+   !    Grashof coefficient (a*g/nu²) in MU08's equation 10.8.                             !
+   !---------------------------------------------------------------------------------------!
+   gr_coeff = th_expan * grav  / ( kin_visc * kin_visc )
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !     Find the conductance, in m/s, associated with forced convection.                  !
    !---------------------------------------------------------------------------------------!
    !----- 1. Compute the Reynolds number. -------------------------------------------------!
-   reynolds        = veg_wind * lwidth * th_diffi
+   reynolds        = veg_wind * lwidth / th_diff
    !----- 2. Compute the Nusselt number for both the laminar and turbulent case. ----------!
    nusselt_lami    = aflat_lami * reynolds ** nflat_lami
    nusselt_turb    = aflat_turb * reynolds ** nflat_turb

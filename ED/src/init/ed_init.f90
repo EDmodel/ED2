@@ -499,7 +499,6 @@ subroutine sfcdata_ed()
                           , slcons1           & ! intent(out)
                           , slcons18          & ! intent(out)
                           , slden             & ! intent(out)
-                          , emisg             & ! intent(out)
                           , soil              & ! intent(in)
                           , thicknet          & ! intent(out)
                           , thick             ! ! intent(out)
@@ -524,7 +523,8 @@ subroutine sfcdata_ed()
 
 
    !----- Soil vertical grid spacing arrays (some with timestep info). --------------------!
-   slz(nzg+1) = 0.
+   slz (nzg+1) = 0.
+   slz8(nzg+1) = 0.d0
 
    do k = 1,nzg
       dslz    (k) = slz(k+1) - slz(k)
@@ -540,13 +540,24 @@ subroutine sfcdata_ed()
       slzt8   (k) = dble(slzt   (k))
    end do
 
-   !----- Find the exponential increase factor. -------------------------------------------!
+   !----- Find the exponential increase factor to estimate the bottom boundary condition. -!
    ezg  = log(slz(1)/slz(nzg)) / log(real(nzg))
    slz0 = slz(1) * (real(nzg+1)/real(nzg))**ezg
+   !---------------------------------------------------------------------------------------!
 
 
-   slzt (0) = .5 * (slz0 + slz(1))
-   slzt8(0) = dble(slzt(0))
+   !----- Find the thickness of the bottom boundary condition layer. ----------------------!
+   dslz   (0) = slz(1) - slz0
+   dslzo2 (0) = .5 * dslz(0)
+   dslzi  (0) = 1. / dslz(0)
+   dslzidt(0) = dslzi(0) * dtlsm
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find the height at the middle of the bottom boundary condition. -----------------!
+   slzt   (0) = .5 * (slz0 + slz(1))
+   slzt8  (0) = dble(slzt(0))
+   !---------------------------------------------------------------------------------------!
 
    do k = 1,nzg
       dslzt    (k) = slzt(k) - slzt(k-1)
@@ -587,7 +598,6 @@ subroutine sfcdata_ed()
       end do
 
       slden    (nnn) =  soil(nnn)%slden    
-      emisg (nnn) = .98
    end do
 
    !----- Defining some snow thickness variables ------------------------------------------!

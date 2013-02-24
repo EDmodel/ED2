@@ -2003,23 +2003,30 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    use soil_coms     , only : soil               & ! intent(in), look-up table
                             , slz                & ! intent(in)
                             , tiny_sfcwater_mass & ! intent(in)
+                            , soil_rough         & ! intent(in)
+                            , ny07_eq04_a        & ! intent(in)
+                            , ny07_eq04_m        & ! intent(in)
                             , matric_potential   ! ! intent(in)
-   use consts_coms   , only : wdns               ! ! intent(in)
+   use consts_coms   , only : wdns               & ! intent(in)
+                            , fsdns              & ! intent(in)
+                            , fsdnsi             ! ! intent(in)
    use therm_lib     , only : uextcm2tl          & ! subroutine
                             , uint2tl            ! ! subroutine
    use ed_therm_lib  , only : ed_grndvap         ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)                 , target     :: csite      ! Current site
-   integer                        , intent(in) :: ipa        ! Number of the current patch
-   integer                        , intent(in) :: mzg        ! Number of soil layers
-   integer                        , intent(in) :: mzs        ! Number of sfc. water layers
-   integer        , dimension(mzg), intent(in) :: ntext_soil ! Soil texture
+   type(sitetype)                 , target     :: csite          ! Current site
+   integer                        , intent(in) :: ipa            ! Current patch #
+   integer                        , intent(in) :: mzg            ! # of soil layers
+   integer                        , intent(in) :: mzs            ! # of sfc. water layers
+   integer        , dimension(mzg), intent(in) :: ntext_soil     ! Soil texture
    !----- Local variables -----------------------------------------------------------------!
-   type(patchtype)                , pointer    :: cpatch     ! Current patch
-   integer                                     :: k          ! Layer counter
-   integer                                     :: ico        ! Cohort counter
-   integer                                     :: nsoil      ! Alias for soil texture class
+   type(patchtype)                , pointer    :: cpatch         ! Current patch
+   integer                                     :: k              ! Layer counter
+   integer                                     :: ico            ! Cohort counter
+   integer                                     :: nsoil          ! Soil texture class
+   real                                        :: tot_sfcw_mass  ! Total mass
+   real                                        :: bulk_sfcw_dens ! Bulk density
    !---------------------------------------------------------------------------------------!
 
 
@@ -2042,11 +2049,16 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    ! checking the mass.  In case there is a layer, we convert sfcwater_energy from J/m2 to !
    ! J/kg, and compute the temperature and liquid fraction.                                !
    !---------------------------------------------------------------------------------------! 
-   csite%nlev_sfcwater(ipa) = 0
+   csite%nlev_sfcwater   (ipa) = 0
+   tot_sfcw_mass               = 0.
+   csite%total_sfcw_depth(ipa) = 0.
    snowloop: do k=1,mzs
       !----- Leave the loop if there is not enough mass in this layer... ------------------!
       if (csite%sfcwater_mass(k,ipa) <= tiny_sfcwater_mass)  exit snowloop
       csite%nlev_sfcwater(ipa) = k
+      tot_sfcw_mass                = tot_sfcw_mass  + csite%sfcwater_mass (k,ipa)
+      csite%total_sfcw_depth(ipa)  = csite%total_sfcw_depth(ipa)                           &
+                                   + csite%sfcwater_depth(k,ipa)
       csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa)                          &
                                    / csite%sfcwater_mass(k,ipa)
       call uint2tl(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                &
@@ -2067,8 +2079,31 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
          csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
       end if
    end do
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the fraction of the canopy covered in snow.  I could not find any            !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
+   !---------------------------------------------------------------------------------------!
+   ! csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   if (tot_sfcw_mass > tiny_sfcwater_mass) then
+      bulk_sfcw_dens     = max( fsdns, min( wdns                                           &
+                              , tot_sfcw_mass / csite%total_sfcw_depth(ipa)))
+      csite%snowfac(ipa) = max( 0.0, min( 0.99                                             &
+                              , tanh( csite%total_sfcw_depth(ipa)                          &
+                                    / ( ny07_eq04_a * soil_rough                           &
+                                      * (bulk_sfcw_dens * fsdnsi) ** ny07_eq04_m ) ) ) )
+   else
+      csite%snowfac(ipa) = 0.0
+   end if
+   !---------------------------------------------------------------------------------------!
 
    
    !----- Now we can compute the surface properties. --------------------------------------!
@@ -2076,7 +2111,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    call ed_grndvap(csite%nlev_sfcwater(ipa),ntext_soil(mzg)                                &
                   ,csite%soil_water(mzg,ipa),csite%soil_tempk(mzg,ipa)                     &
                   ,csite%soil_fracliq(mzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
-                  ,csite%sfcwater_fracliq(k,ipa),csite%can_prss(ipa)                       &
+                  ,csite%sfcwater_fracliq(k,ipa),csite%snowfac(ipa),csite%can_prss(ipa)    &
                   ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
                   ,csite%ground_temp(ipa),csite%ground_fliq(ipa),csite%ggsoil(ipa))
    !---------------------------------------------------------------------------------------! 

@@ -124,7 +124,7 @@ subroutine vegetation_dynamics(new_month,new_year)
             ! be fused.  After fusing, we also check whether there are patches that are    !
             ! too small, and terminate them.                                               !
             !------------------------------------------------------------------------------!
-            if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
+            if (maxpatch >= 0) call fuse_patches(cgrid,ifm,.false.)
             do ipy = 1,cgrid%npolygons
                cpoly => cgrid%polygon(ipy)
                  

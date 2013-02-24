@@ -16,7 +16,7 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 here    = getwd()                                  #   Current directory
-srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"      #   Script directory
+srcdir  = "/n/home00/mlongo/util/Rsc"              #   Script directory
 outfile = file.path(here,"newjoborder.txt")        #   Job order
 #------------------------------------------------------------------------------------------#
 

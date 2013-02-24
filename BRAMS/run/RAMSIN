@@ -2345,10 +2345,12 @@ $ED2_INFO
    !                                                                                       !
    ! ICANRAD      -- Specifies how canopy radiation is solved.  This variable sets both    !
    !                 shortwave and longwave.                                               !
-   !                 0.  Two-stream model (Medvigy 2006), with the possibility to apply    !
-   !                     finite crown area to direct shortwave radiation.                  !
+   !                 0.  Original two-stream model (Medvigy 2006), with the possibility to !
+   !                     apply finite crown area to direct shortwave radiation.            !
    !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
    !                     possibility to apply finite crown area to all radiation fluxes.   !
+   !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
+   !                     apply finite crown area to all radiation fluxes.                  !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !

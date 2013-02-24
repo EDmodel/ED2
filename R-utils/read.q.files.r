@@ -186,8 +186,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$parup           [m] =   mymont$MMEAN.PARUP.PY          * Watts.2.Ein * 1.e6
       emean$rnet            [m] =   mymont$MMEAN.RNET.PY
       emean$albedo          [m] =   mymont$MMEAN.ALBEDO.PY
-      emean$albedo.beam     [m] =   mymont$MMEAN.ALBEDO.BEAM.PY
-      emean$albedo.diff     [m] =   mymont$MMEAN.ALBEDO.DIFF.PY
+      emean$albedo.par      [m] =   mymont$MMEAN.ALBEDO.PAR.PY
+      emean$albedo.nir      [m] =   mymont$MMEAN.ALBEDO.NIR.PY
       emean$rlong.albedo    [m] =   mymont$MMEAN.RLONG.ALBEDO.PY
       emean$leaf.gbw        [m] =   mymont$MMEAN.LEAF.GBW.PY * day.sec
       emean$leaf.gsw        [m] =   mymont$MMEAN.LEAF.GSW.PY * day.sec
@@ -343,8 +343,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$parup       [m,] =   mymont$QMEAN.PARUP.PY          * Watts.2.Ein * 1.e6
       qmean$rnet        [m,] =   mymont$QMEAN.RNET.PY
       qmean$albedo      [m,] =   mymont$QMEAN.ALBEDO.PY
-      qmean$albedo.beam [m,] =   mymont$QMEAN.ALBEDO.BEAM.PY
-      qmean$albedo.diff [m,] =   mymont$QMEAN.ALBEDO.DIFF.PY
+      qmean$albedo.par  [m,] =   mymont$QMEAN.ALBEDO.PAR.PY
+      qmean$albedo.nir  [m,] =   mymont$QMEAN.ALBEDO.NIR.PY
       qmean$rlong.albedo[m,] =   mymont$QMEAN.RLONG.ALBEDO.PY
       qmean$leaf.gbw    [m,] =   mymont$QMEAN.LEAF.GBW.PY       * day.sec
       qmean$leaf.gsw    [m,] =   mymont$QMEAN.LEAF.GSW.PY       * day.sec
@@ -694,10 +694,19 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                              + mymont$MMEAN.VLEAF.RESP.CO  )
          nppconow          = gppconow-plant.respconow
          cbaconow          = mymont$MMEAN.CB
-         cbalightconow     = rowMeans(mymont$CB.LIGHTMAX[,1:12])
-         cbamoistconow     = rowMeans(mymont$CB.MOISTMAX[,1:12])
-         cbamaxconow       = rowMeans(       klight  * mymont$CB.LIGHTMAX[,1:12]
-                                     + (1. - klight) * mymont$CB.MOISTMAX[,1:12] )
+         #----- Use mean instead of rowMeans in case there is only one cohort. ------------#
+         if (sum(ncohorts) == 1){
+            cbalightconow     = mean(mymont$CB.LIGHTMAX)
+            cbamoistconow     = mean(mymont$CB.MOISTMAX)
+            cbamaxconow       = mean(       klight  * mymont$CB.LIGHTMAX
+                                    + (1. - klight) * mymont$CB.MOISTMAX)
+         }else{
+            cbalightconow     = rowMeans(mymont$CB.LIGHTMAX[,1:12])
+            cbamoistconow     = rowMeans(mymont$CB.MOISTMAX[,1:12])
+            cbamaxconow       = rowMeans(       klight  * mymont$CB.LIGHTMAX[,1:12]
+                                        + (1. - klight) * mymont$CB.MOISTMAX[,1:12] )
+         }#end if
+         #---------------------------------------------------------------------------------#
          cbarelconow       = mymont$CBR.BAR
          mcostconow        = ( mymont$MMEAN.LEAF.MAINTENANCE.CO
                              + mymont$MMEAN.ROOT.MAINTENANCE.CO )
@@ -709,11 +718,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
          bdeadconow        = mymont$BDEAD
          bleafconow        = mymont$MMEAN.BLEAF.CO
-         if (all(mymont$MMEAN.BROOT.CO == 0,na.rm=TRUE)){
-            brootconow        = pft$qroot[pftconow] * dbh2bl(dbh=dbhconow,ipft=pftconow)
-         }else{
-            brootconow        = mymont$MMEAN.BROOT.CO
-         }#end if
+         brootconow        = mymont$MMEAN.BROOT.CO
          bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
          baliveconow       = bleafconow + brootconow + bsapwoodconow
          bstorageconow     = mymont$MMEAN.BSTORAGE.CO

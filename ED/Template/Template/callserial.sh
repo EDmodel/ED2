@@ -10,10 +10,10 @@ errfile=${here}'/serial_out.err'               # Executable error file
 currloc=`pwd`                                  # Current location
 
 mddir='met_driver'
+scendir='myscenmain'
 datasrc='mypackdata'
 datadest="/scratch/${moi}"
-
-datasize=39000000
+scenario='myscenario'
 #------------------------------------------------------------------------------------------#
 
 
@@ -54,16 +54,39 @@ fi
 
 
 
-#----- These are the names of the lock and unlock files. ----------------------------------#
-dontcopy=${datadest}/dontcopy_072.txt
-diskfull=${datadest}/fulldisk_072.txt
-unlocked=${datadest}/unlocked_072.txt
+#------------------------------------------------------------------------------------------#
+#     Check size based on the met driver.                                                  #
+#------------------------------------------------------------------------------------------#
+if [ ${scenario} == 'sheffield' ]
+then
+   datasize=39000000
+else
+   datasize=300000
+fi
 #------------------------------------------------------------------------------------------#
 
+
+#----- These are the names of the lock and unlock files. ----------------------------------#
+dontcopy=${datadest}/dontcopy_${scenario}.txt
+diskfull=${datadest}/fulldisk_${scenario}.txt
+unlocked=${datadest}/unlocked_${scenario}.txt
+#------------------------------------------------------------------------------------------#
+
+
+#----- These variables are the scenario paths (global and node). --------------------------#
+source_thisscen="${datasrc}/${mddir}/${scendir}/${scenario}"
+node_driverroot="${datadest}/${mddir}"
+node_scenroot="${node_driverroot}/${scendir}"
+node_thisscen="${node_scenroot}/${scenario}"
+#------------------------------------------------------------------------------------------#
 
 
 #----- Make the code more "personal", so it is easy to spot where the runs are running. ---#
 thismach=`hostname -s`
+echo "------------------------------------------------------" 1>> ${logfile} 2>> ${errfile}
+echo " Script callserial.sh starts on node ${thismach}..."    1>> ${logfile} 2>> ${errfile}
+echo "------------------------------------------------------" 1>> ${logfile} 2>> ${errfile}
+echo " "                                                      1>> ${logfile} 2>> ${errfile}
 #------------------------------------------------------------------------------------------#
 
 
@@ -86,21 +109,31 @@ else
    if [ ! -s ${dontcopy} ] && [ ! -s ${diskfull} ]
    then
       #----- Don't remove the directory if it is there... ---------------------------------#
-      if [ ! -s ${datadest} ]
+      if [ ! -s ${datadest}            ]
       then
          mkdir ${datadest}
       fi
+      if [ ! -s ${node_driverroot}   ]
+      then
+         mkdir ${node_driverroot}
+      fi
+      if [ ! -s ${node_scenroot} ]
+      then
+         mkdir ${node_scenroot}
+      fi
+      #------------------------------------------------------------------------------------#
+
       echo 'Copying files to node '${thismach}'... ' > ${dontcopy}
 
       blah=' + Files are not all there, cleaning path before we copy again.'
       blah=${blah}'  Please hold!'
       echo ${blah} 1>> ${logfile} 2>> ${errfile}
 
-      if [ -s ${datadest}/${mddir} ]
+      if [ -s ${node_thisscen} ]
       then
          blah='  - Deleting old stuff from the meterological forcing driver...'
          echo ${blah} 1>> ${logfile} 2>> ${errfile}
-         /bin/rm -fr ${datadest}/${mddir} 1>> ${logfile} 2>> ${errfile}
+         /bin/rm -fr ${node_thisscen} 1>> ${logfile} 2>> ${errfile}
       fi
 
       #----- First thing we do is to check whether this disk is full. ---------------------#
@@ -117,7 +150,7 @@ else
          #----- Copy the meteorological forcing. ------------------------------------------#
          blah='  - Copying the meterological forcing driver...'
          echo ${blah} 1>> ${logfile} 2>> ${errfile}
-         rsync -Pruvaz ${datasrc}/${mddir} ${datadest} 1>> ${logfile} 2>> ${errfile}
+         rsync -Pruvaz ${source_thisscen} ${node_scenroot} 1>> ${logfile} 2>> ${errfile}
 
 
          #----- Copy finished.  Create a file to unlock this node. ------------------------#
@@ -151,11 +184,11 @@ else
          blah=${blah}'  Please hold!'
          echo ${blah} 1>> ${logfile} 2>> ${errfile}
 
-         if [ -s ${datadest}/${mddir} ]
+         if [ -s ${node_thisscen} ]
          then
             blah='  - Deleting old stuff from the meterological forcing driver...'
             echo ${blah} 1>> ${logfile} 2>> ${errfile}
-            /bin/rm -fr ${datadest}/${mddir} 1>> ${logfile} 2>> ${errfile}
+            /bin/rm -fr ${node_thisscen} 1>> ${logfile} 2>> ${errfile}
          fi
 
          #----- First thing we do is to check whether this disk is full. ------------------------#
@@ -169,13 +202,13 @@ else
          if [ ${space} -gt ${datasize} ]
          then
 
-            #----- Copy the meteorological forcing. ---------------------------------------------#
+            #----- Copy the meteorological forcing. ---------------------------------------#
             blah='  - Copying the meterological forcing driver...'
             echo ${blah} 1>> ${logfile} 2>> ${errfile}
-            rsync -Pruvaz ${datasrc}/${mddir} ${datadest} 1>> ${logfile} 2>> ${errfile}
+            rsync -Pruvaz ${source_thisscen} ${node_scenroot} 1>> ${logfile} 2>> ${errfile}
 
 
-            #----- Copy finished.  Create a file to unlock this node. ---------------------------#
+            #----- Copy finished.  Create a file to unlock this node. ---------------------#
             echo 'All the data needed are here!' > ${unlocked}
 
             blah=' + The files were successfully copied to '${thismach}'.'

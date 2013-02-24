@@ -8,7 +8,7 @@
 MAKE = /usr/bin/make
 
 # RAPP root directory
-RPOST_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost
+RPOST_ROOT=../../../../EDBRAMS/Ramspost
 
 #------ Define MPI libraries. -------------------------------------------------------------#
 MPI_PATH=

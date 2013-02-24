@@ -221,8 +221,13 @@ module rk4_coms
 
 
       !------ Variables used for hybrid stepping -----------------------------------------!
+      real(kind=8)                        :: hflxgc
+      real(kind=8)                        :: hflxsc
       real(kind=8)                        :: wflxgc
+      real(kind=8)                        :: wflxsc
       real(kind=8)                        :: wflxac
+      real(kind=8)                        :: qwflxgc
+      real(kind=8)                        :: qwflxsc
       real(kind=8), pointer, dimension(:) :: wflxtr
       real(kind=8), pointer, dimension(:) :: wflxlc
       real(kind=8), pointer, dimension(:) :: wflxwc
@@ -398,16 +403,16 @@ module rk4_coms
       real(kind=8), dimension(:)  , pointer :: avail_h2o_int
       !----- Extracted water by transpiration [kg/m²]. ------------------------------------!
       real(kind=8), dimension(:,:), pointer :: extracted_water
-      !----- Heat resistance [Km²s/J]. ----------------------------------------------------!
-      real(kind=8), dimension(:)  , pointer :: rfactor
+      !----- Thermal conductivity [W/m/K]. ------------------------------------------------!
+      real(kind=8), dimension(:)  , pointer :: th_cond_s
+      real(kind=8), dimension(:)  , pointer :: th_cond_p
       !----- Sensible heat flux at staggered layer (k = k-1/2) [W/m²]. --------------------!
-      real(kind=8), dimension(:)  , pointer :: hfluxgsc
+      real(kind=8), dimension(:)  , pointer :: h_flux_g
+      real(kind=8), dimension(:)  , pointer :: h_flux_s
       !----- Water flux at staggered layers (k = k-1/2) [kg/m²/s]. ------------------------!
-      real(kind=8), dimension(:)  , pointer :: w_flux
+      real(kind=8), dimension(:)  , pointer :: w_flux_g
       !----- Latent heat flux at staggered layers (k=k-1/2) [W/m²]. -----------------------!
-      real(kind=8), dimension(:)  , pointer :: qw_flux
-      !----- Depth flux at staggered layers (k=k-1/2) [m/s]. ------------------------------!
-      real(kind=8), dimension(:)  , pointer :: d_flux
+      real(kind=8), dimension(:)  , pointer :: qw_flux_g
       !----- Tests to check if the soil is too dry or too wet. ----------------------------!
       logical     , dimension(:)  , pointer :: drysoil
       logical     , dimension(:)  , pointer :: satsoil
@@ -1081,8 +1086,13 @@ module rk4_coms
       y%flx_sensible_ac                = 0.d0
       y%flx_heatstor_veg               = 0.d0
 
+      y%hflxgc                         = 0.d0
+      y%hflxsc                         = 0.d0
       y%wflxgc                         = 0.d0
+      y%wflxsc                         = 0.d0
       y%wflxac                         = 0.d0
+      y%qwflxgc                        = 0.d0
+      y%qwflxsc                        = 0.d0
 
       y%flx_drainage                   = 0.d0
       y%flx_qdrainage                  = 0.d0
@@ -1708,15 +1718,16 @@ module rk4_coms
 
       allocate(rk4aux%psiplusz                (          0:mzg) )
       allocate(rk4aux%hydcond                 (          0:mzg) )
+      allocate(rk4aux%th_cond_s               (          0:mzg) )
+      allocate(rk4aux%th_cond_p               (          0:mzs) )
       allocate(rk4aux%drysoil                 (          0:mzg) )
       allocate(rk4aux%satsoil                 (          0:mzg) )
       allocate(rk4aux%avail_h2o_lyr           (          mzg+1) )
       allocate(rk4aux%avail_h2o_int           (          mzg+1) )
-      allocate(rk4aux%rfactor                 (        mzg+mzs) )
-      allocate(rk4aux%hfluxgsc                (      mzg+mzs+1) )
-      allocate(rk4aux%w_flux                  (      mzg+mzs+1) )
-      allocate(rk4aux%qw_flux                 (      mzg+mzs+1) )
-      allocate(rk4aux%d_flux                  (          mzs+1) )
+      allocate(rk4aux%h_flux_g                (          mzg+1) )
+      allocate(rk4aux%h_flux_s                (          mzs+1) )
+      allocate(rk4aux%w_flux_g                (          mzg+1) )
+      allocate(rk4aux%qw_flux_g               (          mzg+1) )
       allocate(rk4aux%extracted_water         (mcoh,     mzg+1) )
 
 
@@ -1743,16 +1754,17 @@ module rk4_coms
 
       nullify(rk4aux%psiplusz                )
       nullify(rk4aux%hydcond                 )
+      nullify(rk4aux%th_cond_s               )
+      nullify(rk4aux%th_cond_p               )
       nullify(rk4aux%drysoil                 )
       nullify(rk4aux%satsoil                 )
       nullify(rk4aux%avail_h2o_lyr           )
       nullify(rk4aux%avail_h2o_int           )
       nullify(rk4aux%extracted_water         )
-      nullify(rk4aux%rfactor                 )
-      nullify(rk4aux%hfluxgsc                )
-      nullify(rk4aux%w_flux                  )
-      nullify(rk4aux%qw_flux                 )
-      nullify(rk4aux%d_flux                  )
+      nullify(rk4aux%h_flux_g                )
+      nullify(rk4aux%h_flux_s                )
+      nullify(rk4aux%w_flux_g                )
+      nullify(rk4aux%qw_flux_g               )
 
       return
    end subroutine nullify_rk4_aux
@@ -1773,15 +1785,16 @@ module rk4_coms
 
       if (associated(rk4aux%psiplusz        )) rk4aux%psiplusz        (:  ) = 0.d0
       if (associated(rk4aux%hydcond         )) rk4aux%hydcond         (:  ) = 0.d0
+      if (associated(rk4aux%th_cond_s       )) rk4aux%th_cond_s       (:  ) = 0.d0
+      if (associated(rk4aux%th_cond_p       )) rk4aux%th_cond_p       (:  ) = 0.d0
       if (associated(rk4aux%drysoil         )) rk4aux%drysoil         (:  ) = .false.
       if (associated(rk4aux%satsoil         )) rk4aux%satsoil         (:  ) = .false.
       if (associated(rk4aux%avail_h2o_lyr   )) rk4aux%avail_h2o_lyr   (:  ) = 0.d0
       if (associated(rk4aux%avail_h2o_int   )) rk4aux%avail_h2o_int   (:  ) = 0.d0
-      if (associated(rk4aux%rfactor         )) rk4aux%rfactor         (:  ) = 0.d0
-      if (associated(rk4aux%hfluxgsc        )) rk4aux%hfluxgsc        (:  ) = 0.d0
-      if (associated(rk4aux%w_flux          )) rk4aux%w_flux          (:  ) = 0.d0
-      if (associated(rk4aux%qw_flux         )) rk4aux%qw_flux         (:  ) = 0.d0
-      if (associated(rk4aux%d_flux          )) rk4aux%d_flux          (:  ) = 0.d0
+      if (associated(rk4aux%h_flux_g        )) rk4aux%h_flux_g        (:  ) = 0.d0
+      if (associated(rk4aux%h_flux_s        )) rk4aux%h_flux_s        (:  ) = 0.d0
+      if (associated(rk4aux%w_flux_g        )) rk4aux%w_flux_g        (:  ) = 0.d0
+      if (associated(rk4aux%qw_flux_g       )) rk4aux%qw_flux_g       (:  ) = 0.d0
       if (associated(rk4aux%extracted_water )) rk4aux%extracted_water (:,:) = 0.d0
 
       return
@@ -1803,15 +1816,16 @@ module rk4_coms
 
       if (associated(rk4aux%psiplusz        )) deallocate(rk4aux%psiplusz        )
       if (associated(rk4aux%hydcond         )) deallocate(rk4aux%hydcond         )
+      if (associated(rk4aux%th_cond_s       )) deallocate(rk4aux%th_cond_s       )
+      if (associated(rk4aux%th_cond_p       )) deallocate(rk4aux%th_cond_p       )
       if (associated(rk4aux%drysoil         )) deallocate(rk4aux%drysoil         )
       if (associated(rk4aux%satsoil         )) deallocate(rk4aux%satsoil         )
       if (associated(rk4aux%avail_h2o_lyr   )) deallocate(rk4aux%avail_h2o_lyr   )
       if (associated(rk4aux%avail_h2o_int   )) deallocate(rk4aux%avail_h2o_int   )
-      if (associated(rk4aux%rfactor         )) deallocate(rk4aux%rfactor         )
-      if (associated(rk4aux%hfluxgsc        )) deallocate(rk4aux%hfluxgsc        )
-      if (associated(rk4aux%w_flux          )) deallocate(rk4aux%w_flux          )
-      if (associated(rk4aux%qw_flux         )) deallocate(rk4aux%qw_flux         )
-      if (associated(rk4aux%d_flux          )) deallocate(rk4aux%d_flux          )
+      if (associated(rk4aux%h_flux_g        )) deallocate(rk4aux%h_flux_g        )
+      if (associated(rk4aux%h_flux_s        )) deallocate(rk4aux%h_flux_s        )
+      if (associated(rk4aux%w_flux_g        )) deallocate(rk4aux%w_flux_g        )
+      if (associated(rk4aux%qw_flux_g       )) deallocate(rk4aux%qw_flux_g       )
       if (associated(rk4aux%extracted_water )) deallocate(rk4aux%extracted_water )
 
       return

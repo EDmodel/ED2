@@ -2094,15 +2094,15 @@ end do
 
    if (crown_mod < 0 .or. crown_mod > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid CROWN_MOD, it must be between 0 or 1.  Yours is set to'       &
+                    'Invalid CROWN_MOD, it must be either 0 or 1.  Yours is set to'        &
                     ,crown_mod,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if  (icanrad <0 .or. icanrad > 1) then
+   if  (icanrad <0 .or. icanrad > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid ICANRAD, it must be between 0 or 1.  Yours is set to'         &
+                    'Invalid ICANRAD, it must be between 0 and 2.  Yours is set to'        &
                     ,icanrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')

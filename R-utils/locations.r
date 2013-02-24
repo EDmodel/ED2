@@ -318,7 +318,7 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 #==========================================================================================#
 #     This function finds a good name to describe the simulation.                          #
 #------------------------------------------------------------------------------------------#
-simul.description <<- function(ici,testpoi,max.char=66){
+simul.description <<- function(ici,testpoi,max.char=50){
 
    #---------------------------------------------------------------------------------------#
    #     This block contains names for the commonest settings for variables that are       #
@@ -337,8 +337,8 @@ simul.description <<- function(ici,testpoi,max.char=66){
    #----- icanrad is the canopy radiation model. ------------------------------------------#
    flagvar[["icanrad"]]         = list( descr   = "Canopy radiation method"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=1,by=1)
-                                      , names   = c("Medvigy","Zhao and Qualls")
+                                      , values  = seq(from=0,to=2,by=1)
+                                      , names   = c("Medvigy","Zhao and Qualls","Liou")
                                       )#end list
    #----- imetavg is the averaging method for met driver. ---------------------------------#
    flagvar[["imetavg"]]         = list( descr   = "Met driver average"
@@ -701,6 +701,19 @@ simul.description <<- function(ici,testpoi,max.char=66){
                                                    ,"WMO-based"
                                                    )#end names
                                        )#end list
+   flagvar[["init.mode"]]        = list( descr  = "Initial Cond.:"
+                                       , numeric = TRUE
+                                       , values = c(-1,0,1,2,3,4,5,6)
+                                       , names  = c("Bare Ground"
+                                                   ,"Near bare ground"
+                                                   ,"ED-1.0"
+                                                   ,"ED-2.0"
+                                                   ,"ED-2.0 + Hydro"
+                                                   ,"ED-2.1"
+                                                   ,"ED-2.2"
+                                                   ,"Biometry"
+                                                   )#end names
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -880,6 +893,16 @@ simul.description <<- function(ici,testpoi,max.char=66){
                                      , fmt   = "%3i"
                                      , off   =   0.0
                                      , mult  =   1.0)
+   numvar[["yeara"]]           = list( descr = "Initial year"
+                                     , unit  = ""
+                                     , fmt   = "%4.4i"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
+   numvar[["yearz"]]           = list( descr = "Final year"
+                                     , unit  = ""
+                                     , fmt   = "%4.4i"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
    #---------------------------------------------------------------------------------------#
 
 
@@ -892,7 +915,7 @@ simul.description <<- function(ici,testpoi,max.char=66){
    lenici = nchar(ici)
    if (lenici == 8){
       nparms = 1
-      param  = c("isas")
+      param  = c("met.forcing")
       na     = c(     6)
       nz     = c(     8)
    }else if (lenici == 11){
@@ -900,6 +923,16 @@ simul.description <<- function(ici,testpoi,max.char=66){
       param  = c("revision")
       na     = c(         9)
       nz     = c(        11)
+   }else if (lenici == 12){
+      nparms = 1
+      param  = c("icanrad")
+      na     = c(        10)
+      nz     = c(        12)
+   }else if (lenici == 14){
+      nparms = 1
+      param  = c("icanrad")
+      na     = c(        13)
+      nz     = c(        15)
    }else if (lenici == 15){
       nparms = 1
       param  = c("revision")
@@ -927,9 +960,9 @@ simul.description <<- function(ici,testpoi,max.char=66){
       nz     = c(        11,               19)
    }else if (lenici == 21){
       nparms = 3
-      param  = c("isas","ipatch","idiversity")
-      na     = c(     6,      14,          20)
-      nz     = c(     8,      15,          21)
+      param  = c("isas","iage","idiversity")
+      na     = c(     6,    14,          20)
+      nz     = c(     8,    15,          21)
    }else if (lenici == 22){
       nparms = 2
       param  = c("iscenario","iphen.scheme")
@@ -942,9 +975,9 @@ simul.description <<- function(ici,testpoi,max.char=66){
       nz     = c(         10,        19,    23)
    }else if (lenici == 24){
       nparms = 3
-      param  = c("soil.depth","kw.tree","atm.co2")
-      na     = c(          10,       15,       22)
-      nz     = c(          11,       17,       24)
+      param  = c("met.forcing","icanrad","init.mode")
+      na     = c(            6,      14,          22)
+      nz     = c(            8,      16,          24)
    }else if (lenici == 25){
       nparms = 3
       param  = c("iphen.scheme","d0","include.fire")

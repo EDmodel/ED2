@@ -275,7 +275,6 @@ module soil_coms
    !     Variables to be initialised in sfcdata_ed (ed_init.f90).                          !
    !---------------------------------------------------------------------------------------!
    real   , dimension(ed_nstyp)        :: slden    ! dry soil density               [kg/m3]
-   real   , dimension(ed_nstyp)        :: emisg    ! soil infrared emissivity
    real   , dimension(ed_nstyp)        :: fhydraul ! vertically varying hydraulic 
                                                    !    conductivity factor
    integer, dimension(ed_nvtyp)        :: kroot    ! level in which roots are       [  ---]
@@ -330,12 +329,11 @@ module soil_coms
       real(kind=4) :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
       real(kind=4) :: slcons     ! hydraulic conductivity at saturation          [     m/s]
       real(kind=4) :: slcons0    ! Surface value for slcons                      [     m/s]
-      real(kind=4) :: soilcond0  ! Intercept for conductivity calculation        [   N/K/s]
-      real(kind=4) :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
-      real(kind=4) :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
+      real(kind=4) :: thcond0    ! First coefficient for thermal conductivity    [   W/m/K]
+      real(kind=4) :: thcond1    ! Second coefficient for thermal conductivity   [   W/m/K]
+      real(kind=4) :: thcond2    ! Third coefficient for thermal conductivity    [     ---]
+      real(kind=4) :: thcond3    ! Fourth coefficient for thermal conductivity   [     ---]
       real(kind=4) :: sfldcap    ! Soil field capacity                           [   m3/m3]
-      real(kind=4) :: albwet     ! Albedo for wet soil                           [     ---]
-      real(kind=4) :: albdry     ! Albedo for dry soil                           [     ---]
       real(kind=4) :: xsand      ! Percentage of sand                            [     ---]
       real(kind=4) :: xclay      ! Percentage of clay                            [     ---]
       real(kind=4) :: xsilt      ! Percentage of silt                            [     ---]
@@ -358,12 +356,11 @@ module soil_coms
       real(kind=8) :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
       real(kind=8) :: slcons     ! hydraulic conductivity at saturation          [     m/s]
       real(kind=8) :: slcons0    ! Surface value for slcons                      [     m/s]
-      real(kind=8) :: soilcond0  ! Intercept for conductivity calculation        [   N/K/s]
-      real(kind=8) :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
-      real(kind=8) :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
+      real(kind=8) :: thcond0    ! First coefficient for thermal conductivity    [   W/m/K]
+      real(kind=8) :: thcond1    ! Second coefficient for thermal conductivity   [   W/m/K]
+      real(kind=8) :: thcond2    ! Third coefficient for thermal conductivity    [     ---]
+      real(kind=8) :: thcond3    ! Fourth coefficient for thermal conductivity   [     ---]
       real(kind=8) :: sfldcap    ! Soil field capacity                           [   m3/m3]
-      real(kind=8) :: albwet     ! Albedo for wet soil                           [     ---]
-      real(kind=8) :: albdry     ! Albedo for dry soil                           [     ---]
       real(kind=8) :: xsand      ! Percentage of sand                            [     ---]
       real(kind=8) :: xclay      ! Percentage of clay                            [     ---]
       real(kind=8) :: xsilt      ! Percentage of silt                            [     ---]
@@ -391,6 +388,7 @@ module soil_coms
       real(kind=4) :: alb_nir_dry
       real(kind=4) :: alb_vis_wet
       real(kind=4) :: alb_nir_wet
+      real(kind=4) :: emiss_tir
    end type soilcol_class
    !----- To be filled in ed_params.f90. --------------------------------------------------!
    type(soilcol_class), dimension(ed_nscol) :: soilcol
@@ -453,11 +451,10 @@ module soil_coms
 
       allocate (slcons1(0:nzg,ed_nstyp))
 
-      allocate (slz8     (  nzg))
-      allocate (dslz     (  nzg))
-      allocate (dslzo2   (  nzg))
-      allocate (dslzi    (  nzg))
-      allocate (dslzidt  (  nzg))
+      allocate (dslz     (0:nzg))
+      allocate (dslzo2   (0:nzg))
+      allocate (dslzi    (0:nzg))
+      allocate (dslzidt  (0:nzg))
       allocate (slzt     (0:nzg))
       allocate (dslzt    (  nzg))
       allocate (dslzti   (  nzg))
@@ -465,10 +462,11 @@ module soil_coms
 
       allocate (slcons18(0:nzg,ed_nstyp))
 
-      allocate (dslz8     (  nzg))
-      allocate (dslzo28   (  nzg))
-      allocate (dslzi8    (  nzg))
-      allocate (dslzidt8  (  nzg))
+      allocate (slz8      (nzg+1))
+      allocate (dslz8     (0:nzg))
+      allocate (dslzo28   (0:nzg))
+      allocate (dslzi8    (0:nzg))
+      allocate (dslzidt8  (0:nzg))
       allocate (slzt8     (0:nzg))
       allocate (dslzt8    (  nzg))
       allocate (dslzti8   (  nzg))
@@ -700,14 +698,23 @@ module soil_coms
    !=======================================================================================!
    !      This function converts soil moisture to hydraulic conductivity.                  !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function hydr_conduct(k,nsoil,soil_water)
+   real(kind=4) function hydr_conduct(k,nsoil,soil_water,soil_fracliq)
+      use consts_coms, only : lnexp_min ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer     , intent(in) :: k          ! Layer index                          [  idx]
-      integer     , intent(in) :: nsoil      ! Soil texture                         [  idx]
-      real(kind=4), intent(in) :: soil_water ! Soil moisture                        [m3/m3]
+      integer     , intent(in) :: k            ! Layer index                        [  idx]
+      integer     , intent(in) :: nsoil        ! Soil texture                       [  idx]
+      real(kind=4), intent(in) :: soil_water   ! Soil moisture                      [m3/m3]
+      real(kind=4), intent(in) :: soil_fracliq ! Liquid fraction                    [  ---]
       !----- Internal variables. ----------------------------------------------------------!
-      real(kind=4)             :: relmoist   ! Relative soil moisture                [ ---]
+      real(kind=4)             :: relmoist     ! Relative soil moisture             [  ---]
+      real(kind=4)             :: fzcorr       ! Freezing correction                [  ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find correction for frozen soils. -------------------------------------------!
+      fzcorr = exp( max( lnexp_min, - freezecoef * (1.0 - soil_fracliq) ) )
       !------------------------------------------------------------------------------------!
 
 
@@ -719,7 +726,7 @@ module soil_coms
 
 
       !----- Find the hydraulic conductivity. ---------------------------------------------!
-      hydr_conduct   = slcons1(k,nsoil) * relmoist ** (2. * soil(nsoil)%slbs + 3.)
+      hydr_conduct = fzcorr * slcons1(k,nsoil) * relmoist ** (2. * soil(nsoil)%slbs + 3.)
       !------------------------------------------------------------------------------------!
 
 
@@ -738,14 +745,23 @@ module soil_coms
    !      This function is the double precision version of the function above, so it also  !
    ! converts soil moisture to hydraulic conductivity.                                     !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function hydr_conduct8(k,nsoil,soil_water)
+   real(kind=8) function hydr_conduct8(k,nsoil,soil_water,soil_fracliq)
+      use consts_coms, only : lnexp_min8 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer     , intent(in) :: k          ! Layer index                          [  idx]
-      integer     , intent(in) :: nsoil      ! Soil texture                         [  idx]
-      real(kind=8), intent(in) :: soil_water ! Soil moisture                        [m3/m3]
+      integer     , intent(in) :: k            ! Layer index                        [  idx]
+      integer     , intent(in) :: nsoil        ! Soil texture                       [  idx]
+      real(kind=8), intent(in) :: soil_water   ! Soil moisture                      [m3/m3]
+      real(kind=8), intent(in) :: soil_fracliq ! Liquid fraction                    [  ---]
       !----- Internal variables. ----------------------------------------------------------!
-      real(kind=8)             :: relmoist   ! Relative soil moisture               [  ---]
+      real(kind=8)             :: relmoist     ! Relative soil moisture             [  ---]
+      real(kind=8)             :: fzcorr       ! Freezing correction                [  ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find correction for frozen soils. -------------------------------------------!
+      fzcorr = exp( max( lnexp_min8, - freezecoef8 * (1.d0 - soil_fracliq) ) )
       !------------------------------------------------------------------------------------!
 
 
@@ -757,7 +773,8 @@ module soil_coms
 
 
       !----- Find the hydraulic conductivity. ---------------------------------------------!
-      hydr_conduct8 = slcons18(k,nsoil) * relmoist ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
+      hydr_conduct8 = fzcorr * slcons18(k,nsoil)                                           &
+                    * relmoist ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
       !------------------------------------------------------------------------------------!
 
 

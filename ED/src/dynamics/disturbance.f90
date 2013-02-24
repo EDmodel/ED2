@@ -376,7 +376,7 @@ module disturbance_utils
                      !----- Fuse then terminate cohorts. ----------------------------------!
                      if (csite%patch(new_lu+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
                         call fuse_cohorts(csite,new_lu+onsp,cpoly%green_leaf_factor(:,isi) &
-                                         ,cpoly%lsl(isi))
+                                         ,cpoly%lsl(isi),.false.)
                         call terminate_cohorts(csite,new_lu+onsp,elim_nplant,elim_lai)
                         call split_cohorts(qpatch,cpoly%green_leaf_factor(:,isi)           &
                                           ,cpoly%lsl(isi))
