@@ -18,29 +18,26 @@ here    = getwd()                                #   Current directory
 srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"    #   Script directory
 outroot = paste(here,"structure_comp",sep="/")   #   Output directory
 
-sites          = c("gyf","s67","s83","pdg","pnz","ban","rja","m34","cax")
-sites.pch      = c(    2,    5,    9,   13,    4,    8,    1,    6,    0)
+sites          = c("gyf","s67","s83","pdg","pnz","ban","rja","m34")#,"cax")
+sites.pch      = c(    2,    5,    9,   13,    4,    8,    1,    6)#,    0)
 
 size.struct = list( name    = c(               "sas",               "ble")
                   , desc    = c(           "Size St",            "1 Size")
                   , verbose = c(    "Size structure",       "Single size")
                   , hue     = list( green  = c("#55AC00"     ,"chartreuse"    )
-                                  , olive  = c("olivedrab3"  ,"#DCFFA0"       )
+                                  , blue   = c("dodgerblue4" ,"steelblue1"    )
                                   , purple = c("purple3"     ,"mediumpurple1" )
                                   , indigo = c("slateblue2"  ,"#CDC5FF"       )
                                   )#end list
                   )#end list
-pft.struct  = list( name    = c(             "pft05",             "pft02")
-                  , desc    = c(             "3T+2G",             "1T+1G")
-                  , verbose = c( "Succesion struct.",  "Single succesion")
-                  , sat     = c(                   1,                   2)
+pft.struct  = list( name    = c(                "pft05",             "pft02")
+                  , desc    = c(               "5 PFTs",            "2 PFTs")
+                  , verbose = c( "Succession structure",  "Single sucession")
+                  , sat     = c(                      1,                   2)
                   )#end list
 age.struct  = list( name    = c(            "iage25",            "iage01")
                   , desc    = c(            "Age St",             "1 Age")
                   , verbose = c(     "Age structure",        "Single age")
-                  , cex     = c(                 2.0,                 1.3)
-                  , lwd     = c(                 2.5,                 2.0)
-                  , lty     = c(             "solid",            "dashed")
                   )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -68,7 +65,7 @@ legwhere       = "topleft"             # Where should I place the legend?
 inset          = 0.01                  # Inset between legend and edge of plot region.
 fracexp        = 0.40                  # Expansion factor for y axis (to fit legend)
 cex.main       = 0.8                   # Scale coefficient for the title
-ibackground    = 2                     # Make figures compatible to which background?
+ibackground    = 0                     # Make figures compatible to which background?
                                        # 0 -- white
                                        # 1 -- black
                                        # 2 -- dark grey
@@ -334,40 +331,32 @@ nout    = length(outform)
 #     Combine all structures into a consistent list.                                       #
 #------------------------------------------------------------------------------------------#
 #----- Simulation keys.  The separation is rather cumbersome, mix them. -------------------#
-egrid.key   = expand.grid( size             = size.struct$name
-                         , pft              = pft.struct$name
+egrid.key   = expand.grid( pft              = pft.struct$name
                          , age              = age.struct$name
+                         , size             = size.struct$name
                          , stringsAsFactors = FALSE
                          )#end expand.grid
-simul.key   = apply( X = egrid.key[,c(1,3,2)],MARGIN=1,FUN=paste,collapse="_")
+simul.key   = apply( X = egrid.key[,c(3,2,1)],MARGIN=1,FUN=paste,collapse="_")
 #----- Description. -----------------------------------------------------------------------#
-simleg.key  = apply( X        = expand.grid( size.struct$desc
-                                           , pft.struct$desc
-                                           , age.struct$desc
-                                           )#end expand.grid
-                   , MARGIN   = 1
-                   , FUN      = paste
-                   , collapse = " + "
-                   )#end apply
+simleg.key  = c("Size and age, 5 PFTs","Size and age, 2 PFTs"
+               ,"Size only, 5 PFTs"   ,"Size only, 2 PFTs"
+               ,"Big leaf, 5 PFTs"    ,"Big leaf, 2 PFTs"
+               ,"Big leaf, 5 PFTs"    ,"Big leaf, 2 PFTs"
+               )#end c
 #---- Create the colours and line type for legend. ----------------------------------------#
 n.size        = length(size.struct$name)
 n.pft         = length(pft.struct$name )
 n.age         = length(age.struct$name )
-my.rainbow    = array(data=NA,dim=c(n.size,n.pft,n.age))
+my.rainbow    = array(data=NA,dim=c(n.pft,n.age,n.size))
 for (n in 1:n.size){
-   my.rainbow[n,,1] = size.struct$hue[[2*n-1]]
-   my.rainbow[n,,2] = size.struct$hue[[2*n  ]]
+   my.rainbow[,1,n] = size.struct$hue[[2*n-1]]
+   my.rainbow[,2,n] = size.struct$hue[[2*n  ]]
 }#end for
 simcol.key     = c(unlist(my.rainbow))
-simfg.key      = rep(my.rainbow[,,1],times=n.age)
-simlty.key     = c(aperm(a=array(age.struct$lty,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
-simcex.key     = c(aperm(a=array(age.struct$cex,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
-simlwd.key     = c(aperm(a=array(age.struct$lwd,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
-#----- Force big leaf to be without size structure. ---------------------------------------#
-ble = egrid.key$size == "ble"
-simlty.key[ble] = age.struct$lty[2]
-simcex.key[ble] = age.struct$cex[2]
-simlwd.key[ble] = age.struct$lwd[2]
+simlty.key     = rep("solid",times=n.age*n.size*n.pft)
+simcex.key     = rep(2.0    ,times=n.age*n.size*n.pft)
+simlwd.key     = rep(2.0    ,times=n.age*n.size*n.pft)
+simpch.key     = rep(21     ,times=n.age*n.size*n.pft)
 #------------------------------------------------------------------------------------------#
 
 
@@ -381,10 +370,10 @@ egrid.key     = egrid.key [-bye,]
 simul.key     = simul.key [-bye ]
 simleg.key    = simleg.key[-bye ]
 simcol.key    = simcol.key[-bye ]
-simfg.key     = simfg.key [-bye ]
 simlty.key    = simlty.key[-bye ]
 simcex.key    = simcex.key[-bye ]
 simlwd.key    = simlwd.key[-bye ]
+simpch.key    = simpch.key[-bye ]
 #------------------------------------------------------------------------------------------#
 
 
@@ -395,31 +384,12 @@ simlwd.key    = simlwd.key[-bye ]
 simul       = data.frame( name             = simul.key
                         , desc             = simleg.key
                         , colour           = simcol.key
-                        , fgcol            = simfg.key
                         , lty              = simlty.key
                         , cex              = simcex.key
                         , lwd              = simlwd.key
+                        , pch              = simpch.key
                         , stringsAsFactors = FALSE
                         )#end data.frame
-#------------------------------------------------------------------------------------------#
-
-
-
-#------ Create the legend summary. --------------------------------------------------------#
-col.in.rgb = apply( X = my.rainbow[,,1], MARGIN = c(1,2), FUN = col2rgb)
-col.size   =          apply( X = col.in.rgb     , MARGIN = c(1,2), FUN = mean   )
-col.pft    = colMeans(apply( X = col.in.rgb     , MARGIN = c(1,3), FUN = mean   ))
-col.age    = mean    (apply( X = col.in.rgb     , MARGIN = c(1)  , FUN = mean   ))
-col.size   = rgb(red=col.size[1,],green=col.size[2,],blue=col.size[3,],maxColorValue=255)
-col.pft    = rgb(red=col.pft     ,green=col.pft     ,blue=col.pft     ,maxColorValue=255)
-col.age    = rgb(red=col.age     ,green=col.age     ,blue=col.age     ,maxColorValue=255)
-summ = list( desc = c(size.struct$verbose,pft.struct$verbose,age.struct$verbose)
-           , col  = c(col.size,col.pft,rep(col.age,times=n.age))
-           , pch  = rep(22,times=n.size+n.age+n.pft)
-           , lty  = c(rep("solid",times=n.size+n.pft),age.struct$lty)
-           , cex  = c(rep(mean(age.struct$cex),times=n.size+n.pft),age.struct$cex)
-           , lwd  = c(rep(mean(age.struct$lwd),times=n.size+n.pft),age.struct$lwd)
-           )#end summ
 #------------------------------------------------------------------------------------------#
 
 
@@ -640,7 +610,7 @@ for (p in 1:nsites){
    #---------------------------------------------------------------------------------------#
    for (s in 1:nsimul){
       cat("    * Simulation: ",simul$desc[s],"...","\n")
-      sim.name = paste("e",iata,"_",simul$name[s],sep="")
+      sim.name = paste("t",iata,"_",simul$name[s],sep="")
       sim.path = paste(here,sim.name,sep="/")
       sim.file = paste(sim.path,"rdata_hour",paste("comp-",sim.name,".RData",sep="")
                       ,sep="/")
@@ -823,13 +793,13 @@ for (g in good.loop){
                plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                legend ( x       = "bottom"
                       , inset   = 0.0
-                      , legend  = summ$desc
-                      , col     = summ$col
-                      , lwd     = max(summ$lwd)
-                      , lty     = summ$lty
+                      , legend  = simul$desc
+                      , col     = simul$col
+                      , lwd     = simul$lwd
+                      , lty     = simul$lty
                       , ncol    = 3
                       , title   = expression(bold("Structure"))
-                      , cex     = if (ptsz <= 14){1.0}else{0.8}
+                      , cex     = 14 / ptsz
                       , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
@@ -849,7 +819,7 @@ for (g in good.loop){
                           , rp.type          = "p"
                           , label.prop       = 1.15 * max(1,sqrt(ptsz / 14))
                           , main             = ""
-                          , line.col         = simul$fgcol
+                          , line.col         = simul$col
                           , lty              = simul$lty
                           , lwd              = 3.0
                           , show.grid        = TRUE
@@ -959,14 +929,14 @@ for (g in good.loop){
                plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                legend ( x       = "bottom"
                       , inset   = 0.0
-                      , legend  = summ$desc
-                      , col     = summ$col
-                      , lwd     = max(summ$lwd)
-                      , lty     = summ$lty
+                      , legend  = simul$desc
+                      , col     = simul$col
+                      , lwd     = max(simul$lwd)
+                      , lty     = simul$lty
                       , ncol    = 3
                       , title   = expression(bold("Structure"))
-                      , pt.cex  = summ$cex
-                      , cex     = 1.0
+                      , pt.cex  = simul$cex
+                      , cex     = 14 / ptsz
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -982,7 +952,7 @@ for (g in good.loop){
                           , clockwise        = TRUE
                           , rp.type          = "p"
                           , main             = ""
-                          , line.col         = simul$fgcol
+                          , line.col         = simul$col
                           , lty              = simul$lty
                           , lwd              = 3.0
                           , show.grid        = TRUE
@@ -1309,8 +1279,8 @@ for (v in 1:ncompvar){
                    , pch     = sites.pch
                    , ncol    = min(4,pretty.box(nsites)$ncol)
                    , title   = expression(bold("Sites"))
-                   , pt.cex  = mean(unique(summ$cex))
-                   , cex     = 1.0
+                   , pt.cex  = mean(unique(simul$cex))
+                   , cex     = 15 / ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1324,16 +1294,16 @@ for (v in 1:ncompvar){
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
             legend ( x       = "bottom"
                    , inset   = 0.0
-                   , legend  = summ$desc
-                   , col     = summ$col
-                   , pt.bg   = summ$col
-                   , pt.cex  = summ$cex
-                   , pt.lwd  = summ$lwd
-                   , pch     = summ$pch
+                   , legend  = simul$desc
+                   , col     = simul$col
+                   , pt.bg   = simul$col
+                   , pt.cex  = simul$cex
+                   , pt.lwd  = simul$lwd
+                   , pch     = simul$pch
                    , border  = foreground
                    , ncol    = 3
                    , title   = expression(bold("Structure"))
-                   , cex     = 1.0
+                   , cex     = 13 / ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1357,8 +1327,8 @@ for (v in 1:ncompvar){
                                                             , cex = 2.0
                                                             )#end list
                                       , mod           = mod.diel[[iata]]
-                                      , mod.options   = list( col = simul$fgcol
-                                                            , bg  = simul$fgcol
+                                      , mod.options   = list( col = simul$col
+                                                            , bg  = simul$col
                                                             , pch = sites.pch[p]
                                                             , cex = simul$cex
                                                             , lty = "solid"
@@ -1477,7 +1447,7 @@ for (v in 1:ncompvar){
                    , ncol    = min(4,pretty.box(nsites)$ncol)
                    , title   = expression(bold("Sites"))
                    , pt.cex  = 2.0
-                   , cex     = 1.0
+                   , cex     = 14 / ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1491,16 +1461,16 @@ for (v in 1:ncompvar){
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
             legend ( x       = "bottom"
                    , inset   = 0.0
-                   , legend  = summ$desc
-                   , col     = summ$col
-                   , pt.bg   = summ$col
-                   , pt.cex  = summ$cex
-                   , pt.lwd  = summ$lwd
-                   , pch     = summ$pch
+                   , legend  = simul$desc
+                   , col     = simul$col
+                   , pt.bg   = simul$col
+                   , pt.cex  = simul$cex
+                   , pt.lwd  = simul$lwd
+                   , pch     = simul$pch
                    , border  = foreground
                    , ncol    = 3
                    , title   = expression(bold("Structure"))
-                   , cex     = 1.0
+                   , cex     = 14/ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1522,8 +1492,8 @@ for (v in 1:ncompvar){
                                         , mod        = mod.diel[[iata]]
                                         , add        = add
                                         , pos.corr   = NA
-                                        , pt.col     = simul$fgcol
-                                        , pt.bg      = simul$fgcol
+                                        , pt.col     = simul$col
+                                        , pt.bg      = simul$col
                                         , pt.pch     = sites.pch[p]
                                         , pt.cex     = simul$cex
                                         , pt.lwd     = simul$lwd
@@ -1723,7 +1693,7 @@ for (v in 1:ncompvar){
                    , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
-                   , cex     = 1.0
+                   , cex     = 14 / ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1884,7 +1854,7 @@ for (v in 1:ncompvar){
                    , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
-                   , cex     = 0.7
+                   , cex     = 12 / ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -2027,7 +1997,7 @@ for (v in 1:ncompvar){
                       , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
-                      , cex     = 1.0
+                      , cex     = 14 / ptsz
                       , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
@@ -2179,7 +2149,7 @@ for (v in 1:ncompvar){
                       , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
-                      , cex     = 1.0
+                      , cex     = 14 / ptsz
                       , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#

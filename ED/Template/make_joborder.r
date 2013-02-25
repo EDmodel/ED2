@@ -17,38 +17,27 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 here    = getwd()                                  #   Current directory
 srcdir  = "/n/home00/mlongo/util/Rsc"              #   Script directory
-outfile = file.path(here,"newjoborder.txt")        #   Job order
+outfile = file.path(here,"joborder.txt")           #   Job order
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
 #      Variables that will vary (check the list below for all possibilities.               #
 #------------------------------------------------------------------------------------------#
-# rscen    = c("r+000","r-020","r-040","r-060","r-080","r-100")
-# tscen    = c("t+000","t+100","t+200","t+300")
-# escen    = paste("real",sprintf("%2.2i",seq(from=0,to=9,by=1)),sep="-")
-# 
-# scenario = apply( X        = expand.grid(list(rscen,tscen,escen), stringsAsFactors = FALSE)
-#                 , MARGIN   = 1
-#                 , FUN      = paste
-#                 , collapse = "_"
-#                 )#end apply
-
-
-varrun  = list( iata      = c("gyf","s67","rja")
-              , iscenario = scenario
-              , iphen     = c(-1,2)
-              , yeara     = 1962
-              , yearz     = 2012
-              , isoilflg  = 2
-              , istext    = c(16,6,2,8,11)
-              )#end list
+varrun   = list( iata      = c("gyf","m34","s67","s83","ban","rja","pdg","cax","pnz")
+               , iscenario = c("wmo")
+               , ibigleaf  = c(0,1)
+               , iage      = c(1,25)
+               , isizepft  = c(2 ,5)
+               , ivegtdyn  = 0
+               , queue     = "moorcroft_6100b"
+               )#end list
 varlabel = list( iata      = varrun$iata
-               , iscenario = scenario
-               , iphen     = paste("iphen",sprintf("%+2.2i",varrun$iphen) ,sep="")
-               , yeara     = "yr1962"
-               , yearz     = "yr2012"
-               , isoilflg  = "isoil02"
-               , istext    = paste("stext",sprintf("%2.2i",varrun$istext),sep="")
+               , iscenario = c("wmo")
+               , ibigleaf  = c("sas","ble")
+               , iage      = paste("iage" , sprintf( "%2.2i",varrun$iage     ), sep="" )
+               , isizepft  = paste("pft"  , sprintf( "%2.2i",varrun$isizepft ), sep="" )
+               , ivegtdyn  = 0
+               , queue     = "moorcroft_6100b"
                )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -75,6 +64,11 @@ varlabel = list( iata      = varrun$iata
 source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 
+
+#----- Check whether there is a joborder.  In case there is one, back it up. --------------#
+backupfile = file.path(dirname(outfile),paste("old",basename(outfile),sep="_"))
+if (file.exists(outfile)) dummy = file.rename(from=outfile,to=backupfile)
+#------------------------------------------------------------------------------------------#
 
 
 
@@ -119,7 +113,7 @@ default = list( run           = "unnamed"
               , depth         = "F"
               , isoilbc       = 1
               , sldrain       = 90.
-              , scolour       = 14
+              , scolour       = 16
               , slzres        = 0
               , queue         = "long_serial"
               , met.driver    = "tower"
@@ -163,19 +157,19 @@ default = list( run           = "unnamed"
               , ribmax        = 0.50
               , atmco2        = 378.
               , thcrit        = -1.20
-              , sm.fire       = -1.40
+              , sm.fire       = 0.6666667
               , ifire         = 0
               , fire.parm     = 0.5
               , ipercol       = 0
               , runoff.time   = 3600.
               , imetrad       = 2
               , ibranch       = 1
-              , icanrad       = 1
+              , icanrad       = 2
               , crown.mod     = 0
               , ltrans.vis    = 0.050
               , lreflect.vis  = 0.100
-              , ltrans.nir    = 0.230
-              , lreflect.nir  = 0.460
+              , ltrans.nir    = 0.200
+              , lreflect.nir  = 0.400
               , orient.tree   = 0.100
               , orient.grass  = 0.000
               , clump.tree    = 0.800
@@ -186,7 +180,7 @@ default = list( run           = "unnamed"
               , iallom        = 2
               , ibigleaf      = 0
               , irepro        = 2
-              , treefall      = 0.0111
+              , treefall      = 0.0125
               ) #end list
 #------------------------------------------------------------------------------------------#
 
@@ -196,9 +190,11 @@ default = list( run           = "unnamed"
 #------------------------------------------------------------------------------------------#
 #     Create the full combination of runs.                                                 #
 #------------------------------------------------------------------------------------------#
-myruns = expand.grid(varrun,stringsAsFactors=FALSE)
-nvars  = ncol(myruns)
-nruns  = nrow(myruns)
+myruns    = expand.grid(varrun,stringsAsFactors=FALSE)
+forbidden = myruns$iage == 1 & myruns$ibigleaf == 1
+myruns    = myruns[! forbidden,]
+nvars     = ncol(myruns)
+nruns     = nrow(myruns)
 #------------------------------------------------------------------------------------------#
 
 
@@ -213,7 +209,7 @@ for (n in 1:nvars) joborder[[names(myruns)[n]]] = myruns[[names(myruns)[n]]]
 #------------------------------------------------------------------------------------------#
 #     Create a table with room for all simulations.                                        #
 #------------------------------------------------------------------------------------------#
-poidata = poilist[match(joborder$iata,poilist$iata),]
+poitout = poilist[match(joborder$iata,poilist$iata),]
 #------------------------------------------------------------------------------------------#
 
 
@@ -221,7 +217,7 @@ poidata = poilist[match(joborder$iata,poilist$iata),]
 #     Replace met driver when it is supposed to be tower data.                             #
 #------------------------------------------------------------------------------------------#
 is.tower                      = joborder$met.driver == "tower"
-joborder$met.driver[is.tower] = poidata$met.driver[is.tower]
+joborder$met.driver[is.tower] = poitout$met.driver[is.tower]
 #------------------------------------------------------------------------------------------#
 
 
@@ -229,11 +225,11 @@ joborder$met.driver[is.tower] = poidata$met.driver[is.tower]
 #     Replace other POI-specific variables as long as they are not to be specified by the  #
 # user settings.                                                                           #
 #------------------------------------------------------------------------------------------#
-keep    = ( names(poidata) %in% names(joborder) 
-          & ( ! names(poidata) %in% names(myruns) )
-          & ( ! names(poidata) %in% c("iata","met.driver") )
+keep    = ( names(poitout) %in% names(joborder) 
+          & ( ! names(poitout) %in% names(myruns) )
+          & ( ! names(poitout) %in% c("iata","met.driver") )
           )#end keep
-poidata = poidata[,keep]
+poidata = poitout[,keep]
 npois   = ncol(poidata)
 if (npois > 0){
    for (p in 1:npois) joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
@@ -269,8 +265,8 @@ runname  = apply( X        = expand.grid(varlabel, stringsAsFactors = FALSE)
                 , FUN      = paste
                 , collapse = "_"
                 )#end apply
-metname           = "s"
-metname[is.tower] = "t"
+runname           = runname[! forbidden]
+metname           = ifelse(is.tower,"t","s")
 joborder$run      = paste(metname,runname,sep="")
 #------------------------------------------------------------------------------------------#
 

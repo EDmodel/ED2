@@ -35,32 +35,54 @@ ttt.10 <<- c(0.0415,218.8)
 #------------------------------------------------------------------------------------------#
 eslif <<- function(temp,funout=FALSE){
 
-   liq = is.finite(temp) & temp >= t3ple
-   ice = is.finite(temp) & temp <  t3ple
+   #----- Initialise all output with NA.  We only solve viable points. --------------------#
+   l1fun = NA * temp
+   l2fun = NA * temp
+   ttfun = NA * temp
+   iifun = NA * temp
+   esliq = NA * temp
+   esice = NA * temp
+   esfun = NA * temp
+   #---------------------------------------------------------------------------------------#
 
-   l1fun = NA + temp
-   l2fun = NA + temp
-   ttfun = NA + temp
-   iifun = NA + temp
-   esfun = NA + temp
 
-   if (any(liq)){
-      l1fun[liq] = ( l01.10[1] + l01.10[2]/temp[liq] + l01.10[3]*log(temp[liq])
-                   + l01.10[4] * temp[liq] )
-      l2fun[liq] = ( l02.10[1] + l02.10[2]/temp[liq] + l02.10[3]*log(temp[liq])
-                   + l02.10[4] * temp[liq] )
-      ttfun[liq] = tanh(ttt.10[1] * (temp[liq] - ttt.10[2]))
-      esfun[liq] = exp(l1fun[liq] + ttfun[liq] * l2fun[liq])
-   }#end if
 
-   if (any(ice)){
-      iifun[ice] = ( iii.7[1] + iii.7[2]/temp[ice] + iii.7[3] * log(temp[ice])
-                   + iii.7[4] * temp[ice] )
-      esfun[ice]  = exp(iifun[ice])
-   }#end if
-   
+   #----- Solve only for valid points. ----------------------------------------------------#
+   sel = is.finite(temp) & temp > 100 & temp < 370
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Liquid water equilibrium. -------------------------------------------------------#
+   l1fun[sel] = ( l01.10[1] + l01.10[2]/temp[sel] + l01.10[3]*log(temp[sel])
+                + l01.10[4] * temp[sel] )
+   l2fun[sel] = ( l02.10[1] + l02.10[2]/temp[sel] + l02.10[3]*log(temp[sel])
+                + l02.10[4] * temp[sel] )
+   ttfun[sel] = tanh(ttt.10[1] * (temp[sel] - ttt.10[2]))
+   esliq[sel] = exp(l1fun[sel] + ttfun[sel] * l2fun[sel])
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Ice equilibrium. ----------------------------------------------------------------#
+   iifun[sel] = ( iii.7[1] + iii.7[2]/temp[sel] + iii.7[3] * log(temp[sel])
+                + iii.7[4] * temp[sel] )
+   esice[sel] = exp(iifun[sel])
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Actual saturation is the one that has the lowest partial pressure. --------------#
+   esfun      = pmin(esliq,esice)
+   #---------------------------------------------------------------------------------------#
+
    if (funout){
-      ans = list(esfun = esfun,l1fun = l1fun, l2fun=l2fun, ttfun = ttfun, iifun = iifun)
+      ans = list( esfun = esfun
+                , l1fun = l1fun
+                , l2fun=l2fun
+                , ttfun = ttfun
+                , iifun = iifun
+                , esliq = esliq
+                , esice = esice
+                )#end list
       return(ans)
    }else{
       return(esfun)

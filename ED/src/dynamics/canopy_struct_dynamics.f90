@@ -118,7 +118,7 @@ module canopy_struct_dynamics
                                   , cs_dense0            & ! intent(in)
                                   , gamma_clm4           & ! intent(in)
                                   , tprandtl             & ! intent(in)
-                                  , zoobukhov            ! ! function
+                                  , dpsimdzeta           ! ! function
       use canopy_layer_coms, only : ncanlyr              & ! intent(in)
                                   , dzcan                & ! intent(in)
                                   , zztop0i              & ! intent(in)
@@ -194,7 +194,7 @@ module canopy_struct_dynamics
       real           :: can_cp       ! Canopy air space specific heat           [   J/kg/K]
       real           :: ldga_bk      ! Cumulative leaf drag area                [      ---]
       real           :: lyrhalf      ! Half the contrib. of this layer to zeta  [      1/m]
-      real           :: sigmakm      ! Km coefficient at z=h                    [        m]
+      real           :: sigmakh      ! Kh coefficient at z=h                    [        m]
       real           :: K_top        ! Diffusivity at canopy top z=h            [     m2/s]
       real           :: Kdiff        ! Diffusivity                              [     m2/s]
       real           :: surf_rough   ! Roughness length of the bare ground 
@@ -216,6 +216,7 @@ module canopy_struct_dynamics
       real           :: hmidcrown    ! Height at the middle of the crown        [        m]
       real           :: hbotcrown    ! Height at the bottom of the crown        [        m]
       real           :: htop         ! Height of the topmost layer              [        m]
+      real           :: zetatop      ! Dimensionless height at the topmost lyr. [      ---]
       real           :: dzcrown      ! Depth that contains leaves/branches      [        m]
       real           :: d0ohgt       ! d0/height                                [      ---]
       real           :: z0ohgt       ! z0/height                                [      ---]
@@ -1137,15 +1138,19 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             !     Find the bulk resistance by integrating the inverse of the diffusivity   !
             ! for each layer (e.g. Sellers et al. (1986)).  We assumed Km = sigma u, which !
-            ! is the preferred approach by Sellers et al. (1986).                          !
+            ! is the preferred approach by Sellers et al. (1986), and divide by the        !
+            ! Prandtl number to convert Km to Kh.                                          !
             !------------------------------------------------------------------------------!
             rasveg  = 0.0
-            sigmakm = vonk * csite%ustar(ipa) * htop * (1.0 - d0ohgt) / uh
+            zetatop = csite%zeta(ipa) * ( htop       - csite%veg_displace(ipa) )           & 
+                                      / ( cmet%geoht - csite%veg_displace(ipa) )
+            sigmakh = vonk * csite%ustar(ipa) * htop * (1.0 - d0ohgt)                      &
+                    / ( tprandtl * uh * ( 1.0 - zetatop * dpsimdzeta(zetatop,stable)))
             do k=1,zcan
                !---------------------------------------------------------------------------!
                !    Find the normalised drag density fraction and wind for this layer.     !
                !---------------------------------------------------------------------------!
-               Kdiff      = sigmakm * windlyr(k) + kvwake
+               Kdiff      = sigmakh * windlyr(k) + kvwake
                rasveg     = rasveg + dzcan(k) / Kdiff
             end do
             csite%ggveg(ipa) = 1.0 / rasveg
@@ -1234,12 +1239,17 @@ module canopy_struct_dynamics
                         !     Find the bulk resistance by integrating the inverse of the   !
                         ! diffusivity for each layer (e.g. Sellers et al. (1986)).  We     !
                         ! assumed Km = sigma u, which is the preferred approach by Sellers !
-                        ! et al. (1986).                                                   !
+                        ! et al. (1986), and divide by the Prandtl number to convert Km to !
+                        ! Kh.                                                              !
                         !------------------------------------------------------------------!
                         rasveg  = 0.0
-                        sigmakm = vonk * csite%ustar(ipa) * htop * (1.0 - d0ohgt) / uh
+                        zetatop = csite%zeta(ipa) * (htop       - csite%veg_displace(ipa)) & 
+                                                  / (cmet%geoht - csite%veg_displace(ipa))
+                        sigmakh = vonk * csite%ustar(ipa) * htop * (1.0 - d0ohgt)          &
+                                / ( tprandtl * uh                                          &
+                                  * ( 1.0 - zetatop * dpsimdzeta(zetatop,stable)))
                         do kk=1,zcan
-                           Kdiff      = sigmakm * windlyr(kk) + kvwake
+                           Kdiff      = sigmakh * windlyr(kk) + kvwake
                            rasveg     = rasveg + dzcan(kk) / Kdiff
                         end do
                         csite%ggveg(ipa) = 1.0 / rasveg
@@ -1430,7 +1440,7 @@ module canopy_struct_dynamics
                                   , cs_dense08           & ! intent(in)
                                   , gamma_clm48          & ! intent(in)
                                   , tprandtl8            & ! intent(in)
-                                  , zoobukhov8           ! ! intent(in)
+                                  , dpsimdzeta8          ! ! function
       use canopy_layer_coms, only : ncanlyr              & ! intent(in)
                                   , dzcan8               & ! intent(in)
                                   , zztop0i8             & ! intent(in)
@@ -1493,7 +1503,7 @@ module canopy_struct_dynamics
       real(kind=8)   :: can_thetav   ! Free atmosphere virtual potential temp.  [        K]
       real(kind=8)   :: ldga_bk      ! Cumulative zeta function                 [      ---]
       real(kind=8)   :: lyrhalf      ! Half the contrib. of this layer to zeta  [      1/m]
-      real(kind=8)   :: sigmakm      ! Km coefficient at z=h                    [        m]
+      real(kind=8)   :: sigmakh      ! Kh coefficient at z=h                    [        m]
       real(kind=8)   :: K_top        ! Diffusivity at canopy top z=h            [     m2/s]
       real(kind=8)   :: kdiff        ! Diffusivity                              [     m2/s]
       real(kind=8)   :: surf_rough   ! Roughness length of the bare ground 
@@ -1508,6 +1518,7 @@ module canopy_struct_dynamics
       real(kind=8)   :: hmidcrown    ! Height at the middle of the crown        [        m]
       real(kind=8)   :: hbotcrown    ! Height at the bottom of the crown        [        m]
       real(kind=8)   :: htop         ! Height of the topmost layer              [        m]
+      real(kind=8)   :: zetatop      ! Dimensionless height at the topmost lyr. [      ---]
       real(kind=8)   :: dzcrown      ! Depth that contains leaves/branches      [        m]
       real(kind=8)   :: d0ohgt       ! d0/height                                [      ---]
       real(kind=8)   :: z0ohgt       ! z0/height                                [      ---]
@@ -2391,15 +2402,19 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             !     Find the bulk resistance by integrating the inverse of the diffusivity   !
             ! for each layer (e.g. Sellers et al. (1986)).  We assumed Km = sigma u, which !
-            ! is the preferred approach by Sellers et al. (1986).                          !
+            ! is the preferred approach by Sellers et al. (1986), and divide by the        !
+            ! Prandtl number to convert Km to Kh.                                          !
             !------------------------------------------------------------------------------!
             rasveg  = 0.d0
-            sigmakm = vonk8 * initp%ustar * htop * (1.d0 - d0ohgt) / uh
+            zetatop = initp%zeta * (htop          - initp%veg_displace)                    & 
+                                 / (rk4site%geoht - initp%veg_displace)
+            sigmakh = vonk8 * initp%ustar * htop * (1.d0 - d0ohgt)                         &
+                    / ( tprandtl8 * uh * ( 1.d0 - zetatop * dpsimdzeta8(zetatop,stable) ) )
             do k=1,zcan
                !---------------------------------------------------------------------------!
                !    Find the normalised drag density fraction and wind for this layer.     !
                !---------------------------------------------------------------------------!
-               Kdiff      = sigmakm * windlyr8(k) + kvwake8
+               Kdiff      = sigmakh * windlyr8(k) + kvwake8
                rasveg     = rasveg + dzcan8(k) / Kdiff
             end do
             initp%ggveg = 1.d0 / rasveg
@@ -2487,12 +2502,17 @@ module canopy_struct_dynamics
                         !     Find the bulk resistance by integrating the inverse of the   !
                         ! diffusivity for each layer (e.g. Sellers et al. (1986)).  We     !
                         ! assumed Km = sigma u, which is the preferred approach by Sellers !
-                        ! et al. (1986).                                                   !
+                        ! et al. (1986), and divide by the Prandtl number to convert Km to !
+                        ! Kh.                                                              !
                         !------------------------------------------------------------------!
                         rasveg  = 0.d0
-                        sigmakm = vonk8 * initp%ustar * htop * (1.d0 - d0ohgt) / uh
+                        zetatop = initp%zeta * (htop          - initp%veg_displace)        & 
+                                             / (rk4site%geoht - initp%veg_displace)
+                        sigmakh = vonk8 * initp%ustar * htop * (1.d0 - d0ohgt)             &
+                                / ( tprandtl8 * uh                                         &
+                                  * ( 1.d0 - zetatop * dpsimdzeta8(zetatop,stable) ) )
                         do kk=1,zcan
-                           Kdiff       = sigmakm * windlyr8(kk) + kvwake8
+                           Kdiff       = sigmakh * windlyr8(kk) + kvwake8
                            rasveg      = rasveg + dzcan8(kk) / Kdiff
                         end do
                         initp%ggveg    = 1.d0 / rasveg
