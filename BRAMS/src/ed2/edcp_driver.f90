@@ -35,7 +35,12 @@ subroutine ed_coup_driver()
    use io_params     , only : ioutput               ! ! intent(in)
    use rk4_coms      , only : checkbudget           ! ! intent(in)
    use phenology_aux , only : first_phenology       ! ! subroutine
-   use average_utils , only : update_ed_yearly_vars ! ! sub-routine
+   use average_utils , only : update_ed_yearly_vars & ! sub-routine
+                            , zero_ed_fmean_vars    & ! sub-routine
+                            , zero_ed_dmean_vars    & ! sub-routine
+                            , zero_ed_qmean_vars    & ! sub-routine
+                            , zero_ed_mmean_vars    ! ! sub-routine
+                            
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0

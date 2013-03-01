@@ -2119,11 +2119,11 @@ subroutine leaf3_solve_veg(ip,mzs,leaf_class,soil_rough,patch_area,veg_fracarea,
       total_sfcw_mass  = total_sfcw_mass  + sfcwater_mass (k)
    end do
    if (total_sfcw_mass > min_sfcwater_mass) then
-      bulk_sfcw_dens = max( fsndens, min( wdns, total_sfcw_mass / total_sfcw_depth))
+      bulk_sfcw_dens = max( fsdns, min( wdns, total_sfcw_mass / total_sfcw_depth))
       snowfac        = max( 0.0, min( 0.99                                                 &
                               , tanh( total_sfcw_depth                                     &
                                     / ( ny07_eq04_a * max(0.001,soil_rough)                &
-                                      * (bulk_sfcw_dens * fsndensi) ** ny07_eq04_m ) ) ) )
+                                      * (bulk_sfcw_dens * fsdnsi) ** ny07_eq04_m ) ) ) )
    else
       snowfac = 0.0
    end if

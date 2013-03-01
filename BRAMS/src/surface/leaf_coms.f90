@@ -1087,7 +1087,7 @@ module leaf_coms
          !---------------------------------------------------------------------------------!
          !    Stable case, use Oncley and Dudhia, we can solve it analytically.            !
          !---------------------------------------------------------------------------------!
-         if (stable .and. isfclyrm == 2) then
+         if (stable .and. istar == 2) then
             zoobukhov = ribuse * zstar * min(lnzoz0m,lnzoz0h)                              &
                       / ( (zstar-rough) * (tprandtl - beta_s * ribuse) )
             return
