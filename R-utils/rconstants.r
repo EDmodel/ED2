@@ -109,22 +109,18 @@ shsummer  <<- -10             # Day of year of S.Hemisphere summer solstice     
 #        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).            #
 #                                                                                          #
 #     Air diffusion properties. These properties are temperature-dependent in reality,     #
-# but for simplicity we assume them constants, using the value at 20 degC.                 #
+# but for simplicity we assume them constants, using the value at 20C.                     #
 #                                                                                          #
-# Thermal diffusivity - Straight from Table 15.1 of MU08                                   #
+# Thermal diffusivity - Computed from equation on page 32 of MU08;                         #
 # Kinematic viscosity - Computed from equation on page 32 of MU08;                         #
 # Thermal expansion coefficient - determined by inverting the coefficient at equation      #
 #                                 10.11 (MU08).                                            #
 # These terms could be easily made function of temperature in the future if needed be.     #
 #------------------------------------------------------------------------------------------#
-th.diff  <<- 2.060e-5     # Air thermal diffusivity         [     m2/s]
-kin.visc <<- 1.516e-5     # Kinematic viscosity             [     m2/s]
-th.expan <<- 3.43e-3      # Air thermal expansion coeff.    [      1/K]
-#------------------------------------------------------------------------------------------#
-#    Grashof coefficient [1/(K m3)].  This is the coefficient a*g/(nu2) in MU08's          #
-# equation 10.8, in the equation that defines the Grashof number.                          #
-#------------------------------------------------------------------------------------------#
-gr.coeff <<- th.expan * grav / (th.diff * th.diff)
+th.diff.0  <<- 1.890e-5     # Air thermal diffusivity                           [     m2/s]
+dth.diff   <<- 0.007        # Temperature dependency slop                       [      1/K]
+kin.visc.0 <<- 1.330e-5     # Kinematic viscosity                               [     m2/s]
+dkin.visc  <<- 0.007        # Temperature dependency slop                       [      1/K]
 #------------------------------------------------------------------------------------------#
 
 

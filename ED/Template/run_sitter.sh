@@ -1459,16 +1459,12 @@ then
                rm -f ${here}/${polyname}/serial_out.out
                rm -f ${here}/${polyname}/serial_lsf.out
                rm -f ${here}/${polyname}/serial_out.err
+               #---------------------------------------------------------------------------#
+
+
 
                #----- Copy the Template to the right directory. ---------------------------#
                cp ${here}/Template/ED2IN ${ED2IN}
-
-               #---------------------------------------------------------------------------#
-               #     Determine which PFTs to use.                                          #
-               #---------------------------------------------------------------------------#
-               lonint=${polylon/.*}
-               latint=${polylat/.*}
-               pfts='1,2,3,4,16'
                #---------------------------------------------------------------------------#
 
 

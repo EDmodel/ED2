@@ -2,7 +2,7 @@
 . ${HOME}/.bashrc
 here=`pwd`                            # ! Main path
 myself=`whoami`                       # ! You
-diskthere='/n/moorcroftfs2'           # ! Disk where the output files are
+diskthere=''                          # ! Disk where the output files are
 thisqueue='moorcroft_6100b'           # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#

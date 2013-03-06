@@ -74,7 +74,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: compp
    real                                    :: broot_tot
    real                                    :: broot_loc
-   real                                    :: wgpfrac
    real                                    :: water_demand
    real                                    :: psiplusz
    real                                    :: avail_h2o_lyr
@@ -182,11 +181,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
          do k = mzg, kroot, -1
             !----- Alias for soil type. ---------------------------------------------------!
             nsoil = ntext_soil(k)
-            !------------------------------------------------------------------------------!
-
-
-            !----- Find the average soil wetness. -----------------------------------------!
-            wgpfrac = csite%soil_water(k,ipa) / soil(nsoil)%slmsts
             !------------------------------------------------------------------------------!
 
 

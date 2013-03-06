@@ -163,10 +163,12 @@ ko2.hor.b02  <<-  2852.844                        # "Activation energy          
 #     These are constants obtained in Leuning et al. (1995) and Collatz et al. (1991) to   #
 # convert different conductivities.                                                        #
 #------------------------------------------------------------------------------------------#
-gbh.2.gbw  <<- 1.075           # heat  to water  - leaf boundary layer
-gbw.2.gbc  <<- 1.0 / 1.4       # water to carbon - leaf boundary layer
-gsw.2.gsc  <<- 1.0 / 1.6       # water to carbon - stomata
-gsc.2.gsw  <<- 1./gsw.2.gsc    # carbon to water - stomata
+gbh.2.gbw  <<- 1.075               # heat   to water  - leaf boundary layer
+gsc.2.gsw  <<- 1.60                # carbon to water  - stomata
+gbc.2.gbw  <<- gsc.2.gsw^twothirds # carbon to water  - leaf boundary layer
+gsw.2.gsc  <<- 1.0 / gsc.2.gsw     # water  to carbon - stomata
+gbw.2.gbc  <<- 1.0 / gbc.2.gbw     # water  to carbon - leaf boundary layer
+gsc.2.gsw  <<- 1.0 / gsw.2.gsc     # carbon to water  - stomata
 #------------------------------------------------------------------------------------------#
 
 
@@ -306,6 +308,21 @@ if (! "clumping.grass" %in% ls()){
    clumping.grass    <<-  1.0
 }else{
    clumping.grass    <<-   clumping.grass
+}#end if
+if (! "lwidth.grass" %in% ls()){
+   lwidth.grass      <<-   0.05
+}else{
+   lwidth.grass      <<-   lwidth.grass
+}#end if
+if (! "lwidth.bltree" %in% ls()){
+   lwidth.bltree     <<-   0.10
+}else{
+   lwidth.bltree     <<-   lwidth.bltree
+}#end if
+if (! "lwidth.nltree" %in% ls()){
+   lwidth.nltree     <<-   0.05
+}else{
+   lwidth.nltree     <<-   lwidth.nltree
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -479,6 +496,7 @@ pft01 = list( name               = "C4 grass"
             , agf.bs             = 0.7
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
+            , leaf.width         = lwidth.grass
             )
 
 pft02 = list( name               = "Early tropical"
@@ -533,6 +551,7 @@ pft02 = list( name               = "Early tropical"
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
+            , leaf.width         = lwidth.bltree
             )
 
 pft03 = list( name               = "Mid tropical"
@@ -587,6 +606,7 @@ pft03 = list( name               = "Mid tropical"
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
+            , leaf.width         = lwidth.bltree
             )
 
 pft04 = list( name               = "Late tropical"
@@ -641,6 +661,7 @@ pft04 = list( name               = "Late tropical"
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
+            , leaf.width         = lwidth.bltree
             )
 
 pft05 = list( name               = "Temperate C3 Grass"
@@ -695,6 +716,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , agf.bs             = 0.7
             , orient.factor      = -0.30
             , clumping.factor    =  1.00
+            , leaf.width         = lwidth.grass
             )
 
 pft06 = list( name               = "North Pine"
@@ -749,6 +771,7 @@ pft06 = list( name               = "North Pine"
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
+            , leaf.width         = lwidth.nltree
             )
 
 pft07 = list( name               = "South Pine"
@@ -803,6 +826,7 @@ pft07 = list( name               = "South Pine"
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
+            , leaf.width         = lwidth.nltree
             )
 
 pft08 = list( name               = "Late conifer"
@@ -857,6 +881,7 @@ pft08 = list( name               = "Late conifer"
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
+            , leaf.width         = lwidth.nltree
             )
 
 pft09 = list( name               = "Early hardwood"
@@ -911,6 +936,7 @@ pft09 = list( name               = "Early hardwood"
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
+            , leaf.width         = lwidth.bltree
             )
 
 pft10 = list( name               = "Mid hardwood"
@@ -965,6 +991,7 @@ pft10 = list( name               = "Mid hardwood"
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
+            , leaf.width         = lwidth.bltree
             )
 
 pft11 = list( name               = "Late hardwood"
@@ -1019,6 +1046,7 @@ pft11 = list( name               = "Late hardwood"
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
+            , leaf.width         = lwidth.bltree
             )
 
 pft12 = pft05; pft12$name = "C3 crop"   ; pft12$key = "CC3"; pft12$colour="purple4"
@@ -1078,6 +1106,7 @@ pft16 = list( name               = "C3 grass"
             , agf.bs             = 0.7
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
+            , leaf.width         = lwidth.grass
             )
 
 pft17 = list( name               = "Araucaria"
@@ -1132,6 +1161,7 @@ pft17 = list( name               = "Araucaria"
             , agf.bs             = 0.7
             , orient.factor      = orient.aa
             , clumping.factor    = clumping.aa
+            , leaf.width         = lwidth.nltree
             )
 pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour=all.colour
 #------------------------------------------------------------------------------------------#

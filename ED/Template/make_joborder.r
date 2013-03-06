@@ -18,6 +18,7 @@ graphics.off()
 here    = getwd()                                  #   Current directory
 srcdir  = "/n/home00/mlongo/util/Rsc"              #   Script directory
 outfile = file.path(here,"joborder.txt")           #   Job order
+defjob  = FALSE                                    #   Generate the default job order?
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -157,7 +158,7 @@ default = list( run           = "unnamed"
               , ribmax        = 0.50
               , atmco2        = 378.
               , thcrit        = -1.20
-              , sm.fire       = 0.6666667
+              , sm.fire       = 0.33333333
               , ifire         = 0
               , fire.parm     = 0.5
               , ipercol       = 0
@@ -190,9 +191,12 @@ default = list( run           = "unnamed"
 #------------------------------------------------------------------------------------------#
 #     Create the full combination of runs.                                                 #
 #------------------------------------------------------------------------------------------#
-myruns    = expand.grid(varrun,stringsAsFactors=FALSE)
-forbidden = myruns$iage == 1 & myruns$ibigleaf == 1
-myruns    = myruns[! forbidden,]
+if (defjob){
+   myruns = data.frame(iata=poilist$iata,stringsAsFactors=FALSE)
+   defname = poilist$short
+}else{
+   myruns    = expand.grid(varrun,stringsAsFactors=FALSE)
+}#end if
 nvars     = ncol(myruns)
 nruns     = nrow(myruns)
 #------------------------------------------------------------------------------------------#
@@ -203,6 +207,16 @@ nruns     = nrow(myruns)
 #------------------------------------------------------------------------------------------#
 joborder = data.frame(sapply(X=default,FUN=rep,times=nruns),stringsAsFactors=FALSE)
 for (n in 1:nvars) joborder[[names(myruns)[n]]] = myruns[[names(myruns)[n]]]
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Remove forbidden combinations.                                                       #
+#------------------------------------------------------------------------------------------#
+forbidden = joborder$iage == 1 & joborder$ibigleaf == 1
+joborder  = joborder[! forbidden,]
+myruns    = myruns[! forbidden,]
+nruns     = nrow(myruns)
 #------------------------------------------------------------------------------------------#
 
 
@@ -260,13 +274,18 @@ stay = which(names(varlabel) %in% c("iata"))
 bye  = which(sapply(X=varlabel,FUN=length) == 1)
 bye  = bye[! bye %in% stay]
 if (length(bye) > 0) for (b in sort(bye,decreasing=TRUE)) varlabel[[b]] = NULL
-runname  = apply( X        = expand.grid(varlabel, stringsAsFactors = FALSE)
-                , MARGIN   = 1
-                , FUN      = paste
-                , collapse = "_"
-                )#end apply
-runname           = runname[! forbidden]
-metname           = ifelse(is.tower,"t","s")
+if (defjob){
+   runname = defname[! forbidden]
+   metname = ""
+}else{
+   runname  = apply( X        = expand.grid(varlabel, stringsAsFactors = FALSE)
+                   , MARGIN   = 1
+                   , FUN      = paste
+                   , collapse = "_"
+                   )#end apply
+   runname  = runname[! forbidden]
+   metname  = ifelse(is.tower,"t","s")
+}#end if
 joborder$run      = paste(metname,runname,sep="")
 #------------------------------------------------------------------------------------------#
 
