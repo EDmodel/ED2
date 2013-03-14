@@ -32,7 +32,7 @@ moorcroft_6100b)
    ;;
 moorcroft2a)
    nodes="hero4001 hero4002 hero4003 hero4004 hero4005 hero4006
-          hero4007 hero4008 hero4009 hero4010 hero4011 hero4013"
+          hero4007 hero4008 hero4009 hero4010 hero4011"
    ;;
 moorcroft2b)
    nodes="hero4014 hero4015 hero4016 hero4101 hero4102 hero4103
@@ -78,8 +78,9 @@ esac
 #------------------------------------------------------------------------------------------#
 for node in ${nodes}
 do
-   echo -n ' Deleting files from node '${node}'...'
-   ssh ${node} rm -fr /scratch/${myself} 1> /dev/null 2>&1
-   echo 'Gone!'
+   echo -n ' Scheduling files for deletion - node '${node}'...'
+   ssh ${node} /bin/mv /scratch/${myself} /scratch/goodbye-${myself} 1> /dev/null 2>&1
+   ssh ${node} rm -fr /scratch/goodbye-${myself}                     1> /dev/null 2>&1 &
+   echo 'Done!'
 done
 #------------------------------------------------------------------------------------------#

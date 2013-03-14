@@ -52,16 +52,8 @@ if (! "ptsz" %in% ls()){
 }else{
    ptsz <<- ptsz
 }#end if
-if (ptsz <= 14){
-   cex.main      <<- 1.1
-   cex.lab       <<- 1.0
-}else if (ptsz <= 16){
-   cex.main      <<- 0.9
-   cex.lab       <<- 1.0
-}else{
-   cex.main      <<- 0.7
-   cex.lab       <<- 0.9
-}#end if
+cex.main <<- 1.1 * min(1.0,ptsz / 14)
+cex.lab  <<- 1.0 * min(1.0,ptsz / 14)
 #------------------------------------------------------------------------------------------#
 
 

@@ -325,6 +325,7 @@ module fuse_fiss_utils
       integer                              :: ico          ! Counter
       integer                              :: ilu          ! Counter
       integer                              :: ipft         ! Counter
+      logical                              :: onlyone      ! Is this a single patch?
       logical, dimension  (:), allocatable :: remain_table ! Flag: this patch shall remain.
       real   , dimension  (:), allocatable :: old_area     ! Area before rescaling
       real   , dimension  (:), allocatable :: elim_area    ! Area of removed patches
@@ -341,7 +342,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     No need to re-scale patches if there is a single patch left.                   !
       !------------------------------------------------------------------------------------!
-      if (csite%npatches == 1) return
+      onlyone = csite%npatches == 1
+      if (onlyone .and. csite%area(1) == 1.) return
       !------------------------------------------------------------------------------------!
 
 
@@ -357,7 +359,7 @@ module fuse_fiss_utils
       elim_area (:) = 0.0
 
       do ipa = 1,csite%npatches
-         if (csite%area(ipa) < min_patch_area) then
+         if (csite%area(ipa) < min_patch_area .and. (.not. onlyone)) then
             ilu = csite%dist_type(ipa)
             elim_area(ilu)= elim_area (ilu) + csite%area(ipa)
             remain_table(ipa) = .false.

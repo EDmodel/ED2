@@ -16,11 +16,11 @@ graphics.off()
 
 
 #----- Paths. -----------------------------------------------------------------------------#
-main    = "/n/moorcroftfs2/mlongo/EDBRAMS/final_ed/drought/realisation+rtsph" # Current directory.
-here    = "/n/moorcroftfs2/mlongo/EDBRAMS/final_ed/drought/realisation+rtsph/sit_utils"
+main    = "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx" # Main simulation directory.
+here    = file.path(main,"sit_utils")               # This directory.
 
-srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"  # Source  directory.
-outroot = here                                 # Directory for figures
+srcdir  = "/n/home00/mlongo/util/Rsc"               # Source  directory.
+outroot = here                                      # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -73,6 +73,12 @@ mtext.yadj     =  0.65                # Offset for the y label
 #==========================================================================================#
 #==========================================================================================#
 
+#----- Check that directory main has been set. --------------------------------------------#
+if ( main == "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx"){
+   cat (" Main: ",main,"\n")
+   stop(" Directory main has not been set!!!")
+}#end if
+#------------------------------------------------------------------------------------------#
 
 
 

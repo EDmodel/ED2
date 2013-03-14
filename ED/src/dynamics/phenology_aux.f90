@@ -356,6 +356,7 @@ module phenology_aux
       use ed_max_dims   , only : n_pft            ! ! intent(in)
       use allometry     , only : area_indices     ! ! subroutine
       use grid_coms     , only : nzg              ! ! intent(in)
+      use therm_lib     , only : cmtl2uext        ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid       ! Current grid
@@ -421,8 +422,14 @@ module phenology_aux
                                     ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
                                     ,cpatch%pft(ico)                                       &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
-                  cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-                  cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+                  cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)               &
+                                                     ,cpatch%leaf_water(ico)               &
+                                                     ,cpatch%leaf_temp (ico)               &
+                                                     ,cpatch%leaf_fliq (ico))
+                  cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)               &
+                                                     ,cpatch%wood_water(ico)               &
+                                                     ,cpatch%wood_temp (ico)               &
+                                                     ,cpatch%wood_fliq (ico))
                   call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
                end do cohortloop

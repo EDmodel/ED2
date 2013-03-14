@@ -1179,7 +1179,8 @@ subroutine ed_opspec_misc
                                     , sldrain                      & ! intent(in)
                                     , zrough                       & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
-   use mem_polygons          , only : maxsite                      ! ! intent(in)
+   use mem_polygons          , only : maxsite                      & ! intent(in)
+                                    , maxpatch                     ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
@@ -1576,9 +1577,9 @@ end do
          'Invalid IBIGLEAF, it must be between 0 and 1. Yours is set to',ibigleaf,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   elseif (ibigleaf == 1 .and. crown_mod /= 0) then
+   elseif (ibigleaf == 1 .and. ( crown_mod /= 0 .or. abs(maxpatch) == 1 )) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-         'CROWN_MOD must be turned off when IBIGLEAF is set to 1...'
+         'CROWN_MOD must be 0 and MAXPATCH cannot be -1 or 1 when IBIGLEAF is set to 1...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -2104,6 +2105,10 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid ICANRAD, it must be between 0 and 2.  Yours is set to'        &
                     ,icanrad,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   elseif (icanrad /= 0 .and. crown_mod == 1) then
+      write(reason,fmt='(a)') 'CROWN_MOD must be turned off when ICANRAD is 1 or 2...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if

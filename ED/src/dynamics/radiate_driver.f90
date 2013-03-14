@@ -1791,7 +1791,7 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,nighttime,csite)
                                         + csite%rlong_albedo       (ipa)                   &
                                         * radfrq_o_frqsum
       !----- Daily mean of albedo is integrated only when there is some radiation. --------!
-      if (.not. nighttime) then
+      if (.not. nighttime .and. writing_long) then
          csite%dmean_albedo        (ipa)  = csite%dmean_albedo        (ipa)                &
                                           + csite%albedo              (ipa)                &
                                           * radfrq

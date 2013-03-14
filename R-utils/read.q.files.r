@@ -388,6 +388,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
       #----- Read a few patch-level variables. --------------------------------------------#
       areapa      = mymont$AREA * rep(areasi,times=npatches)
+      areapa      = areapa / sum(areapa)
       ipa         = sequence(mymont$NPATCHES.GLOBAL)
       lupa        = mymont$DIST.TYPE
       agepa       = mymont$AGE

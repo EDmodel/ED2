@@ -17,7 +17,7 @@ source $HOME/.bashrc
 
 
 #----- Main path, you must actually type the path in case you add to chron. ---------------#
-here='/n/moorcroftfs1/mlongo/EDBRAMS/final_ed/biophysics/long_term/met+size+age+pft+fire'
+here='xxxxxxxxxxxxxxxxxxxxx'
 if [ ${here} == 'xxxxxxxxxxxxxxxxxxxxx' ]
 then
    echo ' You must set up variable here before using run_sitter.sh!!!'
@@ -48,6 +48,11 @@ bioinit='/n/home00/mlongo/protected/mlongo/data/ed2_data/site_bio_data'
 #------------------------------------------------------------------------------------------#
 desc=`basename ${here}`
 runtitle="Drought/warming scenario"
+#------------------------------------------------------------------------------------------#
+
+
+#----- This is the header with the Sheffield data. ----------------------------------------#
+shefhead='SHEF_NCEP_DRIVER_DS314'
 #------------------------------------------------------------------------------------------#
 
 
@@ -181,7 +186,9 @@ R_figlist="${situtils}/stt_stext16.png
            ${situtils}/bsa_stext16.png
            ${situtils}/bsa_stext06.png
            ${situtils}/lai_stext16.png
-           ${situtils}/lai_stext06.png"
+           ${situtils}/lai_stext06.png
+           ${situtils}/scb_stext16.png
+           ${situtils}/scb_stext06.png"
 emailbody="${situtils}/email.txt"
 headfile="${situtils}/head.txt"
 tailfile="${situtils}/tail.txt"
@@ -1018,6 +1025,7 @@ then
          agb='NA'
          bsa='NA'
          lai='NA'
+         scb='NA'
          echo "${ff} H:-\ ${polyname} doesn't have a home directory..."
       else
 
@@ -1044,14 +1052,15 @@ then
          statrun=${here}/${polyname}/statusrun.txt
          if [ -s ${statrun} ]
          then
-            yearh=`cat ${statrun}  | awk '{print $2}'`
-            monthh=`cat ${statrun} | awk '{print $3}'`
-            dateh=`cat ${statrun}  | awk '{print $4}'`
-            timeh=`cat ${statrun}  | awk '{print $5}'`
-            runt=`cat ${statrun}   | awk '{print $6}'`
-            agb=`cat ${statrun}    | awk '{print $7}'`
-            bsa=`cat ${statrun}    | awk '{print $8}'`
-            lai=`cat ${statrun}    | awk '{print $9}'`
+            yearh=`cat ${statrun}  | awk '{print  $2}'`
+            monthh=`cat ${statrun} | awk '{print  $3}'`
+            dateh=`cat ${statrun}  | awk '{print  $4}'`
+            timeh=`cat ${statrun}  | awk '{print  $5}'`
+            runt=`cat ${statrun}   | awk '{print  $6}'`
+            agb=`cat ${statrun}    | awk '{print  $7}'`
+            bsa=`cat ${statrun}    | awk '{print  $8}'`
+            lai=`cat ${statrun}    | awk '{print  $9}'`
+            scb=`cat ${statrun}    | awk '{print $10}'`
          else
             yearh=${yeara}
             monthh=${montha}
@@ -1061,6 +1070,7 @@ then
             agb='NA'
             bsa='NA'
             lai='NA'
+            scb='NA'
          fi
          #---------------------------------------------------------------------------------#
 
@@ -1079,14 +1089,15 @@ then
             whichrun=${here}/${polyname}/whichrun.r
             outwhich=${here}/${polyname}/outwhich.txt
             R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
-            year=`cat ${statrun}  | awk '{print $2}'`
-            month=`cat ${statrun} | awk '{print $3}'`
-            day=`cat ${statrun}   | awk '{print $4}'`
-            hhmm=`cat ${statrun}  | awk '{print $5}'`
-            runt=`cat ${statrun}  | awk '{print $6}'`
-            agb=`cat ${statrun}   | awk '{print $7}'`
-            bsa=`cat ${statrun}   | awk '{print $8}'`
-            lai=`cat ${statrun}   | awk '{print $9}'`
+            year=`cat ${statrun}  | awk '{print  $2}'`
+            month=`cat ${statrun} | awk '{print  $3}'`
+            day=`cat ${statrun}   | awk '{print  $4}'`
+            hhmm=`cat ${statrun}  | awk '{print  $5}'`
+            runt=`cat ${statrun}  | awk '{print  $6}'`
+            agb=`cat ${statrun}   | awk '{print  $7}'`
+            bsa=`cat ${statrun}   | awk '{print  $8}'`
+            lai=`cat ${statrun}   | awk '{print  $9}'`
+            scb=`cat ${statrun}   | awk '{print $10}'`
          # fi
          #---------------------------------------------------------------------------------#
 
@@ -1666,6 +1677,7 @@ then
                agb='NA'
                bsa='NA'
                lai='NA'
+               scb='NA'
             else
                echo "${polyname} is running/pending..." >> ${situation}
             fi # [ ${running} -eq 0 ]
@@ -1737,7 +1749,7 @@ then
 
       #----- Write polygon check into a single table. -------------------------------------#
       output="${polyname} ${polylon} ${polylat} ${year} ${month} ${day} ${hhmm}"
-      output="${output} ${runt} ${agb} ${bsa} ${lai} NA"
+      output="${output} ${runt} ${agb} ${bsa} ${lai} ${scb}"
       echo ${output} >> ${outcheck}
       #------------------------------------------------------------------------------------#
 

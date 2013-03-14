@@ -1,17 +1,19 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-here='/xxxxxxxx/xxxxxxxx/xxx_XXX/XXXXXXXXXXX' # ! Main path
-diskthere='/n/moorcroftfs2'           # ! Disk where the output files are
-thisqueue='moorcroft'                 # ! Queue where jobs should be submitted
-lonlat=${here}'/joborder.txt'         # ! File with the job instructions
+here='xxxxxxxxxxxxxxxxxxxxx'                  # ! Main path
+myself=`whoami`                               # ! You
+diskthere=''                                  # ! Disk where the output files are
+thisqueue='qqqqqqqqqq'                        # ! Queue where jobs should be submitted
+lonlat=${here}'/joborder.txt'                 # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot='/xxxxxxxx/xxxxxxxx/xxx_XXX/XXXXXXXXXXX/figures'
+outroot='xxxxxxxxxxxxxxxxxxxx'
 submit='y'       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+useperiod='a'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # 'a' -- All period
                  # 't' -- One eddy flux tower met cycle
                  # 'u' -- User defined period, defined by the variables below.
+                 # 'f' -- Force the tower cycle.  You may need to edit the script, though
 yusera=1972      # First year to use
 yuserz=2011      # Last year to use
 #----- Check whether to use openlava or typical job submission. ---------------------------#
@@ -31,9 +33,18 @@ outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
 #----- DBH classes. -----------------------------------------------------------------------#
-idbhtype=2                     # Type of DBH class
+idbhtype=3                     # Type of DBH class
                                # 1 -- Every 10 cm until 100cm; > 100cm
                                # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                               # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
+#----- Default background colour. ---------------------------------------------------------#
+background=0                   # 0 -- White
+                               # 1 -- Pitch black
+                               # 2 -- Dark grey
+#----- Trim the year comparison for tower years only? -------------------------------------#
+efttrim="FALSE"
+#----- Path with R scripts that are useful. -----------------------------------------------#
+rscpath="${HOME}/EDBRAMS/R-utils"
 #------------------------------------------------------------------------------------------#
 
 
@@ -52,12 +63,39 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 
 
+
+
+#------------------------------------------------------------------------------------------#
+#    Use the general path.                                                                 #
+#------------------------------------------------------------------------------------------#
+if [ ${myself} == "mlongo" ]
+then
+   rscpath="/n/home00/mlongo/util/Rsc"
+fi
+#------------------------------------------------------------------------------------------#
+
+
 #------------------------------------------------------------------------------------------#
 #    If this is an openlava run, load the openlava stuff.                                  #
 #------------------------------------------------------------------------------------------#
 if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
 then
    . /opt/openlava-2.0/etc/openlava-client.sh
+fi
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Make sure the paths are set.                                                         #
+#------------------------------------------------------------------------------------------#
+if [ ${here} == 'xxxxxxxxxxxxxxxxxxxxx' ] || [ ${outroot} == 'xxxxxxxxxxxxxxxxxxxxx' ] ||
+   [ ${thisqueue} =='qqqqqqqqqq' ]
+then
+   echo " here    = ${here}"
+   echo " outroot = ${outroot}"
+   echo " queue   = ${queue}"
+   echo " Set up variables here, outroot, and queue before using read_monthly.sh!!!"
+   exit 99
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -252,50 +290,119 @@ do
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Retrieve some information from ED2IN. -------------------------------------------#
+   iphysiol=`grep -i NL%IPHYSIOL     ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   iallom=`grep   -i NL%IALLOM       ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   metcyca=`grep  -i NL%METCYC1      ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   metcycz=`grep  -i NL%METCYCF      ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   klight=`grep   -i NL%DDMORT_CONST ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   #---------------------------------------------------------------------------------------#
+
+
+   #---- Find the forest inventory cycle. -------------------------------------------------#
+   case ${polyiata} in
+   gyf|s67)
+      biocyca=2004
+      biocycz=2009
+      subcens=1
+      ;;
+   s67)
+      biocyca=2001
+      biocycz=2011
+      subcens=1
+      ;;
+   *)
+      biocyca=${metcyca}
+      biocycz=${metcycz}
+      subcens=0
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---- The eddy flux tower cycles. ------------------------------------------------------#
+   case ${polyiata} in
+   gyf)
+      eftyeara=2004
+      eftyearz=2009
+      ;;
+   cax)
+      eftyeara=1999
+      eftyearz=2003
+      ;;
+   m34)
+      eftyeara=1999
+      eftyearz=2005
+      ;;
+   s67)
+      eftyeara=2001
+      eftyearz=2010
+      ;;
+   s77)
+      eftyeara=2001
+      eftyearz=2005
+      ;;
+   s83)
+      eftyeara=2000
+      eftyearz=2003
+      ;;
+   pnz)
+      eftyeara=2004
+      eftyearz=2004
+      ;;
+   ban)
+      eftyeara=2004
+      eftyearz=2006
+      ;;
+   rja)
+      eftyeara=1999
+      eftyearz=2002
+      ;;
+   fns)
+      eftyeara=1999
+      eftyearz=2002
+      ;;
+   pdg)
+      eftyeara=2001
+      eftyearz=2003
+      ;;
+   hvd)
+      eftyeara=1992
+      eftyearz=2003
+      ;;
+   *)
+      eftyeara=${metcyca}
+      eftyearz=${metcycz}
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---- Cheat and force the met cycle to be the tower cycle. -----------------------------#
+   if [ ${useperiod} == "f" ]
+   then
+      metcyca=${eftyeara}
+      metcycz=${eftyearz}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Switch years in case this is a specific drought run.                              #
+   #---------------------------------------------------------------------------------------#
+   if [ ${droughtmark} == "TRUE" ]
+   then 
+      let yeara=${droughtyeara}-1
+      let yearz=${droughtyearz}+1
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
    if [ -s ${here}/${polyname} ]
    then
-
-
-
-      #----- Retrieve some information from ED2IN. ----------------------------------------#
-      iphysiol=`grep -i NL%IPHYSIOL ${here}/${polyname}/ED2IN | awk '{print $3}'`
-      iallom=`grep -i NL%IALLOM ${here}/${polyname}/ED2IN | awk '{print $3}'`
-      metcyca=`grep -i NL%METCYC1 ${here}/${polyname}/ED2IN | awk '{print $3}'`
-      metcycz=`grep -i NL%METCYCF ${here}/${polyname}/ED2IN | awk '{print $3}'`
-      #------------------------------------------------------------------------------------#
-
-
-      #---- Find the forest inventory cycle. ----------------------------------------------#
-      case ${polyiata} in
-      gyf|s67)
-         biocyca=2004
-         biocycz=2009
-         subcens=1
-         ;;
-      s67)
-         biocyca=2001
-         biocycz=2011
-         subcens=1
-         ;;
-      *)
-         biocyca=${metcyca}
-         biocycz=${metcycz}
-         subcens=0
-         ;;
-      esac
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Switch years in case this is a specific drought run.                           #
-      #------------------------------------------------------------------------------------#
-      if [ ${droughtmark} == "TRUE" ]
-      then 
-         let yeara=${droughtyeara}-1
-         let yearz=${droughtyearz}+1
-      fi
-      #------------------------------------------------------------------------------------#
 
 
       #------ Check which period to use. --------------------------------------------------#
@@ -329,6 +436,14 @@ do
          thisyeara=${yusera}
          thisyearz=${yuserz}
          #---------------------------------------------------------------------------------#
+
+      elif [ ${useperiod} == 'f' ]
+      then
+         #----- The user said to use the eddy flux period. --------------------------------#
+         thisyeara=${eftyeara}
+         thisyearz=${eftyearz}
+         #---------------------------------------------------------------------------------#
+
       else
          #----- Grab all years that the simulation is supposed to run. --------------------#
          thisyeara=${yeara}
@@ -442,6 +557,7 @@ do
          sed -i s@thisoutroot@${outroot}@g           ${scriptnow}
          sed -i s@thispath@${here}@g                 ${scriptnow}
          sed -i s@thatpath@${there}@g                ${scriptnow}
+         sed -i s@thisrscpath@${rscpath}@g           ${scriptnow}
          sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
          sed -i s@thismontha@${thismontha}@g         ${scriptnow}
          sed -i s@thisdatea@${thisdatea}@g           ${scriptnow}
@@ -467,6 +583,11 @@ do
          sed -i s@mybiocyca@${biocyca}@g             ${scriptnow}
          sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
          sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
+         sed -i s@mybackground@${background}@g       ${scriptnow}
+         sed -i s@myklight@${klight}@g               ${scriptnow}
+         sed -i s@myefttrim@${efttrim}@g             ${scriptnow}
+         sed -i s@myeftyeara@${eftyeara}@g           ${scriptnow}
+         sed -i s@myeftyearz@${eftyearz}@g           ${scriptnow}
          #---------------------------------------------------------------------------------#
 
 

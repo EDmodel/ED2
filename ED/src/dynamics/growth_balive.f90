@@ -10,7 +10,7 @@ module growth_balive
 
 
 
-   !==============================================================1=========================!
+   !=======================================================================================!
    !=======================================================================================!
    !     This subroutine will update the alive biomass, and compute the respiration terms  !
    ! other than leaf respiration.                                                          !
@@ -38,7 +38,8 @@ module growth_balive
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
-      use ed_misc_coms    , only : igrass                 ! ! intent(in)
+      use ed_misc_coms    , only : igrass                 & ! intent(in)
+                                 , ibigleaf               ! ! intent(in)
       use budget_utils    , only : update_budget          ! ! sub-routine
 
       implicit none
@@ -241,15 +242,28 @@ module growth_balive
                   end if
                   
                   !------------------------------------------------------------------------!
-                  !      Do mortality --- note that only frost mortality changes daily.    !
-                  ! Here we do not add the 5th mortality rate (disturbance), because this  !
-                  ! mortality creates a new patch instead of reducing the area.  The 5th   !
-                  ! mortality is for diagnostic purposes only.                             !
+                  !      Update mortality rates.  Notice that the only mortality rate that !
+                  ! changes daily is the frost mortality, and the disturbance mortality is !
+                  ! not updated here (it is updated in the main disturbance procedure).    !
+                  !                                                                        !
+                  !      How we integrate mortality also depends on whether we are running !
+                  ! size-and-age (or size-only) structure, or big leaf.  Big leaf doesn't  !
+                  ! create new patches, thus we also include the disturbance mortality     !
+                  ! here.  Loss of plants in size-and-age is represented by creating a new !
+                  ! patch, so it shouldn't be included here.  Size-only is done by         !
+                  ! creating and merging the patch back, so it should not be added here    !
+                  ! either.                                                                !
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico,csite%avg_daily_temp(ipa)            &
                                       ,csite%age(ipa))
-                  dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
-                  dndt     = dlnndt * cpatch%nplant(ico)
+                  select case (ibigleaf)
+                  case (0)
+                     dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  case (1)
+                     dlnndt   = - sum(cpatch%mort_rate(1:5,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  end select
                   !------------------------------------------------------------------------!
 
                   !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!

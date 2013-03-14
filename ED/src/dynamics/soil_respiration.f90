@@ -186,7 +186,7 @@ end subroutine soil_respiration
 
 !==========================================================================================!
 !==========================================================================================!
-!     This function determines the normalised root respiration (umol/kg_fine_root/s) at a  !
+!     This function determines the normalised root respiration (umol/kgC_fine_root/s) at a !
 ! given soil layer.                                                                        !
 !------------------------------------------------------------------------------------------!
 real function root_resp_norm(ipft,soil_temp)

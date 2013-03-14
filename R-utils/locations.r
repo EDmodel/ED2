@@ -318,7 +318,7 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 #==========================================================================================#
 #     This function finds a good name to describe the simulation.                          #
 #------------------------------------------------------------------------------------------#
-simul.description <<- function(ici,testpoi,max.char=50){
+simul.description <<- function(ici,testpoi,max.char=66){
 
    #---------------------------------------------------------------------------------------#
    #     This block contains names for the commonest settings for variables that are       #

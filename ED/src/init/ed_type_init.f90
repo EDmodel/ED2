@@ -1113,26 +1113,26 @@ subroutine init_ed_site_vars(cpoly, lat)
    !---------------------------------------------------------------------------------------!
    !      Initialise several disturbance- and LU-related variables.                        !
    !---------------------------------------------------------------------------------------!
-   cpoly%plantation                                                (:) = 0
-   cpoly%agri_stocking_pft                                         (:) = agri_stock
-   cpoly%agri_stocking_density                                     (:) = 10.0
-   cpoly%plantation_stocking_pft                                   (:) = plantation_stock
-   cpoly%plantation_stocking_density                               (:) = 4.0
-   cpoly%primary_harvest_memory                                    (:) = 0.0
-   cpoly%secondary_harvest_memory                                  (:) = 0.0
-   cpoly%fire_disturbance_rate                                     (:) = 0.0
-   cpoly%ignition_rate                                             (:) = 0.0
-   cpoly%lambda_fire                                          (1:12,:) = 0.0
-   cpoly%nat_disturbance_rate                                      (:) = 0.0
-   cpoly%nat_dist_type                                             (:) = 0
-   cpoly%disturbance_memory         (1:n_dist_types, 1:n_dist_types,:) = 0.0
-   cpoly%disturbance_rates          (1:n_dist_types, 1:n_dist_types,:) = 0.0
+   cpoly%plantation                       (:) = 0
+   cpoly%agri_stocking_pft                (:) = agri_stock
+   cpoly%agri_stocking_density            (:) = 10.0
+   cpoly%plantation_stocking_pft          (:) = plantation_stock
+   cpoly%plantation_stocking_density      (:) = 4.0
+   cpoly%primary_harvest_memory           (:) = 0.0
+   cpoly%secondary_harvest_memory         (:) = 0.0
+   cpoly%fire_disturbance_rate            (:) = 0.0
+   cpoly%ignition_rate                    (:) = 0.0
+   cpoly%lambda_fire                    (:,:) = 0.0
+   cpoly%nat_disturbance_rate             (:) = 0.0
+   cpoly%nat_dist_type                    (:) = 0
+   cpoly%disturbance_memory           (:,:,:) = 0.0
+   cpoly%disturbance_rates            (:,:,:) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Initialise the mean radiation. --------------------------------------------------!
-   cpoly%rad_avg(:) = 200.0
+   cpoly%rad_avg                          (:) = 200.0
    !---------------------------------------------------------------------------------------!
 
 

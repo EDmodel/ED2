@@ -2113,6 +2113,8 @@ subroutine init_pft_mort_params()
                           , seedling_mortality         & ! intent(out)
                           , treefall_s_gtht            & ! intent(out)
                           , treefall_s_ltht            & ! intent(out)
+                          , fire_s_gtht                & ! intent(out)
+                          , fire_s_ltht                & ! intent(out)
                           , plant_min_temp             & ! intent(out)
                           , frost_mort                 ! ! intent(out)
    use consts_coms , only : t00                        & ! intent(in)
@@ -2301,23 +2303,36 @@ subroutine init_pft_mort_params()
 
    !---------------------------------------------------------------------------------------!
    !     Here we check whether patches should be created or the treefall should affect     !
-   ! only the mortality (big leaf or quasi- size-structured approximation; other           !
-   ! disturbances may be turned off for a true size-structured approximation).             !
+   ! only the mortality or it should create patches.                                       !
+   !                                                                                       !
+   ! 1.  Setting TREEFALL_DISTURBANCE_RATE < 0 won't be the actual size-structured         !
+   !     approximation, since fires and anthropogenic disturbance will still create        !
+   !     patches.  For a true size-structured approximation, set MAXPATCH=1 and do not     !
+   !     run with anthropogenic disturbance.                                               !
+   ! 2.  Big leaf is no longer treated as the negative case.  Disturbance rates are now    !
+   !     included in the 5th mortality type (which may be either treefall or fire), and    !
+   !     applied to the population in growth_balive.f90.                                   !
    !---------------------------------------------------------------------------------------!
-   if (treefall_disturbance_rate < 0. .or. ibigleaf == 1) then
+   if (ibigleaf == 1 .or. treefall_disturbance_rate >= 0.) then
+      treefall_disturbance_rate = lambda_eff
+   else
       !------------------------------------------------------------------------------------!
       !      We incorporate the disturbance rate into the density-independent mortality    !
       ! rate and turn off the patch-creating treefall disturbance.                         !
       !------------------------------------------------------------------------------------!
-      mort3(:) = mort3(:) + lambda_eff
+      mort3(:)                  = mort3(:) + lambda_eff
       treefall_disturbance_rate = 0.
-   else
-      treefall_disturbance_rate = lambda_eff
    end if
    !---------------------------------------------------------------------------------------!
 
 
-   
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Seedling mortality must be redefined for big leaf runs: this is necessary because !
+   ! big leaf plants don't grow in diameter, but in "population".                          !
+   !---------------------------------------------------------------------------------------!
    select case (ibigleaf)
    case (0)
       seedling_mortality(1)    = 0.95
@@ -2346,9 +2361,16 @@ subroutine init_pft_mort_params()
          seedling_mortality(17)    = 0.4000
       end select
    end select
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Treefall survivorship fraction.                                                  !
+   !---------------------------------------------------------------------------------------!
+   !----- Trees taller than treefall_hite_threshold. --------------------------------------!
    treefall_s_gtht(1:17)    = 0.0
-
+   !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
    treefall_s_ltht(1)       = 0.25
    treefall_s_ltht(2:4)     = 0.10
    treefall_s_ltht(5)       = 0.25
@@ -2356,6 +2378,24 @@ subroutine init_pft_mort_params()
    treefall_s_ltht(12:15)   = 0.25
    treefall_s_ltht(16)      = 0.25
    treefall_s_ltht(17)      = 0.10
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Fire survivorship fraction.                                                      !
+   !---------------------------------------------------------------------------------------!
+   !----- Trees taller than fire_hite_threshold. ------------------------------------------!
+   fire_s_gtht(1:17)    = 0.0
+   !----- Trees shorter than fire_hite_threshold. -----------------------------------------!
+   fire_s_ltht(1)       = 0.0
+   fire_s_ltht(2:4)     = 0.0
+   fire_s_ltht(5)       = 0.0
+   fire_s_ltht(6:11)    = 0.0
+   fire_s_ltht(12:15)   = 0.0
+   fire_s_ltht(16)      = 0.0
+   fire_s_ltht(17)      = 0.0
+   !---------------------------------------------------------------------------------------!
 
    plant_min_temp(1:4)      = t00+2.5
    plant_min_temp(5:6)      = t00-80.0
@@ -3754,6 +3794,7 @@ end subroutine init_pft_derived_params
 subroutine init_disturb_params
 
    use disturb_coms , only : treefall_hite_threshold  & ! intent(out)
+                           , fire_hite_threshold      & ! intent(out)
                            , forestry_on              & ! intent(out)
                            , agriculture_on           & ! intent(out)
                            , plantation_year          & ! intent(out)
@@ -3772,6 +3813,9 @@ subroutine init_disturb_params
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    treefall_hite_threshold = 10.0 
+
+   !----- Cut-off for fire survivorship (bush fires versus canopy fire). ------------------!
+   fire_hite_threshold     = 5.0
 
    !----- Set to 1 if to do forest harvesting. --------------------------------------------!
    forestry_on = 0

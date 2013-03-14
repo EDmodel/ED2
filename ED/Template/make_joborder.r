@@ -15,31 +15,58 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
-here    = getwd()                                  #   Current directory
-srcdir  = "/n/home00/mlongo/util/Rsc"              #   Script directory
-outfile = file.path(here,"joborder.txt")           #   Job order
-defjob  = FALSE                                    #   Generate the default job order?
+here    = getwd()                             # Current directory
+srcdir  = "/n/home00/mlongo/util/Rsc"         # Script directory
+outfile = file.path(here,"joborder.txt")      # Job order
+defjob  = FALSE                               # Generate the default job order?
+lonlat  = NULL                                # NULL - define runs locally 
+                                              #        (varrun/varlabel)
+#lonlat  = file.path(here,"lonlat_input.txt") # Not NULL - read lon/lat from file, and
+                                              #    finish up settings below
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
-#      Variables that will vary (check the list below for all possibilities.               #
+#      Variables that will vary (check the list below for all possibilities).              #
 #------------------------------------------------------------------------------------------#
-varrun   = list( iata      = c("gyf","m34","s67","s83","ban","rja","pdg","cax","pnz")
-               , iscenario = c("wmo")
-               , ibigleaf  = c(0,1)
-               , iage      = c(1,25)
-               , isizepft  = c(2 ,5)
-               , ivegtdyn  = 0
-               , queue     = "moorcroft_6100b"
-               )#end list
-varlabel = list( iata      = varrun$iata
-               , iscenario = c("wmo")
-               , ibigleaf  = c("sas","ble")
-               , iage      = paste("iage" , sprintf( "%2.2i",varrun$iage     ), sep="" )
-               , isizepft  = paste("pft"  , sprintf( "%2.2i",varrun$isizepft ), sep="" )
-               , ivegtdyn  = 0
-               , queue     = "moorcroft_6100b"
-               )#end list
+if (! defjob && is.null(lonlat)){
+   #----- Site-run simulation, define the sites and settings. -----------------------------#
+   varrun   = list( iata      = c("gyf","m34","s67","s83","ban","rja","pdg","cax","pnz")
+                  , iscenario = c("wmo")
+                  , ibigleaf  = c(0,1)
+                  , iage      = c(1,25)
+                  , isizepft  = c(2 ,5)
+                  , ivegtdyn  = 0
+                  , queue     = "moorcroft_6100b"
+                  )#end list
+   varlabel = list( iata      = varrun$iata
+                  , iscenario = c("wmo")
+                  , ibigleaf  = c("sas","ble")
+                  , iage      = paste("iage" , sprintf( "%2.2i",varrun$iage     ), sep="" )
+                  , isizepft  = paste("pft"  , sprintf( "%2.2i",varrun$isizepft ), sep="" )
+                  , ivegtdyn  = 0
+                  , queue     = "moorcroft_6100b"
+                  )#end list
+}else if(! defjob){
+   #----- Regional run.  Read in the list of polygons, and complete the settings. ---------#
+   myruns  = read.table( file             = lonlat
+                       , header           = TRUE
+                       , stringsAsFactors = FALSE
+                       , comment.char     = ""
+                       , colClasses       = c("character",rep("numeric",times=2))
+                       )#end read.table
+   nruns             = nrow(myruns)
+   myruns$iscenario  = rep("default"  ,times=nruns)
+   myruns$met.driver = rep("Sheffield",times=nruns)
+   myruns$init.mode  = rep(          0,times=nruns)
+   myruns$iphen      = rep(          2,times=nruns)
+   myruns$fire       = rep(          3,times=nruns)
+   myruns$iage       = rep(         25,times=nruns)
+   myruns$ibigleaf   = rep(          0,times=nruns)
+   myruns$yeara      = rep(       1500,times=nruns)
+   myruns$yearz      = rep(       2011,times=nruns)
+
+   nvars             = ncol(myruns)
+}#end if
 #------------------------------------------------------------------------------------------#
 
 
@@ -74,16 +101,18 @@ if (file.exists(outfile)) dummy = file.rename(from=outfile,to=backupfile)
 
 
 #----- Check that varrun and varlabel have the same length and dimensions. ----------------#
-if (length(varrun) != length(varlabel)){
-   stop(" Varrun and varlabel must have the same number of variables!")
-}else if (any(names(varrun) != names(varlabel))){
-   stop(" Variable names of varrun and varlabel must match an be in the same order!")
-}else if (any(sapply(X=varrun,FUN=length) != sapply(X=varlabel,FUN=length))){
-   length.matrix = cbind( run   = sapply(X=varrun  ,FUN=length)
-                        , label = sapply(X=varlabel,FUN=length)
-                        )#end cbind
-   print(length.matrix)
-   stop(" Length of all variables in varrun and varlabel must match!")
+if (! defjob && is.null(lonlat)){
+   if (length(varrun) != length(varlabel)){
+      stop(" Varrun and varlabel must have the same number of variables!")
+   }else if (any(names(varrun) != names(varlabel))){
+      stop(" Variable names of varrun and varlabel must match an be in the same order!")
+   }else if (any(sapply(X=varrun,FUN=length) != sapply(X=varlabel,FUN=length))){
+      length.matrix = cbind( run   = sapply(X=varrun  ,FUN=length)
+                           , label = sapply(X=varlabel,FUN=length)
+                           )#end cbind
+      print(length.matrix)
+      stop(" Length of all variables in varrun and varlabel must match!")
+   }#end if
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -158,7 +187,7 @@ default = list( run           = "unnamed"
               , ribmax        = 0.50
               , atmco2        = 378.
               , thcrit        = -1.20
-              , sm.fire       = 0.33333333
+              , sm.fire       = 0.45
               , ifire         = 0
               , fire.parm     = 0.5
               , ipercol       = 0
@@ -189,16 +218,19 @@ default = list( run           = "unnamed"
 
 
 #------------------------------------------------------------------------------------------#
-#     Create the full combination of runs.                                                 #
+#     Create the full combination of runs (if reading lonlat, this has been already        #
+# generated).                                                                              #
 #------------------------------------------------------------------------------------------#
 if (defjob){
-   myruns = data.frame(iata=poilist$iata,stringsAsFactors=FALSE)
+   myruns  = data.frame(iata=poilist$iata,stringsAsFactors=FALSE)
    defname = poilist$short
-}else{
-   myruns    = expand.grid(varrun,stringsAsFactors=FALSE)
+   nvars     = ncol(myruns)
+   nruns     = nrow(myruns)
+}else if (is.null(lonlat)){
+   myruns  = expand.grid(varrun,stringsAsFactors=FALSE)
+   nvars     = ncol(myruns)
+   nruns     = nrow(myruns)
 }#end if
-nvars     = ncol(myruns)
-nruns     = nrow(myruns)
 #------------------------------------------------------------------------------------------#
 
 
@@ -221,72 +253,89 @@ nruns     = nrow(myruns)
 
 
 #------------------------------------------------------------------------------------------#
-#     Create a table with room for all simulations.                                        #
+#     Check whether to replace information by site-specific information if no default has  #
+# been provided (only if lonlat is NULL).                                                  #
 #------------------------------------------------------------------------------------------#
-poitout = poilist[match(joborder$iata,poilist$iata),]
-#------------------------------------------------------------------------------------------#
+if (is.null(lonlat)){
+   #---------------------------------------------------------------------------------------#
+   #     Create a table with room for all simulations.                                     #
+   #---------------------------------------------------------------------------------------#
+   poitout = poilist[match(joborder$iata,poilist$iata),]
+   #---------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#     Replace met driver when it is supposed to be tower data.                             #
-#------------------------------------------------------------------------------------------#
-is.tower                      = joborder$met.driver == "tower"
-joborder$met.driver[is.tower] = poitout$met.driver[is.tower]
-#------------------------------------------------------------------------------------------#
+   #---------------------------------------------------------------------------------------#
+   #     Replace met driver when it is supposed to be tower data.                          #
+   #---------------------------------------------------------------------------------------#
+   is.tower                      = joborder$met.driver == "tower"
+   joborder$met.driver[is.tower] = poitout$met.driver[is.tower]
+   #---------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#     Replace other POI-specific variables as long as they are not to be specified by the  #
-# user settings.                                                                           #
-#------------------------------------------------------------------------------------------#
-keep    = ( names(poitout) %in% names(joborder) 
-          & ( ! names(poitout) %in% names(myruns) )
-          & ( ! names(poitout) %in% c("iata","met.driver") )
-          )#end keep
-poidata = poitout[,keep]
-npois   = ncol(poidata)
-if (npois > 0){
-   for (p in 1:npois) joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
-}#end if
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#     Make sure that soil texture is standard when the user provides soil texture and the  #
-# value is not zero.                                                                       #
-#------------------------------------------------------------------------------------------#
-if ("istext" %in% names(varrun)){
-   sel                    = joborder$istext != 0
-   joborder$sand  [  sel] = -1.0
-   joborder$clay  [  sel] = -1.0
-   joborder$istext[! sel] = poidata$istext[! sel]
-}#end if
-#------------------------------------------------------------------------------------------#
+   #---------------------------------------------------------------------------------------#
+   #     Replace other POI-specific variables as long as they are not to be specified by   #
+   # the user settings.                                                                    #
+   #---------------------------------------------------------------------------------------#
+   keep    = ( names(poitout) %in% names(joborder) 
+             & ( ! names(poitout) %in% names(myruns) )
+             & ( ! names(poitout) %in% c("iata","met.driver") )
+             )#end keep
+   poidata = poitout[,keep]
+   npois   = ncol(poidata)
+   if (npois > 0){
+      for (p in 1:npois) joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
+   }#end if
+   #---------------------------------------------------------------------------------------#
 
 
 
-#------------------------------------------------------------------------------------------#
-#    Build the name of the simulations.  The polygon name always stays, even if the run is #
-# for one site only.                                                                       #
-#------------------------------------------------------------------------------------------#
-stay = which(names(varlabel) %in% c("iata"))
-bye  = which(sapply(X=varlabel,FUN=length) == 1)
-bye  = bye[! bye %in% stay]
-if (length(bye) > 0) for (b in sort(bye,decreasing=TRUE)) varlabel[[b]] = NULL
-if (defjob){
-   runname = defname[! forbidden]
-   metname = ""
+   #---------------------------------------------------------------------------------------#
+   #     Make sure that soil texture is standard when the user provides soil texture and   #
+   # the value is not zero.                                                                #
+   #---------------------------------------------------------------------------------------#
+   if ("istext" %in% names(varrun)){
+      sel                    = joborder$istext != 0
+      joborder$sand  [  sel] = -1.0
+      joborder$clay  [  sel] = -1.0
+      joborder$istext[! sel] = poidata$istext[! sel]
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Build the name of the simulations.  The polygon name always stays, even if the run #
+   # is for one site only.                                                                 #
+   #---------------------------------------------------------------------------------------#
+   if (defjob){
+      runname = defname[! forbidden]
+      metname = ""
+   }else{
+      stay     = which(names(varlabel) %in% c("iata"))
+      bye      = which(sapply(X=varlabel,FUN=length) == 1)
+      bye      = bye[! bye %in% stay]
+      if (length(bye) > 0) for (b in sort(bye,decreasing=TRUE)) varlabel[[b]] = NULL
+      runname  = apply( X        = expand.grid(varlabel, stringsAsFactors = FALSE)
+                      , MARGIN   = 1
+                      , FUN      = paste
+                      , collapse = "_"
+                      )#end apply
+      runname  = runname[! forbidden]
+      metname  = ifelse(is.tower,"t","s")
+   }#end if
+   joborder$run      = paste(metname,runname,sep="")
+   #---------------------------------------------------------------------------------------#
 }else{
-   runname  = apply( X        = expand.grid(varlabel, stringsAsFactors = FALSE)
-                   , MARGIN   = 1
-                   , FUN      = paste
-                   , collapse = "_"
-                   )#end apply
-   runname  = runname[! forbidden]
-   metname  = ifelse(is.tower,"t","s")
+   #---------------------------------------------------------------------------------------#
+   #     Job name by appending longitude and latitude.                                     #
+   #---------------------------------------------------------------------------------------#
+   joborder$run = paste( joborder$iata
+                       , "_lon",sprintf("%+06.2f",joborder$lon)
+                       , "_lat",sprintf("%+06.2f",joborder$lat)
+                       , sep = ""
+                       )#end paste
+   #---------------------------------------------------------------------------------------#
 }#end if
-joborder$run      = paste(metname,runname,sep="")
 #------------------------------------------------------------------------------------------#
 
 

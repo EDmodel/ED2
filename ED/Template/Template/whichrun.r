@@ -127,6 +127,7 @@ if (nhisto > 0){
    agb.pft  = colSums(mydata$AGB.PY       [1,,],na.rm=TRUE)
    bsa.pft  = colSums(mydata$BASAL.AREA.PY[1,,],na.rm=TRUE)
    lai.pft  = colSums(mydata$LAI.PY       [1,,],na.rm=TRUE)
+   scb.py   = mydata$FAST.SOIL.C.PY + mydata$STRUCT.SOIL.C.PY + mydata$SLOW.SOIL.C.PY
    #---------------------------------------------------------------------------------------#
 
 
@@ -139,6 +140,7 @@ if (nhisto > 0){
    agb      = sprintf("%7.3f",sum(agb.pft))
    bsa      = sprintf("%7.3f",sum(bsa.pft))
    lai      = sprintf("%7.3f",sum(lai.pft))
+   scb      = sprintf("%7.3f",scb.py)
    #---------------------------------------------------------------------------------------#
 
 
@@ -153,17 +155,17 @@ if (nhisto > 0){
    # convincing that the run is working).                                                  #
    #---------------------------------------------------------------------------------------#
    if (sigsegv){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"SIGSEGV",agb,bsa,lai,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"SIGSEGV",agb,bsa,lai,scb,sep=" ")
    }else if (metmiss){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"METMISS",agb,bsa,lai,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"METMISS",agb,bsa,lai,scb,sep=" ")
    }else if(crashed){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"CRASHED",agb,bsa,lai,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"CRASHED",agb,bsa,lai,scb,sep=" ")
    }else if(stopped){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"STOPPED",agb,bsa,lai,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"STOPPED",agb,bsa,lai,scb,sep=" ")
    }else if(finished){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"THE_END",agb,bsa,lai,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"THE_END",agb,bsa,lai,scb,sep=" ")
    }else{
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,sep=" ")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -178,7 +180,8 @@ if (nhisto > 0){
    agb       = sprintf("%7.3f",NA    )
    bsa       = sprintf("%7.3f",NA    )
    lai       = sprintf("%7.3f",NA    )
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,sep=" ")
+   scb       = sprintf("%7.3f",NA    )
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,sep=" ")
    #---------------------------------------------------------------------------------------#
 }#end if (nhisto > 0)
 #------------------------------------------------------------------------------------------#

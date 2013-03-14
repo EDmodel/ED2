@@ -156,9 +156,12 @@ module mortality
    real function survivorship(dest_type,poly_dest_type,mindbh_harvest,csite,ipa,ico)
       use ed_state_vars, only : patchtype                & ! structure
                               , sitetype                 ! ! structure
-      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
+      use disturb_coms , only : treefall_hite_threshold  & ! intent(in)
+                              , fire_hite_threshold      ! ! intent(in)
       use pft_coms     , only : treefall_s_ltht          & ! intent(in)
-                              , treefall_s_gtht          ! ! intent(in)
+                              , treefall_s_gtht          & ! intent(in)
+                              , fire_s_ltht              & ! intent(in)
+                              , fire_s_gtht              ! ! intent(in)
       use ed_max_dims  , only : n_pft                    ! ! intent(in)
       
       implicit none
@@ -210,13 +213,17 @@ module mortality
          select case (poly_dest_type)
          case (0) !----- Treefall, we must check the cohort height. -----------------------!
             if (cpatch%hite(ico) < treefall_hite_threshold) then
-               survivorship =  treefall_s_ltht(ipft)
+               survivorship = treefall_s_ltht(ipft)
             else
                survivorship = treefall_s_gtht(ipft)
             end if
 
-         case (1) !----- Fire, no survival. -----------------------------------------------!
-            survivorship = 0.0
+         case (1) !----- Fire, also check the cohort height. ------------------------------!
+            if (cpatch%hite(ico) < fire_hite_threshold) then
+               survivorship = fire_s_ltht(ipft)
+            else
+               survivorship = fire_s_gtht(ipft)
+            end if
          end select
       end select
 

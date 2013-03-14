@@ -248,6 +248,21 @@ module pft_coms
 
    !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: rrf_q10
+
+   !----- Temperature [°C] below which storage respiration begins to rapidly decline. -----!
+   real, dimension(n_pft) :: strf_low_temp 
+
+   !----- Temperature [°C] above which storage respiration begins to rapidly decline. -----!
+   real, dimension(n_pft) :: strf_high_temp 
+
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   real, dimension(n_pft) :: strf_decay_e 
+
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: strf_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
+   real, dimension(n_pft) :: strf_q10
    !=======================================================================================!
    !=======================================================================================!
 
@@ -306,6 +321,18 @@ module pft_coms
    ! (see disturbance_coms.f90).                                                           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: treefall_s_ltht
+
+   !---------------------------------------------------------------------------------------!
+   !     Survivorship fraction for trees with heights greater than fire_hite_threshold     !
+   ! (see disturbance_coms.f90).                                                           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: fire_s_gtht
+
+   !---------------------------------------------------------------------------------------!
+   !     Survivorship fraction for trees with heights less than fire_hite_threshold        !
+   ! (see disturbance_coms.f90).                                                           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: fire_s_ltht
 
    !----- Below this temperature, mortality rapidly increases. ----------------------------!
    real, dimension(n_pft) :: plant_min_temp

@@ -553,6 +553,19 @@ module disturbance_utils
                   call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1    &
                                                  ,cpoly%lsl(isi))
                end do
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !       Reset mortality rates due to disturbance.                           !
+               !---------------------------------------------------------------------------!
+               resetdist_bl: do ipa=1,onsp
+                  cpatch => csite%patch(ipa)
+                  do ico=1,cpatch%ncohorts
+                     cpatch%mort_rate(5,ico) = 0.0
+                  end do
+               end do resetdist_bl
+               !---------------------------------------------------------------------------!
 
 
 
@@ -2697,6 +2710,7 @@ module disturbance_utils
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
       use phenology_coms , only : retained_carbon_fraction ! ! intent(in)
       use phenology_aux  , only : pheninit_balive_bstorage ! ! intent(in)
+      use therm_lib      , only : cmtl2uext                ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target     :: csite
@@ -2829,9 +2843,10 @@ module disturbance_utils
                         ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
-      cpatch%leaf_energy(nc) = cpatch%leaf_hcap(nc) * cpatch%leaf_temp(nc)
-      cpatch%wood_energy(nc) = cpatch%wood_hcap(nc) * cpatch%wood_temp(nc)
-
+      cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc),cpatch%leaf_water(nc)       &
+                                        ,cpatch%leaf_temp (nc),cpatch%leaf_fliq (nc))
+      cpatch%wood_energy(nc) = cmtl2uext(cpatch%wood_hcap (nc),cpatch%wood_water(nc)       &
+                                        ,cpatch%wood_temp (nc),cpatch%wood_fliq (nc))
       call is_resolvable(csite,np,nc)
 
       !----- Should plantations be considered recruits? -----------------------------------!

@@ -877,19 +877,17 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    !     Compute the ground temperature and specific humidity.                             !
    !---------------------------------------------------------------------------------------!
-   k = max(1,ksn)
-   if (ksn == 0) then
-      k = 1
-      ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp       .and.                    &
-                  initp%soil_tempk(nzg) <= rk4max_soil_temp       .and.                    &
-                  initp%soil_water(nzg) >= rk4min_soil_water(nzg) .and.                    &
-                  initp%soil_water(nzg) <= rk4max_soil_water(nzg)
-   else
-      k = ksn
-      ok_ground = initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
+   ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp       .and.                       &
+               initp%soil_tempk(nzg) <= rk4max_soil_temp       .and.                       &
+               initp%soil_water(nzg) >= rk4min_soil_water(nzg) .and.                       &
+               initp%soil_water(nzg) <= rk4max_soil_water(nzg)
+   if (ksn > 0) then
+      ok_ground = ok_ground                                     .and.                      &
+                  initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
                   initp%sfcwater_tempk(ksn) <= rk4max_sfcw_temp
    end if
    if (ok_ground) then
+      k = max(1,ksn)
       call ed_grndvap8(ksn,initp%soil_water(nzg),initp%soil_tempk(nzg)                     &
                       ,initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)                     &
                       ,initp%sfcwater_fracliq(k),initp%snowfac,initp%can_prss              &

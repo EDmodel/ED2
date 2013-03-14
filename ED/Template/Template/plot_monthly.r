@@ -29,7 +29,7 @@ yearend        = thisyearz    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
-nyears.long    = 25           # Runs longer than this are considered long runs.
+nyears.long    = 15           # Runs longer than this are considered long runs.
 n.density      = 256          # Number of density points
 #------------------------------------------------------------------------------------------#
 
@@ -1665,15 +1665,17 @@ for (place in myplaces){
          #  constant, nudge the limits so the plot command will not complain.              #
          #---------------------------------------------------------------------------------#
          xlimit   = pretty.xylim(u=datum$tomonth,fracexp=0.0,is.log=FALSE)
-         ylimit  = NULL
+         ylimit   = NULL
+         mylucols = NULL
+         mylulegs = NULL
          n       = 0
          for (jlu in 1:nlu){
             for (ilu in 1:nlu){
                n = n + 1
                if (seldist[ilu,jlu]){
-                  ylimit = c(ylimit,lu$dist[,ilu,jlu])
-                  cols   = c(cols,distcols[n])
-                  legs   = c(legs,distnames[n])
+                  ylimit   = c(ylimit,lu$dist[,ilu,jlu])
+                  mylucols = c(mylucols,distcols [n])
+                  mylulegs = c(mylulegs,distnames[n])
                }#end if
             }#end for
          }#end for
@@ -1706,8 +1708,8 @@ for (place in myplaces){
          legend( x      = "bottom"
                , inset  = 0.0
                , bg     = background
-               , legend = legs
-               , col    = cols
+               , legend = mylulegs
+               , col    = mylucols
                , lwd    = lwidth
                , ncol   = min(3,pretty.box(n)$ncol)
                , title  = expression(bold("Transition"))
@@ -1726,7 +1728,8 @@ for (place in myplaces){
          axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
          axis(side=2)
          box()
-         title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+         title(main=letitre,xlab="Year",ylab="Disturbance rate [1/yr]",cex.main=cex.main
+              ,log=xylog)
          if (drought.mark){
             for (n in 1:ndrought){
                rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1744,8 +1747,6 @@ for (place in myplaces){
             for (ilu in 1:nlu){
                n = n + 1
                if (seldist[ilu,jlu]){
-                  cols = c(cols,distcols[n])
-                  legs = c(legs,distnames[n])
                   lines(datum$tomonth,lu$dist[,ilu,jlu],type="l"
                        ,col=distcols[n],lwd=lwidth)
                }#end if
@@ -2788,6 +2789,11 @@ for (place in myplaces){
       plog        = thispatch$plog
       plotit      = thispatch$emean
 
+      this        = patchpdf[[vnam]]$edensity
+      plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
+                             && any(is.finite(this$y),na.rm=TRUE) 
+                             && any(is.finite(this$z),na.rm=TRUE) )
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -2796,8 +2802,6 @@ for (place in myplaces){
          outdir  =  paste(outpref,"patch_emean",sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
          cat("      + PDF plot of ",description,"...","\n")
-
-         this = patchpdf[[vnam]]$edensity
 
 
          #----- Loop over formats. --------------------------------------------------------#
@@ -2892,6 +2896,11 @@ for (place in myplaces){
       plog        = thispatch$plog
       plotit      = thispatch$mmean
 
+      this        = patchpdf[[vnam]]$mdensity
+      plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
+                             && any(is.finite(this$y),na.rm=TRUE) 
+                             && any(is.finite(this$z),na.rm=TRUE) )
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -2900,8 +2909,6 @@ for (place in myplaces){
          outdir  =  paste(outpref,"patch_mmean",sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
          cat("      + PDF plot of ",description,"...","\n")
-
-         this = patchpdf[[vnam]]$mdensity
 
 
          #----- Find the month tick marks. ------------------------------------------------#
