@@ -363,6 +363,10 @@ do
       eftyeara=1999
       eftyearz=2002
       ;;
+   bsb)
+      eftyeara=2006
+      eftyearz=2011
+      ;;
    pdg)
       eftyeara=2001
       eftyearz=2003

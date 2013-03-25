@@ -1669,6 +1669,8 @@ module fuse_fiss_utils
                                              + cpatch%fmean_rshort_w        (donc)
          cpatch%fmean_rlong_w         (recc) = cpatch%fmean_rlong_w         (recc)         &
                                              + cpatch%fmean_rlong_w         (donc)
+         cpatch%fmean_rad_profile   (:,recc) = cpatch%fmean_rad_profile   (:,recc)         &
+                                             + cpatch%fmean_rad_profile   (:,donc)
          cpatch%fmean_sensible_wc     (recc) = cpatch%fmean_sensible_wc     (recc)         &
                                              + cpatch%fmean_sensible_wc     (donc)
          cpatch%fmean_vapor_wc        (recc) = cpatch%fmean_vapor_wc        (recc)         &
@@ -1942,6 +1944,8 @@ module fuse_fiss_utils
                                              + cpatch%dmean_rshort_w        (donc)
          cpatch%dmean_rlong_w         (recc) = cpatch%dmean_rlong_w         (recc)         &
                                              + cpatch%dmean_rlong_w         (donc)
+         cpatch%dmean_rad_profile   (:,recc) = cpatch%dmean_rad_profile   (:,recc)         &
+                                             + cpatch%dmean_rad_profile   (:,donc)
          cpatch%dmean_sensible_wc     (recc) = cpatch%dmean_sensible_wc     (recc)         &
                                              + cpatch%dmean_sensible_wc     (donc)
          cpatch%dmean_vapor_wc        (recc) = cpatch%dmean_vapor_wc        (recc)         &
@@ -2316,6 +2320,8 @@ module fuse_fiss_utils
                                              + cpatch%mmean_rshort_w        (donc)
          cpatch%mmean_rlong_w         (recc) = cpatch%mmean_rlong_w         (recc)         &
                                              + cpatch%mmean_rlong_w         (donc)
+         cpatch%mmean_rad_profile   (:,recc) = cpatch%mmean_rad_profile   (:,recc)         &
+                                             + cpatch%mmean_rad_profile   (:,donc)
          cpatch%mmean_sensible_wc     (recc) = cpatch%mmean_sensible_wc     (recc)         &
                                              + cpatch%mmean_sensible_wc     (donc)
          cpatch%mmean_vapor_wc        (recc) = cpatch%mmean_vapor_wc        (recc)         &
@@ -2660,6 +2666,8 @@ module fuse_fiss_utils
                                              + cpatch%qmean_rshort_w      (:,donc)
          cpatch%qmean_rlong_w       (:,recc) = cpatch%qmean_rlong_w       (:,recc)         &
                                              + cpatch%qmean_rlong_w       (:,donc)
+         cpatch%qmean_rad_profile (:,:,recc) = cpatch%qmean_rad_profile (:,:,recc)         &
+                                             + cpatch%qmean_rad_profile (:,:,donc)
          cpatch%qmean_sensible_wc   (:,recc) = cpatch%qmean_sensible_wc   (:,recc)         &
                                              + cpatch%qmean_sensible_wc   (:,donc)
          cpatch%qmean_vapor_wc      (:,recc) = cpatch%qmean_vapor_wc      (:,recc)         &

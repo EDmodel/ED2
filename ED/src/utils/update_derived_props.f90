@@ -1278,6 +1278,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
       cpatch%fmean_wshed_lg      (ico) = cpatch%fmean_wshed_lg      (ico) * mult
       cpatch%fmean_rshort_w      (ico) = cpatch%fmean_rshort_w      (ico) * mult
       cpatch%fmean_rlong_w       (ico) = cpatch%fmean_rlong_w       (ico) * mult
+      cpatch%fmean_rad_profile (:,ico) = cpatch%fmean_rad_profile (:,ico) * mult
       cpatch%fmean_sensible_wc   (ico) = cpatch%fmean_sensible_wc   (ico) * mult
       cpatch%fmean_vapor_wc      (ico) = cpatch%fmean_vapor_wc      (ico) * mult
       cpatch%fmean_intercepted_aw(ico) = cpatch%fmean_intercepted_aw(ico) * mult
@@ -1303,6 +1304,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
          cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico) * mult
          cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico) * mult
          cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico) * mult
+         cpatch%dmean_rad_profile (:,ico) = cpatch%dmean_rad_profile (:,ico) * mult
          cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico) * mult
          cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico) * mult
          cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico) * mult
@@ -1330,6 +1332,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
          cpatch%mmean_wshed_lg      (ico) = cpatch%mmean_wshed_lg      (ico) * mult
          cpatch%mmean_rshort_w      (ico) = cpatch%mmean_rshort_w      (ico) * mult
          cpatch%mmean_rlong_w       (ico) = cpatch%mmean_rlong_w       (ico) * mult
+         cpatch%mmean_rad_profile (:,ico) = cpatch%mmean_rad_profile (:,ico) * mult
          cpatch%mmean_sensible_wc   (ico) = cpatch%mmean_sensible_wc   (ico) * mult
          cpatch%mmean_vapor_wc      (ico) = cpatch%mmean_vapor_wc      (ico) * mult
          cpatch%mmean_intercepted_aw(ico) = cpatch%mmean_intercepted_aw(ico) * mult
@@ -1364,6 +1367,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
          cpatch%qmean_wshed_lg      (:,ico) = cpatch%qmean_wshed_lg      (:,ico) * mult
          cpatch%qmean_rshort_w      (:,ico) = cpatch%qmean_rshort_w      (:,ico) * mult
          cpatch%qmean_rlong_w       (:,ico) = cpatch%qmean_rlong_w       (:,ico) * mult
+         cpatch%qmean_rad_profile (:,:,ico) = cpatch%qmean_rad_profile (:,:,ico) * mult
          cpatch%qmean_sensible_wc   (:,ico) = cpatch%qmean_sensible_wc   (:,ico) * mult
          cpatch%qmean_vapor_wc      (:,ico) = cpatch%qmean_vapor_wc      (:,ico) * mult
          cpatch%qmean_intercepted_aw(:,ico) = cpatch%qmean_intercepted_aw(:,ico) * mult

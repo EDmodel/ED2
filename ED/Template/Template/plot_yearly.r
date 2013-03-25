@@ -1706,7 +1706,7 @@ for (place in myplaces){
       description = thisbar$desc
       unit        = thisbar$e.unit
       stacked     = thisbar$stack
-      plotit      = thisbar$bar.plot
+      plotit      = thisbar$bar.plot && plot.ycomp 
       plog        = thisbar$plog
       if (plog){
          stacked = FALSE

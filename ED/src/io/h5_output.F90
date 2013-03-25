@@ -834,7 +834,8 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
                                  , n_dist_types   & ! intent(in)
                                  , n_dbh          & ! intent(in)
                                  , n_age          & ! intent(in)
-                                 , n_mort         ! ! intent(in)
+                                 , n_mort         & ! intent(in)
+                                 , n_radprof      ! ! intent(in)
    use hdf5_coms          , only : chnkdims       & ! intent(in)
                                  , chnkoffs       & ! intent(in)
                                  , cnt            & ! intent(in)
@@ -1440,6 +1441,35 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
+
+   case (411) !(n_radprof,ncohorts)
+      
+      ! Radiation profile type
+      dsetrank    = 2
+      globdims(1) = int(n_radprof,8)
+      chnkdims(1) = int(n_radprof,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+
+   case (-411) !(n_radprof,ndcycle,ncohorts)
+      
+      ! Radiation profile type
+      dsetrank    = 3
+      globdims(1) = int(n_radprof,8)
+      chnkdims(1) = int(n_radprof,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(ndcycle,8)
+      chnkdims(2) = int(ndcycle,8)
+      chnkoffs(2) = 0_8
+      globdims(3) = int(var_len_global,8)
+      chnkdims(3) = int(varlen,8)
+      chnkoffs(3) = int(globid,8)
+      cnt(1:3)    = 1_8
+      stride(1:3) = 1_8
 
    case default
       write (unit=*,fmt='(a)')       '--------------------------------------------------'

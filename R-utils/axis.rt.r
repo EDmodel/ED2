@@ -8,7 +8,7 @@
 axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
 
    #----- Make sure side is correct. ------------------------------------------------------#
-   stopifnot(side %in% c(1,2,3,4,5,6))
+   stopifnot(side %in% c(1,2,3,4))
    #---------------------------------------------------------------------------------------#
 
 
@@ -42,8 +42,8 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
 
    }else{
       #------------------------------------------------------------------------------------#
-      #     las is either 5 or 6, and labels is not FALSE.  We first plot the axis ticks, using the default axis      #
-      # function, then add the labels using rotation.                                      #
+      #     las is either 5 or 6, and labels is not FALSE.  We first plot the axis ticks,  #
+      # using the default axis function, then add the labels using rotation.               #
       #------------------------------------------------------------------------------------#
 
 

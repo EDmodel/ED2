@@ -379,6 +379,10 @@ do
       eftyeara=2001
       eftyearz=2003
       ;;
+   bsb)
+      eftyeara=2006
+      eftyearz=2011
+      ;;
    hvd)
       eftyeara=1992
       eftyearz=2003

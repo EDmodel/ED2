@@ -1436,53 +1436,54 @@ module average_utils
 
                !----- Cohort level variables. ---------------------------------------------!
                cohortloop: do ico=1,cpatch%ncohorts
-                  cpatch%fmean_gpp             (ico) = 0.0
-                  cpatch%fmean_npp             (ico) = 0.0
-                  cpatch%fmean_leaf_resp       (ico) = 0.0
-                  cpatch%fmean_root_resp       (ico) = 0.0
-                  cpatch%fmean_growth_resp     (ico) = 0.0
-                  cpatch%fmean_storage_resp    (ico) = 0.0
-                  cpatch%fmean_vleaf_resp      (ico) = 0.0
-                  cpatch%fmean_plresp          (ico) = 0.0
-                  cpatch%fmean_leaf_energy     (ico) = 0.0
-                  cpatch%fmean_leaf_water      (ico) = 0.0
-                  cpatch%fmean_leaf_hcap       (ico) = 0.0
-                  cpatch%fmean_leaf_vpdef      (ico) = 0.0
-                  cpatch%fmean_leaf_temp       (ico) = 0.0
-                  cpatch%fmean_leaf_fliq       (ico) = 0.0
-                  cpatch%fmean_leaf_gsw        (ico) = 0.0
-                  cpatch%fmean_leaf_gbw        (ico) = 0.0
-                  cpatch%fmean_wood_energy     (ico) = 0.0
-                  cpatch%fmean_wood_water      (ico) = 0.0
-                  cpatch%fmean_wood_hcap       (ico) = 0.0
-                  cpatch%fmean_wood_temp       (ico) = 0.0
-                  cpatch%fmean_wood_fliq       (ico) = 0.0
-                  cpatch%fmean_wood_gbw        (ico) = 0.0
-                  cpatch%fmean_fs_open         (ico) = 0.0
-                  cpatch%fmean_fsw             (ico) = 0.0
-                  cpatch%fmean_fsn             (ico) = 0.0
-                  cpatch%fmean_psi_open        (ico) = 0.0
-                  cpatch%fmean_psi_closed      (ico) = 0.0
-                  cpatch%fmean_water_supply    (ico) = 0.0
-                  cpatch%fmean_light_level     (ico) = 0.0
-                  cpatch%fmean_light_level_beam(ico) = 0.0
-                  cpatch%fmean_light_level_diff(ico) = 0.0
-                  cpatch%fmean_par_l           (ico) = 0.0
-                  cpatch%fmean_par_l_beam      (ico) = 0.0
-                  cpatch%fmean_par_l_diff      (ico) = 0.0
-                  cpatch%fmean_rshort_l        (ico) = 0.0
-                  cpatch%fmean_rlong_l         (ico) = 0.0
-                  cpatch%fmean_sensible_lc     (ico) = 0.0
-                  cpatch%fmean_vapor_lc        (ico) = 0.0
-                  cpatch%fmean_transp          (ico) = 0.0
-                  cpatch%fmean_intercepted_al  (ico) = 0.0
-                  cpatch%fmean_wshed_lg        (ico) = 0.0
-                  cpatch%fmean_rshort_w        (ico) = 0.0
-                  cpatch%fmean_rlong_w         (ico) = 0.0
-                  cpatch%fmean_sensible_wc     (ico) = 0.0
-                  cpatch%fmean_vapor_wc        (ico) = 0.0
-                  cpatch%fmean_intercepted_aw  (ico) = 0.0
-                  cpatch%fmean_wshed_wg        (ico) = 0.0
+                  cpatch%fmean_gpp               (ico) = 0.0
+                  cpatch%fmean_npp               (ico) = 0.0
+                  cpatch%fmean_leaf_resp         (ico) = 0.0
+                  cpatch%fmean_root_resp         (ico) = 0.0
+                  cpatch%fmean_growth_resp       (ico) = 0.0
+                  cpatch%fmean_storage_resp      (ico) = 0.0
+                  cpatch%fmean_vleaf_resp        (ico) = 0.0
+                  cpatch%fmean_plresp            (ico) = 0.0
+                  cpatch%fmean_leaf_energy       (ico) = 0.0
+                  cpatch%fmean_leaf_water        (ico) = 0.0
+                  cpatch%fmean_leaf_hcap         (ico) = 0.0
+                  cpatch%fmean_leaf_vpdef        (ico) = 0.0
+                  cpatch%fmean_leaf_temp         (ico) = 0.0
+                  cpatch%fmean_leaf_fliq         (ico) = 0.0
+                  cpatch%fmean_leaf_gsw          (ico) = 0.0
+                  cpatch%fmean_leaf_gbw          (ico) = 0.0
+                  cpatch%fmean_wood_energy       (ico) = 0.0
+                  cpatch%fmean_wood_water        (ico) = 0.0
+                  cpatch%fmean_wood_hcap         (ico) = 0.0
+                  cpatch%fmean_wood_temp         (ico) = 0.0
+                  cpatch%fmean_wood_fliq         (ico) = 0.0
+                  cpatch%fmean_wood_gbw          (ico) = 0.0
+                  cpatch%fmean_fs_open           (ico) = 0.0
+                  cpatch%fmean_fsw               (ico) = 0.0
+                  cpatch%fmean_fsn               (ico) = 0.0
+                  cpatch%fmean_psi_open          (ico) = 0.0
+                  cpatch%fmean_psi_closed        (ico) = 0.0
+                  cpatch%fmean_water_supply      (ico) = 0.0
+                  cpatch%fmean_light_level       (ico) = 0.0
+                  cpatch%fmean_light_level_beam  (ico) = 0.0
+                  cpatch%fmean_light_level_diff  (ico) = 0.0
+                  cpatch%fmean_par_l             (ico) = 0.0
+                  cpatch%fmean_par_l_beam        (ico) = 0.0
+                  cpatch%fmean_par_l_diff        (ico) = 0.0
+                  cpatch%fmean_rshort_l          (ico) = 0.0
+                  cpatch%fmean_rlong_l           (ico) = 0.0
+                  cpatch%fmean_sensible_lc       (ico) = 0.0
+                  cpatch%fmean_vapor_lc          (ico) = 0.0
+                  cpatch%fmean_transp            (ico) = 0.0
+                  cpatch%fmean_intercepted_al    (ico) = 0.0
+                  cpatch%fmean_wshed_lg          (ico) = 0.0
+                  cpatch%fmean_rshort_w          (ico) = 0.0
+                  cpatch%fmean_rlong_w           (ico) = 0.0
+                  cpatch%fmean_rad_profile     (:,ico) = 0.0
+                  cpatch%fmean_sensible_wc       (ico) = 0.0
+                  cpatch%fmean_vapor_wc          (ico) = 0.0
+                  cpatch%fmean_intercepted_aw    (ico) = 0.0
+                  cpatch%fmean_wshed_wg          (ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -2237,6 +2238,9 @@ module average_utils
                                                    * frqsum_o_daysec
                   cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico)      &
                                                    + cpatch%fmean_rlong_w       (ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_rad_profile (:,ico) = cpatch%dmean_rad_profile (:,ico)      &
+                                                   + cpatch%fmean_rad_profile (:,ico)      &
                                                    * frqsum_o_daysec
                   cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico)      &
                                                    + cpatch%fmean_sensible_wc   (ico)      &
@@ -3264,60 +3268,61 @@ module average_utils
                !       Loop over cohorts.                                                  !
                !---------------------------------------------------------------------------!
                cohortloop: do ico=1, cpatch%ncohorts
-                  cpatch%dmean_nppleaf         (ico) = 0.0
-                  cpatch%dmean_nppfroot        (ico) = 0.0
-                  cpatch%dmean_nppsapwood      (ico) = 0.0
-                  cpatch%dmean_nppcroot        (ico) = 0.0
-                  cpatch%dmean_nppseeds        (ico) = 0.0
-                  cpatch%dmean_nppwood         (ico) = 0.0
-                  cpatch%dmean_nppdaily        (ico) = 0.0
-                  cpatch%dmean_gpp             (ico) = 0.0
-                  cpatch%dmean_npp             (ico) = 0.0
-                  cpatch%dmean_leaf_resp       (ico) = 0.0
-                  cpatch%dmean_root_resp       (ico) = 0.0
-                  cpatch%dmean_growth_resp     (ico) = 0.0
-                  cpatch%dmean_storage_resp    (ico) = 0.0
-                  cpatch%dmean_vleaf_resp      (ico) = 0.0
-                  cpatch%dmean_plresp          (ico) = 0.0
-                  cpatch%dmean_leaf_energy     (ico) = 0.0
-                  cpatch%dmean_leaf_water      (ico) = 0.0
-                  cpatch%dmean_leaf_hcap       (ico) = 0.0
-                  cpatch%dmean_leaf_vpdef      (ico) = 0.0
-                  cpatch%dmean_leaf_temp       (ico) = 0.0
-                  cpatch%dmean_leaf_fliq       (ico) = 0.0
-                  cpatch%dmean_leaf_gsw        (ico) = 0.0
-                  cpatch%dmean_leaf_gbw        (ico) = 0.0
-                  cpatch%dmean_wood_energy     (ico) = 0.0
-                  cpatch%dmean_wood_water      (ico) = 0.0
-                  cpatch%dmean_wood_hcap       (ico) = 0.0
-                  cpatch%dmean_wood_temp       (ico) = 0.0
-                  cpatch%dmean_wood_fliq       (ico) = 0.0
-                  cpatch%dmean_wood_gbw        (ico) = 0.0
-                  cpatch%dmean_fs_open         (ico) = 0.0
-                  cpatch%dmean_fsw             (ico) = 0.0
-                  cpatch%dmean_fsn             (ico) = 0.0
-                  cpatch%dmean_psi_open        (ico) = 0.0
-                  cpatch%dmean_psi_closed      (ico) = 0.0
-                  cpatch%dmean_water_supply    (ico) = 0.0
-                  cpatch%dmean_light_level     (ico) = 0.0
-                  cpatch%dmean_light_level_beam(ico) = 0.0
-                  cpatch%dmean_light_level_diff(ico) = 0.0
-                  cpatch%dmean_par_l           (ico) = 0.0
-                  cpatch%dmean_par_l_beam      (ico) = 0.0
-                  cpatch%dmean_par_l_diff      (ico) = 0.0
-                  cpatch%dmean_rshort_l        (ico) = 0.0
-                  cpatch%dmean_rlong_l         (ico) = 0.0
-                  cpatch%dmean_sensible_lc     (ico) = 0.0
-                  cpatch%dmean_vapor_lc        (ico) = 0.0
-                  cpatch%dmean_transp          (ico) = 0.0
-                  cpatch%dmean_intercepted_al  (ico) = 0.0
-                  cpatch%dmean_wshed_lg        (ico) = 0.0
-                  cpatch%dmean_rshort_w        (ico) = 0.0
-                  cpatch%dmean_rlong_w         (ico) = 0.0
-                  cpatch%dmean_sensible_wc     (ico) = 0.0
-                  cpatch%dmean_vapor_wc        (ico) = 0.0
-                  cpatch%dmean_intercepted_aw  (ico) = 0.0
-                  cpatch%dmean_wshed_wg        (ico) = 0.0
+                  cpatch%dmean_nppleaf           (ico) = 0.0
+                  cpatch%dmean_nppfroot          (ico) = 0.0
+                  cpatch%dmean_nppsapwood        (ico) = 0.0
+                  cpatch%dmean_nppcroot          (ico) = 0.0
+                  cpatch%dmean_nppseeds          (ico) = 0.0
+                  cpatch%dmean_nppwood           (ico) = 0.0
+                  cpatch%dmean_nppdaily          (ico) = 0.0
+                  cpatch%dmean_gpp               (ico) = 0.0
+                  cpatch%dmean_npp               (ico) = 0.0
+                  cpatch%dmean_leaf_resp         (ico) = 0.0
+                  cpatch%dmean_root_resp         (ico) = 0.0
+                  cpatch%dmean_growth_resp       (ico) = 0.0
+                  cpatch%dmean_storage_resp      (ico) = 0.0
+                  cpatch%dmean_vleaf_resp        (ico) = 0.0
+                  cpatch%dmean_plresp            (ico) = 0.0
+                  cpatch%dmean_leaf_energy       (ico) = 0.0
+                  cpatch%dmean_leaf_water        (ico) = 0.0
+                  cpatch%dmean_leaf_hcap         (ico) = 0.0
+                  cpatch%dmean_leaf_vpdef        (ico) = 0.0
+                  cpatch%dmean_leaf_temp         (ico) = 0.0
+                  cpatch%dmean_leaf_fliq         (ico) = 0.0
+                  cpatch%dmean_leaf_gsw          (ico) = 0.0
+                  cpatch%dmean_leaf_gbw          (ico) = 0.0
+                  cpatch%dmean_wood_energy       (ico) = 0.0
+                  cpatch%dmean_wood_water        (ico) = 0.0
+                  cpatch%dmean_wood_hcap         (ico) = 0.0
+                  cpatch%dmean_wood_temp         (ico) = 0.0
+                  cpatch%dmean_wood_fliq         (ico) = 0.0
+                  cpatch%dmean_wood_gbw          (ico) = 0.0
+                  cpatch%dmean_fs_open           (ico) = 0.0
+                  cpatch%dmean_fsw               (ico) = 0.0
+                  cpatch%dmean_fsn               (ico) = 0.0
+                  cpatch%dmean_psi_open          (ico) = 0.0
+                  cpatch%dmean_psi_closed        (ico) = 0.0
+                  cpatch%dmean_water_supply      (ico) = 0.0
+                  cpatch%dmean_light_level       (ico) = 0.0
+                  cpatch%dmean_light_level_beam  (ico) = 0.0
+                  cpatch%dmean_light_level_diff  (ico) = 0.0
+                  cpatch%dmean_par_l             (ico) = 0.0
+                  cpatch%dmean_par_l_beam        (ico) = 0.0
+                  cpatch%dmean_par_l_diff        (ico) = 0.0
+                  cpatch%dmean_rshort_l          (ico) = 0.0
+                  cpatch%dmean_rlong_l           (ico) = 0.0
+                  cpatch%dmean_sensible_lc       (ico) = 0.0
+                  cpatch%dmean_vapor_lc          (ico) = 0.0
+                  cpatch%dmean_transp            (ico) = 0.0
+                  cpatch%dmean_intercepted_al    (ico) = 0.0
+                  cpatch%dmean_wshed_lg          (ico) = 0.0
+                  cpatch%dmean_rshort_w          (ico) = 0.0
+                  cpatch%dmean_rlong_w           (ico) = 0.0
+                  cpatch%dmean_rad_profile     (:,ico) = 0.0
+                  cpatch%dmean_sensible_wc       (ico) = 0.0
+                  cpatch%dmean_vapor_wc          (ico) = 0.0
+                  cpatch%dmean_intercepted_aw    (ico) = 0.0
+                  cpatch%dmean_wshed_wg          (ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
@@ -4484,6 +4489,9 @@ module average_utils
                   cpatch%mmean_rlong_w         (ico) = cpatch%mmean_rlong_w         (ico)  &
                                                      + cpatch%dmean_rlong_w         (ico)  &
                                                      * ndaysi
+                  cpatch%mmean_rad_profile   (:,ico) = cpatch%mmean_rad_profile   (:,ico)  &
+                                                     + cpatch%dmean_rad_profile   (:,ico)  &
+                                                     * ndaysi
                   cpatch%mmean_sensible_wc     (ico) = cpatch%mmean_sensible_wc     (ico)  &
                                                      + cpatch%dmean_sensible_wc     (ico)  &
                                                      * ndaysi
@@ -5288,6 +5296,7 @@ module average_utils
                   cpatch%mmean_wshed_lg          (ico) = 0.0
                   cpatch%mmean_rshort_w          (ico) = 0.0
                   cpatch%mmean_rlong_w           (ico) = 0.0
+                  cpatch%mmean_rad_profile     (:,ico) = 0.0
                   cpatch%mmean_sensible_wc       (ico) = 0.0
                   cpatch%mmean_vapor_wc          (ico) = 0.0
                   cpatch%mmean_intercepted_aw    (ico) = 0.0
@@ -6255,6 +6264,9 @@ module average_utils
                   cpatch%qmean_rlong_w       (t,ico) = cpatch%qmean_rlong_w       (t,ico)  &
                                                      + cpatch%fmean_rlong_w         (ico)  &
                                                      * ndaysi
+                  cpatch%qmean_rad_profile (:,t,ico) = cpatch%qmean_rad_profile (:,t,ico)  &
+                                                     + cpatch%fmean_rad_profile   (:,ico)  &
+                                                     * ndaysi
                   cpatch%qmean_sensible_wc   (t,ico) = cpatch%qmean_sensible_wc   (t,ico)  &
                                                      + cpatch%fmean_sensible_wc     (ico)  &
                                                      * ndaysi
@@ -6992,6 +7004,7 @@ module average_utils
                   cpatch%qmean_wshed_lg            (:,ico) = 0.0
                   cpatch%qmean_rshort_w            (:,ico) = 0.0
                   cpatch%qmean_rlong_w             (:,ico) = 0.0
+                  cpatch%qmean_rad_profile       (:,:,ico) = 0.0
                   cpatch%qmean_sensible_wc         (:,ico) = 0.0
                   cpatch%qmean_vapor_wc            (:,ico) = 0.0
                   cpatch%qmean_intercepted_aw      (:,ico) = 0.0

@@ -4541,7 +4541,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    use ed_max_dims        , only : n_pft         & ! intent(in)
                                  , n_mort        & ! intent(in)
                                  , max_site      & ! intent(in)
-                                 , n_dist_types  ! ! intent(in)
+                                 , n_dist_types  & ! intent(in)
+                                 , n_radprof     ! ! intent(in)
    use hdf5
    use hdf5_coms          , only : file_id       & ! intent(inout)
                                  , dset_id       & ! intent(inout)
@@ -5185,7 +5186,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      2-D variables, dimensions: (n_pft,npatches).                                     !
+   !      2-D variables, dimensions: (13 ,ncohorts).                                       !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
    globdims(1) = 13_8
@@ -5210,7 +5211,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-  
+
 
 
 
@@ -5218,7 +5219,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      2-D variables, dimensions: (n_mort,npatches).                                    !
+   !      2-D variables, dimensions: (n_mort,ncohorts).                                    !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
    globdims(1) = int(n_mort,8)
@@ -5244,7 +5245,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-  
+
 
 
 
@@ -5252,7 +5253,45 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      2-D variables, dimensions: (ndcycle,npatches).                                   !
+   !      2-D variables, dimensions: (n_radprof,ncohorts).                                 !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 2
+   globdims(1) = int(n_radprof,8)
+   chnkdims(1) = int(n_radprof,8)
+   chnkoffs(1) = 0_8
+   memdims (1) = int(n_radprof,8)
+   memsize (1) = int(n_radprof,8)
+   memoffs (1) = 0_8
+   
+   globdims(2) = int(ncohorts_global,8)
+   chnkdims(2) = int(cpatch%ncohorts,8)
+   chnkoffs(2) = int(paco_index - 1,8)
+   memdims (2) = int(cpatch%ncohorts,8)
+   memsize (2) = int(cpatch%ncohorts,8)
+   memoffs (2) = 0_8
+   call hdf_getslab_r(cpatch%rad_profile                                                   &
+                     ,'RAD_PROFILE_CO              ',dsetrank,iparallel,.true. ,foundvar)
+   if (writing_long) then
+      call hdf_getslab_r(cpatch%dmean_rad_profile                                          &
+                        ,'DMEAN_RAD_PROFILE_CO     ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   if (writing_eorq) then
+      call hdf_getslab_r(cpatch%mmean_rad_profile                                          &
+                        ,'MMEAN_RAD_PROFILE_CO     ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      2-D variables, dimensions: (ndcycle,ncohorts).                                   !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
    globdims(1) = int(ndcycle,8)
@@ -5380,6 +5419,43 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
       call hdf_getslab_r(cpatch%qmsqu_vapor_wc                                             &
                         ,'QMSQU_VAPOR_WC_CO         ',dsetrank,iparallel,.false.,foundvar)
    end if
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      3-D variables, dimensions: (n_radprof,ndcycle,ncohorts).                                 !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 3
+   globdims(1) = int(n_radprof,8)
+   chnkdims(1) = int(n_radprof,8)
+   chnkoffs(1) = 0_8
+   memdims (1) = int(n_radprof,8)
+   memsize (1) = int(n_radprof,8)
+   memoffs (1) = 0_8
+   globdims(2) = int(ndcycle,8)
+   chnkdims(2) = int(ndcycle,8)
+   chnkoffs(2) = 0_8
+   memdims (2) = int(ndcycle,8)
+   memsize (2) = int(ndcycle,8)
+   memoffs (2) = 0_8
+   globdims(3) = int(ncohorts_global,8)
+   chnkdims(3) = int(cpatch%ncohorts,8)
+   chnkoffs(3) = int(paco_index - 1,8)
+   memdims (3) = int(cpatch%ncohorts,8)
+   memsize (3) = int(cpatch%ncohorts,8)
+   memoffs (3) = 0_8
+   if (writing_dcyc) then
+      call hdf_getslab_r(cpatch%qmean_rad_profile                                          &
+                        ,'QMEAN_RAD_PROFILE_CO     ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!

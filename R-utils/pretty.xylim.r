@@ -3,7 +3,7 @@
 #     This function creates a expanded range for a variable, expanding the limits by a     #
 # certain factor so it fits a legend.                                                      #
 #------------------------------------------------------------------------------------------#
-pretty.xylim <<- function(u,fracexp=0.40,is.log=FALSE){
+pretty.xylim <<- function(u,fracexp=0.00,is.log=FALSE){
 
    #----- Set lnudge, which is used to create limits when variable "u" is constant. -------#
    if (fracexp != 0.0){

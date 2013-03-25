@@ -16,11 +16,10 @@ graphics.off()
 
 
 #----- Paths. -----------------------------------------------------------------------------#
-main    = "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx" # Main simulation directory.
-here    = file.path(main,"sit_utils")               # This directory.
-
-srcdir  = "/n/home00/mlongo/util/Rsc"               # Source  directory.
-outroot = here                                      # Directory for figures
+main    = "/n/moorcroftfs2/mlongo/EDBRAMS/final_ed/trop_southam/pve+sas" # Main path.
+here    = file.path(main,"sit_utils")          # This path
+srcdir  = "/n/home00/mlongo/util/Rsc"          # Source  directory.
+outroot = here                                 # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -73,12 +72,6 @@ mtext.yadj     =  0.65                # Offset for the y label
 #==========================================================================================#
 #==========================================================================================#
 
-#----- Check that directory main has been set. --------------------------------------------#
-if ( main == "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx"){
-   cat (" Main: ",main,"\n")
-   stop(" Directory main has not been set!!!")
-}#end if
-#------------------------------------------------------------------------------------------#
 
 
 
@@ -122,9 +115,6 @@ jobs             = read.table(file=joborder,skip=3,header=FALSE,comment.char=""
                              ,stringsAsFactors=FALSE)
 names(jobs)      = names.jobs
 njobs            = nrow(jobs)
-jobs$drain       = as.numeric(substring(jobs$run, 7,10)) / 100
-jobs$dtemp       = as.numeric(substring(jobs$run,13,16)) / 100
-jobs$realisation = as.numeric(substring(jobs$run,23,24))
 #------------------------------------------------------------------------------------------#
 
 
@@ -159,27 +149,14 @@ if (ncurr == njobs){
 #------------------------------------------------------------------------------------------#
 #     Find the dimensions.                                                                 #
 #------------------------------------------------------------------------------------------#
-iata            = unique(sort(jobs$iata       ))
-drain           = unique(sort(jobs$drain      ))
-dtemp           = unique(sort(jobs$dtemp      ))
-realisation     = unique(sort(jobs$realisation))
-iphen           = unique(sort(jobs$iphen      ))
-stext           = unique(sort(jobs$istext     ))
-n.iata          = length(iata       )
-n.drain         = length(drain      )
-n.dtemp         = length(dtemp      )
-n.realisation   = length(realisation)
-n.stext         = length(stext      )
-n.iphen         = length(iphen      )
-key.iata        = toupper(iata      )
-key.drain       = paste("r"    ,sprintf("%+3.3i",sort(100*unique(jobs$drain      ))),sep="")
-key.dtemp       = paste("t"    ,sprintf("%+3.3i",sort(100*unique(jobs$dtemp      ))),sep="")
-key.realisation = paste("real" ,sprintf("%2.2i" ,sort(    unique(jobs$realisation))),sep="")
-key.stext       = paste("stext",sprintf("%2.2i" ,sort(    unique(jobs$istext     ))),sep="")
-key.iphen       = c("Evergreen","Deciduous")
-desc.iata       = poilist$longname[match(iata,poilist$iata)]
-desc.stext      = stext.names[stext]
-desc.iphen      = c("Evergreen","Drought deciduous")
+lon             = unique(sort(jobs$lon        ))
+lat             = unique(sort(jobs$lat        ))
+dlon            = median(diff(lon))
+dlat            = median(diff(lat))
+n.lon           = length(lon        )
+n.lat           = length(lat        )
+key.lon         = sprintf("%+06.2f",lon)
+key.lat         = sprintf("%+06.2f",lat)
 #------------------------------------------------------------------------------------------#
 
 
@@ -189,9 +166,8 @@ desc.iphen      = c("Evergreen","Drought deciduous")
 #     Initialise the variables.                                                            #
 #------------------------------------------------------------------------------------------#
 template   = array( data     = NA
-                  , dim      = c(n.drain,n.dtemp,n.realisation,n.iphen,n.iata,n.stext)
-                  , dimnames = list(key.drain,key.dtemp,key.realisation,key.iphen
-                                   ,key.iata,key.stext)
+                  , dim      = c(n.lon,n.lat)
+                  , dimnames = list(key.lon,key.lat)
                   )#end array
 datum      = list ( agb    = template
                   , lai    = template
@@ -228,9 +204,8 @@ jobs$yearn [il[l.sel]] = last$year[l.sel]  ; jobs$yearn [ic[c.sel]] = curr$year[
 
 
 
-keep            = names(jobs) %in% c("drain","dtemp","realisation","iphen","iata","istext"
-                                    ,"yeara","yearz","yearn","status"
-                                    ,"agb","bsa","lai","scb")
+keep            = names(jobs) %in% c("lon","lat","iata","yeara","yearz","yearn","status"
+                                     ,"agb","bsa","lai","scb")
 jobs            = jobs[,keep]
 weird           = is.finite(jobs$lai) & abs(jobs$lai) > 20
 jobs$lai[weird] = NA
@@ -241,13 +216,9 @@ jobs$lai[weird] = NA
 #------------------------------------------------------------------------------------------#
 #     Find the indices to map the data to the arrays.                                      #
 #------------------------------------------------------------------------------------------#
-i.drain             = match(jobs$drain      ,drain      )
-i.dtemp             = match(jobs$dtemp      ,dtemp      )
-i.realisation       = match(jobs$realisation,realisation)
-i.iphen             = match(jobs$iphen      ,iphen      )
-i.iata              = match(jobs$iata       ,iata       )
-i.stext             = match(jobs$istext     ,stext      )
-index               = cbind(i.drain,i.dtemp,i.realisation,i.iphen,i.iata,i.stext)
+i.lon               = match(jobs$lon        ,lon        )
+i.lat               = match(jobs$lat        ,lat        )
+index               = cbind(i.lon,i.lat)
 datum$agb   [index] = jobs$agb
 datum$lai   [index] = jobs$lai
 datum$bsa   [index] = jobs$bsa
@@ -293,49 +264,168 @@ datum$yr.idx[bad.met] = n.level + 6
 datum$yr.idx[crashed] = n.level + 7
 yr.cscheme            = c("grey89",iatlas(n=n.level),"royalblue4","steelblue3","purple3"
                          ,"mediumpurple1","deepskyblue","red3","hotpink")
-ybottom               = rep(0,times=n.level+7)
-ytop                  = rep(1,times=n.level+7)
-xleft                 = seq(from=-1,to=n.level+5)
-xright                = seq(from= 0,to=n.level+6)
-xat                   = seq(from=-1,to=n.level+5)+0.5
-xbrks                 = seq(from=-1,to=n.level+6)+0.5
+ybottom               = rep(0,times=n.level+8)
+ytop                  = rep(1,times=n.level+8)
+xleft                 = seq(from=-1,to=n.level+6)
+xright                = seq(from= 0,to=n.level+7)
+xat                   = seq(from=-1,to=n.level+6)+0.5
+xbrks                 = seq(from=-1,to=n.level+7)+0.5
 xlabel                = c("Initial",yr.brks[-1],"Finish","StState","Extinct"
                          ,"Stopped","MetMiss","Bad Met","Crashed")
 #------------------------------------------------------------------------------------------#
 
 
 
-
-
 #------------------------------------------------------------------------------------------#
-#    Pick a random realisation to send to the user.                                        #
+#      Limits for longitude and latitude.                                                  #
 #------------------------------------------------------------------------------------------#
-use.yr.idx = apply( X      = datum$yr.idx
-                  , FUN    = max
-                  , MARGIN = c(1,2,4,5,6)
-                  , na.rm  = TRUE
-                  )#end use.idx
+limlon = c(min(lon)-0.5*dlon,max(lon)+0.5*dlon)
+limlat = c(min(lat)-0.5*dlat,max(lat)+0.5*dlat)
 #------------------------------------------------------------------------------------------#
-
 
 
 #------------------------------------------------------------------------------------------#
 #      Create the status map for all sites.                                                #
 #------------------------------------------------------------------------------------------#
 cat(" Plot the current status...","\n")
-lo.box = pretty.box(n.iphen*n.iata)
-for (st in 1:n.stext){
+
+#------ Make plot annotation. -------------------------------------------------------------#
+letitre      = paste("Polygon status")
+#------------------------------------------------------------------------------------------#
+
+for (o in 1:nout){
+   #----- Open file. ----------------------------------------------------------------------#
+   fichier = paste(here,"/stt_region.",outform[o],sep="")
+   if(outform[o] == "x11"){
+      X11(width=size$width,height=size$height,pointsize=ptsz)
+   }else if(outform[o] == "png"){
+      png(filename=fichier,width=size$width*depth,height=size$height*depth
+         ,pointsize=ptsz,res=depth)
+   }else if(outform[o] == "eps"){
+      postscript(file=fichier,width=size$width,height=size$height
+                ,pointsize=ptsz,paper=size$paper)
+   }else if(outform[o] == "pdf"){
+      pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+         ,pointsize=ptsz,paper=size$paper)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Save the margins to avoid losing the data. --------------------------------------#
+   par.orig = par(no.readonly = TRUE)
+   mar.orig = par.orig$mar
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Split the plotting window.                                                       #
+   #---------------------------------------------------------------------------------------#
+   layout( mat     = rbind(2,1)
+         , heights = c(3,1)
+         )#end layout
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     First, let's plot the legend.                                                     #
+   #---------------------------------------------------------------------------------------#
+   par(mar=c(3,2,2,2)+0.1)
+   plot.new()
+   plot.window(xlim=range(xleft,xright),ylim=range(ybottom,ytop),xaxs="i",yaxs="i")
+   rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=yr.cscheme)
+   box()
+   axis(side=1,at=xat,srt=45,labels=FALSE)
+   text(x=xat,y=par("usr")[3]-0.6,labels=xlabel,srt=30,adj=1,xpd=TRUE,cex=1.00)
+   title(main="Status",ylab="",xlab="")
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #----- Set the window. -----------------------------------------------------------------#
+   par(mar = c(3.1,3.1,4.1,2.1))
+   plot.new()
+   plot.window(xlim=limlon,ylim=limlat,xaxs="i",yaxs="i")
+   axis(side=1)
+   axis(side=2)
+   box()
+   title(main=letitre,xlab="",ylab="")
+   image(x=lon,y=lat,z=datum$yr.idx,col=yr.cscheme,breaks=xbrks,add=TRUE)
+   southammap()
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Close the device. ---------------------------------------------------------------#
+   if (outform[o] == "x11"){
+      locator(n=1)
+      dev.off()
+   }else{
+      dev.off()
+   }#end if
+   bye = clean.tmp()
+   #---------------------------------------------------------------------------------------#
+}#end for
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Create parameter space maps for all other variables.                                #
+#------------------------------------------------------------------------------------------#
+cat(" Plot the current properties...","\n")
+key.var  = c("lai","bsa","agb","scb")
+desc.var = c("Leaf area index [m2/m2]","Basal area [cm2/m2]"
+            ,"Above-ground biomass [kgC/m2]","Soil carbon [kgC/m2]")
+n.var    = length(key.var)
+for (v in 1:n.var){
+   cat("   - ",desc.var[v],"...","\n")
+   #----- Collapse realisations using the median. -----------------------------------------#
+   this.var       = datum[[key.var[v]]]
+   rien           = ! is.finite(this.var)
+   this.var[rien] = NA
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Break the data into bins.                                                        #
+   #---------------------------------------------------------------------------------------#
+   if (all(is.na(this.var))){
+     var.brks    = c(-1,0,1)
+     n.brks      = length(var.brks)
+     var.cut     = cut(as.numeric(this.var),breaks=var.brks)
+   }else{
+     var.brks    = pretty(this.var,n=ncolours)
+     n.brks      = length(var.brks)
+     var.cut     = cut(this.var,breaks=var.brks)
+   }#end if
+   var.lev     = levels(var.cut)
+   var.idx     = match(var.cut,var.lev) + 0 * this.var
+   var.cscheme = iatlas(n=n.brks-1)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Make the edges. -----------------------------------------------------------------#
+   xleft       = var.brks[-n.brks]
+   xright      = var.brks[     -1]
+   ybottom     = rep(0,times=n.brks)
+   ytop        = rep(1,times=n.brks)
+   xat         = var.brks
+   #---------------------------------------------------------------------------------------#
+
+
    #------ Find the soil texture key and description. -------------------------------------#
-   this.st.key  = key.stext [st]
-   letitre      = paste("Polygon status   --   Soil type: ",desc.stext[st]
-                       ,sep="")
-   lex          = paste("Rainfall change [scale parameter]")
-   ley          = paste("Temperature change [K]")
+   letitre      = paste(desc.var[v])
    #---------------------------------------------------------------------------------------#
 
    for (o in 1:nout){
       #----- Open file. -------------------------------------------------------------------#
-      fichier = paste(here,"/stt_",this.st.key,".",outform[o],sep="")
+      fichier = paste(here,"/",key.var[v],"_region.",outform[o],sep="")
       if(outform[o] == "x11"){
          X11(width=size$width,height=size$height,pointsize=ptsz)
       }else if(outform[o] == "png"){
@@ -361,9 +451,8 @@ for (st in 1:n.stext){
       #------------------------------------------------------------------------------------#
       #      Split the plotting window.                                                    #
       #------------------------------------------------------------------------------------#
-      par(oma = c(0.2,3,4,0))
-      layout( mat     = rbind(lo.box$mat+1,rep(1,times=lo.box$ncol))
-            , heights = c(rep(5/lo.box$nrow,lo.box$nrow),1)
+      layout( mat     = rbind(2,1)
+            , heights = c(4,1)
             )#end layout
       #------------------------------------------------------------------------------------#
 
@@ -372,68 +461,27 @@ for (st in 1:n.stext){
       #------------------------------------------------------------------------------------#
       #     First, let's plot the legend.                                                  #
       #------------------------------------------------------------------------------------#
-      par(mar=c(3,3,2,3)+0.1)
+      par(mar=c(3,3,2,2)+0.1)
       plot.new()
       plot.window(xlim=range(xleft,xright),ylim=range(ybottom,ytop),xaxs="i",yaxs="i")
-      rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=yr.cscheme)
+      rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=var.cscheme)
       box()
-      axis(side=1,at=xat,srt=45,labels=FALSE)
-      text(x=xat,y=par("usr")[3]-0.6,labels=xlabel,srt=30,adj=1,xpd=TRUE,cex=1.1)
-      title(main="Status",ylab="",xlab="")
+      axis(side=1,at=xat)
+      title(main=desc.var[v],xlab="",ylab="")
       #------------------------------------------------------------------------------------#
 
 
 
-      #------------------------------------------------------------------------------------#
-      #     Now we loop over sites and pheonologies.                                       #
-      #------------------------------------------------------------------------------------#
-      k = 0
-      for (ph in 1:n.iphen){
-         for (pl in 1:n.iata){
-            #----- Make the sub-title. ----------------------------------------------------#
-            lesub=paste(desc.iata[pl],desc.iphen[ph],sep=" - ")
-            #------------------------------------------------------------------------------#
-
-            #----- Find out where is this box going, and set up axes and margins. ---------#
-            k       = k + 1
-            left    = (k %% lo.box$ncol) == 1 || lo.box$ncol == 1
-            right   = (k %% lo.box$ncol) == 0
-            top     = k <= lo.box$ncol
-            bottom  = k > (lo.box$nrow - 1) * lo.box$ncol
-            mar.now = c(3 + 1 * bottom,1 + 1 * left,1 + 1 * top,1 + 1 * right) + 0.1
-            if (bottom){
-               xaxt = "s"
-            }else{
-               xaxt = "n"
-            }#end if
-            if (left){
-               yaxt = "s"
-            }else{
-               yaxt = "n"
-            }#end if
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Set the window. --------------------------------------------------------#
-            par(mar = mar.now)
-            image(x=drain,y=dtemp,z=use.yr.idx[,,ph,pl,st],col=yr.cscheme,breaks=xbrks
-                 ,xaxt=xaxt,yaxt=yaxt,main=lesub,xlab="",ylab="")
-            #------------------------------------------------------------------------------#
-         }#end for
-         #---------------------------------------------------------------------------------#
-      }#end for
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Plot the global title.                                                         #
-      #------------------------------------------------------------------------------------#
-      par(las=0)
-      mtext(side=1,text=lex    ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
-      mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
-      mtext(side=3,text=letitre,outer=TRUE,font=2)
+      #----- Set the window. --------------------------------------------------------------#
+      par(mar = c(3.1,3.1,4.1,2.1))
+      plot.new()
+      plot.window(xlim=limlon,ylim=limlat,xaxs="i",yaxs="i")
+      axis(side=1)
+      axis(side=2)
+      box()
+      title(main=letitre,xlab="",ylab="")
+      image(x=lon,y=lat,z=this.var,col=var.cscheme,breaks=var.brks,add=TRUE)
+      southammap()
       #------------------------------------------------------------------------------------#
 
 
@@ -446,189 +494,6 @@ for (st in 1:n.stext){
          dev.off()
       }#end if
       bye = clean.tmp()
-      #------------------------------------------------------------------------------------#
-   }#end for
-   #---------------------------------------------------------------------------------------#
-}#end for
-#------------------------------------------------------------------------------------------#
-
-
-
-
-#------------------------------------------------------------------------------------------#
-#      Create parameter space maps for all other variables.                                #
-#------------------------------------------------------------------------------------------#
-cat(" Plot the current properties...","\n")
-key.var  = c("lai","bsa","agb","scb")
-desc.var = c("Leaf area index [m2/m2]","Basal area [cm2/m2]"
-            ,"Above-ground biomass [kgC/m2]","Soil carbon [kgC/m2]")
-n.var    = length(key.var)
-lo.box = pretty.box(n.iphen*n.iata)
-for (v in 1:n.var){
-   cat("   - ",desc.var[v],"...","\n")
-   #----- Collapse realisations using the median. -----------------------------------------#
-   this.var       = apply( X      = datum[[key.var[v]]]
-                         , MARGIN = c(1,2,4,5,6)
-                         , FUN    = median
-                         , na.rm  = TRUE
-                         )#end apply
-   rien           = ! is.finite(this.var)
-   this.var[rien] = NA
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Break the data into bins.                                                        #
-   #---------------------------------------------------------------------------------------#
-   if (all(is.na(this.var))){
-     var.brks    = c(-1,0,1)
-     n.brks      = length(var.brks)
-     var.cut     = cut(as.numeric(this.var),breaks=var.brks)
-   }else{
-     var.brks    = pretty(this.var,n=ncolours)
-     n.brks      = length(var.brks)
-     var.cut     = cut(this.var,breaks=var.brks)
-   }#end if
-   n.brks      = length(var.brks)
-   var.cut     = cut(this.var,breaks=var.brks)
-   var.lev     = levels(var.cut)
-   var.idx     = match(var.cut,var.lev) + 0 * this.var
-   var.cscheme = iatlas(n=n.brks-1)
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- Make the edges. -----------------------------------------------------------------#
-   xleft       = var.brks[-n.brks]
-   xright      = var.brks[     -1]
-   ybottom     = rep(0,times=n.brks)
-   ytop        = rep(1,times=n.brks)
-   xat         = var.brks
-   #---------------------------------------------------------------------------------------#
-
-
-   for (st in 1:n.stext){
-      #------ Find the soil texture key and description. ----------------------------------#
-      this.st.key  = key.stext [st]
-      letitre      = paste(desc.var[v],"   --   Soil type: ",desc.stext[st],sep="")
-      lex          = paste("Rainfall change [scale parameter]")
-      ley          = paste("Temperature change [K]")
-      #------------------------------------------------------------------------------------#
-
-      for (o in 1:nout){
-         #----- Open file. ----------------------------------------------------------------#
-         fichier = paste(here,"/",key.var[v],"_",this.st.key,".",outform[o],sep="")
-         if(outform[o] == "x11"){
-            X11(width=size$width,height=size$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
-            png(filename=fichier,width=size$width*depth,height=size$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
-            postscript(file=fichier,width=size$width,height=size$height
-                      ,pointsize=ptsz,paper=size$paper)
-         }else if(outform[o] == "pdf"){
-            pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-               ,pointsize=ptsz,paper=size$paper)
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Save the margins to avoid losing the data. --------------------------------#
-         par.orig = par(no.readonly = TRUE)
-         mar.orig = par.orig$mar
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #      Split the plotting window.                                                 #
-         #---------------------------------------------------------------------------------#
-         par(oma = c(0.2,3,4,0))
-         layout( mat     = rbind(lo.box$mat+1,rep(1,times=lo.box$ncol))
-               , heights = c(rep(5/lo.box$nrow,lo.box$nrow),1)
-               )#end layout
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     First, let's plot the legend.                                               #
-         #---------------------------------------------------------------------------------#
-         par(mar=c(3,3,2,3)+0.1)
-         plot.new()
-         plot.window(xlim=range(xleft,xright),ylim=range(ybottom,ytop),xaxs="i",yaxs="i")
-         rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=var.cscheme)
-         box()
-         axis(side=1,at=xat)
-         title(main=desc.var[v],xlab="",ylab="")
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Now we loop over sites and pheonologies.                                    #
-         #---------------------------------------------------------------------------------#
-         k = 0
-         for (ph in 1:n.iphen){
-            for (pl in 1:n.iata){
-               #----- Make the sub-title. -------------------------------------------------#
-               lesub=paste(desc.iata[pl],desc.iphen[ph],sep=" - ")
-               #---------------------------------------------------------------------------#
-
-               #----- Find out where is this box going, and set up axes and margins. ------#
-               k       = k + 1
-               left    = (k %% lo.box$ncol) == 1 || lo.box$ncol == 1
-               right   = (k %% lo.box$ncol) == 0
-               top     = k <= lo.box$ncol
-               bottom  = k > (lo.box$nrow - 1) * lo.box$ncol
-               mar.now = c(3 + 1 * bottom,1 + 1 * left,1 + 1 * top,1 + 1 * right) + 0.1
-               if (bottom){
-                  xaxt = "s"
-               }else{
-                  xaxt = "n"
-               }#end if
-               if (left){
-                  yaxt = "s"
-               }else{
-                  yaxt = "n"
-               }#end if
-               #---------------------------------------------------------------------------#
-
-
-
-               #----- Set the window. -----------------------------------------------------#
-               par(mar = mar.now)
-               image(x=drain,y=dtemp,z=this.var[,,ph,pl,st],col=var.cscheme
-                    ,breaks=var.brks,xaxt=xaxt,yaxt=yaxt,main=lesub,xlab="",ylab="")
-               #---------------------------------------------------------------------------#
-            }#end for
-            #------------------------------------------------------------------------------#
-         }#end for
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Plot the global title.                                                      #
-         #---------------------------------------------------------------------------------#
-         par(las=0)
-         mtext(side=1,text=lex    ,outer=TRUE,adj=mtext.xadj,padj=mtext.xoff)
-         mtext(side=2,text=ley    ,outer=TRUE,adj=mtext.yadj,padj=mtext.yoff)
-         mtext(side=3,text=letitre,outer=TRUE,font=2)
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
-            locator(n=1)
-            dev.off()
-         }else{
-            dev.off()
-         }#end if
-         bye = clean.tmp()
-         #---------------------------------------------------------------------------------#
-      }#end for
       #------------------------------------------------------------------------------------#
    }#end for
    #---------------------------------------------------------------------------------------#

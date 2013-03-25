@@ -599,6 +599,12 @@ do
       metcycf=2006
       imetavg=1
       ;;
+   Brasilia)
+      metdriverdb=${fullscen}'/Brasilia/Brasilia_HEADER'
+      metcyc1=2006
+      metcycf=2011
+      imetavg=1
+      ;;
    Caxiuana)
       metdriverdb=${fullscen}'/Caxiuana/Caxiuana_HEADER'
       metcyc1=1999

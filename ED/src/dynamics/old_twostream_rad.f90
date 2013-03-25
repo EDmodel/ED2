@@ -6,13 +6,15 @@
 ! randomly distributed).  The crown area will be also considered when the user wants it.   !
 !------------------------------------------------------------------------------------------!
 subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai,canopy_area &
-                             ,par_beam_flip,par_diff_flip,sw_abs_beam_flip                 &
+                             ,radprof_flip,par_beam_flip,par_diff_flip,sw_abs_beam_flip    &
                              ,sw_abs_diff_flip,dw_parlo_beam,dw_parlo_diff                 &
                              ,uw_parhi_diff,dw_nirlo_beam,dw_nirlo_diff,uw_nirhi_diff      &
                              ,par_beam_level,par_diff_level,light_level,light_beam_level   &
                              ,light_diff_level)
 
-   use ed_max_dims          , only : n_pft                   ! ! intent(in)
+   use ed_max_dims          , only : n_pft                   & ! intent(in)
+                                   , n_radprof               ! ! intent(in)
+   use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : leaf_backscatter_nir    & ! intent(in)
                                    , leaf_backscatter_vis    & ! intent(in)
                                    , leaf_scatter_nir        & ! intent(in)
@@ -33,107 +35,110 @@ subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai,c
                                    , cosz_min8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, dimension(ncoh)       , intent(in)  :: pft
-   integer                        , intent(in)  :: ncoh
-   real(kind=8), dimension(ncoh)  , intent(in)  :: lai
-   real(kind=8), dimension(ncoh)  , intent(in)  :: wai
-   real(kind=8), dimension(ncoh)  , intent(in)  :: canopy_area
-   real                           , intent(in)  :: salbedo_par
-   real                           , intent(in)  :: salbedo_nir
-   real                           , intent(in)  :: scosaoi
-   real, dimension(ncoh)          , intent(out) :: par_beam_flip
-   real, dimension(ncoh)          , intent(out) :: par_diff_flip
-   real, dimension(ncoh)          , intent(out) :: sw_abs_beam_flip
-   real, dimension(ncoh)          , intent(out) :: sw_abs_diff_flip
-   real                           , intent(out) :: uw_parhi_diff
-   real                           , intent(out) :: uw_nirhi_diff
-   real                           , intent(out) :: dw_parlo_beam
-   real                           , intent(out) :: dw_parlo_diff
-   real                           , intent(out) :: dw_nirlo_beam
-   real                           , intent(out) :: dw_nirlo_diff
-   real(kind=8), dimension(ncoh)  , intent(out) :: par_beam_level
-   real(kind=8), dimension(ncoh)  , intent(out) :: par_diff_level
-   real(kind=8), dimension(ncoh)  , intent(out) :: light_level
-   real(kind=8), dimension(ncoh)  , intent(out) :: light_beam_level
-   real(kind=8), dimension(ncoh)  , intent(out) :: light_diff_level
+   integer, dimension(ncoh)       , intent(in)    :: pft
+   integer                        , intent(in)    :: ncoh
+   real(kind=8), dimension(ncoh)  , intent(in)    :: lai
+   real(kind=8), dimension(ncoh)  , intent(in)    :: wai
+   real(kind=8), dimension(ncoh)  , intent(in)    :: canopy_area
+   real                           , intent(in)    :: salbedo_par
+   real                           , intent(in)    :: salbedo_nir
+   real                           , intent(in)    :: scosaoi
+   real, dimension(n_radprof,ncoh), intent(inout) :: radprof_flip
+   real, dimension(ncoh)          , intent(out)   :: par_beam_flip
+   real, dimension(ncoh)          , intent(out)   :: par_diff_flip
+   real, dimension(ncoh)          , intent(out)   :: sw_abs_beam_flip
+   real, dimension(ncoh)          , intent(out)   :: sw_abs_diff_flip
+   real                           , intent(out)   :: uw_parhi_diff
+   real                           , intent(out)   :: uw_nirhi_diff
+   real                           , intent(out)   :: dw_parlo_beam
+   real                           , intent(out)   :: dw_parlo_diff
+   real                           , intent(out)   :: dw_nirlo_beam
+   real                           , intent(out)   :: dw_nirlo_diff
+   real(kind=8), dimension(ncoh)  , intent(out)   :: par_beam_level
+   real(kind=8), dimension(ncoh)  , intent(out)   :: par_diff_level
+   real(kind=8), dimension(ncoh)  , intent(out)   :: light_level
+   real(kind=8), dimension(ncoh)  , intent(out)   :: light_beam_level
+   real(kind=8), dimension(ncoh)  , intent(out)   :: light_diff_level
    !----- Local variables -----------------------------------------------------------------!
-   integer     , dimension(2*ncoh)              :: indx
-   integer                                      :: il
-   integer                                      :: ipft
-   integer                                      :: ncoh2
-   integer                                      :: iband
-   integer                                      :: i
-   integer                                      :: j
-   integer                                      :: ind
-   real(kind=8), dimension(ncoh)                :: expkl_top
-   real(kind=8), dimension(ncoh)                :: expkl_bot
-   real(kind=8), dimension(ncoh)                :: expamk_top
-   real(kind=8), dimension(ncoh)                :: expamk_bot
-   real(kind=8), dimension(ncoh)                :: expapk_top
-   real(kind=8), dimension(ncoh)                :: expapk_bot
-   real(kind=8), dimension(ncoh)                :: a_top
-   real(kind=8), dimension(ncoh)                :: a_bot
-   real(kind=8), dimension(ncoh)                :: b_top
-   real(kind=8), dimension(ncoh)                :: b_bot
-   real(kind=8), dimension(ncoh)                :: c_top
-   real(kind=8), dimension(ncoh)                :: c_bot
-   real(kind=8), dimension(ncoh)                :: f_top
-   real(kind=8), dimension(ncoh)                :: f_bot
-   real(kind=8), dimension(ncoh)                :: g_top
-   real(kind=8), dimension(ncoh)                :: g_bot
-   real(kind=8), dimension(ncoh)                :: h_top
-   real(kind=8), dimension(ncoh)                :: h_bot
-   real(kind=8), dimension(ncoh)                :: beam_bot
-   real(kind=8), dimension(ncoh)                :: beam_bot_crown
-   real(kind=8), dimension(ncoh)                :: tai
-   real(kind=8), dimension(ncoh)                :: eff_tai
-   real(kind=8), dimension(ncoh)                :: lambda
-   real(kind=8), dimension(ncoh)                :: beam_backscatter
-   real(kind=8), dimension(ncoh)                :: cohort_scatter_vis
-   real(kind=8), dimension(ncoh)                :: cohort_backscatter_vis
-   real(kind=8), dimension(ncoh)                :: cohort_scatter_nir
-   real(kind=8), dimension(ncoh)                :: cohort_backscatter_nir
-   real(kind=8), dimension(ncoh)                :: cohort_scatter
-   real(kind=8), dimension(ncoh)                :: cohort_backscatter
-   real(kind=8), dimension(ncoh)                :: cohort_clumping
-   real(kind=8), dimension(ncoh+1)              :: upward_par_beam
-   real(kind=8), dimension(ncoh+1)              :: upward_par_diff
-   real(kind=8), dimension(ncoh+1)              :: upward_nir_beam
-   real(kind=8), dimension(ncoh+1)              :: upward_nir_diff
-   real(kind=8), dimension(ncoh+1)              :: downward_nir_beam
-   real(kind=8), dimension(ncoh+1)              :: downward_nir_diff
-   real(kind=8), dimension(ncoh+1)              :: downward_par_beam
-   real(kind=8), dimension(ncoh+1)              :: downward_par_diff
-   real(kind=8), dimension(2*ncoh)              :: mastervec_beam
-   real(kind=8), dimension(2*ncoh)              :: masveccp_beam
-   real(kind=8), dimension(2*ncoh)              :: mastervec_diff
-   real(kind=8), dimension(2*ncoh)              :: masveccp_diff
-   real(kind=8), dimension(2*ncoh,2)            :: matal
-   real(kind=8), dimension(2*ncoh,5)            :: mastermat
-   real(kind=8), dimension(2*ncoh,2*ncoh)       :: masmatcp
-   real(kind=8)                                 :: albedo
-   real(kind=8)                                 :: cosz
-   real(kind=8)                                 :: cosaoi
-   real(kind=8)                                 :: eta
-   real(kind=8)                                 :: zeta
-   real(kind=8)                                 :: iota
-   real(kind=8)                                 :: exk
-   real(kind=8)                                 :: exki
-   real(kind=8)                                 :: zetai
-   real(kind=8)                                 :: d
-   real(kind=8)                                 :: rhoo
-   real(kind=8)                                 :: psi
-   real(kind=8)                                 :: sigma
-   real(kind=8)                                 :: source_bot
-   real(kind=8)                                 :: source_top
-   real(kind=8)                                 :: beam_top
-   real(kind=8)                                 :: diff_top
-   real(kind=8)                                 :: weight_leaf
-   real(kind=8)                                 :: weight_wood
-   real(kind=8)                                 :: proj_area
-   real(kind=8)                                 :: snglscat_alb
-   real                                         :: uw_parhi_beam
-   real                                         :: uw_nirhi_beam
+   integer     , dimension(2*ncoh)                :: indx
+   integer                                        :: il
+   integer                                        :: ipft
+   integer                                        :: ncoh2
+   integer                                        :: iband
+   integer                                        :: i
+   integer                                        :: j
+   integer                                        :: ind
+   real(kind=8), dimension(ncoh)                  :: expkl_top
+   real(kind=8), dimension(ncoh)                  :: expkl_bot
+   real(kind=8), dimension(ncoh)                  :: expamk_top
+   real(kind=8), dimension(ncoh)                  :: expamk_bot
+   real(kind=8), dimension(ncoh)                  :: expapk_top
+   real(kind=8), dimension(ncoh)                  :: expapk_bot
+   real(kind=8), dimension(ncoh)                  :: a_top
+   real(kind=8), dimension(ncoh)                  :: a_bot
+   real(kind=8), dimension(ncoh)                  :: b_top
+   real(kind=8), dimension(ncoh)                  :: b_bot
+   real(kind=8), dimension(ncoh)                  :: c_top
+   real(kind=8), dimension(ncoh)                  :: c_bot
+   real(kind=8), dimension(ncoh)                  :: f_top
+   real(kind=8), dimension(ncoh)                  :: f_bot
+   real(kind=8), dimension(ncoh)                  :: g_top
+   real(kind=8), dimension(ncoh)                  :: g_bot
+   real(kind=8), dimension(ncoh)                  :: h_top
+   real(kind=8), dimension(ncoh)                  :: h_bot
+   real(kind=8), dimension(ncoh)                  :: beam_bot
+   real(kind=8), dimension(ncoh)                  :: beam_bot_crown
+   real(kind=8), dimension(ncoh)                  :: tai
+   real(kind=8), dimension(ncoh)                  :: eff_tai
+   real(kind=8), dimension(ncoh)                  :: lambda
+   real(kind=8), dimension(ncoh)                  :: beam_backscatter
+   real(kind=8), dimension(ncoh)                  :: cohort_scatter_vis
+   real(kind=8), dimension(ncoh)                  :: cohort_backscatter_vis
+   real(kind=8), dimension(ncoh)                  :: cohort_scatter_nir
+   real(kind=8), dimension(ncoh)                  :: cohort_backscatter_nir
+   real(kind=8), dimension(ncoh)                  :: cohort_scatter
+   real(kind=8), dimension(ncoh)                  :: cohort_backscatter
+   real(kind=8), dimension(ncoh)                  :: cohort_clumping
+   real(kind=8), dimension(ncoh+1)                :: upward_par_beam
+   real(kind=8), dimension(ncoh+1)                :: upward_par_diff
+   real(kind=8), dimension(ncoh+1)                :: upward_nir_beam
+   real(kind=8), dimension(ncoh+1)                :: upward_nir_diff
+   real(kind=8), dimension(ncoh+1)                :: downward_nir_beam
+   real(kind=8), dimension(ncoh+1)                :: downward_nir_diff
+   real(kind=8), dimension(ncoh+1)                :: downward_par_beam
+   real(kind=8), dimension(ncoh+1)                :: downward_par_diff
+   real(kind=8), dimension(2*ncoh)                :: mastervec_beam
+   real(kind=8), dimension(2*ncoh)                :: masveccp_beam
+   real(kind=8), dimension(2*ncoh)                :: mastervec_diff
+   real(kind=8), dimension(2*ncoh)                :: masveccp_diff
+   real(kind=8), dimension(2*ncoh,2)              :: matal
+   real(kind=8), dimension(2*ncoh,5)              :: mastermat
+   real(kind=8), dimension(2*ncoh,2*ncoh)         :: masmatcp
+   real(kind=8)                                   :: albedo
+   real(kind=8)                                   :: cosz
+   real(kind=8)                                   :: cosaoi
+   real(kind=8)                                   :: eta
+   real(kind=8)                                   :: zeta
+   real(kind=8)                                   :: iota
+   real(kind=8)                                   :: exk
+   real(kind=8)                                   :: exki
+   real(kind=8)                                   :: zetai
+   real(kind=8)                                   :: d
+   real(kind=8)                                   :: rhoo
+   real(kind=8)                                   :: psi
+   real(kind=8)                                   :: sigma
+   real(kind=8)                                   :: source_bot
+   real(kind=8)                                   :: source_top
+   real(kind=8)                                   :: beam_top
+   real(kind=8)                                   :: diff_top
+   real(kind=8)                                   :: weight_leaf
+   real(kind=8)                                   :: weight_wood
+   real(kind=8)                                   :: proj_area
+   real(kind=8)                                   :: snglscat_alb
+   real                                           :: uw_parhi_beam
+   real                                           :: uw_nirhi_beam
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4)                  , external       :: sngloff
    !---------------------------------------------------------------------------------------!
 
    
@@ -497,24 +502,38 @@ subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai,c
                               / ( par_diff_norm + nir_beam_norm )
       !------------------------------------------------------------------------------------!
 
-      par_beam_flip(il)    = sngl( downward_par_beam       (il+1)                          &
-                                 - downward_par_beam       (il  )                          &
-                                 + upward_par_beam         (il  )                          &
-                                 - upward_par_beam         (il+1)  )
-      par_diff_flip(il)    = sngl( downward_par_diff (il+1)                                &
-                                    - downward_par_diff (il  )                             &
-                                    + upward_par_diff   (il  )                             &
-                                    - upward_par_diff   (il+1)  )
+      par_beam_flip(il)    = sngloff(  downward_par_beam       (il+1)                      &
+                                     - downward_par_beam       (il  )                      &
+                                     + upward_par_beam         (il  )                      &
+                                     - upward_par_beam         (il+1)                      &
+                                     , tiny_offset )
+      par_diff_flip(il)    = sngloff(  downward_par_diff (il+1)                            &
+                                     - downward_par_diff (il  )                            &
+                                     + upward_par_diff   (il  )                            &
+                                     - upward_par_diff   (il+1)                            &
+                                     , tiny_offset )
 
-      sw_abs_beam_flip(il) = par_beam_flip(il)    + sngl( downward_nir_beam   (il+1)       &
-                                                        - downward_nir_beam   (il  )       &
-                                                        + upward_nir_beam     (il  )       &
-                                                        - upward_nir_beam     (il+1) )
+      radprof_flip(1,il)   = sngloff(  downward_par_beam (il), tiny_offset)
+      radprof_flip(2,il)   = sngloff(  upward_par_beam   (il), tiny_offset)
+      radprof_flip(3,il)   = sngloff(  downward_par_diff (il), tiny_offset)
+      radprof_flip(4,il)   = sngloff(  upward_par_diff   (il), tiny_offset)
+      radprof_flip(5,il)   = sngloff(  downward_nir_beam (il), tiny_offset)
+      radprof_flip(6,il)   = sngloff(  upward_nir_beam   (il), tiny_offset)
+      radprof_flip(7,il)   = sngloff(  downward_nir_diff (il), tiny_offset)
+      radprof_flip(8,il)   = sngloff(  upward_nir_diff   (il), tiny_offset)
 
-      sw_abs_diff_flip(il) = par_diff_flip(il) + sngl( downward_nir_diff(il+1)             &
-                                                     - downward_nir_diff(il  )             &
-                                                     + upward_nir_diff  (il  )             &
-                                                     - upward_nir_diff  (il+1) )
+
+      sw_abs_beam_flip(il) = par_beam_flip(il) + sngloff(  downward_nir_beam   (il+1)      &
+                                                         - downward_nir_beam   (il  )      &
+                                                         + upward_nir_beam     (il  )      &
+                                                         - upward_nir_beam     (il+1)      &
+                                                         , tiny_offset )
+
+      sw_abs_diff_flip(il) = par_diff_flip(il) + sngloff(  downward_nir_diff(il+1)         &
+                                                         - downward_nir_diff(il  )         &
+                                                         + upward_nir_diff  (il  )         &
+                                                         - upward_nir_diff  (il+1)         &
+                                                         , tiny_offset )
 
       !----- Ensure that we don't get any negative radiation... ---------------------------!
       par_beam_flip   (il)  = max(0.0,par_beam_flip   (il) )
@@ -754,7 +773,9 @@ end subroutine mprove
 ! effect of leaves, and, if that's the user's will, the branches.                          !
 !------------------------------------------------------------------------------------------!
 subroutine old_lw_two_stream(semgs,sT_grnd,rlong_top4,ncoh, pft,lai,wai,canopy_area        &
-                            ,leaf_temp,wood_temp,tir_flip,dw_tirlo,uw_tirlo,uw_tirhi)
+                            ,leaf_temp,wood_temp,radprof_flip,tir_flip,dw_tirlo,uw_tirlo   &
+                            ,uw_tirhi)
+   use ed_max_dims           , only : n_radprof            ! ! intent(in)
    use canopy_radiation_coms , only : leaf_emiss_tir       & ! intent(in)
                                     , wood_emiss_tir       & ! intent(in)
                                     , leaf_backscatter_tir & ! intent(in)
@@ -766,75 +787,76 @@ subroutine old_lw_two_stream(semgs,sT_grnd,rlong_top4,ncoh, pft,lai,wai,canopy_a
    use rk4_coms              , only : tiny_offset          ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                      , intent(in)  :: ncoh        ! # of cohorts
-   real                         , intent(in)  :: semgs       ! Gnd. emmissivity
-   real                         , intent(in)  :: st_grnd     ! Gnd. temperature
-   real(kind=4)                 , intent(in)  :: rlong_top4
-   integer     , dimension(ncoh), intent(in)  :: pft         ! Plant functional type
-   real(kind=8), dimension(ncoh), intent(in)  :: lai         ! Leaf Area Index
-   real(kind=8), dimension(ncoh), intent(in)  :: wai         ! Wood Area Index
-   real(kind=8), dimension(ncoh), intent(in)  :: leaf_temp   ! Leaf temperature
-   real(kind=8), dimension(ncoh), intent(in)  :: wood_temp   ! Leaf temperature
-   real(kind=8), dimension(ncoh), intent(in)  :: canopy_area ! canopy area
-   real(kind=4), dimension(ncoh), intent(out) :: tir_flip
-   real(kind=4)                 , intent(out) :: dw_tirlo
-   real(kind=4)                 , intent(out) :: uw_tirlo
-   real(kind=4)                 , intent(out) :: uw_tirhi
+   integer                                , intent(in)    :: ncoh        ! # of cohorts
+   real                                   , intent(in)    :: semgs       ! Gnd. emmissivity
+   real                                   , intent(in)    :: st_grnd     ! Gnd. temperature
+   real(kind=4)                           , intent(in)    :: rlong_top4
+   integer     , dimension(ncoh)          , intent(in)    :: pft         ! Plant func. type
+   real(kind=8), dimension(ncoh)          , intent(in)    :: lai         ! Leaf Area Index
+   real(kind=8), dimension(ncoh)          , intent(in)    :: wai         ! Wood Area Index
+   real(kind=8), dimension(ncoh)          , intent(in)    :: leaf_temp   ! Leaf temperature
+   real(kind=8), dimension(ncoh)          , intent(in)    :: wood_temp   ! Leaf temperature
+   real(kind=8), dimension(ncoh)          , intent(in)    :: canopy_area ! canopy area
+   real(kind=4), dimension(n_radprof,ncoh), intent(inout) :: radprof_flip
+   real(kind=4), dimension(ncoh)          , intent(out)   :: tir_flip
+   real(kind=4)                           , intent(out)   :: dw_tirlo
+   real(kind=4)                           , intent(out)   :: uw_tirlo
+   real(kind=4)                           , intent(out)   :: uw_tirhi
    !----- Local variables. ----------------------------------------------------------------!
-   integer     , dimension(2*ncoh)            :: indx
-   integer                                    :: ncoh2
-   integer                                    :: il
-   integer                                    :: i
-   integer                                    :: j
-   integer                                    :: ind
-   integer                                    :: ipft
-   real(kind=8), dimension(2*ncoh,2*ncoh)     :: masmatcp
-   real(kind=8), dimension(2*ncoh,5)          :: mastermat
-   real(kind=8), dimension(2*ncoh,2)          :: matal
-   real(kind=8), dimension(2*ncoh)            :: mastervec_surf
-   real(kind=8), dimension(2*ncoh)            :: mastervec_incid
-   real(kind=8), dimension(ncoh+1)            :: explai
-   real(kind=8), dimension(ncoh+1)            :: exmlai
-   real(kind=8), dimension(ncoh+1)            :: downward_lw_incid
-   real(kind=8), dimension(ncoh+1)            :: downward_lw_surf
-   real(kind=8), dimension(ncoh+1)            :: upward_lw_incid
-   real(kind=8), dimension(ncoh+1)            :: upward_lw_surf
-   real(kind=8), dimension(ncoh)              :: source_lw
-   real(kind=8), dimension(ncoh)              :: forcing_lw
-   real(kind=8), dimension(ncoh)              :: A_dw
-   real(kind=8), dimension(ncoh)              :: B_dw
-   real(kind=8), dimension(ncoh)              :: C_dw
-   real(kind=8), dimension(ncoh)              :: D_dw
-   real(kind=8), dimension(ncoh)              :: A_uw
-   real(kind=8), dimension(ncoh)              :: B_uw
-   real(kind=8), dimension(ncoh)              :: C_uw
-   real(kind=8), dimension(ncoh)              :: D_uw
-   real(kind=8), dimension(ncoh)              :: E_uw
-   real(kind=8), dimension(ncoh)              :: F_uw
-   real(kind=8)                               :: emgs
-   real(kind=8)                               :: T_grnd
-   real(kind=8)                               :: zeta
-   real(kind=8)                               :: eta
-   real(kind=8)                               :: exk
-   real(kind=8)                               :: zetai
-   real(kind=8)                               :: exki
-   real(kind=8)                               :: d
-   real(kind=8)                               :: lw_v_surf_tmp
-   real(kind=8)                               :: lw_v_incid_tmp
-   real(kind=8)                               :: cohort_emis
-   real(kind=8)                               :: cohort_backscatter
-   real(kind=8)                               :: cohort_temp_four
-   real(kind=8)                               :: cohort_tai
-   real        , dimension(ncoh)              :: lw_v_surf
-   real        , dimension(ncoh)              :: lw_v_incid
-   real                                       :: downward_lw_below_surf
-   real                                       :: upward_lw_above_surf
-   real                                       :: upward_lw_below_surf
-   real                                       :: downward_lw_below_incid
-   real                                       :: upward_lw_above_incid
-   real                                       :: upward_lw_below_incid
+   integer     , dimension(2*ncoh)                        :: indx
+   integer                                                :: ncoh2
+   integer                                                :: il
+   integer                                                :: i
+   integer                                                :: j
+   integer                                                :: ind
+   integer                                                :: ipft
+   real(kind=8), dimension(2*ncoh,2*ncoh)                 :: masmatcp
+   real(kind=8), dimension(2*ncoh,5)                      :: mastermat
+   real(kind=8), dimension(2*ncoh,2)                      :: matal
+   real(kind=8), dimension(2*ncoh)                        :: mastervec_surf
+   real(kind=8), dimension(2*ncoh)                        :: mastervec_incid
+   real(kind=8), dimension(ncoh+1)                        :: explai
+   real(kind=8), dimension(ncoh+1)                        :: exmlai
+   real(kind=8), dimension(ncoh+1)                        :: downward_lw_incid
+   real(kind=8), dimension(ncoh+1)                        :: downward_lw_surf
+   real(kind=8), dimension(ncoh+1)                        :: upward_lw_incid
+   real(kind=8), dimension(ncoh+1)                        :: upward_lw_surf
+   real(kind=8), dimension(ncoh)                          :: source_lw
+   real(kind=8), dimension(ncoh)                          :: forcing_lw
+   real(kind=8), dimension(ncoh)                          :: A_dw
+   real(kind=8), dimension(ncoh)                          :: B_dw
+   real(kind=8), dimension(ncoh)                          :: C_dw
+   real(kind=8), dimension(ncoh)                          :: D_dw
+   real(kind=8), dimension(ncoh)                          :: A_uw
+   real(kind=8), dimension(ncoh)                          :: B_uw
+   real(kind=8), dimension(ncoh)                          :: C_uw
+   real(kind=8), dimension(ncoh)                          :: D_uw
+   real(kind=8), dimension(ncoh)                          :: E_uw
+   real(kind=8), dimension(ncoh)                          :: F_uw
+   real(kind=8)                                           :: emgs
+   real(kind=8)                                           :: T_grnd
+   real(kind=8)                                           :: zeta
+   real(kind=8)                                           :: eta
+   real(kind=8)                                           :: exk
+   real(kind=8)                                           :: zetai
+   real(kind=8)                                           :: exki
+   real(kind=8)                                           :: d
+   real(kind=8)                                           :: lw_v_surf_tmp
+   real(kind=8)                                           :: lw_v_incid_tmp
+   real(kind=8)                                           :: cohort_emis
+   real(kind=8)                                           :: cohort_backscatter
+   real(kind=8)                                           :: cohort_temp_four
+   real(kind=8)                                           :: cohort_tai
+   real        , dimension(ncoh)                          :: lw_v_surf
+   real        , dimension(ncoh)                          :: lw_v_incid
+   real                                                   :: downward_lw_below_surf
+   real                                                   :: upward_lw_above_surf
+   real                                                   :: upward_lw_below_surf
+   real                                                   :: downward_lw_below_incid
+   real                                                   :: upward_lw_above_incid
+   real                                                   :: upward_lw_below_incid
    !----- External functions. -------------------------------------------------------------!
-   real(kind=4), external                     :: sngloff
+   real(kind=4), external                                 :: sngloff
    !---------------------------------------------------------------------------------------!
 
 
@@ -1003,13 +1025,17 @@ subroutine old_lw_two_stream(semgs,sT_grnd,rlong_top4,ncoh, pft,lai,wai,canopy_a
    upward_lw_incid(1)        = (1.0d0-emgs) * downward_lw_incid(1)
 
    do il = 1,ncoh
-      lw_v_surf_tmp  = downward_lw_surf(il+1)  - downward_lw_surf(il)                      &
-                     + upward_lw_surf(il)  - upward_lw_surf(il+1)
-      lw_v_incid_tmp = downward_lw_incid(il+1) - downward_lw_incid(il)                     &
-                     + upward_lw_incid(il) - upward_lw_incid(il+1)
-      lw_v_surf(il)  = sngloff(lw_v_surf_tmp , tiny_num8)
-      lw_v_incid(il) = sngloff(lw_v_incid_tmp, tiny_num8)
-      tir_flip(il)   = lw_v_surf(il) + lw_v_incid(il)
+      lw_v_surf_tmp       = downward_lw_surf(il+1)  - downward_lw_surf(il)                 &
+                          + upward_lw_surf(il)  - upward_lw_surf(il+1)
+      lw_v_incid_tmp      = downward_lw_incid(il+1) - downward_lw_incid(il)                &
+                          + upward_lw_incid(il) - upward_lw_incid(il+1)
+      lw_v_surf(il)       = sngloff(lw_v_surf_tmp , tiny_num8)
+      lw_v_incid(il)      = sngloff(lw_v_incid_tmp, tiny_num8)
+      tir_flip(il)        = lw_v_surf(il) + lw_v_incid(il)
+      radprof_flip( 9,il) = sngloff( downward_lw_surf(il) + downward_lw_incid(il)          &
+                                   , tiny_num8 )
+      radprof_flip(10,il) = sngloff( upward_lw_surf  (il) + upward_lw_incid  (il)          &
+                                   , tiny_num8 )
    end do
 
    downward_lw_below_surf  = sngloff(downward_lw_surf(1)    , tiny_num8)

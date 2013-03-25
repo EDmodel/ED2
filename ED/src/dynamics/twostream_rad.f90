@@ -17,8 +17,9 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,leaf_temp  &
-                        ,wood_temp,tir_flip,dw_tirlo,uw_tirlo,uw_tirhi)
-   use ed_max_dims          , only : n_pft                   ! ! intent(in)
+                        ,wood_temp,radprof_flip,tir_flip,dw_tirlo,uw_tirlo,uw_tirhi)
+   use ed_max_dims          , only : n_pft                   & ! intent(in)
+                                   , n_radprof               ! ! intent(in)
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : clumping_factor         & ! intent(in)
                                    , orient_factor           & ! intent(in)
@@ -34,57 +35,58 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4)                              , intent(in)  :: grnd_emiss4
-   real(kind=4)                              , intent(in)  :: grnd_temp4
-   real(kind=4)                              , intent(in)  :: rlong_top4
-   integer                                   , intent(in)  :: ncoh
-   integer     , dimension(ncoh)             , intent(in)  :: pft
-   real(kind=8), dimension(ncoh)             , intent(in)  :: lai
-   real(kind=8), dimension(ncoh)             , intent(in)  :: wai
-   real(kind=8), dimension(ncoh)             , intent(in)  :: cai
-   real(kind=8), dimension(ncoh)             , intent(in)  :: leaf_temp
-   real(kind=8), dimension(ncoh)             , intent(in)  :: wood_temp
-   real(kind=4), dimension(ncoh)             , intent(out) :: tir_flip
-   real(kind=4)                              , intent(out) :: dw_tirlo
-   real(kind=4)                              , intent(out) :: uw_tirlo
-   real(kind=4)                              , intent(out) :: uw_tirhi
+   real(kind=4)                              , intent(in)    :: grnd_emiss4
+   real(kind=4)                              , intent(in)    :: grnd_temp4
+   real(kind=4)                              , intent(in)    :: rlong_top4
+   integer                                   , intent(in)    :: ncoh
+   integer     , dimension(ncoh)             , intent(in)    :: pft
+   real(kind=8), dimension(ncoh)             , intent(in)    :: lai
+   real(kind=8), dimension(ncoh)             , intent(in)    :: wai
+   real(kind=8), dimension(ncoh)             , intent(in)    :: cai
+   real(kind=8), dimension(ncoh)             , intent(in)    :: leaf_temp
+   real(kind=8), dimension(ncoh)             , intent(in)    :: wood_temp
+   real(kind=4), dimension(n_radprof,ncoh)   , intent(inout) :: radprof_flip
+   real(kind=4), dimension(ncoh)             , intent(out)   :: tir_flip
+   real(kind=4)                              , intent(out)   :: dw_tirlo
+   real(kind=4)                              , intent(out)   :: uw_tirlo
+   real(kind=4)                              , intent(out)   :: uw_tirhi
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                                 :: ipft
-   integer                                                 :: nsiz
-   integer                                                 :: i
-   integer                                                 :: im1
-   integer                                                 :: ip1
-   integer                                                 :: i2
-   integer                                                 :: i2p1
-   integer                                                 :: i2m1
-   integer                                                 :: i2p2
-   logical                                                 :: sing
-   real(kind=8), dimension(ncoh+1)                         :: black
-   real(kind=8), dimension(ncoh+1)                         :: expl_plus
-   real(kind=8), dimension(ncoh+1)                         :: expl_minus
-   real(kind=8), dimension(ncoh+1)                         :: gamm_plus
-   real(kind=8), dimension(ncoh+1)                         :: gamm_minus
-   real(kind=8), dimension(ncoh+1)                         :: down
-   real(kind=8), dimension(ncoh+1)                         :: up
-   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: mmat
-   real(kind=8), dimension(2*ncoh+2)                       :: yvec
-   real(kind=8), dimension(2*ncoh+2)                       :: xvec
-   real(kind=8), dimension(ncoh+1)                         :: elai
-   real(kind=8), dimension(ncoh+1)                         :: etai
-   real(kind=8), dimension(ncoh+1)                         :: mu
-   real(kind=8), dimension(ncoh+1)                         :: leaf_weight
-   real(kind=8), dimension(ncoh+1)                         :: wood_weight
-   real(kind=8), dimension(ncoh+1)                         :: beta
-   real(kind=8), dimension(ncoh+1)                         :: epsil
-   real(kind=8), dimension(ncoh+1)                         :: iota
-   real(kind=8), dimension(ncoh+1)                         :: lambda
-   real(kind=8)                                            :: temiss_four
-   real(kind=8)                                            :: iota_g
-   real(kind=8)                                            :: black_g
-   real(kind=8)                                            :: down_sky
+   integer                                                   :: ipft
+   integer                                                   :: nsiz
+   integer                                                   :: i
+   integer                                                   :: im1
+   integer                                                   :: ip1
+   integer                                                   :: i2
+   integer                                                   :: i2p1
+   integer                                                   :: i2m1
+   integer                                                   :: i2p2
+   logical                                                   :: sing
+   real(kind=8), dimension(ncoh+1)                           :: black
+   real(kind=8), dimension(ncoh+1)                           :: expl_plus
+   real(kind=8), dimension(ncoh+1)                           :: expl_minus
+   real(kind=8), dimension(ncoh+1)                           :: gamm_plus
+   real(kind=8), dimension(ncoh+1)                           :: gamm_minus
+   real(kind=8), dimension(ncoh+1)                           :: down
+   real(kind=8), dimension(ncoh+1)                           :: up
+   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)                :: mmat
+   real(kind=8), dimension(2*ncoh+2)                         :: yvec
+   real(kind=8), dimension(2*ncoh+2)                         :: xvec
+   real(kind=8), dimension(ncoh+1)                           :: elai
+   real(kind=8), dimension(ncoh+1)                           :: etai
+   real(kind=8), dimension(ncoh+1)                           :: mu
+   real(kind=8), dimension(ncoh+1)                           :: leaf_weight
+   real(kind=8), dimension(ncoh+1)                           :: wood_weight
+   real(kind=8), dimension(ncoh+1)                           :: beta
+   real(kind=8), dimension(ncoh+1)                           :: epsil
+   real(kind=8), dimension(ncoh+1)                           :: iota
+   real(kind=8), dimension(ncoh+1)                           :: lambda
+   real(kind=8)                                              :: temiss_four
+   real(kind=8)                                              :: iota_g
+   real(kind=8)                                              :: black_g
+   real(kind=8)                                              :: down_sky
    !----- External functions. -------------------------------------------------------------!
-   real(kind=8)                              , external    :: eifun8
-   real(kind=4)                              , external    :: sngloff
+   real(kind=8)                              , external      :: eifun8
+   real(kind=4)                              , external      :: sngloff
    !---------------------------------------------------------------------------------------!
 
 
@@ -329,7 +331,9 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    !---------------------------------------------------------------------------------------!
    do i=1,ncoh
       ip1 = i + 1
-      tir_flip(i) = sngloff(down(ip1) - down(i) + up(i) - up(ip1), tiny_offset)
+      radprof_flip ( 9,i) = sngloff(down(i), tiny_offset)
+      radprof_flip (10,i) = sngloff(up  (i), tiny_offset)
+      tir_flip        (i) = sngloff(down(ip1) - down(i) + up(i) - up(ip1), tiny_offset)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -360,12 +364,13 @@ end subroutine lw_two_stream
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,cai          &
-                        ,par_beam_flip,par_diff_flip,sw_abs_beam_flip                      &
+                        ,radprof_flip,par_beam_flip,par_diff_flip,sw_abs_beam_flip         &
                         ,sw_abs_diff_flip,dw_parlo_beam,dw_parlo_diff                      &
                         ,uw_parhi_diff,dw_nirlo_beam,dw_nirlo_diff,uw_nirhi_diff           &
                         ,par_beam_level,par_diff_level,light_level,light_beam_level        &
                         ,light_diff_level)
-   use ed_max_dims          , only : n_pft                   ! ! intent(in)
+   use ed_max_dims          , only : n_pft                   & ! intent(in)
+                                   , n_radprof               ! ! intent(in)
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : clumping_factor         & ! intent(in)
                                    , orient_factor           & ! intent(in)
@@ -390,83 +395,84 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4)                              , intent(in)  :: grnd_alb_par4
-   real(kind=4)                              , intent(in)  :: grnd_alb_nir4
-   real(kind=4)                              , intent(in)  :: cosaoi4
-   integer                                   , intent(in)  :: ncoh
-   integer     , dimension(ncoh)             , intent(in)  :: pft
-   real(kind=8), dimension(ncoh)             , intent(in)  :: lai
-   real(kind=8), dimension(ncoh)             , intent(in)  :: wai
-   real(kind=8), dimension(ncoh)             , intent(in)  :: cai
-   real(kind=4), dimension(ncoh)             , intent(out) :: par_beam_flip
-   real(kind=4), dimension(ncoh)             , intent(out) :: par_diff_flip
-   real(kind=4), dimension(ncoh)             , intent(out) :: sw_abs_beam_flip
-   real(kind=4), dimension(ncoh)             , intent(out) :: sw_abs_diff_flip
-   real(kind=4)                              , intent(out) :: uw_parhi_diff
-   real(kind=4)                              , intent(out) :: uw_nirhi_diff
-   real(kind=4)                              , intent(out) :: dw_parlo_beam
-   real(kind=4)                              , intent(out) :: dw_parlo_diff
-   real(kind=4)                              , intent(out) :: dw_nirlo_beam
-   real(kind=4)                              , intent(out) :: dw_nirlo_diff
-   real(kind=8), dimension(ncoh)             , intent(out) :: par_beam_level
-   real(kind=8), dimension(ncoh)             , intent(out) :: par_diff_level
-   real(kind=8), dimension(ncoh)             , intent(out) :: light_level
-   real(kind=8), dimension(ncoh)             , intent(out) :: light_beam_level
-   real(kind=8), dimension(ncoh)             , intent(out) :: light_diff_level
+   real(kind=4)                              , intent(in)     :: grnd_alb_par4
+   real(kind=4)                              , intent(in)     :: grnd_alb_nir4
+   real(kind=4)                              , intent(in)     :: cosaoi4
+   integer                                   , intent(in)     :: ncoh
+   integer     , dimension(ncoh)             , intent(in)     :: pft
+   real(kind=8), dimension(ncoh)             , intent(in)     :: lai
+   real(kind=8), dimension(ncoh)             , intent(in)     :: wai
+   real(kind=8), dimension(ncoh)             , intent(in)     :: cai
+   real(kind=4), dimension(n_radprof,ncoh)   , intent(inout)  :: radprof_flip
+   real(kind=4), dimension(ncoh)             , intent(out)    :: par_beam_flip
+   real(kind=4), dimension(ncoh)             , intent(out)    :: par_diff_flip
+   real(kind=4), dimension(ncoh)             , intent(out)    :: sw_abs_beam_flip
+   real(kind=4), dimension(ncoh)             , intent(out)    :: sw_abs_diff_flip
+   real(kind=4)                              , intent(out)    :: uw_parhi_diff
+   real(kind=4)                              , intent(out)    :: uw_nirhi_diff
+   real(kind=4)                              , intent(out)    :: dw_parlo_beam
+   real(kind=4)                              , intent(out)    :: dw_parlo_diff
+   real(kind=4)                              , intent(out)    :: dw_nirlo_beam
+   real(kind=4)                              , intent(out)    :: dw_nirlo_diff
+   real(kind=8), dimension(ncoh)             , intent(out)    :: par_beam_level
+   real(kind=8), dimension(ncoh)             , intent(out)    :: par_diff_level
+   real(kind=8), dimension(ncoh)             , intent(out)    :: light_level
+   real(kind=8), dimension(ncoh)             , intent(out)    :: light_beam_level
+   real(kind=8), dimension(ncoh)             , intent(out)    :: light_diff_level
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                                 :: ipft
-   integer                                                 :: iband
-   integer                                                 :: nsiz
-   integer                                                 :: i
-   integer                                                 :: ip1
-   integer                                                 :: i2
-   integer                                                 :: i2p1
-   integer                                                 :: i2m1
-   integer                                                 :: i2p2
-   logical                                                 :: sing
-   real(kind=4), dimension(ncoh)                           :: nir_beam_flip
-   real(kind=4), dimension(ncoh)                           :: nir_diff_flip
-   real(kind=8), dimension(ncoh+1)                         :: expl_plus
-   real(kind=8), dimension(ncoh+1)                         :: expl_minus
-   real(kind=8), dimension(ncoh+1)                         :: expm0_minus
-   real(kind=8), dimension(ncoh+1)                         :: gamm_plus
-   real(kind=8), dimension(ncoh+1)                         :: gamm_minus
-   real(kind=8), dimension(ncoh+1)                         :: delta
-   real(kind=8), dimension(ncoh+1)                         :: upsilon
-   real(kind=8), dimension(ncoh+1)                         :: down0
-   real(kind=8), dimension(ncoh+1)                         :: down
-   real(kind=8), dimension(ncoh+1)                         :: up
-   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)              :: mmat
-   real(kind=8), dimension(2*ncoh+2)                       :: yvec
-   real(kind=8), dimension(2*ncoh+2)                       :: xvec
-   real(kind=8), dimension(n_pft)                          :: leaf_scatter
-   real(kind=8), dimension(n_pft)                          :: wood_scatter
-   real(kind=8), dimension(n_pft)                          :: leaf_backscatter
-   real(kind=8), dimension(n_pft)                          :: wood_backscatter
-   real(kind=8), dimension(ncoh+1)                         :: elai
-   real(kind=8), dimension(ncoh+1)                         :: etai
-   real(kind=8), dimension(ncoh+1)                         :: mu
-   real(kind=8), dimension(ncoh+1)                         :: mu0
-   real(kind=8), dimension(ncoh+1)                         :: leaf_weight
-   real(kind=8), dimension(ncoh+1)                         :: wood_weight
-   real(kind=8), dimension(ncoh+1)                         :: beta0
-   real(kind=8), dimension(ncoh+1)                         :: beta
-   real(kind=8), dimension(ncoh+1)                         :: epsil
-   real(kind=8), dimension(ncoh+1)                         :: epsil0
-   real(kind=8), dimension(ncoh+1)                         :: iota
-   real(kind=8), dimension(ncoh+1)                         :: lambda
-   real(kind=8), dimension(ncoh+1)                         :: iota_ratio
-   real(kind=8), dimension(ncoh+1)                         :: proj_area
-   real(kind=8), dimension(ncoh+1)                         :: a_aux
-   real(kind=8), dimension(ncoh+1)                         :: s_aux
-   real(kind=8)                                            :: iota_g
-   real(kind=8)                                            :: iota_g_par
-   real(kind=8)                                            :: iota_g_nir
-   real(kind=8)                                            :: down_sky
-   real(kind=8)                                            :: down0_sky
-   real(kind=8)                                            :: czen
+   integer                                                    :: ipft
+   integer                                                    :: iband
+   integer                                                    :: nsiz
+   integer                                                    :: i
+   integer                                                    :: ip1
+   integer                                                    :: i2
+   integer                                                    :: i2p1
+   integer                                                    :: i2m1
+   integer                                                    :: i2p2
+   logical                                                    :: sing
+   real(kind=4), dimension(ncoh)                              :: nir_beam_flip
+   real(kind=4), dimension(ncoh)                              :: nir_diff_flip
+   real(kind=8), dimension(ncoh+1)                            :: expl_plus
+   real(kind=8), dimension(ncoh+1)                            :: expl_minus
+   real(kind=8), dimension(ncoh+1)                            :: expm0_minus
+   real(kind=8), dimension(ncoh+1)                            :: gamm_plus
+   real(kind=8), dimension(ncoh+1)                            :: gamm_minus
+   real(kind=8), dimension(ncoh+1)                            :: delta
+   real(kind=8), dimension(ncoh+1)                            :: upsilon
+   real(kind=8), dimension(ncoh+1)                            :: down0
+   real(kind=8), dimension(ncoh+1)                            :: down
+   real(kind=8), dimension(ncoh+1)                            :: up
+   real(kind=8), dimension(2*ncoh+2,2*ncoh+2)                 :: mmat
+   real(kind=8), dimension(2*ncoh+2)                          :: yvec
+   real(kind=8), dimension(2*ncoh+2)                          :: xvec
+   real(kind=8), dimension(n_pft)                             :: leaf_scatter
+   real(kind=8), dimension(n_pft)                             :: wood_scatter
+   real(kind=8), dimension(n_pft)                             :: leaf_backscatter
+   real(kind=8), dimension(n_pft)                             :: wood_backscatter
+   real(kind=8), dimension(ncoh+1)                            :: elai
+   real(kind=8), dimension(ncoh+1)                            :: etai
+   real(kind=8), dimension(ncoh+1)                            :: mu
+   real(kind=8), dimension(ncoh+1)                            :: mu0
+   real(kind=8), dimension(ncoh+1)                            :: leaf_weight
+   real(kind=8), dimension(ncoh+1)                            :: wood_weight
+   real(kind=8), dimension(ncoh+1)                            :: beta0
+   real(kind=8), dimension(ncoh+1)                            :: beta
+   real(kind=8), dimension(ncoh+1)                            :: epsil
+   real(kind=8), dimension(ncoh+1)                            :: epsil0
+   real(kind=8), dimension(ncoh+1)                            :: iota
+   real(kind=8), dimension(ncoh+1)                            :: lambda
+   real(kind=8), dimension(ncoh+1)                            :: iota_ratio
+   real(kind=8), dimension(ncoh+1)                            :: proj_area
+   real(kind=8), dimension(ncoh+1)                            :: a_aux
+   real(kind=8), dimension(ncoh+1)                            :: s_aux
+   real(kind=8)                                               :: iota_g
+   real(kind=8)                                               :: iota_g_par
+   real(kind=8)                                               :: iota_g_nir
+   real(kind=8)                                               :: down_sky
+   real(kind=8)                                               :: down0_sky
+   real(kind=8)                                               :: czen
    !----- External functions. -------------------------------------------------------------!
-   real(kind=4)                              , external    :: sngloff
+   real(kind=4)                              , external       :: sngloff
    !---------------------------------------------------------------------------------------!
 
 
@@ -733,7 +739,7 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
       mmat(1,2)         = (gamm_plus (1) - iota_g * gamm_minus(1)) * expl_plus (1)
       mmat(nsiz,nsiz-1) = gamm_plus (ncoh+1)
       mmat(nsiz,nsiz  ) = gamm_minus(ncoh+1)
-      yvec(1)           = iota_g * down0_sky                                               &
+      yvec(1)           = iota_g * down0(1)                                                &
                         - ( upsilon(1) - iota_g * delta(1) ) * expm0_minus(1)
       yvec(nsiz)        = down_sky - delta(ncoh+1)
       do i=1,ncoh
@@ -849,9 +855,13 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !---------------------------------------------------------------------------------!
          do i=1,ncoh
             ip1 = i + 1
-            par_beam_flip(i) = sngloff( down0(ip1) - down0  (i), tiny_offset)
-            par_diff_flip(i) = sngloff( down (ip1) - down   (i)                            &
-                                      + up     (i) - up   (ip1), tiny_offset)
+            par_beam_flip   (i) = sngloff( down0(ip1) - down0  (i), tiny_offset)
+            par_diff_flip   (i) = sngloff( down (ip1) - down   (i)                         &
+                                         + up     (i) - up   (ip1), tiny_offset)
+            radprof_flip ( 1,i) = sngloff(down0(i), tiny_offset)
+            radprof_flip ( 2,i) = 0.0
+            radprof_flip ( 3,i) = sngloff(down(i), tiny_offset)
+            radprof_flip ( 4,i) = sngloff(up  (i), tiny_offset)
          end do
          !---------------------------------------------------------------------------------!
 
@@ -874,9 +884,13 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !---------------------------------------------------------------------------------!
          do i=1,ncoh
             ip1 = i + 1
-            nir_beam_flip(i) = sngloff( down0(ip1) - down0  (i), tiny_offset)
-            nir_diff_flip(i) = sngloff( down (ip1) - down   (i)                            &
-                                      + up     (i) - up   (ip1), tiny_offset)
+            nir_beam_flip   (i) = sngloff( down0(ip1) - down0  (i), tiny_offset)
+            nir_diff_flip   (i) = sngloff( down (ip1) - down   (i)                         &
+                                         + up     (i) - up   (ip1), tiny_offset)
+            radprof_flip ( 5,i) = sngloff( down0  (i), tiny_offset)
+            radprof_flip ( 6,i) = 0.0
+            radprof_flip ( 7,i) = sngloff( down   (i), tiny_offset)
+            radprof_flip ( 8,i) = sngloff( up     (i), tiny_offset)
          end do
          !---------------------------------------------------------------------------------!
 

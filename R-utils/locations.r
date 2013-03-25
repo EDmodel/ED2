@@ -965,9 +965,9 @@ simul.description <<- function(ici,testpoi,max.char=66){
       nz     = c(     8,    15,          21)
    }else if (lenici == 22){
       nparms = 2
-      param  = c("iscenario","iphen.scheme")
-      na     = c(         11,            20)
-      nz     = c(         14,            22)
+      param  = c("icanrad","crown.mod")
+      na     = c(       13,         21)
+      nz     = c(       14,         22)
    }else if (lenici == 23){
       nparms = 3
       param  = c("idiversity","icanrad","isas")
@@ -1434,21 +1434,21 @@ u           = u + 1
 poitmp[[u]] = list( short           = "brasilia"          
                   , longname        = "Brasilia, DF"                
                   , iata            = "bsb"
-                  , lon             = -47.910
-                  , lat             = -15.860
-                  , alt             = 1054
+                  , lon             = -47.713
+                  , lat             = -15.601
+                  , alt             = 1023
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
+                  , isoilflg        = 2
+                  , ntext           = 17
                   , sand            = -1.000
                   , clay            = -1.000
-                  , depth           = "F"
+                  , depth           = "H"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Brasilia"
+                  , yeara           = 2006
+                  , yearz           = 2011
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2119,8 +2119,8 @@ poitmp[[u]] = list( short           = "harvard"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Harvard"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , yeara           = 1987
+                  , yearz           = 2003
                   , iphen           = 1
                   )#end list
 u           = u + 1

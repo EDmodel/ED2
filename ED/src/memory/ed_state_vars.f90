@@ -13,6 +13,7 @@ module ed_state_vars
                                  , n_dbh             & ! intent(in)
                                  , n_mort            & ! intent(in)
                                  , n_dist_types      & ! intent(in)
+                                 , n_radprof         & ! intent(in)
                                  , maxmach           & ! intent(in)
                                  , maxgrds           & ! intent(in)
                                  , str_len           ! ! intent(in)
@@ -363,6 +364,20 @@ module ed_state_vars
       ! Total long wave radiation absorbed by the cohort wood (W/m2)
       real ,pointer,dimension(:) :: rlong_w
 
+      !----- Radiation profile for this patch, at thhe cohort interfaces (W/m2). ----------!
+      !  1. PAR, Beam, Down                                                                !
+      !  2. PAR, Beam, Up (only Medvigy's radiation, zero for others).                     !
+      !  3. PAR, Diff, Down                                                                !
+      !  4. PAR, Diff, Up                                                                  !
+      !  5. NIR, Beam, Down                                                                !
+      !  6. NIR, Beam, Up (only Medvigy's radiation, zero for others).                     !
+      !  7. NIR, Diff, Down                                                                !
+      !  8. NIR, Diff, Up                                                                  !
+      !  9. TIR, Diff, Down                                                                !
+      ! 10. TIR. Diff, Up                                                                  !
+      !------------------------------------------------------------------------------------!
+      real ,pointer,dimension(:,:) :: rad_profile
+
       ! Leaf boundary layer conductance for heat/entropy  [J/K/m2leaf/s]
       real ,pointer,dimension(:) :: leaf_gbh
 
@@ -449,61 +464,62 @@ module ed_state_vars
       ! m2g means m2 of ground area (extensive variable)                                   !
       !------------------------------------------------------------------------------------!
       !----- Fast averages. ---------------------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_gpp              ! Gross primary prod. [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_npp              ! Net primary prod.   [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_leaf_resp        ! Leaf respiration    [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_root_resp        ! Root respiration    [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_growth_resp      ! Growth resp.        [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_storage_resp     ! Storage resp.       [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_vleaf_resp       ! Virt. leaf resp.    [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_plresp           ! Plant respiration.  [kgC/pl/yr]
-      real,pointer,dimension(:) :: fmean_leaf_energy      ! Leaf int. energy    [    J/m2g]
-      real,pointer,dimension(:) :: fmean_leaf_water       ! Leaf sfc. water     [   kg/m2g]
-      real,pointer,dimension(:) :: fmean_leaf_hcap        ! Leaf heat capacity  [  J/m2g/K]
-      real,pointer,dimension(:) :: fmean_leaf_vpdef       ! Leaf VPD            [       Pa]
-      real,pointer,dimension(:) :: fmean_leaf_temp        ! Leaf temperature    [        K]
-      real,pointer,dimension(:) :: fmean_leaf_fliq        ! Liquid fraction     [       --]
-      real,pointer,dimension(:) :: fmean_leaf_gsw         ! Stomatal conduct.   [      m/s]
-      real,pointer,dimension(:) :: fmean_leaf_gbw         ! Leaf BL conduct.    [      m/s]
-      real,pointer,dimension(:) :: fmean_wood_energy      ! Wood int. energy    [    J/m2g]
-      real,pointer,dimension(:) :: fmean_wood_water       ! Wood sfc. water     [   kg/m2g]
-      real,pointer,dimension(:) :: fmean_wood_hcap        ! Wood heat capacity  [  J/m2g/K]
-      real,pointer,dimension(:) :: fmean_wood_temp        ! Wood temperature    [        K]
-      real,pointer,dimension(:) :: fmean_wood_fliq        ! Liquid fraction     [       --]
-      real,pointer,dimension(:) :: fmean_wood_gbw         ! Wood BL conduct.    [      m/s]
-      real,pointer,dimension(:) :: fmean_fs_open          ! Net stress factor   [       --]
-      real,pointer,dimension(:) :: fmean_fsw              ! Moisture stress     [       --] 
-      real,pointer,dimension(:) :: fmean_fsn              ! Nitrogen stress     [       --]
-      real,pointer,dimension(:) :: fmean_psi_open         ! Transp. no stress   [ kg/m2l/s]
-      real,pointer,dimension(:) :: fmean_psi_closed       ! Transp. max stress  [ kg/m2l/s]
-      real,pointer,dimension(:) :: fmean_water_supply     ! Water supply        [       --]
-      real,pointer,dimension(:) :: fmean_light_level      ! Light level (Total) [       --] 
-      real,pointer,dimension(:) :: fmean_light_level_beam ! Light lev. (Direct) [       --]
-      real,pointer,dimension(:) :: fmean_light_level_diff ! Lighy lev. (Diff.)  [       --]
-      real,pointer,dimension(:) :: fmean_par_l            ! Absorbed PAR (Leaf) [    W/m2g]
-      real,pointer,dimension(:) :: fmean_par_l_beam       ! Abs. Dir. PAR       [    W/m2g]
-      real,pointer,dimension(:) :: fmean_par_l_diff       ! Abs. Diffuse PAR    [    W/m2g]
-      real,pointer,dimension(:) :: fmean_rshort_l         ! Abs. SW (leaf)      [    W/m2g]
-      real,pointer,dimension(:) :: fmean_rlong_l          ! Abs. LW (leaf)      [    W/m2g]
-      real,pointer,dimension(:) :: fmean_sensible_lc      ! Sensible heat       [    W/m2g]
-      real,pointer,dimension(:) :: fmean_vapor_lc         ! Leaf evaporation    [ kg/m2g/s]
-      real,pointer,dimension(:) :: fmean_transp           ! Leaf transpiration  [ kg/m2g/s]
-      real,pointer,dimension(:) :: fmean_intercepted_al   ! Leaf interception   [ kg/m2g/s]
-      real,pointer,dimension(:) :: fmean_wshed_lg         ! Leaf shedding       [ kg/m2g/s]
-      real,pointer,dimension(:) :: fmean_rshort_w         ! Abs. SW (Wood)      [    W/m2g]
-      real,pointer,dimension(:) :: fmean_rlong_w          ! Abs. LW (Wood)      [    W/m2g]
-      real,pointer,dimension(:) :: fmean_sensible_wc      ! Sensible heat       [    W/m2g]
-      real,pointer,dimension(:) :: fmean_vapor_wc         ! Wood evaporation    [ kg/m2g/s]
-      real,pointer,dimension(:) :: fmean_intercepted_aw   ! Wood interception   [ kg/m2g/s]
-      real,pointer,dimension(:) :: fmean_wshed_wg         ! Wood shedding       [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_gpp              ! Gross prim. prod. [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_npp              ! Net primary prod. [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_resp        ! Leaf respiration  [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_root_resp        ! Root respiration  [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_growth_resp      ! Growth resp.      [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_storage_resp     ! Storage resp.     [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_vleaf_resp       ! Virt. leaf resp.  [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_plresp           ! Plant resp.       [kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_energy      ! Leaf int. energy  [    J/m2g]
+      real,pointer,dimension(:)   :: fmean_leaf_water       ! Leaf sfc. water   [   kg/m2g]
+      real,pointer,dimension(:)   :: fmean_leaf_hcap        ! Leaf heat cap.    [  J/m2g/K]
+      real,pointer,dimension(:)   :: fmean_leaf_vpdef       ! Leaf VPD          [       Pa]
+      real,pointer,dimension(:)   :: fmean_leaf_temp        ! Leaf temperature  [        K]
+      real,pointer,dimension(:)   :: fmean_leaf_fliq        ! Liquid fraction   [       --]
+      real,pointer,dimension(:)   :: fmean_leaf_gsw         ! Stomatal conduct. [      m/s]
+      real,pointer,dimension(:)   :: fmean_leaf_gbw         ! Leaf BL conduct.  [      m/s]
+      real,pointer,dimension(:)   :: fmean_wood_energy      ! Wood int. energy  [    J/m2g]
+      real,pointer,dimension(:)   :: fmean_wood_water       ! Wood sfc. water   [   kg/m2g]
+      real,pointer,dimension(:)   :: fmean_wood_hcap        ! Wood heat cap.    [  J/m2g/K]
+      real,pointer,dimension(:)   :: fmean_wood_temp        ! Wood temperature  [        K]
+      real,pointer,dimension(:)   :: fmean_wood_fliq        ! Liquid fraction   [       --]
+      real,pointer,dimension(:)   :: fmean_wood_gbw         ! Wood BL conduct.  [      m/s]
+      real,pointer,dimension(:)   :: fmean_fs_open          ! Net stress factor [       --]
+      real,pointer,dimension(:)   :: fmean_fsw              ! Moisture stress   [       --]
+      real,pointer,dimension(:)   :: fmean_fsn              ! Nitrogen stress   [       --]
+      real,pointer,dimension(:)   :: fmean_psi_open         ! Transp. no stress [ kg/m2l/s]
+      real,pointer,dimension(:)   :: fmean_psi_closed       ! Transp. max st.   [ kg/m2l/s]
+      real,pointer,dimension(:)   :: fmean_water_supply     ! Water supply      [       --]
+      real,pointer,dimension(:)   :: fmean_light_level      ! Light lev. (Tot.) [       --]
+      real,pointer,dimension(:)   :: fmean_light_level_beam ! Light lev. (Beam) [       --]
+      real,pointer,dimension(:)   :: fmean_light_level_diff ! Lighy lev. (Diff) [       --]
+      real,pointer,dimension(:)   :: fmean_par_l            ! Abs. PAR (Leaf)   [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_par_l_beam       ! Abs. Dir. PAR     [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_par_l_diff       ! Abs. Diffuse PAR  [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_rshort_l         ! Abs. SW (leaf)    [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_rlong_l          ! Abs. LW (leaf)    [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_sensible_lc      ! Sensible heat     [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_vapor_lc         ! Leaf evaporation  [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_transp           ! Leaf transp.      [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_intercepted_al   ! Leaf interception [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_wshed_lg         ! Leaf shedding     [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_rshort_w         ! Abs. SW (Wood)    [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_rlong_w          ! Abs. LW (Wood)    [    W/m2g]
+      real,pointer,dimension(:,:) :: fmean_rad_profile      ! Rad. profile      [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_sensible_wc      ! Sensible heat     [    W/m2g]
+      real,pointer,dimension(:)   :: fmean_vapor_wc         ! Wood evaporation  [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_intercepted_aw   ! Wood interception [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_wshed_wg         ! Wood shedding     [ kg/m2g/s]
       !----- Variables without sub-daily averages. ----------------------------------------!
-      real,pointer,dimension(:) :: dmean_nppleaf          ! Leaf NPP            [kgC/pl/yr]
-      real,pointer,dimension(:) :: dmean_nppfroot         ! Fine root NPP       [kgC/pl/yr]
-      real,pointer,dimension(:) :: dmean_nppsapwood       ! Sapwood NPP         [kgC/pl/yr]
-      real,pointer,dimension(:) :: dmean_nppcroot         ! Coarse root NPP     [kgC/pl/yr]
-      real,pointer,dimension(:) :: dmean_nppseeds         ! Seed NPP            [kgC/pl/yr]
-      real,pointer,dimension(:) :: dmean_nppwood          ! Wood NPP            [kgC/pl/yr]
-      real,pointer,dimension(:) :: dmean_nppdaily         ! Daily NPP           [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppleaf          ! Leaf NPP          [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppfroot         ! Fine root NPP     [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppsapwood       ! Sapwood NPP       [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppcroot         ! Coarse root NPP   [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppseeds         ! Seed NPP          [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppwood          ! Wood NPP          [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppdaily         ! Daily NPP         [kgC/pl/yr]
       !----- Monthly means of variables that are integrated daily. ------------------------!
       real,pointer,dimension(:)   :: mmean_lai              ! Leaf area index   [  m2l/m2g]
       real,pointer,dimension(:)   :: mmean_bleaf            ! Leaf biomass      [   kgC/pl]
@@ -515,174 +531,177 @@ module ed_state_vars
       real,pointer,dimension(:)   :: mmean_leaf_drop        ! Leaf drop         [kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_cb               ! 12-mon C balance  [kgC/pl/yr]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
-      real,pointer,dimension(:)   :: dmean_gpp
-      real,pointer,dimension(:)   :: dmean_npp
-      real,pointer,dimension(:)   :: dmean_leaf_resp
-      real,pointer,dimension(:)   :: dmean_root_resp
-      real,pointer,dimension(:)   :: dmean_growth_resp
-      real,pointer,dimension(:)   :: dmean_storage_resp
-      real,pointer,dimension(:)   :: dmean_vleaf_resp
-      real,pointer,dimension(:)   :: dmean_plresp
-      real,pointer,dimension(:)   :: dmean_leaf_energy
-      real,pointer,dimension(:)   :: dmean_leaf_water
-      real,pointer,dimension(:)   :: dmean_leaf_hcap
-      real,pointer,dimension(:)   :: dmean_leaf_vpdef
-      real,pointer,dimension(:)   :: dmean_leaf_temp
-      real,pointer,dimension(:)   :: dmean_leaf_fliq
-      real,pointer,dimension(:)   :: dmean_leaf_gsw
-      real,pointer,dimension(:)   :: dmean_leaf_gbw
-      real,pointer,dimension(:)   :: dmean_wood_energy
-      real,pointer,dimension(:)   :: dmean_wood_water
-      real,pointer,dimension(:)   :: dmean_wood_hcap
-      real,pointer,dimension(:)   :: dmean_wood_temp
-      real,pointer,dimension(:)   :: dmean_wood_fliq
-      real,pointer,dimension(:)   :: dmean_wood_gbw
-      real,pointer,dimension(:)   :: dmean_fs_open
-      real,pointer,dimension(:)   :: dmean_fsw
-      real,pointer,dimension(:)   :: dmean_fsn
-      real,pointer,dimension(:)   :: dmean_psi_open
-      real,pointer,dimension(:)   :: dmean_psi_closed
-      real,pointer,dimension(:)   :: dmean_water_supply
-      real,pointer,dimension(:)   :: dmean_light_level
-      real,pointer,dimension(:)   :: dmean_light_level_beam
-      real,pointer,dimension(:)   :: dmean_light_level_diff
-      real,pointer,dimension(:)   :: dmean_par_l
-      real,pointer,dimension(:)   :: dmean_par_l_beam
-      real,pointer,dimension(:)   :: dmean_par_l_diff
-      real,pointer,dimension(:)   :: dmean_rshort_l
-      real,pointer,dimension(:)   :: dmean_rlong_l
-      real,pointer,dimension(:)   :: dmean_sensible_lc
-      real,pointer,dimension(:)   :: dmean_vapor_lc
-      real,pointer,dimension(:)   :: dmean_transp
-      real,pointer,dimension(:)   :: dmean_intercepted_al
-      real,pointer,dimension(:)   :: dmean_wshed_lg
-      real,pointer,dimension(:)   :: dmean_rshort_w
-      real,pointer,dimension(:)   :: dmean_rlong_w
-      real,pointer,dimension(:)   :: dmean_sensible_wc
-      real,pointer,dimension(:)   :: dmean_vapor_wc
-      real,pointer,dimension(:)   :: dmean_intercepted_aw
-      real,pointer,dimension(:)   :: dmean_wshed_wg
+      real,pointer,dimension(:)     :: dmean_gpp
+      real,pointer,dimension(:)     :: dmean_npp
+      real,pointer,dimension(:)     :: dmean_leaf_resp
+      real,pointer,dimension(:)     :: dmean_root_resp
+      real,pointer,dimension(:)     :: dmean_growth_resp
+      real,pointer,dimension(:)     :: dmean_storage_resp
+      real,pointer,dimension(:)     :: dmean_vleaf_resp
+      real,pointer,dimension(:)     :: dmean_plresp
+      real,pointer,dimension(:)     :: dmean_leaf_energy
+      real,pointer,dimension(:)     :: dmean_leaf_water
+      real,pointer,dimension(:)     :: dmean_leaf_hcap
+      real,pointer,dimension(:)     :: dmean_leaf_vpdef
+      real,pointer,dimension(:)     :: dmean_leaf_temp
+      real,pointer,dimension(:)     :: dmean_leaf_fliq
+      real,pointer,dimension(:)     :: dmean_leaf_gsw
+      real,pointer,dimension(:)     :: dmean_leaf_gbw
+      real,pointer,dimension(:)     :: dmean_wood_energy
+      real,pointer,dimension(:)     :: dmean_wood_water
+      real,pointer,dimension(:)     :: dmean_wood_hcap
+      real,pointer,dimension(:)     :: dmean_wood_temp
+      real,pointer,dimension(:)     :: dmean_wood_fliq
+      real,pointer,dimension(:)     :: dmean_wood_gbw
+      real,pointer,dimension(:)     :: dmean_fs_open
+      real,pointer,dimension(:)     :: dmean_fsw
+      real,pointer,dimension(:)     :: dmean_fsn
+      real,pointer,dimension(:)     :: dmean_psi_open
+      real,pointer,dimension(:)     :: dmean_psi_closed
+      real,pointer,dimension(:)     :: dmean_water_supply
+      real,pointer,dimension(:)     :: dmean_light_level
+      real,pointer,dimension(:)     :: dmean_light_level_beam
+      real,pointer,dimension(:)     :: dmean_light_level_diff
+      real,pointer,dimension(:)     :: dmean_par_l
+      real,pointer,dimension(:)     :: dmean_par_l_beam
+      real,pointer,dimension(:)     :: dmean_par_l_diff
+      real,pointer,dimension(:)     :: dmean_rshort_l
+      real,pointer,dimension(:)     :: dmean_rlong_l
+      real,pointer,dimension(:)     :: dmean_sensible_lc
+      real,pointer,dimension(:)     :: dmean_vapor_lc
+      real,pointer,dimension(:)     :: dmean_transp
+      real,pointer,dimension(:)     :: dmean_intercepted_al
+      real,pointer,dimension(:)     :: dmean_wshed_lg
+      real,pointer,dimension(:)     :: dmean_rshort_w
+      real,pointer,dimension(:)     :: dmean_rlong_w
+      real,pointer,dimension(:,:)   :: dmean_rad_profile
+      real,pointer,dimension(:)     :: dmean_sensible_wc
+      real,pointer,dimension(:)     :: dmean_vapor_wc
+      real,pointer,dimension(:)     :: dmean_intercepted_aw
+      real,pointer,dimension(:)     :: dmean_wshed_wg
       !----- Monthly mean (same units as fast mean). --------------------------------------!
-      real,pointer,dimension(:)   :: mmean_gpp
-      real,pointer,dimension(:)   :: mmean_npp
-      real,pointer,dimension(:)   :: mmean_leaf_resp
-      real,pointer,dimension(:)   :: mmean_root_resp
-      real,pointer,dimension(:)   :: mmean_growth_resp
-      real,pointer,dimension(:)   :: mmean_storage_resp
-      real,pointer,dimension(:)   :: mmean_vleaf_resp
-      real,pointer,dimension(:)   :: mmean_plresp
-      real,pointer,dimension(:)   :: mmean_leaf_energy
-      real,pointer,dimension(:)   :: mmean_leaf_water
-      real,pointer,dimension(:)   :: mmean_leaf_hcap
-      real,pointer,dimension(:)   :: mmean_leaf_vpdef
-      real,pointer,dimension(:)   :: mmean_leaf_temp
-      real,pointer,dimension(:)   :: mmean_leaf_fliq
-      real,pointer,dimension(:)   :: mmean_leaf_gsw
-      real,pointer,dimension(:)   :: mmean_leaf_gbw
-      real,pointer,dimension(:)   :: mmean_wood_energy
-      real,pointer,dimension(:)   :: mmean_wood_water
-      real,pointer,dimension(:)   :: mmean_wood_hcap
-      real,pointer,dimension(:)   :: mmean_wood_temp
-      real,pointer,dimension(:)   :: mmean_wood_fliq
-      real,pointer,dimension(:)   :: mmean_wood_gbw
-      real,pointer,dimension(:)   :: mmean_fs_open
-      real,pointer,dimension(:)   :: mmean_fsw
-      real,pointer,dimension(:)   :: mmean_fsn
-      real,pointer,dimension(:)   :: mmean_psi_open
-      real,pointer,dimension(:)   :: mmean_psi_closed
-      real,pointer,dimension(:)   :: mmean_water_supply
-      real,pointer,dimension(:)   :: mmean_light_level
-      real,pointer,dimension(:)   :: mmean_light_level_beam
-      real,pointer,dimension(:)   :: mmean_light_level_diff
-      real,pointer,dimension(:)   :: mmean_par_l
-      real,pointer,dimension(:)   :: mmean_par_l_beam
-      real,pointer,dimension(:)   :: mmean_par_l_diff
-      real,pointer,dimension(:)   :: mmean_rshort_l
-      real,pointer,dimension(:)   :: mmean_rlong_l
-      real,pointer,dimension(:)   :: mmean_sensible_lc
-      real,pointer,dimension(:)   :: mmean_vapor_lc
-      real,pointer,dimension(:)   :: mmean_transp
-      real,pointer,dimension(:)   :: mmean_intercepted_al
-      real,pointer,dimension(:)   :: mmean_wshed_lg
-      real,pointer,dimension(:)   :: mmean_rshort_w
-      real,pointer,dimension(:)   :: mmean_rlong_w
-      real,pointer,dimension(:)   :: mmean_sensible_wc
-      real,pointer,dimension(:)   :: mmean_vapor_wc
-      real,pointer,dimension(:)   :: mmean_intercepted_aw
-      real,pointer,dimension(:)   :: mmean_wshed_wg
-      real,pointer,dimension(:)   :: mmean_nppleaf
-      real,pointer,dimension(:)   :: mmean_nppfroot
-      real,pointer,dimension(:)   :: mmean_nppsapwood
-      real,pointer,dimension(:)   :: mmean_nppcroot
-      real,pointer,dimension(:)   :: mmean_nppseeds
-      real,pointer,dimension(:)   :: mmean_nppwood
-      real,pointer,dimension(:)   :: mmean_nppdaily
+      real,pointer,dimension(:)     :: mmean_gpp
+      real,pointer,dimension(:)     :: mmean_npp
+      real,pointer,dimension(:)     :: mmean_leaf_resp
+      real,pointer,dimension(:)     :: mmean_root_resp
+      real,pointer,dimension(:)     :: mmean_growth_resp
+      real,pointer,dimension(:)     :: mmean_storage_resp
+      real,pointer,dimension(:)     :: mmean_vleaf_resp
+      real,pointer,dimension(:)     :: mmean_plresp
+      real,pointer,dimension(:)     :: mmean_leaf_energy
+      real,pointer,dimension(:)     :: mmean_leaf_water
+      real,pointer,dimension(:)     :: mmean_leaf_hcap
+      real,pointer,dimension(:)     :: mmean_leaf_vpdef
+      real,pointer,dimension(:)     :: mmean_leaf_temp
+      real,pointer,dimension(:)     :: mmean_leaf_fliq
+      real,pointer,dimension(:)     :: mmean_leaf_gsw
+      real,pointer,dimension(:)     :: mmean_leaf_gbw
+      real,pointer,dimension(:)     :: mmean_wood_energy
+      real,pointer,dimension(:)     :: mmean_wood_water
+      real,pointer,dimension(:)     :: mmean_wood_hcap
+      real,pointer,dimension(:)     :: mmean_wood_temp
+      real,pointer,dimension(:)     :: mmean_wood_fliq
+      real,pointer,dimension(:)     :: mmean_wood_gbw
+      real,pointer,dimension(:)     :: mmean_fs_open
+      real,pointer,dimension(:)     :: mmean_fsw
+      real,pointer,dimension(:)     :: mmean_fsn
+      real,pointer,dimension(:)     :: mmean_psi_open
+      real,pointer,dimension(:)     :: mmean_psi_closed
+      real,pointer,dimension(:)     :: mmean_water_supply
+      real,pointer,dimension(:)     :: mmean_light_level
+      real,pointer,dimension(:)     :: mmean_light_level_beam
+      real,pointer,dimension(:)     :: mmean_light_level_diff
+      real,pointer,dimension(:)     :: mmean_par_l
+      real,pointer,dimension(:)     :: mmean_par_l_beam
+      real,pointer,dimension(:)     :: mmean_par_l_diff
+      real,pointer,dimension(:)     :: mmean_rshort_l
+      real,pointer,dimension(:)     :: mmean_rlong_l
+      real,pointer,dimension(:)     :: mmean_sensible_lc
+      real,pointer,dimension(:)     :: mmean_vapor_lc
+      real,pointer,dimension(:)     :: mmean_transp
+      real,pointer,dimension(:)     :: mmean_intercepted_al
+      real,pointer,dimension(:)     :: mmean_wshed_lg
+      real,pointer,dimension(:)     :: mmean_rshort_w
+      real,pointer,dimension(:)     :: mmean_rlong_w
+      real,pointer,dimension(:,:)   :: mmean_rad_profile
+      real,pointer,dimension(:)     :: mmean_sensible_wc
+      real,pointer,dimension(:)     :: mmean_vapor_wc
+      real,pointer,dimension(:)     :: mmean_intercepted_aw
+      real,pointer,dimension(:)     :: mmean_wshed_wg
+      real,pointer,dimension(:)     :: mmean_nppleaf
+      real,pointer,dimension(:)     :: mmean_nppfroot
+      real,pointer,dimension(:)     :: mmean_nppsapwood
+      real,pointer,dimension(:)     :: mmean_nppcroot
+      real,pointer,dimension(:)     :: mmean_nppseeds
+      real,pointer,dimension(:)     :: mmean_nppwood
+      real,pointer,dimension(:)     :: mmean_nppdaily
       !----- Monthly mean sum of squares. -------------------------------------------------!
-      real,pointer,dimension(:)   :: mmsqu_gpp
-      real,pointer,dimension(:)   :: mmsqu_npp
-      real,pointer,dimension(:)   :: mmsqu_plresp
-      real,pointer,dimension(:)   :: mmsqu_sensible_lc
-      real,pointer,dimension(:)   :: mmsqu_vapor_lc
-      real,pointer,dimension(:)   :: mmsqu_transp
-      real,pointer,dimension(:)   :: mmsqu_sensible_wc
-      real,pointer,dimension(:)   :: mmsqu_vapor_wc
+      real,pointer,dimension(:)     :: mmsqu_gpp
+      real,pointer,dimension(:)     :: mmsqu_npp
+      real,pointer,dimension(:)     :: mmsqu_plresp
+      real,pointer,dimension(:)     :: mmsqu_sensible_lc
+      real,pointer,dimension(:)     :: mmsqu_vapor_lc
+      real,pointer,dimension(:)     :: mmsqu_transp
+      real,pointer,dimension(:)     :: mmsqu_sensible_wc
+      real,pointer,dimension(:)     :: mmsqu_vapor_wc
       !----- Mean diel (same units as fast mean). -----------------------------------------!
-      real,pointer,dimension(:,:) :: qmean_gpp
-      real,pointer,dimension(:,:) :: qmean_npp
-      real,pointer,dimension(:,:) :: qmean_leaf_resp
-      real,pointer,dimension(:,:) :: qmean_root_resp
-      real,pointer,dimension(:,:) :: qmean_growth_resp
-      real,pointer,dimension(:,:) :: qmean_storage_resp
-      real,pointer,dimension(:,:) :: qmean_vleaf_resp
-      real,pointer,dimension(:,:) :: qmean_plresp
-      real,pointer,dimension(:,:) :: qmean_leaf_energy
-      real,pointer,dimension(:,:) :: qmean_leaf_water
-      real,pointer,dimension(:,:) :: qmean_leaf_hcap
-      real,pointer,dimension(:,:) :: qmean_leaf_vpdef
-      real,pointer,dimension(:,:) :: qmean_leaf_temp
-      real,pointer,dimension(:,:) :: qmean_leaf_fliq
-      real,pointer,dimension(:,:) :: qmean_leaf_gsw
-      real,pointer,dimension(:,:) :: qmean_leaf_gbw
-      real,pointer,dimension(:,:) :: qmean_wood_energy
-      real,pointer,dimension(:,:) :: qmean_wood_water
-      real,pointer,dimension(:,:) :: qmean_wood_hcap
-      real,pointer,dimension(:,:) :: qmean_wood_temp
-      real,pointer,dimension(:,:) :: qmean_wood_fliq
-      real,pointer,dimension(:,:) :: qmean_wood_gbw
-      real,pointer,dimension(:,:) :: qmean_fs_open
-      real,pointer,dimension(:,:) :: qmean_fsw
-      real,pointer,dimension(:,:) :: qmean_fsn
-      real,pointer,dimension(:,:) :: qmean_psi_open
-      real,pointer,dimension(:,:) :: qmean_psi_closed
-      real,pointer,dimension(:,:) :: qmean_water_supply
-      real,pointer,dimension(:,:) :: qmean_light_level
-      real,pointer,dimension(:,:) :: qmean_light_level_beam
-      real,pointer,dimension(:,:) :: qmean_light_level_diff
-      real,pointer,dimension(:,:) :: qmean_par_l
-      real,pointer,dimension(:,:) :: qmean_par_l_beam
-      real,pointer,dimension(:,:) :: qmean_par_l_diff
-      real,pointer,dimension(:,:) :: qmean_rshort_l
-      real,pointer,dimension(:,:) :: qmean_rlong_l
-      real,pointer,dimension(:,:) :: qmean_sensible_lc
-      real,pointer,dimension(:,:) :: qmean_vapor_lc
-      real,pointer,dimension(:,:) :: qmean_transp
-      real,pointer,dimension(:,:) :: qmean_intercepted_al
-      real,pointer,dimension(:,:) :: qmean_wshed_lg
-      real,pointer,dimension(:,:) :: qmean_rshort_w
-      real,pointer,dimension(:,:) :: qmean_rlong_w
-      real,pointer,dimension(:,:) :: qmean_sensible_wc
-      real,pointer,dimension(:,:) :: qmean_vapor_wc
-      real,pointer,dimension(:,:) :: qmean_intercepted_aw
-      real,pointer,dimension(:,:) :: qmean_wshed_wg
+      real,pointer,dimension(:,:)   :: qmean_gpp
+      real,pointer,dimension(:,:)   :: qmean_npp
+      real,pointer,dimension(:,:)   :: qmean_leaf_resp
+      real,pointer,dimension(:,:)   :: qmean_root_resp
+      real,pointer,dimension(:,:)   :: qmean_growth_resp
+      real,pointer,dimension(:,:)   :: qmean_storage_resp
+      real,pointer,dimension(:,:)   :: qmean_vleaf_resp
+      real,pointer,dimension(:,:)   :: qmean_plresp
+      real,pointer,dimension(:,:)   :: qmean_leaf_energy
+      real,pointer,dimension(:,:)   :: qmean_leaf_water
+      real,pointer,dimension(:,:)   :: qmean_leaf_hcap
+      real,pointer,dimension(:,:)   :: qmean_leaf_vpdef
+      real,pointer,dimension(:,:)   :: qmean_leaf_temp
+      real,pointer,dimension(:,:)   :: qmean_leaf_fliq
+      real,pointer,dimension(:,:)   :: qmean_leaf_gsw
+      real,pointer,dimension(:,:)   :: qmean_leaf_gbw
+      real,pointer,dimension(:,:)   :: qmean_wood_energy
+      real,pointer,dimension(:,:)   :: qmean_wood_water
+      real,pointer,dimension(:,:)   :: qmean_wood_hcap
+      real,pointer,dimension(:,:)   :: qmean_wood_temp
+      real,pointer,dimension(:,:)   :: qmean_wood_fliq
+      real,pointer,dimension(:,:)   :: qmean_wood_gbw
+      real,pointer,dimension(:,:)   :: qmean_fs_open
+      real,pointer,dimension(:,:)   :: qmean_fsw
+      real,pointer,dimension(:,:)   :: qmean_fsn
+      real,pointer,dimension(:,:)   :: qmean_psi_open
+      real,pointer,dimension(:,:)   :: qmean_psi_closed
+      real,pointer,dimension(:,:)   :: qmean_water_supply
+      real,pointer,dimension(:,:)   :: qmean_light_level
+      real,pointer,dimension(:,:)   :: qmean_light_level_beam
+      real,pointer,dimension(:,:)   :: qmean_light_level_diff
+      real,pointer,dimension(:,:)   :: qmean_par_l
+      real,pointer,dimension(:,:)   :: qmean_par_l_beam
+      real,pointer,dimension(:,:)   :: qmean_par_l_diff
+      real,pointer,dimension(:,:)   :: qmean_rshort_l
+      real,pointer,dimension(:,:)   :: qmean_rlong_l
+      real,pointer,dimension(:,:)   :: qmean_sensible_lc
+      real,pointer,dimension(:,:)   :: qmean_vapor_lc
+      real,pointer,dimension(:,:)   :: qmean_transp
+      real,pointer,dimension(:,:)   :: qmean_intercepted_al
+      real,pointer,dimension(:,:)   :: qmean_wshed_lg
+      real,pointer,dimension(:,:)   :: qmean_rshort_w
+      real,pointer,dimension(:,:)   :: qmean_rlong_w
+      real,pointer,dimension(:,:,:) :: qmean_rad_profile
+      real,pointer,dimension(:,:)   :: qmean_sensible_wc
+      real,pointer,dimension(:,:)   :: qmean_vapor_wc
+      real,pointer,dimension(:,:)   :: qmean_intercepted_aw
+      real,pointer,dimension(:,:)   :: qmean_wshed_wg
       !------ Mean diel of sum of squares. ------------------------------------------------!
-      real,pointer,dimension(:,:) :: qmsqu_gpp
-      real,pointer,dimension(:,:) :: qmsqu_npp
-      real,pointer,dimension(:,:) :: qmsqu_plresp
-      real,pointer,dimension(:,:) :: qmsqu_sensible_lc
-      real,pointer,dimension(:,:) :: qmsqu_vapor_lc
-      real,pointer,dimension(:,:) :: qmsqu_transp
-      real,pointer,dimension(:,:) :: qmsqu_sensible_wc
-      real,pointer,dimension(:,:) :: qmsqu_vapor_wc
+      real,pointer,dimension(:,:)   :: qmsqu_gpp
+      real,pointer,dimension(:,:)   :: qmsqu_npp
+      real,pointer,dimension(:,:)   :: qmsqu_plresp
+      real,pointer,dimension(:,:)   :: qmsqu_sensible_lc
+      real,pointer,dimension(:,:)   :: qmsqu_vapor_lc
+      real,pointer,dimension(:,:)   :: qmsqu_transp
+      real,pointer,dimension(:,:)   :: qmsqu_sensible_wc
+      real,pointer,dimension(:,:)   :: qmsqu_vapor_wc
       !------------------------------------------------------------------------------------!
    end type patchtype
    !=======================================================================================!
@@ -4282,360 +4301,365 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
 
-      allocate(cpatch%pft                          (        ncohorts))
-      allocate(cpatch%nplant                       (        ncohorts))
-      allocate(cpatch%phenology_status             (        ncohorts))
-      allocate(cpatch%recruit_dbh                  (        ncohorts))
-      allocate(cpatch%census_status                (        ncohorts))
-      allocate(cpatch%hite                         (        ncohorts))
-      allocate(cpatch%agb                          (        ncohorts))
-      allocate(cpatch%basarea                      (        ncohorts))
-      allocate(cpatch%dagb_dt                      (        ncohorts))
-      allocate(cpatch%dlnagb_dt                    (        ncohorts))
-      allocate(cpatch%dba_dt                       (        ncohorts))
-      allocate(cpatch%dlnba_dt                     (        ncohorts))
-      allocate(cpatch%ddbh_dt                      (        ncohorts))
-      allocate(cpatch%dlndbh_dt                    (        ncohorts))
-      allocate(cpatch%dbh                          (        ncohorts))
-      allocate(cpatch%bdead                        (        ncohorts))
-      allocate(cpatch%bleaf                        (        ncohorts))
-      allocate(cpatch%balive                       (        ncohorts))
-      allocate(cpatch%broot                        (        ncohorts))
-      allocate(cpatch%bsapwooda                    (        ncohorts))
-      allocate(cpatch%bsapwoodb                    (        ncohorts))
-      allocate(cpatch%bstorage                     (        ncohorts))
-      allocate(cpatch%bseeds                       (        ncohorts))
-      allocate(cpatch%lai                          (        ncohorts))
-      allocate(cpatch%wai                          (        ncohorts))
-      allocate(cpatch%crown_area                   (        ncohorts))
-      allocate(cpatch%leaf_resolvable              (        ncohorts))
-      allocate(cpatch%wood_resolvable              (        ncohorts))
-      allocate(cpatch%cb                           (     13,ncohorts))
-      allocate(cpatch%cb_lightmax                  (     13,ncohorts))
-      allocate(cpatch%cb_moistmax                  (     13,ncohorts))
-      allocate(cpatch%cbr_bar                      (        ncohorts))
-      allocate(cpatch%leaf_energy                  (        ncohorts))
-      allocate(cpatch%leaf_temp                    (        ncohorts))
-      allocate(cpatch%leaf_vpdef                   (        ncohorts))
-      allocate(cpatch%leaf_temp_pv                 (        ncohorts))
-      allocate(cpatch%leaf_hcap                    (        ncohorts))
-      allocate(cpatch%leaf_fliq                    (        ncohorts))
-      allocate(cpatch%leaf_water                   (        ncohorts))
-      allocate(cpatch%wood_energy                  (        ncohorts))
-      allocate(cpatch%wood_temp                    (        ncohorts))
-      allocate(cpatch%wood_temp_pv                 (        ncohorts))
-      allocate(cpatch%wood_hcap                    (        ncohorts))
-      allocate(cpatch%wood_fliq                    (        ncohorts))
-      allocate(cpatch%wood_water                   (        ncohorts))
-      allocate(cpatch%veg_wind                     (        ncohorts))
-      allocate(cpatch%lsfc_shv_open                (        ncohorts))
-      allocate(cpatch%lsfc_shv_closed              (        ncohorts))
-      allocate(cpatch%lsfc_co2_open                (        ncohorts))
-      allocate(cpatch%lsfc_co2_closed              (        ncohorts))
-      allocate(cpatch%lint_shv                     (        ncohorts))
-      allocate(cpatch%lint_co2_open                (        ncohorts))
-      allocate(cpatch%lint_co2_closed              (        ncohorts))
-      allocate(cpatch%today_leaf_resp              (        ncohorts))
-      allocate(cpatch%today_root_resp              (        ncohorts))
-      allocate(cpatch%today_gpp                    (        ncohorts))
-      allocate(cpatch%today_gpp_pot                (        ncohorts))
-      allocate(cpatch%today_gpp_lightmax           (        ncohorts))
-      allocate(cpatch%today_gpp_moistmax           (        ncohorts))
-      allocate(cpatch%today_nppleaf                (        ncohorts))
-      allocate(cpatch%today_nppfroot               (        ncohorts))
-      allocate(cpatch%today_nppsapwood             (        ncohorts))
-      allocate(cpatch%today_nppcroot               (        ncohorts))
-      allocate(cpatch%today_nppseeds               (        ncohorts))
-      allocate(cpatch%today_nppwood                (        ncohorts))
-      allocate(cpatch%today_nppdaily               (        ncohorts))
-      allocate(cpatch%growth_respiration           (        ncohorts))
-      allocate(cpatch%storage_respiration          (        ncohorts))
-      allocate(cpatch%vleaf_respiration            (        ncohorts))
-      allocate(cpatch%monthly_dndt                 (        ncohorts))
-      allocate(cpatch%monthly_dlnndt               (        ncohorts))
-      allocate(cpatch%mort_rate                    ( n_mort,ncohorts))
+      allocate(cpatch%pft                          (                    ncohorts))
+      allocate(cpatch%nplant                       (                    ncohorts))
+      allocate(cpatch%phenology_status             (                    ncohorts))
+      allocate(cpatch%recruit_dbh                  (                    ncohorts))
+      allocate(cpatch%census_status                (                    ncohorts))
+      allocate(cpatch%hite                         (                    ncohorts))
+      allocate(cpatch%agb                          (                    ncohorts))
+      allocate(cpatch%basarea                      (                    ncohorts))
+      allocate(cpatch%dagb_dt                      (                    ncohorts))
+      allocate(cpatch%dlnagb_dt                    (                    ncohorts))
+      allocate(cpatch%dba_dt                       (                    ncohorts))
+      allocate(cpatch%dlnba_dt                     (                    ncohorts))
+      allocate(cpatch%ddbh_dt                      (                    ncohorts))
+      allocate(cpatch%dlndbh_dt                    (                    ncohorts))
+      allocate(cpatch%dbh                          (                    ncohorts))
+      allocate(cpatch%bdead                        (                    ncohorts))
+      allocate(cpatch%bleaf                        (                    ncohorts))
+      allocate(cpatch%balive                       (                    ncohorts))
+      allocate(cpatch%broot                        (                    ncohorts))
+      allocate(cpatch%bsapwooda                    (                    ncohorts))
+      allocate(cpatch%bsapwoodb                    (                    ncohorts))
+      allocate(cpatch%bstorage                     (                    ncohorts))
+      allocate(cpatch%bseeds                       (                    ncohorts))
+      allocate(cpatch%lai                          (                    ncohorts))
+      allocate(cpatch%wai                          (                    ncohorts))
+      allocate(cpatch%crown_area                   (                    ncohorts))
+      allocate(cpatch%leaf_resolvable              (                    ncohorts))
+      allocate(cpatch%wood_resolvable              (                    ncohorts))
+      allocate(cpatch%cb                           (                 13,ncohorts))
+      allocate(cpatch%cb_lightmax                  (                 13,ncohorts))
+      allocate(cpatch%cb_moistmax                  (                 13,ncohorts))
+      allocate(cpatch%cbr_bar                      (                    ncohorts))
+      allocate(cpatch%leaf_energy                  (                    ncohorts))
+      allocate(cpatch%leaf_temp                    (                    ncohorts))
+      allocate(cpatch%leaf_vpdef                   (                    ncohorts))
+      allocate(cpatch%leaf_temp_pv                 (                    ncohorts))
+      allocate(cpatch%leaf_hcap                    (                    ncohorts))
+      allocate(cpatch%leaf_fliq                    (                    ncohorts))
+      allocate(cpatch%leaf_water                   (                    ncohorts))
+      allocate(cpatch%wood_energy                  (                    ncohorts))
+      allocate(cpatch%wood_temp                    (                    ncohorts))
+      allocate(cpatch%wood_temp_pv                 (                    ncohorts))
+      allocate(cpatch%wood_hcap                    (                    ncohorts))
+      allocate(cpatch%wood_fliq                    (                    ncohorts))
+      allocate(cpatch%wood_water                   (                    ncohorts))
+      allocate(cpatch%veg_wind                     (                    ncohorts))
+      allocate(cpatch%lsfc_shv_open                (                    ncohorts))
+      allocate(cpatch%lsfc_shv_closed              (                    ncohorts))
+      allocate(cpatch%lsfc_co2_open                (                    ncohorts))
+      allocate(cpatch%lsfc_co2_closed              (                    ncohorts))
+      allocate(cpatch%lint_shv                     (                    ncohorts))
+      allocate(cpatch%lint_co2_open                (                    ncohorts))
+      allocate(cpatch%lint_co2_closed              (                    ncohorts))
+      allocate(cpatch%today_leaf_resp              (                    ncohorts))
+      allocate(cpatch%today_root_resp              (                    ncohorts))
+      allocate(cpatch%today_gpp                    (                    ncohorts))
+      allocate(cpatch%today_gpp_pot                (                    ncohorts))
+      allocate(cpatch%today_gpp_lightmax           (                    ncohorts))
+      allocate(cpatch%today_gpp_moistmax           (                    ncohorts))
+      allocate(cpatch%today_nppleaf                (                    ncohorts))
+      allocate(cpatch%today_nppfroot               (                    ncohorts))
+      allocate(cpatch%today_nppsapwood             (                    ncohorts))
+      allocate(cpatch%today_nppcroot               (                    ncohorts))
+      allocate(cpatch%today_nppseeds               (                    ncohorts))
+      allocate(cpatch%today_nppwood                (                    ncohorts))
+      allocate(cpatch%today_nppdaily               (                    ncohorts))
+      allocate(cpatch%growth_respiration           (                    ncohorts))
+      allocate(cpatch%storage_respiration          (                    ncohorts))
+      allocate(cpatch%vleaf_respiration            (                    ncohorts))
+      allocate(cpatch%monthly_dndt                 (                    ncohorts))
+      allocate(cpatch%monthly_dlnndt               (                    ncohorts))
+      allocate(cpatch%mort_rate                    (             n_mort,ncohorts))
 
-      allocate(cpatch%krdepth                      (        ncohorts))
-      allocate(cpatch%first_census                 (        ncohorts))
-      allocate(cpatch%new_recruit_flag             (        ncohorts))
-      allocate(cpatch%light_level                  (        ncohorts))
-      allocate(cpatch%light_level_beam             (        ncohorts))
-      allocate(cpatch%light_level_diff             (        ncohorts))
-      allocate(cpatch%par_l                        (        ncohorts))
-      allocate(cpatch%par_l_beam                   (        ncohorts))
-      allocate(cpatch%par_l_diffuse                (        ncohorts))
-      allocate(cpatch%rshort_l                     (        ncohorts))
-      allocate(cpatch%rshort_l_beam                (        ncohorts))
-      allocate(cpatch%rshort_l_diffuse             (        ncohorts))
-      allocate(cpatch%rlong_l                      (        ncohorts))
-      allocate(cpatch%rshort_w                     (        ncohorts))
-      allocate(cpatch%rshort_w_beam                (        ncohorts))
-      allocate(cpatch%rshort_w_diffuse             (        ncohorts))
-      allocate(cpatch%rlong_w                      (        ncohorts))
-      allocate(cpatch%leaf_gbh                     (        ncohorts))
-      allocate(cpatch%leaf_gbw                     (        ncohorts))
-      allocate(cpatch%wood_gbh                     (        ncohorts))
-      allocate(cpatch%wood_gbw                     (        ncohorts))
-      allocate(cpatch%A_open                       (        ncohorts))
-      allocate(cpatch%A_closed                     (        ncohorts))
-      allocate(cpatch%psi_open                     (        ncohorts))
-      allocate(cpatch%psi_closed                   (        ncohorts))
-      allocate(cpatch%gsw_open                     (        ncohorts))
-      allocate(cpatch%gsw_closed                   (        ncohorts))
-      allocate(cpatch%leaf_gsw                     (        ncohorts))
-      allocate(cpatch%fsw                          (        ncohorts))
-      allocate(cpatch%fsn                          (        ncohorts))
-      allocate(cpatch%fs_open                      (        ncohorts))
-      allocate(cpatch%water_supply                 (        ncohorts))
-      allocate(cpatch%leaf_maintenance             (        ncohorts))
-      allocate(cpatch%root_maintenance             (        ncohorts))
-      allocate(cpatch%leaf_drop                    (        ncohorts))
-      allocate(cpatch%leaf_respiration             (        ncohorts))
-      allocate(cpatch%root_respiration             (        ncohorts))
-      allocate(cpatch%gpp                          (        ncohorts))
-      allocate(cpatch%paw_avg                      (        ncohorts))
-      allocate(cpatch%elongf                       (        ncohorts))
-      allocate(cpatch%turnover_amp                 (        ncohorts))
-      allocate(cpatch%llspan                       (        ncohorts))
-      allocate(cpatch%vm_bar                       (        ncohorts))
-      allocate(cpatch%sla                          (        ncohorts))
+      allocate(cpatch%krdepth                      (                    ncohorts))
+      allocate(cpatch%first_census                 (                    ncohorts))
+      allocate(cpatch%new_recruit_flag             (                    ncohorts))
+      allocate(cpatch%light_level                  (                    ncohorts))
+      allocate(cpatch%light_level_beam             (                    ncohorts))
+      allocate(cpatch%light_level_diff             (                    ncohorts))
+      allocate(cpatch%par_l                        (                    ncohorts))
+      allocate(cpatch%par_l_beam                   (                    ncohorts))
+      allocate(cpatch%par_l_diffuse                (                    ncohorts))
+      allocate(cpatch%rshort_l                     (                    ncohorts))
+      allocate(cpatch%rshort_l_beam                (                    ncohorts))
+      allocate(cpatch%rshort_l_diffuse             (                    ncohorts))
+      allocate(cpatch%rlong_l                      (                    ncohorts))
+      allocate(cpatch%rshort_w                     (                    ncohorts))
+      allocate(cpatch%rshort_w_beam                (                    ncohorts))
+      allocate(cpatch%rshort_w_diffuse             (                    ncohorts))
+      allocate(cpatch%rlong_w                      (                    ncohorts))
+      allocate(cpatch%rad_profile                  (          n_radprof,ncohorts))
+      allocate(cpatch%leaf_gbh                     (                    ncohorts))
+      allocate(cpatch%leaf_gbw                     (                    ncohorts))
+      allocate(cpatch%wood_gbh                     (                    ncohorts))
+      allocate(cpatch%wood_gbw                     (                    ncohorts))
+      allocate(cpatch%A_open                       (                    ncohorts))
+      allocate(cpatch%A_closed                     (                    ncohorts))
+      allocate(cpatch%psi_open                     (                    ncohorts))
+      allocate(cpatch%psi_closed                   (                    ncohorts))
+      allocate(cpatch%gsw_open                     (                    ncohorts))
+      allocate(cpatch%gsw_closed                   (                    ncohorts))
+      allocate(cpatch%leaf_gsw                     (                    ncohorts))
+      allocate(cpatch%fsw                          (                    ncohorts))
+      allocate(cpatch%fsn                          (                    ncohorts))
+      allocate(cpatch%fs_open                      (                    ncohorts))
+      allocate(cpatch%water_supply                 (                    ncohorts))
+      allocate(cpatch%leaf_maintenance             (                    ncohorts))
+      allocate(cpatch%root_maintenance             (                    ncohorts))
+      allocate(cpatch%leaf_drop                    (                    ncohorts))
+      allocate(cpatch%leaf_respiration             (                    ncohorts))
+      allocate(cpatch%root_respiration             (                    ncohorts))
+      allocate(cpatch%gpp                          (                    ncohorts))
+      allocate(cpatch%paw_avg                      (                    ncohorts))
+      allocate(cpatch%elongf                       (                    ncohorts))
+      allocate(cpatch%turnover_amp                 (                    ncohorts))
+      allocate(cpatch%llspan                       (                    ncohorts))
+      allocate(cpatch%vm_bar                       (                    ncohorts))
+      allocate(cpatch%sla                          (                    ncohorts))
 
-      allocate(cpatch%fmean_gpp                    (        ncohorts))
-      allocate(cpatch%fmean_npp                    (        ncohorts))
-      allocate(cpatch%fmean_leaf_resp              (        ncohorts))
-      allocate(cpatch%fmean_root_resp              (        ncohorts))
-      allocate(cpatch%fmean_growth_resp            (        ncohorts))
-      allocate(cpatch%fmean_storage_resp           (        ncohorts))
-      allocate(cpatch%fmean_vleaf_resp             (        ncohorts))
-      allocate(cpatch%fmean_plresp                 (        ncohorts))
-      allocate(cpatch%fmean_leaf_energy            (        ncohorts))
-      allocate(cpatch%fmean_leaf_water             (        ncohorts))
-      allocate(cpatch%fmean_leaf_hcap              (        ncohorts))
-      allocate(cpatch%fmean_leaf_vpdef             (        ncohorts))
-      allocate(cpatch%fmean_leaf_temp              (        ncohorts))
-      allocate(cpatch%fmean_leaf_fliq              (        ncohorts))
-      allocate(cpatch%fmean_leaf_gsw               (        ncohorts))
-      allocate(cpatch%fmean_leaf_gbw               (        ncohorts))
-      allocate(cpatch%fmean_wood_energy            (        ncohorts))
-      allocate(cpatch%fmean_wood_water             (        ncohorts))
-      allocate(cpatch%fmean_wood_hcap              (        ncohorts))
-      allocate(cpatch%fmean_wood_temp              (        ncohorts))
-      allocate(cpatch%fmean_wood_fliq              (        ncohorts))
-      allocate(cpatch%fmean_wood_gbw               (        ncohorts))
-      allocate(cpatch%fmean_fs_open                (        ncohorts))
-      allocate(cpatch%fmean_fsw                    (        ncohorts))
-      allocate(cpatch%fmean_fsn                    (        ncohorts))
-      allocate(cpatch%fmean_psi_open               (        ncohorts))
-      allocate(cpatch%fmean_psi_closed             (        ncohorts))
-      allocate(cpatch%fmean_water_supply           (        ncohorts))
-      allocate(cpatch%fmean_light_level            (        ncohorts))
-      allocate(cpatch%fmean_light_level_beam       (        ncohorts))
-      allocate(cpatch%fmean_light_level_diff       (        ncohorts))
-      allocate(cpatch%fmean_par_l                  (        ncohorts))
-      allocate(cpatch%fmean_par_l_beam             (        ncohorts))
-      allocate(cpatch%fmean_par_l_diff             (        ncohorts))
-      allocate(cpatch%fmean_rshort_l               (        ncohorts))
-      allocate(cpatch%fmean_rlong_l                (        ncohorts))
-      allocate(cpatch%fmean_sensible_lc            (        ncohorts))
-      allocate(cpatch%fmean_vapor_lc               (        ncohorts))
-      allocate(cpatch%fmean_transp                 (        ncohorts))
-      allocate(cpatch%fmean_intercepted_al         (        ncohorts))
-      allocate(cpatch%fmean_wshed_lg               (        ncohorts))
-      allocate(cpatch%fmean_rshort_w               (        ncohorts))
-      allocate(cpatch%fmean_rlong_w                (        ncohorts))
-      allocate(cpatch%fmean_sensible_wc            (        ncohorts))
-      allocate(cpatch%fmean_vapor_wc               (        ncohorts))
-      allocate(cpatch%fmean_intercepted_aw         (        ncohorts))
-      allocate(cpatch%fmean_wshed_wg               (        ncohorts))
+      allocate(cpatch%fmean_gpp                    (                    ncohorts))
+      allocate(cpatch%fmean_npp                    (                    ncohorts))
+      allocate(cpatch%fmean_leaf_resp              (                    ncohorts))
+      allocate(cpatch%fmean_root_resp              (                    ncohorts))
+      allocate(cpatch%fmean_growth_resp            (                    ncohorts))
+      allocate(cpatch%fmean_storage_resp           (                    ncohorts))
+      allocate(cpatch%fmean_vleaf_resp             (                    ncohorts))
+      allocate(cpatch%fmean_plresp                 (                    ncohorts))
+      allocate(cpatch%fmean_leaf_energy            (                    ncohorts))
+      allocate(cpatch%fmean_leaf_water             (                    ncohorts))
+      allocate(cpatch%fmean_leaf_hcap              (                    ncohorts))
+      allocate(cpatch%fmean_leaf_vpdef             (                    ncohorts))
+      allocate(cpatch%fmean_leaf_temp              (                    ncohorts))
+      allocate(cpatch%fmean_leaf_fliq              (                    ncohorts))
+      allocate(cpatch%fmean_leaf_gsw               (                    ncohorts))
+      allocate(cpatch%fmean_leaf_gbw               (                    ncohorts))
+      allocate(cpatch%fmean_wood_energy            (                    ncohorts))
+      allocate(cpatch%fmean_wood_water             (                    ncohorts))
+      allocate(cpatch%fmean_wood_hcap              (                    ncohorts))
+      allocate(cpatch%fmean_wood_temp              (                    ncohorts))
+      allocate(cpatch%fmean_wood_fliq              (                    ncohorts))
+      allocate(cpatch%fmean_wood_gbw               (                    ncohorts))
+      allocate(cpatch%fmean_fs_open                (                    ncohorts))
+      allocate(cpatch%fmean_fsw                    (                    ncohorts))
+      allocate(cpatch%fmean_fsn                    (                    ncohorts))
+      allocate(cpatch%fmean_psi_open               (                    ncohorts))
+      allocate(cpatch%fmean_psi_closed             (                    ncohorts))
+      allocate(cpatch%fmean_water_supply           (                    ncohorts))
+      allocate(cpatch%fmean_light_level            (                    ncohorts))
+      allocate(cpatch%fmean_light_level_beam       (                    ncohorts))
+      allocate(cpatch%fmean_light_level_diff       (                    ncohorts))
+      allocate(cpatch%fmean_par_l                  (                    ncohorts))
+      allocate(cpatch%fmean_par_l_beam             (                    ncohorts))
+      allocate(cpatch%fmean_par_l_diff             (                    ncohorts))
+      allocate(cpatch%fmean_rshort_l               (                    ncohorts))
+      allocate(cpatch%fmean_rlong_l                (                    ncohorts))
+      allocate(cpatch%fmean_sensible_lc            (                    ncohorts))
+      allocate(cpatch%fmean_vapor_lc               (                    ncohorts))
+      allocate(cpatch%fmean_transp                 (                    ncohorts))
+      allocate(cpatch%fmean_intercepted_al         (                    ncohorts))
+      allocate(cpatch%fmean_wshed_lg               (                    ncohorts))
+      allocate(cpatch%fmean_rshort_w               (                    ncohorts))
+      allocate(cpatch%fmean_rlong_w                (                    ncohorts))
+      allocate(cpatch%fmean_rad_profile            (          n_radprof,ncohorts))
+      allocate(cpatch%fmean_sensible_wc            (                    ncohorts))
+      allocate(cpatch%fmean_vapor_wc               (                    ncohorts))
+      allocate(cpatch%fmean_intercepted_aw         (                    ncohorts))
+      allocate(cpatch%fmean_wshed_wg               (                    ncohorts))
 
 
       if (writing_long) then
-         allocate(cpatch%dmean_nppleaf             (        ncohorts))
-         allocate(cpatch%dmean_nppfroot            (        ncohorts))
-         allocate(cpatch%dmean_nppsapwood          (        ncohorts))
-         allocate(cpatch%dmean_nppcroot            (        ncohorts))
-         allocate(cpatch%dmean_nppseeds            (        ncohorts))
-         allocate(cpatch%dmean_nppwood             (        ncohorts))
-         allocate(cpatch%dmean_nppdaily            (        ncohorts))
-         allocate(cpatch%dmean_gpp                 (        ncohorts))
-         allocate(cpatch%dmean_npp                 (        ncohorts))
-         allocate(cpatch%dmean_leaf_resp           (        ncohorts))
-         allocate(cpatch%dmean_root_resp           (        ncohorts))
-         allocate(cpatch%dmean_growth_resp         (        ncohorts))
-         allocate(cpatch%dmean_storage_resp        (        ncohorts))
-         allocate(cpatch%dmean_vleaf_resp          (        ncohorts))
-         allocate(cpatch%dmean_plresp              (        ncohorts))
-         allocate(cpatch%dmean_leaf_energy         (        ncohorts))
-         allocate(cpatch%dmean_leaf_water          (        ncohorts))
-         allocate(cpatch%dmean_leaf_hcap           (        ncohorts))
-         allocate(cpatch%dmean_leaf_vpdef          (        ncohorts))
-         allocate(cpatch%dmean_leaf_temp           (        ncohorts))
-         allocate(cpatch%dmean_leaf_fliq           (        ncohorts))
-         allocate(cpatch%dmean_leaf_gsw            (        ncohorts))
-         allocate(cpatch%dmean_leaf_gbw            (        ncohorts))
-         allocate(cpatch%dmean_wood_energy         (        ncohorts))
-         allocate(cpatch%dmean_wood_water          (        ncohorts))
-         allocate(cpatch%dmean_wood_hcap           (        ncohorts))
-         allocate(cpatch%dmean_wood_temp           (        ncohorts))
-         allocate(cpatch%dmean_wood_fliq           (        ncohorts))
-         allocate(cpatch%dmean_wood_gbw            (        ncohorts))
-         allocate(cpatch%dmean_fs_open             (        ncohorts))
-         allocate(cpatch%dmean_fsw                 (        ncohorts))
-         allocate(cpatch%dmean_fsn                 (        ncohorts))
-         allocate(cpatch%dmean_psi_open            (        ncohorts))
-         allocate(cpatch%dmean_psi_closed          (        ncohorts))
-         allocate(cpatch%dmean_water_supply        (        ncohorts))
-         allocate(cpatch%dmean_light_level         (        ncohorts))
-         allocate(cpatch%dmean_light_level_beam    (        ncohorts))
-         allocate(cpatch%dmean_light_level_diff    (        ncohorts))
-         allocate(cpatch%dmean_par_l               (        ncohorts))
-         allocate(cpatch%dmean_par_l_beam          (        ncohorts))
-         allocate(cpatch%dmean_par_l_diff          (        ncohorts))
-         allocate(cpatch%dmean_rshort_l            (        ncohorts))
-         allocate(cpatch%dmean_rlong_l             (        ncohorts))
-         allocate(cpatch%dmean_sensible_lc         (        ncohorts))
-         allocate(cpatch%dmean_vapor_lc            (        ncohorts))
-         allocate(cpatch%dmean_transp              (        ncohorts))
-         allocate(cpatch%dmean_intercepted_al      (        ncohorts))
-         allocate(cpatch%dmean_wshed_lg            (        ncohorts))
-         allocate(cpatch%dmean_rshort_w            (        ncohorts))
-         allocate(cpatch%dmean_rlong_w             (        ncohorts))
-         allocate(cpatch%dmean_sensible_wc         (        ncohorts))
-         allocate(cpatch%dmean_vapor_wc            (        ncohorts))
-         allocate(cpatch%dmean_intercepted_aw      (        ncohorts))
-         allocate(cpatch%dmean_wshed_wg            (        ncohorts))
+         allocate(cpatch%dmean_nppleaf             (                    ncohorts))
+         allocate(cpatch%dmean_nppfroot            (                    ncohorts))
+         allocate(cpatch%dmean_nppsapwood          (                    ncohorts))
+         allocate(cpatch%dmean_nppcroot            (                    ncohorts))
+         allocate(cpatch%dmean_nppseeds            (                    ncohorts))
+         allocate(cpatch%dmean_nppwood             (                    ncohorts))
+         allocate(cpatch%dmean_nppdaily            (                    ncohorts))
+         allocate(cpatch%dmean_gpp                 (                    ncohorts))
+         allocate(cpatch%dmean_npp                 (                    ncohorts))
+         allocate(cpatch%dmean_leaf_resp           (                    ncohorts))
+         allocate(cpatch%dmean_root_resp           (                    ncohorts))
+         allocate(cpatch%dmean_growth_resp         (                    ncohorts))
+         allocate(cpatch%dmean_storage_resp        (                    ncohorts))
+         allocate(cpatch%dmean_vleaf_resp          (                    ncohorts))
+         allocate(cpatch%dmean_plresp              (                    ncohorts))
+         allocate(cpatch%dmean_leaf_energy         (                    ncohorts))
+         allocate(cpatch%dmean_leaf_water          (                    ncohorts))
+         allocate(cpatch%dmean_leaf_hcap           (                    ncohorts))
+         allocate(cpatch%dmean_leaf_vpdef          (                    ncohorts))
+         allocate(cpatch%dmean_leaf_temp           (                    ncohorts))
+         allocate(cpatch%dmean_leaf_fliq           (                    ncohorts))
+         allocate(cpatch%dmean_leaf_gsw            (                    ncohorts))
+         allocate(cpatch%dmean_leaf_gbw            (                    ncohorts))
+         allocate(cpatch%dmean_wood_energy         (                    ncohorts))
+         allocate(cpatch%dmean_wood_water          (                    ncohorts))
+         allocate(cpatch%dmean_wood_hcap           (                    ncohorts))
+         allocate(cpatch%dmean_wood_temp           (                    ncohorts))
+         allocate(cpatch%dmean_wood_fliq           (                    ncohorts))
+         allocate(cpatch%dmean_wood_gbw            (                    ncohorts))
+         allocate(cpatch%dmean_fs_open             (                    ncohorts))
+         allocate(cpatch%dmean_fsw                 (                    ncohorts))
+         allocate(cpatch%dmean_fsn                 (                    ncohorts))
+         allocate(cpatch%dmean_psi_open            (                    ncohorts))
+         allocate(cpatch%dmean_psi_closed          (                    ncohorts))
+         allocate(cpatch%dmean_water_supply        (                    ncohorts))
+         allocate(cpatch%dmean_light_level         (                    ncohorts))
+         allocate(cpatch%dmean_light_level_beam    (                    ncohorts))
+         allocate(cpatch%dmean_light_level_diff    (                    ncohorts))
+         allocate(cpatch%dmean_par_l               (                    ncohorts))
+         allocate(cpatch%dmean_par_l_beam          (                    ncohorts))
+         allocate(cpatch%dmean_par_l_diff          (                    ncohorts))
+         allocate(cpatch%dmean_rshort_l            (                    ncohorts))
+         allocate(cpatch%dmean_rlong_l             (                    ncohorts))
+         allocate(cpatch%dmean_sensible_lc         (                    ncohorts))
+         allocate(cpatch%dmean_vapor_lc            (                    ncohorts))
+         allocate(cpatch%dmean_transp              (                    ncohorts))
+         allocate(cpatch%dmean_intercepted_al      (                    ncohorts))
+         allocate(cpatch%dmean_wshed_lg            (                    ncohorts))
+         allocate(cpatch%dmean_rshort_w            (                    ncohorts))
+         allocate(cpatch%dmean_rlong_w             (                    ncohorts))
+         allocate(cpatch%dmean_rad_profile         (          n_radprof,ncohorts))
+         allocate(cpatch%dmean_sensible_wc         (                    ncohorts))
+         allocate(cpatch%dmean_vapor_wc            (                    ncohorts))
+         allocate(cpatch%dmean_intercepted_aw      (                    ncohorts))
+         allocate(cpatch%dmean_wshed_wg            (                    ncohorts))
       end if
 
       if (writing_eorq) then
-         allocate(cpatch%mmean_lai                 (        ncohorts))
-         allocate(cpatch%mmean_bleaf               (        ncohorts))
-         allocate(cpatch%mmean_broot               (        ncohorts))
-         allocate(cpatch%mmean_bstorage            (        ncohorts))
-         allocate(cpatch%mmean_mort_rate           ( n_mort,ncohorts))
-         allocate(cpatch%mmean_leaf_maintenance    (        ncohorts))
-         allocate(cpatch%mmean_root_maintenance    (        ncohorts))
-         allocate(cpatch%mmean_leaf_drop           (        ncohorts))
-         allocate(cpatch%mmean_cb                  (        ncohorts))
-         allocate(cpatch%mmean_gpp                 (        ncohorts))
-         allocate(cpatch%mmean_npp                 (        ncohorts))
-         allocate(cpatch%mmean_leaf_resp           (        ncohorts))
-         allocate(cpatch%mmean_root_resp           (        ncohorts))
-         allocate(cpatch%mmean_growth_resp         (        ncohorts))
-         allocate(cpatch%mmean_storage_resp        (        ncohorts))
-         allocate(cpatch%mmean_vleaf_resp          (        ncohorts))
-         allocate(cpatch%mmean_plresp              (        ncohorts))
-         allocate(cpatch%mmean_leaf_energy         (        ncohorts))
-         allocate(cpatch%mmean_leaf_water          (        ncohorts))
-         allocate(cpatch%mmean_leaf_hcap           (        ncohorts))
-         allocate(cpatch%mmean_leaf_vpdef          (        ncohorts))
-         allocate(cpatch%mmean_leaf_temp           (        ncohorts))
-         allocate(cpatch%mmean_leaf_fliq           (        ncohorts))
-         allocate(cpatch%mmean_leaf_gsw            (        ncohorts))
-         allocate(cpatch%mmean_leaf_gbw            (        ncohorts))
-         allocate(cpatch%mmean_wood_energy         (        ncohorts))
-         allocate(cpatch%mmean_wood_water          (        ncohorts))
-         allocate(cpatch%mmean_wood_hcap           (        ncohorts))
-         allocate(cpatch%mmean_wood_temp           (        ncohorts))
-         allocate(cpatch%mmean_wood_fliq           (        ncohorts))
-         allocate(cpatch%mmean_wood_gbw            (        ncohorts))
-         allocate(cpatch%mmean_fs_open             (        ncohorts))
-         allocate(cpatch%mmean_fsw                 (        ncohorts))
-         allocate(cpatch%mmean_fsn                 (        ncohorts))
-         allocate(cpatch%mmean_psi_open            (        ncohorts))
-         allocate(cpatch%mmean_psi_closed          (        ncohorts))
-         allocate(cpatch%mmean_water_supply        (        ncohorts))
-         allocate(cpatch%mmean_light_level         (        ncohorts))
-         allocate(cpatch%mmean_light_level_beam    (        ncohorts))
-         allocate(cpatch%mmean_light_level_diff    (        ncohorts))
-         allocate(cpatch%mmean_par_l               (        ncohorts))
-         allocate(cpatch%mmean_par_l_beam          (        ncohorts))
-         allocate(cpatch%mmean_par_l_diff          (        ncohorts))
-         allocate(cpatch%mmean_rshort_l            (        ncohorts))
-         allocate(cpatch%mmean_rlong_l             (        ncohorts))
-         allocate(cpatch%mmean_sensible_lc         (        ncohorts))
-         allocate(cpatch%mmean_vapor_lc            (        ncohorts))
-         allocate(cpatch%mmean_transp              (        ncohorts))
-         allocate(cpatch%mmean_intercepted_al      (        ncohorts))
-         allocate(cpatch%mmean_wshed_lg            (        ncohorts))
-         allocate(cpatch%mmean_rshort_w            (        ncohorts))
-         allocate(cpatch%mmean_rlong_w             (        ncohorts))
-         allocate(cpatch%mmean_sensible_wc         (        ncohorts))
-         allocate(cpatch%mmean_vapor_wc            (        ncohorts))
-         allocate(cpatch%mmean_intercepted_aw      (        ncohorts))
-         allocate(cpatch%mmean_wshed_wg            (        ncohorts))
-         allocate(cpatch%mmean_nppleaf             (        ncohorts))
-         allocate(cpatch%mmean_nppfroot            (        ncohorts))
-         allocate(cpatch%mmean_nppsapwood          (        ncohorts))
-         allocate(cpatch%mmean_nppcroot            (        ncohorts))
-         allocate(cpatch%mmean_nppseeds            (        ncohorts))
-         allocate(cpatch%mmean_nppwood             (        ncohorts))
-         allocate(cpatch%mmean_nppdaily            (        ncohorts))
-         allocate(cpatch%mmsqu_gpp                 (        ncohorts))
-         allocate(cpatch%mmsqu_npp                 (        ncohorts))
-         allocate(cpatch%mmsqu_plresp              (        ncohorts))
-         allocate(cpatch%mmsqu_sensible_lc         (        ncohorts))
-         allocate(cpatch%mmsqu_vapor_lc            (        ncohorts))
-         allocate(cpatch%mmsqu_transp              (        ncohorts))
-         allocate(cpatch%mmsqu_sensible_wc         (        ncohorts))
-         allocate(cpatch%mmsqu_vapor_wc            (        ncohorts))
+         allocate(cpatch%mmean_lai                 (                    ncohorts))
+         allocate(cpatch%mmean_bleaf               (                    ncohorts))
+         allocate(cpatch%mmean_broot               (                    ncohorts))
+         allocate(cpatch%mmean_bstorage            (                    ncohorts))
+         allocate(cpatch%mmean_mort_rate           (             n_mort,ncohorts))
+         allocate(cpatch%mmean_leaf_maintenance    (                    ncohorts))
+         allocate(cpatch%mmean_root_maintenance    (                    ncohorts))
+         allocate(cpatch%mmean_leaf_drop           (                    ncohorts))
+         allocate(cpatch%mmean_cb                  (                    ncohorts))
+         allocate(cpatch%mmean_gpp                 (                    ncohorts))
+         allocate(cpatch%mmean_npp                 (                    ncohorts))
+         allocate(cpatch%mmean_leaf_resp           (                    ncohorts))
+         allocate(cpatch%mmean_root_resp           (                    ncohorts))
+         allocate(cpatch%mmean_growth_resp         (                    ncohorts))
+         allocate(cpatch%mmean_storage_resp        (                    ncohorts))
+         allocate(cpatch%mmean_vleaf_resp          (                    ncohorts))
+         allocate(cpatch%mmean_plresp              (                    ncohorts))
+         allocate(cpatch%mmean_leaf_energy         (                    ncohorts))
+         allocate(cpatch%mmean_leaf_water          (                    ncohorts))
+         allocate(cpatch%mmean_leaf_hcap           (                    ncohorts))
+         allocate(cpatch%mmean_leaf_vpdef          (                    ncohorts))
+         allocate(cpatch%mmean_leaf_temp           (                    ncohorts))
+         allocate(cpatch%mmean_leaf_fliq           (                    ncohorts))
+         allocate(cpatch%mmean_leaf_gsw            (                    ncohorts))
+         allocate(cpatch%mmean_leaf_gbw            (                    ncohorts))
+         allocate(cpatch%mmean_wood_energy         (                    ncohorts))
+         allocate(cpatch%mmean_wood_water          (                    ncohorts))
+         allocate(cpatch%mmean_wood_hcap           (                    ncohorts))
+         allocate(cpatch%mmean_wood_temp           (                    ncohorts))
+         allocate(cpatch%mmean_wood_fliq           (                    ncohorts))
+         allocate(cpatch%mmean_wood_gbw            (                    ncohorts))
+         allocate(cpatch%mmean_fs_open             (                    ncohorts))
+         allocate(cpatch%mmean_fsw                 (                    ncohorts))
+         allocate(cpatch%mmean_fsn                 (                    ncohorts))
+         allocate(cpatch%mmean_psi_open            (                    ncohorts))
+         allocate(cpatch%mmean_psi_closed          (                    ncohorts))
+         allocate(cpatch%mmean_water_supply        (                    ncohorts))
+         allocate(cpatch%mmean_light_level         (                    ncohorts))
+         allocate(cpatch%mmean_light_level_beam    (                    ncohorts))
+         allocate(cpatch%mmean_light_level_diff    (                    ncohorts))
+         allocate(cpatch%mmean_par_l               (                    ncohorts))
+         allocate(cpatch%mmean_par_l_beam          (                    ncohorts))
+         allocate(cpatch%mmean_par_l_diff          (                    ncohorts))
+         allocate(cpatch%mmean_rshort_l            (                    ncohorts))
+         allocate(cpatch%mmean_rlong_l             (                    ncohorts))
+         allocate(cpatch%mmean_sensible_lc         (                    ncohorts))
+         allocate(cpatch%mmean_vapor_lc            (                    ncohorts))
+         allocate(cpatch%mmean_transp              (                    ncohorts))
+         allocate(cpatch%mmean_intercepted_al      (                    ncohorts))
+         allocate(cpatch%mmean_wshed_lg            (                    ncohorts))
+         allocate(cpatch%mmean_rshort_w            (                    ncohorts))
+         allocate(cpatch%mmean_rlong_w             (                    ncohorts))
+         allocate(cpatch%mmean_rad_profile         (          n_radprof,ncohorts))
+         allocate(cpatch%mmean_sensible_wc         (                    ncohorts))
+         allocate(cpatch%mmean_vapor_wc            (                    ncohorts))
+         allocate(cpatch%mmean_intercepted_aw      (                    ncohorts))
+         allocate(cpatch%mmean_wshed_wg            (                    ncohorts))
+         allocate(cpatch%mmean_nppleaf             (                    ncohorts))
+         allocate(cpatch%mmean_nppfroot            (                    ncohorts))
+         allocate(cpatch%mmean_nppsapwood          (                    ncohorts))
+         allocate(cpatch%mmean_nppcroot            (                    ncohorts))
+         allocate(cpatch%mmean_nppseeds            (                    ncohorts))
+         allocate(cpatch%mmean_nppwood             (                    ncohorts))
+         allocate(cpatch%mmean_nppdaily            (                    ncohorts))
+         allocate(cpatch%mmsqu_gpp                 (                    ncohorts))
+         allocate(cpatch%mmsqu_npp                 (                    ncohorts))
+         allocate(cpatch%mmsqu_plresp              (                    ncohorts))
+         allocate(cpatch%mmsqu_sensible_lc         (                    ncohorts))
+         allocate(cpatch%mmsqu_vapor_lc            (                    ncohorts))
+         allocate(cpatch%mmsqu_transp              (                    ncohorts))
+         allocate(cpatch%mmsqu_sensible_wc         (                    ncohorts))
+         allocate(cpatch%mmsqu_vapor_wc            (                    ncohorts))
       end if
       
       if (writing_dcyc) then
-         allocate(cpatch%qmean_gpp                 (ndcycle,ncohorts))
-         allocate(cpatch%qmean_npp                 (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_resp           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_root_resp           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_growth_resp         (ndcycle,ncohorts))
-         allocate(cpatch%qmean_storage_resp        (ndcycle,ncohorts))
-         allocate(cpatch%qmean_vleaf_resp          (ndcycle,ncohorts))
-         allocate(cpatch%qmean_plresp              (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_energy         (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_water          (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_hcap           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_vpdef          (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_temp           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_fliq           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_gsw            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_leaf_gbw            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wood_energy         (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wood_water          (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wood_hcap           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wood_temp           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wood_fliq           (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wood_gbw            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_fs_open             (ndcycle,ncohorts))
-         allocate(cpatch%qmean_fsw                 (ndcycle,ncohorts))
-         allocate(cpatch%qmean_fsn                 (ndcycle,ncohorts))
-         allocate(cpatch%qmean_psi_open            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_psi_closed          (ndcycle,ncohorts))
-         allocate(cpatch%qmean_water_supply        (ndcycle,ncohorts))
-         allocate(cpatch%qmean_light_level         (ndcycle,ncohorts))
-         allocate(cpatch%qmean_light_level_beam    (ndcycle,ncohorts))
-         allocate(cpatch%qmean_light_level_diff    (ndcycle,ncohorts))
-         allocate(cpatch%qmean_par_l               (ndcycle,ncohorts))
-         allocate(cpatch%qmean_par_l_beam          (ndcycle,ncohorts))
-         allocate(cpatch%qmean_par_l_diff          (ndcycle,ncohorts))
-         allocate(cpatch%qmean_rshort_l            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_rlong_l             (ndcycle,ncohorts))
-         allocate(cpatch%qmean_sensible_lc         (ndcycle,ncohorts))
-         allocate(cpatch%qmean_vapor_lc            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_transp              (ndcycle,ncohorts))
-         allocate(cpatch%qmean_intercepted_al      (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wshed_lg            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_rshort_w            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_rlong_w             (ndcycle,ncohorts))
-         allocate(cpatch%qmean_sensible_wc         (ndcycle,ncohorts))
-         allocate(cpatch%qmean_vapor_wc            (ndcycle,ncohorts))
-         allocate(cpatch%qmean_intercepted_aw      (ndcycle,ncohorts))
-         allocate(cpatch%qmean_wshed_wg            (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_gpp                 (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_npp                 (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_plresp              (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_sensible_lc         (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_vapor_lc            (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_transp              (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_sensible_wc         (ndcycle,ncohorts))
-         allocate(cpatch%qmsqu_vapor_wc            (ndcycle,ncohorts))
+         allocate(cpatch%qmean_gpp                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_npp                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_resp           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_root_resp           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_growth_resp         (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_storage_resp        (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_vleaf_resp          (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_plresp              (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_energy         (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_water          (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_hcap           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_vpdef          (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_temp           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_fliq           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_gsw            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_leaf_gbw            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_energy         (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_water          (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_hcap           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_temp           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_fliq           (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wood_gbw            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_fs_open             (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_fsw                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_fsn                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_psi_open            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_psi_closed          (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_water_supply        (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_light_level         (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_light_level_beam    (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_light_level_diff    (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_par_l               (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_par_l_beam          (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_par_l_diff          (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_rshort_l            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_rlong_l             (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_sensible_lc         (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_vapor_lc            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_transp              (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_intercepted_al      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wshed_lg            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_rshort_w            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_rlong_w             (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_rad_profile         (n_radprof,  ndcycle,ncohorts))
+         allocate(cpatch%qmean_sensible_wc         (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_vapor_wc            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_intercepted_aw      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_wshed_wg            (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_gpp                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_npp                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_plresp              (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_sensible_lc         (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_vapor_lc            (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_transp              (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_sensible_wc         (            ndcycle,ncohorts))
+         allocate(cpatch%qmsqu_vapor_wc            (            ndcycle,ncohorts))
       end if
 
       return
@@ -6037,6 +6061,7 @@ module ed_state_vars
       nullify(cpatch%rshort_w_beam         )
       nullify(cpatch%rshort_w_diffuse      )
       nullify(cpatch%rlong_w               )
+      nullify(cpatch%rad_profile           )
       nullify(cpatch%leaf_gbh              )
       nullify(cpatch%leaf_gbw              )
       nullify(cpatch%wood_gbh              )
@@ -6107,6 +6132,7 @@ module ed_state_vars
       nullify(cpatch%fmean_wshed_lg        )
       nullify(cpatch%fmean_rshort_w        )
       nullify(cpatch%fmean_rlong_w         )
+      nullify(cpatch%fmean_rad_profile     )
       nullify(cpatch%fmean_sensible_wc     )
       nullify(cpatch%fmean_vapor_wc        )
       nullify(cpatch%fmean_intercepted_aw  )
@@ -6161,6 +6187,7 @@ module ed_state_vars
       nullify(cpatch%dmean_wshed_lg        )
       nullify(cpatch%dmean_rshort_w        )
       nullify(cpatch%dmean_rlong_w         )
+      nullify(cpatch%dmean_rad_profile     )
       nullify(cpatch%dmean_sensible_wc     )
       nullify(cpatch%dmean_vapor_wc        )
       nullify(cpatch%dmean_intercepted_aw  )
@@ -6217,6 +6244,7 @@ module ed_state_vars
       nullify(cpatch%mmean_wshed_lg        )
       nullify(cpatch%mmean_rshort_w        )
       nullify(cpatch%mmean_rlong_w         )
+      nullify(cpatch%mmean_rad_profile     )
       nullify(cpatch%mmean_sensible_wc     )
       nullify(cpatch%mmean_vapor_wc        )
       nullify(cpatch%mmean_intercepted_aw  )
@@ -6279,6 +6307,7 @@ module ed_state_vars
       nullify(cpatch%qmean_wshed_lg        )
       nullify(cpatch%qmean_rshort_w        )
       nullify(cpatch%qmean_rlong_w         )
+      nullify(cpatch%qmean_rad_profile     )
       nullify(cpatch%qmean_sensible_wc     )
       nullify(cpatch%qmean_vapor_wc        )
       nullify(cpatch%qmean_intercepted_aw  )
@@ -7733,6 +7762,7 @@ module ed_state_vars
       if(associated(cpatch%rshort_w_beam       )) deallocate(cpatch%rshort_w_beam       )
       if(associated(cpatch%rshort_w_diffuse    )) deallocate(cpatch%rshort_w_diffuse    )
       if(associated(cpatch%rlong_w             )) deallocate(cpatch%rlong_w             )
+      if(associated(cpatch%rad_profile         )) deallocate(cpatch%rad_profile         )
       if(associated(cpatch%leaf_gbh            )) deallocate(cpatch%leaf_gbh            )
       if(associated(cpatch%leaf_gbw            )) deallocate(cpatch%leaf_gbw            )
       if(associated(cpatch%wood_gbh            )) deallocate(cpatch%wood_gbh            )
@@ -7805,6 +7835,7 @@ module ed_state_vars
       if(associated(cpatch%fmean_wshed_lg      )) deallocate(cpatch%fmean_wshed_lg      )
       if(associated(cpatch%fmean_rshort_w      )) deallocate(cpatch%fmean_rshort_w      )
       if(associated(cpatch%fmean_rlong_w       )) deallocate(cpatch%fmean_rlong_w       )
+      if(associated(cpatch%fmean_rad_profile   )) deallocate(cpatch%fmean_rad_profile   )
       if(associated(cpatch%fmean_sensible_wc   )) deallocate(cpatch%fmean_sensible_wc   )
       if(associated(cpatch%fmean_vapor_wc      )) deallocate(cpatch%fmean_vapor_wc      )
       if(associated(cpatch%fmean_intercepted_aw)) deallocate(cpatch%fmean_intercepted_aw)
@@ -7861,6 +7892,7 @@ module ed_state_vars
       if(associated(cpatch%dmean_wshed_lg      )) deallocate(cpatch%dmean_wshed_lg      )
       if(associated(cpatch%dmean_rshort_w      )) deallocate(cpatch%dmean_rshort_w      )
       if(associated(cpatch%dmean_rlong_w       )) deallocate(cpatch%dmean_rlong_w       )
+      if(associated(cpatch%dmean_rad_profile   )) deallocate(cpatch%dmean_rad_profile   )
       if(associated(cpatch%dmean_sensible_wc   )) deallocate(cpatch%dmean_sensible_wc   )
       if(associated(cpatch%dmean_vapor_wc      )) deallocate(cpatch%dmean_vapor_wc      )
       if(associated(cpatch%dmean_intercepted_aw)) deallocate(cpatch%dmean_intercepted_aw)
@@ -7921,6 +7953,7 @@ module ed_state_vars
       if(associated(cpatch%mmean_wshed_lg      )) deallocate(cpatch%mmean_wshed_lg      )
       if(associated(cpatch%mmean_rshort_w      )) deallocate(cpatch%mmean_rshort_w      )
       if(associated(cpatch%mmean_rlong_w       )) deallocate(cpatch%mmean_rlong_w       )
+      if(associated(cpatch%mmean_rad_profile   )) deallocate(cpatch%mmean_rad_profile   )
       if(associated(cpatch%mmean_sensible_wc   )) deallocate(cpatch%mmean_sensible_wc   )
       if(associated(cpatch%mmean_vapor_wc      )) deallocate(cpatch%mmean_vapor_wc      )
       if(associated(cpatch%mmean_intercepted_aw)) deallocate(cpatch%mmean_intercepted_aw)
@@ -7985,6 +8018,7 @@ module ed_state_vars
       if(associated(cpatch%qmean_wshed_lg      )) deallocate(cpatch%qmean_wshed_lg      )
       if(associated(cpatch%qmean_rshort_w      )) deallocate(cpatch%qmean_rshort_w      )
       if(associated(cpatch%qmean_rlong_w       )) deallocate(cpatch%qmean_rlong_w       )
+      if(associated(cpatch%qmean_rad_profile   )) deallocate(cpatch%qmean_rad_profile   )
       if(associated(cpatch%qmean_sensible_wc   )) deallocate(cpatch%qmean_sensible_wc   )
       if(associated(cpatch%qmean_vapor_wc      )) deallocate(cpatch%qmean_vapor_wc      )
       if(associated(cpatch%qmean_intercepted_aw)) deallocate(cpatch%qmean_intercepted_aw)
@@ -9583,6 +9617,14 @@ module ed_state_vars
          !---------------------------------------------------------------------------------!
 
 
+         !------ Radiation profile variables. ---------------------------------------------!
+         do m=1,n_radprof
+            opatch%rad_profile      (m,oco) = ipatch%rad_profile      (m,ico)
+            opatch%fmean_rad_profile(m,oco) = ipatch%fmean_rad_profile(m,ico)
+         end do
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !     Daily means.                                                                !
@@ -9643,6 +9685,14 @@ module ed_state_vars
             opatch%dmean_vapor_wc        (oco) = ipatch%dmean_vapor_wc        (ico)
             opatch%dmean_intercepted_aw  (oco) = ipatch%dmean_intercepted_aw  (ico)
             opatch%dmean_wshed_wg        (oco) = ipatch%dmean_wshed_wg        (ico)
+
+
+            !------ Radiation profile variables. ------------------------------------------!
+            do m=1,n_radprof
+               opatch%dmean_rad_profile(m,oco) = ipatch%dmean_rad_profile(m,ico)
+            end do
+            !------------------------------------------------------------------------------!
+
          end if
          !---------------------------------------------------------------------------------!
 
@@ -9728,6 +9778,12 @@ module ed_state_vars
                opatch%mmean_mort_rate(m,oco) = ipatch%mmean_mort_rate(m,ico)
             end do
             !------------------------------------------------------------------------------!
+
+            !------ Radiation profile variables. ------------------------------------------!
+            do m=1,n_radprof
+               opatch%mmean_rad_profile(m,oco) = ipatch%mmean_rad_profile(m,ico)
+            end do
+            !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
 
@@ -9738,62 +9794,68 @@ module ed_state_vars
          !---------------------------------------------------------------------------------!
 
          if (writing_dcyc) then
-            do m=1,ndcycle
-               opatch%qmean_gpp             (m,oco) = ipatch%qmean_gpp             (m,ico)
-               opatch%qmean_npp             (m,oco) = ipatch%qmean_npp             (m,ico)
-               opatch%qmean_leaf_resp       (m,oco) = ipatch%qmean_leaf_resp       (m,ico)
-               opatch%qmean_root_resp       (m,oco) = ipatch%qmean_root_resp       (m,ico)
-               opatch%qmean_growth_resp     (m,oco) = ipatch%qmean_growth_resp     (m,ico)
-               opatch%qmean_storage_resp    (m,oco) = ipatch%qmean_storage_resp    (m,ico)
-               opatch%qmean_vleaf_resp      (m,oco) = ipatch%qmean_vleaf_resp      (m,ico)
-               opatch%qmean_plresp          (m,oco) = ipatch%qmean_plresp          (m,ico)
-               opatch%qmean_leaf_energy     (m,oco) = ipatch%qmean_leaf_energy     (m,ico)
-               opatch%qmean_leaf_water      (m,oco) = ipatch%qmean_leaf_water      (m,ico)
-               opatch%qmean_leaf_hcap       (m,oco) = ipatch%qmean_leaf_hcap       (m,ico)
-               opatch%qmean_leaf_vpdef      (m,oco) = ipatch%qmean_leaf_vpdef      (m,ico)
-               opatch%qmean_leaf_temp       (m,oco) = ipatch%qmean_leaf_temp       (m,ico)
-               opatch%qmean_leaf_fliq       (m,oco) = ipatch%qmean_leaf_fliq       (m,ico)
-               opatch%qmean_leaf_gsw        (m,oco) = ipatch%qmean_leaf_gsw        (m,ico)
-               opatch%qmean_leaf_gbw        (m,oco) = ipatch%qmean_leaf_gbw        (m,ico)
-               opatch%qmean_wood_energy     (m,oco) = ipatch%qmean_wood_energy     (m,ico)
-               opatch%qmean_wood_water      (m,oco) = ipatch%qmean_wood_water      (m,ico)
-               opatch%qmean_wood_hcap       (m,oco) = ipatch%qmean_wood_hcap       (m,ico)
-               opatch%qmean_wood_temp       (m,oco) = ipatch%qmean_wood_temp       (m,ico)
-               opatch%qmean_wood_fliq       (m,oco) = ipatch%qmean_wood_fliq       (m,ico)
-               opatch%qmean_wood_gbw        (m,oco) = ipatch%qmean_wood_gbw        (m,ico)
-               opatch%qmean_fs_open         (m,oco) = ipatch%qmean_fs_open         (m,ico)
-               opatch%qmean_fsw             (m,oco) = ipatch%qmean_fsw             (m,ico)
-               opatch%qmean_fsn             (m,oco) = ipatch%qmean_fsn             (m,ico)
-               opatch%qmean_psi_open        (m,oco) = ipatch%qmean_psi_open        (m,ico)
-               opatch%qmean_psi_closed      (m,oco) = ipatch%qmean_psi_closed      (m,ico)
-               opatch%qmean_water_supply    (m,oco) = ipatch%qmean_water_supply    (m,ico)
-               opatch%qmean_light_level     (m,oco) = ipatch%qmean_light_level     (m,ico)
-               opatch%qmean_light_level_beam(m,oco) = ipatch%qmean_light_level_beam(m,ico)
-               opatch%qmean_light_level_diff(m,oco) = ipatch%qmean_light_level_diff(m,ico)
-               opatch%qmean_par_l           (m,oco) = ipatch%qmean_par_l           (m,ico)
-               opatch%qmean_par_l_beam      (m,oco) = ipatch%qmean_par_l_beam      (m,ico)
-               opatch%qmean_par_l_diff      (m,oco) = ipatch%qmean_par_l_diff      (m,ico)
-               opatch%qmean_rshort_l        (m,oco) = ipatch%qmean_rshort_l        (m,ico)
-               opatch%qmean_rlong_l         (m,oco) = ipatch%qmean_rlong_l         (m,ico)
-               opatch%qmean_sensible_lc     (m,oco) = ipatch%qmean_sensible_lc     (m,ico)
-               opatch%qmean_vapor_lc        (m,oco) = ipatch%qmean_vapor_lc        (m,ico)
-               opatch%qmean_transp          (m,oco) = ipatch%qmean_transp          (m,ico)
-               opatch%qmean_intercepted_al  (m,oco) = ipatch%qmean_intercepted_al  (m,ico)
-               opatch%qmean_wshed_lg        (m,oco) = ipatch%qmean_wshed_lg        (m,ico)
-               opatch%qmean_rshort_w        (m,oco) = ipatch%qmean_rshort_w        (m,ico)
-               opatch%qmean_rlong_w         (m,oco) = ipatch%qmean_rlong_w         (m,ico)
-               opatch%qmean_sensible_wc     (m,oco) = ipatch%qmean_sensible_wc     (m,ico)
-               opatch%qmean_vapor_wc        (m,oco) = ipatch%qmean_vapor_wc        (m,ico)
-               opatch%qmean_intercepted_aw  (m,oco) = ipatch%qmean_intercepted_aw  (m,ico)
-               opatch%qmean_wshed_wg        (m,oco) = ipatch%qmean_wshed_wg        (m,ico)
-               opatch%qmsqu_gpp             (m,oco) = ipatch%qmsqu_gpp             (m,ico)
-               opatch%qmsqu_npp             (m,oco) = ipatch%qmsqu_npp             (m,ico)
-               opatch%qmsqu_plresp          (m,oco) = ipatch%qmsqu_plresp          (m,ico)
-               opatch%qmsqu_sensible_lc     (m,oco) = ipatch%qmsqu_sensible_lc     (m,ico)
-               opatch%qmsqu_vapor_lc        (m,oco) = ipatch%qmsqu_vapor_lc        (m,ico)
-               opatch%qmsqu_transp          (m,oco) = ipatch%qmsqu_transp          (m,ico)
-               opatch%qmsqu_sensible_wc     (m,oco) = ipatch%qmsqu_sensible_wc     (m,ico)
-               opatch%qmsqu_vapor_wc        (m,oco) = ipatch%qmsqu_vapor_wc        (m,ico)
+            do n=1,ndcycle
+               opatch%qmean_gpp             (n,oco) = ipatch%qmean_gpp             (n,ico)
+               opatch%qmean_npp             (n,oco) = ipatch%qmean_npp             (n,ico)
+               opatch%qmean_leaf_resp       (n,oco) = ipatch%qmean_leaf_resp       (n,ico)
+               opatch%qmean_root_resp       (n,oco) = ipatch%qmean_root_resp       (n,ico)
+               opatch%qmean_growth_resp     (n,oco) = ipatch%qmean_growth_resp     (n,ico)
+               opatch%qmean_storage_resp    (n,oco) = ipatch%qmean_storage_resp    (n,ico)
+               opatch%qmean_vleaf_resp      (n,oco) = ipatch%qmean_vleaf_resp      (n,ico)
+               opatch%qmean_plresp          (n,oco) = ipatch%qmean_plresp          (n,ico)
+               opatch%qmean_leaf_energy     (n,oco) = ipatch%qmean_leaf_energy     (n,ico)
+               opatch%qmean_leaf_water      (n,oco) = ipatch%qmean_leaf_water      (n,ico)
+               opatch%qmean_leaf_hcap       (n,oco) = ipatch%qmean_leaf_hcap       (n,ico)
+               opatch%qmean_leaf_vpdef      (n,oco) = ipatch%qmean_leaf_vpdef      (n,ico)
+               opatch%qmean_leaf_temp       (n,oco) = ipatch%qmean_leaf_temp       (n,ico)
+               opatch%qmean_leaf_fliq       (n,oco) = ipatch%qmean_leaf_fliq       (n,ico)
+               opatch%qmean_leaf_gsw        (n,oco) = ipatch%qmean_leaf_gsw        (n,ico)
+               opatch%qmean_leaf_gbw        (n,oco) = ipatch%qmean_leaf_gbw        (n,ico)
+               opatch%qmean_wood_energy     (n,oco) = ipatch%qmean_wood_energy     (n,ico)
+               opatch%qmean_wood_water      (n,oco) = ipatch%qmean_wood_water      (n,ico)
+               opatch%qmean_wood_hcap       (n,oco) = ipatch%qmean_wood_hcap       (n,ico)
+               opatch%qmean_wood_temp       (n,oco) = ipatch%qmean_wood_temp       (n,ico)
+               opatch%qmean_wood_fliq       (n,oco) = ipatch%qmean_wood_fliq       (n,ico)
+               opatch%qmean_wood_gbw        (n,oco) = ipatch%qmean_wood_gbw        (n,ico)
+               opatch%qmean_fs_open         (n,oco) = ipatch%qmean_fs_open         (n,ico)
+               opatch%qmean_fsw             (n,oco) = ipatch%qmean_fsw             (n,ico)
+               opatch%qmean_fsn             (n,oco) = ipatch%qmean_fsn             (n,ico)
+               opatch%qmean_psi_open        (n,oco) = ipatch%qmean_psi_open        (n,ico)
+               opatch%qmean_psi_closed      (n,oco) = ipatch%qmean_psi_closed      (n,ico)
+               opatch%qmean_water_supply    (n,oco) = ipatch%qmean_water_supply    (n,ico)
+               opatch%qmean_light_level     (n,oco) = ipatch%qmean_light_level     (n,ico)
+               opatch%qmean_light_level_beam(n,oco) = ipatch%qmean_light_level_beam(n,ico)
+               opatch%qmean_light_level_diff(n,oco) = ipatch%qmean_light_level_diff(n,ico)
+               opatch%qmean_par_l           (n,oco) = ipatch%qmean_par_l           (n,ico)
+               opatch%qmean_par_l_beam      (n,oco) = ipatch%qmean_par_l_beam      (n,ico)
+               opatch%qmean_par_l_diff      (n,oco) = ipatch%qmean_par_l_diff      (n,ico)
+               opatch%qmean_rshort_l        (n,oco) = ipatch%qmean_rshort_l        (n,ico)
+               opatch%qmean_rlong_l         (n,oco) = ipatch%qmean_rlong_l         (n,ico)
+               opatch%qmean_sensible_lc     (n,oco) = ipatch%qmean_sensible_lc     (n,ico)
+               opatch%qmean_vapor_lc        (n,oco) = ipatch%qmean_vapor_lc        (n,ico)
+               opatch%qmean_transp          (n,oco) = ipatch%qmean_transp          (n,ico)
+               opatch%qmean_intercepted_al  (n,oco) = ipatch%qmean_intercepted_al  (n,ico)
+               opatch%qmean_wshed_lg        (n,oco) = ipatch%qmean_wshed_lg        (n,ico)
+               opatch%qmean_rshort_w        (n,oco) = ipatch%qmean_rshort_w        (n,ico)
+               opatch%qmean_rlong_w         (n,oco) = ipatch%qmean_rlong_w         (n,ico)
+               opatch%qmean_sensible_wc     (n,oco) = ipatch%qmean_sensible_wc     (n,ico)
+               opatch%qmean_vapor_wc        (n,oco) = ipatch%qmean_vapor_wc        (n,ico)
+               opatch%qmean_intercepted_aw  (n,oco) = ipatch%qmean_intercepted_aw  (n,ico)
+               opatch%qmean_wshed_wg        (n,oco) = ipatch%qmean_wshed_wg        (n,ico)
+               opatch%qmsqu_gpp             (n,oco) = ipatch%qmsqu_gpp             (n,ico)
+               opatch%qmsqu_npp             (n,oco) = ipatch%qmsqu_npp             (n,ico)
+               opatch%qmsqu_plresp          (n,oco) = ipatch%qmsqu_plresp          (n,ico)
+               opatch%qmsqu_sensible_lc     (n,oco) = ipatch%qmsqu_sensible_lc     (n,ico)
+               opatch%qmsqu_vapor_lc        (n,oco) = ipatch%qmsqu_vapor_lc        (n,ico)
+               opatch%qmsqu_transp          (n,oco) = ipatch%qmsqu_transp          (n,ico)
+               opatch%qmsqu_sensible_wc     (n,oco) = ipatch%qmsqu_sensible_wc     (n,ico)
+               opatch%qmsqu_vapor_wc        (n,oco) = ipatch%qmsqu_vapor_wc        (n,ico)
+
+               !------ Radiation profile variables. ---------------------------------------!
+               do m=1,n_radprof
+                  opatch%qmean_rad_profile(m,n,oco) = ipatch%qmean_rad_profile(m,n,ico)
+               end do
+               !---------------------------------------------------------------------------!
             end do
             !------------------------------------------------------------------------------!
          end if
@@ -10032,6 +10094,13 @@ module ed_state_vars
       end do
       !------------------------------------------------------------------------------------!
 
+
+      !------ Radiation profile variables. ------------------------------------------------!
+      do m=1,n_radprof
+         opatch%rad_profile(m,1:z) = pack(ipatch%rad_profile  (m,:),lmask)
+      end do
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine copy_patchtype_mask_inst
    !=======================================================================================!
@@ -10110,6 +10179,13 @@ module ed_state_vars
       opatch%fmean_vapor_wc        (1:z) = pack(ipatch%fmean_vapor_wc            ,lmask)
       opatch%fmean_intercepted_aw  (1:z) = pack(ipatch%fmean_intercepted_aw      ,lmask)
       opatch%fmean_wshed_wg        (1:z) = pack(ipatch%fmean_wshed_wg            ,lmask)
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Radiation profile variables. ------------------------------------------------!
+      do m=1,n_radprof
+         opatch%fmean_rad_profile(m,1:z) = pack(ipatch%fmean_rad_profile  (m,:),lmask)
+      end do
       !------------------------------------------------------------------------------------!
 
       return
@@ -10198,6 +10274,13 @@ module ed_state_vars
       opatch%dmean_vapor_wc        (1:z) = pack(ipatch%dmean_vapor_wc            ,lmask)
       opatch%dmean_intercepted_aw  (1:z) = pack(ipatch%dmean_intercepted_aw      ,lmask)
       opatch%dmean_wshed_wg        (1:z) = pack(ipatch%dmean_wshed_wg            ,lmask)
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Radiation profile variables. ------------------------------------------------!
+      do m=1,n_radprof
+         opatch%dmean_rad_profile(m,1:z) = pack(ipatch%dmean_rad_profile  (m,:),lmask)
+      end do
       !------------------------------------------------------------------------------------!
 
       return
@@ -10311,6 +10394,13 @@ module ed_state_vars
       end do
       !------------------------------------------------------------------------------------!
 
+
+      !------ Radiation profile variables. ------------------------------------------------!
+      do m=1,n_radprof
+         opatch%mmean_rad_profile(m,1:z) = pack(ipatch%mmean_rad_profile  (m,:),lmask)
+      end do
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine copy_patchtype_mask_mmean
    !=======================================================================================!
@@ -10342,64 +10432,73 @@ module ed_state_vars
 
 
 
-      do m=1,ndcycle
-         opatch%qmean_gpp           (m,1:z) = pack(ipatch%qmean_gpp           (m,:),lmask)
-         opatch%qmean_npp           (m,1:z) = pack(ipatch%qmean_npp           (m,:),lmask)
-         opatch%qmean_leaf_resp     (m,1:z) = pack(ipatch%qmean_leaf_resp     (m,:),lmask)
-         opatch%qmean_root_resp     (m,1:z) = pack(ipatch%qmean_root_resp     (m,:),lmask)
-         opatch%qmean_growth_resp   (m,1:z) = pack(ipatch%qmean_growth_resp   (m,:),lmask)
-         opatch%qmean_storage_resp  (m,1:z) = pack(ipatch%qmean_storage_resp  (m,:),lmask)
-         opatch%qmean_vleaf_resp    (m,1:z) = pack(ipatch%qmean_vleaf_resp    (m,:),lmask)
-         opatch%qmean_plresp        (m,1:z) = pack(ipatch%qmean_plresp        (m,:),lmask)
-         opatch%qmean_leaf_energy   (m,1:z) = pack(ipatch%qmean_leaf_energy   (m,:),lmask)
-         opatch%qmean_leaf_water    (m,1:z) = pack(ipatch%qmean_leaf_water    (m,:),lmask)
-         opatch%qmean_leaf_hcap     (m,1:z) = pack(ipatch%qmean_leaf_hcap     (m,:),lmask)
-         opatch%qmean_leaf_vpdef    (m,1:z) = pack(ipatch%qmean_leaf_vpdef    (m,:),lmask)
-         opatch%qmean_leaf_temp     (m,1:z) = pack(ipatch%qmean_leaf_temp     (m,:),lmask)
-         opatch%qmean_leaf_fliq     (m,1:z) = pack(ipatch%qmean_leaf_fliq     (m,:),lmask)
-         opatch%qmean_leaf_gsw      (m,1:z) = pack(ipatch%qmean_leaf_gsw      (m,:),lmask)
-         opatch%qmean_leaf_gbw      (m,1:z) = pack(ipatch%qmean_leaf_gbw      (m,:),lmask)
-         opatch%qmean_wood_energy   (m,1:z) = pack(ipatch%qmean_wood_energy   (m,:),lmask)
-         opatch%qmean_wood_water    (m,1:z) = pack(ipatch%qmean_wood_water    (m,:),lmask)
-         opatch%qmean_wood_hcap     (m,1:z) = pack(ipatch%qmean_wood_hcap     (m,:),lmask)
-         opatch%qmean_wood_temp     (m,1:z) = pack(ipatch%qmean_wood_temp     (m,:),lmask)
-         opatch%qmean_wood_fliq     (m,1:z) = pack(ipatch%qmean_wood_fliq     (m,:),lmask)
-         opatch%qmean_wood_gbw      (m,1:z) = pack(ipatch%qmean_wood_gbw      (m,:),lmask)
-         opatch%qmean_fs_open       (m,1:z) = pack(ipatch%qmean_fs_open       (m,:),lmask)
-         opatch%qmean_fsw           (m,1:z) = pack(ipatch%qmean_fsw           (m,:),lmask)
-         opatch%qmean_fsn           (m,1:z) = pack(ipatch%qmean_fsn           (m,:),lmask)
-         opatch%qmean_psi_open      (m,1:z) = pack(ipatch%qmean_psi_open      (m,:),lmask)
-         opatch%qmean_psi_closed    (m,1:z) = pack(ipatch%qmean_psi_closed    (m,:),lmask)
-         opatch%qmean_water_supply  (m,1:z) = pack(ipatch%qmean_water_supply  (m,:),lmask)
-         opatch%qmean_light_level   (m,1:z) = pack(ipatch%qmean_light_level   (m,:),lmask)
-         opatch%qmean_light_level_beam(m,1:z) =                                            &
-                                            pack(ipatch%qmean_light_level_beam(m,:),lmask)
-         opatch%qmean_light_level_diff(m,1:z) =                                            &
-                                            pack(ipatch%qmean_light_level_diff(m,:),lmask)
-         opatch%qmean_par_l         (m,1:z) = pack(ipatch%qmean_par_l         (m,:),lmask)
-         opatch%qmean_par_l_beam    (m,1:z) = pack(ipatch%qmean_par_l_beam    (m,:),lmask)
-         opatch%qmean_par_l_diff    (m,1:z) = pack(ipatch%qmean_par_l_diff    (m,:),lmask)
-         opatch%qmean_rshort_l      (m,1:z) = pack(ipatch%qmean_rshort_l      (m,:),lmask)
-         opatch%qmean_rlong_l       (m,1:z) = pack(ipatch%qmean_rlong_l       (m,:),lmask)
-         opatch%qmean_sensible_lc   (m,1:z) = pack(ipatch%qmean_sensible_lc   (m,:),lmask)
-         opatch%qmean_vapor_lc      (m,1:z) = pack(ipatch%qmean_vapor_lc      (m,:),lmask)
-         opatch%qmean_transp        (m,1:z) = pack(ipatch%qmean_transp        (m,:),lmask)
-         opatch%qmean_intercepted_al(m,1:z) = pack(ipatch%qmean_intercepted_al(m,:),lmask)
-         opatch%qmean_wshed_lg      (m,1:z) = pack(ipatch%qmean_wshed_lg      (m,:),lmask)
-         opatch%qmean_rshort_w      (m,1:z) = pack(ipatch%qmean_rshort_w      (m,:),lmask)
-         opatch%qmean_rlong_w       (m,1:z) = pack(ipatch%qmean_rlong_w       (m,:),lmask)
-         opatch%qmean_sensible_wc   (m,1:z) = pack(ipatch%qmean_sensible_wc   (m,:),lmask)
-         opatch%qmean_vapor_wc      (m,1:z) = pack(ipatch%qmean_vapor_wc      (m,:),lmask)
-         opatch%qmean_intercepted_aw(m,1:z) = pack(ipatch%qmean_intercepted_aw(m,:),lmask)
-         opatch%qmean_wshed_wg      (m,1:z) = pack(ipatch%qmean_wshed_wg      (m,:),lmask)
-         opatch%qmsqu_gpp           (m,1:z) = pack(ipatch%qmsqu_gpp           (m,:),lmask)
-         opatch%qmsqu_npp           (m,1:z) = pack(ipatch%qmsqu_npp           (m,:),lmask)
-         opatch%qmsqu_plresp        (m,1:z) = pack(ipatch%qmsqu_plresp        (m,:),lmask)
-         opatch%qmsqu_sensible_lc   (m,1:z) = pack(ipatch%qmsqu_sensible_lc   (m,:),lmask)
-         opatch%qmsqu_vapor_lc      (m,1:z) = pack(ipatch%qmsqu_vapor_lc      (m,:),lmask)
-         opatch%qmsqu_transp        (m,1:z) = pack(ipatch%qmsqu_transp        (m,:),lmask)
-         opatch%qmsqu_sensible_wc   (m,1:z) = pack(ipatch%qmsqu_sensible_wc   (m,:),lmask)
-         opatch%qmsqu_vapor_wc      (m,1:z) = pack(ipatch%qmsqu_vapor_wc      (m,:),lmask)
+      do n=1,ndcycle
+         opatch%qmean_gpp           (n,1:z) = pack(ipatch%qmean_gpp           (n,:),lmask)
+         opatch%qmean_npp           (n,1:z) = pack(ipatch%qmean_npp           (n,:),lmask)
+         opatch%qmean_leaf_resp     (n,1:z) = pack(ipatch%qmean_leaf_resp     (n,:),lmask)
+         opatch%qmean_root_resp     (n,1:z) = pack(ipatch%qmean_root_resp     (n,:),lmask)
+         opatch%qmean_growth_resp   (n,1:z) = pack(ipatch%qmean_growth_resp   (n,:),lmask)
+         opatch%qmean_storage_resp  (n,1:z) = pack(ipatch%qmean_storage_resp  (n,:),lmask)
+         opatch%qmean_vleaf_resp    (n,1:z) = pack(ipatch%qmean_vleaf_resp    (n,:),lmask)
+         opatch%qmean_plresp        (n,1:z) = pack(ipatch%qmean_plresp        (n,:),lmask)
+         opatch%qmean_leaf_energy   (n,1:z) = pack(ipatch%qmean_leaf_energy   (n,:),lmask)
+         opatch%qmean_leaf_water    (n,1:z) = pack(ipatch%qmean_leaf_water    (n,:),lmask)
+         opatch%qmean_leaf_hcap     (n,1:z) = pack(ipatch%qmean_leaf_hcap     (n,:),lmask)
+         opatch%qmean_leaf_vpdef    (n,1:z) = pack(ipatch%qmean_leaf_vpdef    (n,:),lmask)
+         opatch%qmean_leaf_temp     (n,1:z) = pack(ipatch%qmean_leaf_temp     (n,:),lmask)
+         opatch%qmean_leaf_fliq     (n,1:z) = pack(ipatch%qmean_leaf_fliq     (n,:),lmask)
+         opatch%qmean_leaf_gsw      (n,1:z) = pack(ipatch%qmean_leaf_gsw      (n,:),lmask)
+         opatch%qmean_leaf_gbw      (n,1:z) = pack(ipatch%qmean_leaf_gbw      (n,:),lmask)
+         opatch%qmean_wood_energy   (n,1:z) = pack(ipatch%qmean_wood_energy   (n,:),lmask)
+         opatch%qmean_wood_water    (n,1:z) = pack(ipatch%qmean_wood_water    (n,:),lmask)
+         opatch%qmean_wood_hcap     (n,1:z) = pack(ipatch%qmean_wood_hcap     (n,:),lmask)
+         opatch%qmean_wood_temp     (n,1:z) = pack(ipatch%qmean_wood_temp     (n,:),lmask)
+         opatch%qmean_wood_fliq     (n,1:z) = pack(ipatch%qmean_wood_fliq     (n,:),lmask)
+         opatch%qmean_wood_gbw      (n,1:z) = pack(ipatch%qmean_wood_gbw      (n,:),lmask)
+         opatch%qmean_fs_open       (n,1:z) = pack(ipatch%qmean_fs_open       (n,:),lmask)
+         opatch%qmean_fsw           (n,1:z) = pack(ipatch%qmean_fsw           (n,:),lmask)
+         opatch%qmean_fsn           (n,1:z) = pack(ipatch%qmean_fsn           (n,:),lmask)
+         opatch%qmean_psi_open      (n,1:z) = pack(ipatch%qmean_psi_open      (n,:),lmask)
+         opatch%qmean_psi_closed    (n,1:z) = pack(ipatch%qmean_psi_closed    (n,:),lmask)
+         opatch%qmean_water_supply  (n,1:z) = pack(ipatch%qmean_water_supply  (n,:),lmask)
+         opatch%qmean_light_level   (n,1:z) = pack(ipatch%qmean_light_level   (n,:),lmask)
+         opatch%qmean_light_level_beam(n,1:z) =                                            &
+                                            pack(ipatch%qmean_light_level_beam(n,:),lmask)
+         opatch%qmean_light_level_diff(n,1:z) =                                            &
+                                            pack(ipatch%qmean_light_level_diff(n,:),lmask)
+         opatch%qmean_par_l         (n,1:z) = pack(ipatch%qmean_par_l         (n,:),lmask)
+         opatch%qmean_par_l_beam    (n,1:z) = pack(ipatch%qmean_par_l_beam    (n,:),lmask)
+         opatch%qmean_par_l_diff    (n,1:z) = pack(ipatch%qmean_par_l_diff    (n,:),lmask)
+         opatch%qmean_rshort_l      (n,1:z) = pack(ipatch%qmean_rshort_l      (n,:),lmask)
+         opatch%qmean_rlong_l       (n,1:z) = pack(ipatch%qmean_rlong_l       (n,:),lmask)
+         opatch%qmean_sensible_lc   (n,1:z) = pack(ipatch%qmean_sensible_lc   (n,:),lmask)
+         opatch%qmean_vapor_lc      (n,1:z) = pack(ipatch%qmean_vapor_lc      (n,:),lmask)
+         opatch%qmean_transp        (n,1:z) = pack(ipatch%qmean_transp        (n,:),lmask)
+         opatch%qmean_intercepted_al(n,1:z) = pack(ipatch%qmean_intercepted_al(n,:),lmask)
+         opatch%qmean_wshed_lg      (n,1:z) = pack(ipatch%qmean_wshed_lg      (n,:),lmask)
+         opatch%qmean_rshort_w      (n,1:z) = pack(ipatch%qmean_rshort_w      (n,:),lmask)
+         opatch%qmean_rlong_w       (n,1:z) = pack(ipatch%qmean_rlong_w       (n,:),lmask)
+         opatch%qmean_sensible_wc   (n,1:z) = pack(ipatch%qmean_sensible_wc   (n,:),lmask)
+         opatch%qmean_vapor_wc      (n,1:z) = pack(ipatch%qmean_vapor_wc      (n,:),lmask)
+         opatch%qmean_intercepted_aw(n,1:z) = pack(ipatch%qmean_intercepted_aw(n,:),lmask)
+         opatch%qmean_wshed_wg      (n,1:z) = pack(ipatch%qmean_wshed_wg      (n,:),lmask)
+         opatch%qmsqu_gpp           (n,1:z) = pack(ipatch%qmsqu_gpp           (n,:),lmask)
+         opatch%qmsqu_npp           (n,1:z) = pack(ipatch%qmsqu_npp           (n,:),lmask)
+         opatch%qmsqu_plresp        (n,1:z) = pack(ipatch%qmsqu_plresp        (n,:),lmask)
+         opatch%qmsqu_sensible_lc   (n,1:z) = pack(ipatch%qmsqu_sensible_lc   (n,:),lmask)
+         opatch%qmsqu_vapor_lc      (n,1:z) = pack(ipatch%qmsqu_vapor_lc      (n,:),lmask)
+         opatch%qmsqu_transp        (n,1:z) = pack(ipatch%qmsqu_transp        (n,:),lmask)
+         opatch%qmsqu_sensible_wc   (n,1:z) = pack(ipatch%qmsqu_sensible_wc   (n,:),lmask)
+         opatch%qmsqu_vapor_wc      (n,1:z) = pack(ipatch%qmsqu_vapor_wc      (n,:),lmask)
+
+
+
+         !------ Radiation profile variables. ---------------------------------------------!
+         do m=1,n_radprof
+            opatch%qmean_rad_profile(m,n,1:z) = pack(ipatch%qmean_rad_profile(m,n,:),lmask)
+         end do
+         !---------------------------------------------------------------------------------!
+
       end do
       !------------------------------------------------------------------------------------!
 
@@ -10471,7 +10570,7 @@ module ed_state_vars
    ! -11    : rank 2 : polygon, diurnal cycle                                              !
    !  12    : rank 2 : polygon, s-layer                                                    !
    !  120   : rank 2 : polygon, s-layer, integer                                           !
-   ! -12    : rank 3 : polygon, s-layer, diurnal cycle                                     !
+   ! -12    : rank 3 : polygon, diurnal cycle, s-layer                                     !
    !  13    : rank 2 : polygon, w-layer                                                    !
    !  14    : rank 2 : polygon, pft                                                        !
    !  146   : rank 3 : polygon, pft, dbh                                                   !
@@ -10516,7 +10615,8 @@ module ed_state_vars
    !  47    : rank 2 : cohort, age                                                         !
    !  48    : rank 2 : cohort, mort                                                        !
    !  49    : rank 2 : cohort, month+1                                                     !
-   !                                                                                       !
+   !  411   : rank 2 : cohort, radiation                                                   !
+   ! -411   : rank 2 : cohort, diurnal cycle , radiation                                   !
    !  90    : rank 0 : integer scalar                                                      !
    !  92    : rank 1 : s-layer                                                             !
    !---------------------------------------------------------------------------------------!
@@ -17492,7 +17592,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_i(npts,cpoly%sipa_id                                             &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'SIPA_ID :20:hist:dail:mont:dcyc:year') 
+                           ,'SIPA_ID :20:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Sites first patch indices','[--]','(isite)') 
       end if
       
@@ -17500,7 +17600,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_i(npts,cpoly%sipa_n                                              &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'SIPA_N :20:hist:dail:mont:dcyc:year') 
+                           ,'SIPA_N :20:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Number of patches per site','[--]','(isite)') 
       end if
       
@@ -17508,7 +17608,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_i(npts,cpoly%patch_count                                         &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'PATCH_COUNT :20:hist:dail:mont:dcyc:year') 
+                           ,'PATCH_COUNT :20:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Patch count for each site','[--]','(isite)') 
       end if
       
@@ -17516,7 +17616,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_i(npts,cpoly%sitenum                                             &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'SITENUM :20:hist:year') 
+                           ,'SITENUM :20:hist:anal:year') 
          call metadata_edio(nvar,igr,'Site number','[--]','(isite)') 
       end if
 
@@ -17524,7 +17624,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_i(npts,cpoly%lsl                                                 &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'LSL :20:hist:dail:mont:dcyc') 
+                           ,'LSL :20:hist:anal:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'Lowest soil layer','[--]','(isite)') 
       end if   
 
@@ -17532,7 +17632,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_i(npts,cpoly%ncol_soil                                           &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'NCOL_SOIL :20:hist:dail:mont:dcyc') 
+                           ,'NCOL_SOIL :20:hist:anal:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'Soil colour index','[--]','(isite)') 
       end if   
       
@@ -23278,6 +23378,8 @@ module ed_state_vars
       call filltab_patchtype_m41     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p48     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p49     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_patchtype_p411    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_patchtype_m411    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       !------------------------------------------------------------------------------------!
 
       return
@@ -23433,14 +23535,14 @@ module ed_state_vars
       if (associated(cpatch%nplant)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%nplant,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'NPLANT :41:hist:dail:mont:dcyc:year') 
+           var_len,var_len_global,max_ptrs,'NPLANT :41:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Plant density','[plant/m2]','NA') 
       end if
 
       if (associated(cpatch%hite)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%hite,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'HITE :41:hist:dail:mont:dcyc:year') 
+           var_len,var_len_global,max_ptrs,'HITE :41:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -23454,7 +23556,7 @@ module ed_state_vars
       if (associated(cpatch%basarea)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%basarea,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BA_CO :41:hist:dail:mont:dcyc:year') 
+           var_len,var_len_global,max_ptrs,'BA_CO :41:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Basal-area','[cm2]','icohort') 
       end if
 
@@ -23503,77 +23605,80 @@ module ed_state_vars
       if (associated(cpatch%dbh)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%dbh,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'DBH :41:hist:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'DBH :41:hist:anal:year:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'Diameter at breast height','[cm]','icohort') 
       end if
 
       if (associated(cpatch%bdead)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bdead,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mont:dail:year:dcyc') 
+           var_len,var_len_global,max_ptrs,'BDEAD :41:hist:anal:mont:dail:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%bleaf)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bleaf,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BLEAF :41:hist:anal:year:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%balive)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%balive,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BALIVE :41:hist:anal:year:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%broot)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%broot,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BROOT :41:hist:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BROOT :41:hist:anal:year:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%bsapwooda)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bsapwooda,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BSAPWOODA :41:hist:year:dail:anal:mont:dcyc') 
+           var_len,var_len_global,max_ptrs                                          &
+           ,'BSAPWOODA :41:hist:anal:year:dail:anal:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%bsapwoodb)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bsapwoodb,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BSAPWOODB :41:hist:year:dail:anal:mont:dcyc') 
+           var_len,var_len_global,max_ptrs                                          &
+           ,'BSAPWOODB :41:hist:anal:year:dail:anal:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%lai)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%lai,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:mont:year:dcyc') 
+           var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:anal:dail:mont:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%wai)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%wai,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:mont:year:dcyc') 
+           var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:anal:dail:mont:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%crown_area)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%crown_area,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'CROWN_AREA_CO :41:hist:dail:mont:year:dcyc') 
+           var_len,var_len_global,max_ptrs                                           &
+           ,'CROWN_AREA_CO :41:hist:anal:dail:mont:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(cpatch%bstorage)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bstorage,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:anal:year:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -26615,6 +26720,208 @@ module ed_state_vars
 
       return
    end subroutine filltab_patchtype_p49
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the cohort-level variables          !
+   ! (patchtype) that have two dimensions (n_radprof,ncohorts) and are real (type 411).    !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_patchtype_p411(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                               :: npts
+      character(len=str_len)                :: fast_keys
+      character(len=str_len)                :: dail_keys
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !       This part should have only 2-D vectors, with dimension ncohorts and          !
+      ! radiation types.  Notice that they all use the same npts.  Only variables of type  !
+      ! 411 should be placed here.                                                         !
+      !------------------------------------------------------------------------------------!
+      npts = cpatch%ncohorts * n_radprof
+
+      if (associated(cpatch%rad_profile)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%rad_profile                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'RAD_PROFILE_CO :411:hist') 
+         call metadata_edio(nvar,igr,'Radiation profile','[W/m2]','(iradprof,icohort)') 
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the monthly means to the history file.                !
+      !------------------------------------------------------------------------------------!
+      select case (iadd_cohort_means)
+      case (0)
+         return
+      case (1)
+         if (history_fast) then
+            fast_keys = 'hist:anal'
+         else
+            fast_keys = 'anal'
+         end if
+         if (history_dail) then
+            dail_keys = 'hist:dail'
+         else
+            dail_keys = 'dail'
+         end if
+         if (history_eorq) then
+            eorq_keys = 'hist:mont:dcyc'
+         else
+            eorq_keys = 'mont:dcyc'
+         end if
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      if (associated(cpatch%fmean_rad_profile)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_rad_profile                                  &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_RAD_PROFILE_CO :411:'//trim(fast_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Radiation profile','[W/m2]'                  &
+                           ,'(iradprof,icohort)')
+      end if
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      if (associated(cpatch%dmean_rad_profile)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_rad_profile                                  &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_RAD_PROFILE_CO :411:'//trim(dail_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Radiation profile','[W/m2]'                      &
+                           ,'(iradprof,icohort)')
+      end if
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      if (associated(cpatch%mmean_rad_profile)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_rad_profile                                  &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_RAD_PROFILE_CO :411:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Radiation profile','[W/m2]'                    &
+                           ,'(iradprof,icohort)')
+      end if
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine filltab_patchtype_p411
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the cohort-level variables          !
+   ! (patchtype) that have three dimensions (n_radprof,ndcycle,ncohorts) and are real      !
+   ! (type -411).                                                                          !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_patchtype_m411(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+    
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(patchtype)       , target        :: cpatch
+      integer               , intent(in)    :: init
+      integer               , intent(in)    :: igr
+      integer               , intent(in)    :: var_len
+      integer               , intent(in)    :: max_ptrs
+      integer               , intent(in)    :: var_len_global
+      integer               , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                               :: npts
+      character(len=str_len)                :: eorq_keys
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Decide whether to write the monthly means to the history file.                !
+      !------------------------------------------------------------------------------------!
+      select case (iadd_cohort_means)
+      case (0)
+         return
+      case (1)
+         if (history_eorq) then
+            eorq_keys = 'hist:dcyc'
+         else
+            eorq_keys = 'dcyc'
+         end if
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !       This part should have only 3-D vectors, with dimension ncohorts, ndcycle,    !
+      ! and radiation types.  Notice that they all use the same npts.  Only variables of   !
+      ! type -411 should be placed here.                                                   !
+      !------------------------------------------------------------------------------------!
+      npts = cpatch%ncohorts * ndcycle * n_radprof
+
+      if (associated(cpatch%qmean_rad_profile)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_rad_profile                                  &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_RAD_PROFILE_CO :-411:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Radiation profile','[W/m2]'                       &
+                           ,'(iradprof,ndcycle,icohort)')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine filltab_patchtype_m411
    !=======================================================================================!
    !=======================================================================================!
 
