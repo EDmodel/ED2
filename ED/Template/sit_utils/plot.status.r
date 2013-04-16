@@ -293,12 +293,12 @@ datum$yr.idx[bad.met] = n.level + 6
 datum$yr.idx[crashed] = n.level + 7
 yr.cscheme            = c("grey89",iatlas(n=n.level),"royalblue4","steelblue3","purple3"
                          ,"mediumpurple1","deepskyblue","red3","hotpink")
-ybottom               = rep(0,times=n.level+7)
-ytop                  = rep(1,times=n.level+7)
-xleft                 = seq(from=-1,to=n.level+5)
-xright                = seq(from= 0,to=n.level+6)
-xat                   = seq(from=-1,to=n.level+5)+0.5
-xbrks                 = seq(from=-1,to=n.level+6)+0.5
+ybottom               = rep(0,times=n.level+8)
+ytop                  = rep(1,times=n.level+8)
+xleft                 = seq(from=-1,to=n.level+6)
+xright                = seq(from= 0,to=n.level+7)
+xat                   = seq(from=-1,to=n.level+6)+0.5
+xbrks                 = seq(from=-1,to=n.level+7)+0.5
 xlabel                = c("Initial",yr.brks[-1],"Finish","StState","Extinct"
                          ,"Stopped","MetMiss","Bad Met","Crashed")
 #------------------------------------------------------------------------------------------#
@@ -490,8 +490,6 @@ for (v in 1:n.var){
      n.brks      = length(var.brks)
      var.cut     = cut(this.var,breaks=var.brks)
    }#end if
-   n.brks      = length(var.brks)
-   var.cut     = cut(this.var,breaks=var.brks)
    var.lev     = levels(var.cut)
    var.idx     = match(var.cut,var.lev) + 0 * this.var
    var.cscheme = iatlas(n=n.brks-1)

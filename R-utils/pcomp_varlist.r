@@ -8,832 +8,1204 @@
    n            = 0
    scen.ts      = list()
    n            = n + 1
-   scen.ts[[n]] = list( vname  = "agb"
-                      , desc   = "Above ground biomass"
-                      , unit   = "kgC/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
+   scen.ts[[n]] = list( vname    = "agb"
+                      , desc     = "Above ground biomass"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
                       )#end lis
    n            = n + 1
-   scen.ts[[n]] = list( vname  = "bgb"
-                      , desc   = "Below ground biomass"
-                      , unit   = "kgC/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
+   scen.ts[[n]] = list( vname    = "bgb"
+                      , desc     = "Below ground biomass"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "biomass"
+                      , desc     = "Total biomass"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
                       )#end lis
    n            = n + 1
-   scen.ts[[n]] = list( vname  = "biomass"
-                      , desc   = "Total biomass"
-                      , unit   = "kgC/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
+   scen.ts[[n]] = list( vname    = "lai"
+                      , desc     = "Leaf area index"
+                      , unit     = untab$m2lom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "nplant"
+                      , desc     = "Plant density"
+                      , unit     = untab$plom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
                       )#end lis
    n            = n + 1
-   scen.ts[[n]] = list( vname  = "lai"
-                      , desc   = "Leaf area index"
-                      , unit   = "m2/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "nplant"
-                      , desc   = "Plant density"
-                      , unit   = "plant/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end lis
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "gpp"
-                      , desc   = "Gross primary productivity"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "npp"
-                      , desc   = "Net primary productivity"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "mco"
-                      , desc   = "Maintenance costs"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "cba"
-                      , desc   = "Carbon balance"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "ldrop"
-                      , desc   = "Leaf drop"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "bstorage"
-                      , desc   = "Storage biomass"
-                      , unit   = "kgC/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = FALSE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "ba"
-                      , desc   = "Basal area"
-                      , unit   = "cm2/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "fs.open"
-                      , desc   = "Soil moisture stress factor"
-                      , unit   = "--"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "mort"
-                      , desc   = "Mortality rate"
-                      , unit   = "%pop/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = TRUE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "recr"
-                      , desc   = "Recruitment rate"
-                      , unit   = "%pop/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = TRUE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "growth"
-                      , desc   = "Growth rate (DBH)"
-                      , unit   = "%DBH/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "ncbmort"
-                      , desc   = "Mortality rate - Neg. C balance"
-                      , unit   = "%pop/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = TRUE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "dimort"
-                      , desc   = "Mortality rate - Density-independent"
-                      , unit   = "%pop/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = TRUE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "cbamax"
-                      , desc   = "Maximum carbon balance"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "cbarel"
-                      , desc   = "Relative carbon balance"
-                      , unit   = "--"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "demand"
-                      , desc   = "Water demand"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "supply"
-                      , desc   = "Water supply"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "rain"
-                      , desc   = "Precipitation"
-                      , unit   = "mm"
-                      , f.aggr = "sum"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "water.deficit"
-                      , desc   = "Water deficit (ED-2.2)"
-                      , unit   = "mm"
-                      , f.aggr = "max"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "malhi.deficit"
-                      , desc   = "Water deficit (Malhi 2009)"
-                      , unit   = "mm"
-                      , f.aggr = "max"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "atm.temp"
-                      , desc   = "Air temperature"
-                      , unit   = "degC"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , plog   = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "leaf.temp"
-                      , desc   = "Leaf temperature"
-                      , unit   = "degC"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , plog   = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "rshort"
-                      , desc   = "Incoming shortwave radiation"
-                      , unit   = "W/m2"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "rlong"
-                      , desc   = "Incoming longwave radiation"
-                      , unit   = "W/m2"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "atm.vpd"
-                      , desc   = "Air vapour pressure deficit"
-                      , unit   = "Pa"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "leaf.vpd"
-                      , desc   = "Leaf vapour pressure deficit"
-                      , unit   = "Pa"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "paw"
-                      , desc   = "Potential Available Water"
-                      , unit   = "%"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "smpot"
-                      , desc   = "Soil Matric Potential"
-                      , unit   = "MPa"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "nep"
-                      , desc   = "Net Ecosystem Productivity"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "reco"
-                      , desc   = "Ecosystem Respiration"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "fast.soil.c"
-                      , desc   = "Fast soil carbon"
-                      , unit   = "kgC/m2"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "struct.soil.c"
-                      , desc   = "Structural soil carbon"
-                      , unit   = "kgC/m2"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "slow.soil.c"
-                      , desc   = "Slow soil carbon"
-                      , unit   = "kgC/m2"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "het.resp"
-                      , desc   = "Heterotrophic Respiration"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "plant.resp"
-                      , desc   = "Plant Respiration"
-                      , unit   = "kgC/m2/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "hflxlc"
-                      , desc   = "Leaf sensible heat"
-                      , unit   = "W/m2"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "wflxlc"
-                      , desc   = "Leaf Evaporation"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "transp"
-                      , desc   = "Leaf Transpiration"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.gpp"
-                      , desc   = "Mean Gross Primary Production"
-                      , unit   = "kgC/plant/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.npp"
-                      , desc   = "Mean Net Primary Production"
-                      , unit   = "kgC/plant/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.plant.resp"
-                      , desc   = "Mean Plant Respiration"
-                      , unit   = "kgC/plant/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.cba"
-                      , desc   = "Mean Carbon balance"
-                      , unit   = "kgC/plant/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.cbamax"
-                      , desc   = "Mean Maximum C balance"
-                      , unit   = "kgC/plant/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.hflxlc"
-                      , desc   = "Mean Leaf sensible heat flux"
-                      , unit   = "W/plant"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.wflxlc"
-                      , desc   = "Mean Leaf evaporation"
-                      , unit   = "kg/plant/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "i.transp"
-                      , desc   = "Mean Transpiration"
-                      , unit   = "kg/plant/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "hflxgc"
-                      , desc   = "Sensible heat - Gnd->CAS"
-                      , unit   = "W/m2"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "hflxca"
-                      , desc   = "Sensible heat - CAS->ATM"
-                      , unit   = "W/m2"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "wflxgc"
-                      , desc   = "Water flux - Gnd->CAS"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "wflxca"
-                      , desc   = "Water flux - CAS->ATM"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = FALSE
-                      , dbhvar = FALSE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "wue"
-                      , desc   = "Water use efficiency"
-                      , unit   = "gC/kgH2O"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "leaf.gbw"
-                      , desc   = "Leaf Bnd. Lyr. Conductance"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "leaf.gsw"
-                      , desc   = "Leaf stomatal Conductance"
-                      , unit   = "kg/m2/day"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.gpp"
-                      , desc   = "Gross Primary Productivity"
-                      , unit   = "%biomass/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.plant.resp"
-                      , desc   = "Plant respiration"
-                      , unit   = "%biomass/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.npp"
-                      , desc   = "Net Primary Productivity"
-                      , unit   = "%biomass/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.cba"
-                      , desc   = "Carbon balance"
-                      , unit   = "%biomass/yr"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.bstorage"
-                      , desc   = "Relative storage biomass"
-                      , unit   = "gC_st/kgC_bio"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.bleaf"
-                      , desc   = "Relative leaf biomass"
-                      , unit   = "gC_leaf/kgC_bio"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.broot"
-                      , desc   = "Relative root biomass"
-                      , unit   = "gC_root/kgC_bio"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "f.bseeds"
-                      , desc   = "Relative seed biomass"
-                      , unit   = "gC_seed/kgC_bio"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "leaf.par"
-                      , desc   = "Absorbed PAR - Leaf"
-                      , unit   = "umol/m2leaf/s"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "leaf.rshort"
-                      , desc   = "Absorbed SW - Leaf"
-                      , unit   = "W/m2leaf"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
-                      )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname  = "leaf.rlong"
-                      , desc   = "Absorbed LW - Leaf"
-                      , unit   = "W/m2leaf"
-                      , f.aggr = "mean"
-                      , pftvar = TRUE
-                      , dbhvar = TRUE
-                      , mort   = FALSE
-                      , recr   = FALSE
-                      , plog   = FALSE
-                      , plt    = TRUE
+   scen.ts[[n]] = list( vname    = "gpp"
+                      , desc     = "Gross primary productivity"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "npp"
+                      , desc     = "Net primary productivity"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "mco"
+                      , desc     = "Maintenance costs"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "cba"
+                      , desc     = "Carbon balance"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "ldrop"
+                      , desc     = "Leaf drop"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "bstorage"
+                      , desc     = "Storage biomass"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = FALSE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "bseeds"
+                      , desc     = "Seed biomass"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = FALSE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "ba"
+                      , desc     = "Basal area"
+                      , unit     = untab$cm2om2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "fs.open"
+                      , desc     = "Soil moisture stress factor"
+                      , unit     = untab$empty
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "mort"
+                      , desc     = "Mortality rate"
+                      , unit     = untab$pcpopoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "ncbmort"
+                      , desc     = "Mortality rate - Neg. C balance"
+                      , unit     = untab$pcpopoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "dimort"
+                      , desc     = "Mortality rate - Density-independent"
+                      , unit     = untab$pcpopoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "recr"
+                      , desc     = "Recruitment rate"
+                      , unit     = untab$pcpopoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = TRUE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "growth"
+                      , desc     = "Growth rate (DBH)"
+                      , unit     = untab$pcdbhoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "agb.mort"
+                      , desc     = "Mortality rate"
+                      , unit     = untab$pcagboyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "agb.ncbmort"
+                      , desc     = "Mortality rate - Neg. C balance"
+                      , unit     = untab$pcagboyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "agb.dimort"
+                      , desc     = "Mortality rate - Density-independent"
+                      , unit     = untab$pcagboyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "agb.recr"
+                      , desc     = "Recruitment rate"
+                      , unit     = untab$pcagboyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = TRUE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "agb.growth"
+                      , desc     = "Growth rate (AGB)"
+                      , unit     = untab$pcagboyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "cbamax"
+                      , desc     = "Maximum carbon balance"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "cbarel"
+                      , desc     = "Relative carbon balance"
+                      , unit     = untab$empty
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "demand"
+                      , desc     = "Water demand"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "supply"
+                      , desc     = "Water supply"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "rain"
+                      , desc     = "Precipitation"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "sum"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "runoff"
+                      , desc     = "Total runoff"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "sum"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "intercepted"
+                      , desc     = "Canopy interception"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "sum"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.rain"
+                      , desc     = "Previous 12 months rainfall"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.rain"
+                      , desc     = "Previous 24 months rainfall"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.rain"
+                      , desc     = "Previous 36 months rainfall"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "water.deficit"
+                      , desc     = "Water deficit (ED-2.2)"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "max"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "malhi.deficit"
+                      , desc     = "Water deficit (Malhi 2009)"
+                      , unit     = untab$mmoyr
+                      , f.aggr   = "max"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "atm.temp"
+                      , desc     = "Air temperature"
+                      , unit     = untab$degC
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.temp"
+                      , desc     = "Leaf temperature"
+                      , unit     = untab$degC
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "rshort"
+                      , desc     = "Incoming shortwave radiation"
+                      , unit     = untab$wom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "rlong"
+                      , desc     = "Incoming longwave radiation"
+                      , unit     = untab$wom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "atm.vpd"
+                      , desc     = "Air vapour pressure deficit"
+                      , unit     = untab$pa
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.vpd"
+                      , desc     = "Leaf vapour pressure deficit"
+                      , unit     = untab$pa
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "paw"
+                      , desc     = "Potential Available Water"
+                      , unit     = untab$pcsat
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "smpot"
+                      , desc     = "Soil Matric Potential"
+                      , unit     = untab$mpa
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = TRUE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "nep"
+                      , desc     = "Net Ecosystem Productivity"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "reco"
+                      , desc     = "Ecosystem Respiration"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "fast.soil.c"
+                      , desc     = "Fast soil carbon"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "struct.soil.c"
+                      , desc     = "Structural soil carbon"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "slow.soil.c"
+                      , desc     = "Slow soil carbon"
+                      , unit     = untab$kgcom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "het.resp"
+                      , desc     = "Heterotrophic Respiration"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "plant.resp"
+                      , desc     = "Plant Respiration"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "hflxlc"
+                      , desc     = "Leaf sensible heat"
+                      , unit     = untab$wom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "wflxlc"
+                      , desc     = "Leaf Evaporation"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "transp"
+                      , desc     = "Leaf Transpiration"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.gpp"
+                      , desc     = "Mean Gross Primary Production"
+                      , unit     = untab$kgcoployr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.npp"
+                      , desc     = "Mean Net Primary Production"
+                      , unit     = untab$kgcoployr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.plant.resp"
+                      , desc     = "Mean Plant Respiration"
+                      , unit     = untab$kgcoployr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.cba"
+                      , desc     = "Mean Carbon balance"
+                      , unit     = untab$kgcoployr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.cbamax"
+                      , desc     = "Mean Maximum C balance"
+                      , unit     = untab$kgcoployr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.hflxlc"
+                      , desc     = "Mean Leaf sensible heat flux"
+                      , unit     = untab$wopl
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.wflxlc"
+                      , desc     = "Mean Leaf evaporation"
+                      , unit     = untab$kgwoploday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "i.transp"
+                      , desc     = "Mean Transpiration"
+                      , unit     = untab$kgwoploday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "hflxgc"
+                      , desc     = "Sensible heat - Gnd->CAS"
+                      , unit     = untab$wom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "hflxca"
+                      , desc     = "Sensible heat - CAS->ATM"
+                      , unit     = untab$wom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "wflxgc"
+                      , desc     = "Water flux - Gnd->CAS"
+                      , unit     = untab$wom2
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "wflxca"
+                      , desc     = "Water flux - CAS->ATM"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "wue"
+                      , desc     = "Water use efficiency"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.gbw"
+                      , desc     = "Leaf Bnd. Lyr. Conductance"
+                      , unit     = untab$kgwom2loday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.gsw"
+                      , desc     = "Leaf stomatal Conductance"
+                      , unit     = untab$kgwom2loday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.gpp"
+                      , desc     = "Gross Primary Productivity"
+                      , unit     = untab$pcbiooyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.plant.resp"
+                      , desc     = "Plant respiration"
+                      , unit     = untab$pcbiooyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.npp"
+                      , desc     = "Net Primary Productivity"
+                      , unit     = untab$pcbiooyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.cba"
+                      , desc     = "Carbon balance"
+                      , unit     = untab$pcbiooyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.bstorage"
+                      , desc     = "Relative storage biomass"
+                      , unit     = untab$gcokgcbio
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.bleaf"
+                      , desc     = "Relative leaf biomass"
+                      , unit     = untab$gcokgcbio
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.broot"
+                      , desc     = "Relative root biomass"
+                      , unit     = untab$gcokgcbio
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.bseeds"
+                      , desc     = "Relative seed biomass"
+                      , unit     = untab$gcokgcbio
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.par"
+                      , desc     = "Absorbed PAR - Leaf"
+                      , unit     = untab$umolom2los
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1.e6
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.rshort"
+                      , desc     = "Absorbed SW - Leaf"
+                      , unit     = untab$wom2l
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "leaf.rlong"
+                      , desc     = "Absorbed LW - Leaf"
+                      , unit     = untab$wom2l
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
                       )#end list
    #---------------------------------------------------------------------------------------#
 
@@ -845,8 +1217,11 @@
    scen.ts = data.frame( apply( X = sapply(X=scen.ts,FUN=c), MARGIN = 1, FUN = unlist )
                        , stringsAsFactors = FALSE
                        )#end data.frame
-   for (nl in c("pftvar","dbhvar","mort","recr","plog","plt")){
+   for (nl in c("pftvar","dbhvar","mort","recr","plog","plog.dbh","plt")){
       scen.ts[[nl]] = as.logical(scen.ts[[nl]])
+   }#end for
+   for (nl in c("add","mult")){
+      scen.ts[[nl]] = as.numeric(scen.ts[[nl]])
    }#end for
    #---------------------------------------------------------------------------------------#
 #==========================================================================================#
@@ -867,9 +1242,11 @@
    #----- All that we need here is the variable name. -------------------------------------#
    scen.szpft = data.frame( vname = c(          "agb",          "lai",           "ba"
                                      ,         "recr",         "mort",      "ncbmort"
-                                     ,       "dimort",       "growth",          "gpp"
-                                     ,          "npp",   "plant.resp",          "cba"
-                                     ,          "mco",     "bstorage",      "fs.open"
+                                     ,       "dimort",       "growth",     "agb.recr"
+                                     ,     "agb.mort",  "agb.ncbmort",   "agb.dimort"
+                                     ,   "agb.growth",          "gpp",          "npp"
+                                     ,   "plant.resp",          "cba",          "mco"
+                                     ,     "bstorage",       "bseeds",      "fs.open"
                                      ,       "supply",       "demand",       "hflxlc"
                                      ,       "wflxlc",       "transp",        "i.gpp"
                                      , "i.plant.resp",        "i.npp",        "i.cba"
@@ -878,9 +1255,11 @@
                                      ,     "leaf.gsw",     "leaf.gbw",        "f.gpp"
                                      ,        "f.npp",        "f.cba",   "f.bstorage"
                                      ,      "f.bleaf",     "f.bseeds",         "rain"
-                                     ,"water.deficit","malhi.deficit",      "atm.vpd"
-                                     ,     "leaf.vpd",    "leaf.temp",     "atm.temp"
-                                     ,     "leaf.par"
+                                     ,"last.1yr.rain","last.2yr.rain","last.3yr.rain"
+                                     ,       "runoff",  "intercepted","water.deficit"
+                                     ,"malhi.deficit",      "atm.vpd",     "leaf.vpd"
+                                     ,    "leaf.temp",     "atm.temp",     "leaf.par"
+                                     ,       "nplant"
                                      )#end c
                           , stringsAsFactors = FALSE
                           )#end vname
@@ -937,7 +1316,7 @@
                                        ,         "gpp",       "ldrop",         "mco"
                                        ,      "supply",      "demand",      "transp"
                                        ,  "plant.resp",       "i.gpp","i.plant.resp"
-                                       ,    "i.transp"
+                                       ,    "i.transp",      "bseeds",    "bstorage"
                                        )#end c
                             , stringsAsFactors = FALSE
                             )#end vname
@@ -1002,40 +1381,38 @@
    #----- All that we need here is the variable name, legend position or colour scheme. ---#
    scen.xyz = list()
    scen.xyz$xvar      = list( list( vname = "rshort"       , leg        = "right"  )
-                            , list( vname = "atm.temp"     , leg        = "right"  )
                             , list( vname = "leaf.temp"    , leg        = "right"  )
                             , list( vname = "leaf.par"     , leg        = "right"  )
                             , list( vname = "leaf.vpd"     , leg        = "right"  )
+                            , list( vname = "leaf.gsw"     , leg        = "right"  )
                             , list( vname = "rain"         , leg        = "right"  )
+                            , list( vname = "intercepted"  , leg        = "right"  )
+                            , list( vname = "runoff"       , leg        = "right"  )
+                            , list( vname = "last.1yr.rain", leg        = "right"  )
+                            , list( vname = "last.2yr.rain", leg        = "right"  )
+                            , list( vname = "last.3yr.rain", leg        = "right"  )
                             , list( vname = "smpot"        , leg        = "right"  )
                             , list( vname = "water.deficit", leg        = "right"  )
-                            , list( vname = "malhi.deficit", leg        = "right"  )
-                            , list( vname = "i.cbamax"     , leg        = "right"  )
-                            , list( vname = "cbarel"       , leg        = "right"  )
                             , list( vname = "bstorage"     , leg        = "right"  )
                             , list( vname = "f.bstorage"   , leg        = "right"  )
+                            , list( vname = "bseeds"       , leg        = "right"  )
+                            , list( vname = "f.bseeds"     , leg        = "right"  )
                             , list( vname = "leaf.gsw"     , leg        = "right"  )
+                            , list( vname = "cba"          , leg        = "top"    )
+                            , list( vname = "f.cba"        , leg        = "top"    )
                             )#end list
    scen.xyz$yvar      = list( list( vname = "recr"         , leg        = "top"    )
                             , list( vname = "mort"         , leg        = "top"    )
                             , list( vname = "ncbmort"      , leg        = "top"    )
-                            , list( vname = "dimort"       , leg        = "top"    )
                             , list( vname = "growth"       , leg        = "top"    )
-                            , list( vname = "gpp"          , leg        = "top"    )
-                            , list( vname = "npp"          , leg        = "top"    )
-                            , list( vname = "i.gpp"        , leg        = "top"    )
-                            , list( vname = "i.npp"        , leg        = "top"    )
-                            , list( vname = "cba"          , leg        = "top"    )
-                            , list( vname = "mco"          , leg        = "top"    )
-                            , list( vname = "wue"          , leg        = "top"    )
-                            , list( vname = "i.transp"     , leg        = "top"    )
-                            , list( vname = "i.hflxlc"     , leg        = "top"    )
+                            , list( vname = "agb.recr"     , leg        = "top"    )
+                            , list( vname = "agb.mort"     , leg        = "top"    )
+                            , list( vname = "agb.ncbmort"  , leg        = "top"    )
+                            , list( vname = "agb.growth"   , leg        = "top"    )
                             , list( vname = "leaf.gsw"     , leg        = "top"    )
                             )#end list
    scen.xyz$zvar      = list( list( vname = "lai"          , col.scheme = "clife" )
                             , list( vname = "ba"           , col.scheme = "clife" )
-                            , list( vname = "agb"          , col.scheme = "clife" )
-                            , list( vname = "nplant"       , col.scheme = "clife" )
                             )#end list
    #---------------------------------------------------------------------------------------#
 
@@ -1126,22 +1503,31 @@
    scen.comp = list( list( vname =           "agb", low = "purple"   , high = "green"    )
                    , list( vname =           "lai", low = "purple"   , high = "green"    )
                    , list( vname =            "ba", low = "purple"   , high = "green"    )
+                   , list( vname =        "nplant", low = "purple"   , high = "green"    )
                    , list( vname =           "gpp", low = "purple"   , high = "green"    )
                    , list( vname =           "npp", low = "purple"   , high = "green"    )
                    , list( vname =           "mco", low = "purple"   , high = "green"    )
                    , list( vname =           "cba", low = "purple"   , high = "green"    )
                    , list( vname =         "ldrop", low = "green"    , high = "purple"   )
                    , list( vname =      "bstorage", low = "purple"   , high = "green"    )
+                   , list( vname =        "bseeds", low = "purple"   , high = "green"    )
                    , list( vname =       "fs.open", low = "orangered", high = "blue"     )
                    , list( vname =          "mort", low = "green"    , high = "purple"   )
                    , list( vname =          "recr", low = "purple"   , high = "green"    )
                    , list( vname =        "growth", low = "purple"   , high = "green"    )
                    , list( vname =       "ncbmort", low = "green"    , high = "purple"   )
                    , list( vname =        "dimort", low = "green"    , high = "purple"   )
+                   , list( vname =      "agb.mort", low = "green"    , high = "purple"   )
+                   , list( vname =      "agb.recr", low = "purple"   , high = "green"    )
+                   , list( vname =    "agb.growth", low = "purple"   , high = "green"    )
+                   , list( vname =   "agb.ncbmort", low = "green"    , high = "purple"   )
+                   , list( vname =    "agb.dimort", low = "green"    , high = "purple"   )
                    , list( vname =        "cbarel", low = "purple"   , high = "green"    )
                    , list( vname =        "demand", low = "blue"     , high = "orangered")
                    , list( vname =        "supply", low = "orangered", high = "blue"     )
                    , list( vname =          "rain", low = "orangered", high = "blue"     )
+                   , list( vname =        "runoff", low = "orangered", high = "blue"     )
+                   , list( vname =   "intercepted", low = "orangered", high = "blue"     )
                    , list( vname = "water.deficit", low = "blue"     , high = "orangered")
                    , list( vname =      "atm.temp", low = "blue"     , high = "orangered")
                    , list( vname =     "leaf.temp", low = "blue"     , high = "orangered")
@@ -1242,24 +1628,27 @@
    panel.box = data.frame( vname = c(          "agb",          "lai",           "ba"
                                     ,          "gpp",          "npp",          "mco"
                                     ,          "cba",        "ldrop",     "bstorage"
-                                    ,      "fs.open",         "mort",         "recr"
-                                    ,       "growth",      "ncbmort",       "dimort"
+                                    ,       "bseeds",      "fs.open",         "mort"
+                                    ,      "ncbmort",       "dimort",         "recr"
+                                    ,       "growth",     "agb.mort",  "agb.ncbmort"
+                                    ,   "agb.dimort",     "agb.recr",   "agb.growth"
                                     ,       "cbarel",       "demand",       "supply"
                                     ,         "rain","water.deficit","malhi.deficit"
-                                    ,     "atm.temp",    "leaf.temp",       "rshort"
-                                    ,        "rlong",      "atm.vpd",     "leaf.vpd"
-                                    ,          "paw",        "smpot",          "nep"
-                                    ,         "reco",  "fast.soil.c","struct.soil.c"
-                                    ,  "slow.soil.c",     "het.resp",   "plant.resp"
-                                    ,       "hflxlc",       "wflxlc",       "transp"
-                                    ,       "hflxgc",       "hflxca",       "wflxgc"
-                                    ,       "wflxca",     "i.hflxlc",     "i.wflxlc"
-                                    ,     "i.transp",        "i.gpp",        "i.npp"
-                                    , "i.plant.resp",        "i.cba",     "i.cbamax"
-                                    ,          "wue",     "leaf.gbw",     "leaf.gsw"
-                                    ,     "leaf.par",  "leaf.rshort",        "f.gpp"
-                                    ,        "f.npp",        "f.cba",   "f.bstorage"
-                                    ,     "f.bseeds",      "f.bleaf"
+                                    ,       "runoff",     "atm.temp",    "leaf.temp"
+                                    ,       "rshort",        "rlong",      "atm.vpd"
+                                    ,     "leaf.vpd",          "paw",        "smpot"
+                                    ,          "nep",         "reco",  "fast.soil.c"
+                                    ,"struct.soil.c",  "slow.soil.c",     "het.resp"
+                                    ,   "plant.resp",       "hflxlc",       "wflxlc"
+                                    ,       "transp",       "hflxgc",       "hflxca"
+                                    ,       "wflxgc",       "wflxca",     "i.hflxlc"
+                                    ,     "i.wflxlc",     "i.transp",        "i.gpp"
+                                    ,        "i.npp", "i.plant.resp",        "i.cba"
+                                    ,     "i.cbamax",          "wue",     "leaf.gbw"
+                                    ,     "leaf.gsw",     "leaf.par",  "leaf.rshort"
+                                    ,        "f.gpp",        "f.npp",        "f.cba"
+                                    ,   "f.bstorage",     "f.bseeds",      "f.bleaf"
+                                    ,       "nplant"
                                     )#end vname
                          , stringsAsFactors = FALSE
                          )#end data.frame

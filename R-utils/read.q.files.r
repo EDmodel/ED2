@@ -75,6 +75,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #----- Read data and close connection immediately after. ----------------------------#
       h5file       = datum$input[m]
       h5file.bz2   = paste(datum$input[m],"bz2",sep=".")
+      h5file.gz    = paste(datum$input[m],"gz" ,sep=".")
       if (file.exists(h5file)){
          mymont    = hdf5load(file=h5file,load=FALSE,verbosity=0,tidy=TRUE)
 
@@ -84,6 +85,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
          dummy     = file.remove(temp.file)
 
+      }else if(file.exists(h5file.gz)){
+         temp.file = file.path(tempdir(),basename(h5file))
+         dummy     = gunzip(filename=h5file.gz,destname=temp.file,remove=FALSE)
+         mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+         dummy     = file.remove(temp.file)
       }else{
          cat (" - File      : ",basename(h5file)    ,"\n")
          cat (" - File (bz2): ",basename(h5file.bz2),"\n")
@@ -92,6 +98,41 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       }#end if
       #------------------------------------------------------------------------------------#
 
+
+      #------------------------------------------------------------------------------------#
+      #      Create some additional radiation variables.                                   #
+      #------------------------------------------------------------------------------------#
+      #----- Direct radiation. ------------------------------------------------------------#
+      mymont$MMEAN.ATM.RSHORT.BEAM.PY = ( mymont$MMEAN.ATM.RSHORT.PY 
+                                        - mymont$MMEAN.ATM.RSHORT.DIFF.PY )
+      mymont$MMEAN.ATM.PAR.BEAM.PY    = ( mymont$MMEAN.ATM.PAR.PY 
+                                        - mymont$MMEAN.ATM.PAR.DIFF.PY    )
+      mymont$MMEAN.ATM.RSHORT.BEAM.SI = ( mymont$MMEAN.ATM.RSHORT.SI 
+                                        - mymont$MMEAN.ATM.RSHORT.DIFF.SI )
+      mymont$MMEAN.ATM.PAR.BEAM.SI    = ( mymont$MMEAN.ATM.PAR.SI 
+                                        - mymont$MMEAN.ATM.PAR.DIFF.SI    )
+      mymont$QMEAN.ATM.RSHORT.BEAM.PY = ( mymont$QMEAN.ATM.RSHORT.PY 
+                                        - mymont$QMEAN.ATM.RSHORT.DIFF.PY )
+      mymont$QMEAN.ATM.PAR.BEAM.PY    = ( mymont$QMEAN.ATM.PAR.PY 
+                                        - mymont$QMEAN.ATM.PAR.DIFF.PY    )
+      mymont$QMEAN.ATM.RSHORT.BEAM.SI = ( mymont$QMEAN.ATM.RSHORT.SI 
+                                        - mymont$QMEAN.ATM.RSHORT.DIFF.SI )
+      mymont$QMEAN.ATM.PAR.BEAM.SI    = ( mymont$QMEAN.ATM.PAR.SI 
+                                        - mymont$QMEAN.ATM.PAR.DIFF.SI    )
+      #----- Near infrared. ---------------------------------------------------------------#
+      mymont$MMEAN.ATM.NIR.PY         = ( mymont$MMEAN.ATM.RSHORT.PY
+                                        - mymont$MMEAN.ATM.PAR.PY          )
+      mymont$MMEAN.ATM.NIR.DIFF.PY    = ( mymont$MMEAN.ATM.RSHORT.DIFF.PY
+                                        - mymont$MMEAN.ATM.PAR.DIFF.PY     )
+      mymont$MMEAN.ATM.NIR.BEAM.PY    = ( mymont$MMEAN.ATM.RSHORT.BEAM.PY
+                                        - mymont$MMEAN.ATM.PAR.BEAM.PY     )
+      mymont$QMEAN.ATM.NIR.PY         = ( mymont$QMEAN.ATM.RSHORT.PY
+                                        - mymont$QMEAN.ATM.PAR.PY          )
+      mymont$QMEAN.ATM.NIR.DIFF.PY    = ( mymont$QMEAN.ATM.RSHORT.DIFF.PY
+                                        - mymont$QMEAN.ATM.PAR.DIFF.PY     )
+      mymont$QMEAN.ATM.NIR.BEAM.PY    = ( mymont$QMEAN.ATM.RSHORT.BEAM.PY
+                                        - mymont$QMEAN.ATM.PAR.BEAM.PY     )
+      #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
@@ -161,6 +202,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$wflxgc          [m] =   mymont$MMEAN.VAPOR.GC.PY   * day.sec
       emean$wflxlc          [m] =   mymont$MMEAN.VAPOR.LC.PY   * day.sec
       emean$wflxwc          [m] =   mymont$MMEAN.VAPOR.WC.PY   * day.sec
+      emean$runoff          [m] = ( mymont$MMEAN.RUNOFF.PY
+                                  + mymont$MMEAN.DRAINAGE.PY       ) * mondays * day.sec
+      emean$intercepted     [m] = ( mymont$MMEAN.INTERCEPTED.AL.PY
+                                  + mymont$MMEAN.INTERCEPTED.AW.PY ) * mondays * day.sec
+      emean$wshed           [m] = ( mymont$MMEAN.WSHED.LG.PY
+                                  + mymont$MMEAN.WSHED.WG.PY       ) * mondays * day.sec
       emean$evap            [m] = ( mymont$MMEAN.VAPOR.GC.PY
                                   + mymont$MMEAN.VAPOR.LC.PY
                                   + mymont$MMEAN.VAPOR.WC.PY ) * day.sec
@@ -168,6 +215,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$wue             [m] = ( mymont$MMEAN.NPP.PY
                                   / mymont$MMEAN.TRANSP.PY )   * 1000. / yr.day
       emean$rain            [m] =   mymont$MMEAN.PCPG.PY * mondays * day.sec
+      
+      #----- Save the past rainfall. ------------------------------------------------------#
+      emean$last.1yr.rain[m] = sum(emean$rain[max(m-11,1):m])
+      emean$last.2yr.rain[m] = sum(emean$rain[max(m-23,1):m])
+      emean$last.3yr.rain[m] = sum(emean$rain[max(m-35,1):m])
+      #------------------------------------------------------------------------------------#
+
       emean$fs.open         [m] =   mymont$MMEAN.FS.OPEN.PY
       emean$rshort          [m] =   mymont$MMEAN.ATM.RSHORT.PY
       emean$rshort.beam     [m] = ( mymont$MMEAN.ATM.RSHORT.PY
@@ -186,8 +240,19 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$parup           [m] =   mymont$MMEAN.PARUP.PY          * Watts.2.Ein * 1.e6
       emean$rnet            [m] =   mymont$MMEAN.RNET.PY
       emean$albedo          [m] =   mymont$MMEAN.ALBEDO.PY
-      emean$albedo.par      [m] =   mymont$MMEAN.ALBEDO.PAR.PY
-      emean$albedo.nir      [m] =   mymont$MMEAN.ALBEDO.NIR.PY
+      if (all(c("MMEAN.ALBEDO.PAR.PY","MMEAN.ALBEDO.NIR.PY") %in% names(mymont))){
+         emean$albedo.par   [m] =   mymont$MMEAN.ALBEDO.PAR.PY
+         emean$albedo.nir   [m] =   mymont$MMEAN.ALBEDO.NIR.PY
+      }else{
+         emean$albedo.par   [m] = ifelse( mymont$MMEAN.ATM.PAR.PY > 0.5
+                                        , mymont$MMEAN.PARUP.PY / mymont$MMEAN.ATM.PAR.PY
+                                        , mymont$MMEAN.ALBEDO.PY
+                                        )#end ifelse
+         emean$albedo.nir   [m] = ifelse( mymont$MMEAN.ATM.NIR.PY > 0.5
+                                        , mymont$MMEAN.NIRUP.PY / mymont$MMEAN.ATM.NIR.PY
+                                        , mymont$MMEAN.ALBEDO.PY
+                                        )#end ifelse
+      }#end if
       emean$rlong.albedo    [m] =   mymont$MMEAN.RLONG.ALBEDO.PY
       emean$leaf.gbw        [m] =   mymont$MMEAN.LEAF.GBW.PY * day.sec
       emean$leaf.gsw        [m] =   mymont$MMEAN.LEAF.GSW.PY * day.sec
@@ -303,6 +368,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$wflxlc      [m,] =   mymont$QMEAN.VAPOR.LC.PY     * day.sec
       qmean$wflxwc      [m,] =   mymont$QMEAN.VAPOR.WC.PY     * day.sec
       qmean$wflxgc      [m,] =   mymont$QMEAN.VAPOR.GC.PY     * day.sec
+      qmean$runoff      [m,] = ( mymont$QMEAN.RUNOFF.PY
+                               + mymont$QMEAN.DRAINAGE.PY )   * day.sec
+      qmean$intercepted [m,] = ( mymont$QMEAN.INTERCEPTED.AL.PY
+                               + mymont$QMEAN.INTERCEPTED.AW.PY ) * day.sec
+      qmean$wshed       [m,] = ( mymont$QMEAN.WSHED.LG.PY
+                               + mymont$QMEAN.WSHED.WG.PY       ) * day.sec
       qmean$evap        [m,] = ( mymont$QMEAN.VAPOR.GC.PY
                                + mymont$QMEAN.VAPOR.WC.PY
                                + mymont$QMEAN.VAPOR.LC.PY )   * day.sec
@@ -343,8 +414,19 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$parup       [m,] =   mymont$QMEAN.PARUP.PY          * Watts.2.Ein * 1.e6
       qmean$rnet        [m,] =   mymont$QMEAN.RNET.PY
       qmean$albedo      [m,] =   mymont$QMEAN.ALBEDO.PY
-      qmean$albedo.par  [m,] =   mymont$QMEAN.ALBEDO.PAR.PY
-      qmean$albedo.nir  [m,] =   mymont$QMEAN.ALBEDO.NIR.PY
+      if (all(c("QMEAN.ALBEDO.PAR.PY","QMEAN.ALBEDO.NIR.PY") %in% names(mymont))){
+         qmean$albedo.par   [m,] =   mymont$QMEAN.ALBEDO.PAR.PY
+         qmean$albedo.nir   [m,] =   mymont$QMEAN.ALBEDO.NIR.PY
+      }else{
+         qmean$albedo.par   [m,] = ifelse( mymont$QMEAN.ATM.PAR.PY > 0.5
+                                         , mymont$QMEAN.PARUP.PY / mymont$QMEAN.ATM.PAR.PY
+                                         , mymont$QMEAN.ALBEDO.PY
+                                         )#end ifelse
+         qmean$albedo.nir   [m,] = ifelse( mymont$QMEAN.ATM.NIR.PY > 0.5
+                                         , mymont$QMEAN.NIRUP.PY / mymont$QMEAN.ATM.NIR.PY
+                                         , mymont$QMEAN.ALBEDO.PY
+                                         )#end ifelse
+      }#end if
       qmean$rlong.albedo[m,] =   mymont$QMEAN.RLONG.ALBEDO.PY
       qmean$leaf.gbw    [m,] =   mymont$QMEAN.LEAF.GBW.PY       * day.sec
       qmean$leaf.gsw    [m,] =   mymont$QMEAN.LEAF.GSW.PY       * day.sec
@@ -792,6 +874,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          dimortconow     = mortconow - ncbmortconow
          recruitconow    = mymont$RECRUIT.DBH
          growthconow     = 100. * pmax(0,mymont$DLNDBH.DT)
+         agb.growthconow = 100. * pmax(0,mymont$DLNAGB.DT)
+         bsa.growthconow = 100. * pmax(0,mymont$DLNBA.DT )
          #---------------------------------------------------------------------------------#
       }else{
          #----- Make everything NA. -------------------------------------------------------#
@@ -853,6 +937,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          dimortconow       = NA
          recruitconow      = NA
          growthconow       = NA
+         agb.growthconow   = NA
+         bsa.growthconow   = NA
          leaf.gbwconow     = NA
          leaf.gswconow     = NA
          wood.gbwconow     = NA
@@ -917,13 +1003,26 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #     Build the size (DBH) structure arrays.                                         #
       #------------------------------------------------------------------------------------#
       for (d in sequence(ndbh+1)){
+         #----- Decide which DBH to use. --------------------------------------------------#
          if (all(is.na(dbhfac))){
             sel.dbh       = rep(FALSE,times=length(dbhfac     ))
             sel.dbh.1ago  = rep(FALSE,times=length(dbhfac.1ago))
+
+            #----- Define the minimum DBH. ------------------------------------------------#
+            dbhminconow   = rep(Inf,times=length(pftconow))
+            #------------------------------------------------------------------------------#
          }else{
             sel.dbh       = dbhfac      == d | d == (ndbh+1)
             sel.dbh.1ago  = dbhfac.1ago == d | d == (ndbh+1)
+
+            #----- Define the minimum DBH. ------------------------------------------------#
+            dbhminconow   = pft$dbh.min[pftconow] * (d == 1) + census.dbh.min * (d != 1)
+            #------------------------------------------------------------------------------#
          }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Decide which PFT to use. --------------------------------------------------#
          for (p in sequence(npft+1)){
             sel.pft   = pftconow == p | p == (npft+1)
             sel       = sel.pft & sel.dbh
@@ -1076,31 +1175,70 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             #    For mortality and growth, we keep deleting the tiny guys because they     #
             # skew the rates quite significantly.                                          #
             #------------------------------------------------------------------------------#
-            sel = sel.pft & sel.dbh & dbhconow >= census.dbh.min
+            sel = sel.pft & sel.dbh & dbhconow >= dbhminconow
             if (any(sel)){
                #----- Growth rates are weighted by population. ----------------------------#
-               szpft$growth [m,d,p] = weighted.mean( x = growthconow[sel]
-                                                   , w = w.nplant   [sel]
-                                                   )#end weighted.mean
+               szpft$growth     [m,d,p] = weighted.mean( x = growthconow    [sel]
+                                                       , w = w.nplant       [sel]
+                                                       )#end weighted.mean
+               szpft$agb.growth [m,d,p] = weighted.mean( x = agb.growthconow[sel]
+                                                       , w = w.nplant       [sel]
+                                                       )#end weighted.mean
+               szpft$bsa.growth [m,d,p] = weighted.mean( x = bsa.growthconow[sel]
+                                                       , w = w.nplant       [sel]
+                                                       )#end weighted.mean
                #---------------------------------------------------------------------------#
 
 
 
-               #---- This is the number of survivors and living before. -------------------#
-               survivor             = sum( w.nplant            [sel] )
-               previous             = sum( w.nplant            [sel]
-                                         * exp(mortconow       [sel] ) )
-               szpft$mort   [m,d,p] = log( previous / survivor )
+               #---------------------------------------------------------------------------#
+               #      Find the total number of plants and previous population if the only  #
+               # mortality was the mortality we test.                                      #
+               #---------------------------------------------------------------------------#
+               survivor             = sum( w.nplant[sel]                          )
+               previous             = sum( w.nplant[sel] * exp(mortconow   [sel]) )
+               ncb.previous         = sum( w.nplant[sel] * exp(ncbmortconow[sel]) )
+               di.previous          = sum( w.nplant[sel] * exp(dimortconow [sel]) )
+               szpft$mort   [m,d,p] = log( previous     / survivor )
+               szpft$ncbmort[m,d,p] = log( ncb.previous / survivor )
+               szpft$dimort [m,d,p] = log( di.previous  / survivor )
+               #---------------------------------------------------------------------------#
 
-               survivor             = sum( w.nplant          [sel] )
-               previous             = sum( w.nplant          [sel]
-                                         * exp(ncbmortconow  [sel] ) )
-               szpft$ncbmort[m,d,p] = log( previous / survivor )
 
-               survivor             = sum( w.nplant          [sel] )   
-               previous             = sum( w.nplant          [sel]     
-                                         * exp(dimortconow   [sel] ) ) 
-               szpft$dimort [m,d,p] = log( previous / survivor )
+
+               #---------------------------------------------------------------------------#
+               #      Find the total AGB and previous AGB if the only mortality was the    #
+               # mortality we test.                                                        #
+               #---------------------------------------------------------------------------#
+               survivor                 = sum( w.nplant[sel] * agbconow[sel])
+               previous                 = sum( w.nplant[sel] * agbconow[sel]
+                                             * exp(mortconow           [sel] ) )
+               ncb.previous             = sum( w.nplant[sel] * agbconow[sel]
+                                             * exp(ncbmortconow        [sel] ) )
+               di.previous              = sum( w.nplant[sel] * agbconow[sel]
+                                             * exp(dimortconow         [sel] ) )
+               szpft$agb.mort   [m,d,p] = log( previous     / survivor )
+               szpft$agb.ncbmort[m,d,p] = log( ncb.previous / survivor )
+               szpft$agb.dimort [m,d,p] = log( di.previous  / survivor )
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Find the total basal area and previous basal area if the only        #
+               # mortality was the mortality we test.                                      #
+               #---------------------------------------------------------------------------#
+               survivor                 = sum( w.nplant[sel] * baconow[sel])
+               previous                 = sum( w.nplant[sel] * baconow[sel]
+                                             * exp(mortconow          [sel] ) )
+               ncb.previous             = sum( w.nplant[sel] * baconow[sel]
+                                             * exp(ncbmortconow       [sel] ) )
+               di.previous              = sum( w.nplant[sel] * baconow[sel]
+                                             * exp(dimortconow        [sel] ) )
+               szpft$bsa.mort   [m,d,p] = log( previous     / survivor )
+               szpft$bsa.ncbmort[m,d,p] = log( ncb.previous / survivor )
+               szpft$bsa.dimort [m,d,p] = log( di.previous  / survivor )
+               #---------------------------------------------------------------------------#
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -1110,12 +1248,28 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             #    Recruitment: we must determine whether the plant grew into the new        #
             # category or not.                                                             #
             #------------------------------------------------------------------------------#
-            sel.pop = sel.pft & sel.dbh      & dbhconow      >= census.dbh.min
-            sel.est = sel.pop & sel.dbh.1ago & dbhconow.1ago >= census.dbh.min 
+            sel.pop = sel.pft & sel.dbh      & dbhconow      >= dbhminconow
+            sel.est = sel.pop & sel.dbh.1ago & dbhconow.1ago >= dbhminconow
             if (any(sel.pop) & any(sel.est)){
-               population         = sum(w.nplant[sel.pop])
-               established        = sum(w.nplant[sel.est])
-               szpft$recr [m,d,p] = log(population / established)
+               #----- Recruitment rate in terms of individuals. ---------------------------#
+               population             = sum(w.nplant[sel.pop])
+               established            = sum(w.nplant[sel.est])
+               szpft$recr     [m,d,p] = log(population / established)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Recruitment rate in terms of above-ground biomass. ------------------#
+               population             = sum(w.nplant[sel.pop] * agbconow[sel.pop])
+               established            = sum(w.nplant[sel.est] * agbconow[sel.est])
+               szpft$agb.recr [m,d,p] = log(population / established)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Recruitment rate in terms of basal area. ----------------------------#
+               population             = sum(w.nplant[sel.pop] * baconow [sel.pop])
+               established            = sum(w.nplant[sel.est] * baconow [sel.est])
+               szpft$bsa.recr [m,d,p] = log(population / established)
+               #---------------------------------------------------------------------------#
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -1253,6 +1407,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$dimort       [[clab]] = 100. * (1.0 - exp(-dimortconow    ))
          cohort$recruit      [[clab]] = 100. * (exp(recruitconow) - 1.0)
          cohort$growth       [[clab]] = growthconow
+         cohort$agb.growth   [[clab]] = agb.growthconow
+         cohort$bsa.growth   [[clab]] = bsa.growthconow
          cohort$f.gpp        [[clab]] = f.gppconow
          cohort$f.plant.resp [[clab]] = f.plant.respconow
          cohort$f.npp        [[clab]] = f.nppconow

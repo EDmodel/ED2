@@ -326,8 +326,8 @@ for (place in myplaces){
       thisvar = yc.tvar[[tt]]
       vname   = thisvar$vnam
       desc    = thisvar$desc
-      if (vname == "rain"){
-         unit    = "mm/month"
+      if (vname %in% c("rain","runoff","intercepted","wshed")){
+         unit    = untab$mmomo
       }else{
          unit    = thisvar$unit
       }#end if
@@ -420,7 +420,7 @@ for (place in myplaces){
             
             letitre = paste(lieu," \n",desc,sep="")
             lex     = "Months"
-            ley     = paste(desc," [",unit,"]")
+            ley     = desc.unit(desc=desc,unit=unit)
 
 
             par(par.user)
@@ -494,7 +494,7 @@ for (place in myplaces){
                             , dimnames = list(yr3mon.desc,season.list[-nseasons])
                             , byrow    = TRUE
                             )#end matrix
-         if (vname == "rain"){
+         if (vname %in% c("rain","runoff","intercepted","wshed")){
             ylimit = c(0,max(season.vec,na.rm=TRUE))
          }else{
             ylimit = pretty.xylim(u=season.vec,fracexp=0.0,is.log=FALSE)
@@ -522,7 +522,7 @@ for (place in myplaces){
             
             letitre = paste(lieu," \n Year comparison: ",desc,sep="")
             lex     = "Season"
-            ley     = paste(desc," [",unit,"]")
+            ley     = desc.unit(desc=desc,unit=unit)
 
 
             par(par.user)
@@ -602,21 +602,21 @@ for (place in myplaces){
             this.pch  = eft.pch[match(yr.season,eft.year)]
             #----- Expand the edges of the x axis. ----------------------------------------#
             xvar      = emean[[xvname]]
-            lex       = paste(xdesc," [",xunit,"]",sep="")
+            lex       = desc.unit(desc=xdesc,unit=xunit)
             xrange    = range(xvar,na.rm=TRUE)
             xlimit    = xrange
             xlimit[1] = xrange[1] - 0.05 * (xrange[2] - xrange[1])
             xlimit[2] = xrange[2] + 0.05 * (xrange[2] - xrange[1])
             #----- Expand the edges of the y axis. ----------------------------------------#
             yvar      = emean[[yvname]]
-            ley       = paste(ydesc," [",yunit[y],"]",sep="")
+            ley       = desc.unit(desc=ydesc,unit=yunit)
             yrange    = range(yvar,na.rm=TRUE)
             ylimit    = yrange
             ylimit[1] = yrange[1] - 0.05 * (yrange[2] - yrange[1])
             ylimit[2] = yrange[2] + 0.40 * (yrange[2] - yrange[1])
             #----- Annotation for the colour map ("Z" axis). ------------------------------#
             zvar      = emean[[zvname]]
-            lez       = paste(zkey,"\n [",zunit,"]",sep="")
+            lez       = desc.unit(desc=zdesc,unit=zunit)
             #----- Find the position to plot the legend. ----------------------------------#
             leg.pos   = paste(yleg,xleg,sep="")
 

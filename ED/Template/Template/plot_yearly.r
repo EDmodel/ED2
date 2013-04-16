@@ -329,7 +329,7 @@ for (place in myplaces){
          msdev[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=sd  , na.rm=TRUE)
          ymean[[vname]] = qapply(X=emean[[vname]], INDEX=yfac, DIM=1, FUN=mean, na.rm=TRUE)
          ysdev[[vname]] = qapply(X=emean[[vname]], INDEX=yfac, DIM=1, FUN=sd  , na.rm=TRUE)
-      }else if (vname %in% c("rain")){
+      }else if (vname %in% c("rain","runoff","intercepted","wshed")){
          mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
          msdev[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=sd  , na.rm=TRUE)
          ymean[[vname]] = tapply(X=emean[[vname]], INDEX=yfac, FUN=sum , na.rm=TRUE)
@@ -390,10 +390,18 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #     Convert mortality and recruitment so it is scaled between 0 and 100%.             #
    #---------------------------------------------------------------------------------------#
-   szpft$mort    = 100. * (1.0 - exp(- szpft$mort   ))
-   szpft$dimort  = 100. * (1.0 - exp(- szpft$dimort ))
-   szpft$ncbmort = 100. * (1.0 - exp(- szpft$ncbmort))
-   szpft$recr    = 100. * (exp(  szpft$recr   ) - 1.0)
+   szpft$mort          = 100. * (1.0 - exp(- szpft$mort         )      )
+   szpft$dimort        = 100. * (1.0 - exp(- szpft$dimort       )      )
+   szpft$ncbmort       = 100. * (1.0 - exp(- szpft$ncbmort      )      )
+   szpft$recrpft       = 100. * (      exp(  szpft$recr         ) - 1.0)
+   szpft$agb.mort      = 100. * (1.0 - exp(- szpft$agb.mort     )      )
+   szpft$agb.dimort    = 100. * (1.0 - exp(- szpft$agb.dimort   )      )
+   szpft$agb.ncbmort   = 100. * (1.0 - exp(- szpft$agb.ncbmort  )      )
+   szpft$agb.recrpft   = 100. * (      exp(  szpft$agb.recr     ) - 1.0)
+   szpft$bsa.mort      = 100. * (1.0 - exp(- szpft$bsa.mort     )      )
+   szpft$bsa.dimort    = 100. * (1.0 - exp(- szpft$bsa.dimort   )      )
+   szpft$bsa.ncbmort   = 100. * (1.0 - exp(- szpft$bsa.ncbmort  )      )
+   szpft$bsa.recrpft   = 100. * (      exp(  szpft$bsa.recr     ) - 1.0)
    #---------------------------------------------------------------------------------------#
 
 
@@ -544,6 +552,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(description,lieu,sep=" - ")
+            ley     = desc.unit(desc=description,unit=unit)
             cols    = pft$colour[selpft]
             legs    = pft$name  [selpft]
             #------------------------------------------------------------------------------#
@@ -586,7 +595,7 @@ for (place in myplaces){
             axis(side=1)
             axis(side=2)
             box()
-            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -714,6 +723,7 @@ for (place in myplaces){
 
                #-----  Plot annotation. ---------------------------------------------------#
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               ley     = desc.unit(desc=description,unit=unit)
                #---------------------------------------------------------------------------#
 
 
@@ -755,7 +765,7 @@ for (place in myplaces){
                axis(side=1)
                axis(side=2)
                box()
-               title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -899,10 +909,10 @@ for (place in myplaces){
 
                #----- Load variable -------------------------------------------------------#
                letitre = paste(description," - ",lieu,"\n","Monthly mean - ",cyear,sep="")
+               ley     = desc.unit(desc=description,unit=unit)
                par(par.user)
                plot(x=montmont,y=var.year,type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
-                   ,cex.main=cex.main)
+                   ,ylim=ylimit,ylab=ley,log=plog,xaxt="n",cex.main=cex.main)
                axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
                if (plotgrid){ 
                   abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
@@ -1028,6 +1038,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(description,lieu,sep=" - ")
+            ley     = desc.unit(desc=description,unit=unit)
             cols    = lucols[sellu]
             legs    = lunames[sellu]
             #------------------------------------------------------------------------------#
@@ -1070,7 +1081,7 @@ for (place in myplaces){
             axis(side=1)
             axis(side=2)
             box()
-            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1329,6 +1340,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(" Time series: ",group,"\n",lieu,sep="")
+            ley     = desc.unit(desc=description,unit=unit)
             #------------------------------------------------------------------------------#
 
 
@@ -1368,7 +1380,7 @@ for (place in myplaces){
             axis(side=1)
             axis(side=2)
             box()
-            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1492,6 +1504,7 @@ for (place in myplaces){
                #----- Plot settings. ------------------------------------------------------#
                letitre = paste(group," - ",lieu,"\n"
                               ,"Mean diurnal cycle - ",cyear,sep="")
+               ley     = desc.unit(desc=description,unit=unit)
                #---------------------------------------------------------------------------#
 
 
@@ -1531,7 +1544,7 @@ for (place in myplaces){
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                axis(side=2)
                box()
-               title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1547,7 +1560,7 @@ for (place in myplaces){
                for (l in 1:nlayers){
                   thisvar = umean[[vnames[l]]]
                   thisvar = cbind(thisvar[,ndcycle],thisvar)
-                  points(x=thisday,y=thisvar[pmon,],col=lcolours[l]
+                  points(x=thisday,y=thisvar[yy,],col=lcolours[l]
                         ,lwd=llwd[l],type=ltype,pch=16)
                }#end for
                #---------------------------------------------------------------------------#
@@ -1658,12 +1671,13 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description,"\n",lieu,sep="")
+            ley     = desc.unit(desc="Soil depth",unit=untab$m)
+            lacle   = desc.unit(desc=NULL,unit=unit)
             par(par.user)
             sombreado(x=yearaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,color.palette=get(vcscheme)
-                     ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
-                                      ,cex.main=0.7)
-                     ,key.title=title(main=unit,cex.main=0.8)
+                     ,plot.title=title(main=letitre,xlab="Month",ylab=ley,cex.main=0.7)
+                     ,key.title=title(main=lacle,cex.main=0.8)
                      ,key.log=pnlog
                      ,plot.axes={axis(side=1)
                                  axis(side=2,at=zat,labels=znice)
@@ -1793,7 +1807,7 @@ for (place in myplaces){
                #------ Set up the title and axis labels. ----------------------------------#
                letitre = paste(lieu,"\n",description," - Year : ",cyear,sep="")
                lexlab  = "DBH Classes"
-               leylab  = paste(description," [",unit,"]",sep="")
+               leylab  = desc.unit(desc=description,unit=unit)
                #---------------------------------------------------------------------------#
 
 

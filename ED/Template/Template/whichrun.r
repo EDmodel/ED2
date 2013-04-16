@@ -14,7 +14,11 @@ yeara            = thisyeara
 montha           = thismontha
 datea            = thisdatea
 timea            = thistimea
-output = paste(main,polyg,sep="/") # Current directory.
+check.steady     = thischecksteady
+metcyca          = thismetcyc1
+metcycz          = thismetcycf
+nyear.min        = thisnyearmin
+ststcrit         = thisststcrit
 #------------------------------------------------------------------------------------------#
 
 
@@ -32,6 +36,10 @@ output = paste(main,polyg,sep="/") # Current directory.
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 
+
+#----- Output path. -----------------------------------------------------------------------#
+output           = file.path(main,polyg)
+#------------------------------------------------------------------------------------------#
 
 
 #----- Load some useful scripts and packages. ---------------------------------------------#
@@ -120,7 +128,7 @@ hasoutput   = nhisto > 0
 #------------------------------------------------------------------------------------------#
 if (hasoutput){
    latesthisto = histolist[nhisto]
-   pathhisto   = paste(histodir,histolist[nhisto],sep="/")
+   pathhisto   = file.path(histodir,histolist[nhisto])
    print (paste("Polygon",polyg," - Last:",latesthisto,"..."))
 
    #----- Open the last history and check how many cohorts exist. -------------------------#
@@ -156,6 +164,110 @@ if (hasoutput){
    }#end if
    scb = mydata$FAST.SOIL.C.PY+mydata$STRUCT.SOIL.C.PY+mydata$SLOW.SOIL.C.PY
    #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check whether we have reached steady state (if the user wants it, of course...    #
+   #---------------------------------------------------------------------------------------#
+   if (check.steady && yyyy > yeara + nyear.min){
+      #------------------------------------------------------------------------------------#
+      #    If all plants went extinct, this has become a desert.  No need to check for     #
+      # steady state.                                                                      #
+      #------------------------------------------------------------------------------------#
+      if (desert){
+         extinct = TRUE
+         ststate = FALSE
+      }else{
+         #----- Not a desert, check for steady state. -------------------------------------#
+         extinct = FALSE
+
+         #---- Get the meteorological cycle. ----------------------------------------------#
+         metcycle   = metcycz - metcyca
+         years.test = seq(from=yeara,to=yeara+nhisto-1,by=metcycle)
+         ntest      = length(years.test)
+         npft       = dim(mydata$AGB.PY)[3]
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Get AGB and soil carbon time series. --------------------------------------#
+         agb.pft    = matrix(NA,nrow=ntest,ncol=npft)
+         scb.scp    = matrix(NA,nrow=ntest,ncol=   3)
+         for (y in 1:ntest){
+            thishisto    = grep(paste("-",years.test[y],"-",sep=""),histolist)
+            pathhisto    = paste(histodir,histolist[thishisto],sep="/")
+            olddata      = hdf5load(file=pathhisto,load=FALSE,verbosity=0,tidy=TRUE)
+            agb.pft[y,]  = colSums(olddata$AGB.PY[1,,])
+            scb.scp[y,1] = olddata$FAST.SOIL.C.PY
+            scb.scp[y,2] = olddata$STRUCT.SOIL.C.PY
+            scb.scp[y,3] = olddata$SLOW.SOIL.C.PY
+         }#end for
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     Extinct PFTs by definition have reached the equilibrium.  Likewise, if any  #
+         # soil carbon is zero, we cannot check so assume equilibrium.  From this point,   #
+         # we assume we are at steady state.  If any PFT or soil carbon pool fail, we stop #
+         # checking.                                                                       #
+         #---------------------------------------------------------------------------------#
+         pft.check = which(agb.pft[ntest,] > 0)
+         scp.check = which(scp.sft[ntest,] > 0)
+         steady    = TRUE
+         #----- Check AGB for each PFT. ---------------------------------------------------#
+         for (p in pft.check){
+            #----- Skip check of no longer steady state. ----------------------------------#
+            if (steady){
+               #----- Find the AGB rate of change. ----------------------------------------#
+               rate    = c(NA,diff(agb.pft[,p])) / max(agb.pft[,p])
+               data.in = data.frame(rate,years.test)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Smooth the rate of change, so we remove the noise. ------------------#
+               fit.in  = loess(formula = rate~years.test,data=data.in)
+               pred.in = predict(fit.in,data=data.in)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Check whether the last point has low enough rate. -------------------#
+               npred   = length(pred.in)
+               steady  = ( abs(pred.in[npred])   <= ststcrit   &&
+                           abs(pred.in[npred-1]) <= ststcrit     )
+               #---------------------------------------------------------------------------#
+            }#end if (steady)
+            #------------------------------------------------------------------------------#
+         }#end for (p in pft.check)
+         #----- Check Soil carbon for each soil carbon pool. ------------------------------#
+         for (p in scp.check){
+            #----- Skip check of no longer steady state. ----------------------------------#
+            if (steady){
+               #----- Find the AGB rate of change. ----------------------------------------#
+               rate    = c(NA,diff(scb.scp[,p])) / max(scb.scp[,p])
+               data.in = data.frame(rate,years.test)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Smooth the rate of change, so we remove the noise. ------------------#
+               fit.in  = loess(formula = rate~years.test,data=data.in)
+               pred.in = predict(fit.in,data=data.in)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Check whether the last point has low enough rate. -------------------#
+               npred   = length(pred.in)
+               steady  = ( abs(pred.in[npred])   <= ststcrit   &&
+                           abs(pred.in[npred-1]) <= ststcrit     )
+               #---------------------------------------------------------------------------#
+            }#end if (steady)
+         }#end for (p in scp.check)
+         #---------------------------------------------------------------------------------#
+      }#end if (desert)
+      #------------------------------------------------------------------------------------#
+   }else{
+      extinct = FALSE
+      ststate = FALSE
+   }#end if (check.steady && yyyy > yeara + nyear.min)
+   #---------------------------------------------------------------------------------------#
 }else{
    #---------------------------------------------------------------------------------------#
    #     No history file, the run hasn't started yet...                                    #
@@ -168,7 +280,8 @@ if (hasoutput){
    bsa       = sprintf("%7.3f",NA    )
    lai       = sprintf("%7.3f",NA    )
    scb       = sprintf("%7.3f",NA    )
-   desert    = FALSE
+   extinct   = FALSE
+   ststate   = FALSE
    #---------------------------------------------------------------------------------------#
 }#end if (nhisto > 0)
 #------------------------------------------------------------------------------------------#
@@ -180,7 +293,13 @@ if (hasoutput){
 # convincing that the run is working).                                                     #
 #------------------------------------------------------------------------------------------#
 if (running && hasoutput){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,sep=" ")
+   if (extinct){
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"EXTINCT",agb,bsa,lai,scb,sep=" ")
+   }else if(ststate){
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"STSTATE",agb,bsa,lai,scb,sep=" ")
+   }else{
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,sep=" ")
+   }#end if
 }else if(running){
    status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,sep=" ")
 }else if (sigsegv){
@@ -196,7 +315,13 @@ if (running && hasoutput){
 }else if(finished){
    status    = paste(polyg,yyyy,mm,dd,hhhh,"THE_END",agb,bsa,lai,scb,sep=" ")
 }else if(hasoutput){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,sep=" ")
+   if (extinct){
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"EXTINCT",agb,bsa,lai,scb,sep=" ")
+   }else if(ststate){
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"STSTATE",agb,bsa,lai,scb,sep=" ")
+   }else{
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,sep=" ")
+   }#end if
 }else{
    status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,sep=" ")
 }#end if

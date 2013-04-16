@@ -75,7 +75,7 @@ eft.col  <<- c("purple4","purple1","mediumpurple1","royalblue4","steelblue","dee
 
 #----- Standard colours and names for soil classes. ---------------------------------------#
 stext.cols  <<- c("gold","chartreuse","limegreen","darkgreen","purple3"
-                 ,"deepskyblue","aquamarine","midnightblue","darkorange3","sienna"
+                 ,"deepskyblue","aquamarine","slateblue2","darkorange3","sienna"
                  ,"firebrick","grey61","grey29","orchid","olivedrab","goldenrod"
                  ,"steelblue")
 stext.names <<- c("Sand","Loamy Sand","Sandy loam","Silt loam","Loam","Sandy clay loam"
@@ -144,8 +144,12 @@ if (idbh.type == 1){
    ddbh       <<- 10
    classdbh   <<- seq(from=0,to=(ndbh-1)*ddbh,by=ddbh)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
+   dbhlabel   <<- "11_szclss"
    dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- c(paste("> ",sprintf("%.1f",classdbh),"cm",sep=""),"Total")
+   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                       , c(classdbh[-1],classdbh[ndbh]),"cm"
+                       , sep=""
+                       )#end paste
    dbhcols    <<- c(         "purple3",   "mediumpurple1",      "royalblue4"
                    ,      "steelblue3",     "deepskyblue",         "#004E00"
                    ,     "chartreuse3",      "olivedrab3", "lightgoldenrod3"
@@ -157,25 +161,57 @@ if (idbh.type == 1){
    ndbh       <<-  6
    classdbh   <<- c(0,10,20,35,50,70)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
+   dbhlabel   <<- "06_szclss"
    dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- c(paste("> ",sprintf("%.1f",classdbh),"cm",sep=""),"Total")
+   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                       , c(classdbh[-1],classdbh[ndbh]),"cm"
+                       , sep=""
+                       )#end paste
    dbhcols    <<- c(         "purple3",      "royalblue3",     "chartreuse3"
-                  ,          "yellow3",     "darkorange1",       "firebrick"
-                  ,         all.colour
-                  )#end c
+                   ,         "yellow3",     "darkorange1",       "firebrick"
+                   ,        all.colour
+                   )#end c
 }else if (idbh.type == 3){
    ndbh       <<-  4
    classdbh   <<- c(0,10,35,55)
+   dbhlabel   <<- "04_szclss"
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
    dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- c(paste("> ",sprintf("%.1f",classdbh),"cm",sep=""),"Total")
+   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                       , c(classdbh[-1],classdbh[ndbh]),"cm"
+                       , sep=""
+                       )#end paste
    dbhcols    <<- c(      "royalblue3",     "chartreuse3"
-                  ,          "yellow3",     "darkorange1",         all.colour
-                  )#end c
+                   ,         "yellow3",     "darkorange1",         all.colour
+                   )#end c
+}else if (idbh.type == 4){
+   ndbh       <<-  3
+   classdbh   <<- c(0,10,35)
+   breakdbh   <<- c(-Inf,classdbh[-1],Inf)
+   dbhlabel   <<- "03_szclss"
+   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
+   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                       , c(classdbh[-1],classdbh[ndbh]),"cm"
+                       , sep=""
+                       )#end paste
+   dbhcols    <<- c(      "royalblue3",     "chartreuse3"
+                   ,     "darkorange1",         all.colour
+                   )#end c
+}else if (idbh.type == 5){
+   ndbh       <<-  2
+   classdbh   <<- c(0,35)
+   breakdbh   <<- c(-Inf,classdbh[-1],Inf)
+   dbhlabel   <<- "02_szclss"
+   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
+   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                       , c(classdbh[-1],classdbh[ndbh]),"cm"
+                       , sep=""
+                       )#end paste
+   dbhcols    <<- c(      "royalblue3",     "darkorange1",         all.colour)
 }else{
    cat(" In globdims.r:","\n")
    cat(" IDBH.TYPE = ",idbh.type,"\n")
-   stop(" Invalid IDBH.TYPE, it must be either 1, 2, or 3 (feel free to add more options.")
+   stop(" Invalid IDBH.TYPE, it must be between 1 and 5 (feel free to add more options.")
 }#end if
 #==========================================================================================#
 #==========================================================================================#

@@ -410,14 +410,19 @@ do
    /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
    whichrun="${here}/${polyname}/whichrun.r"
    outwhich="${here}/${polyname}/outwhichrun.txt"
-   sed -i s@thispoly@${polyname}@g ${whichrun}
-   sed -i s@thisqueue@${queue}@g   ${whichrun}
-   sed -i s@pathhere@${here}@g     ${whichrun}
-   sed -i s@paththere@${there}@g   ${whichrun}
-   sed -i s@thisyeara@${yeara}@g   ${whichrun}
-   sed -i s@thismontha@${montha}@g ${whichrun}
-   sed -i s@thisdatea@${datea}@g   ${whichrun}
-   sed -i s@thistimea@${timea}@g   ${whichrun}
+   sed -i s@thispoly@${polyname}@g           ${whichrun}
+   sed -i s@thisqueue@${queue}@g             ${whichrun}
+   sed -i s@pathhere@${here}@g               ${whichrun}
+   sed -i s@paththere@${there}@g             ${whichrun}
+   sed -i s@thisyeara@${yeara}@g             ${whichrun}
+   sed -i s@thismontha@${montha}@g           ${whichrun}
+   sed -i s@thisdatea@${datea}@g             ${whichrun}
+   sed -i s@thistimea@${timea}@g             ${whichrun}
+   sed -i s@thischecksteady@FALSE@g          ${whichrun}
+   sed -i s@thismetcyc1@${metcyc1}@g         ${whichrun}
+   sed -i s@thismetcycf@${metcycf}@g         ${whichrun}
+   sed -i s@thisnyearmin@10000@g             ${whichrun}
+   sed -i s@thisststcrit@0.0@g               ${whichrun}
    R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
    while [ ! -s ${here}/${polyname}/statusrun.txt ]
    do

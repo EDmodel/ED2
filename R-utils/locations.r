@@ -141,7 +141,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon=substring(100+mona,2)
          filename     = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -153,7 +154,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mo,2)
          filename     = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -174,7 +176,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mona,2)
          filename     = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -186,7 +189,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mo,2)
          filename     = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -207,7 +211,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon=substring(100+mona,2)
          filename     = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -219,7 +224,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mo,2)
          filename     = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -243,7 +249,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cday         = substring(100+daya,2)
          filename     = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -263,7 +270,9 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
          filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
                              ,sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
+                             ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -278,7 +287,9 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
          filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
                              ,sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
+                             ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             dayz = dy
             dy   = daya #----- This will make it leave the loop. -------------------------#
          } #end if
@@ -924,10 +935,10 @@ simul.description <<- function(ici,testpoi,max.char=66){
       na     = c(         9)
       nz     = c(        11)
    }else if (lenici == 12){
-      nparms = 1
-      param  = c("icanrad")
-      na     = c(        10)
-      nz     = c(        12)
+      nparms = 2
+      param  = c("met.forcing","isas")
+      na     = c(            6,    10)
+      nz     = c(            8,    12)
    }else if (lenici == 14){
       nparms = 1
       param  = c("icanrad")
@@ -998,6 +1009,11 @@ simul.description <<- function(ici,testpoi,max.char=66){
       param  = c("iphen.scheme", "isoil.text","treefall")
       na     = c(            11,           20,        25)
       nz     = c(            13,           21,        28)
+   }else if (lenici == 29){
+      nparms = 3
+      param  = c("yeara","iphen.scheme", "isoil.text")
+      na     = c(      9,            19,           28)
+      nz     = c(     12,            21,           29)
    }else if (lenici == 30){
       nparms = 3
       param  = c("iscenario","iphen.scheme","isoil.text")
@@ -1023,6 +1039,11 @@ simul.description <<- function(ici,testpoi,max.char=66){
       param  = c("imet.drought","isoil.text","iphen.scheme","idrought")
       na     = c(             9,          17,            24,        35)
       nz     = c(            10,          18,            26,        36)
+   }else if (lenici == 37){
+      nparms = 4
+      param  = c("yeara","iphen.scheme","isoil.text","treefall")
+      na     = c(      9,            18,          27,        35)
+      nz     = c(     11,            20,          28,        37)
    }else if (lenici == 39){
       nparms = 6
       param  = c("met.forcing","isas","iage","idiversity","iphen.scheme","include.fire")

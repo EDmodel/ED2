@@ -37,7 +37,7 @@ situtils="${here}/sit_utils"
 
 
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/n/home00/mlongo/protected/mlongo/data/ed2_data/site_bio_data'
+bioinit='/n/home00/mlongo/protected/data/ed2_data/site_bio_data'
 #------------------------------------------------------------------------------------------#
 
 
@@ -47,12 +47,21 @@ bioinit='/n/home00/mlongo/protected/mlongo/data/ed2_data/site_bio_data'
 #   runtitle -- Full name of this simulation, this is used only in the e-mail subject.     #
 #------------------------------------------------------------------------------------------#
 desc=`basename ${here}`
-runtitle="Drought/warming scenario"
+runtitle="ED-2 simulation"
 #------------------------------------------------------------------------------------------#
 
 
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#      Variables that tell whether to check for steady state and deserts.                  #
+#------------------------------------------------------------------------------------------#
+checksteady="FALSE"   #   Check whether to stop simulations? (TRUE of FALSE, R style)
+nyearmin=160          #   Minimum number of years before we check
+ststcrit=0.01         #   Maximum change allowed between two cycles
 #------------------------------------------------------------------------------------------#
 
 
@@ -162,6 +171,9 @@ upapmax=0
 #    E-mail options (normally only the first three options may require changes.            #
 #    email1day    -- Should I e-mail once a day (1) or every time I run (0)?               #
 #    recipient    -- To which e-mail should I send the update?                             #
+#    mailprog     -- Which e-mail program to use? mutt works best, I installed in my util  #
+#                    directory.  Give a try, if it doesn't work you may need to install    #
+#                    locally on your directory.                                            #
 #    plotstatus   -- Plot the current status of the run (you will need to create some R    #
 #                    script for each simulation). 0: no; 1: yes                            #
 #    Rscript_plot -- Script that you want to run to generate some plots.                   #
@@ -176,7 +188,8 @@ upapmax=0
 #    email1day    -- Reminder so the script knows whether an e-mail has been sent or not.  #
 #------------------------------------------------------------------------------------------#
 email1day=1
-recipient='xxxxxx@xxxx.com'
+recipient="xxxxxx@xxxx.com"
+mailprog="/n/home00/mlongo/util/mutt"
 plotstatus=1
 Rscript_plot="${situtils}/plot.status.r"
 R_figlist="${situtils}/stt_stext16.png
@@ -288,6 +301,7 @@ nsigsegv=0     # Number of new polygons that crashed due to segmentation violati
 nstopped=0     # Number of new polygons that crashed due to unknown reason
 ncrashed=0     # Number of new polygons that crashed due to numeric instability
 newsuspend=0   # Number of new polygons that have been suspended by priority people
+newunknown=0   # Number of new polygons whose status is unknown
 newststate=0   # Number of new polygons at steady state
 newextinct=0   # Number of new extinct polygons
 nresubmit=0    # Number of long_serial polygons that were submitted again.
@@ -907,7 +921,7 @@ then
          imetavg=1
          ;;
       Brasilia)
-         metdriverdb=${fullscen}'/Bananal/Brasilia_HEADER'
+         metdriverdb=${fullscen}'/Brasilia/Brasilia_HEADER'
          metcyc1=2006
          metcycf=2011
          imetavg=1
@@ -1039,15 +1053,20 @@ then
 
          #----- Update the R script that controls the run. --------------------------------#
          /bin/rm -f ${here}/${polyname}/whichrun.r
-         /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
-         sed -i s@thispoly@${polyname}@g        ${here}/${polyname}/whichrun.r
-         sed -i s@thisqueue@${queue}@g          ${here}/${polyname}/whichrun.r
-         sed -i s@pathhere@${here}@g            ${here}/${polyname}/whichrun.r
-         sed -i s@paththere@${here}@g           ${here}/${polyname}/whichrun.r
-         sed -i s@thisyeara@${yeara}@g          ${here}/${polyname}/whichrun.r
-         sed -i s@thismontha@${montha}@g        ${here}/${polyname}/whichrun.r
-         sed -i s@thisdatea@${datea}@g          ${here}/${polyname}/whichrun.r
-         sed -i s@thistimea@${timea}@g          ${here}/${polyname}/whichrun.r
+         /bin/cp -f ${here}/Template/whichrun.r    ${here}/${polyname}/whichrun.r
+         sed -i s@thispoly@${polyname}@g           ${here}/${polyname}/whichrun.r
+         sed -i s@thisqueue@${queue}@g             ${here}/${polyname}/whichrun.r
+         sed -i s@pathhere@${here}@g               ${here}/${polyname}/whichrun.r
+         sed -i s@paththere@${here}@g              ${here}/${polyname}/whichrun.r
+         sed -i s@thisyeara@${yeara}@g             ${here}/${polyname}/whichrun.r
+         sed -i s@thismontha@${montha}@g           ${here}/${polyname}/whichrun.r
+         sed -i s@thisdatea@${datea}@g             ${here}/${polyname}/whichrun.r
+         sed -i s@thistimea@${timea}@g             ${here}/${polyname}/whichrun.r
+         sed -i s@thischecksteady@${checksteady}@g ${here}/${polyname}/whichrun.r
+         sed -i s@thismetcyc1@${metcyc1}@g         ${here}/${polyname}/whichrun.r
+         sed -i s@thismetcycf@${metcycf}@g         ${here}/${polyname}/whichrun.r
+         sed -i s@thisnyearmin@${nyearmin}@g       ${here}/${polyname}/whichrun.r
+         sed -i s@thisststcrit@${ststcrit}@g       ${here}/${polyname}/whichrun.r
          #---------------------------------------------------------------------------------#
 
 
@@ -1129,6 +1148,15 @@ then
          #---------------------------------------------------------------------------------#
 
 
+
+         #---------------------------------------------------------------------------------#
+         #      Check whether the status is unknown.  If so, kill it because the node is   #
+         # probably down.                                                                  #
+         #---------------------------------------------------------------------------------#
+         unknown=`bjobs -w -J ${jobname}   2> /dev/null | grep UNKWN | wc -l`
+         #---------------------------------------------------------------------------------#
+
+
          #---------------------------------------------------------------------------------#
          #    In case the polygon has crashed, we may need to re-submit...                 #
          #---------------------------------------------------------------------------------#
@@ -1138,6 +1166,13 @@ then
             echo "${ff} >:-@ ${polyname} HAS BEEN beeeeeeeeeeeeeep SUSPENDED... <========="
             deathrow="${deathrow} ${jobname}"
             let newsuspend=${newsuspend}+1
+            #------------------------------------------------------------------------------#
+         elif [ ${unknown} -gt 0 ]
+         then
+            #----- Kill the job to resubmit it. -------------------------------------------#
+            echo "${ff}  :-S ${polyname} status is UNKNOWN..."
+            deathrow="${deathrow} ${jobname}"
+            let newunknown=${newunknown}+1
             #------------------------------------------------------------------------------#
          elif [ ${runt} == 'CRASHED' ] || [ ${runt} == 'STOPPED' ] ||
             [ ${runt} == 'METMISS' ] || [ ${runt} == 'SIGSEGV' ] ||
@@ -1215,8 +1250,18 @@ then
                   cp ${here}/Template/ED2IN ${ED2IN}
 
 
+                  #----- If last history is the first year, switch it to initial. ---------#
+                  if [ ${year} -eq ${yeara} ] || [ ${runt} == 'INITIAL' ]
+                  then
+                     runflag='INITIAL'
+                  else
+                     runflag='HISTORY'
+                  fi
+                  #------------------------------------------------------------------------#
+
+
                   #----- Check whether to use SFILIN as restart or history. ---------------#
-                  if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
+                  if [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
                   then
                      thissfilin=${thisbiomin}
                   else
@@ -2945,14 +2990,15 @@ sleep 300
 #----- Quick check the status of the queues. ----------------------------------------------#
 /bin/rm -f ${recefile}
 touch ${recefile}
-echo '------- Polygon recent activity status. ----------------------------' >> ${recefile}
-echo 'Number of polygons that were re-submitted:    '${nresubmit}           >> ${recefile}
-echo 'Number of polygons that switched queues:      '${nfill}               >> ${recefile}
-echo 'Number of polygons to unrestricted_parallel:  '${nptounpa}            >> ${recefile}
-echo 'Number of polygons that have been suspended:  '${newsuspend}          >> ${recefile}
-echo 'Number of polygons that went extinct:         '${newextinct}          >> ${recefile}
-echo 'Number of polygons that reached steady state: '${newststate}          >> ${recefile}
-echo '--------------------------------------------------------------------' >> ${recefile}
+echo "------- Polygon recent activity status. ----------------------------" >> ${recefile}
+echo "Number of polygons that were re-submitted:    ${nresubmit}"           >> ${recefile}
+echo "Number of polygons that switched queues:      ${nfill}"               >> ${recefile}
+echo "Number of polygons to unrestricted_parallel:  ${nptounpa}"            >> ${recefile}
+echo "Number of polygons that have been suspended:  ${newsuspend}"          >> ${recefile}
+echo "Number of polygons that were unknown:         ${newunknown}"          >> ${recefile}
+echo "Number of polygons that went extinct:         ${newextinct}"          >> ${recefile}
+echo "Number of polygons that reached steady state: ${newststate}"          >> ${recefile}
+echo "--------------------------------------------------------------------" >> ${recefile}
 #------------------------------------------------------------------------------------------#
 
 
@@ -3095,17 +3141,16 @@ echo ' '         >> ${emailbody}
 #----- Check whether to append some plots. ------------------------------------------------#
 if [ ${plotstatus} -eq 1 ]
 then
+   attach=""
    for fichier in ${R_figlist}
    do
-      ext=`echo ${fichier##*.}`
-      path=`dirname ${fichier}`
-      base=`basename ${fichier}`
-      prefix=`basename ${base} .${ext}`
-      text="${path}/${prefix}.txt"
-      cat ${text} >> ${emailbody}
-      echo ' '    >> ${emailbody}
-      /bin/rm -f ${text}
+      if [ -s ${fichier} ]
+      then
+         attach="${attach} -a ${fichier}"
+      fi
    done
+else
+   attach=""
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -3158,7 +3203,7 @@ if [ ${sendemail} == "y" ]
 then
    echo ${today} > ${emailday}
    echo 'Sending e-mail...'
-   mail -s "${subject}" ${recipient} < ${emailbody}
+   ${mailprog} -s "${subject}" ${attach} ${recipient} < ${emailbody}
 else
    echo 'Skipping e-mail...'
 fi

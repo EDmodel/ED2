@@ -13,32 +13,53 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
+here    = getwd()                               #   Current directory
+srcdir  = "/n/home00/mlongo/util/Rsc"           #   Script directory
+ibackground    = 2                              # Make figures compatible to background
+                                                # 0 -- white
+                                                # 1 -- black
+                                                # 2 -- dark grey
+#----- Output directory -------------------------------------------------------------------#
+outroot = file.path(here,paste("structure_comp_ibg",sprintf("%2.2i",ibackground),sep=""))
 #------------------------------------------------------------------------------------------#
-here    = getwd()                                #   Current directory
-srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"    #   Script directory
-outroot = paste(here,"structure_comp",sep="/")   #   Output directory
 
-sites          = c("gyf","s67","s83","pdg","pnz","ban","rja","m34")#,"cax")
-sites.pch      = c(    2,    5,    9,   13,    4,    8,    1,    6)#,    0)
 
-size.struct = list( name    = c(               "sas",               "ble")
-                  , desc    = c(           "Size St",            "1 Size")
-                  , verbose = c(    "Size structure",       "Single size")
-                  , hue     = list( green  = c("#55AC00"     ,"chartreuse"    )
-                                  , blue   = c("dodgerblue4" ,"steelblue1"    )
-                                  , purple = c("purple3"     ,"mediumpurple1" )
-                                  , indigo = c("slateblue2"  ,"#CDC5FF"       )
-                                  )#end list
-                  )#end list
-pft.struct  = list( name    = c(                "pft05",             "pft02")
-                  , desc    = c(               "5 PFTs",            "2 PFTs")
-                  , verbose = c( "Succession structure",  "Single sucession")
-                  , sat     = c(                      1,                   2)
-                  )#end list
-age.struct  = list( name    = c(            "iage25",            "iage01")
-                  , desc    = c(            "Age St",             "1 Age")
-                  , verbose = c(     "Age structure",        "Single age")
-                  )#end list
+#------------------------------------------------------------------------------------------#
+#     Site settings:                                                                       #
+# eort      -- first letter ("e" or "t")                                                   #
+# sites     -- site codes ("IATA")                                                         #
+# sites.pch -- site symbols                                                                #
+#------------------------------------------------------------------------------------------#
+eort           = "e"
+sites          = c("gyf","s67","s83","pdg","pnz","ban","rja","m34","cax")
+sites.pch      = c(    2,    5,    9,   13,    4,    8,    1,    6,    0)
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Simulation settings:                                                                  #
+# name -- the suffix of the simulations (list all combinations.                            #
+# desc -- description (for legends)                                                        #
+# verbose -- long description (for titles)                                                 #
+# colour  -- colour to represent this simulation                                           #
+#------------------------------------------------------------------------------------------#
+sim.struct     = list( name     = c("ble_iage25_pft02","ble_iage25_pft05"
+                                   ,"sas_iage01_pft02","sas_iage01_pft05"
+                                   ,"sas_iage25_pft02","sas_iage25_pft05"
+                                   )#end c
+                     , desc     = c("Big leaf, 2 PFTs"    ,"Big leaf, 5 PFTs"
+                                   ,"Size only, 2 PFTs"   ,"Size only, 5 PFTs"
+                                   ,"Size and age, 2 PFTs","Size and age, 5 PFTs"
+                                   )#end c
+                     , verbose  = c("Big leaf, 2 PFTs"    ,"Big leaf, 5 PFTs"
+                                   ,"Size only, 2 PFTs"   ,"Size only, 5 PFTs"
+                                   ,"Size and age, 2 PFTs","Size and age, 5 PFTs"
+                                   )#end c
+                     , colour   = c("slateblue4" ,"purple1"     
+                                   ,"dodgerblue3","deepskyblue" 
+                                   ,"chartreuse4","chartreuse"  
+                                   )#end c
+                     )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -65,10 +86,6 @@ legwhere       = "topleft"             # Where should I place the legend?
 inset          = 0.01                  # Inset between legend and edge of plot region.
 fracexp        = 0.40                  # Expansion factor for y axis (to fit legend)
 cex.main       = 0.8                   # Scale coefficient for the title
-ibackground    = 0                     # Make figures compatible to which background?
-                                       # 0 -- white
-                                       # 1 -- black
-                                       # 2 -- dark grey
 #------------------------------------------------------------------------------------------#
 
 
@@ -102,7 +119,7 @@ compvar       = list()
 compvar[[ 1]] = list( vnam       = "ustar"
                     , symbol     = expression(u^symbol("\052"))
                     , desc       = "Friction velocity"
-                    , unit       = "[m/s]"
+                    , unit       = untab$mos
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(purple.bg,purple.fg)
                     , leg.corner = "topleft"
@@ -111,7 +128,7 @@ compvar[[ 1]] = list( vnam       = "ustar"
 compvar[[ 2]] = list( vnam       = "cflxca"
                     , symbol     = expression(F(CO[2]))
                     , desc       = "Carbon dioxide flux"
-                    , unit       = "[umol/m2/s]"
+                    , unit       = untab$umolcom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(green.bg,green.fg)
                     , leg.corner = "bottomright"
@@ -120,7 +137,7 @@ compvar[[ 2]] = list( vnam       = "cflxca"
 compvar[[ 3]] = list( vnam       = "cflxst"
                     , symbol     = expression(S(CO[2]))
                     , desc       = "Carbon dioxide storage"
-                    , unit       = "[umol/m2/s]"
+                    , unit       = untab$umolcom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(orange.bg,orange.fg)
                     , leg.corner = "topleft"
@@ -129,7 +146,7 @@ compvar[[ 3]] = list( vnam       = "cflxst"
 compvar[[ 4]] = list( vnam       = "nee"
                     , symbol     = expression(NEE)
                     , desc       = "Net ecosystem exchange"
-                    , unit       = "[umol/m2/s]"
+                    , unit       = untab$umolcom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(green.bg,green.fg)
                     , leg.corner = "bottomright"
@@ -138,7 +155,7 @@ compvar[[ 4]] = list( vnam       = "nee"
 compvar[[ 5]] = list( vnam       = "nep"
                     , symbol     = expression(NEP)
                     , desc       = "Net ecosystem productivity"
-                    , unit       = "[kgC/m2/yr]"
+                    , unit       = untab$kgcom2oyr
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(olive.bg,olive.fg)
                     , leg.corner = "topleft"
@@ -147,7 +164,7 @@ compvar[[ 5]] = list( vnam       = "nep"
 compvar[[ 6]] = list( vnam       = "reco"
                     , symbol     = expression(R[Eco])
                     , desc       = "Ecosystem respiration"
-                    , unit       = "[kgC/m2/yr]"
+                    , unit       = untab$kgcom2oyr
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(yellow.bg,yellow.fg)
                     , leg.corner = "topleft"
@@ -156,7 +173,7 @@ compvar[[ 6]] = list( vnam       = "reco"
 compvar[[ 7]] = list( vnam       = "gpp"
                     , symbol     = expression(GPP)
                     , desc       = "Gross primary productivity"
-                    , unit       = "[kgC/m2/yr]"
+                    , unit       = untab$kgcom2oyr
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(green.bg,green.fg)
                     , leg.corner = "topleft"
@@ -165,7 +182,7 @@ compvar[[ 7]] = list( vnam       = "gpp"
 compvar[[ 8]] = list( vnam       = "parup"
                     , symbol     = expression(PAR^symbol("\335"))
                     , desc       = "Outgoing PAR"
-                    , unit       = "[umol/m2/s]"
+                    , unit       = untab$umolom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(olive.bg,olive.fg)
                     , leg.corner = "topleft"
@@ -174,7 +191,7 @@ compvar[[ 8]] = list( vnam       = "parup"
 compvar[[ 9]] = list( vnam       = "rshortup"
                     , symbol     = expression(SW^symbol("\335"))
                     , desc       = "Outgoing shortwave radiation"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(indigo.bg,indigo.fg)
                     , leg.corner = "topleft"
@@ -183,7 +200,7 @@ compvar[[ 9]] = list( vnam       = "rshortup"
 compvar[[10]] = list( vnam       = "rnet"
                     , symbol     = expression(R[Net])
                     , desc       = "Net radiation"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(sky.bg,sky.fg)
                     , leg.corner = "topleft"
@@ -192,7 +209,7 @@ compvar[[10]] = list( vnam       = "rnet"
 compvar[[11]] = list( vnam       = "rlongup"
                     , symbol     = expression(LW^symbol("\335"))
                     , desc       = "Outgoing longwave radiation"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(red.bg,red.fg)
                     , leg.corner = "topleft"
@@ -201,7 +218,7 @@ compvar[[11]] = list( vnam       = "rlongup"
 compvar[[12]] = list( vnam       = "hflxca"
                     , symbol     = expression(F(theta))
                     , desc       = "Sensible heat flux"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(orange.bg,orange.fg)
                     , leg.corner = "topleft"
@@ -210,7 +227,7 @@ compvar[[12]] = list( vnam       = "hflxca"
 compvar[[13]] = list( vnam       = "wflxca"
                     , symbol     = expression(F(H[2]*O))
                     , desc       = "Water vapour flux"
-                    , unit       = "[kg/m2/day]"
+                    , unit       = untab$kgwom2oday
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c(blue.bg,blue.fg)
                     , leg.corner = "topleft"
@@ -226,43 +243,43 @@ compvar[[13]] = list( vnam       = "wflxca"
 control       = list()
 control[[ 1]] = list( vnam       = "rshort"
                     , desc       = "Incoming shortwave radiation"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     )#end list
 control[[ 2]] = list( vnam       = "rlong"
                     , desc       = "Incoming longwave radiation"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     )#end list
 control[[ 3]] = list( vnam       = "atm.prss"
                     , desc       = "Air pressure"
-                    , unit       = "[hPa]"
+                    , unit       = untab$hpa
                     )#end list
 control[[ 4]] = list( vnam       = "atm.temp"
                     , desc       = "Air temperature"
-                    , unit       = "[degC]"
+                    , unit       = untab$degC
                     )#end list
 control[[ 5]] = list( vnam       = "atm.shv"
                     , desc       = "Air specific humidity"
-                    , unit       = "[g/kg]"
+                    , unit       = untab$gwokg
                     )#end list
 control[[ 6]] = list( vnam       = "atm.vels"
                     , desc       = "Wind speed"
-                    , unit       = "[m/s]"
+                    , unit       = untab$mos
                     )#end list
 control[[ 7]] = list( vnam       = "rain"
                     , desc       = "Precipitation rate"
-                    , unit       = "[kg/m2/day]"
+                    , unit       = untab$kgwom2oday
                     )#end list
 control[[ 8]] = list( vnam       = "bsa"
                     , desc       = "Basal area"
-                    , unit       = "[cm2/m2]"
+                    , unit       = untab$cm2om2
                     )#end list
 control[[ 9]] = list( vnam       = "wdens"
                     , desc       = "Mean wood density"
-                    , unit       = "[kg/m3]"
+                    , unit       = untab$kgom3
                     )#end list
 control[[10]] = list( vnam       = "global"
                     , desc       = "Global index"
-                    , unit       = "[--]"
+                    , unit       = untab$empty
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -330,50 +347,17 @@ nout    = length(outform)
 #------------------------------------------------------------------------------------------#
 #     Combine all structures into a consistent list.                                       #
 #------------------------------------------------------------------------------------------#
-#----- Simulation keys.  The separation is rather cumbersome, mix them. -------------------#
-egrid.key   = expand.grid( pft              = pft.struct$name
-                         , age              = age.struct$name
-                         , size             = size.struct$name
-                         , stringsAsFactors = FALSE
-                         )#end expand.grid
-simul.key   = apply( X = egrid.key[,c(3,2,1)],MARGIN=1,FUN=paste,collapse="_")
+n.sim       = length(sim.struct$name)
+#----- Simulation keys. -------------------------------------------------------------------#
+simul.key   = sim.struct$name
 #----- Description. -----------------------------------------------------------------------#
-simleg.key  = c("Size and age, 5 PFTs","Size and age, 2 PFTs"
-               ,"Size only, 5 PFTs"   ,"Size only, 2 PFTs"
-               ,"Big leaf, 5 PFTs"    ,"Big leaf, 2 PFTs"
-               ,"Big leaf, 5 PFTs"    ,"Big leaf, 2 PFTs"
-               )#end c
+simleg.key  = sim.struct$desc
 #---- Create the colours and line type for legend. ----------------------------------------#
-n.size        = length(size.struct$name)
-n.pft         = length(pft.struct$name )
-n.age         = length(age.struct$name )
-my.rainbow    = array(data=NA,dim=c(n.pft,n.age,n.size))
-for (n in 1:n.size){
-   my.rainbow[,1,n] = size.struct$hue[[2*n-1]]
-   my.rainbow[,2,n] = size.struct$hue[[2*n  ]]
-}#end for
-simcol.key     = c(unlist(my.rainbow))
-simlty.key     = rep("solid",times=n.age*n.size*n.pft)
-simcex.key     = rep(2.0    ,times=n.age*n.size*n.pft)
-simlwd.key     = rep(2.0    ,times=n.age*n.size*n.pft)
-simpch.key     = rep(21     ,times=n.age*n.size*n.pft)
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#     Some big leaf simulations are unecessary: big leaf cannot have age structure.        #
-# Remove these simulations from the list.                                                  #
-#------------------------------------------------------------------------------------------#
-bye           = intersect(which(egrid.key$size == "ble"),which(egrid.key$age == "iage01"))
-egrid.key     = egrid.key [-bye,]
-simul.key     = simul.key [-bye ]
-simleg.key    = simleg.key[-bye ]
-simcol.key    = simcol.key[-bye ]
-simlty.key    = simlty.key[-bye ]
-simcex.key    = simcex.key[-bye ]
-simlwd.key    = simlwd.key[-bye ]
-simpch.key    = simpch.key[-bye ]
+simcol.key     = sim.struct$colour
+simlty.key     = rep("solid",times=n.sim)
+simcex.key     = rep(2.0    ,times=n.sim)
+simlwd.key     = rep(2.0    ,times=n.sim)
+simpch.key     = rep(21     ,times=n.sim)
 #------------------------------------------------------------------------------------------#
 
 
@@ -417,12 +401,6 @@ ncontrol = length(control.key)
 ngood    = length(good.key   )
 nseason  = length(season.key )
 ndiel    = length(diel.key   )
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Avoid unecessary and extremely annoying beeps. -------------------------------------#
-options(locatorBell=FALSE)
 #------------------------------------------------------------------------------------------#
 
 
@@ -610,7 +588,7 @@ for (p in 1:nsites){
    #---------------------------------------------------------------------------------------#
    for (s in 1:nsimul){
       cat("    * Simulation: ",simul$desc[s],"...","\n")
-      sim.name = paste("t",iata,"_",simul$name[s],sep="")
+      sim.name = paste(eort,iata,"_",simul$name[s],sep="")
       sim.path = paste(here,sim.name,sep="/")
       sim.file = paste(sim.path,"rdata_hour",paste("comp-",sim.name,".RData",sep="")
                       ,sep="/")
@@ -794,12 +772,11 @@ for (g in good.loop){
                legend ( x       = "bottom"
                       , inset   = 0.0
                       , legend  = simul$desc
-                      , col     = simul$col
-                      , lwd     = simul$lwd
-                      , lty     = simul$lty
-                      , ncol    = 3
+                      , fill    = simul$col
+                      , border  = simul$col
+                      , ncol    = 2
                       , title   = expression(bold("Structure"))
-                      , cex     = 14 / ptsz
+                      , cex     = cex.ptsz
                       , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
@@ -930,13 +907,12 @@ for (g in good.loop){
                legend ( x       = "bottom"
                       , inset   = 0.0
                       , legend  = simul$desc
-                      , col     = simul$col
-                      , lwd     = max(simul$lwd)
-                      , lty     = simul$lty
-                      , ncol    = 3
+                      , fill    = simul$col
+                      , border  = simul$col
+                      , ncol    = 2
                       , title   = expression(bold("Structure"))
                       , pt.cex  = simul$cex
-                      , cex     = 14 / ptsz
+                      , cex     = cex.ptsz
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -1280,7 +1256,7 @@ for (v in 1:ncompvar){
                    , ncol    = min(4,pretty.box(nsites)$ncol)
                    , title   = expression(bold("Sites"))
                    , pt.cex  = mean(unique(simul$cex))
-                   , cex     = 15 / ptsz
+                   , cex     = 1.1 * cex.ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1295,15 +1271,12 @@ for (v in 1:ncompvar){
             legend ( x       = "bottom"
                    , inset   = 0.0
                    , legend  = simul$desc
-                   , col     = simul$col
-                   , pt.bg   = simul$col
-                   , pt.cex  = simul$cex
-                   , pt.lwd  = simul$lwd
+                   , fill    = simul$col
+                   , border  = simul$col
                    , pch     = simul$pch
-                   , border  = foreground
-                   , ncol    = 3
+                   , ncol    = 2
                    , title   = expression(bold("Structure"))
-                   , cex     = 13 / ptsz
+                   , cex     = 0.9 * cex.ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1447,7 +1420,7 @@ for (v in 1:ncompvar){
                    , ncol    = min(4,pretty.box(nsites)$ncol)
                    , title   = expression(bold("Sites"))
                    , pt.cex  = 2.0
-                   , cex     = 14 / ptsz
+                   , cex     = cex.ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1462,13 +1435,10 @@ for (v in 1:ncompvar){
             legend ( x       = "bottom"
                    , inset   = 0.0
                    , legend  = simul$desc
-                   , col     = simul$col
-                   , pt.bg   = simul$col
-                   , pt.cex  = simul$cex
-                   , pt.lwd  = simul$lwd
+                   , fill    = simul$col
+                   , border  = simul$col
                    , pch     = simul$pch
-                   , border  = foreground
-                   , ncol    = 3
+                   , ncol    = 2
                    , title   = expression(bold("Structure"))
                    , cex     = 14/ptsz
                    , xpd     = TRUE
@@ -1693,7 +1663,7 @@ for (v in 1:ncompvar){
                    , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
-                   , cex     = 14 / ptsz
+                   , cex     = cex.ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1760,9 +1730,9 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             letitre = paste(desc.good," - ",this.desc,"\n",diel.desc[d],sep="")
             if (this.good %in% c("bias","rmse")){
-               ley  = paste(desc.good,this.unit,sep=" ")
+               ley  = desc.unit(desc=desc.good,unit=this.unit)
             }else{
-               ley  = paste(desc.good," [--]",sep="")
+               ley  = desc.unit(desc=desc.good,unit=untab$empty)
             }#end if
             lex     = "Sites"
             #------------------------------------------------------------------------------#
@@ -1801,9 +1771,9 @@ for (v in 1:ncompvar){
          letitre = paste(desc.good," - ",this.desc,"\n",diel.desc[d]," - All seasons"
                         ,sep="")
          if (this.good %in% c("bias","rmse")){
-            ley  = paste(desc.good,this.unit,sep=" ")
+            ley  = desc.unit(desc=desc.good,unit=this.unit)
          }else{
-            ley  = paste(desc.good," [--]",sep="")
+            ley  = desc.unit(desc=desc.good,unit=untab$empty)
          }#end if
          lex     = "Sites"
          #-----  Order the sites by amount of information. --------------------------------#
@@ -1854,7 +1824,7 @@ for (v in 1:ncompvar){
                    , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
-                   , cex     = 12 / ptsz
+                   , cex     = 0.85 * cex.ptsz
                    , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
@@ -1997,7 +1967,7 @@ for (v in 1:ncompvar){
                       , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
-                      , cex     = 14 / ptsz
+                      , cex     = cex.ptsz
                       , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
@@ -2054,9 +2024,9 @@ for (v in 1:ncompvar){
                #---------------------------------------------------------------------------#
                letitre = paste(desc.good," - ",this.desc,"\n",diel.desc[d],sep="")
                if (this.good %in% c("bias","rmse")){
-                  ley  = paste(desc.good,this.unit,sep=" ")
+                  ley  = desc.unit(desc=desc.good,unit=this.unit)
                }else{
-                  ley  = paste(desc.good," [--]",sep="")
+                  ley  = desc.unit(desc=desc.good,unit=untab$empty)
                }#end if
                lex     = paste("Quality index - ",qual.desc,sep="")
                #---------------------------------------------------------------------------#
@@ -2098,9 +2068,9 @@ for (v in 1:ncompvar){
             letitre = paste(desc.good," - ",this.desc,"\n",diel.desc[d]," - All seasons"
                            ,sep="")
             if (this.good %in% c("bias","rmse")){
-               ley  = paste(desc.good,this.unit,sep=" ")
+               ley  = desc.unit(desc=desc.good,unit=this.unit)
             }else{
-               ley  = paste(desc.good," [--]",sep="")
+               ley  = desc.unit(desc=desc.good,unit=untab$empty)
             }#end if
             lex     = paste("Quality index - ",qual.desc,sep="")
             #----- Loop over all output formats. ------------------------------------------#
@@ -2149,7 +2119,7 @@ for (v in 1:ncompvar){
                       , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
-                      , cex     = 14 / ptsz
+                      , cex     = cex.ptsz
                       , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
@@ -2219,3 +2189,4 @@ for (v in 1:ncompvar){
    #---------------------------------------------------------------------------------------#
 }#end for (v in 1:ncompvar)
 #------------------------------------------------------------------------------------------#
+

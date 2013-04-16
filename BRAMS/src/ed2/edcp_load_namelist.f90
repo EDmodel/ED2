@@ -229,12 +229,12 @@ subroutine read_ednl(iunit,filename)
                                    , leaf_min_patch_area => min_patch_area ! ! intent(in)
    use mem_radiate          , only : radfrq                                ! ! intent(in)
    use consts_coms          , only : day_sec                               ! ! intent(in)
-   use detailed_coms        , only : dt_census                             & ! intent(in)
-                                   , yr1st_census                          & ! intent(in)
-                                   , mon1st_census                         & ! intent(in)
-                                   , min_recruit_dbh                       & ! intent(in)
-                                   , idetailed                             & ! intent(in)
-                                   , patch_keep                            ! ! intent(in)
+   use detailed_coms        , only : dt_census                             & ! intent(out)
+                                   , yr1st_census                          & ! intent(out)
+                                   , mon1st_census                         & ! intent(out)
+                                   , min_recruit_dbh                       & ! intent(out)
+                                   , idetailed                             & ! intent(out)
+                                   , patch_keep                            ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer         , intent(in) :: iunit    ! Namelist unit number
@@ -465,7 +465,7 @@ subroutine read_ednl(iunit,filename)
    mon1st_census   = 1      ! Dummy variable
    min_recruit_dbh = 0.     ! Dummy variable
    idetailed =  0           ! No detailed output in coupled runs (it is already too slow 
-                            !     with the normal output...)
+                            !     with just the normal output...)
    patch_keep = 0           ! Keep all patches.
    !---------------------------------------------------------------------------------------!
 

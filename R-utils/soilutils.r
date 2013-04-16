@@ -45,6 +45,8 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
    soil.name = c("Sand","Loamy sand","Sandy loam","Silt loam","Loam","Sandy clay loam"
                 ,"Silty clay loam","Clayey loam","Sandy clay","Silty clay","Clay"
                 ,"Peat","Bedrock","Silt","Heavy clay","Clayey sand","Clayey silt")
+   soil.key  = c("Sa","LSa","SaL","SiL","L","SaCL","SiCL","CL","SaC","SiC","C","P","BR"
+                ,"Si","CC","CSa","CSi")
    #----- Define some constants. ----------------------------------------------------------#
    fieldcp.K  = 0.1  # hydraulic conduct. at field capacity                       [ mm/day]
    soilcp.MPa = 3.1  # soil-water potential for air dry soil                      [    MPa]
@@ -80,6 +82,7 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
    #----- Initialise the list with meaningless parameters. --------------------------------#
    mysoil = list( ntext      = NA
                 , name       = NA
+                , key        = NA
                 , xsand      = NA
                 , xclay      = NA
                 , xsilt      = NA
@@ -115,18 +118,21 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
    if (missing(slxsand) || missing(slxclay) || missing(isoilflg)){
       mysoil$ntext = ntext
       mysoil$name  = soil.name[mysoil$ntext]
+      mysoil$key   = soil.key [mysoil$ntext]
       mysoil$xsand = xsand.def[ntext]
       mysoil$xclay = xclay.def[ntext]
       mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay
    }else if (isoilflg == 2 & slxsand > 0 & slxclay > 0 & (slxsand + slxclay) < 1 ){
       mysoil$ntext = sclass(slxsand,slxclay)
       mysoil$name  = soil.name[mysoil$ntext]
+      mysoil$key   = soil.key [mysoil$ntext]
       mysoil$xsand = slxsand
       mysoil$xclay = slxclay
       mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay
    }else{
       mysoil$ntext = ntext
       mysoil$name  = soil.name[mysoil$ntext]
+      mysoil$key   = soil.key [mysoil$ntext]
       mysoil$xsand = xsand.def[ntext]
       mysoil$xclay = xclay.def[ntext]
       mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay

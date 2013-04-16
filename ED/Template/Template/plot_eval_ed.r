@@ -125,7 +125,7 @@ source(file.path(srcdir,"load.everything.r"))
 compvar       = list()
 compvar[[ 1]] = list( vnam       = "hflxca"
                     , desc       = "Sensible heat flux"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
@@ -133,7 +133,7 @@ compvar[[ 1]] = list( vnam       = "hflxca"
                     )#end list
 compvar[[ 2]] = list( vnam       = "wflxca"
                     , desc       = "Water vapour flux"
-                    , unit       = "[kg/m2/day]"
+                    , unit       = untab$kgwom2oday
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("deepskyblue","royalblue4")
                     , leg.corner = "topleft"
@@ -141,7 +141,7 @@ compvar[[ 2]] = list( vnam       = "wflxca"
                     )#end list
 compvar[[ 3]] = list( vnam       = "cflxca"
                     , desc       = "Carbon dioxide flux"
-                    , unit       = "[umol/m2/s]"
+                    , unit       = untab$umolcom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("chartreuse2","darkgreen")
                     , leg.corner = "bottomright"
@@ -149,7 +149,7 @@ compvar[[ 3]] = list( vnam       = "cflxca"
                     )#end list
 compvar[[ 4]] = list( vnam       = "cflxst"
                     , desc       = "Carbon dioxide storage"
-                    , unit       = "[umol/m2/s]"
+                    , unit       = untab$umolcom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("lightgoldenrod3","darkorange1")
                     , leg.corner = "topleft"
@@ -157,7 +157,7 @@ compvar[[ 4]] = list( vnam       = "cflxst"
                     )#end list
 compvar[[ 5]] = list( vnam       = "gpp"
                     , desc       = "Gross primary productivity"
-                    , unit       = "[kgC/m2/yr]"
+                    , unit       = untab$kgcom2oyr
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("green3","darkgreen")
                     , leg.corner = "topleft"
@@ -165,7 +165,7 @@ compvar[[ 5]] = list( vnam       = "gpp"
                     )#end list
 compvar[[ 6]] = list( vnam       = "reco"
                     , desc       = "Ecosystem respiration"
-                    , unit       = "[kgC/m2/yr]"
+                    , unit       = untab$kgcom2oyr
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("yellow3","peru")
                     , leg.corner = "topleft"
@@ -173,7 +173,7 @@ compvar[[ 6]] = list( vnam       = "reco"
                     )#end list
 compvar[[ 7]] = list( vnam       = "nep"
                     , desc       = "Net ecosystem productivity"
-                    , unit       = "[kgC/m2/yr]"
+                    , unit       = untab$kgcom2oyr
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("olivedrab2","darkolivegreen4")
                     , leg.corner = "topleft"
@@ -181,7 +181,7 @@ compvar[[ 7]] = list( vnam       = "nep"
                     )#end list
 compvar[[ 8]] = list( vnam       = "nee"
                     , desc       = "Net ecosystem exchange"
-                    , unit       = "[umol/m2/s]"
+                    , unit       = untab$umolcom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "bottomright"
@@ -189,7 +189,7 @@ compvar[[ 8]] = list( vnam       = "nee"
                     )#end list
 compvar[[ 9]] = list( vnam       = "ustar"
                     , desc       = "Friction velocity"
-                    , unit       = "[m/s]"
+                    , unit       = untab$mos
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("mediumpurple1","purple4")
                     , leg.corner = "topleft"
@@ -197,7 +197,7 @@ compvar[[ 9]] = list( vnam       = "ustar"
                     )#end list
 compvar[[10]] = list( vnam       = "rlongup"
                     , desc       = "Outgoing longwave radiation"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
@@ -205,7 +205,7 @@ compvar[[10]] = list( vnam       = "rlongup"
                     )#end list
 compvar[[11]] = list( vnam       = "rnet"
                     , desc       = "Net radiation"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("gold","orangered")
                     , leg.corner = "topleft"
@@ -213,7 +213,7 @@ compvar[[11]] = list( vnam       = "rnet"
                     )#end list
 compvar[[12]] = list( vnam       = "albedo"
                     , desc       = "Albedo"
-                    , unit       = "[--]"
+                    , unit       = untab$empty
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("orange1","chocolate4")
                     , leg.corner = "topleft"
@@ -221,7 +221,7 @@ compvar[[12]] = list( vnam       = "albedo"
                     )#end list
 compvar[[13]] = list( vnam       = "parup"
                     , desc       = "Outgoing PAR"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$umolom2os
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("chartreuse","chartreuse4")
                     , leg.corner = "topleft"
@@ -229,7 +229,7 @@ compvar[[13]] = list( vnam       = "parup"
                     )#end list
 compvar[[14]] = list( vnam       = "rshortup"
                     , desc       = "Outgoing SW"
-                    , unit       = "[W/m2]"
+                    , unit       = untab$wom2
                     , col.obser  = c(grey.bg,grey.fg)
                     , col.model  = c("deepskyblue","royalblue3")
                     , leg.corner = "topleft"
@@ -1028,7 +1028,7 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         letitre = paste(lieu,"\n",this.desc," - ",season.full[s]
                                        ," - ",diel.desc,sep="")
-                        lex     = paste(this.desc,this.unit,sep=" ")
+                        lex     = desc.unit(desc=this.desc,unit=this.unit)
                         ley     = "Density function [ ]"
                         #------------------------------------------------------------------#
 
@@ -1123,8 +1123,8 @@ for (place in myplaces){
                         #------------------------------------------------------------------#
                         letitre = paste(lieu,"\n","QQ Plot for ",this.desc
                                        ," - ",season.full[s]," - ",diel.desc,sep="")
-                        lex     = paste("Observations",this.unit,sep=" ")
-                        ley     = paste("Model",this.unit,sep=" ")
+                        lex     = desc.unit(desc="Observed",unit=this.unit)
+                        ley     = desc.unit(desc="Model"   ,unit=this.unit)
                         #------------------------------------------------------------------#
 
 
@@ -1203,8 +1203,9 @@ for (place in myplaces){
 
                   #----- Set up the title and axes labels. --------------------------------#
                   letitre = paste(lieu,"\n",this.desc," - ",season.full[s],sep="")
-                  lex     = paste(hourblock.len,"-hour period [UTC]",sep="")
-                  ley     = paste(this.desc,this.unit,sep=" ")
+                  lex     = desc.unit( desc = paste(hourblock.len,"-hour period",sep="")
+                                     , unit = untab$gmt)
+                  ley     = desc.unit(desc=this.desc,unit=this.unit)
                   #------------------------------------------------------------------------#
 
 

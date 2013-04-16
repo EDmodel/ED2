@@ -8,8 +8,8 @@ tspftdbh          = list()
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "agb"
                         , desc     = "Above ground biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -21,8 +21,8 @@ tspftdbh[[n]]     = list( vnam     = "agb"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bgb"
                         , desc     = "Below ground biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -34,8 +34,8 @@ tspftdbh[[n]]     = list( vnam     = "bgb"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "biomass"
                         , desc     = "Total biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -47,8 +47,8 @@ tspftdbh[[n]]     = list( vnam     = "biomass"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "ba"
                         , desc     = "Basal area"
-                        , e.unit   = "cm2/m2"
-                        , i.unit   = "cm2/plant"
+                        , e.unit   = untab$cm2om2
+                        , i.unit   = untab$cm2opl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -60,8 +60,8 @@ tspftdbh[[n]]     = list( vnam     = "ba"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "lai"
                         , desc     = "Leaf area index"
-                        , e.unit   = "m2/m2"
-                        , i.unit   = "m2/m2"
+                        , e.unit   = untab$m2lom2
+                        , i.unit   = untab$m2lom2
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -73,8 +73,8 @@ tspftdbh[[n]]     = list( vnam     = "lai"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "wai"
                         , desc     = "Wood area index"
-                        , e.unit   = "m2/m2"
-                        , i.unit   = "m2/m2"
+                        , e.unit   = untab$m2wom2
+                        , i.unit   = untab$m2wom2
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -86,8 +86,8 @@ tspftdbh[[n]]     = list( vnam     = "wai"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "tai"
                         , desc     = "Total area index"
-                        , e.unit   = "m2/m2"
-                        , i.unit   = "m2/m2"
+                        , e.unit   = untab$m2om2
+                        , i.unit   = untab$m2om2
                         , plog     = FALSE
                         , pft      = FALSE
                         , pftdbh   = FALSE
@@ -99,8 +99,8 @@ tspftdbh[[n]]     = list( vnam     = "tai"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "gpp"
                         , desc     = "Gross primary productivity"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcom2opl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -112,8 +112,8 @@ tspftdbh[[n]]     = list( vnam     = "gpp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "npp"
                         , desc     = "Net primary productivity"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -125,8 +125,8 @@ tspftdbh[[n]]     = list( vnam     = "npp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "mco"
                         , desc     = "Maintenance costs"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -138,8 +138,8 @@ tspftdbh[[n]]     = list( vnam     = "mco"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cba"
                         , desc     = "Carbon balance"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -151,8 +151,8 @@ tspftdbh[[n]]     = list( vnam     = "cba"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "ldrop"
                         , desc     = "Leaf drop"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE 
                         , pftdbh   = TRUE 
@@ -164,8 +164,8 @@ tspftdbh[[n]]     = list( vnam     = "ldrop"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "balive"
                         , desc     = "Biomass of active tissues"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = FALSE
                         , pftdbh   = FALSE
@@ -177,8 +177,8 @@ tspftdbh[[n]]     = list( vnam     = "balive"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bdead"
                         , desc     = "Structural biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = FALSE
                         , pftdbh   = FALSE
@@ -190,8 +190,8 @@ tspftdbh[[n]]     = list( vnam     = "bdead"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bleaf"
                         , desc     = "Leaf biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = FALSE
                         , pftdbh   = FALSE
@@ -203,8 +203,8 @@ tspftdbh[[n]]     = list( vnam     = "bleaf"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "broot"
                         , desc     = "Root biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = FALSE
                         , pftdbh   = FALSE
@@ -216,8 +216,8 @@ tspftdbh[[n]]     = list( vnam     = "broot"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bsapwood"
                         , desc     = "Sapwood biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = FALSE
                         , pftdbh   = FALSE
@@ -229,8 +229,8 @@ tspftdbh[[n]]     = list( vnam     = "bsapwood"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bstorage"
                         , desc     = "Storage biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -242,8 +242,8 @@ tspftdbh[[n]]     = list( vnam     = "bstorage"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bseeds"
                         , desc     = "Seed biomass"
-                        , e.unit   = "kgC/m2"
-                        , i.unit   = "kgC/plant"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -255,8 +255,8 @@ tspftdbh[[n]]     = list( vnam     = "bseeds"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.resp"
                         , desc     = "Leaf respiration"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -268,8 +268,8 @@ tspftdbh[[n]]     = list( vnam     = "leaf.resp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "root.resp"
                         , desc     = "Root respiration"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -281,8 +281,8 @@ tspftdbh[[n]]     = list( vnam     = "root.resp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "growth.resp"
                         , desc     = "Growth respiration"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -294,8 +294,8 @@ tspftdbh[[n]]     = list( vnam     = "growth.resp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "nplant"
                         , desc     = "Plant density"
-                        , e.unit   = "plant/m2"
-                        , i.unit   = "plant/m2"
+                        , e.unit   = untab$plom2
+                        , i.unit   = untab$plom2
                         , plog     = TRUE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -307,8 +307,8 @@ tspftdbh[[n]]     = list( vnam     = "nplant"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "fs.open"
                         , desc     = "Soil moisture stress factor"
-                        , e.unit   = "--"
-                        , i.unit   = "--"
+                        , e.unit   = untab$empty
+                        , i.unit   = untab$empty
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -320,8 +320,8 @@ tspftdbh[[n]]     = list( vnam     = "fs.open"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.gsw"
                         , desc     = "Stomatal conductance"
-                        , e.unit   = "kg/m2leaf/day"
-                        , i.unit   = "kg/m2leaf/day"
+                        , e.unit   = untab$kgwom2loday
+                        , i.unit   = untab$kgwom2loday
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -333,47 +333,8 @@ tspftdbh[[n]]     = list( vnam     = "leaf.gsw"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.gbw"
                         , desc     = "Leaf boundary layer conductance"
-                        , e.unit   = "kg/m2leaf/day"
-                        , i.unit   = "kg/m2leaf/day"
-                        , plog     = FALSE
-                        , pft      = TRUE
-                        , pftdbh   = TRUE
-                        , sas      = FALSE
-                        , bar.plot = TRUE
-                        , stack    = FALSE
-                        , scsout   = TRUE
-                        )#end list
-n                 = n + 1
-tspftdbh[[n]]     = list( vnam     = "mort"
-                        , desc     = "Mortality rate"
-                        , e.unit   = "%pop/yr"
-                        , i.unit   = "%pop/yr"
-                        , plog     = FALSE
-                        , pft      = TRUE
-                        , pftdbh   = TRUE
-                        , sas      = FALSE
-                        , bar.plot = TRUE
-                        , stack    = FALSE
-                        , scsout   = FALSE
-                        )#end list
-n                 = n + 1
-tspftdbh[[n]]     = list( vnam     = "recr"
-                        , desc     = "Recruitment rate"
-                        , e.unit   = "%pop/yr"
-                        , i.unit   = "%pop/yr"
-                        , plog     = FALSE
-                        , pft      = TRUE
-                        , pftdbh   = TRUE
-                        , sas      = FALSE
-                        , bar.plot = TRUE
-                        , stack    = FALSE
-                        , scsout   = TRUE
-                        )#end list
-n                 = n + 1
-tspftdbh[[n]]     = list( vnam     = "growth"
-                        , desc     = "Growth rate"
-                        , e.unit   = "%dbh/yr"
-                        , i.unit   = "%dbh/yr"
+                        , e.unit   = untab$kgwom2loday
+                        , i.unit   = untab$kgwom2loday
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -385,8 +346,8 @@ tspftdbh[[n]]     = list( vnam     = "growth"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.lai"
                         , desc     = "Leaf area index (H > 1.5m)"
-                        , e.unit   = "m2/m2"
-                        , i.unit   = "m2/m2"
+                        , e.unit   = untab$m2lom2
+                        , i.unit   = untab$m2lom2
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -399,8 +360,8 @@ n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.agb"
                         , desc     = "Above-ground biomass (DBH > 10cm)"
                         , sas      = FALSE
-                        , e.unit   = "m2/m2"
-                        , i.unit   = "m2/m2"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -413,8 +374,8 @@ n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.ba"
                         , desc     = "Basal area (DBH > 10cm)"
                         , sas      = FALSE
-                        , e.unit   = "cm2/m2"
-                        , i.unit   = "cm2/m2"
+                        , e.unit   = untab$cm2om2
+                        , i.unit   = untab$cm2om2
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -424,10 +385,23 @@ tspftdbh[[n]]     = list( vnam     = "census.ba"
                         , scsout   = FALSE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "mort"
+                        , desc     = "Mortality rate"
+                        , e.unit   = untab$pcpopoyr
+                        , i.unit   = untab$pcpopoyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "ncbmort"
                         , desc     = "Mortality rate - Neg. C balance"
-                        , e.unit   = "%pop/yr"
-                        , i.unit   = "%pop/yr"
+                        , e.unit   = untab$pcpopoyr
+                        , i.unit   = untab$pcpopoyr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -439,8 +413,99 @@ tspftdbh[[n]]     = list( vnam     = "ncbmort"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "dimort"
                         , desc     = "Mortality rate - Density independent"
-                        , e.unit   = "%pop/yr"
-                        , i.unit   = "%pop/yr"
+                        , e.unit   = untab$pcpopoyr
+                        , i.unit   = untab$pcpopoyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "recr"
+                        , desc     = "Recruitment rate"
+                        , e.unit   = untab$pcpopoyr
+                        , i.unit   = untab$pcpopoyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "growth"
+                        , desc     = "Growth rate"
+                        , e.unit   = untab$pcdbhoyr
+                        , i.unit   = untab$pcdbhoyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "agb.mort"
+                        , desc     = "Mortality rate"
+                        , e.unit   = untab$pcagboyr
+                        , i.unit   = untab$pcagboyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "agb.ncbmort"
+                        , desc     = "Mortality rate - Neg. C balance"
+                        , e.unit   = untab$pcagboyr
+                        , i.unit   = untab$pcagboyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "agb.dimort"
+                        , desc     = "Mortality rate - Density independent"
+                        , e.unit   = untab$pcagboyr
+                        , i.unit   = untab$pcagboyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "agb.recr"
+                        , desc     = "Recruitment rate"
+                        , e.unit   = untab$pcagboyr
+                        , i.unit   = untab$pcagboyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "agb.growth"
+                        , desc     = "Growth rate"
+                        , e.unit   = untab$pcagboyr
+                        , i.unit   = untab$pcagboyr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -452,8 +517,8 @@ tspftdbh[[n]]     = list( vnam     = "dimort"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbamax"
                         , desc     = "Maximum Carbon balance"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -465,8 +530,8 @@ tspftdbh[[n]]     = list( vnam     = "cbamax"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbalight"
                         , desc     = "Carbon balance - Maximum light"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -478,8 +543,8 @@ tspftdbh[[n]]     = list( vnam     = "cbalight"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbamoist"
                         , desc     = "Carbon balance - Maximum moisture"
-                        , e.unit   = "kgC/m2/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -491,8 +556,8 @@ tspftdbh[[n]]     = list( vnam     = "cbamoist"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbarel"
                         , desc     = "Relative carbon balance"
-                        , e.unit   = "--"
-                        , i.unit   = "--"
+                        , e.unit   = untab$empty
+                        , i.unit   = untab$empty
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -504,8 +569,8 @@ tspftdbh[[n]]     = list( vnam     = "cbarel"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "hflxlc"
                         , desc     = "Leaf sensible heat flux"
-                        , e.unit   = "W/m2"
-                        , i.unit   = "W/plant"
+                        , e.unit   = untab$wom2
+                        , i.unit   = untab$wopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -517,8 +582,8 @@ tspftdbh[[n]]     = list( vnam     = "hflxlc"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "wflxlc"
                         , desc     = "Leaf evaporation"
-                        , e.unit   = "kg/m2/day"
-                        , i.unit   = "kg/plant/day"
+                        , e.unit   = untab$kgwom2oday
+                        , i.unit   = untab$kgwoploday
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -530,8 +595,8 @@ tspftdbh[[n]]     = list( vnam     = "wflxlc"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "transp"
                         , desc     = "Leaf transpiration"
-                        , e.unit   = "kg/m2/day"
-                        , i.unit   = "kg/plant/day"
+                        , e.unit   = untab$kgwom2oday
+                        , i.unit   = untab$kgwoploday
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -543,8 +608,8 @@ tspftdbh[[n]]     = list( vnam     = "transp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "wue"
                         , desc     = "Water use efficiency"
-                        , e.unit   = "gC/kgH2O"
-                        , i.unit   = "gC/kgH2O"
+                        , e.unit   = untab$gcokgw
+                        , i.unit   = untab$gcokgw
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -556,8 +621,8 @@ tspftdbh[[n]]     = list( vnam     = "wue"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.gpp"
                         , desc     = "Mean gross primary production"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -569,8 +634,8 @@ tspftdbh[[n]]     = list( vnam     = "i.gpp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.npp"
                         , desc     = "Mean net primary production"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -582,8 +647,8 @@ tspftdbh[[n]]     = list( vnam     = "i.npp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.plant.resp"
                         , desc     = "Mean plant respiration"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -595,8 +660,8 @@ tspftdbh[[n]]     = list( vnam     = "i.plant.resp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.mco"
                         , desc     = "Mean maintenance costs"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -608,8 +673,8 @@ tspftdbh[[n]]     = list( vnam     = "i.mco"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cba"
                         , desc     = "Mean carbon balance"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -621,8 +686,8 @@ tspftdbh[[n]]     = list( vnam     = "i.cba"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cbamax"
                         , desc     = "Maximum carbon balance"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -634,8 +699,8 @@ tspftdbh[[n]]     = list( vnam     = "i.cbamax"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cbalight"
                         , desc     = "Mean carbon balance - maximum light"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -647,8 +712,8 @@ tspftdbh[[n]]     = list( vnam     = "i.cbalight"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.cbamoist"
                         , desc     = "Mean carbon balance - maximum moisture"
-                        , e.unit   = "kgC/plant/yr"
-                        , i.unit   = "kgC/plant/yr"
+                        , e.unit   = untab$kgcoployr
+                        , i.unit   = untab$kgcoployr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -660,8 +725,8 @@ tspftdbh[[n]]     = list( vnam     = "i.cbamoist"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.hflxlc"
                         , desc     = "Mean leaf sensible heat flux"
-                        , e.unit   = "W/plant"
-                        , i.unit   = "W/plant"
+                        , e.unit   = untab$wopl
+                        , i.unit   = untab$wopl
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -673,8 +738,8 @@ tspftdbh[[n]]     = list( vnam     = "i.hflxlc"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.wflxlc"
                         , desc     = "Mean leaf evaporation"
-                        , e.unit   = "kg/plant/day"
-                        , i.unit   = "kg/plant/day"
+                        , e.unit   = untab$kgwoploday
+                        , i.unit   = untab$kgwoploday
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -686,8 +751,8 @@ tspftdbh[[n]]     = list( vnam     = "i.wflxlc"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.transp"
                         , desc     = "Mean leaf evaporation"
-                        , e.unit   = "kg/plant/day"
-                        , i.unit   = "kg/plant/day"
+                        , e.unit   = untab$kgwoploday
+                        , i.unit   = untab$kgwoploday
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -699,8 +764,8 @@ tspftdbh[[n]]     = list( vnam     = "i.transp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "height"
                         , desc     = "Height"
-                        , e.unit   = "m"
-                        , i.unit   = "m"
+                        , e.unit   = untab$m
+                        , i.unit   = untab$m
                         , plog     = FALSE
                         , pft      = FALSE
                         , pftdbh   = FALSE
@@ -712,8 +777,8 @@ tspftdbh[[n]]     = list( vnam     = "height"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.gpp"
                         , desc     = "Gross Primary Productivity"
-                        , e.unit   = "%biomass/yr"
-                        , i.unit   = "%biomass/yr"
+                        , e.unit   = untab$pcbiooyr
+                        , i.unit   = untab$pcbiooyr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -725,8 +790,8 @@ tspftdbh[[n]]     = list( vnam     = "f.gpp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.plant.resp"
                         , desc     = "Plant respiration"
-                        , e.unit   = "%biomass/yr"
-                        , i.unit   = "%biomass/yr"
+                        , e.unit   = untab$pcbiooyr
+                        , i.unit   = untab$pcbiooyr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -738,8 +803,8 @@ tspftdbh[[n]]     = list( vnam     = "f.plant.resp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.npp"
                         , desc     = "Net Primary Productivity"
-                        , e.unit   = "%biomass/yr"
-                        , i.unit   = "%biomass/yr"
+                        , e.unit   = untab$pcbiooyr
+                        , i.unit   = untab$pcbiooyr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -751,8 +816,8 @@ tspftdbh[[n]]     = list( vnam     = "f.npp"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.cba"
                         , desc     = "Carbon balance"
-                        , e.unit   = "%biomass/yr"
-                        , i.unit   = "%biomass/yr"
+                        , e.unit   = untab$pcbiooyr
+                        , i.unit   = untab$pcbiooyr
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -764,8 +829,8 @@ tspftdbh[[n]]     = list( vnam     = "f.cba"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.bstorage"
                         , desc     = "Relative storage biomass"
-                        , e.unit   = "gC_st/kgC_bio"
-                        , i.unit   = "gC_st/kgC_bio"
+                        , e.unit   = untab$gcokgcbio
+                        , i.unit   = untab$gcokgcbio
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -777,8 +842,8 @@ tspftdbh[[n]]     = list( vnam     = "f.bstorage"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.bleaf"
                         , desc     = "Relative leaf biomass"
-                        , e.unit   = "gC_leaf/kgC_bio"
-                        , i.unit   = "gC_leaf/kgC_bio"
+                        , e.unit   = untab$gcokgcbio
+                        , i.unit   = untab$gcokgcbio
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -790,8 +855,8 @@ tspftdbh[[n]]     = list( vnam     = "f.bleaf"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.broot"
                         , desc     = "Relative root biomass"
-                        , e.unit   = "gC_root/kgC_bio"
-                        , i.unit   = "gC_root/kgC_bio"
+                        , e.unit   = untab$gcokgcbio
+                        , i.unit   = untab$gcokgcbio
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -803,8 +868,8 @@ tspftdbh[[n]]     = list( vnam     = "f.broot"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.bseeds"
                         , desc     = "Relative seed biomass"
-                        , e.unit   = "gC_seed/kgC_bio"
-                        , i.unit   = "gC_seed/kgC_bio"
+                        , e.unit   = untab$gcokgcbio
+                        , i.unit   = untab$gcokgcbio
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -816,8 +881,8 @@ tspftdbh[[n]]     = list( vnam     = "f.bseeds"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.par"
                         , desc     = "Absorbed PAR - Leaf"
-                        , e.unit   = "umol/m2leaf/s"
-                        , i.unit   = "umol/m2leaf/s"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -829,8 +894,8 @@ tspftdbh[[n]]     = list( vnam     = "leaf.par"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
                         , desc     = "Absorbed SW - Leaf"
-                        , e.unit   = "W/m2leaf"
-                        , i.unit   = "W/m2leaf"
+                        , e.unit   = untab$wom2l
+                        , i.unit   = untab$wom2l
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -842,8 +907,8 @@ tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rlong"
                         , desc     = "Net absorbed LW - Leaf"
-                        , e.unit   = "W/m2leaf"
-                        , i.unit   = "W/m2leaf"
+                        , e.unit   = untab$wom2l
+                        , i.unit   = untab$wom2l
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -865,49 +930,49 @@ tslu      = list()
 n         = n + 1
 tslu[[n]] = list( vnam = "agb"
                 , desc = "Above ground biomass"
-                , unit = "kgC/m2"
+                , unit = untab$kgcom2
                 , plog = FALSE
                 , plt  = FALSE)
 n         = n + 1
 tslu[[n]] = list( vnam = "bgb"
                 , desc = "Below ground biomass"
-                , unit = "kgC/m2"
+                , unit = untab$kgcom2
                 , plog = FALSE
                 , plt  = FALSE)
 n         = n + 1
 tslu[[n]] = list( vnam = "biomass"
                 , desc = "Total biomass"
-                , unit = "kgC/m2"
+                , unit = untab$kgcom2
                 , plog = FALSE
                 , plt  = FALSE)
 n         = n + 1
 tslu[[n]] = list( vnam = "lai"
                 , desc = "Leaf area index"
-                , unit = "m2/m2"
+                , unit = untab$m2lom2
                 , plog = FALSE
                 , plt  = FALSE)
 n         = n + 1
 tslu[[n]] = list( vnam = "gpp"
                 , desc = "Gross primary productivity"
-                , unit = "kgC/m2/yr"
+                , unit = untab$kgcom2oyr
                 , plog = FALSE
                 , plt  = FALSE)
 n         = n + 1
 tslu[[n]] = list( vnam = "npp"
                 , desc = "Net primary productivity"
-                , unit = "kgC/m2/yr"
+                , unit = untab$kgcom2oyr
                 , plog = FALSE
                 , plt  = FALSE)
 n         = n + 1
 tslu[[n]] = list( vnam = "area"
                 , desc = "Fraction of area"
-                , unit = ""
+                , unit = untab$empty
                 , plog = FALSE
                 , plt  = FALSE)
 n         = n + 1
 tslu[[n]] = list( vnam = "basarea"
                 , desc = "Basal area"
-                , unit = "cm2/m2"
+                , unit = untab$cm2om2
                 , plog = FALSE
                 , plt  = FALSE)
 #------------------------------------------------------------------------------------------#
@@ -929,7 +994,7 @@ squeeze      = list()
 n            = n + 1
 squeeze[[n]] = list( vnam       = "gpp"
                    , desc       = "Gross Primary productivity"
-                   , unit       = "kgC/m2/yr"
+                   , unit       = untab$kgcom2oyr
                    , col.scheme = "atlas"
                    , fco.mmean  = TRUE
                    , fco.qmean  = FALSE
@@ -938,7 +1003,7 @@ squeeze[[n]] = list( vnam       = "gpp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "npp"
                    , desc       = "Net Primary productivity"
-                   , unit       = "kgC/m2/yr"
+                   , unit       = untab$kgcom2oyr
                    , col.scheme = "atlas"
                    , fco.mmean  = TRUE
                    , fco.qmean  = FALSE
@@ -947,7 +1012,7 @@ squeeze[[n]] = list( vnam       = "npp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "plant.resp"
                    , desc       = "Plant respiration"
-                   , unit       = "kgC/m2/yr"
+                   , unit       = untab$kgcom2oyr
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -956,7 +1021,7 @@ squeeze[[n]] = list( vnam       = "plant.resp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "het.resp"
                    , desc       = "Heterotrophic respiration"
-                   , unit       = "kgC/m2/yr"
+                   , unit       = untab$kgcom2oyr
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -965,7 +1030,7 @@ squeeze[[n]] = list( vnam       = "het.resp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "nep"
                    , desc       = "Net ecosystem production"
-                   , unit       = "kgC/m2/yr"
+                   , unit       = untab$kgcom2oyr
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -974,7 +1039,7 @@ squeeze[[n]] = list( vnam       = "nep"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "reco"
                    , desc       = "Ecosystem respiration"
-                   , unit       = "kgC/m2/yr"
+                   , unit       = untab$kgcom2oyr
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -983,7 +1048,7 @@ squeeze[[n]] = list( vnam       = "reco"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "hflxca"
                    , desc       = "Sensible heat flux"
-                   , unit       = "W/m2"
+                   , unit       = untab$wom2
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -992,7 +1057,7 @@ squeeze[[n]] = list( vnam       = "hflxca"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxca"
                    , desc       = "Water flux"
-                   , unit       = "kg/m2/day"
+                   , unit       = untab$kgwom2oday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1001,7 +1066,7 @@ squeeze[[n]] = list( vnam       = "wflxca"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxgc"
                    , desc       = "Ground evaporation"
-                   , unit       = "kg/m2/day"
+                   , unit       = untab$kgwom2oday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1010,7 +1075,7 @@ squeeze[[n]] = list( vnam       = "wflxgc"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxlc"
                    , desc       = "Leaf evaporation"
-                   , unit       = "kg/m2/day"
+                   , unit       = untab$kgwom2oday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1019,7 +1084,7 @@ squeeze[[n]] = list( vnam       = "wflxlc"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxwc"
                    , desc       = "Wood evaporation"
-                   , unit       = "kg/m2/day"
+                   , unit       = untab$kgwom2oday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1028,7 +1093,7 @@ squeeze[[n]] = list( vnam       = "wflxwc"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "evap"
                    , desc       = "Evaporation"
-                   , unit       = "kg/m2/day"
+                   , unit       = untab$kgwom2oday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1037,7 +1102,7 @@ squeeze[[n]] = list( vnam       = "evap"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "transp"
                    , desc       = "Transpiration"
-                   , unit       = "kg/m2/day"
+                   , unit       = untab$kgwom2oday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1046,7 +1111,7 @@ squeeze[[n]] = list( vnam       = "transp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "nee"
                    , desc       = "Net ecosystem exchange"
-                   , unit       = "umol/m2/s"
+                   , unit       = untab$umolcom2os
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1055,7 +1120,7 @@ squeeze[[n]] = list( vnam       = "nee"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "cflxca"
                    , desc       = "CO2 flux"
-                   , unit       = "umol/m2/s"
+                   , unit       = untab$umolcom2os
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1064,7 +1129,7 @@ squeeze[[n]] = list( vnam       = "cflxca"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "cflxst"
                    , desc       = "CO2 flux"
-                   , unit       = "umol/m2/s"
+                   , unit       = untab$umolcom2os
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1073,7 +1138,7 @@ squeeze[[n]] = list( vnam       = "cflxst"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "can.temp"
                    , desc       = "Canopy air temperature"
-                   , unit       = "degC"
+                   , unit       = untab$degC
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1082,7 +1147,7 @@ squeeze[[n]] = list( vnam       = "can.temp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "atm.temp"
                    , desc       = "Atmospheric temperature"
-                   , unit       = "degC"
+                   , unit       = untab$degC
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1091,7 +1156,7 @@ squeeze[[n]] = list( vnam       = "atm.temp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "leaf.temp"
                    , desc       = "Leaf temperature"
-                   , unit       = "degC"
+                   , unit       = untab$degC
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1100,7 +1165,7 @@ squeeze[[n]] = list( vnam       = "leaf.temp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "wood.temp"
                    , desc       = "Wood temperature"
-                   , unit       = "degC"
+                   , unit       = untab$degC
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1109,7 +1174,7 @@ squeeze[[n]] = list( vnam       = "wood.temp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "gnd.temp"
                    , desc       = "Ground temperature"
-                   , unit       = "degC"
+                   , unit       = untab$degC
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1118,7 +1183,7 @@ squeeze[[n]] = list( vnam       = "gnd.temp"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "atm.shv"
                    , desc       = "Atmospheric specific humidity" 
-                   , unit       = "g/kg"
+                   , unit       = untab$gwokg
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1127,7 +1192,7 @@ squeeze[[n]] = list( vnam       = "atm.shv"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "can.shv"
                    , desc       = "Canopy air specific humidity"
-                   , unit       = "g/kg"
+                   , unit       = untab$gwokg
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1136,7 +1201,7 @@ squeeze[[n]] = list( vnam       = "can.shv"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "gnd.shv"
                    , desc       = "Ground specific humidity"
-                   , unit       = "g/kg"
+                   , unit       = untab$gwokg
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1145,7 +1210,7 @@ squeeze[[n]] = list( vnam       = "gnd.shv"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "atm.co2"
                    , desc       = "Atmospheric CO2 mixing ratio"
-                   , unit       = "umol/mol"
+                   , unit       = untab$molcomol
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1154,7 +1219,7 @@ squeeze[[n]] = list( vnam       = "atm.co2"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "can.co2"
                    , desc       = "Canopy air CO2 mixing ratio"
-                   , unit       = "umol/mol"
+                   , unit       = untab$molcomol
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1163,7 +1228,34 @@ squeeze[[n]] = list( vnam       = "can.co2"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "rain"
                    , desc       = "Total monthly precipitation"
-                   , unit       = "mm"
+                   , unit       = untab$mm
+                   , col.scheme = "imuitas"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "runoff"
+                   , desc       = "Total monthly runoff"
+                   , unit       = untab$mm
+                   , col.scheme = "imuitas"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "intercepted"
+                   , desc       = "Total monthly interception"
+                   , unit       = untab$mm
+                   , col.scheme = "imuitas"
+                   , fco.mmean  = FALSE
+                   , fco.qmean  = FALSE
+                   , box.plot   = FALSE
+                   )#end list
+n            = n + 1
+squeeze[[n]] = list( vnam       = "wshed"
+                   , desc       = "Total monthly dripping"
+                   , unit       = untab$mm
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1172,7 +1264,7 @@ squeeze[[n]] = list( vnam       = "rain"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "fs.open"
                    , desc       = "Fraction of open stomata"
-                   , unit       = "---"
+                   , unit       = untab$empty
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1181,7 +1273,7 @@ squeeze[[n]] = list( vnam       = "fs.open"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "leaf.gbw"
                    , desc       = "Leaf boundary layer conductance"
-                   , unit       = "kg/m2l/day"
+                   , unit       = untab$kgwom2loday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1190,7 +1282,7 @@ squeeze[[n]] = list( vnam       = "leaf.gbw"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "leaf.gsw"
                    , desc       = "Stomatal conductance"
-                   , unit       = "kg/m2l/day"
+                   , unit       = untab$kgwom2loday
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1199,7 +1291,7 @@ squeeze[[n]] = list( vnam       = "leaf.gsw"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "rshort"
                    , desc       = "Downward shortwave radiation"
-                   , unit       = "W/m2"
+                   , unit       = untab$wom2
                    , col.scheme = "icloudy"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1208,7 +1300,7 @@ squeeze[[n]] = list( vnam       = "rshort"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "rshort.gnd"
                    , desc       = "Abs. gnd. shortwave radiation"
-                   , unit       = "W/m2"
+                   , unit       = untab$wom2
                    , col.scheme = "icloudy"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1217,7 +1309,7 @@ squeeze[[n]] = list( vnam       = "rshort.gnd"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "rshortup"
                    , desc       = "Outgoing shortwave radiation"
-                   , unit       = "W/m2"
+                   , unit       = untab$wom2
                    , col.scheme = "icloudy"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1226,7 +1318,7 @@ squeeze[[n]] = list( vnam       = "rshortup"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "rlong"
                    , desc       = "Downward longwave radiation"
-                   , unit       = "W/m2"
+                   , unit       = untab$wom2
                    , col.scheme = "cloudy"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1235,7 +1327,7 @@ squeeze[[n]] = list( vnam       = "rlong"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "rlong.gnd"
                    , desc       = "Abs. gnd. longwave radiation"
-                   , unit       = "W/m2"
+                   , unit       = untab$wom2
                    , col.scheme = "cloudy"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1244,7 +1336,7 @@ squeeze[[n]] = list( vnam       = "rlong.gnd"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "rlongup"
                    , desc       = "Outgoing longwave radiation"
-                   , unit       = "W/m2"
+                   , unit       = untab$wom2
                    , col.scheme = "cloudy"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1253,7 +1345,7 @@ squeeze[[n]] = list( vnam       = "rlongup"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "albedo"
                    , desc       = "Shortwave albedo"
-                   , unit       = "---"
+                   , unit       = untab$empty
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1262,7 +1354,7 @@ squeeze[[n]] = list( vnam       = "albedo"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "ustar"
                    , desc       = "Friction velocity"
-                   , unit       = "m/s"
+                   , unit       = untab$mos
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1271,7 +1363,7 @@ squeeze[[n]] = list( vnam       = "ustar"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "paw"
                    , desc       = "Potential available water"
-                   , unit       = "%"
+                   , unit       = untab$pcsat
                    , col.scheme = "imuitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1280,7 +1372,7 @@ squeeze[[n]] = list( vnam       = "paw"
 n            = n + 1
 squeeze[[n]] = list( vnam       = "smpot"
                    , desc       = "Integrated matric potential"
-                   , unit       = "MPa"
+                   , unit       = untab$mpa
                    , col.scheme = "muitas"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
@@ -1309,7 +1401,7 @@ theme[[n]] = list( vnam      = c(        "gpp", "plant.resp",  "het.resp",      
                  , plog      = FALSE
                  , prefix    = "ecoflux"
                  , title     = "Ecosystem fluxes"
-                 , unit      = "kgC/m2/yr"
+                 , unit      = untab$kgcom2oyr
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1329,7 +1421,7 @@ theme[[n]] = list( vnam      = c(   "rshort",      "rlong","rshort.gnd",    "qwf
                  , plog      = FALSE
                  , prefix    = "eneflux"
                  , title     = "Energy fluxes"
-                 , unit      = "W/m2"
+                 , unit      = untab$wom2
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1349,7 +1441,7 @@ theme[[n]] = list( vnam      = c(        "wflxgc",         "wflxca",      "wflxl
                  , plog      = FALSE
                  , prefix    = "h2oflux"
                  , title     = "Water fluxes"
-                 , unit      = "kg/m2/day"
+                 , unit      = untab$kgwom2oday
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1369,7 +1461,7 @@ theme[[n]] = list( vnam      = c(     "atm.temp",  "can.temp",  "leaf.temp"
                  , plog      = FALSE
                  , prefix    = "temperature"
                  , title     = "Temperature"
-                 , unit      = "degC"
+                 , unit      = untab$degC
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1385,7 +1477,7 @@ theme[[n]] = list( vnam      = c(    "atm.shv",   "can.shv",      "gnd.shv")
                  , plog      = FALSE
                  , prefix    = "h2ovapour"
                  , title     = "Water vapour mixing ratio"
-                 , unit      = "g/kg"
+                 , unit      = untab$gwokg
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1401,7 +1493,7 @@ theme[[n]] = list( vnam      = c(    "atm.co2",    "can.co2")
                  , plog      = FALSE
                  , prefix    = "co2"
                  , title     = "CO2 mixing ratio"
-                 , unit      = "umol/mol"
+                 , unit      = untab$umolcomol
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1409,15 +1501,15 @@ theme[[n]] = list( vnam      = c(    "atm.co2",    "can.co2")
                  , ymean     = TRUE
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c(         "rain")
-                 , desc      = c("Precipitation")
-                 , colour    = c(   "royalblue4")
-                 , lwd       = c(            2.5)
+theme[[n]] = list( vnam      = c(         "rain",      "runoff", "intercepted",   "wshed")
+                 , desc      = c("Precipitation","Total runoff","Interception","Dripping")
+                 , colour    = c(   "royalblue4",   "orangered", "chartreuse4", "purple2")
+                 , lwd       = c(            2.5,           2.5,           2.5,       2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "prec"
-                 , title     = "Precipitation"
-                 , unit      = "mm"
+                 , title     = "Precipitation distribution"
+                 , unit      = untab$mm
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1433,7 +1525,7 @@ theme[[n]] = list( vnam      = c("npat.global")
                  , plog      = FALSE
                  , prefix    = "npatch"
                  , title     = "Total number of patches"
-                 , unit      = "---"
+                 , unit      = untab$empty
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1449,7 +1541,7 @@ theme[[n]] = list( vnam      = c( "ncoh.global")
                  , plog      = FALSE
                  , prefix    = "ncohort"
                  , title     = "Total number of cohorts"
-                 , unit      = "---"
+                 , unit      = untab$empty
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1469,7 +1561,7 @@ theme[[n]] = list( vnam      = c( "plant.resp",     "het.resp",   "cwd.resp", "l
                  , plog      = FALSE
                  , prefix    = "respiration"
                  , title     = "Respiration fluxes"
-                 , unit      = "kgC/m2/yr"
+                 , unit      = untab$kgcom2oyr
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1485,7 +1577,7 @@ theme[[n]] = list( vnam      = c(  "atm.vels",            "ustar")
                  , plog      = FALSE
                  , prefix    = "wind"
                  , title     = "Winds"
-                 , unit      = "m/s"
+                 , unit      = untab$mos
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1501,7 +1593,7 @@ theme[[n]] = list( vnam      = c("fast.soil.c","slow.soil.c","struct.soil.c")
                  , plog      = FALSE
                  , prefix    = "soil_carbon"
                  , title     = "Soil Carbon"
-                 , unit      = "kgC/m2"
+                 , unit      = untab$kgcom2
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1517,7 +1609,7 @@ theme[[n]] = list( vnam      = c(    "atm.vpd",    "can.vpd",   "leaf.vpd")
                  , plog      = FALSE
                  , prefix    = "vpdef"
                  , title     = "Vapour pressure deficit"
-                 , unit      = "hPa"
+                 , unit      = untab$hpa
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1533,7 +1625,7 @@ theme[[n]] = list( vnam      = c(         "paw")
                  , plog      = FALSE
                  , prefix    = "paw"
                  , title     = "Average potential available water"
-                 , unit      = "%"
+                 , unit      = untab$pcsat
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1549,7 +1641,7 @@ theme[[n]] = list( vnam      = c(         "smpot")
                  , plog      = FALSE
                  , prefix    = "smpot"
                  , title     = "Average soil matric potential"
-                 , unit      = "MPa"
+                 , unit      = untab$mpa
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1565,7 +1657,7 @@ theme[[n]] = list( vnam      = c("water.deficit",      "malhi.deficit")
                  , plog      = FALSE
                  , prefix    = "water_deficit"
                  , title     = "Monthly Water deficit"
-                 , unit      = "kg/m2/month"
+                 , unit      = untab$mmomo
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1581,7 +1673,7 @@ theme[[n]] = list( vnam      = c(        "nee",   "cflxca",     "cflxst")
                  , plog      = FALSE
                  , prefix    = "carbflux"
                  , title     = "CO2 fluxes"
-                 , unit      = "umol/m2/s"
+                 , unit      = untab$umolcom2os
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1601,7 +1693,7 @@ theme[[n]] = list( vnam      = c(         "rshort",  "rshort.beam","rshort.diff"
                  , plog      = FALSE
                  , prefix    = "rshort"
                  , title     = "Short wave radiation"
-                 , unit      = "W/m2"
+                 , unit      = untab$wom2
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1617,7 +1709,7 @@ theme[[n]] = list( vnam      = c(          "rlong",  "rlongup",    "rlong.gnd")
                  , plog      = FALSE
                  , prefix    = "rlong"
                  , title     = "Long wave radiation"
-                 , unit      = "W/m2"
+                 , unit      = untab$wom2
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1633,7 +1725,7 @@ theme[[n]] = list( vnam      = c(         "albedo", "albedo.par","albedo.nir")
                  , plog      = FALSE
                  , prefix    = "albedo"
                  , title     = "Albedo"
-                 , unit      = "---"
+                 , unit      = untab$empty
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1653,7 +1745,7 @@ theme[[n]] = list( vnam      = c(        "par.tot",     "par.beam", "par.diff"
                  , plog      = FALSE
                  , prefix    = "par"
                  , title     = "Photosynthetically Active Radiation"
-                 , unit      = "umol/m2/s"
+                 , unit      = untab$umolom2os
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1669,7 +1761,7 @@ theme[[n]] = list( vnam      = c(       "leaf.gsw",        "leaf.gbw",        "w
                  , plog      = FALSE
                  , prefix    = "conduct"
                  , title     = "Conductance"
-                 , unit      = "kg/m2/day"
+                 , unit      = untab$kgwom2oday
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1687,7 +1779,7 @@ compmodel      = list()
 n              = n + 1
 compmodel[[n]] = list( vnam   = "nep"
                      , desc   = "Net Ecosystem Productivity"
-                     , unit   = "kgC/m2/yr"
+                     , unit   = untab$kgcom2oyr
                      , plotsd = TRUE
                      , colour = c(green.fg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
@@ -1706,7 +1798,7 @@ compmodel[[n]] = list( vnam   = "nep"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "gpp"
                      , desc   = "Gross Primary Productivity"
-                     , unit   = "kgC/m2/yr"
+                     , unit   = untab$kgcom2oyr
                      , plotsd = TRUE
                      , colour = c(green.fg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
@@ -1725,7 +1817,7 @@ compmodel[[n]] = list( vnam   = "gpp"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.co2"
                      , desc   = "Air CO2 mixing ratio"
-                     , unit   = "g/kg"
+                     , unit   = untab$umolcomol
                      , plotsd = TRUE
                      , colour = c(green.fg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
@@ -1744,7 +1836,7 @@ compmodel[[n]] = list( vnam   = "atm.co2"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "hflxca"
                      , desc   = "Sensible heat flux"
-                     , unit   = "W/m2"
+                     , unit   = untab$wom2
                      , plotsd = TRUE
                      , colour = c(orange.fg,grey.fg)
                      , errcol = c(orange.bg,grey.bg)
@@ -1763,7 +1855,7 @@ compmodel[[n]] = list( vnam   = "hflxca"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "wflxca"
                      , desc   = "Water flux"
-                     , unit   = "kgH2O/m2/day"
+                     , unit   = untab$kgwom2oday
                      , plotsd = TRUE
                      , colour = c(blue.fg,grey.fg)
                      , errcol = c(blue.bg,grey.bg)
@@ -1782,7 +1874,7 @@ compmodel[[n]] = list( vnam   = "wflxca"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rshort"
                      , desc   = "Incoming shortwave radiation"
-                     , unit   = "W/m2"
+                     , unit   = untab$wom2
                      , plotsd = TRUE
                      , colour = c(orange.fg,grey.fg)
                      , errcol = c(orange.bg,grey.bg)
@@ -1801,7 +1893,7 @@ compmodel[[n]] = list( vnam   = "rshort"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "par.tot"
                      , desc   = "Incoming PAR"
-                     , unit   = "umol/m2/s"
+                     , unit   = untab$umolom2os
                      , plotsd = TRUE
                      , colour = c(orange.fg,grey.fg)
                      , errcol = c(orange.bg,grey.bg)
@@ -1820,7 +1912,7 @@ compmodel[[n]] = list( vnam   = "par.tot"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rlong"
                      , desc   = "Incoming longwave radiation"
-                     , unit   = "W/m2"
+                     , unit   = untab$wom2
                      , plotsd = TRUE
                      , colour = c(blue.fg,grey.fg)
                      , errcol = c(blue.bg,grey.bg)
@@ -1839,7 +1931,7 @@ compmodel[[n]] = list( vnam   = "rlong"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.temp"
                      , desc   = "Air temperature"
-                     , unit   = "C"
+                     , unit   = untab$degC
                      , plotsd = TRUE
                      , colour = c(orange.fg,grey.fg)
                      , errcol = c(orange.bg,grey.bg)
@@ -1858,7 +1950,7 @@ compmodel[[n]] = list( vnam   = "atm.temp"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.shv"
                      , desc   = "Air specific humidity"
-                     , unit   = "g/kg"
+                     , unit   = untab$gwokg
                      , plotsd = TRUE
                      , colour = c(blue.fg,grey.fg)
                      , errcol = c(blue.bg,grey.bg)
@@ -1877,7 +1969,7 @@ compmodel[[n]] = list( vnam   = "atm.shv"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rain"
                      , desc   = "Precipitation rate"
-                     , unit   = "kg/m2/day"
+                     , unit   = untab$mmoday
                      , plotsd = FALSE
                      , colour = c(blue.fg,grey.fg)
                      , errcol = c(blue.bg,grey.bg)
@@ -1896,7 +1988,7 @@ compmodel[[n]] = list( vnam   = "rain"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.vels"
                      , desc   = "Wind speed"
-                     , unit   = "m/s"
+                     , unit   = untab$mos
                      , plotsd = TRUE
                      , colour = c(indigo.fg,grey.fg)
                      , errcol = c(indigo.bg,grey.bg)
@@ -1915,7 +2007,7 @@ compmodel[[n]] = list( vnam   = "atm.vels"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "atm.prss"
                      , desc   = "Air pressure"
-                     , unit   = "hPa"
+                     , unit   = untab$hpa
                      , plotsd = TRUE
                      , colour = c(purple.fg,grey.fg)
                      , errcol = c(purple.bg,grey.bg)
@@ -1934,7 +2026,7 @@ compmodel[[n]] = list( vnam   = "atm.prss"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "cflxca"
                      , desc   = "CO2 flux"
-                     , unit   = "umol/m2/s"
+                     , unit   = untab$umolcom2os
                      , plotsd = TRUE
                      , colour = c(green.fg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
@@ -1953,7 +2045,7 @@ compmodel[[n]] = list( vnam   = "cflxca"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "cflxst"
                      , desc   = "CO2 storage"
-                     , unit   = "umol/m2/s"
+                     , unit   = untab$umolcom2os
                      , plotsd = TRUE
                      , colour = c(orange.fg,grey.fg)
                      , errcol = c(orange.bg,grey.bg)
@@ -1972,7 +2064,7 @@ compmodel[[n]] = list( vnam   = "cflxst"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "nee"
                      , desc   = "Net Ecosystem Exchange"
-                     , unit   = "umol/m2/s"
+                     , unit   = untab$umolcom2os
                      , plotsd = TRUE
                      , colour = c(green.fg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
@@ -1991,7 +2083,7 @@ compmodel[[n]] = list( vnam   = "nee"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "ustar"
                      , desc   = "Friction velocity"
-                     , unit   = "m/s"
+                     , unit   = untab$mos
                      , plotsd = TRUE
                      , colour = c(purple.fg,grey.fg)
                      , errcol = c(purple.bg,grey.bg)
@@ -2010,7 +2102,7 @@ compmodel[[n]] = list( vnam   = "ustar"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "reco"
                      , desc   = "Ecosystem respiration"
-                     , unit   = "kgC/m2/yr"
+                     , unit   = untab$kgcom2oyr
                      , plotsd = TRUE
                      , colour = c(yellow.bg,grey.fg)
                      , errcol = c(yellow.bg,grey.bg)
@@ -2029,7 +2121,7 @@ compmodel[[n]] = list( vnam   = "reco"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "albedo"
                      , desc   = "Albedo"
-                     , unit   = "--"
+                     , unit   = untab$empty
                      , plotsd = TRUE
                      , colour = c(orange.fg,grey.fg)
                      , errcol = c(orange.bg,grey.bg)
@@ -2048,7 +2140,7 @@ compmodel[[n]] = list( vnam   = "albedo"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rshortup"
                      , desc   = "Outgoing SW Radiation"
-                     , unit   = "W/m2"
+                     , unit   = untab$wom2
                      , plotsd = TRUE
                      , colour = c(blue.fg,grey.fg)
                      , errcol = c(blue.bg,grey.bg)
@@ -2067,7 +2159,7 @@ compmodel[[n]] = list( vnam   = "rshortup"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rlongup"
                      , desc   = "Outgoing LW Radiation"
-                     , unit   = "W/m2"
+                     , unit   = untab$wom2
                      , plotsd = TRUE
                      , colour = c(red.fg,grey.fg)
                      , errcol = c(red.bg,grey.bg)
@@ -2086,7 +2178,7 @@ compmodel[[n]] = list( vnam   = "rlongup"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "parup"
                      , desc   = "Outgoing PAR"
-                     , unit   = "umol/m2/s"
+                     , unit   = untab$umolom2os
                      , plotsd = TRUE
                      , colour = c(green.fg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
@@ -2105,7 +2197,7 @@ compmodel[[n]] = list( vnam   = "parup"
 n              = n + 1
 compmodel[[n]] = list( vnam   = "rnet"
                      , desc   = "Net radiation"
-                     , unit   = "W/m2"
+                     , unit   = untab$wom2
                      , plotsd = TRUE
                      , colour = c(yellow.bg,grey.fg)
                      , errcol = c(yellow.bg,grey.bg)
@@ -2131,7 +2223,7 @@ soilplot      = list()
 n             = n + 1
 soilplot[[n]] = list( vnam   = "soil.water"
                     , desc   = "Soil moisture"
-                    , unit   = "m3H2O/m3"
+                    , unit   = untab$m3wom3
                     , csch   = "imuitas"
                     , pnlog  = FALSE
                     , mmean  = TRUE
@@ -2142,7 +2234,7 @@ soilplot[[n]] = list( vnam   = "soil.water"
 n             = n + 1
 soilplot[[n]] = list( vnam   = "soil.temp"
                     , desc   = "Soil temperature"
-                    , unit   = "C"
+                    , unit   = untab$degC
                     , csch   = "muitas"
                     , pnlog  = FALSE
                     , mmean  = TRUE
@@ -2153,7 +2245,7 @@ soilplot[[n]] = list( vnam   = "soil.temp"
 n             = n + 1
 soilplot[[n]] = list( vnam   = "soil.mstpot"
                     , desc   = "(Negative) Soil moisture potential"
-                    , unit   = "m"
+                    , unit   = untab$mpa
                     , csch   = "muitas"
                     , pnlog  = TRUE
                     , mmean  = TRUE
@@ -2173,7 +2265,7 @@ plotpatch      = list()
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "nep"
                      , desc       = "Net ecosystem production"
-                     , unit       = "kgC/m2/yr"
+                     , unit       = untab$kgcom2oyr
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2183,7 +2275,7 @@ plotpatch[[n]] = list( vnam       = "nep"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "het.resp"
                      , desc       = "Heterotrophic respiration"
-                     , unit       = "kgC/m2/yr"
+                     , unit       = untab$kgcom2oyr
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2193,7 +2285,7 @@ plotpatch[[n]] = list( vnam       = "het.resp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.temp"
                      , desc       = "CAS temperature"
-                     , unit       = "degC"
+                     , unit       = untab$degC
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2203,7 +2295,7 @@ plotpatch[[n]] = list( vnam       = "can.temp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "gnd.temp"
                      , desc       = "Ground temperature"
-                     , unit       = "degC"
+                     , unit       = untab$degC
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2213,7 +2305,7 @@ plotpatch[[n]] = list( vnam       = "gnd.temp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.shv"
                      , desc       = "CAS specific humidity"
-                     , unit       = "g/kg"
+                     , unit       = untab$gwokg
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2223,7 +2315,7 @@ plotpatch[[n]] = list( vnam       = "can.shv"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "gnd.shv"
                      , desc       = "Ground specific humidity"
-                     , unit       = "g/kg"
+                     , unit       = untab$gwokg
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2233,7 +2325,7 @@ plotpatch[[n]] = list( vnam       = "gnd.shv"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.vpd"
                      , desc       = "CAS vapour pressure deficit"
-                     , unit       = "hPa"
+                     , unit       = untab$hpa
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2243,7 +2335,7 @@ plotpatch[[n]] = list( vnam       = "can.vpd"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.co2"
                      , desc       = "CAS CO2 mixing ratio"
-                     , unit       = "umol/mol"
+                     , unit       = untab$umolcomol
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2253,7 +2345,7 @@ plotpatch[[n]] = list( vnam       = "can.co2"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.prss"
                      , desc       = "CAS pressure"
-                     , unit       = "hPa"
+                     , unit       = untab$hpa
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2263,7 +2355,7 @@ plotpatch[[n]] = list( vnam       = "can.prss"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "cflxca"
                      , desc       = "CO2 flux (CAS->Atm)"
-                     , unit       = "umol/m2/s"
+                     , unit       = untab$umolcom2os
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2273,7 +2365,7 @@ plotpatch[[n]] = list( vnam       = "cflxca"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "cflxst"
                      , desc       = "CO2 storage at CAS"
-                     , unit       = "umol/m2/s"
+                     , unit       = untab$umolcom2os
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2283,7 +2375,7 @@ plotpatch[[n]] = list( vnam       = "cflxst"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "nee"
                      , desc       = "Net ecosystem exchange"
-                     , unit       = "umol/m2/s"
+                     , unit       = untab$umolcom2os
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2293,7 +2385,7 @@ plotpatch[[n]] = list( vnam       = "nee"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "qwflxca"
                      , desc       = "'Latent' heat flux (CAS->Atm)"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2303,7 +2395,7 @@ plotpatch[[n]] = list( vnam       = "qwflxca"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxca"
                      , desc       = "Sensible heat flux (CAS->Atm)"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2313,7 +2405,7 @@ plotpatch[[n]] = list( vnam       = "hflxca"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxgc"
                      , desc       = "Sensible heat flux (Grnd->CAS)"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2323,7 +2415,7 @@ plotpatch[[n]] = list( vnam       = "hflxgc"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxlc"
                      , desc       = "Sensible heat flux (Leaf->CAS)"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2333,7 +2425,7 @@ plotpatch[[n]] = list( vnam       = "hflxlc"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxwc"
                      , desc       = "Sensible heat flux (Wood->CAS)"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2343,7 +2435,7 @@ plotpatch[[n]] = list( vnam       = "hflxwc"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxca"
                      , desc       = "Water flux (CAS->Atm)"
-                     , unit       = "kg/m2/day"
+                     , unit       = untab$kgwom2oday
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2353,7 +2445,7 @@ plotpatch[[n]] = list( vnam       = "wflxca"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxgc"
                      , desc       = "Water flux (Grnd->CAS)"
-                     , unit       = "kg/m2/day"
+                     , unit       = untab$kgwom2oday
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2363,7 +2455,7 @@ plotpatch[[n]] = list( vnam       = "wflxgc"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxlc"
                      , desc       = "Water flux (Leaf->CAS)"
-                     , unit       = "kg/m2/day"
+                     , unit       = untab$kgwom2oday
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2373,7 +2465,7 @@ plotpatch[[n]] = list( vnam       = "wflxlc"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxwc"
                      , desc       = "Water flux (Wood->CAS)"
-                     , unit       = "kg/m2/day"
+                     , unit       = untab$kgwom2oday
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2383,7 +2475,7 @@ plotpatch[[n]] = list( vnam       = "wflxwc"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "transp"
                      , desc       = "Leaf transpiration"
-                     , unit       = "kg/m2/day"
+                     , unit       = untab$kgwom2oday
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2393,7 +2485,7 @@ plotpatch[[n]] = list( vnam       = "transp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "ustar"
                      , desc       = "Friction velocity"
-                     , unit       = "m/s"
+                     , unit       = untab$mos
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2403,7 +2495,7 @@ plotpatch[[n]] = list( vnam       = "ustar"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "rshortup"
                      , desc       = "Outgoing SW radiation"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2413,7 +2505,7 @@ plotpatch[[n]] = list( vnam       = "rshortup"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "rlongup"
                      , desc       = "Outgoing LW radiation"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2423,7 +2515,7 @@ plotpatch[[n]] = list( vnam       = "rlongup"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "parup"
                      , desc       = "Outgoing PAR"
-                     , unit       = "umol/m2/s"
+                     , unit       = untab$umolom2os
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2433,7 +2525,7 @@ plotpatch[[n]] = list( vnam       = "parup"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "rnet"
                      , desc       = "Net radiation at ToC"
-                     , unit       = "W/m2"
+                     , unit       = untab$wom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2443,7 +2535,7 @@ plotpatch[[n]] = list( vnam       = "rnet"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "lai"
                      , desc       = "Leaf area index"
-                     , unit       = "m2/m2"
+                     , unit       = untab$m2lom2
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2453,7 +2545,7 @@ plotpatch[[n]] = list( vnam       = "lai"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "leaf.temp"
                      , desc       = "Leaf temperature"
-                     , unit       = "degC"
+                     , unit       = untab$degC
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2463,7 +2555,7 @@ plotpatch[[n]] = list( vnam       = "leaf.temp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "leaf.vpd"
                      , desc       = "Leaf vapour pressure deficit"
-                     , unit       = "hPa"
+                     , unit       = untab$hpa
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2473,7 +2565,7 @@ plotpatch[[n]] = list( vnam       = "leaf.vpd"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "wood.temp"
                      , desc       = "Wood temperature"
-                     , unit       = "degC"
+                     , unit       = untab$degC
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2483,7 +2575,7 @@ plotpatch[[n]] = list( vnam       = "wood.temp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "gpp"
                      , desc       = "Gross primary productivity"
-                     , unit       = "kgC/m2/yr"
+                     , unit       = untab$kgcom2oyr
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2493,7 +2585,7 @@ plotpatch[[n]] = list( vnam       = "gpp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "npp"
                      , desc       = "Net primary productivity"
-                     , unit       = "kgC/m2/yr"
+                     , unit       = untab$kgcom2oyr
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2503,7 +2595,7 @@ plotpatch[[n]] = list( vnam       = "npp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "plant.resp"
                      , desc       = "Plant respiration"
-                     , unit       = "kgC/m2/yr"
+                     , unit       = untab$kgcom2oyr
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2513,7 +2605,7 @@ plotpatch[[n]] = list( vnam       = "plant.resp"
 n              = n + 1
 plotpatch[[n]] = list( vnam       = "reco"
                      , desc       = "Ecosystem respiration"
-                     , unit       = "kgC/m2/yr"
+                     , unit       = untab$kgcom2oyr
                      , col.scheme = "muitas"
                      , plog       = TRUE
                      , emean      = TRUE
@@ -2533,231 +2625,231 @@ yc.tvar      = list()
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "rshort"
                    , desc      = "Incident SW"
-                   , unit      = "W/m2"
+                   , unit      = untab$wom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "fast.soil.c"
                    , desc      = "Fast soil carbon"
-                   , unit      = "kgC/m2"
+                   , unit      = untab$kgcom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "struct.soil.c"
                    , desc      = "Structural soil carbon"
-                   , unit      = "kgC/m2"
+                   , unit      = untab$kgcom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "nep"
                    , desc      = "Net Ecosystem Production"
-                   , unit      = "kgC/m2"
+                   , unit      = untab$kgcom2
                    , plt       = TRUE
                    , cumul     = TRUE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "nee"
                    , desc      = "Net Ecosystem Exchange"
-                   , unit      = "umol/m2"
+                   , unit      = untab$umolcom2os
                    , plt       = TRUE
                    , cumul     = TRUE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "mco"
                    , desc      = "Maintenance Costs"
-                   , unit      = "kgC/m2/yr"
+                   , unit      = untab$kgcom2oyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "npp"
                    , desc      = "Net primary productivity"
-                   , unit      = "kgC/m2/yr"
+                   , unit      = untab$kgcom2oyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "cba"
                    , desc      = "Carbon balance"
-                   , unit      = "kgC/m2"
+                   , unit      = untab$kgcom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "ldrop"
                    , desc      = "Leaf drop"
-                   , unit      = "kgC/m2/yr"
+                   , unit      = untab$kgcom2oyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "cflxca"
                    , desc      = "Carbon flux"
-                   , unit      = "umol/m2/s"
+                   , unit      = untab$umolcom2os
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "cflxst"
                    , desc      = "Carbon storage"
-                   , unit      = "umol/m2/s"
+                   , unit      = untab$umolcom2os
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "evap"
                    , desc      = "Evaporation"
-                   , unit      = "kg/m2/day"
+                   , unit      = untab$kgwom2oday
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "transp"
                    , desc      = "Transpiration"
-                   , unit      = "kg/m2/day"
+                   , unit      = untab$kgwom2oday
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "ustar"
                    , desc      = "Friction velocity"
-                   , unit      = "m/s"
+                   , unit      = untab$mos
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "hflxca"
                    , desc      = "Sensible heat flux"
-                   , unit      = "W/m2"
+                   , unit      = untab$wom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "wflxca"
                    , desc      = "Water vapour flux"
-                   , unit      = "kg/m2/day"
+                   , unit      = untab$kgwom2oday
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "fs.open"
                    , desc      = "Water Stress index"
-                   , unit      = "--"
+                   , unit      = untab$empty
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "gpp"
                    , desc      = "Gross Primary Productivity"
-                   , unit      = "kgC/m2/yr"
+                   , unit      = untab$kgcom2oyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "reco"
                    , desc      = "Ecosystem respiration"
-                   , unit      = "kgC/m2/yr"
+                   , unit      = untab$kgcom2oyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "rshortup"
                    , desc      = "Upward SW radiation"
-                   , unit      = "W/m2"
+                   , unit      = untab$wom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "parup"
                    , desc      = "Upward PAR"
-                   , unit      = "umol/m2/s"
+                   , unit      = untab$umolom2os
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "rnet"
                    , desc      = "Net radiation at the top of the canopy"
-                   , unit      = "W/m2"
+                   , unit      = untab$wom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "rlong"
                    , desc      = "Incoming longwave radiation"
-                   , unit      = "W/m2"
+                   , unit      = untab$wom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "rlongup"
                    , desc      = "Outgoing longwave radiation"
-                   , unit      = "W/m2"
+                   , unit      = untab$wom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "cbamax"
                    , desc      = "Maximum carbon balance"
-                   , unit      = "kgC/m2"
+                   , unit      = untab$kgcom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "cbarel"
                    , desc      = "Relative carbon balance"
-                   , unit      = "--"
+                   , unit      = untab$empty
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "f.gpp"
                    , desc      = "Gross Primary Productivity"
-                   , unit      = "%biomass/yr"
+                   , unit      = untab$pcbiooyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "f.npp"
                    , desc      = "Net Primary Productivity"
-                   , unit      = "%biomass/yr"
+                   , unit      = untab$pcbiooyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "f.cba"
                    , desc      = "Carbon balance"
-                   , unit      = "%biomass/yr"
+                   , unit      = untab$pcbiooyr
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "f.bstorage"
                    , desc      = "Relative storage biomass"
-                   , unit      = "gC_stor/kgC_bio"
+                   , unit      = untab$gcokgcbio
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "f.bseeds"
                    , desc      = "Relative seed biomass"
-                   , unit      = "gC_seed/kgC_bio"
+                   , unit      = untab$gcokgcbio
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "f.bleaf"
                    , desc      = "Relative leaf biomass"
-                   , unit      = "gC_leaf/kgC_bio"
+                   , unit      = untab$gcokgcbio
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
 yc.tvar[[n]] = list( vnam      = "agb"
                    , desc      = "Above-ground biomass"
-                   , unit      = "kgC/m2"
+                   , unit      = untab$kgcom2
                    , plt       = TRUE
                    , cumul     = FALSE
                    )#end list
@@ -2771,58 +2863,58 @@ yc.xyzvar      = list()
 yc.xyzvar$zvar = list( list ( vname = "gpp"
                             , desc  = "Gross Primary Productivity"
                             , key   = "GPP"
-                            , unit  = "kgC/m2/yr"
+                            , unit  = untab$kgcom2oyr
                             )#end list
                      , list ( vname = "reco"
                             , desc  = "Ecosystem respiration"
                             , key   = "RE"
-                            , unit  = "kgC/m2/yr"
+                            , unit  = untab$kgcom2oyr
                             )#end list
                      , list ( vname = "plant.resp"
                             , desc  = "Plant respiration"
                             , key   = "PR"
-                            , unit  = "kgC/m2/yr"
+                            , unit  = untab$kgcom2oyr
                             )#end list
                      , list ( vname = "het.resp"
                             , desc  = "Heterotrophic respiration"
                             , key   = "RH"
-                            , unit  = "kgC/m2/yr"
+                            , unit  = untab$kgcom2oyr
                             )#end list
                      , list ( vname = "nep"
                             , desc  = "Net Ecosystem Productivity"
                             , key   = "NEP"
-                            , unit  = "kgC/m2/yr"
+                            , unit  = untab$kgcom2oyr
                             )#end list
                      , list ( vname = "cba"
                             , desc  = "Carbon balance"
                             , key   = "CBA"
-                            , unit  = "kgC/m2/yr"
+                            , unit  = untab$kgcom2oyr
                             )#end list
                      )#end list
 yc.xyzvar$xvar = list( list ( vname = "rain"
                             , desc  = "Rainfall"
-                            , unit  = "mm/month"
+                            , unit  = untab$mmomo
                             , leg   = "right"
                             )#end list
                      , list ( vname = "demand"
                             , desc  = "Water demand"
-                            , unit  = "kg/m2/day"
+                            , unit  = untab$kgwom2oday
                             , leg   = "left"
                             )#end list
                      , list ( vname = "fs.open"
                             , desc  = "Soil water stress"
-                            , unit  = "--"
+                            , unit  = untab$empty
                             , leg   = "left"
                             )#end list
                      )#end list
 yc.xyzvar$yvar = list( list ( vname = "rshort"
                             , desc  = "Shortwave radiation"
-                            , unit  = "W/m2"
+                            , unit  = untab$wom2
                             , leg   = "top"
                             )#end list
                      , list ( vname = "leaf.temp"
                             , desc  = "Leaf temperature"
-                            , unit  = "degC"
+                            , unit  = untab$degC
                             , leg   = "top"
                             )#end list
                      )#end list

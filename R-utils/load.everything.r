@@ -12,36 +12,131 @@ if ("srcdir" %in% ls()){
 
 
 #------------------------------------------------------------------------------------------#
-#      Define the background and foreground colour.                                        #
+#      Define the default colours for a white background and black foreground.             #
+#------------------------------------------------------------------------------------------#
+grid.colour   = "grey66"
+map.colour    = "black"
+miss.colour   = "grey94"
+miss.colour.2 = "grey86"
+all.colour    = "grey22"
+grey.3g       = c("grey25"              ,"grey50"              ,"grey75"              )
+purple.3g     = c("purple4"             ,"purple1"             ,"mediumpurple1"       )
+indigo.3g     = c("slateblue4"          ,"slateblue"           ,"#A0A0FF"             )
+blue.3g       = c("midnightblue"        ,"dodgerblue3"         ,"dodgerblue"          )
+royalblue.3g  = c("royalblue4"          ,"royalblue"           ,"#6496FF"             )
+steelblue.3g  = c("steelblue4"          ,"steelblue3"          ,"steelblue1"          )
+sky.3g        = c("deepskyblue3"        ,"deepskyblue"         ,"skyblue1"            )
+pink.3g       = c("deeppink3"           ,"hotpink"             ,"orchid1"             )
+green.3g      = c("#004000"             ,"green4"              ,"green2"              )
+chartreuse.3g = c("#408000"             ,"#60C000"             ,"#80FF00"             )
+olive.3g      = c("darkolivegreen"      ,"olivedrab4"          ,"olivedrab2"          )
+khaki.3g      = c("burlywood4"          ,"burlywood1"          ,"bisque3"             )
+yellow.3g     = c("saddlebrown"         ,"yellow3"             ,"yellow"              )
+gold.3g       = c("darkgoldenrod"       ,"goldenrod"           ,"lightgoldenrod"      )
+orange.3g     = c("orangered"           ,"orange3"             ,"gold"                )
+red.3g        = c("red3"                ,"red"                 ,"lightcoral"          )
+firebrick.3g  = c("firebrick4"          ,"firebrick2"          ,"#FFA0A0"             )
+brown.3g      = c("#422D11"             ,"#5A3D17"             ,"#7E5123"             )
+grey.7g       = c("grey25"              ,"grey33"              ,"grey41"
+                 ,"grey49"              ,"grey57"              ,"grey65"
+                 ,"grey73"
+                 )#end c
+purple.7g     = c("purple4"             ,"purple2"             ,"mediumpurple3"
+                 ,"mediumpurple1"       ,"slateblue3"          ,"slateblue1"  
+                 ,"#B0B0FF"
+                 )#end c
+blue.7g       = c("midnightblue"        ,"royalblue4"          ,"royalblue2"
+                 ,"dodgerblue"          ,"deepskyblue"         ,"cadetblue3"
+                 ,"darkslategray1"
+                 )#end c
+green.7g      = c("#004000"             ,"chartreuse4"         ,"chartreuse"
+                 ,"olivedrab3"          ,"olivedrab1"          ,"darkseagreen3"
+                 ,"darkseagreen1"
+                 )#end c
+orange.7g     = c("#502800"             ,"sienna"              ,"darkorange1"
+                 ,"orange"              ,"gold"                ,"lightgoldenrod2"
+                 ,"khaki1"
+                 )#end c
+red.7g        = c("red4"                ,"firebrick3"          ,"tomato"
+                 ,"lightcoral"          ,"palevioletred"       ,"lightpink3"
+                 ,"lightpink"
+                 )#end c
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Fix the colours according to the current background.                                 #
 #------------------------------------------------------------------------------------------#
 if (! "ibackground" %in% ls()) ibackground = 0
 if (ibackground == 0){
-   foreground    <<- "black"
-   background    <<- "white"
-   grid.colour   <<- "grey66"
-   map.colour    <<- "black"
-   miss.colour   <<- "grey94"
-   all.colour    <<- "grey22"
+  foreground    = "black"
+  background    = "white"
 }else if (ibackground == 1){
    foreground    <<- "white"
    background    <<- "black"
-   grid.colour   <<- "grey33"
-   map.colour    <<- "white"
-   miss.colour   <<- "grey10"
-   all.colour    <<- "grey78"
-   gcol          <<- c("lightblue","white")
 }else if (ibackground == 2){
    foreground    <<- "white"
    background    <<- "#282828"
-   grid.colour   <<- "grey38"
-   map.colour    <<- "white"
-   miss.colour   <<- "grey20"
-   all.colour    <<- "grey73"
-   gcol          <<- c("lightblue","#282828")
 }else{
    stop(paste(" Invalid ibackground value (",ibackground,")",sep=""))
 }#end if
 #------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Correct all colours.                                                                 #
+#------------------------------------------------------------------------------------------#
+source(file.path(srcdir,"switch.col.r"))
+grid.colour   <<- negative.col(x=grid.colour  ,fg=foreground,bg=background)
+map.colour    <<- negative.col(x=map.colour   ,fg=foreground,bg=background)
+miss.colour   <<- negative.col(x=miss.colour  ,fg=foreground,bg=background)
+miss.colour.2 <<- negative.col(x=miss.colour.2,fg=foreground,bg=background)
+all.colour    <<- negative.col(x=all.colour   ,fg=foreground,bg=background)
+gcol          <<- c(switch.col(x="lightblue"  ,fg=foreground,bg=background),background)
+grey.3g       <<- switch.col  (x=grey.3g      ,fg=foreground,bg=background)
+purple.3g     <<- switch.col  (x=purple.3g    ,fg=foreground,bg=background)
+indigo.3g     <<- switch.col  (x=indigo.3g    ,fg=foreground,bg=background)
+blue.3g       <<- switch.col  (x=blue.3g      ,fg=foreground,bg=background)
+royalblue.3g  <<- switch.col  (x=royalblue.3g ,fg=foreground,bg=background)
+steelblue.3g  <<- switch.col  (x=steelblue.3g ,fg=foreground,bg=background)
+sky.3g        <<- switch.col  (x=sky.3g       ,fg=foreground,bg=background)
+pink.3g       <<- switch.col  (x=pink.3g      ,fg=foreground,bg=background)
+green.3g      <<- switch.col  (x=green.3g     ,fg=foreground,bg=background)
+chartreuse.3g <<- switch.col  (x=chartreuse.3g,fg=foreground,bg=background)
+olive.3g      <<- switch.col  (x=olive.3g     ,fg=foreground,bg=background)
+khaki.3g      <<- switch.col  (x=khaki.3g     ,fg=foreground,bg=background)
+yellow.3g     <<- switch.col  (x=yellow.3g    ,fg=foreground,bg=background)
+gold.3g       <<- switch.col  (x=gold.3g      ,fg=foreground,bg=background)
+orange.3g     <<- switch.col  (x=orange.3g    ,fg=foreground,bg=background)
+red.3g        <<- switch.col  (x=red.3g       ,fg=foreground,bg=background)
+firebrick.3g  <<- switch.col  (x=firebrick.3g ,fg=foreground,bg=background)
+brown.3g      <<- switch.col  (x=brown.3g     ,fg=foreground,bg=background)
+grey.rbow     <<- switch.col  (x=grey.7g      ,fg=foreground,bg=background,may.rev=FALSE)
+purple.rbow   <<- switch.col  (x=purple.7g    ,fg=foreground,bg=background,may.rev=FALSE)
+blue.rbow     <<- switch.col  (x=blue.7g      ,fg=foreground,bg=background,may.rev=FALSE)
+green.rbow    <<- switch.col  (x=green.7g     ,fg=foreground,bg=background,may.rev=FALSE)
+orange.rbow   <<- switch.col  (x=orange.7g    ,fg=foreground,bg=background,may.rev=FALSE)
+red.rbow      <<- switch.col  (x=red.7g       ,fg=foreground,bg=background,may.rev=FALSE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Define the colours for different hues.                                               #
+#------------------------------------------------------------------------------------------#
+fmg.cols  <<- c("grey","purple","indigo","blue","royalblue","steelblue","sky","pink"
+               ,"green","chartreuse","olive","khaki","yellow","gold","orange","red"
+               ,"firebrick","brown")
+for (fmg.col in fmg.cols){
+   threeg = get(paste(fmg.col,"3g",sep="."))
+   assign(x=paste(fmg.col,"fg",sep="."),value=threeg[1],envir=.GlobalEnv)
+   assign(x=paste(fmg.col,"mg",sep="."),value=threeg[2],envir=.GlobalEnv)
+   assign(x=paste(fmg.col,"bg",sep="."),value=threeg[3],envir=.GlobalEnv)
+}#end for
+#------------------------------------------------------------------------------------------#
+
+
 
 
 #------------------------------------------------------------------------------------------#
@@ -52,6 +147,7 @@ if (! "ptsz" %in% ls()){
 }else{
    ptsz <<- ptsz
 }#end if
+cex.ptsz <<- 1.0 * min(1.0,ptsz / 15)
 cex.main <<- 1.1 * min(1.0,ptsz / 14)
 cex.lab  <<- 1.0 * min(1.0,ptsz / 14)
 #------------------------------------------------------------------------------------------#
@@ -59,54 +155,6 @@ cex.lab  <<- 1.0 * min(1.0,ptsz / 14)
 
 
 
-#------------------------------------------------------------------------------------------#
-#     Define the colours for different hues.                                               #
-#------------------------------------------------------------------------------------------#
-if (ibackground == 0){
-   grey.fg   <<- "grey25"        ;grey.mg   <<- "grey50"     ;grey.bg   <<- "grey75"
-   purple.fg <<- "purple4"       ;purple.mg <<- "purple1"    ;purple.bg <<- "mediumpurple1"
-   indigo.fg <<- "slateblue4"    ;indigo.mg <<- "slateblue"  ;indigo.bg <<- "slateblue1"
-   blue.fg   <<- "royalblue4"    ;blue.mg   <<- "royalblue"  ;blue.bg   <<- "steelblue2"
-   sky.fg    <<- "dodgerblue3"   ;sky.mg    <<- "deepskyblue";sky.bg    <<- "lightskyblue1"
-   pink.fg   <<- "deeppink3"     ;pink.mg   <<- "hotpink"    ;pink.bg   <<- "orchid1"
-   green.fg  <<- "darkgreen"     ;green.mg  <<- "chartreuse4";green.bg  <<- "chartreuse"
-   olive.fg  <<- "darkolivegreen";olive.mg  <<- "olivedrab4" ;olive.bg  <<- "olivedrab2"
-   khaki.fg  <<- "burlywood4"    ;khaki.mg  <<- "burlywood1" ;khaki.bg  <<- "bisque3"
-   yellow.fg <<- "saddlebrown"   ;yellow.mg <<- "yellow3"    ;yellow.bg <<- "yellow"
-   orange.fg <<- "orangered"     ;orange.mg <<- "orange3"    ;orange.bg <<- "gold"
-   red.fg    <<- "red3"          ;red.mg    <<- "firebrick1" ;red.bg    <<- "indianred1"
-}else{
-   grey.bg   <<- "grey75"        ;grey.mg   <<- "grey50"     ;grey.fg   <<- "grey25"
-   purple.bg <<- "purple4"       ;purple.mg <<- "purple1"    ;purple.fg <<- "mediumpurple1"
-   indigo.bg <<- "slateblue4"    ;indigo.mg <<- "slateblue"  ;indigo.fg <<- "slateblue1"
-   blue.bg   <<- "royalblue4"    ;blue.mg   <<- "royalblue"  ;blue.fg   <<- "steelblue2"
-   sky.bg    <<- "dodgerblue3"   ;sky.mg    <<- "deepskyblue";sky.fg    <<- "lightskyblue1"
-   pink.bg   <<- "deeppink3"     ;pink.mg   <<- "hotpink"    ;pink.fg   <<- "orchid1"
-   green.bg  <<- "darkgreen"     ;green.mg  <<- "chartreuse4";green.fg  <<- "chartreuse"
-   olive.bg  <<- "darkolivegreen";olive.mg  <<- "olivedrab4" ;olive.fg  <<- "olivedrab2"
-   khaki.bg  <<- "burlywood4"    ;khaki.mg  <<- "burlywood1" ;khaki.fg  <<- "bisque3"
-   yellow.bg <<- "saddlebrown"   ;yellow.mg <<- "yellow3"    ;yellow.fg <<- "yellow"
-   orange.bg <<- "orangered"     ;orange.mg <<- "orange3"    ;orange.fg <<- "gold"
-   red.bg    <<- "red3"          ;red.mg    <<- "firebrick1" ;red.fg    <<- "indianred1"
-}#end if
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#     Make some rainbows with 7 colours, always from darker to lighter.                    #
-#------------------------------------------------------------------------------------------#
-grey.rbow    <<- c("grey25","grey33","grey41","grey49","grey57","grey65","grey73")
-purple.rbow  <<- c("purple4","purple2","mediumpurple3","mediumpurple1"
-                  ,"slateblue3","slateblue1","#B0B0FF")
-blue.rbow    <<- c("midnightblue","royalblue4","royalblue2","dodgerblue"
-                   ,"deepskyblue","cadetblue3","darkslategray1")
-green.rbow   <<- c("#004000","chartreuse4","chartreuse","olivedrab3","olivedrab1"
-                  ,"darkseagreen3","darkseagreen1")
-orange.rbow  <<- c("#502800","sienna","darkorange1","orange","gold"
-                  ,"lightgoldenrod2","khaki1")
-red.rbow     <<- c("red4","firebrick3","tomato","lightcoral","palevioletred"
-                  ,"lightpink3","lightpink")
-#------------------------------------------------------------------------------------------#
 
 
 #----- Create the default plotting settings for R. ----------------------------------------#
@@ -120,6 +168,7 @@ par.user <<- list( bg       = "transparent"
                  , cex.main = cex.main
                  , cex.lab  = cex.lab
                  , family   = "Helvetica"
+                 , mar      = c(5.1,4.4,4.1,2.1)
                  )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -180,7 +229,7 @@ unlockBinding("trim",envir)
 #------------------------------------------------------------------------------------------#
 #     Organise the files so we load them in the right order.                               #
 #------------------------------------------------------------------------------------------#
-at.first      = c("rconstants.r","globdims.r")
+at.first      = c("rconstants.r","globdims.r","unitlist.r")
 at.end        = c("pft.coms.r","pmonthly_varlist.r")
 myself        = c("load.everything.r")
 all.scripts   = sort(list.files(path=srcdir,pattern="\\.[RrSsQq]$"))

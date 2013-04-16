@@ -127,10 +127,10 @@ source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 #    Types of variables to use to determine mortality, growth, and recruitment.            #
 #------------------------------------------------------------------------------------------#
-recr.vars     = c("n")
-recr.labels   = c("Individuals")
-mort.vars     = c("n")
-mort.labels   = c("Individuals")
+recr.vars     = c("n","agb","ba")
+recr.labels   = c("Individuals","Above Ground Biomass","Basal area")
+mort.vars     = c("n","agb","ba")
+mort.labels   = c("Individuals","Above Ground Biomass","Basal area")
 growth.vars   = c("dbh","agb","ba")
 growth.labels = c("DBH","Above Ground Biomass","Basal Area")
 #------------------------------------------------------------------------------------------#
@@ -144,10 +144,10 @@ growth.labels = c("DBH","Above Ground Biomass","Basal Area")
 pratets      = list()
 pratets[[1]] = list( ed2.rate   = "recr"
                    , sta.rate   = "recr"
-                   , sizetoo    = FALSE
+                   , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Recruitment rate"
-                   , unit.rate  = "%/yr"
+                   , unit.rate  = untab$pcoyr
                    , col.ed2    = c(green.fg,green.bg)
                    , col.sta    = c(grey.fg,grey.bg)
                    , indiv      = recr.vars
@@ -160,7 +160,7 @@ pratets[[2]] = list( ed2.rate   = "mort"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Mortality rate"
-                   , unit.rate  = "%/yr"
+                   , unit.rate  = untab$pcoyr
                    , col.ed2    = c(purple.fg,purple.bg)
                    , col.sta    = c(grey.fg,grey.bg)
                    , indiv      = mort.vars
@@ -173,7 +173,7 @@ pratets[[3]] = list( ed2.rate   = "ddmort"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Density-dependent mort. rate"
-                   , unit.rate  = "%/yr"
+                   , unit.rate  = untab$pcoyr
                    , col.ed2    = c(indigo.fg,indigo.bg)
                    , col.sta    = c(grey.fg,grey.bg)
                    , indiv      = mort.vars
@@ -186,7 +186,7 @@ pratets[[4]] = list( ed2.rate   = "dimort"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Density-independent mort. rate"
-                   , unit.rate  = "%/yr"
+                   , unit.rate  = untab$pcoyr
                    , col.ed2    = c(blue.fg,blue.bg)
                    , col.sta    = c(grey.fg,grey.bg)
                    , indiv      = mort.vars
@@ -199,7 +199,7 @@ pratets[[5]] = list( ed2.rate   = "growth"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Growth rate"
-                   , unit.rate  = "%/yr"
+                   , unit.rate  = untab$pcoyr
                    , col.ed2    = c(yellow.fg,yellow.bg)
                    , col.sta    = c(grey.fg,grey.bg)
                    , indiv      = growth.vars
@@ -212,12 +212,26 @@ pratets[[5]] = list( ed2.rate   = "growth"
 
 #---- 2. Plot expected values and confidence intervals for all size classes and censuses. -#
 pratesize      = list()
+pratesize[[1]] = list( ed2.rate   = "recr"
+                     , sta.rate   = "recr"
+                     , sizetoo    = TRUE
+                     , pfttoo     = TRUE
+                     , desc.rate  = "Recruitment rate"
+                     , unit.rate  = untab$pcoyr
+                     , col.ed2    = c(green.fg,green.bg)
+                     , col.sta    = c(grey.fg,grey.bg)
+                     , indiv      = recr.vars
+                     , desc.indiv = recr.labels
+                     , legpos     = "topright"
+                     , plog       = ""
+                     )#end list
+pratesize      = list()
 pratesize[[1]] = list( ed2.rate   = "mort"
                      , sta.rate   = "mort"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Mortality rate"
-                     , unit.rate  = "%/yr"
+                     , unit.rate  = untab$pcoyr
                      , col.ed2    = c(purple.fg,purple.bg)
                      , col.sta    = c(grey.fg,grey.bg)
                      , indiv      = mort.vars
@@ -230,7 +244,7 @@ pratesize[[2]] = list( ed2.rate   = "ddmort"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Density-dependent mort. rate"
-                     , unit.rate  = "%/yr"
+                     , unit.rate  = untab$pcoyr
                      , col.ed2    = c(indigo.fg,indigo.bg)
                      , col.sta    = c(grey.fg,grey.bg)
                      , indiv      = mort.vars
@@ -243,7 +257,7 @@ pratesize[[3]] = list( ed2.rate   = "dimort"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Density-independent mort. rate"
-                     , unit.rate  = "%/yr"
+                     , unit.rate  = untab$pcoyr
                      , col.ed2    = c(blue.fg,blue.bg)
                      , col.sta    = c(grey.fg,grey.bg)
                      , indiv      = mort.vars
@@ -256,7 +270,7 @@ pratesize[[4]] = list( ed2.rate   = "growth"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Growth rate"
-                     , unit.rate  = "%/yr"
+                     , unit.rate  = untab$pcoyr
                      , col.ed2    = c(yellow.fg,yellow.bg)
                      , col.sta    = c(grey.fg,grey.bg)
                      , indiv      = growth.vars
@@ -272,7 +286,7 @@ pratetheme[[1]] = list( ed2.rate   = c("ddmort","dimort")
                       , pfttoo     = TRUE
                       , desc.rate  = c("ED-2.2 Negative C Balance"
                                       ,"ED-2.2 Other")
-                      , unit.rate  = "%/yr"
+                      , unit.rate  = untab$pcoyr
                       , col.ed2    = rbind( c(indigo.fg,indigo.bg)
                                           , c(green.fg ,green.bg)
                                           )#end rbind
@@ -296,7 +310,7 @@ pratetheme[[1]] = list( ed2.rate   = c("ddmort","dimort")
 xyzvar = list()
 xyzvar$xvar      = list( list( vname = "lai"
                              , desc  = "Leaf area index"
-                             , unit  = "m2/m2"
+                             , unit  = untab$m2lom2
                              , add   = 0.
                              , mult  = 1.
                              , leg   = "right"
@@ -304,7 +318,7 @@ xyzvar$xvar      = list( list( vname = "lai"
                              )#end list
                        , list( vname = "ba"
                              , desc  = "Basal area"
-                             , unit  = "cm2/m2"
+                             , unit  = untab$cm2om2
                              , add   = 0.
                              , mult  = 1.
                              , leg   = "right"
@@ -312,7 +326,7 @@ xyzvar$xvar      = list( list( vname = "lai"
                              )#end list
                        , list( vname = "agb"
                              , desc  = "Above-ground biomass"
-                             , unit  = "kgC/m2"
+                             , unit  = untab$kgcom2
                              , add   = 0.
                              , mult  = 1.
                              , leg   = "right"
@@ -322,17 +336,17 @@ xyzvar$xvar      = list( list( vname = "lai"
 xyzvar$yvar      = list( list( vname      = "recr"
                              , desc       = "Recruitment rate"
                              , key        = "Recruitment"
-                             , unit       = "%pop/yr"
+                             , unit       = untab$pcoyr
                              , add        = 0.
                              , mult       = 100.
                              , leg        = "top"
                              , log        = TRUE
-                             , sizetoo    = FALSE
+                             , sizetoo    = TRUE
                              )#end list
                        , list( vname      = "mort"
                              , desc       = "Mortality rate"
                              , key        = "Mortality"
-                             , unit       = "%pop/yr"
+                             , unit       = untab$pcoyr
                              , add        = 0.
                              , mult       = 100.
                              , leg        = "top"
@@ -342,7 +356,7 @@ xyzvar$yvar      = list( list( vname      = "recr"
                        , list( vname      = "ddmort"
                              , desc       = "Density-dependent mortality rate"
                              , key        = "DD Mort."
-                             , unit       = "%pop/yr"
+                             , unit       = untab$pcoyr
                              , add        = 0.
                              , mult       = 100.
                              , leg        = "top"
@@ -352,7 +366,7 @@ xyzvar$yvar      = list( list( vname      = "recr"
                        , list( vname      = "dimort"
                              , desc       = "Density-independent mortality rate"
                              , key        = "DI Mort."
-                             , unit       = "%pop/yr"
+                             , unit       = untab$pcoyr
                              , add        = 0.
                              , mult       = 100.
                              , leg        = "top"
@@ -362,7 +376,7 @@ xyzvar$yvar      = list( list( vname      = "recr"
                        , list( vname      = "growdbh"
                              , desc       = "Growth rate (DBH)"
                              , key        = "Growth"
-                             , unit       = "%DBH/yr"
+                             , unit       = untab$pcdbhoyr
                              , add        = 0.
                              , mult       = 100.
                              , leg        = "top"
@@ -372,7 +386,7 @@ xyzvar$yvar      = list( list( vname      = "recr"
                        , list( vname      = "growagb"
                              , desc       = "Growth rate (AGB)"
                              , key        = "Growth"
-                             , unit       = "%AGB/yr"
+                             , unit       = untab$pcagboyr
                              , add        = 0.
                              , mult       = 100.
                              , leg        = "top"
@@ -382,7 +396,7 @@ xyzvar$yvar      = list( list( vname      = "recr"
                        , list( vname      = "growba"
                              , desc       = "Growth rate (BA)"
                              , key        = "Growth"
-                             , unit       = "%BA/yr"
+                             , unit       = untab$pcbaoyr
                              , add        = 0.
                              , mult       = 100.
                              , leg        = "top"
@@ -392,7 +406,7 @@ xyzvar$yvar      = list( list( vname      = "recr"
                        )#end list
 xyzvar$zvar      = list( list( vname      = "rshort"
                              , desc       = "Mean shortwave radiation"
-                             , unit       = "W/m2"
+                             , unit       = untab$wom2
                              , add        = 0.
                              , mult       = 1.
                              , col.scheme = "muitas"
@@ -400,7 +414,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "fs.open"
                              , desc       = "Minimum water stress scale"
-                             , unit       = "--"
+                             , unit       = untab$empty
                              , add        = 0.
                              , mult       = 1.
                              , col.scheme = "imuitas"
@@ -408,7 +422,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "paw"
                              , desc       = "Minimum available water"
-                             , unit       = "%"
+                             , unit       = untab$pcsat
                              , add        = 0.
                              , mult       = 100.
                              , col.scheme = "imuitas"
@@ -416,7 +430,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "smpot"
                              , desc       = "Maximum matric potential"
-                             , unit       = "MPa"
+                             , unit       = untab$mpa
                              , add        = 0.
                              , mult       = 1.
                              , col.scheme = "muitas"
@@ -424,7 +438,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "atm.vpd"
                              , desc       = "Above-canopy VPD"
-                             , unit       = "hPa"
+                             , unit       = untab$hpa
                              , add        = 0.
                              , mult       = 0.01
                              , col.scheme = "muitas"
@@ -432,7 +446,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "leaf.vpd"
                              , desc       = "Leaf-level VPD"
-                             , unit       = "hPa"
+                             , unit       = untab$hpa
                              , add        = 0.
                              , mult       = 0.01
                              , col.scheme = "muitas"
@@ -440,7 +454,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "leaf.gsw"
                              , desc       = "Stomatal conductance"
-                             , unit       = "kg/m2/day"
+                             , unit       = untab$kgwom2loday
                              , add        = 0.
                              , mult       = 86400.
                              , col.scheme = "imuitas"
@@ -448,7 +462,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "leaf.gbw"
                              , desc       = "Leaf Bnd. Lyr. Conductance"
-                             , unit       = "kg/m2/day"
+                             , unit       = untab$kgwom2loday
                              , add        = 0.
                              , mult       = 86400.
                              , col.scheme = "imuitas"
@@ -456,7 +470,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "cba.light"
                              , desc       = "Carbon balance (Max. light)"
-                             , unit       = "kgC/m2/yr"
+                             , unit       = untab$kgcom2oyr
                              , add        = 0.
                              , mult       = 1.
                              , col.scheme = "clife"
@@ -464,7 +478,7 @@ xyzvar$zvar      = list( list( vname      = "rshort"
                              )#end list
                        , list( vname      = "cba.moist"
                              , desc       = "Carbon balance (Max. Moisture)"
-                             , unit       = "kgC/m2/yr"
+                             , unit       = untab$kgcom2oyr
                              , add        = 0.
                              , mult       = 1.
                              , col.scheme = "clife"
@@ -653,46 +667,33 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       #    Make the vector wit the environmental, plot-level, and size-level dimensions.   #
       #------------------------------------------------------------------------------------#
-      dim.envr     = c(             n.months,nfullcyc)
-      dim.plot     = c(npft+1,      n.months,nfullcyc)
-      dim.size     = c(npft+1,n.dbh,n.months,nfullcyc)
+      dim.envr     = c(               n.months,nfullcyc)
+      dim.size     = c(npft+1,n.dbh+1,n.months,nfullcyc)
       #------------------------------------------------------------------------------------#
 
 
       #----- Initialise all the structures for which we will compare. ---------------------#
-      ts.n.plot    = array( 0., dim = dim.plot)
-      ts.agb.plot  = array( NA, dim = dim.plot)
-      ts.ba.plot   = array( NA, dim = dim.plot)
-      ts.lai.plot  = array( NA, dim = dim.plot)
       ts.n.size    = array( 0., dim = dim.size)
       ts.agb.size  = array( NA, dim = dim.size)
       ts.ba.size   = array( NA, dim = dim.size)
       ts.lai.size  = array( NA, dim = dim.size)
       #----- Recruitment. -----------------------------------------------------------------#
-      ts.recr.plot = list()
+      ts.recr.size     = list()
       for (v in 1:nrecr.vars){
-         ts.recr.plot  [[recr.vars[v]]] = array( NA, dim = dim.plot)
+         ts.recr.size  [[recr.vars[v]]] = array( NA, dim = dim.size)
       }#end for
       #----- Mortality. -------------------------------------------------------------------#
-      ts.mort.plot     = list()
-      ts.ddmort.plot   = list()
-      ts.dimort.plot   = list()
       ts.mort.size     = list()
       ts.ddmort.size   = list()
       ts.dimort.size   = list()
       for (v in 1:nmort.vars){
-         ts.mort.plot  [[mort.vars[v]]] = array( NA, dim = dim.plot)
-         ts.ddmort.plot[[mort.vars[v]]] = array( NA, dim = dim.plot)
-         ts.dimort.plot[[mort.vars[v]]] = array( NA, dim = dim.plot)
          ts.mort.size  [[mort.vars[v]]] = array( NA, dim = dim.size)
          ts.ddmort.size[[mort.vars[v]]] = array( NA, dim = dim.size)
          ts.dimort.size[[mort.vars[v]]] = array( NA, dim = dim.size)
       }#end for
       #----- Growth. ----------------------------------------------------------------------#
-      ts.growth.plot   = list()
       ts.growth.size   = list()
       for (v in 1:ngrowth.vars){
-         ts.growth.plot[[growth.vars[v]]] = array( NA, dim = dim.plot)
          ts.growth.size[[growth.vars[v]]] = array( NA, dim = dim.size)
       }#end for
       #----- Environmental variables. -----------------------------------------------------#
@@ -730,6 +731,7 @@ for (place in myplaces){
             cyear      = sprintf("%2.2i",now.year )
             myfile     = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5",sep="")
             myfile.bz2 = paste(myfile,"bz2",sep=".")
+            myfile.gz  = paste(myfile,"gz" ,sep=".")
             #------------------------------------------------------------------------------#
 
 
@@ -751,7 +753,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Read data if the file exists.                                            #
             #------------------------------------------------------------------------------#
-            if (file.exists(myfile) | file.exists(myfile.bz2)){
+            if (any(file.exists(c(myfile,myfile.bz2,myfile.gz)))){
 
 
 
@@ -763,6 +765,12 @@ for (place in myplaces){
                }else if(file.exists(myfile.bz2)){
                   temp.file = file.path(tempdir(),basename(myfile))
                   dummy     = bunzip2(filename=myfile.bz2,destname=temp.file,remove=FALSE)
+                  mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+                  dummy     = file.remove(temp.file)
+
+               }else if(file.exists(myfile.gz)){
+                  temp.file = file.path(tempdir(),basename(myfile))
+                  dummy     = gunzip(filename=myfile.gz,destname=temp.file,remove=FALSE)
                   mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
                   dummy     = file.remove(temp.file)
 
@@ -863,6 +871,14 @@ for (place in myplaces){
                   #------------------------------------------------------------------------#
 
 
+                  #----- Define the previous DBH class (for recruitment). -----------------#
+                  dbhconow.1ago   = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT))
+                  dbhcut.1ago     = cut(dbhconow.1ago,breaks=breakdbh)
+                  dbhlevs.1ago    = levels(dbhcut.1ago)
+                  dbhfac.1ago     = match(dbhcut.1ago,dbhlevs.1ago)
+                  #------------------------------------------------------------------------#
+
+
                   #------------------------------------------------------------------------#
                   #     Load the other cohort-level variables of interest.                 #
                   #------------------------------------------------------------------------#
@@ -885,6 +901,13 @@ for (place in myplaces){
                }else{
                   areaconow       = NA
                   dbhconow        = NA
+                  dbhcut          = NA
+                  dbhlevs         = NA
+                  dbhfac          = NA
+                  dbhconow.1ago   = NA
+                  dbhcut.1ago     = NA
+                  dbhlevs.1ago    = NA
+                  dbhfac.1ago     = NA
                   pftconow        = NA
                   nplantconow     = NA
                   agbconow        = NA
@@ -922,123 +945,7 @@ for (place in myplaces){
                if (all(!is.na(nplantconow))){
                   ts.cba.light[m,u] = sum( w.nplant * cbalightconow )
                   ts.cba.moist[m,u] = sum( w.nplant * cbamoistconow )
-               }else{
                }#end if
-               #---------------------------------------------------------------------------#
-
-
-
-               #---------------------------------------------------------------------------#
-               #     Loop over all PFTs.                                                   #
-               #---------------------------------------------------------------------------#
-               for (p in 1:(npft+1)){
-                  #------------------------------------------------------------------------#
-                  #     Select the subsample.                                              #
-                  #------------------------------------------------------------------------#
-                  if (all(is.na(pftconow))){
-                     s.dbh  = rep(FALSE,times=length(pftconow))
-                     s.cs2  = rep(FALSE,times=length(pftconow))
-                  }else if (p <= npft){
-                     s.dbh  = pftconow == p & censtatusconow >  0
-                     s.cs2  = pftconow == p & censtatusconow == 2
-                  }else{
-                     s.dbh  = censtatusconow >  0
-                     s.cs2  = censtatusconow == 2
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-                  #------------------------------------------------------------------------#
-                  #    Find the AGB, LAI, and BA if this is the first time, otherwise,     #
-                  # copy from the first time.  This is because an actual census would not  #
-                  # have the information.                                                  #
-                  #------------------------------------------------------------------------#
-                  if (m == muse && any(s.dbh)){
-                     ts.n.plot   [p,m,u] = sum( w.nplant[s.dbh]                   )
-                     ts.agb.plot [p,m,u] = sum( w.nplant[s.dbh] * agbconow[s.dbh] )
-                     ts.ba.plot  [p,m,u] = sum( w.nplant[s.dbh] * baconow [s.dbh] )
-                     ts.lai.plot [p,m,u] = sum( w.lai   [s.dbh]                   )
-                  }else{
-                     ts.n.plot   [p,m,u] = ts.n.plot   [p,muse,u]
-                     ts.agb.plot [p,m,u] = ts.agb.plot [p,muse,u]
-                     ts.ba.plot  [p,m,u] = ts.ba.plot  [p,muse,u]
-                     ts.lai.plot [p,m,u] = ts.lai.plot [p,muse,u]
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-
-                  #------------------------------------------------------------------------#
-                  #     Find the PFT-level mortality rates.                                #
-                  #------------------------------------------------------------------------#
-                  if (any(s.cs2)){
-
-                     #---- This is the number of survivors. -------------------------------#
-                     survivor                = sum( w.nplant       [s.cs2] )
-                     previous                = sum( w.nplant       [s.cs2]
-                                                  * exp(mortconow  [s.cs2]))
-                     ts.mort.plot$n  [p,m,u] = log( previous / survivor )
-
-                     survivor                = sum( w.nplant       [s.cs2])
-                     previous                = sum( w.nplant       [s.cs2]
-                                                  * exp(dimortconow[s.cs2]))
-                     ts.dimort.plot$n[p,m,u] = log( previous / survivor )
-
-                     survivor                = sum( w.nplant       [s.cs2])
-                     previous                = sum( w.nplant       [s.cs2]
-                                                  * exp(ddmortconow[s.cs2]))
-                     ts.ddmort.plot$n[p,m,u] = log( previous / survivor )
-                     #---------------------------------------------------------------------#
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-
-                  #------------------------------------------------------------------------#
-                  #     Find the PFT-level recruitment rates.                              #
-                  #------------------------------------------------------------------------#
-                  if (any(s.dbh) & any(s.cs2)){
-                     #---- This is the number of survivors. -------------------------------#
-                     population              = sum(w.nplant[s.dbh])
-                     established             = sum(w.nplant[s.cs2])
-                     ts.recr.plot$n  [p,m,u] = log( population / established) / 12.0
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-
-                  #------------------------------------------------------------------------#
-                  #     Growth rates are found only for established cohorts.               #
-                  #------------------------------------------------------------------------#
-                  if (any(s.cs2)){
-                     #----- Estimate the mean of this population. -------------------------#
-                     dlndbhdt      = dlndbhdtconow [s.cs2]
-                     dlnagbdt      = dlnagbdtconow [s.cs2]
-                     dlnbadt       = dlnbadtconow  [s.cs2]
-                     wgt           = w.nplant      [s.cs2]
-                     mean.dlndbhdt = weighted.mean( x  = dlndbhdtconow [s.cs2]
-                                                  , w  = w.nplant      [s.cs2]
-                                                  )#end 
-                     mean.dlnagbdt = weighted.mean( x  = dlnagbdtconow [s.cs2]
-                                                  , w  = w.nplant      [s.cs2]
-                                                  )#end 
-                     mean.dlnbadt  = weighted.mean( x  = dlnbadtconow  [s.cs2]
-                                                  , w  = w.nplant      [s.cs2]
-                                                  )#end 
-                     #---------------------------------------------------------------------#
-
-
-
-                     #---------------------------------------------------------------------#
-                     #     Copy the results to the arrays.                                 #
-                     #---------------------------------------------------------------------#
-                     ts.growth.plot$dbh[p,m,u] = mean.dlndbhdt
-                     ts.growth.plot$agb[p,m,u] = mean.dlnagbdt
-                     ts.growth.plot$ba [p,m,u] = mean.dlnbadt
-                     #---------------------------------------------------------------------#
-                  }#end if
-                  #------------------------------------------------------------------------#
-               }#end for
                #---------------------------------------------------------------------------#
 
 
@@ -1047,24 +954,31 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Build the size (DBH) structure arrays.                                #
                #---------------------------------------------------------------------------#
-               for (d in 1:n.dbh){
+               for (d in sequence(n.dbh+1)){
                   if (all(is.na(dbhfac))){
-                     this.dbh  = rep(FALSE,times=length(dbhfac))
+                     sel.dbh       = rep(FALSE,times=length(dbhfac     ))
+                     sel.dbh.1ago  = rep(FALSE,times=length(dbhfac.1ago))
+
+                     #----- Define the minimum DBH. ---------------------------------------#
+                     dbhminconow   = rep(Inf,times=length(pftconow))
+                     #---------------------------------------------------------------------#
                   }else{
-                     this.dbh  = dbhfac == d
+                     sel.dbh       = ( ( dbhfac      == d | d == (ndbh+1) )
+                                     & dbhconow > census.dbh.min )
+                     sel.dbh.1ago  = ( ( dbhfac.1ago == d | d == (ndbh+1) ) 
+                                     & dbhconow.1ago > census.dbh.min )
+
+                     #----- Define the minimum DBH. ---------------------------------------#
+                     dbhminconow   = ( pft$dbh.min[pftconow] * (d == 1) 
+                                     + census.dbh.min * (d != 1) )
+                     #---------------------------------------------------------------------#
                   }#end if
                   for (p in 1:(npft+1)){
                      #---------------------------------------------------------------------#
                      #      Select the cohorts that will be used here.                     #
                      #---------------------------------------------------------------------#
-                     if (p <= npft){
-                        s.pft  = pftconow == p
-                        s.cs2  = s.pft & this.dbh & censtatusconow == 2
-                        s.dbh  = s.pft & this.dbh & censtatusconow  > 0
-                     }else{
-                        s.cs2  = this.dbh & censtatusconow == 2
-                        s.dbh  = this.dbh & censtatusconow  > 0
-                     }#end if
+                     sel.pft   = pftconow == p | p == (npft+1)
+                     sel       = sel.pft & sel.dbh
                      #---------------------------------------------------------------------#
 
 
@@ -1073,11 +987,11 @@ for (place in myplaces){
                      # copy from the first time.  This is because an actual census would   #
                      # not have the information.                                           #
                      #---------------------------------------------------------------------#
-                     if (m == muse && any(s.dbh)){
-                        ts.n.size   [p,d,m,u] = sum( w.nplant[s.dbh]                   )
-                        ts.agb.size [p,d,m,u] = sum( w.nplant[s.dbh] * agbconow[s.dbh] )
-                        ts.ba.size  [p,d,m,u] = sum( w.nplant[s.dbh] * baconow [s.dbh] )
-                        ts.lai.size [p,d,m,u] = sum( w.lai   [s.dbh]                   )
+                     if (m == muse && any(sel)){
+                        ts.n.size   [p,d,m,u] = sum( w.nplant[sel]                   )
+                        ts.agb.size [p,d,m,u] = sum( w.nplant[sel] * agbconow[sel] )
+                        ts.ba.size  [p,d,m,u] = sum( w.nplant[sel] * baconow [sel] )
+                        ts.lai.size [p,d,m,u] = sum( w.lai   [sel]                   )
                      }else{
                         ts.n.size   [p,d,m,u] = ts.n.size   [p,d,muse,u]
                         ts.agb.size [p,d,m,u] = ts.agb.size [p,d,muse,u]
@@ -1086,22 +1000,58 @@ for (place in myplaces){
                      }#end if
                      #---------------------------------------------------------------------#
 
-                     if (any(s.cs2)){
-                        #---- This is the number of survivors and living before. ----------#
-                        survivor                   = sum( w.nplant        [s.cs2] )
-                        previous                   = sum( w.nplant        [s.cs2]
-                                                        * exp(mortconow   [s.cs2]))
-                        ts.mort.size$n   [p,d,m,u] = log( previous / survivor )
+                     if (any(sel)){
+                        #---- Mortality in terms of demographic density. ------------------#
+                        survivor                    = sum( w.nplant        [sel] )
+                        previous                    = sum( w.nplant        [sel]
+                                                         * exp(mortconow   [sel]))
+                        di.previous                 = sum( w.nplant        [sel] 
+                                                         * exp(dimortconow [sel]))
+                        dd.previous                 = sum( w.nplant        [sel] 
+                                                         * exp(ddmortconow [sel]))
+                        ts.mort.size$n    [p,d,m,u] = log(    previous / survivor )
+                        ts.dimort.size$n  [p,d,m,u] = log( di.previous / survivor )
+                        ts.ddmort.size$n  [p,d,m,u] = log( dd.previous / survivor )
+                        #------------------------------------------------------------------#
 
-                        survivor                   = sum( w.nplant        [s.cs2])
-                        previous                   = sum( w.nplant        [s.cs2] 
-                                                        * exp(dimortconow [s.cs2]))
-                        ts.dimort.size$n [p,d,m,u] = log( previous / survivor )
 
-                        survivor                   = sum( w.nplant        [s.cs2])
-                        previous                   = sum( w.nplant        [s.cs2] 
-                                                        * exp(ddmortconow [s.cs2]))
-                        ts.ddmort.size$n [p,d,m,u] = log( previous / survivor )
+
+                        #---- Mortality in terms of AGB. ----------------------------------#
+                        survivor                    = sum( w.nplant        [sel]
+                                                         * agbconow        [sel] )
+                        previous                    = sum( w.nplant        [sel]
+                                                         * agbconow        [sel]
+                                                         * exp(mortconow   [sel]))
+                        di.previous                 = sum( w.nplant        [sel] 
+                                                         * agbconow        [sel]
+                                                         * exp(dimortconow [sel]))
+                        dd.previous                 = sum( w.nplant        [sel] 
+                                                         * agbconow        [sel]
+                                                         * exp(ddmortconow [sel]))
+                        ts.mort.size$agb  [p,d,m,u] = log(    previous / survivor )
+                        ts.dimort.size$agb[p,d,m,u] = log( di.previous / survivor )
+                        ts.ddmort.size$agb[p,d,m,u] = log( dd.previous / survivor )
+                        #------------------------------------------------------------------#
+
+
+
+                        #---- Mortality in terms of Basal area. ---------------------------#
+                        survivor                    = sum( w.nplant        [sel]
+                                                         * baconow         [sel] )
+                        previous                    = sum( w.nplant        [sel]
+                                                         * baconow         [sel]
+                                                         * exp(mortconow   [sel]))
+                        di.previous                 = sum( w.nplant        [sel] 
+                                                         * baconow         [sel]
+                                                         * exp(dimortconow [sel]))
+                        dd.previous                 = sum( w.nplant        [sel] 
+                                                         * baconow         [sel]
+                                                         * exp(ddmortconow [sel]))
+                        ts.mort.size$ba   [p,d,m,u] = log(    previous / survivor )
+                        ts.dimort.size$ba [p,d,m,u] = log( di.previous / survivor )
+                        ts.ddmort.size$ba [p,d,m,u] = log( dd.previous / survivor )
+                        #------------------------------------------------------------------#
+
                      }#end if
                      #---------------------------------------------------------------------#
 
@@ -1110,20 +1060,20 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                      #     Growth rates are found only for established cohorts.            #
                      #---------------------------------------------------------------------#
-                     if (any(s.cs2)){
+                     if (any(sel)){
                         #----- Estimate the mean of this population. ----------------------#
-                        dlndbhdt      = dlndbhdtconow [s.cs2]
-                        dlnagbdt      = dlnagbdtconow [s.cs2]
-                        dlnbadt       = dlnbadtconow  [s.cs2]
-                        wgt           = w.nplant      [s.cs2]
-                        mean.dlndbhdt = weighted.mean( x  = dlndbhdtconow [s.cs2]
-                                                     , w  = w.nplant      [s.cs2]
+                        dlndbhdt      = dlndbhdtconow [sel]
+                        dlnagbdt      = dlnagbdtconow [sel]
+                        dlnbadt       = dlnbadtconow  [sel]
+                        wgt           = w.nplant      [sel]
+                        mean.dlndbhdt = weighted.mean( x  = dlndbhdtconow [sel]
+                                                     , w  = w.nplant      [sel]
                                                      )#end 
-                        mean.dlnagbdt = weighted.mean( x  = dlnagbdtconow [s.cs2]
-                                                     , w  = w.nplant      [s.cs2]
+                        mean.dlnagbdt = weighted.mean( x  = dlnagbdtconow [sel]
+                                                     , w  = w.nplant      [sel]
                                                      )#end 
-                        mean.dlnbadt  = weighted.mean( x  = dlnbadtconow  [s.cs2]
-                                                     , w  = w.nplant      [s.cs2]
+                        mean.dlnbadt  = weighted.mean( x  = dlnbadtconow  [sel]
+                                                     , w  = w.nplant      [sel]
                                                      )#end 
                         #------------------------------------------------------------------#
 
@@ -1133,6 +1083,43 @@ for (place in myplaces){
                         ts.growth.size$dbh[p,d,m,u] = mean.dlndbhdt
                         ts.growth.size$agb[p,d,m,u] = mean.dlnagbdt
                         ts.growth.size$ba [p,d,m,u] = mean.dlnbadt
+                        #------------------------------------------------------------------#
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Recruitment: we must determine whether the plant grew into the   #
+                     # new category or not.                                                #
+                     #---------------------------------------------------------------------#
+                     sel.pop = sel.pft & sel.dbh      & dbhconow      >= census.dbh.min
+                     sel.est = sel.pop & sel.dbh.1ago & dbhconow.1ago >= census.dbh.min
+                     if (any(sel.pop) & any(sel.est)){
+                        #----- Recruitment rate in terms of individuals. ------------------#
+                        population              = sum(w.nplant[sel.pop])
+                        established             = sum(w.nplant[sel.est])
+                        ts.recr.size$n[p,d,m,u] = log(population / established)
+                        #------------------------------------------------------------------#
+
+
+                        #----- Recruitment rate in terms of above-ground biomass. ---------#
+                        population                = sum( w.nplant [sel.pop] 
+                                                       * agbconow [sel.pop] )
+                        established               = sum( w.nplant [sel.est] 
+                                                       * agbconow [sel.est] )
+                        ts.recr.size$agb[p,d,m,u] = log(population / established)
+                        #------------------------------------------------------------------#
+
+
+                        #----- Recruitment rate in terms of basal area. -------------------#
+                        population               = sum( w.nplant[sel.pop]
+                                                      * baconow [sel.pop] )
+                        established              = sum( w.nplant[sel.est]
+                                                      * baconow [sel.est] )
+                        ts.recr.size$ba[p,d,m,u] = log(population / established)
                         #------------------------------------------------------------------#
                      }#end if
                      #---------------------------------------------------------------------#
@@ -1255,61 +1242,63 @@ for (place in myplaces){
 
 
          #----- Plot-level variables. -----------------------------------------------------#
-         pspace$lai.plot.mean     = c(qapply( X     = ts.lai.plot       [npft+1,,]
+         pp = npft + 1
+         dd = ndbh + 1
+         pspace$lai.plot.mean     = c(qapply( X     = ts.lai.size       [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean 
                                             , na.rm = TRUE
                                             ))
-         pspace$ba.plot.mean      = c(qapply( X     = ts.ba.plot        [npft+1,,]
+         pspace$ba.plot.mean      = c(qapply( X     = ts.ba.size        [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean 
                                             , na.rm = TRUE
                                             ))
-         pspace$agb.plot.mean     = c(qapply( X     = ts.agb.plot       [npft+1,,]
+         pspace$agb.plot.mean     = c(qapply( X     = ts.agb.size       [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean 
                                             , na.rm = TRUE
                                             ))
-         pspace$recr.mean         = c(qapply( X     = ts.recr.plot$n    [npft+1,,]
+         pspace$recr.plot.mean    = c(qapply( X     = ts.recr.size$n    [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean 
                                             , na.rm = TRUE
                                             ))
-         pspace$mort.plot.mean    = c(qapply( X     = ts.mort.plot$n    [npft+1,,]
+         pspace$mort.plot.mean    = c(qapply( X     = ts.mort.size$n    [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean
                                             , na.rm = TRUE
                                             ))
-         pspace$dimort.plot.mean  = c(qapply( X     = ts.dimort.plot$n  [npft+1,,]
+         pspace$dimort.plot.mean  = c(qapply( X     = ts.dimort.size$n  [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean
                                             , na.rm = TRUE
                                             ))
-         pspace$ddmort.plot.mean  = c(qapply( X     = ts.ddmort.plot$n  [npft+1,,]
+         pspace$ddmort.plot.mean  = c(qapply( X     = ts.ddmort.size$n  [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean
                                             , na.rm = TRUE
                                             ))
-         pspace$growdbh.plot.mean = c(qapply( X     = ts.growth.plot$dbh[npft+1,,]
+         pspace$growdbh.plot.mean = c(qapply( X     = ts.growth.size$dbh[pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean
                                             , na.rm = TRUE
                                             ))
-         pspace$growagb.plot.mean = c(qapply( X     = ts.growth.plot$agb[npft+1,,]
+         pspace$growagb.plot.mean = c(qapply( X     = ts.growth.size$agb[pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean
                                             , na.rm = TRUE
                                             ))
-         pspace$growba.plot.mean  = c(qapply( X     = ts.growth.plot$ba [npft+1,,]
+         pspace$growba.plot.mean  = c(qapply( X     = ts.growth.size$ba [pp,dd,,]
                                             , INDEX = census.idx
                                             , DIM   = 1
                                             , FUN   = mean
@@ -1320,7 +1309,9 @@ for (place in myplaces){
 
 
          #----- Size-level variables. -----------------------------------------------------#
-         pspace$lai.size.mean     = matrix(qapply( X     = ts.lai.size   [npft+1,,,]
+         pp = npft + 1
+         dd = 1:ndbh
+         pspace$lai.size.mean     = matrix(qapply( X     = ts.lai.size   [pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1329,7 +1320,7 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$ba.size.mean      = matrix(qapply( X     = ts.ba.size    [npft+1,,,]
+         pspace$ba.size.mean      = matrix(qapply( X     = ts.ba.size    [pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1338,7 +1329,7 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$agb.size.mean     = matrix(qapply( X     = ts.agb.size   [npft+1,,,]
+         pspace$agb.size.mean     = matrix(qapply( X     = ts.agb.size   [pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1347,7 +1338,7 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$mort.size.mean    = matrix(qapply( X     = ts.mort.size$n[npft+1,,,]
+         pspace$recr.size.mean    = matrix(qapply( X     = ts.recr.size$n[pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1356,7 +1347,7 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$dimort.size.mean  = matrix(qapply( X     = ts.dimort.size$n  [npft+1,,,]
+         pspace$mort.size.mean    = matrix(qapply( X     = ts.mort.size$n[pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1365,7 +1356,7 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$ddmort.size.mean  = matrix(qapply( X     = ts.ddmort.size$n  [npft+1,,,]
+         pspace$dimort.size.mean  = matrix(qapply( X     = ts.dimort.size$n[pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1374,7 +1365,7 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$growdbh.size.mean = matrix(qapply( X     = ts.growth.size$dbh[npft+1,,,]
+         pspace$ddmort.size.mean  = matrix(qapply( X     = ts.ddmort.size$n[pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1383,7 +1374,7 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$growagb.size.mean = matrix(qapply( X     = ts.growth.size$agb[npft+1,,,]
+         pspace$growdbh.size.mean = matrix(qapply( X     = ts.growth.size$dbh[pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1392,7 +1383,16 @@ for (place in myplaces){
                                           , nrow = n.dbh
                                           , ncol = nfullcyc*(n.census-1)
                                           )#end matrix
-         pspace$growba.size.mean  = matrix(qapply( X     = ts.growth.size$ba [npft+1,,,]
+         pspace$growagb.size.mean = matrix(qapply( X     = ts.growth.size$agb[pp,dd,,]
+                                                 , INDEX = census.idx
+                                                 , DIM   = 2
+                                                 , FUN   = mean
+                                                 , na.rm = TRUE
+                                                 )
+                                          , nrow = n.dbh
+                                          , ncol = nfullcyc*(n.census-1)
+                                          )#end matrix
+         pspace$growba.size.mean  = matrix(qapply( X     = ts.growth.size$ba [pp,dd,,]
                                                  , INDEX = census.idx
                                                  , DIM   = 2
                                                  , FUN   = mean
@@ -1432,6 +1432,7 @@ for (place in myplaces){
       ms.ddmort.plot = list()
       ms.dimort.plot = list()
       ms.growth.plot = list()
+      ms.recr.size   = list()
       ms.mort.size   = list()
       ms.ddmort.size = list()
       ms.dimort.size = list()
@@ -1453,8 +1454,10 @@ for (place in myplaces){
          #     Loop over all rates.                                                        #
          #---------------------------------------------------------------------------------#
          for (r in 1:n.rates){
-            ts.this.plot = get(paste("ts",recr.rates[r],"plot",sep="."))
+            ts.this.size = get(paste("ts",recr.rates[r],"size",sep="."))
             ms.this.plot = get(paste("ms",recr.rates[r],"plot",sep="."))
+            ms.this.size = get(paste("ms",recr.rates[r],"size",sep="."))
+
 
             #------------------------------------------------------------------------------#
             #     Find the mean for all PFTs.                                              #
@@ -1462,11 +1465,14 @@ for (place in myplaces){
             ms.mean.plot = array(NA,dim=c(npft+1,n.census))
             ms.q025.plot = array(NA,dim=c(npft+1,n.census))
             ms.q975.plot = array(NA,dim=c(npft+1,n.census))
+            ms.mean.size = array(NA,dim=c(npft+1,n.dbh,n.census))
+            ms.q025.size = array(NA,dim=c(npft+1,n.dbh,n.census))
+            ms.q975.size = array(NA,dim=c(npft+1,n.dbh,n.census))
 
             for (p in 1:(npft+1)){
                for (i in 2:n.census){
                   i.sel = census.idx == i
-                  ts.plot.now       = c(ts.this.plot[[v.now]][p,i.sel,])
+                  ts.plot.now       = c(ts.this.size[[v.now]][p,ndbh+1,i.sel,])
                   ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                   if (any(is.finite(ts.plot.now))){
                      boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
@@ -1482,6 +1488,28 @@ for (place in myplaces){
                      }#end if
                   }#end if
                   #------------------------------------------------------------------------#
+
+                  #------------------------------------------------------------------------#
+                  for (d in 1:n.dbh){
+                     ts.size.now         = c(ts.this.size[[v.now]][p,d,i.sel,])
+                     ms.mean.size[p,d,i] = mean(ts.size.now,na.rm=TRUE) 
+                     if (any(is.finite(ts.size.now))){
+                        boot.now = boot   (data=ts.size.now,statistic=mean.fun,R=n.boot)
+                        ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                                      ,silent=TRUE)
+                        if ("try-error" %in% is(ci.now)){
+                           warning("Failed using bootstrap...")
+                        }else if (length(ci.now$percent) == 5){
+                           ms.q025.size[p,d,i] = ci.now$percent[4]
+                           ms.q975.size[p,d,i] = ci.now$percent[5]
+                        }else{
+                           warning("Failed using bootstrap...")
+                        }#end if
+                        #------------------------------------------------------------------#
+                     }#end if
+                     #---------------------------------------------------------------------#
+                  }#end for
+                  #------------------------------------------------------------------------#
                }#end for
                #---------------------------------------------------------------------------#
             }#end for
@@ -1493,6 +1521,9 @@ for (place in myplaces){
             ms.mean.plot = exp(ms.mean.plot) - 1.
             ms.q025.plot = exp(ms.q025.plot) - 1.
             ms.q975.plot = exp(ms.q975.plot) - 1.
+            ms.mean.size = exp(ms.mean.size) - 1.
+            ms.q025.size = exp(ms.q025.size) - 1.
+            ms.q975.size = exp(ms.q975.size) - 1.
             #------------------------------------------------------------------------------#
 
 
@@ -1504,8 +1535,13 @@ for (place in myplaces){
                                         , q025     = ms.q025.plot
                                         , q975     = ms.q975.plot
                                         )#end list
+            ms.this.size[[v.now]] = list( expected = ms.mean.size
+                                        , q025     = ms.q025.size
+                                        , q975     = ms.q975.size
+                                        )#end list
             #------------------------------------------------------------------------------#
             dummy = assign(paste("ms",recr.rates[r],"plot",sep="."), ms.this.plot)
+            dummy = assign(paste("ms",recr.rates[r],"size",sep="."), ms.this.size)
          }#end for
          #---------------------------------------------------------------------------------#
       }#end for
@@ -1525,7 +1561,6 @@ for (place in myplaces){
          #     Loop over all rates.                                                        #
          #---------------------------------------------------------------------------------#
          for (r in 1:n.rates){
-            ts.this.plot = get(paste("ts",mort.rates[r],"plot",sep="."))
             ts.this.size = get(paste("ts",mort.rates[r],"size",sep="."))
             ms.this.plot = get(paste("ms",mort.rates[r],"plot",sep="."))
             ms.this.size = get(paste("ms",mort.rates[r],"size",sep="."))
@@ -1544,7 +1579,7 @@ for (place in myplaces){
             for (p in 1:(npft+1)){
                for (i in 2:n.census){
                   i.sel = census.idx == i
-                  ts.plot.now       = c(ts.this.plot[[v.now]][p,i.sel,])
+                  ts.plot.now       = c(ts.this.size[[v.now]][p,ndbh+1,i.sel,])
                   ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                   if (any(is.finite(ts.plot.now))){
                      boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
@@ -1633,7 +1668,6 @@ for (place in myplaces){
          #     Loop over all rates.                                                        #
          #---------------------------------------------------------------------------------#
          for (r in 1:n.rates){
-            ts.this.plot = get(paste("ts",growth.rates[r],"plot",sep="."))
             ts.this.size = get(paste("ts",growth.rates[r],"size",sep="."))
             ms.this.plot = get(paste("ms",growth.rates[r],"plot",sep="."))
             ms.this.size = get(paste("ms",growth.rates[r],"size",sep="."))
@@ -1651,7 +1685,7 @@ for (place in myplaces){
             for (p in 1:(npft+1)){
                for (i in 2:n.census){
                   i.sel = census.idx == i
-                  ts.plot.now       = c(ts.this.plot[[v.now]][p,i.sel,])
+                  ts.plot.now       = c(ts.this.size[[v.now]][p,ndbh+1,i.sel,])
                   ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                   if (any(is.finite(ts.plot.now))){
                      boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
@@ -1855,6 +1889,23 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
       }#end for
       #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Append the full time series.                                                  #
+      #------------------------------------------------------------------------------------#
+      ed2$tseries = list ( n.cycles   = nfullcyc
+                         , n.months   = n.months
+                         , n.pft      = npft+1
+                         , n.dbh      = ndbh+1
+                         , recr       = ts.recr.size
+                         , mort       = ts.mort.size
+                         , dimort     = ts.dimort.size
+                         , ddmort     = ts.ddmort.size
+                         , growth     = ts.growth.size
+                         )#end list
+      #------------------------------------------------------------------------------------#
+
 
 
       #------------------------------------------------------------------------------------#
@@ -3187,7 +3238,7 @@ for (place in myplaces){
       }#end if
       yvar.plot   = ymult * ( pspace[[yplot.name]] + yadd )
       yvar.size   = ymult * ( pspace[[ysize.name]] + yadd )
-      ley         = paste(ydesc," [",yunit,"]",sep="")
+      ley         = desc.unit(desc=ydesc,unit=yunit)
       ylimit.plot = pretty.xylim(u=yvar.plot,fracexp=scalleg,is.log=ylog)
       #------------------------------------------------------------------------------------#
 
@@ -3215,7 +3266,7 @@ for (place in myplaces){
          xsize.name  = paste(xvname,"size","mean",sep=".")
          xvar.plot   = xmult * ( pspace[[xplot.name]] + xadd )
          xvar.size   = xmult * ( pspace[[xsize.name]] + xadd )
-         lex         = paste(xdesc," [",xunit,"]",sep="")
+         lex         = desc.unit(desc=xdesc,unit=xunit)
 
          sel         = is.finite(xvar.plot) & ( xvar.plot > 0 | (! xlog))
          xlimit.plot = range(xvar.plot[sel],na.rm=TRUE)
@@ -3260,7 +3311,7 @@ for (place in myplaces){
 
             #----- Annotation for the colour map ("Z" axis). ------------------------------#
             zvar  = zmult * ( pspace[[zvname]] + zadd )
-            lez   = paste(zkey,"\n [",zunit,"]",sep="")
+            lez   = desc.unit(desc=zkey,unit=zunit)
             #------------------------------------------------------------------------------#
 
 
@@ -3326,18 +3377,19 @@ for (place in myplaces){
                        , xyz.main       = list(text=letitre.plot,cex=cex.main)
                        , xyz.xlab       = list(text=lex,adj=mtext.xadj,padj=mtext.xoff)
                        , xyz.ylab       = list(text=ley,adj=mtext.yadj,padj=mtext.yoff)
-                       , key.title      = list(main=lez,cex.main=0.8)
+                       , key.title      = list(main=lez,cex.main=cex.ptsz*0.8)
                        , key.log        = zlog
                        , xyz.more       = list(grid=list(col=grid.colour,lty="solid"))
-                       , xyz.legend     = list( x      = "bottom"
-                                              , inset  = 0.01
+                       , xyz.legend     = list( x      = "center"
+                                              , inset  = 0.0
                                               , legend = pspace$leg.label
                                               , col    = foreground
                                               , bg     = background
                                               , pch    = pspace$leg.pch
                                               , title  = "Census"
                                               , ncol   = 3
-                                              , cex    = 1.0
+                                              , cex    = cex.ptsz
+                                              , xpd    = TRUE
                                               )#end legend
                        )#end xyz.plot
                #---------------------------------------------------------------------------#

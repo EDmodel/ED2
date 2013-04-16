@@ -9,12 +9,19 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cmonth       = sprintf("%2.2i",montha)
    h5first      = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5"    ,sep="")
    h5first.bz2  = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5.bz2",sep="")
+   h5first.gz   = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5.gz" ,sep="")
    if ( file.exists(h5first) ){
       mymont    = hdf5load(file=h5first,load=FALSE,verbosity=0,tidy=TRUE)
 
    }else if ( file.exists(h5first.bz2) ){
       temp.file = file.path(tempdir(),basename(h5first))
       dummy     = bunzip2(filename=h5first.bz2,destname=temp.file,remove=FALSE)
+      mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+      dummy     = file.remove(temp.file)
+
+   }else if ( file.exists(h5first.gz) ){
+      temp.file = file.path(tempdir(),basename(h5first))
+      dummy     = gunzip(filename=h5first.gz,destname=temp.file,remove=FALSE)
       mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
       dummy     = file.remove(temp.file)
 
@@ -178,11 +185,17 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$wflxgc                  = rep(NA,times=ntimes)
    emean$wflxlc                  = rep(NA,times=ntimes)
    emean$wflxwc                  = rep(NA,times=ntimes)
+   emean$runoff                  = rep(NA,times=ntimes)
+   emean$intercepted             = rep(NA,times=ntimes)
+   emean$wshed                   = rep(NA,times=ntimes)
    emean$evap                    = rep(NA,times=ntimes)
    emean$transp                  = rep(NA,times=ntimes)
    emean$et                      = rep(NA,times=ntimes)
    emean$wue                     = rep(NA,times=ntimes)
    emean$rain                    = rep(NA,times=ntimes)
+   emean$last.1yr.rain           = rep(NA,times=ntimes)
+   emean$last.2yr.rain           = rep(NA,times=ntimes)
+   emean$last.3yr.rain           = rep(NA,times=ntimes)
    emean$fs.open                 = rep(NA,times=ntimes)
    emean$rshort                  = rep(NA,times=ntimes)
    emean$rshort.beam             = rep(NA,times=ntimes)
@@ -326,6 +339,16 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$ncbmort           = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$growth            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$recr              = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$agb.mort          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$agb.dimort        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$agb.ncbmort       = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$agb.growth        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$agb.recr          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$bsa.mort          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$bsa.dimort        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$bsa.ncbmort       = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$bsa.growth        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$bsa.recr          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bdead             = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bleaf             = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$broot             = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
@@ -419,6 +442,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$wflxlc         = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$wflxwc         = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$wflxgc         = matrix(data=0,nrow=ntimes,ncol=ndcycle)
+   qmean$runoff         = matrix(data=0,nrow=ntimes,ncol=ndcycle)
+   qmean$intercepted    = matrix(data=0,nrow=ntimes,ncol=ndcycle)
+   qmean$wshed          = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$evap           = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$transp         = matrix(data=0,nrow=ntimes,ncol=ndcycle)
    qmean$atm.temp       = matrix(data=0,nrow=ntimes,ncol=ndcycle)
@@ -612,6 +638,8 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$ncbmort       = list()
    cohort$recruit       = list()
    cohort$growth        = list()
+   cohort$agb.growth    = list()
+   cohort$bsa.growth    = list()
    cohort$f.gpp         = list()
    cohort$f.plant.resp  = list()
    cohort$f.npp         = list()
@@ -700,6 +728,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$nee            [idx ] = old.datum$emean$nee
    new.datum$emean$cflxca         [idx ] = old.datum$emean$cflxca
    new.datum$emean$cflxst         [idx ] = old.datum$emean$cflxst
+   new.datum$emean$runoff         [idx ] = old.datum$emean$runoff
+   new.datum$emean$intercepted    [idx ] = old.datum$emean$intercepted
+   new.datum$emean$wshed          [idx ] = old.datum$emean$wshed
    new.datum$emean$evap           [idx ] = old.datum$emean$evap
    new.datum$emean$transp         [idx ] = old.datum$emean$transp
    new.datum$emean$wue            [idx ] = old.datum$emean$wue
@@ -731,6 +762,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$tai            [idx ] = old.datum$emean$tai
    new.datum$emean$area           [idx ] = old.datum$emean$area
    new.datum$emean$rain           [idx ] = old.datum$emean$rain
+   new.datum$emean$last.1yr.rain  [idx ] = old.datum$emean$last.1yr.rain
+   new.datum$emean$last.2yr.rain  [idx ] = old.datum$emean$last.2yr.rain
+   new.datum$emean$last.3yr.rain  [idx ] = old.datum$emean$last.3yr.rain
    new.datum$emean$gnd.temp       [idx ] = old.datum$emean$gnd.temp
    new.datum$emean$gnd.shv        [idx ] = old.datum$emean$gnd.shv
    new.datum$emean$workload       [idx ] = old.datum$emean$workload
@@ -868,6 +902,16 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$ncbmort        [idx,,] = old.datum$szpft$ncbmort
    new.datum$szpft$growth         [idx,,] = old.datum$szpft$growth
    new.datum$szpft$recr           [idx,,] = old.datum$szpft$recr
+   new.datum$szpft$agb.mort       [idx,,] = old.datum$szpft$agb.mort
+   new.datum$szpft$agb.dimort     [idx,,] = old.datum$szpft$agb.dimort
+   new.datum$szpft$agb.ncbmort    [idx,,] = old.datum$szpft$agb.ncbmort
+   new.datum$szpft$agb.growth     [idx,,] = old.datum$szpft$agb.growth
+   new.datum$szpft$agb.recr       [idx,,] = old.datum$szpft$agb.recr
+   new.datum$szpft$bsa.mort       [idx,,] = old.datum$szpft$bsa.mort
+   new.datum$szpft$bsa.dimort     [idx,,] = old.datum$szpft$bsa.dimort
+   new.datum$szpft$bsa.ncbmort    [idx,,] = old.datum$szpft$bsa.ncbmort
+   new.datum$szpft$bsa.growth     [idx,,] = old.datum$szpft$bsa.growth
+   new.datum$szpft$bsa.recr       [idx,,] = old.datum$szpft$bsa.recr
    new.datum$szpft$bdead          [idx,,] = old.datum$szpft$bdead
    new.datum$szpft$bleaf          [idx,,] = old.datum$szpft$bleaf
    new.datum$szpft$broot          [idx,,] = old.datum$szpft$broot
@@ -959,6 +1003,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$wflxlc        [idx,] = old.datum$qmean$wflxlc
    new.datum$qmean$wflxwc        [idx,] = old.datum$qmean$wflxwc
    new.datum$qmean$wflxgc        [idx,] = old.datum$qmean$wflxgc
+   new.datum$qmean$runoff        [idx,] = old.datum$qmean$runoff
+   new.datum$qmean$intercepted   [idx,] = old.datum$qmean$intercepted
+   new.datum$qmean$wshed         [idx,] = old.datum$qmean$wshed
    new.datum$qmean$evap          [idx,] = old.datum$qmean$evap
    new.datum$qmean$transp        [idx,] = old.datum$qmean$transp
    new.datum$qmean$atm.temp      [idx,] = old.datum$qmean$atm.temp
@@ -1146,6 +1193,8 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$ncbmort      = old.datum$cohort$ncbmort
    new.datum$cohort$recruit      = old.datum$cohort$recruit
    new.datum$cohort$growth       = old.datum$cohort$growth
+   new.datum$cohort$agb.growth   = old.datum$cohort$agb.growth
+   new.datum$cohort$bsa.growth   = old.datum$cohort$bsa.growth
    new.datum$cohort$f.gpp        = old.datum$cohort$f.gpp
    new.datum$cohort$f.plant.resp = old.datum$cohort$f.plant.resp
    new.datum$cohort$f.npp        = old.datum$cohort$f.npp

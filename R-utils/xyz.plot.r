@@ -13,16 +13,24 @@ xyz.plot = function( x
                    , fixed.ylim     = FALSE
                    , xy.log         = ""
                    , xlim           = if (is.list(x) & ! fixed.xlim){
-                                         lapply(X=x,FUN=range,finite=TRUE)
+                                         lapply( X      = x
+                                               , FUN    = pretty.xylim
+                                               , is.log = regexpr("x",tolower(xy.log)) > 0
+                                               )#end lapply
                                       }else{
-                                         range(unlist(x),finite=TRUE)
+                                         pretty.xylim( u      = unlist(x)
+                                               , is.log = regexpr("x",tolower(xy.log)) > 0)
                                       }#end if
                    , ylim           = if (is.list(y) & ! fixed.ylim){
-                                         lapply(X=y,FUN=range,finite=TRUE)
+                                         lapply( X      = y
+                                               , FUN    = pretty.xylim
+                                               , is.log = regexpr("y",tolower(xy.log)) > 0
+                                               )#end lapply
                                       }else{
-                                         range(unlist(y),finite=TRUE)
+                                         pretty.xylim( u      = unlist(y)
+                                               , is.log = regexpr("y",tolower(xy.log)) > 0)
                                       }#end if
-                   , zlim           = range(unlist(z),finite=TRUE)
+                   , zlim           = pretty.xylim(u=unlist(z),is.log=key.log)
                    , pch            = 15
                    , cex            = 1.0
                    , levels         = if (key.log){
@@ -34,10 +42,8 @@ xyz.plot = function( x
                    , colour.palette = cm.colors
                    , col            = colour.palette(length(levels)-1)
                    , na.col         = "grey94"
-                   , xyz.main       = NULL
+                   , xyz.title      = NULL
                    , xyz.sub        = if (length(x) == 1) {""} else {names(x)}
-                   , xyz.xlab       = NULL
-                   , xyz.ylab       = NULL
                    , xyz.legend     = NULL
                    , xyz.xaxis      = NULL
                    , xyz.yaxis      = NULL
@@ -112,19 +118,23 @@ xyz.plot = function( x
    par(oma = c(0.2,3,4.5,0))
    lo.box = pretty.box(npanels)
    if (is.null(xyz.legend)){
-      emat   = cbind(1+lo.box$mat,rep(1,times=lo.box$nrow))
+      emat   = cbind(lo.box$mat.off,rep(1,times=lo.box$nrow))
       layout( mat     = emat
-            , heights = rep(1,times=lo.box$nrow)
-            , widths  = c(rep(0.9/lo.box$ncol,times=lo.box$ncol),0.1)
+            , heights = rep(1/lo.box$nrow,times=lo.box$nrow)
+            , widths  = c(rep(4/lo.box$ncol,times=lo.box$ncol),1)
             )#end layout
+      off.xlab  = 0
+      off.right = 1/5
    }else{
-      emat   = rbind( cbind(2+lo.box$mat,rep(2,times=lo.box$nrow))
+      emat   = rbind( cbind(lo.box$mat.off2,rep(2,times=lo.box$nrow))
                     , c(rep(1,times=lo.box$ncol),0)
                     )#end rbind
       layout( mat     = emat
             , heights = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
             , widths  = c(rep(9/lo.box$ncol,times=lo.box$ncol),1)
             )#end layout
+      off.xlab  = 1/6
+      off.right = 1/10
    }#end if
    #---------------------------------------------------------------------------------------#
    #=======================================================================================#
@@ -155,7 +165,7 @@ xyz.plot = function( x
    #=======================================================================================#
    #      Next plot (or first plot): the key scale.                                        #
    #---------------------------------------------------------------------------------------#
-   par(mar = c(3,0,3,3)+0.1)
+   par(mar = c(0.5,1.0,3,2.5)+0.1)
    plot.new()
    #---------------------------------------------------------------------------------------#
    #     Plot in the horizontal or vertical depending on where the scale is going to       #
@@ -214,7 +224,10 @@ xyz.plot = function( x
       right   = (p %% lo.box$ncol) == 0
       top     = p <= lo.box$ncol
       bottom  = p > (lo.box$nrow - 1) * lo.box$ncol
-      mar.now = c(2 + 1 * bottom,1 + 1 * left,1 + 2 * top,1 + 1 * right) + 0.1
+      mar.now = c( 1 + 4 * ( bottom | (! fixed.xlim)  )
+                 , 1 + 3 * ( left   | (! fixed.ylim)  )
+                 , 1 + 4 * ( top    &    fixed.xlim   )
+                 , 1 + 3 * ( right  &    fixed.ylim   ) ) + 0.1
       #------------------------------------------------------------------------------------#
 
 
@@ -233,7 +246,7 @@ xyz.plot = function( x
       plot.new()
       plot.window(xlim=xlim.now,ylim=ylim.now,log=xy.log,...)
       box()
-      title(main=xyz.sub[p],xlab="",ylab="")
+      title(main=xyz.sub[p],xlab="",ylab="",line=0.5)
       #------------------------------------------------------------------------------------#
 
 
@@ -292,47 +305,15 @@ xyz.plot = function( x
    #---------------------------------------------------------------------------------------#
    #     Plot the global title.                                                            #
    #---------------------------------------------------------------------------------------#
-   par(las=0)
-   if (! is.null(xyz.xlab)){
+   if (! is.null(xyz.title)){
       #----- Make sure we get the main text. ----------------------------------------------#
-      if (! is.list(xyz.xlab)){
-         xyz.xlab=list(text=xyz.xlab)
-      }else if (! "text" %in% names(xyz.xlab)){
-         names(xyz.xlab)[[1]] = "text"
+      if (! is.list(xyz.title)){
+         xyz.title=list(main=xyz.title)
+      }else if (! "main" %in% names(xyz.title)){
+         names(xyz.title)[[1]] = "main"
       }#end if
-      #----- Outer must be set to TRUE, overwrite if needed be. ---------------------------#
-      xyz.xlab$outer = TRUE
-      if (! "side" %in% names(xyz.xlab)) xyz.xlab$side = 1
-      if (! "padj" %in% names(xyz.xlab)) xyz.xlab$padj = -4.75
-      do.call("mtext",xyz.xlab)
-   }#end if
-   if (! is.null(xyz.ylab)){
-      #----- Make sure we get the main text. ----------------------------------------------#
-      if (! is.list(xyz.ylab)){
-         xyz.ylab=list(text=xyz.ylab)
-      }else if (! "text" %in% names(xyz.ylab)){
-         names(xyz.ylab)[[1]] = "text"
-      }#end if
-      #----- Outer must be set to TRUE, overwrite if needed be. ---------------------------#
-      xyz.ylab$outer = TRUE
-      if (! "side" %in% names(xyz.ylab)) xyz.ylab$side = 2
-      if (! "padj" %in% names(xyz.ylab)) xyz.ylab$padj = -0.75
-      do.call("mtext",xyz.ylab)
-   }#end if
-   if (! is.null(xyz.main)){
-      #----- Make sure we get the main text. ----------------------------------------------#
-      if (! is.list(xyz.main)){
-         xyz.main=list(text=xyz.main)
-      }else if (! "text" %in% names(xyz.main)){
-         names(xyz.main)[[1]] = "text"
-      }#end if
-      #----- Outer must be set to TRUE, overwrite if needed be. ---------------------------#
-      xyz.main$outer = TRUE
-      if (! "side" %in% names(xyz.main)) xyz.xlab$side = 3
-      if (! "padj" %in% names(xyz.main)) xyz.xlab$padj = 0
-      if (! "cex"  %in% names(xyz.main)) xyz.xlab$cex  = 1.1
-      if (! "font" %in% names(xyz.main)) xyz.xlab$font = 2
-      do.call("mtext",xyz.main)
+      xyz.title = modifyList(x=xyz.title,val=list(off.xlab=off.xlab,off.right=off.right))
+      do.call("gtitle",xyz.title)
    }#end if
    #---------------------------------------------------------------------------------------#
 

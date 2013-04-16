@@ -491,10 +491,18 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #     Replace the mortality and recruitment exponential rates by the "interests" rates. #
    #---------------------------------------------------------------------------------------#
-   szpft$mort      = 100. * (1.0 - exp(- szpft$mort     )      )
-   szpft$dimort    = 100. * (1.0 - exp(- szpft$dimort   )      )
-   szpft$ncbmort   = 100. * (1.0 - exp(- szpft$ncbmort  )      )
-   szpft$recrpft   = 100. * (      exp(  szpft$recr     ) - 1.0)
+   szpft$mort          = 100. * (1.0 - exp(- szpft$mort         )      )
+   szpft$dimort        = 100. * (1.0 - exp(- szpft$dimort       )      )
+   szpft$ncbmort       = 100. * (1.0 - exp(- szpft$ncbmort      )      )
+   szpft$recrpft       = 100. * (      exp(  szpft$recr         ) - 1.0)
+   szpft$agb.mort      = 100. * (1.0 - exp(- szpft$agb.mort     )      )
+   szpft$agb.dimort    = 100. * (1.0 - exp(- szpft$agb.dimort   )      )
+   szpft$agb.ncbmort   = 100. * (1.0 - exp(- szpft$agb.ncbmort  )      )
+   szpft$agb.recrpft   = 100. * (      exp(  szpft$agb.recr     ) - 1.0)
+   szpft$bsa.mort      = 100. * (1.0 - exp(- szpft$bsa.mort     )      )
+   szpft$bsa.dimort    = 100. * (1.0 - exp(- szpft$bsa.dimort   )      )
+   szpft$bsa.ncbmort   = 100. * (1.0 - exp(- szpft$bsa.ncbmort  )      )
+   szpft$bsa.recrpft   = 100. * (      exp(  szpft$bsa.recr     ) - 1.0)
    #---------------------------------------------------------------------------------------#
 
 
@@ -678,9 +686,10 @@ for (place in myplaces){
 
 
             #----- Plot settings. ---------------------------------------------------------#
-            letitre = paste(description,lieu,sep=" - ")
-            cols    = pft$colour[selpft]
-            legs    = pft$name  [selpft]
+            letitre       = paste(description,lieu,sep=" - ")
+            ley           = desc.unit(desc=description,unit=unit)
+            cols          = pft$colour[selpft]
+            legs          = pft$name  [selpft]
             #------------------------------------------------------------------------------#
 
 
@@ -721,7 +730,7 @@ for (place in myplaces){
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
             axis(side=2)
             box()
-            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -847,6 +856,7 @@ for (place in myplaces){
 
                #-----  Plot annotation. ---------------------------------------------------#
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               ley     = desc.unit(desc=description,unit=unit)
                #---------------------------------------------------------------------------#
 
 
@@ -887,7 +897,7 @@ for (place in myplaces){
                axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
                axis(side=2)
                box()
-               title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1044,10 +1054,10 @@ for (place in myplaces){
 
             #----- Load variable ----------------------------------------------------------#
             letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            ley     = desc.unit(desc=description,unit=unit)
             par(par.user)
             plot(x=thiswhen,y=thismean,type="n",main=letitre,xlab="Time"
-                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
-                ,cex.main=cex.main)
+                ,ylim=ylimit,ylab=ley,log=plog,xaxt="n",cex.main=cex.main)
             axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
             if (plotgrid){
                abline(v=whenplote$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
@@ -1214,9 +1224,10 @@ for (place in myplaces){
 
             #----- Load variable ----------------------------------------------------------#
             letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+            ley     = desc.unit(desc=description,unit=unit)
             par(par.user)
             plot(x=montmont,y=thismean,type="n",main=letitre,xlab="Time"
-                ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                ,ylim=ylimit,ylab=ley,log=plog,xaxt="n"
                 ,cex.main=cex.main)
             axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
             if (plotgrid){ 
@@ -1414,9 +1425,10 @@ for (place in myplaces){
                #----- Load variable -------------------------------------------------------#
                letitre = paste(description," - ",lieu,"\n"
                               ,"Mean diurnal cycle - ",namemon,sep="")
+               ley     = desc.unit(desc=description,unit=unit)
                par(par.user)
                plot(x=thisday,y=thismean[pmon,],type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+                   ,ylim=ylimit,ylab=ley,log=plog,xaxt="n"
                    ,cex.main=cex.main)
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                if (plotgrid){ 
@@ -1557,6 +1569,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(description,lieu,sep=" - ")
+            ley     = desc.unit(desc=description,unit=unit)
             cols    = lucols[sellu]
             legs    = lunames[sellu]
             #------------------------------------------------------------------------------#
@@ -1599,7 +1612,7 @@ for (place in myplaces){
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
             axis(side=2)
             box()
-            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1859,6 +1872,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(" Time series: ",group,"\n",lieu,sep="")
+            ley     = desc.unit(desc=description,unit=unit)
             #------------------------------------------------------------------------------#
 
 
@@ -1898,7 +1912,7 @@ for (place in myplaces){
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
             axis(side=2)
             box()
-            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -2021,6 +2035,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(" Time series: ",group,"\n",lieu,sep="")
+            ley     = desc.unit(desc=description,unit=unit)
             #------------------------------------------------------------------------------#
 
 
@@ -2060,7 +2075,7 @@ for (place in myplaces){
             axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
             axis(side=2)
             box()
-            title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -2182,6 +2197,7 @@ for (place in myplaces){
                #----- Plot settings. ------------------------------------------------------#
                letitre = paste(group," - ",lieu,"\n"
                               ,"Mean diurnal cycle - ",namemon,sep="")
+               ley     = desc.unit(desc=description,unit=unit)
                #---------------------------------------------------------------------------#
 
 
@@ -2221,7 +2237,7 @@ for (place in myplaces){
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                axis(side=2)
                box()
-               title(main=letitre,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
+               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -2346,12 +2362,13 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
+            ley     = desc.unit(desc="Soil depth",unit=untab$m)
+            lacle   = desc.unit(desc=NULL,unit=unit)
             par(par.user)
             sombreado(x=monaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
-                     ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
-                                      ,cex.main=0.7)
-                     ,key.title=title(main=unit,cex.main=0.8)
+                     ,plot.title=title(main=letitre,xlab="Month",ylab=ley,cex.main=0.7)
+                     ,key.title=title(main=lacle,cex.main=0.8)
                      ,key.log=pnlog
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=zat,labels=znice)
@@ -2459,12 +2476,13 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
+            ley     = desc.unit(desc="Soil depth",unit=untab$m)
+            lacle   = desc.unit(desc=NULL,unit=unit)
             par(par.user)
             sombreado(x=whenaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
-                     ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
-                                      ,cex.main=0.7)
-                     ,key.title=title(main=unit,cex.main=0.8)
+                     ,plot.title=title(main=letitre,xlab="Month",ylab=ley,cex.main=0.7)
+                     ,key.title=title(main=lacle,cex.main=0.8)
                      ,key.log=pnlog
                      ,plot.axes={axis(side=1,at=whenplot6$levels
                                      ,labels=whenplot6$labels,padj=whenplot6$padj)
@@ -2585,11 +2603,12 @@ for (place in myplaces){
             }#end if
 
             letitre = paste(description," - ",lieu,sep="")
+            lacle   = desc.unit(desc=NULL,unit=unit)
             par(par.user)
             sombreado(x=monaxis,y=yraxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Year",cex.main=0.7)
-                     ,key.title=title(main=unit,cex.main=0.8)
+                     ,key.title=title(main=lacle,cex.main=0.8)
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=yrat)
                                  if (fcgrid){
@@ -2683,12 +2702,13 @@ for (place in myplaces){
             }#end if
 
             letitre = paste("Mean diurnal cycle \n ",description," - ",lieu,sep="")
+            ley     = desc.unit(desc="Time of day",unit=untab$gmt)
+            lacle   = desc.unit(desc=NULL         ,unit=unit)
             par(par.user)
             sombreado(x=whenaxis,y=hraxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,colour.palette=get(vcscheme)
-                     ,plot.title=title(main=letitre,ylab="Time of day (GMT)"
-                                      ,xlab="Time",cex.main=0.7)
-                     ,key.title=title(main=unit,cex.main=0.8)
+                     ,plot.title=title(main=letitre,ylab=ley,xlab="Time",cex.main=0.7)
+                     ,key.title=title(main=lacle,cex.main=0.8)
                      ,plot.axes={axis(side=1,at=huplot$level,labels=huplot$labels)
                                  axis(side=2,at=uplot$levels,labels=uplot$labels)
                                  if (fcgrid){
@@ -2754,9 +2774,10 @@ for (place in myplaces){
 
             ylimit  = pretty.xylim(u=thisvar,fracexp=0.0,is.log=FALSE)
             letitre = paste(description,lieu,sep=" - ")
+            ley     = desc.unit(desc=description,unit=unit)
             par(par.user)
             plot(mmonth,thisvar,main=letitre,ylim=ylimit,cex.main=0.7
-                ,xlab="Time",ylab=paste("[",unit,"]",sep=""))
+                ,xlab="Time",ylab=ley)
 
             if (outform[o] == "x11"){
                locator(n=1)
@@ -2822,7 +2843,7 @@ for (place in myplaces){
 
             letitre = paste("Density function of ",description," \ ",lieu,sep="")
             lex     = "Time"
-            ley     = paste(description," [",unit,"]",sep="")
+            ley     = desc.unit(desc=description,unit=unit)
 
 
             #------------------------------------------------------------------------------#
@@ -2935,7 +2956,7 @@ for (place in myplaces){
 
             letitre = paste("Density function of ",description," \ ",lieu,sep="")
             lex     = "Months"
-            ley     = paste(description," [",unit,"]",sep="")
+            ley     = desc.unit(desc=description,unit=unit)
 
 
             #------------------------------------------------------------------------------#
@@ -3104,7 +3125,7 @@ for (place in myplaces){
                #------ Set up the title and axis labels. ----------------------------------#
                letitre = paste(lieu,"\n",description," - Time : ",whentitle,sep="")
                lexlab  = "DBH Classes"
-               leylab  = paste(description," [",unit,"]",sep="")
+               leylab  = desc.unit(desc=description,unit=unit)
                #---------------------------------------------------------------------------#
 
 
@@ -3157,7 +3178,7 @@ for (place in myplaces){
 
 
    #---------------------------------------------------------------------------------------#
-   #    Plot the 3-D size and age structure of light level.                                #
+   #    Plot the 3-D size and age structure of various variables.                          #
    #---------------------------------------------------------------------------------------#
    for (v in 1:ntspftdbh){
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -3166,11 +3187,12 @@ for (place in myplaces){
       description = thissas$desc
       unit        = thissas$i.unit
       plotit      = thissas$sas
+      plog        = thissas$plog
 
       #----- If this variable is to be plotted, then go through this if block. ------------#
       if (plotit){
 
-         cat("      + ",description," size and age structure plot...","\n")
+         cat("      + Size and age structure plot: ",description,"...","\n")
 
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #
@@ -3179,11 +3201,17 @@ for (place in myplaces){
          if (! file.exists(sasdir)) dir.create(sasdir)
          outdir = paste(sasdir,vnam,sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
+         #---------------------------------------------------------------------------------#
+
 
          #----- Load this list into "thislist". -------------------------------------------#
          varco =  cohort[[vnam]]
+         #---------------------------------------------------------------------------------#
 
 
+         #---------------------------------------------------------------------------------#
+         #      Loop over all times.                                                       #
+         #---------------------------------------------------------------------------------#
          for (ww in names(cohort$age)){
 
             #----- Find which year we are plotting. ---------------------------------------#
@@ -3194,6 +3222,10 @@ for (place in myplaces){
 
             #----- Retrieve variable list, age, DBH, and PFT for this year. ---------------#
             ageww   = cohort$age   [[ww]]
+            if (any(ageww <= 0,na.rm=TRUE)){
+               minww = min(ageww,na.rm=TRUE)
+               ageww = ageww - minww + 0.01
+            }#end if
             dbhww   = cohort$dbh   [[ww]]
             pftww   = cohort$pft   [[ww]]
             varww   = varco        [[ww]]
@@ -3208,30 +3240,28 @@ for (place in myplaces){
                # the global range, otherwise, simply use the range for this year.          #
                #---------------------------------------------------------------------------#
                if (sasfixlimits){
-                  xlimit  = range(unlist(cohort$age)                 , na.rm=TRUE)
-                  ylimit  = range(unlist(cohort$dbh)                 , na.rm=TRUE)
-                  zlimit  = range(unlist(varco)                      , na.rm=TRUE)
+                  xlimit  = pretty.xylim(u=unlist(cohort$age),fracexp=0.0,is.log=TRUE )
+                  ylimit  = pretty.xylim(u=unlist(cohort$dbh),fracexp=0.0,is.log=FALSE)
+                  zlimit  = pretty.xylim(u=unlist(varco)     ,fracexp=0.0,is.log=plog )
                   popmin  = min  (unlist(cohort$nplant * cohort$area), na.rm=TRUE)
                   popmax  = max  (unlist(cohort$nplant * cohort$area), na.rm=TRUE)
                }else{
-                  xlimit  = range(ageww  ,na.rm=TRUE)
-                  ylimit  = range(dbhww  ,na.rm=TRUE)
-                  zlimit  = range(varww  ,na.rm=TRUE)
+                  xlimit  = pretty.xylim(u=ageww             ,fracexp=0.0,is.log=TRUE )
+                  ylimit  = pretty.xylim(u=dbhww             ,fracexp=0.0,is.log=FALSE)
+                  zlimit  = pretty.xylim(u=varww             ,fracexp=0.0,is.log=plog )
                   popmin  = min  (popww  ,na.rm=TRUE)
                   popmax  = max  (popww  ,na.rm=TRUE)
                }#end if
+               #---------------------------------------------------------------------------#
+
 
                #----- Define the scale-dependent population size. -------------------------#
                cexww = cexmin + (cexmax - cexmin) * log(popww/popmin) / log(popmax/popmin)
+               #---------------------------------------------------------------------------#
+
+
 
                #----- Define the floor location. ------------------------------------------#
-               if (zlimit[1] == zlimit[2]){
-                  if (zlimit[1] == 0){
-                     zlimit = c(-1.,1.)
-                  }else{
-                     zlimit = sort(c(0.9,1.1)*zlimit[1])
-                  }#end if
-               }#end if
                if ((zlimit[1] > 0) != (zlimit[2] > 0)){
                   floor3d = 0.
                }else if (zlimit[1] > 0){
@@ -3239,13 +3269,26 @@ for (place in myplaces){
                }else{
                   floor3d = zlimit[2]
                }#end if
+               #---------------------------------------------------------------------------#
+
+
 
                #----- Define the grid information for the 3-D plot. -----------------------#
-               ageaxis   = pretty(xlimit,n=20)
-               dbhaxis   = pretty(ylimit,n=20)
-               xlimit    = range(ageaxis)
-               ylimit    = range(dbhaxis)
-               flooraxis = matrix(floor3d,nrow=length(ageaxis),ncol=length(dbhaxis))
+               xlabels = pretty.log(xlimit,n=5)
+               ylabels = pretty(ylimit,n=5)
+               zlabels = if(plog){pretty.log(zlimit,n=5)}else{pretty(zlimit,n=5)}
+               xat     = log(xlabels)
+               yat     = ylabels
+               zat     = if(plog){log(zlabels)}else{zlabels}
+               xlimit  = range(x=xat)
+               ylimit  = range(x=yat)
+               zlimit  = range(x=zat)
+               xfloor  = seq(from=xlimit[1],to=xlimit[2],length.out=16)
+               yfloor  = seq(from=ylimit[1],to=ylimit[2],length.out=16)
+               zfloor  = matrix(floor3d,nrow=length(xfloor),ncol=length(yfloor))
+               #---------------------------------------------------------------------------#
+
+
 
                #----- Expand the lines to make the lollipops. -----------------------------#
                ncohnow  = length(varww)
@@ -3255,6 +3298,9 @@ for (place in myplaces){
                varww    = as.vector(rbind(rep(floor3d,times=ncohnow)
                                          ,varco[[ww]]
                                          ,rep(NA,times=ncohnow)))
+               xww      = log(ageww)
+               yww      = dbhww
+               zww      = if(plog){log(varww)}else{varww}
                pchww    = rep(c(NA,16,NA),times=ncohnow)
                cexww    = rep(cexww,each=3)
                colww    = pft$colour[pftww]
@@ -3262,10 +3308,24 @@ for (place in myplaces){
                pftin   = sort(unique(cohort$pft[[ww]]))
                colleg  = pft$colour[pftin]
                pftleg  = pft$name  [pftin]
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #   Plot annotation.                                                        #
+               #---------------------------------------------------------------------------#
+               letitre = paste(description," - ",lieu,
+                               "\n Time :",mlist[mm],"/",thisyear,sep=" ")
+               lexlab  = desc.unit(desc="Gap age",unit=untab$yr)
+               leylab  = desc.unit(desc="DBH",unit=untab$cm)
+               lezlab  = desc.unit(desc=description,unit=unit)
+               #---------------------------------------------------------------------------#
 
 
                #----- Loop over output formats. -------------------------------------------#
                for (o in 1:nout){
+                  #----- Open file. -------------------------------------------------------#
                   fichier = paste(outdir,"/",vnam,"-",thisyear,"-",cmonth,"-",suffix
                                             ,".",outform[o],sep="")
                   if (outform[o] == "x11"){
@@ -3281,35 +3341,74 @@ for (place in myplaces){
                         ,width=size$width,height=size$height,pointsize=ptsz
                         ,paper=size$paper)
                   }#end if
+                  #------------------------------------------------------------------------#
 
-                  stcol   = pft$colour[pftww]
-                  letitre = paste(description," - ",lieu,
-                                  "\n Time :",mlist[mm],"/",thisyear,sep=" ")
-                  lezlab  = paste(description," [",unit,"]",sep="")
 
-                  #----- First plot: the box. ---------------------------------------------#
+                  #----- Split the domain into 2. -----------------------------------------#
                   par(par.user)
-                  pout = persp(x=ageaxis,y=dbhaxis,z=flooraxis,xlim=xlimit,ylim=ylimit
-                              ,zlim=zlimit,theta=theta,phi=phi,col=gcol,expand=expz
-                              ,ticktype="detailed",border=NA,xlab="Gap age [yr]"
-                              ,ylab="DBH [cm]",zlab=lezlab,shade=shade,ltheta=ltheta
-                              ,main=letitre,cex.main=0.7)
-                  #----- Second plot, the actual data (aka my lollipop trees). ------------#
-                  lines (trans3d(x=ageww,y=dbhww,z=varww,pmat=pout),type="l"
-                        ,col=grey.fg,lwd=2)
-                  points(trans3d(x=ageww,y=dbhww,z=varww,pmat=pout),type="p"
-                        ,pch=pchww,col=colww,cex=cexww)
-                  legend( x      = "bottomright"
-                        , inset  = inset
+                  layout(mat=rbind(2,1),heights=c(5,1))
+                  #------------------------------------------------------------------------#
+
+
+                  #------------------------------------------------------------------------#
+                  #     Plot legend.                                                       #
+                  #------------------------------------------------------------------------#
+                  par(mar=c(0.1,0.1,0.1,0.1))
+                  plot.new()
+                  plot.window(xlim=c(0,1),ylim=c(0,1))
+                  legend( x      = "center"
+                        , inset  = 0.0
                         , legend = pftleg
                         , fill   = colleg
-                        , ncol   = 1
-                        , title  = expression(bold("PFT"))
-                        , bg     = background
-                        , cex    = 0.9
+                        , ncol   = min(4,pretty.box(length(pftleg))$ncol)
+                        , title  = expression(bold("Plant functional type"))
+                        , cex    = cex.ptsz
+                        , xpd    = TRUE
                         )#end legend
+                  #------------------------------------------------------------------------#
 
 
+                  #------------------------------------------------------------------------#
+                  #     Plot the 3-D plot.                                                 #
+                  #------------------------------------------------------------------------#
+                  par(mar=c(1.1,1.1,4.1,1.1))
+                  pout = perspx( x         = xfloor
+                               , y         = yfloor
+                               , z         = zfloor
+                               , xlim      = xlimit
+                               , ylim      = ylimit
+                               , zlim      = zlimit
+                               , theta     = theta
+                               , phi       = phi
+                               , col       = gcol
+                               , expand    = expz
+                               , ticktype  = "detailed"
+                               , border    = NA
+                               , shade     = shade
+                               , ltheta    = ltheta
+                               , main      = letitre
+                               , cex.main  = 0.8*cex.ptsz
+                               , axes      = FALSE
+                               )#end perspx
+                  #----- Add axes. --------------------------------------------------------#
+                  paxis3d(edge="X--",pmat=pout,at=xat,cex=0.9*cex.ptsz,labels=xlabels)
+                  paxis3d(edge="Y--",pmat=pout,at=yat,cex=0.9*cex.ptsz,labels=ylabels)
+                  paxis3d(edge="Z-+",pmat=pout,at=zat,cex=0.9*cex.ptsz,labels=zlabels)
+                  mtext3d(edge="X--",pmat=pout,labels=lexlab,cex=cex.ptsz,srt=theta+90)
+                  mtext3d(edge="Y--",pmat=pout,labels=leylab,cex=cex.ptsz,srt=theta)
+                  mtext3d(edge="Z-+",pmat=pout,labels=lezlab,cex=cex.ptsz,srt=-75)
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Add the cohorts. -------------------------------------------------#
+                  lines (trans3d(x=xww,y=yww,z=zww,pmat=pout),type="l",col=grey.fg,lwd=2)
+                  points(trans3d(x=xww,y=yww,z=zww,pmat=pout),type="p",pch=pchww
+                        ,col=colww,cex=cexww)
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Close the device. ------------------------------------------------#
                   if (outform[o] == "x11"){
                      locator(n=1)
                      dev.off()
@@ -3317,10 +3416,15 @@ for (place in myplaces){
                      dev.off()
                   }#end if
                   dummy = clean.tmp()
-               } #end for outform
+                  #------------------------------------------------------------------------#
+               }#end for outform
+               #---------------------------------------------------------------------------#
             }#end if is.na(varww)
+            #------------------------------------------------------------------------------#
          }#end for nameco
-      } #end if
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
    }#end for npsas
    #---------------------------------------------------------------------------------------#
 }#end for places

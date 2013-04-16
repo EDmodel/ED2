@@ -104,15 +104,24 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Make a matrix with offset of one in case the user appends a legend. -------------#
+   sel           = mat == 0
+   mat.off       = mat + 1
+   mat.off[sel]  = 0
+   mat.off2      = mat + 2
+   mat.off2[sel] = 0
+   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
    #     Return a list with the information.                                               #
    #---------------------------------------------------------------------------------------#
    if (horizontal){
-      ans = list(nrow=nbrow,ncol=nbcol,nbox=nbox,angle=yangle,mat=mat)
+      ans = list(nrow=nbrow,ncol=nbcol,nbox=nbox,angle=yangle
+                ,mat=mat,mat.off=mat.off,mat.off2=mat.off2)
    }else{
-      ans = list(nrow=nbrow,ncol=nbcol,nbox=nbox,angle=xangle,mat=mat)
+      ans = list(nrow=nbrow,ncol=nbcol,nbox=nbox,angle=xangle,mat=mat
+                ,mat.off=mat.off,mat.off2=mat.off2)
    }#end if
    return(ans)
 }#end function
