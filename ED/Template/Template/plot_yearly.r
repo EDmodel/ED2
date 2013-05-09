@@ -1438,7 +1438,7 @@ for (place in myplaces){
       group        = themenow$title
       unit         = themenow$unit
       legpos       = themenow$legpos
-      plotit       = themenow$qmean
+      plotit       = themenow$qmean && plot.ycomp
       if (plog){ 
          xylog = "y"
       }else{

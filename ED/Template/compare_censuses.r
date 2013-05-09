@@ -22,7 +22,7 @@ outdata        = file.path(here,"Rdata_census",sep="/")
 
 
 #----- Background and output path. --------------------------------------------------------#
-ibackground =     2                     # Sought background colour (actual background will
+ibackground =     0                     # Sought background colour (actual background will
                                         #  be transparent, but foreground colours will 
                                         #  change)
                                         #  0 -- white background
@@ -31,6 +31,7 @@ ibackground =     2                     # Sought background colour (actual backg
 #----- Main path for output. --------------------------------------------------------------#
 outroot     = file.path(here,paste("census_comp_ibg",sprintf("%2.2i",ibackground),sep=""))
 #------------------------------------------------------------------------------------------#
+
 
 
 #----- Additional settings. ---------------------------------------------------------------#
@@ -66,12 +67,12 @@ mtext.yadj     =  0.65                  # Offset for the y label
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
 slz.min        = -5.0         # The deepest depth that trees access water.
-idbh.type      =    3         # Type of DBH class
+idbh.type      =    2         # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                               # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
 ed22.ci        = TRUE         # Plot confidence interval for ED?
-n.boot         = 1000         # Number of realisations for bootstrap
+n.boot         = 10000        # Number of realisations for bootstrap
 #------------------------------------------------------------------------------------------#
 
 
@@ -122,15 +123,12 @@ source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 #    Types of variables to use to determine mortality, growth, and recruitment.            #
 #------------------------------------------------------------------------------------------#
-recr.vars     = c("n","agb","ba")
-recr.labels   = c("Individuals","Above Ground Biomass","Basal area")
-recr.units    = c(untab$pcpopoyr,untab$pcagboyr,untab$pcbaoyr)
-mort.vars     = c("n","agb","ba")
-mort.labels   = c("Individuals","Above Ground Biomass","Basal area")
-mort.units    = c(untab$pcpopoyr,untab$pcagboyr,untab$pcbaoyr)
-growth.vars   = c("dbh","agb","ba")
-growth.labels = c("DBH","Above Ground Biomass","Basal Area")
-growth.units  = c(untab$pcdbhoyr,untab$pcagboyr,untab$pcbaoyr)
+pop.vars      = c("n","agb","ba","acc")
+pop.labels    = c("Individuals","Above Ground Biomass","Basal area","Accumulated")
+pop.units     = c(untab$pcpopoyr,untab$pcagboyr,untab$pcbaoyr,untab$kgcom2oyr)
+growth.vars   = c("dbh","agb","ba","anpp")
+growth.labels = c("DBH","Above Ground Biomass","Basal Area","ANPP")
+growth.units  = c(untab$pcdbhoyr,untab$pcagboyr,untab$pcbaoyr,untab$kgcom2oyr)
 #------------------------------------------------------------------------------------------#
 
 
@@ -145,11 +143,11 @@ pratets[[1]] = list( ed2.rate   = "recr"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Recruitment rate"
-                   , unit.rate  = recr.units
+                   , unit.rate  = pop.units
                    , col.ed2    = c(chartreuse.fg,chartreuse.bg)
                    , col.sta    = c(grey.fg,grey.bg)
-                   , indiv      = recr.vars
-                   , desc.indiv = recr.labels
+                   , indiv      = pop.vars
+                   , desc.indiv = pop.labels
                    , legpos     = "topright"
                    , plog       = ""
                    )#end list
@@ -158,11 +156,11 @@ pratets[[2]] = list( ed2.rate   = "mort"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Mortality rate"
-                   , unit.rate  = mort.units
+                   , unit.rate  = pop.units
                    , col.ed2    = c(purple.fg,purple.bg)
                    , col.sta    = c(grey.fg,grey.bg)
-                   , indiv      = mort.vars
-                   , desc.indiv = mort.labels
+                   , indiv      = pop.vars
+                   , desc.indiv = pop.labels
                    , legpos     = "topright"
                    , plog       = ""
                    )#end list
@@ -171,11 +169,11 @@ pratets[[3]] = list( ed2.rate   = "ddmort"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Density-dependent mort. rate"
-                   , unit.rate  = mort.units
+                   , unit.rate  = pop.units
                    , col.ed2    = c(indigo.fg,indigo.bg)
                    , col.sta    = c(grey.fg,grey.bg)
-                   , indiv      = mort.vars
-                   , desc.indiv = mort.labels
+                   , indiv      = pop.vars
+                   , desc.indiv = pop.labels
                    , legpos     = "topright"
                    , plog       = ""
                    )#end list
@@ -184,11 +182,11 @@ pratets[[4]] = list( ed2.rate   = "dimort"
                    , sizetoo    = TRUE
                    , pfttoo     = TRUE
                    , desc.rate  = "Density-independent mort. rate"
-                   , unit.rate  = mort.units
+                   , unit.rate  = pop.units
                    , col.ed2    = c(blue.fg,blue.bg)
                    , col.sta    = c(grey.fg,grey.bg)
-                   , indiv      = mort.vars
-                   , desc.indiv = mort.labels
+                   , indiv      = pop.vars
+                   , desc.indiv = pop.labels
                    , legpos     = "topright"
                    , plog       = ""
                    )#end list
@@ -215,11 +213,11 @@ pratesize[[1]] = list( ed2.rate   = "recr"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Recruitment rate"
-                     , unit.rate  = recr.units
+                     , unit.rate  = pop.units
                      , col.ed2    = c(chartreuse.fg,chartreuse.bg)
                      , col.sta    = c(grey.fg,grey.bg)
-                     , indiv      = recr.vars
-                     , desc.indiv = recr.labels
+                     , indiv      = pop.vars
+                     , desc.indiv = pop.labels
                      , legpos     = "topright"
                      , plog       = ""
                      )#end list
@@ -228,11 +226,11 @@ pratesize[[2]] = list( ed2.rate   = "mort"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Mortality rate"
-                     , unit.rate  = mort.units
+                     , unit.rate  = pop.units
                      , col.ed2    = c(purple.fg,purple.bg)
                      , col.sta    = c(grey.fg,grey.bg)
-                     , indiv      = mort.vars
-                     , desc.indiv = mort.labels
+                     , indiv      = pop.vars
+                     , desc.indiv = pop.labels
                      , legpos     = "topright"
                      , plog       = ""
                      )#end list
@@ -241,11 +239,11 @@ pratesize[[3]] = list( ed2.rate   = "ddmort"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Density-dependent mort. rate"
-                     , unit.rate  = mort.units
+                     , unit.rate  = pop.units
                      , col.ed2    = c(indigo.fg,indigo.bg)
                      , col.sta    = c(grey.fg,grey.bg)
-                     , indiv      = mort.vars
-                     , desc.indiv = mort.labels
+                     , indiv      = pop.vars
+                     , desc.indiv = pop.labels
                      , legpos     = "topright"
                      , plog       = ""
                      )#end list
@@ -254,11 +252,11 @@ pratesize[[4]] = list( ed2.rate   = "dimort"
                      , sizetoo    = TRUE
                      , pfttoo     = TRUE
                      , desc.rate  = "Density-independent mort. rate"
-                     , unit.rate  = mort.units
+                     , unit.rate  = pop.units
                      , col.ed2    = c(blue.fg,blue.bg)
                      , col.sta    = c(grey.fg,grey.bg)
-                     , indiv      = mort.vars
-                     , desc.indiv = mort.labels
+                     , indiv      = pop.vars
+                     , desc.indiv = pop.labels
                      , legpos     = "topright"
                      , plog       = ""
                      )#end list
@@ -277,23 +275,57 @@ pratesize[[5]] = list( ed2.rate   = "growth"
                      )#end list
 #---- 3. Plot expected values and confidence intervals for themes. ------------------------#
 pratetheme      = list()
-pratetheme[[1]] = list( ed2.rate   = c("ddmort","dimort")
+pratetheme[[1]] = list( ed2.rate   = c("ddmort","dimort","mort")
                       , sta.rate   = "mort"
                       , sizetoo    = TRUE
                       , pfttoo     = TRUE
-                      , desc.rate  = c("ED-2.2 Negative C Balance"
-                                      ,"ED-2.2 Other")
-                      , unit.rate  = mort.units
-                      , col.ed2    = rbind( c(indigo.fg,indigo.bg)
+                      , desc.rate  = c("ED-2.2 Density-dependent"
+                                      ,"ED-2.2 Density-independent"
+                                      ,"ED-2.2 Total")
+                      , unit.rate  = pop.units
+                      , col.ed2    = rbind( c(sky.fg,sky.bg)
                                           , c(chartreuse.fg ,chartreuse.bg)
+                                          , c(indigo.fg,indigo.bg)
                                           )#end rbind
                       , col.sta    = c(grey.fg,grey.bg)
-                      , angle      = c(-45,45)
-                      , density    = c(40,40)
-                      , indiv      = mort.vars
-                      , desc.indiv = mort.labels
+                      , angle      = c(-30,30,60)
+                      , density    = c(40,40,40)
+                      , indiv      = pop.vars
+                      , desc.indiv = pop.labels
                       , theme      = "mortality"
                       , theme.desc = "Mortality Rates"
+                      , plog       = ""
+                      )#end list
+#---- 4. Plot expected values and confidence intervals for themes. ------------------------#
+pratethbpw      = list()
+pratethbpw[[1]] = list( ed2.rate   = c("mort","dimort","ddmort")
+                      , sta.rate   = "mort"
+                      , sizetoo    = TRUE
+                      , pfttoo     = TRUE
+                      , desc.rate  = c("ED-2.2 Total"
+                                      ,"ED-2.2 Density-independent"
+                                      ,"ED-2.2 Density-dependent")
+                      , unit.rate  = pop.units
+                      , col.ed2    = c(royalblue.mg,chartreuse.mg,indigo.mg)
+                      , col.sta    = grey.mg
+                      , indiv      = pop.vars
+                      , desc.indiv = pop.labels
+                      , theme      = "mortality"
+                      , theme.desc = "Mortality Rates"
+                      , plog       = ""
+                      )#end list
+pratethbpw[[2]] = list( ed2.rate   = "growth"
+                      , sta.rate   = "growth"
+                      , sizetoo    = TRUE
+                      , pfttoo     = TRUE
+                      , desc.rate  = c("ED-2.2")
+                      , unit.rate  = growth.units
+                      , col.ed2    = chartreuse.mg
+                      , col.sta    = grey.mg
+                      , indiv      = growth.vars
+                      , desc.indiv = growth.labels
+                      , theme      = "productivity"
+                      , theme.desc = "Growth rates"
                       , plog       = ""
                       )#end list
 #------------------------------------------------------------------------------------------#
@@ -316,6 +348,7 @@ nout = length(outform)
 #----- Set how many variables we will compare. --------------------------------------------#
 npratesize  = length(pratesize )
 npratetheme = length(pratetheme)
+npratethbpw = length(pratethbpw)
 npratets    = length(pratets   )
 #------------------------------------------------------------------------------------------#
 
@@ -336,8 +369,8 @@ load(file=census.file)
 #------------------------------------------------------------------------------------------#
 #    Types of variables to use to determine mortality, growth, and recruitment.            #
 #------------------------------------------------------------------------------------------#
-nrecr.vars   = length(recr.vars  ) 
-nmort.vars   = length(mort.vars  ) 
+npop.vars    = length(pop.vars  ) 
+npop.vars    = length(pop.vars  ) 
 ngrowth.vars = length(growth.vars) 
 #------------------------------------------------------------------------------------------#
 
@@ -406,11 +439,6 @@ for (p in sequence(nplaces)){
                    & regexpr(pattern=aux.tfall.key[tf],text=aux.simul.all) > 0 )
          simul   = simul.all[keep]
          n.simul = length(simul)
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Set up the location. ------------------------------------------------------#
-         lieu    = paste(longname,iphen.desc[ph],tfall.desc[tf],sep=" - ")
          #---------------------------------------------------------------------------------#
 
 
@@ -518,17 +546,17 @@ for (p in sequence(nplaces)){
                   dim.size     = c(npft+1,n.dbh+1,n.months,n.cycles,n.simul)
                   #----- Recruitment. -----------------------------------------------------#
                   ts.recr.size     = list()
-                  for (v in 1:nrecr.vars){
-                     ts.recr.size  [[recr.vars[v]]] = array( NA, dim = dim.size)
+                  for (v in 1:npop.vars){
+                     ts.recr.size  [[pop.vars[v]]] = array( NA, dim = dim.size)
                   }#end for
                   #----- Mortality. -------------------------------------------------------#
                   ts.mort.size     = list()
                   ts.ddmort.size   = list()
                   ts.dimort.size   = list()
-                  for (v in 1:nmort.vars){
-                     ts.mort.size  [[mort.vars[v]]] = array( NA, dim = dim.size)
-                     ts.ddmort.size[[mort.vars[v]]] = array( NA, dim = dim.size)
-                     ts.dimort.size[[mort.vars[v]]] = array( NA, dim = dim.size)
+                  for (v in 1:npop.vars){
+                     ts.mort.size  [[pop.vars[v]]] = array( NA, dim = dim.size)
+                     ts.ddmort.size[[pop.vars[v]]] = array( NA, dim = dim.size)
+                     ts.dimort.size[[pop.vars[v]]] = array( NA, dim = dim.size)
                   }#end for
                   #----- Growth. ----------------------------------------------------------#
                   ts.growth.size   = list()
@@ -542,12 +570,12 @@ for (p in sequence(nplaces)){
 
 
                #----- Copy the information from this simulation. --------------------------#
-               for (v in 1:nrecr.vars){
-                  var.now = recr.vars[v]
+               for (v in 1:npop.vars){
+                  var.now = pop.vars[v]
                   ts.recr.size  [[var.now]][,,,,s] = ed2$tseries$recr  [[var.now]]
                }#end for
-               for (v in 1:nmort.vars){
-                  var.now = mort.vars[v]
+               for (v in 1:npop.vars){
+                  var.now = pop.vars[v]
                   ts.mort.size  [[var.now]][,,,,s] = ed2$tseries$mort  [[var.now]]
                   ts.ddmort.size[[var.now]][,,,,s] = ed2$tseries$ddmort[[var.now]]
                   ts.dimort.size[[var.now]][,,,,s] = ed2$tseries$dimort[[var.now]]
@@ -605,20 +633,23 @@ for (p in sequence(nplaces)){
 
             #----- Plot-level recruitment. ------------------------------------------------#
             cat("     * Recruitment...","\n")
-            for (v in 1:nrecr.vars){
-               v.now  = recr.vars[v]
-               ms.now = list()
 
-               recr.rates = c("recr")
-               n.rates    = length(recr.rates)
+            #------------------------------------------------------------------------------#
+            #     Loop over all rates.                                                     #
+            #------------------------------------------------------------------------------#
+            recr.rates = c("recr")
+            n.rates    = length(recr.rates)
+            for (r in 1:n.rates){
+               ts.this.size = get(paste("ts",recr.rates[r],"size",sep="."))
+               ms.this.plot = list()
+               ms.this.size = list()
 
                #---------------------------------------------------------------------------#
                #     Loop over all rates.                                                  #
                #---------------------------------------------------------------------------#
-               for (r in 1:n.rates){
-                  ts.this.size = get(paste("ts",recr.rates[r],"size",sep="."))
-                  ms.this.plot = get(paste("ms",recr.rates[r],"plot",sep="."))
-                  ms.this.size = get(paste("ms",recr.rates[r],"size",sep="."))
+               for (v in 1:npop.vars){
+                  v.now  = pop.vars[v]
+                  ms.now = list()
 
 
                   #------------------------------------------------------------------------#
@@ -634,7 +665,7 @@ for (p in sequence(nplaces)){
                   for (p in 1:(npft+1)){
                      for (i in 2:n.census){
                         i.sel = census.idx == i
-                        ts.plot.now       = c(ts.this.size[[v.now]][p,ndbh+1,i.sel,,])
+                        ts.plot.now       = c(ts.this.size[[v.now]][p,n.dbh+1,i.sel,,])
                         ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                         if (any(is.finite(ts.plot.now))){
                            boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
@@ -703,30 +734,30 @@ for (p in sequence(nplaces)){
                                               , q975     = ms.q975.size
                                               )#end list
                   #------------------------------------------------------------------------#
-                  dummy = assign(paste("ms",recr.rates[r],"plot",sep="."), ms.this.plot)
-                  dummy = assign(paste("ms",recr.rates[r],"size",sep="."), ms.this.size)
                }#end for
                #---------------------------------------------------------------------------#
+               dummy = assign(paste("ms",recr.rates[r],"plot",sep="."), ms.this.plot)
+               dummy = assign(paste("ms",recr.rates[r],"size",sep="."), ms.this.size)
             }#end for
             #------------------------------------------------------------------------------#
 
 
             #----- Mortality rates. -------------------------------------------------------#
             cat("     * Mortality...","\n")
-            for (v in 1:nmort.vars){
-               v.now  = mort.vars[v]
-               ms.now = list()
 
-               mort.rates = c("mort","ddmort","dimort")
-               n.rates    = length(mort.rates)
+            mort.rates = c("mort","ddmort","dimort")
+            n.rates    = length(mort.rates)
 
-               #---------------------------------------------------------------------------#
-               #     Loop over all rates.                                                  #
-               #---------------------------------------------------------------------------#
-               for (r in 1:n.rates){
-                  ts.this.size = get(paste("ts",mort.rates[r],"size",sep="."))
-                  ms.this.plot = get(paste("ms",mort.rates[r],"plot",sep="."))
-                  ms.this.size = get(paste("ms",mort.rates[r],"size",sep="."))
+            #---------------------------------------------------------------------------#
+            #     Loop over all rates.                                                  #
+            #---------------------------------------------------------------------------#
+            for (r in 1:n.rates){
+               ts.this.size = get(paste("ts",mort.rates[r],"size",sep="."))
+               ms.this.plot = list()
+               ms.this.size = list()
+               for (v in 1:npop.vars){
+                  v.now  = pop.vars[v]
+                  ms.now = list()
 
 
                   #------------------------------------------------------------------------#
@@ -742,7 +773,7 @@ for (p in sequence(nplaces)){
                   for (p in 1:(npft+1)){
                      for (i in 2:n.census){
                         i.sel = census.idx == i
-                        ts.plot.now       = c(ts.this.size[[v.now]][p,ndbh+1,i.sel,,])
+                        ts.plot.now       = c(ts.this.size[[v.now]][p,n.dbh+1,i.sel,,])
                         ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                         if (any(is.finite(ts.plot.now))){
                            boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
@@ -811,9 +842,9 @@ for (p in sequence(nplaces)){
                                               , q975     = ms.q975.size
                                               )#end list
                   #------------------------------------------------------------------------#
-                  dummy = assign(paste("ms",mort.rates[r],"plot",sep="."), ms.this.plot)
-                  dummy = assign(paste("ms",mort.rates[r],"size",sep="."), ms.this.size)
                }#end for
+               dummy = assign(paste("ms",mort.rates[r],"plot",sep="."), ms.this.plot)
+               dummy = assign(paste("ms",mort.rates[r],"size",sep="."), ms.this.size)
                #---------------------------------------------------------------------------#
             }#end for
             #------------------------------------------------------------------------------#
@@ -821,20 +852,21 @@ for (p in sequence(nplaces)){
             
             #----- Growth rates. ----------------------------------------------------------#
             cat("     * Growth...","\n")
-            for (v in 1:ngrowth.vars){
-               v.now  = growth.vars[v]
-               ms.now = list()
 
-               growth.rates = c("growth")
-               n.rates    = length(growth.rates)
+            #---------------------------------------------------------------------------#
+            #     Loop over all rates.                                                  #
+            #---------------------------------------------------------------------------#
+            growth.rates = c("growth")
+            n.rates    = length(growth.rates)
+            for (r in 1:n.rates){
+               ts.this.size = get(paste("ts",growth.rates[r],"size",sep="."))
+               ms.this.plot = list()
+               ms.this.size = list()
 
-               #---------------------------------------------------------------------------#
-               #     Loop over all rates.                                                  #
-               #---------------------------------------------------------------------------#
-               for (r in 1:n.rates){
-                  ts.this.size = get(paste("ts",growth.rates[r],"size",sep="."))
-                  ms.this.plot = get(paste("ms",growth.rates[r],"plot",sep="."))
-                  ms.this.size = get(paste("ms",growth.rates[r],"size",sep="."))
+               for (v in 1:ngrowth.vars){
+                  v.now  = growth.vars[v]
+                  ms.now = list()
+
 
                   #------------------------------------------------------------------------#
                   #     Find the mean for all PFTs.                                        #
@@ -849,7 +881,7 @@ for (p in sequence(nplaces)){
                   for (p in 1:(npft+1)){
                      for (i in 2:n.census){
                         i.sel = census.idx == i
-                        ts.plot.now       = c(ts.this.size[[v.now]][p,ndbh+1,i.sel,,])
+                        ts.plot.now       = c(ts.this.size[[v.now]][p,n.dbh+1,i.sel,,])
                         ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                         if (any(is.finite(ts.plot.now))){
                            boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
@@ -907,9 +939,9 @@ for (p in sequence(nplaces)){
                                               , q975     = ms.q975.size
                                               )#end list
                   #------------------------------------------------------------------------#
-                  dummy = assign(paste("ms",growth.rates[r],"plot",sep="."), ms.this.plot)
-                  dummy = assign(paste("ms",growth.rates[r],"size",sep="."), ms.this.size)
                }#end for
+               dummy = assign(paste("ms",growth.rates[r],"plot",sep="."), ms.this.plot)
+               dummy = assign(paste("ms",growth.rates[r],"size",sep="."), ms.this.size)
                #---------------------------------------------------------------------------#
             }#end for
             #------------------------------------------------------------------------------#
@@ -1062,8 +1094,12 @@ for (p in sequence(nplaces)){
             #------------------------------------------------------------------------------#
             outplot   = paste(outfall,"census_plot"  ,sep="/")
             outsize   = paste(outfall,"census_size"  ,sep="/")
+            pftplot   = paste(outfall,"pft_plot"     ,sep="/")
+            pftsize   = paste(outfall,"pft_size"     ,sep="/")
             if (! file.exists(outplot)) dir.create(outplot)
             if (! file.exists(outsize)) dir.create(outsize)
+            if (! file.exists(pftplot)) dir.create(pftplot)
+            if (! file.exists(pftsize)) dir.create(pftsize)
             #------------------------------------------------------------------------------#
 
 
@@ -1078,6 +1114,7 @@ for (p in sequence(nplaces)){
             #==============================================================================#
             for (n in 1:npratesize){
                this.plot  = pratesize[[n]]
+               pfttoo     = this.plot$pfttoo
                desc.rate  = this.plot$desc.rate
                unit.rate  = this.plot$unit.rate
                col.ed2    = this.plot$col.ed2
@@ -1091,13 +1128,7 @@ for (p in sequence(nplaces)){
                nindiv     = length(indiv)
 
 
-
-               #----- Create a directory for this type of plot. ---------------------------#
-               outrate   = paste(outsize,ed2.rate,sep="/")
-               if (! file.exists(outrate)) dir.create(outrate)
-               #---------------------------------------------------------------------------#
-
-
+               cat(" + Plotting size-dependent ",desc.rate,"...","\n")
 
                #---------------------------------------------------------------------------#
                #    Loop over all possible types of population count.                      #
@@ -1107,9 +1138,19 @@ for (p in sequence(nplaces)){
 
 
                   #----- Build the rate name. ---------------------------------------------#
-                  cat(" + Plotting size-dependent ",desc.rate,"...","\n")
                   ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
                   sta.rate = paste(this.plot$sta.rate,"size",sep=".")
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Create a directory for this type of plot. ------------------------#
+                  outrate   = paste(outsize,ed2.rate,sep="/")
+                  if (! file.exists(outrate)) dir.create(outrate)
+                  if (pfttoo){
+                     pftrate   = paste(pftsize,ed2.rate,sep="/")
+                     if (! file.exists(pftrate)) dir.create(pftrate)
+                  }#end if
                   #------------------------------------------------------------------------#
 
 
@@ -1121,14 +1162,15 @@ for (p in sequence(nplaces)){
 
 
                   #----- Load the modelled rates. -----------------------------------------#
+                  mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                   sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-                  sta.expected = 100. * sta.mod[1,,]
-                  sta.q025     = 100. * sta.mod[2,,]
-                  sta.q975     = 100. * sta.mod[3,,]
+                  sta.expected = mult * sta.mod[1,,]
+                  sta.q025     = mult * sta.mod[2,,]
+                  sta.q975     = mult * sta.mod[3,,]
                   ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]$global
-                  ed2.expected = 100. * ed2.mod[1,,]
-                  ed2.q025     = 100. * ed2.mod[2,,]
-                  ed2.q975     = 100. * ed2.mod[3,,]
+                  ed2.expected = mult * ed2.mod[1,,]
+                  ed2.q025     = mult * ed2.mod[2,,]
+                  ed2.q975     = mult * ed2.mod[3,,]
                   #------------------------------------------------------------------------#
 
 
@@ -1183,7 +1225,8 @@ for (p in sequence(nplaces)){
                      #     Find the plot limit for the y scale.                            #
                      #---------------------------------------------------------------------#
                      if (ed22.ci){
-                        yuse   = c(sta.q025,sta.q975,ed2.q025,ed2.q975)
+                        yuse   = c(sta.q025,sta.q975,sta.expected
+                                  ,ed2.q025,ed2.q975,ed2.expected)
                         ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
 
 
@@ -1209,7 +1252,7 @@ for (p in sequence(nplaces)){
                                )#end legend
                         #------------------------------------------------------------------#
                      }else{
-                        yuse   = c(sta.q025,sta.q975,ed2.expected)
+                        yuse   = c(sta.q025,sta.q975,sta.expected,ed2.expected)
                         ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
 
 
@@ -1309,7 +1352,8 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Make the title and axis labels.                                 #
                      #---------------------------------------------------------------------#
-                     letitre = paste("Size-dependent ",desc.rate,"\n",lieu,sep="")
+                     letitre = paste("Size-dependent ",desc.rate," - ",longname
+                                    ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                      ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
                      lex     = desc.unit(desc="DBH class",unit=untab$cm)
                      #---------------------------------------------------------------------#
@@ -1325,7 +1369,7 @@ for (p in sequence(nplaces)){
                            , off.xlab  = 1/6
                            , line.xlab = 4.1
                            , line.ylab = 2.6
-                           , cex.main  = 1.1*cex.ptsz
+                           , cex.main  = 0.9*cex.ptsz
                            )#end gtitle
                      #---------------------------------------------------------------------#
 
@@ -1343,6 +1387,272 @@ for (p in sequence(nplaces)){
                   }#end for
                   #------------------------------------------------------------------------#
 
+
+
+
+
+
+                  #------------------------------------------------------------------------#
+                  #     Plot the size structure by PFT.                                    #
+                  #------------------------------------------------------------------------#
+                  if (pfttoo){
+                     cat("   - Size level by PFT: ",desc.indiv[i]," ...","\n")
+
+                     #----- Build the rate name. ------------------------------------------#
+                     ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
+                     sta.rate = paste(this.plot$sta.rate,"size",sep=".")
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(pftrate,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+                     for (p in sequence(npfts)){
+                        pft.label = pft$name[mypfts[p]]
+                        pft.key   = paste("pft",sprintf("%2.2i",mypfts[p]),sep="")
+
+
+                        #----- Load the modelled rates. -----------------------------------#
+                        mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                        sta.mod      = sta[[sta.rate]][[indiv[i]]]
+                        sta.expected = mult * sta.mod$expected[p,,]
+                        sta.q025     = mult * sta.mod$q025    [p,,]
+                        sta.q975     = mult * sta.mod$q975    [p,,]
+                        ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]
+                        ed2.expected = mult * ed2.mod$expected[p,,]
+                        ed2.q025     = mult * ed2.mod$q025    [p,,]
+                        ed2.q975     = mult * ed2.mod$q975    [p,,]
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #      Define a nice configuration for the multiple panels.        #
+                        #------------------------------------------------------------------#
+                        lo.box = pretty.box(n=n.census-1,horizontal=TRUE)
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #      Loop over all formats.                                      #
+                        #------------------------------------------------------------------#
+                        for (o in 1:nout){
+                           #----- Open the file or the plot window. -----------------------#
+                           fichier = file.path(outindiv
+                                              ,paste(iata,"-yrsize-",ed2.rate,"-",indiv[i]
+                                                    ,"-",pft.key,"-",iphen.key[ph]
+                                                    ,".",outform[o],sep=""))
+                           if(outform[o] == "x11"){
+                              X11(width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz)
+                           }else if(outform[o] == "png"){
+                              png(filename=fichier,width=wide.size$width*depth
+                                 ,height=wide.size$height*depth,pointsize=ptsz,res=depth)
+                           }else if(outform[o] == "eps"){
+                              postscript(file=fichier,width=wide.size$width
+                                        ,height=wide.size$height,pointsize=ptsz
+                                        ,paper=wide.size$paper)
+                           }else if(outform[o] == "pdf"){
+                              pdf(file=fichier,onefile=FALSE
+                                 ,width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz,paper=wide.size$paper)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Split the window into several smaller windows.            #
+                           #---------------------------------------------------------------#
+                           par(par.user)
+                           par.orig = par(no.readonly = TRUE)
+                           par(oma = c(0.2,3,4,0))
+                           layout(mat    = rbind(1+lo.box$mat,rep(1,times=lo.box$ncol))
+                                 ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
+                                 )#end layout
+                           #---------------------------------------------------------------#
+
+
+                           #---------------------------------------------------------------#
+                           #     Find the plot limit for the y scale.                      #
+                           #---------------------------------------------------------------#
+                           if (ed22.ci){
+                              yuse   = c(sta.q025,sta.q975,sta.expected
+                                        ,ed2.q025,ed2.q975,ed2.expected)
+                              ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
+
+
+
+                              #----- Plot legend. -----------------------------------------#
+                              par(mar=c(0.1,0.1,0.1,0.1))
+                              plot.new()
+                              plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                              legend ( x       = "bottom"
+                                     , inset   = 0.01
+                                     , legend  = c("Census","ED-2.2")
+                                     , fill    = c(col.sta[2],col.ed2[2])
+                                     , border  = c(col.sta[2],col.ed2[2])
+                                     , col     = c(col.sta[1],col.ed2[1])
+                                     , lwd     = 2.0
+                                     , pt.cex  = 1.0
+                                     , angle   = c(-45,45)
+                                     , density = c( 40,40)
+                                     , bg      = background
+                                     , ncol    = 2
+                                     , title   = "(Shaded - 95% C.I.)"
+                                     , cex     = 1.0
+                                     )#end legend
+                              #------------------------------------------------------------#
+                           }else{
+                              yuse   = c(sta.q025,sta.q975,sta.expected,ed2.expected)
+                              ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
+
+
+
+                              #----- Plot legend. -----------------------------------------#
+                              par(mar=c(0.1,0.1,0.1,0.1))
+                              plot.new()
+                              plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                              legend ( x       = "bottom"
+                                     , inset   = 0.01
+                                     , legend  = c("Census","ED-2.2")
+                                     , fill    = c(col.sta[2],         0)
+                                     , border  = c(col.sta[2],         0)
+                                     , col     = c(col.sta[1],col.ed2[1])
+                                     , lwd     = 2.0
+                                     , pt.cex  = 1.0
+                                     , angle   = c(-45,45)
+                                     , density = c( 40,40)
+                                     , bg      = background
+                                     , ncol    = 2
+                                     , title   = "(Shaded - 95% C.I.)"
+                                     , cex     = 1.0
+                                     )#end legend
+                              #------------------------------------------------------------#
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+                           #---------------------------------------------------------------#
+                           #      Loop over all years.                                     #
+                           #---------------------------------------------------------------#
+                           for (y in 2:n.census){
+                              k       = y - 1
+                              left    = (k %% lo.box$ncol) == 1
+                              right   = (k %% lo.box$ncol) == 0
+                              top     = k <= lo.box$ncol
+                              bottom  = k > (lo.box$nrow - 1) * lo.box$ncol
+                              mar.now = c(1.1 + 4 * bottom
+                                         ,1.1 + 3 * left
+                                         ,1.1 + 4 * top
+                                         ,1.1 + 3 * right
+                                         )#end c
+
+
+
+                              #------------------------------------------------------------#
+                              #      95% Confidence Interval.                              #
+                              #------------------------------------------------------------#
+                              if (ed22.ci){
+                                 size.poly     = list()
+                                 size.poly$x   = c(size.poly$x,x.dbh       
+                                                  ,rev(x.dbh)       ,NA
+                                                  ,size.poly$x,x.dbh       
+                                                  ,rev(x.dbh)       ,NA)
+                                 size.poly$y   = c(size.poly$y,sta.q025[,y]
+                                                  ,rev(sta.q975[,y]),NA
+                                                  ,size.poly$y,ed2.q025[,y]
+                                                  ,rev(ed2.q975[,y]),NA)
+                                 size.poly$col = c(col.sta[2],col.ed2[2])
+                              }else{
+                                 size.poly     = list()
+                                 size.poly$x   = c(size.poly$x,x.dbh       
+                                                  ,rev(x.dbh)       ,NA)
+                                 size.poly$y   = c(size.poly$y,sta.q025[,y]
+                                                  ,rev(sta.q975[,y]),NA)
+                                 size.poly$col = col.sta[2]
+                              }#end if
+                              #------------------------------------------------------------#
+
+
+
+                              #----- Set up the title for each plot. ----------------------#
+                              lesub = paste("Census period: ",census.desc[y],sep="")
+                              #------------------------------------------------------------#
+
+
+                              #------------------------------------------------------------#
+                              #     Go on and plot stuff.                                  #
+                              #------------------------------------------------------------#
+                              #----- Plotting window and grid. ----------------------------#
+                              par(mar=mar.now)
+                              plot.new()
+                              plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                              if (bottom) axis(side=1,at=x.dbh,labels=dbh.names)
+                              if (left  ) axis(side=2)
+                              box()
+                              title(main=lesub)
+                              if (plotgrid){
+                                 abline(v=x.edge,h=axTicks(2),col=grid.colour,lty="solid")
+                              }#end if (plotgrid)
+                              #----- Plot the taxon rate with confidence interval. --------#
+                              epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
+                                      ,angle=c(-45,45),density=40,lty="solid",lwd=1.0)
+                              lines(x=x.dbh,y=sta.expected[,y],type="o",col=col.sta[1]
+                                   ,pch=16,lwd=2.0)
+                              lines(x=x.dbh,y=ed2.expected[,y],type="o",col=col.ed2[1]
+                                   ,pch=16,lwd=2.0)
+                           }#end for
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Make the title and axis labels.                           #
+                           #---------------------------------------------------------------#
+                           letitre = paste("Size-dependent ",desc.rate," - ",longname
+                                          ," - ",pft.label
+                                          ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                           ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
+                           lex     = desc.unit(desc="DBH class",unit=untab$cm)
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Plot the global title.                                    #
+                           #---------------------------------------------------------------#
+                           gtitle( main      = letitre
+                                 , xlab      = lex
+                                 , ylab      = ley
+                                 , off.xlab  = 1/6
+                                 , line.xlab = 4.1
+                                 , line.ylab = 2.6
+                                 , cex.main  = 0.9*cex.ptsz
+                                 )#end gtitle
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Close the device. ---------------------------------------#
+                           if (outform[o] == "x11"){
+                              locator(n=1)
+                              dev.off()
+                           }else{
+                              dev.off()
+                           }#end if
+                           #---------------------------------------------------------------#
+
+                        }#end for (o in 1:nout)
+                        #------------------------------------------------------------------#
+                     }#end for (p in sequence(npfts))
+                  }#end if (pfttoo)
+                  #------------------------------------------------------------------------#
                }#end for (i in 1:nindiv)
                #---------------------------------------------------------------------------#
             }#end for
@@ -1361,6 +1671,7 @@ for (p in sequence(nplaces)){
             for (n in 1:npratetheme){
                this.plot  = pratetheme[[n]]
                sizetoo    = this.plot$sizetoo
+               pfttoo     = this.plot$pfttoo
                desc.rate  = this.plot$desc.rate
                unit.rate  = this.plot$unit.rate
                col.ed2    = this.plot$col.ed2
@@ -1404,18 +1715,19 @@ for (p in sequence(nplaces)){
 
 
                   #----- Load the modelled rates. -----------------------------------------#
+                  mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                   sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-                  sta.expected = 100. * sta.mod[1,-1]
-                  sta.q025     = 100. * sta.mod[2,-1]
-                  sta.q975     = 100. * sta.mod[3,-1]
+                  sta.expected = mult * sta.mod[1,-1]
+                  sta.q025     = mult * sta.mod[2,-1]
+                  sta.q975     = mult * sta.mod[3,-1]
                   ed2.expected = list()
                   ed2.q025     = list()
                   ed2.q975     = list()
                   for (r in sequence(nrate)){
                      ed2.mod         = ed2[[ed2.rate[r]]][[indiv[i]]]$global
-                     ed2.expected[[r]] = 100. * ed2.mod[1,-1]
-                     ed2.q025    [[r]] = 100. * ed2.mod[2,-1]
-                     ed2.q975    [[r]] = 100. * ed2.mod[3,-1]
+                     ed2.expected[[r]] = mult * ed2.mod[1,-1]
+                     ed2.q025    [[r]] = mult * ed2.mod[2,-1]
+                     ed2.q975    [[r]] = mult * ed2.mod[3,-1]
                   }#end for
                   #------------------------------------------------------------------------#
 
@@ -1451,7 +1763,8 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Find the plot limit for the y scale.                            #
                      #---------------------------------------------------------------------#
-                     yuse   = c(sta.q025,sta.q975,unlist(ed2.q025),unlist(ed2.q975))
+                     yuse   = c(sta.q025,sta.q975,sta.expected
+                               ,unlist(ed2.q025),unlist(ed2.q975),unlist(ed2.expected))
                      ylimit = pretty.xylim(u=yuse,fracexp=0.,is.log=ylog)
                      #---------------------------------------------------------------------#
                   }else{
@@ -1469,7 +1782,7 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Find the plot limit for the y scale.                            #
                      #---------------------------------------------------------------------#
-                     yuse   = c(sta.q025,sta.q975,unlist(ed2.expected))
+                     yuse   = c(sta.q025,sta.q975,sta.expected,unlist(ed2.expected))
                      ylimit = pretty.xylim(u=yuse,fracexp=0.,is.log=ylog)
                      #---------------------------------------------------------------------#
                   }#end if
@@ -1504,8 +1817,9 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Make the title and axis labels.                                 #
                      #---------------------------------------------------------------------#
-                     letitre = paste(theme.desc," - ",lieu,sep="")
-                     ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
+                     letitre = paste(theme.desc," - ",longname
+                                    ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                     ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
                      lex     = desc.unit(desc="Census year",unit=NULL)
                      #---------------------------------------------------------------------#
 
@@ -1525,43 +1839,46 @@ for (p in sequence(nplaces)){
                         plot.new()
                         plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                         legend ( x       = "bottom"
-                               , inset   = 0.01
+                               , inset   = 0.0
                                , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
-                               , fill    = c(col.sta[2],rep(0,times=nrate-1),col.ed2[,2])
-                               , border  = c(col.sta[2],rep(0,times=nrate-1),col.ed2[,2])
-                               , col     = c(col.sta[1],rep(0,times=nrate-1),col.ed2[,1])
-                               , lwd     = c(2.0,rep(0,times=nrate-1),rep(2,0,times=nrate))
-                               , pt.cex  = c(1.0,rep(0,times=nrate-1),rep(1.0,times=nrate))
+                               , fill    = c(col.sta[2],rep("transparent",times=nrate-1)
+                                            ,col.ed2[,2])
+                               , border  = c(col.sta[2],rep("transparent",times=nrate-1)
+                                            ,col.ed2[,2])
+                               , col     = c(col.sta[1],rep("transparent",times=nrate-1)
+                                            ,col.ed2[,1])
+                               , lwd     = 2.0
+                               , pt.cex  = 1.0
                                , angle   = c(90,rep(0,times=nrate-1),angle)
                                , density = c(40,rep(0,times=nrate-1),dens)
                                , ncol    = 2
                                , title   = "(Shaded - 95% C.I.)"
-                               , cex     = 1.0
+                               , cex     = 0.8 * cex.ptsz
                                )#end legend
                      }else{
                         par(mar=c(0.1,0.1,0.1,0.1))
                         plot.new()
                         plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                         legend ( x       = "bottom"
-                               , inset   = 0.01
+                               , inset   = 0.0
                                , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
-                               , fill    = c(col.sta[2],rep(0,times=nrate+1))
-                               , border  = c(col.sta[2],rep(0,times=nrate+1))
-                               , col     = c(col.sta[1],rep(0,times=nrate-1),col.ed2[,1])
-                               , lwd     = c(2.0,rep(0,times=nrate-1),rep(2,0,times=nrate))
-                               , pt.cex  = c(1.0,rep(0,times=nrate-1),rep(1.0,times=nrate))
+                               , fill    = c(col.sta[2],rep("transparent",times=nrate+1))
+                               , border  = c(col.sta[2],rep("transparent",times=nrate+1))
+                               , col     = c(col.sta[1],rep("transparent",times=nrate-1))
+                               , lwd     = 2.0
+                               , pt.cex  = 1.0
                                , angle   = c(90,rep(0,times=nrate+1))
                                , density = c(40,rep(0,times=nrate+1))
                                , ncol    = 2
                                , title   = "(Shaded - 95% C.I.)"
-                               , cex     = 0.85
+                               , cex     = 0.8 * cex.ptsz
                                )#end legend
                      }#end if
                      #---------------------------------------------------------------------#
 
 
                      #----- Plotting window and grid. -------------------------------------#
-                     par(mar=c(5,4,4,2)+0.1)
+                     par(mar=c(5.1,4.4,4.1,2.1))
                      plot(x=x.years,y=sta.expected,xlim=xlimit,ylim=ylimit,type="n"
                          ,main=letitre,xlab=lex,ylab=ley,log=plog,cex.main=0.7)
                      if (plotgrid) grid(col=grid.colour,lty="solid")
@@ -1668,49 +1985,48 @@ for (p in sequence(nplaces)){
                         #------------------------------------------------------------------#
 
 
-
                         #----- Plot legend. -----------------------------------------------#
-                        par(mar=c(0.1,0.1,0.1,0.1))
-                        plot.new()
-                        plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                         if (ed22.ci){
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                            legend ( x       = "bottom"
-                                  , legend  = c("Observed",rep("",times=nrate-1)
-                                               ,desc.rate)
-                                  , fill    = c(col.sta[2],rep(0,times=nrate-1)
+                                  , inset   = 0.0
+                                  , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
+                                  , fill    = c(col.sta[2],rep("transparent",times=nrate-1)
                                                ,col.ed2[,2])
-                                  , border  = c(col.sta[2],rep(0,times=nrate-1)
+                                  , border  = c(col.sta[2],rep("transparent",times=nrate-1)
                                                ,col.ed2[,2])
-                                  , col     = c(col.sta[1],rep(0,times=nrate-1)
+                                  , col     = c(col.sta[1],rep("transparent",times=nrate-1)
                                                ,col.ed2[,1])
-                                  , lwd     = c(2.0,rep(0,times=nrate-1)
-                                                   ,rep(2,0,times=nrate))
-                                  , pt.cex  = c(1.0,rep(0,times=nrate-1)
-                                                   ,rep(1.0,times=nrate))
+                                  , lwd     = 2.0
+                                  , pt.cex  = 1.0
                                   , angle   = c(90,rep(0,times=nrate-1),angle)
                                   , density = c(40,rep(0,times=nrate-1),dens)
                                   , ncol    = 2
                                   , title   = "(Shaded - 95% C.I.)"
-                                  , cex     = 0.85
-                                  , xpd     = TRUE
+                                  , cex     = 0.8 * cex.ptsz
                                   )#end legend
                         }else{
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                            legend ( x       = "bottom"
+                                  , inset   = 0.0
                                   , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
-                                  , fill    = c(col.sta[2],rep(0,times=nrate+1))
-                                  , border  = c(col.sta[2],rep(0,times=nrate+1))
-                                  , col     = c(col.sta[1],rep(0,times=nrate-1)
-                                               ,col.ed2[,1])
-                                  , lwd     = c(2.0,rep(0,times=nrate-1)
-                                                   ,rep(2,0,times=nrate))
-                                  , pt.cex  = c(1.0,rep(0,times=nrate-1)
-                                                   ,rep(1.0,times=nrate))
+                                  , fill    = c(col.sta[2]
+                                               ,rep("transparent",times=nrate+1))
+                                  , border  = c(col.sta[2]
+                                               ,rep("transparent",times=nrate+1))
+                                  , col     = c(col.sta[1]
+                                               ,rep("transparent",times=nrate-1))
+                                  , lwd     = 2.0
+                                  , pt.cex  = 1.0
                                   , angle   = c(90,rep(0,times=nrate+1))
                                   , density = c(40,rep(0,times=nrate+1))
                                   , ncol    = 2
                                   , title   = "(Shaded - 95% C.I.)"
-                                  , cex     = 0.85
-                                  , xpd     = TRUE
+                                  , cex     = 0.8 * cex.ptsz
                                   )#end legend
                         }#end if
                         #------------------------------------------------------------------#
@@ -1731,18 +2047,19 @@ for (p in sequence(nplaces)){
 
 
                            #----- Load the modelled rates. --------------------------------#
+                           mult = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                            sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-                           sta.expected = 100. * sta.mod[1,d,-1]
-                           sta.q025     = 100. * sta.mod[2,d,-1]
-                           sta.q975     = 100. * sta.mod[3,d,-1]
+                           sta.expected = mult * sta.mod[1,d,-1]
+                           sta.q025     = mult * sta.mod[2,d,-1]
+                           sta.q975     = mult * sta.mod[3,d,-1]
                            ed2.expected = list()
                            ed2.q025     = list()
                            ed2.q975     = list()
                            for (r in 1:nrate){
                               ed2.mod             = ed2[[ed2.rate[r]]][[indiv[i]]]$global
-                              ed2.expected[[r]]   = 100. * ed2.mod[1,d,-1]
-                              ed2.q025    [[r]]   = 100. * ed2.mod[2,d,-1]
-                              ed2.q975    [[r]]   = 100. * ed2.mod[3,d,-1]
+                              ed2.expected[[r]]   = mult * ed2.mod[1,d,-1]
+                              ed2.q025    [[r]]   = mult * ed2.mod[2,d,-1]
+                              ed2.q975    [[r]]   = mult * ed2.mod[3,d,-1]
                            }#end for
                            #---------------------------------------------------------------#
 
@@ -1753,7 +2070,8 @@ for (p in sequence(nplaces)){
                               #     Find the plot limit for the y scale.                   #
                               #------------------------------------------------------------#
                               yuse   = c(unlist(ed2.q025),unlist(ed2.q975)
-                                        ,sta.q025,sta.q975)
+                                        ,unlist(ed2.expected),sta.q025,sta.q975
+                                        ,sta.expected)
                               ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
                               #------------------------------------------------------------#
 
@@ -1778,7 +2096,8 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
                               #     Find the plot limit for the y scale.                   #
                               #------------------------------------------------------------#
-                              yuse   = c(ed2.expected[d,],sta.q025,sta.q975)
+                              yuse   = c(unlist(ed2.expected),sta.expected
+                                        ,sta.q025,sta.q975)
                               ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
                               #------------------------------------------------------------#
 
@@ -1802,7 +2121,7 @@ for (p in sequence(nplaces)){
 
 
                            #----- Plot the box plot. --------------------------------------#
-                           par(mar=c(2,2,4,1)+0.1)
+                           par(mar=c(4.1,3.1,2.1,2.1))
                            #----- Plotting window and grid. -------------------------------#
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
@@ -1830,8 +2149,9 @@ for (p in sequence(nplaces)){
                         #------------------------------------------------------------------#
                         #     Make the title and axis labels.                              #
                         #------------------------------------------------------------------#
-                        letitre = paste(theme.desc,": ",lieu,sep="")
-                        ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
+                        letitre = paste(theme.desc," - ",longname
+                                       ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                        ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
                         lex     = desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
@@ -1846,7 +2166,7 @@ for (p in sequence(nplaces)){
                               , off.xlab  = 1/6
                               , line.xlab = 4.1
                               , line.ylab = 2.6
-                              , cex.main  = 1.1*cex.ptsz
+                              , cex.main  = 0.9*cex.ptsz
                               )#end gtitle
                         #------------------------------------------------------------------#
 
@@ -1864,7 +2184,607 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                   }#end if
                   #------------------------------------------------------------------------#
-               }#end for
+
+
+
+
+
+                  #========================================================================#
+                  #========================================================================#
+                  #    PFT-specific plots.                                                 #
+                  #------------------------------------------------------------------------#
+                  if (pfttoo){
+
+                     #=====================================================================#
+                     #=====================================================================#
+                     #     PLOT-LEVEL rates.                                               #
+                     #---------------------------------------------------------------------#
+                     cat("  - PFT-dependent plot level: ",desc.indiv[i],"...","\n")
+                     ed2.rate       = paste(this.plot$ed2.rate,"plot",sep=".")
+                     sta.rate       = paste(this.plot$sta.rate,"plot",sep=".")
+
+
+                     #----- Create a directory for this type of plot. ---------------------#
+                     outtheme   = paste(pftplot,theme.now,sep="/")
+                     if (! file.exists(outtheme)) dir.create(outtheme)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(outtheme,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define a nice configuration for the multiple panels.           #
+                     #---------------------------------------------------------------------#
+                     lo.pft = pretty.box(n=npfts+1,horizontal=TRUE)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Load the modelled rates. --------------------------------------#
+                     mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                     sta.mod      = sta[[sta.rate]][[indiv[i]]]
+                     sta.global   = sta[[sta.rate]][[indiv[i]]]$global
+                     sta.expected = mult * rbind(sta.mod$expected[ ,-1] 
+                                                ,sta.global      [1,-1])
+                     sta.q025     = mult * rbind(sta.mod$q025    [ ,-1]
+                                                ,sta.global      [2,-1])
+                     sta.q975     = mult * rbind(sta.mod$q975    [ ,-1]
+                                                ,sta.global      [3,-1])
+                     ed2.expected = list()
+                     ed2.q025     = list()
+                     ed2.q975     = list()
+                     for (r in sequence(nrate)){
+                        ed2.mod           = ed2[[ed2.rate[r]]][[indiv[i]]]
+                        ed2.global        = ed2[[ed2.rate[r]]][[indiv[i]]]$global
+                        ed2.expected[[r]] = mult * rbind(ed2.mod$expected[ ,-1]
+                                                        ,ed2.global      [1,-1])
+                        ed2.q025    [[r]] = mult * rbind(ed2.mod$q025    [ ,-1]
+                                                        ,ed2.global      [2,-1])
+                        ed2.q975    [[r]] = mult * rbind(ed2.mod$q975    [ ,-1]
+                                                        ,ed2.global      [3,-1])
+                     }#end for
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #     Find Y limits.                                                  #
+                     #---------------------------------------------------------------------#
+                     if (ed22.ci){
+                        #----- Limits are defined by confidence intervals. ----------------#
+                        yuse   = c(sta.q025,sta.q975,sta.expected
+                                  ,unlist(ed2.q025),unlist(ed2.q975)
+                                  ,unlist(ed2.expected))
+                        ylimit = pretty.xylim(u=yuse,fracexp=0.,is.log=ylog)
+                        #------------------------------------------------------------------#
+                     }else{
+                        #----- Limits are defined by expected values. ---------------------#
+                        yuse   = c(sta.q025,sta.q975,sta.expected,unlist(ed2.expected))
+                        ylimit = pretty.xylim(u=yuse,fracexp=0.,is.log=ylog)
+                        #------------------------------------------------------------------#
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Find the DBH for x scale.                                        #
+                     #---------------------------------------------------------------------#
+                     x.years  = year4[2:n.census]
+                     xlimit   = range(x.years)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Loop over all formats, and make the plots.                      #
+                     #---------------------------------------------------------------------#
+                     for (o in 1:nout){
+                        #----- Open the file or the plot window. --------------------------#
+                        fichier = file.path(outindiv
+                                           ,paste(iata,"-theme-",theme.now,"-",indiv[i]
+                                                 ,"-",iphen.key[ph],".",outform[o],sep=""))
+                        if(outform[o] == "x11"){
+                           X11(width=size$width,height=size$height,pointsize=ptsz)
+                        }else if(outform[o] == "png"){
+                           png(filename=fichier,width=size$width*depth
+                              ,height=size$height*depth,pointsize=ptsz,res=depth)
+                        }else if(outform[o] == "eps"){
+                           postscript(file=fichier,width=size$width,height=size$height
+                                     ,pointsize=ptsz,paper=size$paper)
+                        }else if(outform[o] == "pdf"){
+                           pdf(file=fichier,onefile=FALSE,width=size$width
+                              ,height=size$height,pointsize=ptsz,paper=size$paper)
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Split the window.                                            #
+                        #------------------------------------------------------------------#
+                        par(par.user)
+                        par.orig = par(no.readonly = TRUE)
+                        par(oma = c(0.2,3,4,0))
+                        layout(mat    = rbind(lo.pft$mat.off,rep(1,times=lo.pft$ncol))
+                              ,height = c(rep(5/lo.pft$nrow,times=lo.pft$nrow),1)
+                              )#end layout
+                        #------------------------------------------------------------------#
+
+
+                        #----- Plot legend. -----------------------------------------------#
+                        if (ed22.ci){
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                           legend ( x       = "bottom"
+                                  , inset   = 0
+                                  , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
+                                  , fill    = c(col.sta[2],rep("transparent",times=nrate-1)
+                                               ,col.ed2[,2])
+                                  , border  = c(col.sta[2],rep("transparent",times=nrate-1)
+                                               ,col.ed2[,2])
+                                  , col     = c(col.sta[1],rep("transparent",times=nrate-1)
+                                               ,col.ed2[,1])
+                                  , lwd     = 2.0
+                                  , pt.cex  = 1.0
+                                  , angle   = c(90,rep(0,times=nrate-1),angle)
+                                  , density = c(40,rep(0,times=nrate-1),dens)
+                                  , ncol    = 2
+                                  , title   = "(Shaded - 95% C.I.)"
+                                  , cex     = 0.8 * cex.ptsz
+                                  )#end legend
+                        }else{
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                           legend ( x       = "bottom"
+                                  , inset   = 0
+                                  , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
+                                  , fill    = c(col.sta[2]
+                                               ,rep("transparent",times=nrate+1))
+                                  , border  = c(col.sta[2]
+                                               ,rep("transparent",times=nrate+1))
+                                  , col     = c(col.sta[1]
+                                               ,rep("transparent",times=nrate-1))
+                                  , lwd     = 2.0
+                                  , pt.cex  = 1.0
+                                  , angle   = c(90,rep(0,times=nrate+1))
+                                  , density = c(40,rep(0,times=nrate+1))
+                                  , ncol    = 2
+                                  , title   = "(Shaded - 95% C.I.)"
+                                  , cex     = 0.8 * cex.ptsz
+                                  )#end legend
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Loop over all PFTS to be plotted.                            #
+                        #------------------------------------------------------------------#
+                        for (p in sequence(npfts+1)){
+                           if (p == npfts + 1){
+                              pft.label = "All PFTs"
+                           }else{
+                              pft.label = pft$name[mypfts[p]]
+                           }#end if
+
+
+                           if (ed22.ci){
+                              #------------------------------------------------------------#
+                              #    Make the polygons.                                      #
+                              #------------------------------------------------------------#
+                              plot.poly     = list()
+                              plot.poly$x   = c(x.years ,rev(x.years) )
+                              plot.poly$y   = c(sta.q025[p,],rev(sta.q975[p,]))
+                              plot.poly$col = c(col.sta[2])
+                              for (r in sequence(nrate)){
+                                 plot.poly$x   = c(plot.poly$x  ,NA
+                                                  ,x.years      ,rev(x.years)      )
+                                 plot.poly$y   = c(plot.poly$y  ,NA
+                                                  ,ed2.q025[[r]][p,]
+                                                  ,rev(ed2.q975[[r]][p,]))
+                                 plot.poly$col = c(plot.poly$col,col.ed2[r,2])
+                              }#end for
+                              #------------------------------------------------------------#
+                           }else{
+                              #------------------------------------------------------------#
+                              #    Make the polygons.                                      #
+                              #------------------------------------------------------------#
+                              plot.poly     = list()
+                              plot.poly$x   = c(x.years ,rev(x.years) )
+                              plot.poly$y   = c(sta.q025[p,],rev(sta.q975[p,]))
+                              plot.poly$col = col.sta[2]
+                              #------------------------------------------------------------#
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+                           #---------------------------------------------------------------#
+                           #     Define margins.                                           #
+                           #---------------------------------------------------------------#
+                           left    = (p %% lo.pft$ncol) == 1
+                           right   = (p %% lo.pft$ncol) == 0
+                           top     = p <= lo.pft$ncol
+                           bottom  = p > (lo.pft$nrow - 1) * lo.pft$ncol
+                           #---------------------------------------------------------------#
+
+
+
+
+                           #----- Plotting window and grid. -------------------------------#
+                           par(mar=c(4.1,3.1,2.1,2.1))
+                           plot.new()
+                           plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                           box()
+                           axis(side=1)
+                           axis(side=2)
+                           title(main=pft.label)
+                           if (plotgrid) grid(col=grid.colour,lty="solid")
+                           #----- Plot the taxon rate with confidence interval. -----------#
+                           epolygon(x=plot.poly$x,y=plot.poly$y,col=plot.poly$col
+                                   ,angle=c(90,angle),density=c(40,dens),lty="solid"
+                                   ,lwd=1.0)
+                           lines(x=x.years,y=sta.expected[p,],type="o",col=col.sta[1]
+                                ,pch=16,lwd=2.0)
+                           for (r in 1:nrate){
+                              lines(x=x.years,y=ed2.expected[[r]][p,],type="o"
+                                   ,col=col.ed2[r,1],pch=16,lwd=2.0)
+                           }#end for
+                           #---------------------------------------------------------------#
+                        }#end for (p in sequence(npfts)
+                        #------------------------------------------------------------------#
+
+
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Make the title and axis labels.                              #
+                        #------------------------------------------------------------------#
+                        letitre = paste(theme.desc," - ",longname
+                                       ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                        ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
+                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        #------------------------------------------------------------------#
+
+
+                        #------------------------------------------------------------------#
+                        #      Plot global annotation.                                     #
+                        #------------------------------------------------------------------#
+                        gtitle( main      = letitre
+                              , xlab      = lex
+                              , ylab      = ley
+                              , off.xlab  = 1/6
+                              , line.xlab = 4.1
+                              , line.ylab = 2.6
+                              , cex.main  = 0.9*cex.ptsz
+                              )#end gtitle
+                        #------------------------------------------------------------------#
+
+
+
+                        #----- Close the device. ------------------------------------------#
+                        if (outform[o] == "x11"){
+                           locator(n=1)
+                           dev.off()
+                        }else{
+                           dev.off()
+                        }#end if
+                        #------------------------------------------------------------------#
+                     }#end for (o in 1:nout)
+                     #---------------------------------------------------------------------#
+                  }#end if (pfttoo)
+                  #========================================================================#
+                  #========================================================================#
+
+
+
+
+
+                  #========================================================================#
+                  #========================================================================#
+                  #     DBH-LEVEL rates by PFT.                                            #
+                  #------------------------------------------------------------------------#
+                  if (sizetoo && pfttoo){
+                     cat("  - PFT-dependent, DBH classes: ",desc.indiv[i],"...","\n")
+                     ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
+                     sta.rate = paste(this.plot$sta.rate,"size",sep=".")
+
+
+                     #----- Create a directory for this type of plot. ---------------------#
+                     outtheme   = paste(pftsize,theme.now,sep="/")
+                     if (! file.exists(outtheme)) dir.create(outtheme)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(outtheme,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Find the DBH for x scale.                                        #
+                     #---------------------------------------------------------------------#
+                     x.years  = year4[2:n.census]
+                     xlimit   = range(x.years)
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define a nice configuration for the multiple panels.           #
+                     #---------------------------------------------------------------------#
+                     lo.box = pretty.box(n=n.dbh,horizontal=TRUE)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Loop over all PFTs.                                              #
+                     #---------------------------------------------------------------------#
+                     for (p in sequence(npfts)){
+                        pft.label = pft$name[mypfts[p]]
+                        pft.key   = paste("pft",sprintf("%2.2i",mypfts[p]),sep="")
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Loop over all formats, and make the plots.                   #
+                        #------------------------------------------------------------------#
+                        for (o in 1:nout){
+                           #----- Open the file or the plot window. -----------------------#
+                           fichier = file.path(outindiv
+                                              ,paste(iata,"-theme-",theme.now,"-",indiv[i],
+                                                    "-",pft.key,"-",iphen.key[ph]
+                                                    ,".",outform[o] ,sep=""))
+                           if(outform[o] == "x11"){
+                              X11(width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz)
+                           }else if(outform[o] == "png"){
+                              png(filename=fichier,width=wide.size$width*depth
+                                 ,height=wide.size$height*depth,pointsize=ptsz,res=depth)
+                           }else if(outform[o] == "eps"){
+                              postscript(file=fichier,width=wide.size$width
+                                        ,height=wide.size$height,pointsize=ptsz
+                                        ,paper=wide.size$paper)
+                           }else if(outform[o] == "pdf"){
+                              pdf(file=fichier,onefile=FALSE
+                                 ,width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz,paper=wide.size$paper)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Split the window into several smaller windows.            #
+                           #---------------------------------------------------------------#
+                           par(par.user)
+                           par.orig = par(no.readonly = TRUE)
+                           par(oma = c(0.2,3,4,0))
+                           layout(mat    = rbind(lo.box$mat.off,rep(1,times=lo.box$ncol))
+                                 ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
+                                 )#end layout
+                           #---------------------------------------------------------------#
+
+
+                           #----- Plot legend. --------------------------------------------#
+                           if (ed22.ci){
+                              par(mar=c(0.1,0.1,0.1,0.1))
+                              plot.new()
+                              plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                              legend ( x       = "bottom"
+                                     , inset   = 0.0
+                                     , legend  = c("Observed",rep("",times=nrate-1)
+                                                  ,desc.rate)
+                                     , fill    = c(col.sta[2]
+                                                  ,rep("transparent",times=nrate-1)
+                                                  ,col.ed2[,2])
+                                     , border  = c(col.sta[2]
+                                                  ,rep("transparent",times=nrate-1)
+                                                  ,col.ed2[,2])
+                                     , col     = c(col.sta[1]
+                                                  ,rep("transparent",times=nrate-1)
+                                                  ,col.ed2[,1])
+                                     , lwd     = 2.0
+                                     , pt.cex  = 1.0
+                                     , angle   = c(90,rep(0,times=nrate-1),angle)
+                                     , density = c(40,rep(0,times=nrate-1),dens)
+                                     , ncol    = 2
+                                     , title   = "(Shaded - 95% C.I.)"
+                                     , cex     = 0.8 * cex.ptsz
+                                     )#end legend
+                           }else{
+                              par(mar=c(0.1,0.1,0.1,0.1))
+                              plot.new()
+                              plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                              legend ( x       = "bottom"
+                                     , inset   = 0.0
+                                     , legend  = c("Observed",rep("",times=nrate-1)
+                                                  ,desc.rate)
+                                     , fill    = c(col.sta[2]
+                                                  ,rep("transparent",times=nrate+1))
+                                     , border  = c(col.sta[2]
+                                                  ,rep("transparent",times=nrate+1))
+                                     , col     = c(col.sta[1]
+                                                  ,rep("transparent",times=nrate-1))
+                                     , lwd     = 2.0
+                                     , pt.cex  = 1.0
+                                     , angle   = c(90,rep(0,times=nrate+1))
+                                     , density = c(40,rep(0,times=nrate+1))
+                                     , ncol    = 2
+                                     , title   = "(Shaded - 95% C.I.)"
+                                     , cex     = 0.8 * cex.ptsz
+                                     )#end legend
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+
+                           #---------------------------------------------------------------#
+                           #    Loop over all DBH classes.                                 #
+                           #---------------------------------------------------------------#
+                           for (d in 1:n.dbh){
+                              left    = (d %% lo.box$ncol) == 1
+                              right   = (d %% lo.box$ncol) == 0
+                              top     = d <= lo.box$ncol
+                              bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
+
+
+
+
+                              #----- Load the modelled rates. -----------------------------#
+                              mult = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                              sta.mod      = sta[[sta.rate]][[indiv[i]]]
+                              sta.expected = mult * sta.mod$expected[p,d,-1]
+                              sta.q025     = mult * sta.mod$q025    [p,d,-1]
+                              sta.q975     = mult * sta.mod$q975    [p,d,-1]
+                              ed2.expected = list()
+                              ed2.q025     = list()
+                              ed2.q975     = list()
+                              for (r in 1:nrate){
+                                 ed2.mod             = ed2[[ed2.rate[r]]][[indiv[i]]]
+                                 ed2.expected[[r]]   = mult * ed2.mod$expected[p,d,-1]
+                                 ed2.q025    [[r]]   = mult * ed2.mod$q025    [p,d,-1]
+                                 ed2.q975    [[r]]   = mult * ed2.mod$q975    [p,d,-1]
+                              }#end for
+                              #------------------------------------------------------------#
+
+
+                              if (ed22.ci){
+                                 #---------------------------------------------------------#
+                                 #     Find the plot limit for the y scale.                #
+                                 #---------------------------------------------------------#
+                                 yuse   = c(unlist(ed2.q025),unlist(ed2.q975)
+                                           ,unlist(ed2.expected)
+                                           ,sta.q025,sta.q975,sta.expected)
+                                 ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
+                                 #---------------------------------------------------------#
+
+
+
+                                 #---------------------------------------------------------#
+                                 #    Make the polygons.                                   #
+                                 #---------------------------------------------------------#
+                                 size.poly  = list()
+                                 size.poly$x   = c(x.years ,rev(x.years) )
+                                 size.poly$y   = c(sta.q025,rev(sta.q975))
+                                 size.poly$col = c(col.sta[2]  )
+                                 for (r in sequence(nrate)){
+                                    plot.poly$x   = c(plot.poly$x  ,NA
+                                                     ,x.years      ,rev(x.years)      )
+                                    plot.poly$y   = c(plot.poly$y  ,NA
+                                                     ,ed2.q025[[r]],rev(ed2.q975[[r]]))
+                                    plot.poly$col = c(plot.poly$col,col.ed2[r,2])
+                                 }#end for
+                                 #---------------------------------------------------------#
+                              }else{
+                                 #---------------------------------------------------------#
+                                 #     Find the plot limit for the y scale.                #
+                                 #---------------------------------------------------------#
+                                 yuse   = c(unlist(ed2.expected),sta.expected
+                                           ,sta.q025,sta.q975)
+                                 ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
+                                 #---------------------------------------------------------#
+
+
+
+                                 #---------------------------------------------------------#
+                                 #    Make the polygons.                                   #
+                                 #---------------------------------------------------------#
+                                 size.poly     = list()
+                                 size.poly$x   = c(x.years   ,rev(x.years)     )
+                                 size.poly$y   = c(sta.q025  ,rev(sta.q975)    )
+                                 size.poly$col = c(col.sta[2])
+                                 #---------------------------------------------------------#
+                              }#end if
+                              #------------------------------------------------------------#
+
+
+                              #----- Set up the title and axes labels. --------------------#
+                              lesub = paste("DBH class:",dbh.names[d],sep="")
+                              #------------------------------------------------------------#
+
+
+                              #----- Plot the box plot. -----------------------------------#
+                              par(mar=c(4.1,3.1,2.1,2.1))
+                              #----- Plotting window and grid. ----------------------------#
+                              plot.new()
+                              plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                              axis(side=1)
+                              axis(side=2)
+                              box()
+                              title(main=lesub,xlab="",ylab="")
+                              if (plotgrid) grid(col=grid.colour,lty="solid")
+                              #----- Plot the taxon rate with confidence interval. --------#
+                              epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
+                                      ,angle=c(90,angle),density=c(40,dens),lty="solid"
+                                      ,lwd=1.0)
+                              lines(x=x.years,y=sta.expected,type="o",pch=16,lwd=2.0
+                                   ,col=col.sta[1])
+                              for (r in sequence(nrate)){
+                                 lines(x=x.years,y=ed2.expected[[r]],type="o",pch=16
+                                      ,lwd=2.0,col=col.ed2[r,1])
+                              }#end for
+                              #------------------------------------------------------------#
+                           }#end for (d in 1:n.dbh)
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Make the title and axis labels.                           #
+                           #---------------------------------------------------------------#
+                           letitre = paste(theme.desc," - ",longname," - ",pft.label
+                                    ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                           ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
+                           lex     = desc.unit(desc="Census year",unit=NULL)
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Plot title.                                               #
+                           #---------------------------------------------------------------#
+                           gtitle( main      = letitre
+                                 , xlab      = lex
+                                 , ylab      = ley
+                                 , off.xlab  = 1/6
+                                 , line.xlab = 4.1
+                                 , line.ylab = 2.6
+                                 , cex.main  = 0.9*cex.ptsz
+                                 )#end gtitle
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Close the device. ---------------------------------------#
+                           if (outform[o] == "x11"){
+                              locator(n=1)
+                              dev.off()
+                           }else{
+                              dev.off()
+                           }#end if
+                           #---------------------------------------------------------------#
+                        }#end for (o in 1:nout)
+                        #------------------------------------------------------------------#
+                     }#end for (p in sequence(npfts)
+                     #---------------------------------------------------------------------#
+                  }#end if (pfttoo && sizetoo)
+                  #------------------------------------------------------------------------#
+               }#end for (i in 1:nindiv)
                #---------------------------------------------------------------------------#
             }#end for
             #==============================================================================#
@@ -1881,6 +2801,7 @@ for (p in sequence(nplaces)){
             #==============================================================================#
             for (n in 1:npratets){
                this.plot  = pratets[[n]]
+               pfttoo     = this.plot$pfttoo
                sizetoo    = this.plot$sizetoo
                desc.rate  = this.plot$desc.rate
                unit.rate  = this.plot$unit.rate
@@ -1922,14 +2843,15 @@ for (p in sequence(nplaces)){
 
 
                   #----- Load the modelled rates. -----------------------------------------#
+                  mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                   sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-                  sta.expected = 100. * sta.mod[1,-1]
-                  sta.q025     = 100. * sta.mod[2,-1]
-                  sta.q975     = 100. * sta.mod[3,-1]
+                  sta.expected = mult * sta.mod[1,-1]
+                  sta.q025     = mult * sta.mod[2,-1]
+                  sta.q975     = mult * sta.mod[3,-1]
                   ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]$global
-                  ed2.expected = 100. * ed2.mod[1,-1]
-                  ed2.q025     = 100. * ed2.mod[2,-1]
-                  ed2.q975     = 100. * ed2.mod[3,-1]
+                  ed2.expected = mult * ed2.mod[1,-1]
+                  ed2.q025     = mult * ed2.mod[2,-1]
+                  ed2.q975     = mult * ed2.mod[3,-1]
                   #------------------------------------------------------------------------#
 
 
@@ -1957,7 +2879,8 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Find the plot limit for the y scale.                            #
                      #---------------------------------------------------------------------#
-                     yuse   = c(sta.q025,sta.q975,ed2.q025,ed2.q975)
+                     yuse   = c(sta.q025,sta.q975,sta.expected
+                               ,ed2.q025,ed2.q975,ed2.expected)
                      ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
                      #---------------------------------------------------------------------#
                   }else{
@@ -1975,7 +2898,7 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Find the plot limit for the y scale.                            #
                      #---------------------------------------------------------------------#
-                     yuse   = c(sta.q025,sta.q975,ed2.expected)
+                     yuse   = c(sta.q025,sta.q975,sta.expected,ed2.expected)
                      ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
                      #---------------------------------------------------------------------#
                   }#end if
@@ -2058,7 +2981,8 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Make the title and axis labels.                                 #
                      #---------------------------------------------------------------------#
-                     letitre = paste(desc.rate," - ",lieu,sep="")
+                     letitre = paste(desc.rate," - ",longname
+                                    ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                      ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
                      lex     = desc.unit(desc="Census year",unit=NULL)
                      #---------------------------------------------------------------------#
@@ -2068,7 +2992,7 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Go on and plot stuff.                                           #
                      #---------------------------------------------------------------------#
-                     par(mar=c(5,4,4,2)+0.1)
+                     par(mar=c(5.1,4.4,4.1,2.1))
                      #----- Plotting window and grid. -------------------------------------#
                      plot(x=x.years,y=sta.expected,xlim=xlimit,ylim=ylimit,type="n"
                          ,main=letitre,xlab=lex,ylab=ley,log=plog,cex.main=0.7)
@@ -2117,14 +3041,15 @@ for (p in sequence(nplaces)){
 
 
                      #----- Load the modelled rates. --------------------------------------#
+                     mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                      sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
-                     sta.expected = 100. * sta.mod[1,,-1]
-                     sta.q025     = 100. * sta.mod[2,,-1]
-                     sta.q975     = 100. * sta.mod[3,,-1]
+                     sta.expected = mult * sta.mod[1,,-1]
+                     sta.q025     = mult * sta.mod[2,,-1]
+                     sta.q975     = mult * sta.mod[3,,-1]
                      ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]$global
-                     ed2.expected = 100. * ed2.mod[1,,-1]
-                     ed2.q025     = 100. * ed2.mod[2,,-1]
-                     ed2.q975     = 100. * ed2.mod[3,,-1]
+                     ed2.expected = mult * ed2.mod[1,,-1]
+                     ed2.q025     = mult * ed2.mod[2,,-1]
+                     ed2.q975     = mult * ed2.mod[3,,-1]
                      #---------------------------------------------------------------------#
 
 
@@ -2178,7 +3103,7 @@ for (p in sequence(nplaces)){
                         par(par.user)
                         par.orig = par(no.readonly = TRUE)
                         par(oma = c(0.2,3,4,0))
-                        layout(mat    = rbind(1+lo.box$mat,rep(1,times=lo.box$ncol))
+                        layout(mat    = rbind(lo.box$mat.off,rep(1,times=lo.box$ncol))
                               ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
                               )#end layout
                         #------------------------------------------------------------------#
@@ -2240,8 +3165,8 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
                               #     Find the plot limit for the y scale.                   #
                               #------------------------------------------------------------#
-                              yuse   = c(ed2.q025[d,],ed2.q975[d,]
-                                        ,sta.q025[d,],sta.q975[d,])
+                              yuse   = c(ed2.q025[d,],ed2.q975[d,],ed2.expected[d,]
+                                        ,sta.q025[d,],sta.q975[d,],sta.expected[d,])
                               ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
                               #------------------------------------------------------------#
 
@@ -2261,7 +3186,8 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
                               #     Find the plot limit for the y scale.                   #
                               #------------------------------------------------------------#
-                              yuse   = c(ed2.expected[d,],sta.q025[d,],sta.q975[d,])
+                              yuse   = c(ed2.expected[d,],sta.expected[d,]
+                                        ,sta.q025[d,],sta.q975[d,])
                               ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
                               #------------------------------------------------------------#
 
@@ -2285,7 +3211,7 @@ for (p in sequence(nplaces)){
 
 
                            #----- Plot the box plot. --------------------------------------#
-                           par(mar=c(2,2,4,1)+0.1)
+                           par(mar=c(4.1,3.1,2.1,2.1))
                            #----- Plotting window and grid. -------------------------------#
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
@@ -2310,7 +3236,8 @@ for (p in sequence(nplaces)){
                         #------------------------------------------------------------------#
                         #     Make the title and axis labels.                              #
                         #------------------------------------------------------------------#
-                        letitre = paste(desc.rate,": ",lieu,sep="")
+                        letitre = paste(desc.rate," - ",longname
+                                       ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
                         lex     = desc.unit(desc="Census year",unit=untab$cm)
                         #------------------------------------------------------------------#
@@ -2326,7 +3253,7 @@ for (p in sequence(nplaces)){
                               , off.xlab  = 1/6
                               , line.xlab = 4.1
                               , line.ylab = 2.6
-                              , cex.main  = 1.1*cex.ptsz
+                              , cex.main  = 0.9*cex.ptsz
                               )#end gtitle
                         #------------------------------------------------------------------#
 
@@ -2344,9 +3271,1581 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                   }#end if
                   #------------------------------------------------------------------------#
+
+
+
+
+
+
+                  #========================================================================#
+                  #========================================================================#
+                  #     PFT-dependent rates.                                               #
+                  #------------------------------------------------------------------------#
+                  if (pfttoo){
+                     cat("  - PFT-dependent, plot level: ",desc.indiv[i],"...","\n")
+                     ed2.rate       = paste(this.plot$ed2.rate,"plot",sep=".")
+                     sta.rate       = paste(this.plot$sta.rate,"plot",sep=".")
+
+
+                     #----- Create a directory for this type of plot. ---------------------#
+                     outrate   = paste(pftplot,ed2.rate,sep="/")
+                     if (! file.exists(outrate)) dir.create(outrate)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(outrate,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Load the modelled rates. --------------------------------------#
+                     mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                     sta.mod      = sta[[sta.rate]][[indiv[i]]]
+                     sta.global   = sta[[sta.rate]][[indiv[i]]]$global
+                     sta.expected = mult * rbind(sta.mod$expected[,-1],sta.global[1,-1])
+                     sta.q025     = mult * rbind(sta.mod$q025    [,-1],sta.global[2,-1])
+                     sta.q975     = mult * rbind(sta.mod$q975    [,-1],sta.global[3,-1])
+                     ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]
+                     ed2.global   = ed2[[ed2.rate]][[indiv[i]]]$global
+                     ed2.expected = mult * rbind(ed2.mod$expected[,-1],ed2.global[1,-1])
+                     ed2.q025     = mult * rbind(ed2.mod$q025    [,-1],ed2.global[2,-1])
+                     ed2.q975     = mult * rbind(ed2.mod$q975    [,-1],ed2.global[3,-1])
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Find the DBH for x scale.                                        #
+                     #---------------------------------------------------------------------#
+                     x.years  = year4[2:n.census]
+                     xlimit   = range(x.years)
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Find the limits for Y scale.                                     #
+                     #---------------------------------------------------------------------#
+                     if (ed22.ci){
+                        #----- Use confidence intervals for limits. -----------------------#
+                        yuse   = c(sta.q025,sta.q975,sta.expected
+                                  ,ed2.q025,ed2.q975,ed2.expected)
+                        ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
+                        #------------------------------------------------------------------#
+                     }else{
+                        #----- Use ED2 expected value for limits. -------------------------#
+                        yuse   = c(sta.q025,sta.q975,sta.expected,ed2.expected)
+                        ylimit = pretty.xylim(u=yuse,fracexp=0.0,is.log=ylog)
+                        #------------------------------------------------------------------#
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Find the appropriate number of boxes for PFTs. ----------------#
+                     lo.pft = pretty.box(npfts+1,horizontal=TRUE)
+                     #---------------------------------------------------------------------#
+
+
+
+
+                     #------------------------------------------------------------------------#
+                     #     Loop over all formats, and make the plots.                         #
+                     #------------------------------------------------------------------------#
+                     for (o in 1:nout){
+                        #----- Open the file or the plot window. -----------------------------#
+                        fichier = file.path(outindiv
+                                           ,paste(iata,"-tseries-",ed2.rate,"-",indiv[i]
+                                                 ,"-",iphen.key[ph],".",outform[o],sep=""))
+                        if(outform[o] == "x11"){
+                           X11(width=size$width,height=size$height,pointsize=ptsz)
+                        }else if(outform[o] == "png"){
+                           png(filename=fichier,width=size$width*depth
+                              ,height=size$height*depth,pointsize=ptsz,res=depth)
+                        }else if(outform[o] == "eps"){
+                           postscript(file=fichier,width=size$width,height=size$height
+                                     ,pointsize=ptsz,paper=size$paper)
+                        }else if(outform[o] == "pdf"){
+                           pdf(file=fichier,onefile=FALSE
+                              ,width=size$width,height=size$height,pointsize=ptsz
+                              ,paper=size$paper)
+                        }#end if
+                        #---------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Split the window.                                            #
+                        #------------------------------------------------------------------#
+                        par(par.user)
+                        par.orig = par(no.readonly = TRUE)
+                        par(oma = c(0.2,3,4,0))
+                        layout(mat    = rbind(lo.pft$mat.off,rep(1,times=lo.pft$ncol))
+                              ,height = c(rep(5/lo.pft$nrow,times=lo.pft$nrow),1)
+                              )#end layout
+                        #------------------------------------------------------------------#
+
+
+
+                        #----- Plot legend. --------------------------------------------------#
+                        if (ed22.ci){
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                           legend ( x       = "bottom"
+                                  , legend  = c("Census","ED-2.2")
+                                  , fill    = c(col.sta[2],col.ed2[2])
+                                  , border  = c(col.sta[2],col.ed2[2])
+                                  , col     = c(col.sta[1],col.ed2[1])
+                                  , lwd     = 2.0
+                                  , pt.cex  = 1.0
+                                  , angle   = c(-45,45)
+                                  , density = c( 40,40)
+                                  , bg      = background
+                                  , ncol    = 2
+                                  , title   = "(Shaded - 95% C.I.)"
+                                  , cex     = 0.85
+                                  , xpd     = TRUE
+                                  )#end legend
+                        }else{
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                           legend ( x       = "bottom"
+                                  , legend  = c("Census","ED-2.2")
+                                  , fill    = c(col.sta[2],         0)
+                                  , border  = c(col.sta[2],         0)
+                                  , col     = c(col.sta[1],col.ed2[1])
+                                  , lwd     = 2.0
+                                  , pt.cex  = 1.0
+                                  , angle   = c(-45,45)
+                                  , density = c( 40,40)
+                                  , bg      = background
+                                  , ncol    = 2
+                                  , title   = "(Shaded - 95% C.I.)"
+                                  , cex     = 0.85
+                                  , xpd     = TRUE
+                                  )#end legend
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Loop over the PFTs.                                          #
+                        #------------------------------------------------------------------#
+                        for (p in sequence(npfts+1)){
+                           if (p == npfts + 1){
+                              pft.label="All PFTs"
+                           }else{
+                              pft.label=pft$name[mypfts[p]]
+                           }#end if
+
+
+                           #---------------------------------------------------------------#
+                           #     Define margins.                                           #
+                           #---------------------------------------------------------------#
+                           left    = (p %% lo.pft$ncol) == 1
+                           right   = (p %% lo.pft$ncol) == 0
+                           top     = p <= lo.pft$ncol
+                           bottom  = p > (lo.pft$nrow - 1) * lo.pft$ncol
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #    Make the polygons.                                         #
+                           #---------------------------------------------------------------#
+                           if (ed22.ci){
+                              plot.poly     = list()
+                              plot.poly$x   = c(x.years ,rev(x.years) ,NA
+                                               ,x.years ,rev(x.years) )
+                              plot.poly$y   = c(sta.q025[p,],rev(sta.q975[p,]),NA
+                                               ,ed2.q025[p,],rev(ed2.q975[p,]))
+                              plot.poly$col = c(col.sta[2],col.ed2[2])
+                           }else{
+                              plot.poly     = list()
+                              plot.poly$x   = c(x.years ,rev(x.years) )
+                              plot.poly$y   = c(sta.q025[p,],rev(sta.q975[p,]))
+                              plot.poly$col = col.sta[2]
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Go on and plot stuff.                                     #
+                           #---------------------------------------------------------------#
+                           par(mar=c(4.1,3.1,2.1,2.1))
+                           #----- Plotting window and grid. -------------------------------#
+                           plot.new()
+                           plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                           box()
+                           axis(side=1)
+                           axis(side=2)
+                           title(main=pft.label)
+                           if (plotgrid) grid(col=grid.colour,lty="solid")
+
+                           #----- Plot the taxon rate with confidence interval. -----------#
+                           epolygon(x=plot.poly$x,y=plot.poly$y,col=plot.poly$col
+                                   ,angle=c(-45,45),density=40,lty="solid",lwd=1.0)
+                           lines(x=x.years,y=sta.expected[p,],type="o",col=col.sta[1]
+                                ,pch=16,lwd=2.0)
+                           lines(x=x.years,y=ed2.expected[p,],type="o",col=col.ed2[1]
+                                ,pch=16,lwd=2.0)
+                           #---------------------------------------------------------------#
+                        }#end for (p in sequence(npfts))
+                        #------------------------------------------------------------------#
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Make the title and axis labels.                              #
+                        #------------------------------------------------------------------#
+                        letitre = paste(desc.rate," - ",longname
+                                       ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                        ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
+                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Split the plotting window.                                   #
+                        #------------------------------------------------------------------#
+                        gtitle( main      = letitre
+                              , xlab      = lex
+                              , ylab      = ley
+                              , off.xlab  = 1/6
+                              , line.xlab = 4.1
+                              , line.ylab = 2.6
+                              , cex.main  = 0.9*cex.ptsz
+                              )#end gtitle
+                        #------------------------------------------------------------------#
+
+
+
+                        #----- Close the device. ------------------------------------------#
+                        if (outform[o] == "x11"){
+                           locator(n=1)
+                           dev.off()
+                        }else{
+                           dev.off()
+                        }#end if
+                        #------------------------------------------------------------------#
+                     }#end for (o in 1:nout)
+                     #---------------------------------------------------------------------#
+                  }#end if (pfttoo)
+                  #========================================================================#
+                  #========================================================================#
+
+
+
+
+
+
+
+                  #========================================================================#
+                  #========================================================================#
+                  #     PFT-dependent, DBH-LEVEL rates.                                    #
+                  #------------------------------------------------------------------------#
+                  if (pfttoo && sizetoo){
+                     cat("  - PFT-dependent, DBH classes: ",desc.indiv[i],"...","\n")
+                     ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
+                     sta.rate = paste(this.plot$sta.rate,"size",sep=".")
+
+
+                     #----- Create a directory for this type of plot. ---------------------#
+                     outrate   = paste(pftsize,ed2.rate,sep="/")
+                     if (! file.exists(outrate)) dir.create(outrate)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(outrate,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Load the modelled rates. --------------------------------------#
+                     mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                     sta.mod      = sta[[sta.rate]][[indiv[i]]]
+                     sta.expected = mult * sta.mod$expected[,,-1]
+                     sta.q025     = mult * sta.mod$q025    [,,-1]
+                     sta.q975     = mult * sta.mod$q975    [,,-1]
+                     ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]
+                     ed2.expected = mult * ed2.mod$expected[,,-1]
+                     ed2.q025     = mult * ed2.mod$q025    [,,-1]
+                     ed2.q975     = mult * ed2.mod$q975    [,,-1]
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Find the DBH for x scale.                                        #
+                     #---------------------------------------------------------------------#
+                     x.years  = year4[2:n.census]
+                     xlimit   = range(x.years)
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define a nice configuration for the multiple panels.           #
+                     #---------------------------------------------------------------------#
+                     lo.box = pretty.box(n=n.dbh,horizontal=TRUE)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Loop over PFTs.                                                 #
+                     #---------------------------------------------------------------------#
+                     for (p in sequence(npfts)){
+                        pft.label = pft$name[mypfts[p]]
+                        pft.key   = paste("pft",sprintf("%2.2i",mypfts[p]),sep="")
+
+
+                        #------------------------------------------------------------------#
+                        #     Loop over all formats, and make the plots.                   #
+                        #------------------------------------------------------------------#
+                        for (o in 1:nout){
+                           #----- Open the file or the plot window. -----------------------#
+                           fichier = file.path(outindiv
+                                              ,paste(iata,"-tseries-",ed2.rate,"-",indiv[i]
+                                                    ,"-",pft.key,"-",iphen.key[ph]
+                                                    ,".",outform[o],sep=""))
+                           if(outform[o] == "x11"){
+                              X11(width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz)
+                           }else if(outform[o] == "png"){
+                              png(filename=fichier,width=wide.size$width*depth
+                                 ,height=wide.size$height*depth,pointsize=ptsz,res=depth)
+                           }else if(outform[o] == "eps"){
+                              postscript(file=fichier,width=wide.size$width
+                                        ,height=wide.size$height,pointsize=ptsz
+                                        ,paper=wide.size$paper)
+                           }else if(outform[o] == "pdf"){
+                              pdf(file=fichier,onefile=FALSE
+                                 ,width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz,paper=wide.size$paper)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Split the window into several smaller windows.            #
+                           #---------------------------------------------------------------#
+                           par(par.user)
+                           par.orig = par(no.readonly = TRUE)
+                           par(oma = c(0.2,3,4,0))
+                           layout(mat    = rbind(lo.box$mat.off,rep(1,times=lo.box$ncol))
+                                 ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
+                                 )#end layout
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Plot legend. --------------------------------------------#
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                           if (ed22.ci){
+                              legend ( x       = "bottom"
+                                     , inset   = 0.01
+                                     , legend  = c("Census","ED-2.2")
+                                     , fill    = c(col.sta[2],col.ed2[2])
+                                     , border  = c(col.sta[2],col.ed2[2])
+                                     , col     = c(col.sta[1],col.ed2[1])
+                                     , lwd     = 2.0
+                                     , pt.cex  = 1.0
+                                     , angle   = c(-45,45)
+                                     , density = c( 40,40)
+                                     , bg      = background
+                                     , ncol    = 2
+                                     , title   = "(Shaded - 95% C.I.)"
+                                     , cex     = 0.85
+                                     )#end legend
+                           }else{
+                              legend ( x       = "bottom"
+                                     , inset   = 0.01
+                                     , legend  = c("Census","ED-2.2")
+                                     , fill    = c(col.sta[2],         0)
+                                     , border  = c(col.sta[2],         0)
+                                     , col     = c(col.sta[1],col.ed2[1])
+                                     , lwd     = 2.0
+                                     , pt.cex  = 1.0
+                                     , angle   = c(-45,45)
+                                     , density = c( 40,40)
+                                     , bg      = background
+                                     , ncol    = 2
+                                     , title   = "(Shaded - 95% C.I.)"
+                                     , cex     = 0.85
+                                     )#end legend
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+
+                           #---------------------------------------------------------------#
+                           #    Loop over all DBH classes.                                 #
+                           #---------------------------------------------------------------#
+                           for (d in 1:n.dbh){
+                              left    = (d %% lo.box$ncol) == 1
+                              right   = (d %% lo.box$ncol) == 0
+                              top     = d <= lo.box$ncol
+                              bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
+
+                              if (ed22.ci){
+                                 #---------------------------------------------------------#
+                                 #     Find the plot limit for the y scale.                #
+                                 #---------------------------------------------------------#
+                                 yuse   = c(ed2.q025[p,d,],ed2.q975[p,d,]
+                                           ,sta.expected[p,d,]
+                                           ,sta.q025[p,d,],sta.q975[p,d,]
+                                           ,ed2.expected[p,d,])
+                                 ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
+                                 #---------------------------------------------------------#
+
+
+
+                                 #---------------------------------------------------------#
+                                 #    Make the polygons.                                   #
+                                 #---------------------------------------------------------#
+                                 size.poly  = list()
+                                 size.poly$x   = c(x.years     ,rev(x.years)     ,NA
+                                                  ,x.years     ,rev(x.years)         )
+                                 size.poly$y   = c(sta.q025[p,d,],rev(sta.q975[p,d,]),NA
+                                                  ,ed2.q025[p,d,],rev(ed2.q975[p,d,])    )
+                                 size.poly$col = c(col.sta[2]  ,col.ed2[2]           )
+                                 #---------------------------------------------------------#
+                              }else{
+                                 #---------------------------------------------------------#
+                                 #     Find the plot limit for the y scale.                #
+                                 #---------------------------------------------------------#
+                                 yuse   = c(ed2.expected[p,d,],sta.expected[d,]
+                                           ,sta.q025[p,d,],sta.q975[p,d,])
+                                 ylimit = pretty.xylim(yuse,fracexp=0.0,is.log=ylog)
+                                 #---------------------------------------------------------#
+
+
+
+                                 #---------------------------------------------------------#
+                                 #    Make the polygons.                                   #
+                                 #---------------------------------------------------------#
+                                 size.poly     = list()
+                                 size.poly$x   = c(x.years       ,rev(x.years)           )
+                                 size.poly$y   = c(sta.q025[p,d,],rev(sta.q975[p,d,])    )
+                                 size.poly$col = c(col.sta[2]  )
+                                 #---------------------------------------------------------#
+                              }#end if
+                              #------------------------------------------------------------#
+
+
+                              #----- Set up the title and axes labels. --------------------#
+                              lesub = paste("DBH class:",dbh.names[d],sep="")
+                              #------------------------------------------------------------#
+
+
+                              #----- Plot the box plot. -----------------------------------#
+                              par(mar=c(4.1,3.1,2.1,2.1))
+                              #----- Plotting window and grid. ----------------------------#
+                              plot.new()
+                              plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                              axis(side=1)
+                              axis(side=2)
+                              box()
+                              title(main=lesub,xlab="",ylab="")
+                              if (plotgrid) grid(col=grid.colour,lty="solid")
+                              #----- Plot the taxon rate with confidence interval. --------#
+                              epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
+                                      ,angle=c(-45,45),density=40,lty="solid",lwd=1.0)
+                              lines(x=x.years,y=sta.expected[p,d,],type="o",pch=16,lwd=2.0
+                                   ,col=col.sta[1])
+                              lines(x=x.years,y=ed2.expected[p,d,],type="o",pch=16,lwd=2.0
+                                   ,col=col.ed2[1])
+                              #------------------------------------------------------------#
+                           }#end for (d in 1:n.dbh)
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Make the title and axis labels.                           #
+                           #---------------------------------------------------------------#
+                           letitre = paste(desc.rate," - ",longname," - ",pft.label
+                                          ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                           ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
+                           lex     = desc.unit(desc="Census year",unit=untab$cm)
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Split the plotting window.                                #
+                           #---------------------------------------------------------------#
+                           gtitle( main      = letitre
+                                 , xlab      = lex
+                                 , ylab      = ley
+                                 , off.xlab  = 1/6
+                                 , line.xlab = 4.1
+                                 , line.ylab = 2.6
+                                 , cex.main  = 0.9*cex.ptsz
+                                 )#end gtitle
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Close the device. ---------------------------------------#
+                           if (outform[o] == "x11"){
+                              locator(n=1)
+                              dev.off()
+                           }else{
+                              dev.off()
+                           }#end if
+                           #---------------------------------------------------------------#
+                        }#end for (o in 1:nout)
+                        #------------------------------------------------------------------#
+                     }#end for (p in sequence(npfts))
+                     #---------------------------------------------------------------------#
+                  }#end if (pfttoo && sizetoo)
+                  #------------------------------------------------------------------------#
                }#end for
                #---------------------------------------------------------------------------#
             }#end for
+            #==============================================================================#
+            #==============================================================================#
+graphics.off()
+
+
+
+
+            #==============================================================================#
+            #==============================================================================#
+            #     Plot the theme time series of the rates (by DBH class if applicable).    #
+            #==============================================================================#
+            #==============================================================================#
+            for (n in 1:npratethbpw){
+               this.plot  = pratethbpw[[n]]
+               sizetoo    = this.plot$sizetoo
+               pfttoo     = this.plot$pfttoo
+               desc.rate  = this.plot$desc.rate
+               unit.rate  = this.plot$unit.rate
+               col.ed2    = this.plot$col.ed2
+               col.sta    = this.plot$col.sta
+               indiv      = this.plot$indiv
+               desc.indiv = this.plot$desc.indiv
+               angle      = this.plot$angle
+               dens       = this.plot$density
+               theme.now  = this.plot$theme
+               theme.desc = this.plot$theme.desc
+               plog       = this.plot$plog
+               ylog       = length(grep("y",plog)) > 0
+
+               nindiv     = length(indiv)
+               nrate      = length(this.plot$ed2.rate)
+
+               cat(" + Plotting time series of ",theme.desc,"...","\n")
+               #---------------------------------------------------------------------------#
+               #    Loop over all possible types of population count.                      #
+               #---------------------------------------------------------------------------#
+               for (i in 1:nindiv){
+                  #========================================================================#
+                  #========================================================================#
+                  #     PLOT-LEVEL rates.                                                  #
+                  #------------------------------------------------------------------------#
+                  cat("  - Plot level: ",desc.indiv[i],"...","\n")
+                  ed2.rate       = paste(this.plot$ed2.rate,"plot",sep=".")
+                  sta.rate       = paste(this.plot$sta.rate,"plot",sep=".")
+
+
+                  #----- Create a directory for this type of plot. ------------------------#
+                  outthbpw   = paste(outplot,theme.now,sep="/")
+                  if (! file.exists(outthbpw)) dir.create(outthbpw)
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Create path for this individual. ---------------------------------#
+                  outindiv   = paste(outthbpw,indiv[i],sep="/")
+                  if (! file.exists(outindiv)) dir.create(outindiv)
+                  #------------------------------------------------------------------------#
+
+
+                  #------------------------------------------------------------------------#
+                  #      Define the limits between boxes.                                  #
+                  #------------------------------------------------------------------------#
+                  off        = 0.1
+                  width.bar  = (year4[-1] - year4[-n.census])
+                  width.year = (nrate + 1) * width.bar + 1
+                  x.bounds   = c(0, cumsum(width.year))
+                  xlimit     = range(x.bounds)
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Load the modelled rates. -----------------------------------------#
+                  mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                  x.left       = list()
+                  x.right      = list()
+                  x.mid        = list()
+                  mod.expected = list()
+                  mod.q025     = list()
+                  mod.q975     = list()
+                  mod.colour   = list()
+                  for (r in sequence(nrate+1)){
+                     if (r == nrate + 1){
+                        mod.now           = sta[[sta.rate]][[indiv[i]]]$global
+                        mod.colour[[r]]   = col.sta
+                     }else{
+                        mod.now           = ed2[[ed2.rate[r]]][[indiv[i]]]$global
+                        mod.colour[[r]]   = col.ed2[r]
+                     }#end if
+
+                     x.left      [[r]] = ( x.bounds[-n.census]
+                                         + 0.5 + (r-1) * width.bar + off)
+                     x.right     [[r]] = x.left[[r]] + width.bar - 2. * off
+                     x.mid       [[r]] = 0.5 * ( x.left[[r]] + x.right[[r]] )
+                     mod.expected[[r]] = mult * mod.now[1,-1]
+                     if (ed22.ci || r == nrate + 1){
+                        mod.q025 [[r]] = mult * mod.now[2,-1]
+                        mod.q975 [[r]] = mult * mod.now[3,-1]
+                     }else{
+                        mod.q025 [[r]] = NA   * mod.now[2,-1]
+                        mod.q975 [[r]] = NA   * mod.now[3,-1]
+                     }#end if
+                     #---------------------------------------------------------------------#
+                  }#end for
+                  #------------------------------------------------------------------------#
+
+
+                  #------------------------------------------------------------------------#
+                  #     Find the plot limit for the y scale.                               #
+                  #------------------------------------------------------------------------#
+                  yuse   = c(0,unlist(mod.q025),unlist(mod.q975),unlist(mod.expected))
+                  ylimit = pretty.xylim(u=yuse,fracexp=0.04,is.log=ylog)
+                  #------------------------------------------------------------------------#
+
+
+
+                  #------------------------------------------------------------------------#
+                  #     Loop over all formats, and make the plots.                         #
+                  #------------------------------------------------------------------------#
+                  for (o in 1:nout){
+                     #----- Open the file or the plot window. -----------------------------#
+                     fichier = file.path(outindiv
+                                        ,paste(iata,"-thbpw-",theme.now,"-",indiv[i]
+                                              ,"-",iphen.key[ph],".",outform[o],sep=""))
+                     if(outform[o] == "x11"){
+                        X11(width=size$width,height=size$height,pointsize=ptsz)
+                     }else if(outform[o] == "png"){
+                        png(filename=fichier,width=size$width*depth
+                           ,height=size$height*depth,pointsize=ptsz,res=depth)
+                     }else if(outform[o] == "eps"){
+                        postscript(file=fichier,width=size$width,height=size$height
+                                  ,pointsize=ptsz,paper=size$paper)
+                     }else if(outform[o] == "pdf"){
+                        pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                           ,pointsize=ptsz,paper=size$paper)
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Make the title and axis labels.                                 #
+                     #---------------------------------------------------------------------#
+                     letitre = paste(theme.desc," - ",longname
+                                    ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                     ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
+                     lex     = desc.unit(desc="Census year",unit=NULL)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Go on and plot stuff.                                           #
+                     #---------------------------------------------------------------------#
+                     par(par.user)
+                     layout(mat=rbind(2,1),heights=c(5,1))
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Plot legend. --------------------------------------------------#
+                     par(mar=c(0.1,0.1,0.1,0.1))
+                     plot.new()
+                     plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                     legend ( x       = "bottom"
+                            , inset   = 0.0
+                            , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
+                            , fill    = c(col.sta,rep("transparent",times=nrate-1)
+                                         ,col.ed2)
+                            , border  = c(foreground,rep("transparent",times=nrate-1)
+                                         ,rep(foreground,times=nrate))
+                            , density = -1
+                            , ncol    = 2
+                            , title   = "Whiskers - 95% C.I."
+                            , cex     = 0.9 * cex.ptsz
+                            , xpd     = TRUE
+                            )#end legend
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Plotting window and grid. -------------------------------------#
+                     par(mar=c(5.1,4.4,4.1,2.1))
+                     plot.new()
+                     plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
+                     axis(side=1,at=x.bounds,labels=year4)
+                     axis(side=2)
+                     abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                     box()
+                     title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.ptsz)
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #     Plot rectangles and error bars.                                 #
+                     #---------------------------------------------------------------------#
+                     for (r in sequence(nrate+1)){
+                        rect( xleft   = x.left[[r]]
+                            , ybottom = 0
+                            , xright  = x.right[[r]]
+                            , ytop    = mod.expected[[r]]
+                            , col     = mod.colour[[r]]
+                            , border  = foreground
+                            , lwd     = 1.5
+                            )#end rect
+                        if (ed22.ci || r == nrate+1){
+                           whiskers( x       = x.mid[[r]]
+                                   , y       = mod.expected[[r]]
+                                   , ybottom = mod.q025[[r]]
+                                   , ytop    = mod.q975[[r]]
+                                   , col     = foreground
+                                   , lwd     = 1.5
+                                   )#end whiskers
+                        }#end if
+                        #------------------------------------------------------------------#
+                     }#end for
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Close the device. ---------------------------------------------#
+                     if (outform[o] == "x11"){
+                        locator(n=1)
+                        dev.off()
+                     }else{
+                        dev.off()
+                     }#end if
+                     #---------------------------------------------------------------------#
+                  }#end for (o in 1:nout)
+                  #------------------------------------------------------------------------#
+
+
+
+
+
+
+
+
+                  #========================================================================#
+                  #========================================================================#
+                  #     DBH-LEVEL rates.                                                   #
+                  #------------------------------------------------------------------------#
+                  if (sizetoo){
+                     cat("  - DBH classes: ",desc.indiv[i],"...","\n")
+                     ed2.part = paste(this.plot$ed2.part,"size",sep=".")
+                     ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
+                     sta.rate = paste(this.plot$sta.rate,"size",sep=".")
+
+
+                     #----- Create a directory for this type of plot. ---------------------#
+                     outtheme   = paste(outsize,theme.now,sep="/")
+                     if (! file.exists(outtheme)) dir.create(outtheme)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(outtheme,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define the limits between boxes.                               #
+                     #---------------------------------------------------------------------#
+                     off        = 0.1
+                     width.bar  = (year4[-1] - year4[-n.census])
+                     width.year = (nrate + 1) * width.bar + 1
+                     x.bounds   = c(0, cumsum(width.year))
+                     xlimit     = range(x.bounds)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define a nice configuration for the multiple panels.           #
+                     #---------------------------------------------------------------------#
+                     lo.box = pretty.box(n=n.dbh,horizontal=TRUE)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Loop over all formats, and make the plots.                      #
+                     #---------------------------------------------------------------------#
+                     for (o in 1:nout){
+                        #----- Open the file or the plot window. --------------------------#
+                        fichier = file.path(outindiv
+                                           ,paste(iata,"-thbpw-",theme.now,"-",indiv[i],"-"
+                                                 ,iphen.key[ph],".",outform[o] ,sep=""))
+                        if(outform[o] == "x11"){
+                           X11(width=wide.size$width,height=wide.size$height
+                              ,pointsize=ptsz)
+                        }else if(outform[o] == "png"){
+                           png(filename=fichier,width=wide.size$width*depth
+                              ,height=wide.size$height*depth,pointsize=ptsz,res=depth)
+                        }else if(outform[o] == "eps"){
+                           postscript(file=fichier,width=wide.size$width
+                                     ,height=wide.size$height,pointsize=ptsz
+                                     ,paper=wide.size$paper)
+                        }else if(outform[o] == "pdf"){
+                           pdf(file=fichier,onefile=FALSE
+                              ,width=wide.size$width,height=wide.size$height
+                              ,pointsize=ptsz,paper=wide.size$paper)
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Split the window into several smaller windows.               #
+                        #------------------------------------------------------------------#
+                        par(par.user)
+                        par.orig = par(no.readonly = TRUE)
+                        par(oma = c(0.2,3,4,0))
+                        layout(mat    = rbind(lo.box$mat.off,rep(1,times=lo.box$ncol))
+                              ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
+                              )#end layout
+                        #------------------------------------------------------------------#
+
+
+                        #----- Plot legend. -----------------------------------------------#
+                        par(mar=c(0.1,0.1,0.1,0.1))
+                        plot.new()
+                        plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                        legend ( x       = "bottom"
+                               , inset   = 0.0
+                               , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
+                               , fill    = c(col.sta,rep("transparent",times=nrate-1)
+                                            ,col.ed2)
+                               , border  = c(foreground,rep("transparent",times=nrate-1)
+                                            ,rep(foreground,times=nrate))
+                               , density = -1
+                               , ncol    = 2
+                               , title   = "Whiskers - 95% C.I."
+                               , cex     = cex.ptsz
+                               , xpd     = TRUE
+                               )#end legend
+                        #------------------------------------------------------------------#
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #    Loop over all DBH classes.                                    #
+                        #------------------------------------------------------------------#
+                        for (d in 1:n.dbh){
+                           left    = (d %% lo.box$ncol) == 1
+                           right   = (d %% lo.box$ncol) == 0
+                           top     = d <= lo.box$ncol
+                           bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
+
+
+
+                           #----- Load the modelled rates. --------------------------------#
+                           mult = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                           x.left       = list()
+                           x.right      = list()
+                           x.mid        = list()
+                           mod.expected = list()
+                           mod.q025     = list()
+                           mod.q975     = list()
+                           mod.colour   = list()
+                           for (r in sequence(nrate+1)){
+                              if (r == nrate + 1){
+                                 mod.now           = sta[[sta.rate]][[indiv[i]]]$global
+                                 mod.colour[[r]]   = col.sta
+                              }else{
+                                 mod.now           = ed2[[ed2.rate[r]]][[indiv[i]]]$global
+                                 mod.colour[[r]]   = col.ed2[r]
+                              }#end if
+
+                              x.left      [[r]] = ( x.bounds[-n.census]
+                                                  + 0.5 + (r-1) * width.bar + off)
+                              x.right     [[r]] = x.left[[r]] + width.bar - 2. * off
+                              x.mid       [[r]] = 0.5 * ( x.left[[r]] + x.right[[r]] )
+                              mod.expected[[r]] = mult * mod.now[1,d,-1]
+                              if (ed22.ci || r == nrate + 1){
+                                 mod.q025 [[r]] = mult * mod.now[2,d,-1]
+                                 mod.q975 [[r]] = mult * mod.now[3,d,-1]
+                              }else{
+                                 mod.q025 [[r]] = NA   * mod.now[2,d,-1]
+                                 mod.q975 [[r]] = NA   * mod.now[3,d,-1]
+                              }#end if
+                              #------------------------------------------------------------#
+                           }#end for
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Find the plot limit for the y scale.                      #
+                           #---------------------------------------------------------------#
+                           yuse   = c(0,unlist(mod.q025),unlist(mod.q975)
+                                     ,unlist(mod.expected))
+                           ylimit = pretty.xylim(u=yuse,fracexp=0.04,is.log=ylog)
+                           #---------------------------------------------------------------#
+
+
+                           #----- Set up the title and axes labels. -----------------------#
+                           lesub = paste("DBH class:",dbh.names[d],sep="")
+                           #---------------------------------------------------------------#
+
+
+                           #----- Plotting window and grid. -------------------------------#
+                           par(mar=c(4.1,3.1,2.1,2.1))
+                           plot.new()
+                           plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
+                           axis(side=1,at=x.bounds,labels=year4)
+                           axis(side=2)
+                           abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                           box()
+                           title(main=lesub,xlab="",ylab="")
+                           #---------------------------------------------------------------#
+
+
+                           #---------------------------------------------------------------#
+                           #     Plot rectangles and error bars.                           #
+                           #---------------------------------------------------------------#
+                           for (r in sequence(nrate+1)){
+                              rect( xleft   = x.left[[r]]
+                                  , ybottom = 0
+                                  , xright  = x.right[[r]]
+                                  , ytop    = mod.expected[[r]]
+                                  , col     = mod.colour[[r]]
+                                  , border  = foreground
+                                  , lwd     = 1.5
+                                  )#end rect
+                              if (ed22.ci || r == nrate+1){
+                                 whiskers( x       = x.mid[[r]]
+                                         , y       = mod.expected[[r]]
+                                         , ybottom = mod.q025[[r]]
+                                         , ytop    = mod.q975[[r]]
+                                         , col     = foreground
+                                         , lwd     = 1.5
+                                         )#end whiskers
+                              }#end if
+                              #------------------------------------------------------------#
+                           }#end for
+                           #---------------------------------------------------------------#
+                        }#end for (d in 1:n.dbh)
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Make the title and axis labels.                              #
+                        #------------------------------------------------------------------#
+                        letitre = paste(theme.desc," - ",longname
+                                       ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                        ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
+                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Plot title.                                                  #
+                        #------------------------------------------------------------------#
+                        gtitle( main      = letitre
+                              , xlab      = lex
+                              , ylab      = ley
+                              , off.xlab  = 1/6
+                              , line.xlab = 4.1
+                              , line.ylab = 2.6
+                              , cex.main  = 0.9*cex.ptsz
+                              )#end gtitle
+                        #------------------------------------------------------------------#
+
+
+
+                        #----- Close the device. ------------------------------------------#
+                        if (outform[o] == "x11"){
+                           locator(n=1)
+                           dev.off()
+                        }else{
+                           dev.off()
+                        }#end if
+                        #------------------------------------------------------------------#
+                     }#end for
+                     #---------------------------------------------------------------------#
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+
+
+
+
+                  #========================================================================#
+                  #========================================================================#
+                  #    PFT-specific plots.                                                 #
+                  #------------------------------------------------------------------------#
+                  if (pfttoo){
+
+                     #=====================================================================#
+                     #=====================================================================#
+                     #     PLOT-LEVEL rates.                                               #
+                     #---------------------------------------------------------------------#
+                     cat("  - PFT-dependent plot level: ",desc.indiv[i],"...","\n")
+                     ed2.rate = paste(this.plot$ed2.rate,"plot",sep=".")
+                     sta.rate = paste(this.plot$sta.rate,"plot",sep=".")
+
+
+                     #----- Create a directory for this type of plot. ---------------------#
+                     outtheme   = paste(pftplot,theme.now,sep="/")
+                     if (! file.exists(outtheme)) dir.create(outtheme)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(outtheme,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define the limits between boxes.                               #
+                     #---------------------------------------------------------------------#
+                     off        = 0.1
+                     width.bar  = (year4[-1] - year4[-n.census])
+                     width.year = (nrate + 1) * width.bar + 1
+                     x.bounds   = c(0, cumsum(width.year))
+                     xlimit     = range(x.bounds)
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define a nice configuration for the multiple panels.           #
+                     #---------------------------------------------------------------------#
+                     lo.pft = pretty.box(n=npfts+1,horizontal=TRUE)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Load the modelled rates. --------------------------------------#
+                     mult         = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                     x.left       = list()
+                     x.right      = list()
+                     x.mid        = list()
+                     mod.expected = list()
+                     mod.q025     = list()
+                     mod.q975     = list()
+                     mod.colour   = list()
+                     for (r in sequence(nrate+1)){
+                        if (r == nrate + 1){
+                           mod.now           = sta[[sta.rate]][[indiv[i]]]
+                           mod.global        = sta[[sta.rate]][[indiv[i]]]$global
+                           mod.colour[[r]]   = col.sta
+                        }else{
+                           mod.now           = ed2[[ed2.rate[r]]][[indiv[i]]]
+                           mod.global        = ed2[[ed2.rate[r]]][[indiv[i]]]$global
+                           mod.colour[[r]]   = col.ed2[r]
+                        }#end if
+
+                        x.left      [[r]] = ( x.bounds[-n.census]
+                                            + 0.5 + (r-1) * width.bar + off)
+                        x.right     [[r]] = x.left[[r]] + width.bar - 2. * off
+                        x.mid       [[r]] = 0.5 * ( x.left[[r]] + x.right[[r]] )
+                        mod.expected[[r]] = mult * rbind(mod.now$expected[ ,-1]
+                                                        ,mod.global      [1,-1])
+                        if (ed22.ci || r == nrate + 1){
+                           mod.q025    [[r]] = mult * rbind(mod.now$q025    [ ,-1]
+                                                           ,mod.global      [2,-1])
+                           mod.q975    [[r]] = mult * rbind(mod.now$q975    [ ,-1]
+                                                           ,mod.global      [3,-1])
+                        }else{
+                           mod.q025    [[r]] = NA   * rbind(mod.now$q025    [ ,-1]
+                                                           ,mod.global      [2,-1])
+                           mod.q975    [[r]] = NA   * rbind(mod.now$q975    [ ,-1]
+                                                           ,mod.global      [3,-1])
+                        }#end if
+                        #---------------------------------------------------------------------#
+                     }#end for
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #     Find Y limits.                                                  #
+                     #---------------------------------------------------------------------#
+                     yuse   = c(0,unlist(mod.q025),unlist(mod.q975),unlist(mod.expected))
+                     ylimit = pretty.xylim(u=yuse,fracexp=0.04,is.log=ylog)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Loop over all formats, and make the plots.                      #
+                     #---------------------------------------------------------------------#
+                     for (o in 1:nout){
+                        #----- Open the file or the plot window. --------------------------#
+                        fichier = file.path(outindiv
+                                           ,paste(iata,"-thbpw-",theme.now,"-",indiv[i]
+                                                 ,"-",iphen.key[ph],".",outform[o],sep=""))
+                        if(outform[o] == "x11"){
+                           X11(width=size$width,height=size$height,pointsize=ptsz)
+                        }else if(outform[o] == "png"){
+                           png(filename=fichier,width=size$width*depth
+                              ,height=size$height*depth,pointsize=ptsz,res=depth)
+                        }else if(outform[o] == "eps"){
+                           postscript(file=fichier,width=size$width,height=size$height
+                                     ,pointsize=ptsz,paper=size$paper)
+                        }else if(outform[o] == "pdf"){
+                           pdf(file=fichier,onefile=FALSE,width=size$width
+                              ,height=size$height,pointsize=ptsz,paper=size$paper)
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Split the window.                                            #
+                        #------------------------------------------------------------------#
+                        par(par.user)
+                        par.orig = par(no.readonly = TRUE)
+                        par(oma = c(0.2,3,4,0))
+                        layout(mat    = rbind(lo.pft$mat.off,rep(1,times=lo.pft$ncol))
+                              ,height = c(rep(5/lo.pft$nrow,times=lo.pft$nrow),1)
+                              )#end layout
+                        #------------------------------------------------------------------#
+
+
+                        #----- Plot legend. -----------------------------------------------#
+                        par(mar=c(0.1,0.1,0.1,0.1))
+                        plot.new()
+                        plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                        legend ( x       = "bottom"
+                               , inset   = 0.0
+                               , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
+                               , fill    = c(col.sta,rep("transparent",times=nrate-1)
+                                            ,col.ed2)
+                               , border  = c(foreground,rep("transparent",times=nrate-1)
+                                            ,rep(foreground,times=nrate))
+                               , density = -1
+                               , ncol    = 2
+                               , title   = "Whiskers - 95% C.I."
+                               , cex     = cex.ptsz
+                               , xpd     = TRUE
+                               )#end legend
+                        #------------------------------------------------------------------#
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Loop over all PFTS to be plotted.                            #
+                        #------------------------------------------------------------------#
+                        for (p in sequence(npfts+1)){
+                           if (p == npfts + 1){
+                              pft.label = "All PFTs"
+                           }else{
+                              pft.label = pft$name[mypfts[p]]
+                           }#end if
+
+
+                           #---------------------------------------------------------------#
+                           #     Define margins.                                           #
+                           #---------------------------------------------------------------#
+                           left    = (p %% lo.pft$ncol) == 1
+                           right   = (p %% lo.pft$ncol) == 0
+                           top     = p <= lo.pft$ncol
+                           bottom  = p > (lo.pft$nrow - 1) * lo.pft$ncol
+                           #---------------------------------------------------------------#
+
+
+
+
+                           #----- Plotting window and grid. -------------------------------#
+                           par(mar=c(4.1,3.1,2.1,2.1))
+                           plot.new()
+                           plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
+                           box()
+                           axis(side=1,at=x.bounds,labels=year4)
+                           axis(side=2)
+                           abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                           title(main=pft.label)
+                           #---------------------------------------------------------------#
+
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Plot rectangles and error bars.                           #
+                           #---------------------------------------------------------------#
+                           for (r in sequence(nrate+1)){
+                              rect( xleft   = x.left[[r]]
+                                  , ybottom = 0.
+                                  , xright  = x.right[[r]]
+                                  , ytop    = mod.expected[[r]][p,]
+                                  , col     = mod.colour[[r]]
+                                  , border  = foreground
+                                  , lwd     = 1.5
+                                  )
+                              if (ed22.ci || r == nrate+1){
+                                 whiskers( x       = x.mid[[r]]
+                                         , y       = mod.expected[[r]][p,]
+                                         , ybottom = mod.q025[[r]][p,]
+                                         , ytop    = mod.q975[[r]][p,]
+                                         , col     = foreground
+                                         , lwd     = 1.5
+                                         )
+                              }#end if
+                              #------------------------------------------------------------#
+                           }#end for
+                           #---------------------------------------------------------------#
+                        }#end for (p in sequence(npfts)
+                        #------------------------------------------------------------------#
+
+
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Make the title and axis labels.                              #
+                        #------------------------------------------------------------------#
+                        letitre = paste(theme.desc," - ",longname
+                                       ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                        ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
+                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        #------------------------------------------------------------------#
+
+
+                        #------------------------------------------------------------------#
+                        #      Plot global annotation.                                     #
+                        #------------------------------------------------------------------#
+                        gtitle( main      = letitre
+                              , xlab      = lex
+                              , ylab      = ley
+                              , off.xlab  = 1/6
+                              , line.xlab = 4.1
+                              , line.ylab = 2.6
+                              , cex.main  = 0.9*cex.ptsz
+                              )#end gtitle
+                        #------------------------------------------------------------------#
+
+
+
+                        #----- Close the device. ------------------------------------------#
+                        if (outform[o] == "x11"){
+                           locator(n=1)
+                           dev.off()
+                        }else{
+                           dev.off()
+                        }#end if
+                        #------------------------------------------------------------------#
+                     }#end for (o in 1:nout)
+                     #---------------------------------------------------------------------#
+                  }#end if (pfttoo)
+                  #========================================================================#
+                  #========================================================================#
+
+
+
+
+
+                  #========================================================================#
+                  #========================================================================#
+                  #     DBH-LEVEL rates by PFT.                                            #
+                  #------------------------------------------------------------------------#
+                  if (sizetoo && pfttoo){
+                     cat("  - PFT-dependent, DBH classes: ",desc.indiv[i],"...","\n")
+                     ed2.part = paste(this.plot$ed2.part,"size",sep=".")
+                     ed2.rate = paste(this.plot$ed2.rate,"size",sep=".")
+                     sta.rate = paste(this.plot$sta.rate,"size",sep=".")
+
+
+                     #----- Create a directory for this type of plot. ---------------------#
+                     outtheme   = paste(pftsize,theme.now,sep="/")
+                     if (! file.exists(outtheme)) dir.create(outtheme)
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Create path for this individual. ------------------------------#
+                     outindiv   = paste(outtheme,indiv[i],sep="/")
+                     if (! file.exists(outindiv)) dir.create(outindiv)
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define the limits between boxes.                               #
+                     #---------------------------------------------------------------------#
+                     off        = 0.1
+                     width.bar  = (year4[-1] - year4[-n.census])
+                     width.year = (nrate + 1) * width.bar + 1
+                     x.bounds   = c(0, cumsum(width.year))
+                     xlimit     = range(x.bounds)
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #      Define a nice configuration for the multiple panels.           #
+                     #---------------------------------------------------------------------#
+                     lo.box = pretty.box(n=n.dbh,horizontal=TRUE)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Loop over all PFTs.                                              #
+                     #---------------------------------------------------------------------#
+                     for (p in sequence(npfts)){
+                        pft.label = pft$name[mypfts[p]]
+                        pft.key   = paste("pft",sprintf("%2.2i",mypfts[p]),sep="")
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Loop over all formats, and make the plots.                   #
+                        #------------------------------------------------------------------#
+                        for (o in 1:nout){
+                           #----- Open the file or the plot window. -----------------------#
+                           fichier = file.path(outindiv
+                                              ,paste(iata,"-thbpw-",theme.now,"-",indiv[i],
+                                                    "-",pft.key,"-",iphen.key[ph]
+                                                    ,".",outform[o] ,sep=""))
+                           if(outform[o] == "x11"){
+                              X11(width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz)
+                           }else if(outform[o] == "png"){
+                              png(filename=fichier,width=wide.size$width*depth
+                                 ,height=wide.size$height*depth,pointsize=ptsz,res=depth)
+                           }else if(outform[o] == "eps"){
+                              postscript(file=fichier,width=wide.size$width
+                                        ,height=wide.size$height,pointsize=ptsz
+                                        ,paper=wide.size$paper)
+                           }else if(outform[o] == "pdf"){
+                              pdf(file=fichier,onefile=FALSE
+                                 ,width=wide.size$width,height=wide.size$height
+                                 ,pointsize=ptsz,paper=wide.size$paper)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Split the window into several smaller windows.            #
+                           #---------------------------------------------------------------#
+                           par(par.user)
+                           par.orig = par(no.readonly = TRUE)
+                           par(oma = c(0.2,3,4,0))
+                           layout(mat    = rbind(lo.box$mat.off,rep(1,times=lo.box$ncol))
+                                 ,height = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
+                                 )#end layout
+                           #---------------------------------------------------------------#
+
+
+                           #----- Plot legend. --------------------------------------------#
+                           par(mar=c(0.1,0.1,0.1,0.1))
+                           plot.new()
+                           plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                           legend ( x       = "bottom"
+                                  , inset   = 0.0
+                                  , legend  = c("Observed",rep("",times=nrate-1),desc.rate)
+                                  , fill    = c(col.sta,rep("transparent",times=nrate-1)
+                                               ,col.ed2)
+                                  , border  = c(foreground,rep("transparent",times=nrate-1)
+                                               ,rep(foreground,times=nrate))
+                                  , density = -1
+                                  , ncol    = 2
+                                  , title   = "Whiskers - 95% C.I."
+                                  , cex     = cex.ptsz
+                                  , xpd     = TRUE
+                                  )#end legend
+                           #---------------------------------------------------------------#
+
+
+
+
+                           #---------------------------------------------------------------#
+                           #    Loop over all DBH classes.                                 #
+                           #---------------------------------------------------------------#
+                           for (d in 1:n.dbh){
+                              #----- Find out which side this plot goes. ------------------#
+                              left    = (d %% lo.box$ncol) == 1
+                              right   = (d %% lo.box$ncol) == 0
+                              top     = d <= lo.box$ncol
+                              bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
+                              #------------------------------------------------------------#
+
+
+
+
+
+
+
+                              #----- Load the modelled rates. -----------------------------#
+                              mult = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                              x.left       = list()
+                              x.right      = list()
+                              x.mid        = list()
+                              mod.expected = list()
+                              mod.q025     = list()
+                              mod.q975     = list()
+                              mod.colour   = list()
+                              for (r in sequence(nrate+1)){
+                                 if (r == nrate + 1){
+                                    mod.now         = sta[[sta.rate]][[indiv[i]]]
+                                    mod.colour[[r]] = col.sta
+                                 }else{
+                                    mod.now         = ed2[[ed2.rate[r]]][[indiv[i]]]
+                                    mod.colour[[r]] = col.ed2[r]
+                                 }#end if
+
+                                 x.left      [[r]] = ( x.bounds[-n.census]
+                                                     + 0.5 + (r-1) * width.bar + off)
+                                 x.right     [[r]] = x.left[[r]] + width.bar - 2. * off
+                                 x.mid       [[r]] = 0.5 * ( x.left[[r]] + x.right[[r]] )
+                                 mod.expected[[r]] = mult * mod.now$expected[p,d,-1]
+                                 if (ed22.ci || r == nrate + 1){
+                                    mod.q025    [[r]] = mult * mod.now$q025    [p,d,-1]
+                                    mod.q975    [[r]] = mult * mod.now$q975    [p,d,-1]
+                                 }else{
+                                    mod.q025    [[r]] = NA   * mod.now$q025    [p,d,-1]
+                                    mod.q975    [[r]] = NA   * mod.now$q975    [p,d,-1]
+                                 }#end if
+                                 #---------------------------------------------------------#
+                              }#end for
+                              #------------------------------------------------------------#
+
+
+                              #------------------------------------------------------------#
+                              #     Find Y limits.                                         #
+                              #------------------------------------------------------------#
+                              yuse   = c(0,unlist(mod.q025),unlist(mod.q975)
+                                          ,unlist(mod.expected))
+                              ylimit = pretty.xylim(u=yuse,fracexp=0.04,is.log=ylog)
+                              #------------------------------------------------------------#
+
+
+                              #----- Set up the title and axes labels. --------------------#
+                              lesub = paste("DBH class:",dbh.names[d],sep="")
+                              #------------------------------------------------------------#
+
+
+                              #----- Plotting window and grid. ----------------------------#
+                              par(mar=c(4.1,3.1,2.1,2.1))
+                              plot.new()
+                              plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
+                              axis(side=1,at=x.bounds,labels=year4)
+                              axis(side=2)
+                              abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                              box()
+                              title(main=lesub,xlab="",ylab="")
+                              #------------------------------------------------------------#
+
+
+
+                              #------------------------------------------------------------#
+                              #     Plot rectangles and error bars.                        #
+                              #------------------------------------------------------------#
+                              for (r in sequence(nrate+1)){
+                                 rect( xleft   = x.left      [[r]]
+                                     , ybottom = 0
+                                     , xright  = x.right     [[r]]
+                                     , ytop    = mod.expected[[r]]
+                                     , col     = mod.colour  [[r]]
+                                     , border  = foreground
+                                     , lwd     = 1.5
+                                     )#end rect
+                                 if (ed22.ci || r == nrate+1){
+                                    whiskers( x       = x.mid       [[r]]
+                                            , y       = mod.expected[[r]]
+                                            , ybottom = mod.q025    [[r]]
+                                            , ytop    = mod.q975    [[r]]
+                                            , col     = foreground
+                                            , lwd     = 1.5
+                                            )
+                                 }#end if (ed22.ci || r == nrate+1)
+                                 #---------------------------------------------------------#
+                              }#end for (r in sequence(nrate+1))
+                              #------------------------------------------------------------#
+                           }#end for (d in 1:n.dbh)
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Make the title and axis labels.                           #
+                           #---------------------------------------------------------------#
+                           letitre = paste(theme.desc," - ",longname," - ",pft.label
+                                    ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
+                           ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
+                           lex     = desc.unit(desc="Census year",unit=NULL)
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #     Plot title.                                               #
+                           #---------------------------------------------------------------#
+                           gtitle( main      = letitre
+                                 , xlab      = lex
+                                 , ylab      = ley
+                                 , off.xlab  = 1/6
+                                 , line.xlab = 4.1
+                                 , line.ylab = 2.6
+                                 , cex.main  = 0.9*cex.ptsz
+                                 )#end gtitle
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Close the device. ---------------------------------------#
+                           if (outform[o] == "x11"){
+                              locator(n=1)
+                              dev.off()
+                           }else{
+                              dev.off()
+                           }#end if
+                           #---------------------------------------------------------------#
+                        }#end for (o in 1:nout)
+                        #------------------------------------------------------------------#
+                     }#end for (p in sequence(npfts)
+                     #---------------------------------------------------------------------#
+                  }#end if (pfttoo && sizetoo)
+                  #------------------------------------------------------------------------#
+
+               }#end for (i in 1:nindiv)
+               #---------------------------------------------------------------------------#
+            }#end for (n in 1:npratethbpw)
             #==============================================================================#
             #==============================================================================#
          }#end if (census.name %in% ls())
@@ -2375,6 +4874,7 @@ for (p in sequence(nplaces)){
          #---------------------------------------------------------------------------------#
       }#end for phenology
       #------------------------------------------------------------------------------------#
+
    }#end for tfall
    #---------------------------------------------------------------------------------------#
 }#end for places

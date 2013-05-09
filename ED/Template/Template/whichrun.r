@@ -127,14 +127,16 @@ hasoutput   = nhisto > 0
 #      Check whether there is a last history file or not...                                #
 #------------------------------------------------------------------------------------------#
 if (hasoutput){
+
+   fl=nchar(histolist[1])
+   ylist  = as.numeric(substring(histolist,fl-23,fl-20))
+   nhisto = which.max(ylist)
    latesthisto = histolist[nhisto]
    pathhisto   = file.path(histodir,histolist[nhisto])
    print (paste("Polygon",polyg," - Last:",latesthisto,"..."))
 
    #----- Open the last history and check how many cohorts exist. -------------------------#
    mydata = hdf5load(file=pathhisto,load=FALSE,verbosity=0,tidy=TRUE)
-
-   fl=nchar(latesthisto)
 
    #------ Determine the time. ------------------------------------------------------------#
    yyyy = substring(latesthisto,fl-23,fl-20)
@@ -211,12 +213,12 @@ if (hasoutput){
          # checking.                                                                       #
          #---------------------------------------------------------------------------------#
          pft.check = which(agb.pft[ntest,] > 0)
-         scp.check = which(scp.sft[ntest,] > 0)
-         steady    = TRUE
+         scp.check = which(scb.scp[ntest,] > 0)
+         ststate   = TRUE
          #----- Check AGB for each PFT. ---------------------------------------------------#
          for (p in pft.check){
             #----- Skip check of no longer steady state. ----------------------------------#
-            if (steady){
+            if (ststate){
                #----- Find the AGB rate of change. ----------------------------------------#
                rate    = c(NA,diff(agb.pft[,p])) / max(agb.pft[,p])
                data.in = data.frame(rate,years.test)
@@ -231,16 +233,16 @@ if (hasoutput){
 
                #----- Check whether the last point has low enough rate. -------------------#
                npred   = length(pred.in)
-               steady  = ( abs(pred.in[npred])   <= ststcrit   &&
+               ststate = ( abs(pred.in[npred])   <= ststcrit   &&
                            abs(pred.in[npred-1]) <= ststcrit     )
                #---------------------------------------------------------------------------#
-            }#end if (steady)
+            }#end if (ststate)
             #------------------------------------------------------------------------------#
          }#end for (p in pft.check)
          #----- Check Soil carbon for each soil carbon pool. ------------------------------#
          for (p in scp.check){
             #----- Skip check of no longer steady state. ----------------------------------#
-            if (steady){
+            if (ststate){
                #----- Find the AGB rate of change. ----------------------------------------#
                rate    = c(NA,diff(scb.scp[,p])) / max(scb.scp[,p])
                data.in = data.frame(rate,years.test)
@@ -255,10 +257,10 @@ if (hasoutput){
 
                #----- Check whether the last point has low enough rate. -------------------#
                npred   = length(pred.in)
-               steady  = ( abs(pred.in[npred])   <= ststcrit   &&
+               ststate = ( abs(pred.in[npred])   <= ststcrit   &&
                            abs(pred.in[npred-1]) <= ststcrit     )
                #---------------------------------------------------------------------------#
-            }#end if (steady)
+            }#end if (ststate)
          }#end for (p in scp.check)
          #---------------------------------------------------------------------------------#
       }#end if (desert)
@@ -340,5 +342,5 @@ dum          = write(x=status,file=statusout,append=FALSE)
 #------------------------------------------------------------------------------------------#
 #      Quit R.                                                                             #
 #------------------------------------------------------------------------------------------#
-q("no")
+#q("no")
 #------------------------------------------------------------------------------------------#

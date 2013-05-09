@@ -29,7 +29,8 @@ subroutine structural_growth(cgrid, month)
    use ed_therm_lib   , only : calc_veg_hcap          & ! function
                              , update_veg_energy_cweh ! ! function
    use ed_misc_coms   , only : igrass                 ! ! intent(in)
-   use physiology_coms, only : ddmort_const           ! ! intent(in)
+   use physiology_coms, only : ddmort_const           & ! intent(in)
+                             , iddmort_scheme         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -243,11 +244,29 @@ subroutine structural_growth(cgrid, month)
 
 
 
-               !----- Reset the current month integrator. ---------------------------------!
-               cpatch%cb          (13,ico) = 0.0
-               cpatch%cb_lightmax (13,ico) = 0.0
-               cpatch%cb_moistmax (13,ico) = 0.0
                !---------------------------------------------------------------------------!
+               !      Reset the current month integrator.  The initial value may depend    !
+               ! on the storage.  By including this term we make sure that plants won't    !
+               ! start dying as soon as they shed their leaves, but only when they are in  !
+               ! negative carbon balance and without storage.  This is done only when      !
+               ! iddmort_scheme is set to 1, otherwise the initial value is 0.             !
+               !---------------------------------------------------------------------------!
+               select case (iddmort_scheme)
+               case (0)
+                  !------ Storage is not accounted. ------------------------------------------------!
+                  cpatch%cb          (13,ico) = 0.0
+                  cpatch%cb_lightmax (13,ico) = 0.0
+                  cpatch%cb_moistmax (13,ico) = 0.0
+                  !---------------------------------------------------------------------------------!
+               case (1)
+                  !------ Storage is accounted. ----------------------------------------------------!
+                  cpatch%cb          (13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
+                  !---------------------------------------------------------------------------------!
+               end select
+               !------------------------------------------------------------------------------------!
+
 
 
 
@@ -366,7 +385,8 @@ subroutine structural_growth_eq_0(cgrid, month)
    use ed_therm_lib   , only : calc_veg_hcap          & ! function
                              , update_veg_energy_cweh ! ! function
    use ed_misc_coms   , only : igrass                 ! ! intent(in)
-   use physiology_coms, only : ddmort_const           ! ! intent(in)
+   use physiology_coms, only : ddmort_const           & ! intent(in)
+                             , iddmort_scheme         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -527,11 +547,28 @@ subroutine structural_growth_eq_0(cgrid, month)
 
 
 
-               !----- Reset the current month integrator. ---------------------------------!
-               cpatch%cb          (13,ico) = 0.0
-               cpatch%cb_lightmax (13,ico) = 0.0
-               cpatch%cb_moistmax (13,ico) = 0.0
                !---------------------------------------------------------------------------!
+               !      Reset the current month integrator.  The initial value may depend    !
+               ! on the storage.  By including this term we make sure that plants won't    !
+               ! start dying as soon as they shed their leaves, but only when they are in  !
+               ! negative carbon balance and without storage.  This is done only when      !
+               ! iddmort_scheme is set to 1, otherwise the initial value is 0.             !
+               !---------------------------------------------------------------------------!
+               select case (iddmort_scheme)
+               case (0)
+                  !------ Storage is not accounted. ------------------------------------------------!
+                  cpatch%cb          (13,ico) = 0.0
+                  cpatch%cb_lightmax (13,ico) = 0.0
+                  cpatch%cb_moistmax (13,ico) = 0.0
+                  !---------------------------------------------------------------------------------!
+               case (1)
+                  !------ Storage is accounted. ----------------------------------------------------!
+                  cpatch%cb          (13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
+                  !---------------------------------------------------------------------------------!
+               end select
+               !------------------------------------------------------------------------------------!
 
 
 

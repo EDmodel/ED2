@@ -175,17 +175,17 @@ module ed_state_vars
       logical, pointer, dimension(:) :: wood_resolvable
      
       ! Monthly carbon balance for past 12 months and the current month
-      ! (kgC/plant/yr) - 13th column holds the partial month integration
+      ! (kgC/plant) - 13th column holds the partial month integration
       real, pointer,dimension(:,:) :: cb           !(13,ncohorts)
 
       ! Maximum monthly carbon balance for past 12 months and the current 
       ! month  if cohort were at the top of the canopy (maximum light).
-      ! (kgC/plant/yr) - 13th column holds the partial month integration.
+      ! (kgC/plant) - 13th column holds the partial month integration.
       real, pointer,dimension(:,:) :: cb_lightmax  !(13,ncohorts)
 
       ! Maximum monthly carbon balance for past 12 months and the current 
       ! month  if cohort had access to all soil moisture needed (maximum moisture/fsw).
-      ! (kgC/plant/yr) - 13th column holds the partial month integration.
+      ! (kgC/plant) - 13th column holds the partial month integration.
       real, pointer,dimension(:,:) :: cb_moistmax  !(13,ncohorts)
 
       ! Relative carbon balance:
@@ -529,7 +529,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: mmean_leaf_maintenance ! Leaf maintenance  [kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_root_maintenance ! Root mainten.     [kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_leaf_drop        ! Leaf drop         [kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_cb               ! 12-mon C balance  [kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_cb               ! 12-mon C balance  [   kgC/pl]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -25861,7 +25861,7 @@ module ed_state_vars
                            ,'MMEAN_CB_CO                   :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Carbon balance'                                &
-                           ,'[  kgC/pl/yr]','(icohort)'            )
+                           ,'[  kgC/pl]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppleaf         )) then
          nvar = nvar+1

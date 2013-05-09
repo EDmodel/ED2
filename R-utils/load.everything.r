@@ -253,18 +253,26 @@ nscripts      = length(order.scripts)
 warn.orig = getOption("warn")
 options(warn=2)
 cat(" + Loading scripts from ",srcdir,"...","\n")
-for (n in 1:nscripts){
-   full = file.path(srcdir,order.scripts[n])
-   isok = try(source(full),silent=TRUE)
+for (iscript in 1:nscripts){
+   script.now  = order.scripts[iscript]
+   full        = file.path(srcdir,script.now)
+   isok        = try(source(full),silent=TRUE)
    if ("try-error" %in% is(isok)){
       options(warn=warn.orig)
-      cat("   - Script ",order.scripts[n]," has bugs!  Check the errors/warnings: ","\n")
+      cat("   - Script ",script.now," has bugs!  Check the errors/warnings: ","\n")
       source(full)
       stop("Source code problem")
    }#end if
 }#end for
 options(warn=warn.orig)
 #------------------------------------------------------------------------------------------#
+
+
+if (! "kludgecbal" %in% ls()){
+   kludgecbal <<- FALSE
+}else{
+   kludgecbal <<- kludgecbal
+}#end if
 
 
 

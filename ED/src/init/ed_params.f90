@@ -1903,10 +1903,10 @@ subroutine init_decomp_params()
    rh_decay_high  = 0.60
    rh_low_temp    = 18.0 + t00
    rh_high_temp   = 45.0 + t00
-   rh_decay_dry   = 18.0
-   rh_decay_wet   = 36.0
-   rh_dry_smoist  = 0.36
-   rh_wet_smoist  = 0.96
+   rh_decay_dry   = 12.0 ! 18.0
+   rh_decay_wet   = 36.0 ! 36.0
+   rh_dry_smoist  = 0.48 ! 0.36
+   rh_wet_smoist  = 0.98 ! 0.96
    !---------------------------------------------------------------------------------------!
 
 

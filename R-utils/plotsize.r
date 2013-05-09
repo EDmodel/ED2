@@ -65,6 +65,10 @@ plotsize = function( proje                 #  Map projection? [T|F]
       stdwidth  =  0.8 * 14.0
       stdheight =  0.8 *  8.5
       stdratio  = 14.0 /  8.5
+   }else if (paper == "long"){
+      stdwidth  =  0.8 * 17.0
+      stdheight =  0.8 *  8.5
+      stdratio  = 17.0 /  8.5
    }else if (paper == "executive"){
       stdwidth  =  0.8  * 10.25
       stdheight =  0.8  *  7.25

@@ -127,6 +127,12 @@ if ( "census.dbh.min" %in% ls()){
 }else{
    census.dbh.min <<- 10.
 }#end if
+#----- Minimum DBH to be considered for "ground-based observations". ----------------------#
+if ( "recruit.dbh.min" %in% ls()){
+   recruit.dbh.min <<- recruit.dbh.min
+}else{
+   recruit.dbh.min <<- 0.16
+}#end if
 #------------------------------------------------------------------------------------------#
 
 
@@ -158,18 +164,17 @@ if (idbh.type == 1){
                    )#end c
 
 }else if (idbh.type == 2){
-   ndbh       <<-  6
-   classdbh   <<- c(0,10,20,35,50,70)
+   ndbh       <<-  5
+   classdbh   <<- c(0,10,20,35,55)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhlabel   <<- "06_szclss"
+   dbhlabel   <<- "05_szclss"
    dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
    dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                        , c(classdbh[-1],classdbh[ndbh]),"cm"
                        , sep=""
                        )#end paste
-   dbhcols    <<- c(         "purple3",      "royalblue3",     "chartreuse3"
-                   ,         "yellow3",     "darkorange1",       "firebrick"
-                   ,        all.colour
+   dbhcols    <<- c(      "royalblue3",     "chartreuse3" ,         "yellow3"
+                   ,     "darkorange1",       "firebrick" ,        all.colour
                    )#end c
 }else if (idbh.type == 3){
    ndbh       <<-  4
@@ -185,29 +190,19 @@ if (idbh.type == 1){
                    ,         "yellow3",     "darkorange1",         all.colour
                    )#end c
 }else if (idbh.type == 4){
-   ndbh       <<-  3
-   classdbh   <<- c(0,10,35)
+   ndbh       <<-  6
+   classdbh   <<- c(0,2,10,20,45,70)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhlabel   <<- "03_szclss"
+   dbhlabel   <<- "06_szclss"
    dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
    dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
                        , c(classdbh[-1],classdbh[ndbh]),"cm"
                        , sep=""
                        )#end paste
-   dbhcols    <<- c(      "royalblue3",     "chartreuse3"
-                   ,     "darkorange1",         all.colour
+   dbhcols    <<- c(         "purple3",       "royalblue3",     "chartreuse3"
+                   ,         "yellow3",      "darkorange1",       "firebrick"
+                   ,        all.colour
                    )#end c
-}else if (idbh.type == 5){
-   ndbh       <<-  2
-   classdbh   <<- c(0,35)
-   breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhlabel   <<- "02_szclss"
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
-   dbhcols    <<- c(      "royalblue3",     "darkorange1",         all.colour)
 }else{
    cat(" In globdims.r:","\n")
    cat(" IDBH.TYPE = ",idbh.type,"\n")

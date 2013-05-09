@@ -189,13 +189,47 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$intercepted             = rep(NA,times=ntimes)
    emean$wshed                   = rep(NA,times=ntimes)
    emean$evap                    = rep(NA,times=ntimes)
-   emean$transp                  = rep(NA,times=ntimes)
    emean$et                      = rep(NA,times=ntimes)
+   emean$last.1yr.et             = rep(NA,times=ntimes)
+   emean$last.2yr.et             = rep(NA,times=ntimes)
+   emean$last.3yr.et             = rep(NA,times=ntimes)
+   emean$transp                  = rep(NA,times=ntimes)
+   emean$last.1yr.transp         = rep(NA,times=ntimes)
+   emean$last.2yr.transp         = rep(NA,times=ntimes)
+   emean$last.3yr.transp         = rep(NA,times=ntimes)
+   emean$etue                    = rep(NA,times=ntimes)
+   emean$last.1yr.etue           = rep(NA,times=ntimes)
+   emean$last.2yr.etue           = rep(NA,times=ntimes)
+   emean$last.3yr.etue           = rep(NA,times=ntimes)
    emean$wue                     = rep(NA,times=ntimes)
+   emean$last.1yr.wue            = rep(NA,times=ntimes)
+   emean$last.2yr.wue            = rep(NA,times=ntimes)
+   emean$last.3yr.wue            = rep(NA,times=ntimes)
    emean$rain                    = rep(NA,times=ntimes)
    emean$last.1yr.rain           = rep(NA,times=ntimes)
    emean$last.2yr.rain           = rep(NA,times=ntimes)
    emean$last.3yr.rain           = rep(NA,times=ntimes)
+   emean$ra.rain                 = rep(NA,times=ntimes)
+   emean$nmon.lt.090             = rep(NA,times=ntimes)
+   emean$nmon.lt.100             = rep(NA,times=ntimes)
+   emean$nmon.lt.110             = rep(NA,times=ntimes)
+   emean$nmon.lt.120             = rep(NA,times=ntimes)
+   emean$anpp                    = rep(NA,times=ntimes)
+   emean$last.1yr.anpp           = rep(NA,times=ntimes)
+   emean$last.2yr.anpp           = rep(NA,times=ntimes)
+   emean$last.3yr.anpp           = rep(NA,times=ntimes)
+   emean$bnpp                    = rep(NA,times=ntimes)
+   emean$last.1yr.bnpp           = rep(NA,times=ntimes)
+   emean$last.2yr.bnpp           = rep(NA,times=ntimes)
+   emean$last.3yr.bnpp           = rep(NA,times=ntimes)
+   emean$arue                    = rep(NA,times=ntimes)
+   emean$last.1yr.arue           = rep(NA,times=ntimes)
+   emean$last.2yr.arue           = rep(NA,times=ntimes)
+   emean$last.3yr.arue           = rep(NA,times=ntimes)
+   emean$brue                    = rep(NA,times=ntimes)
+   emean$last.1yr.brue           = rep(NA,times=ntimes)
+   emean$last.2yr.brue           = rep(NA,times=ntimes)
+   emean$last.3yr.brue           = rep(NA,times=ntimes)
    emean$fs.open                 = rep(NA,times=ntimes)
    emean$rshort                  = rep(NA,times=ntimes)
    emean$rshort.beam             = rep(NA,times=ntimes)
@@ -232,6 +266,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$npat.global             = rep(NA,times=ntimes)
    emean$ncoh.global             = rep(NA,times=ntimes)
    emean$water.deficit           = rep(NA,times=ntimes)
+   emean$last.1yr.mwd            = rep(NA,times=ntimes)
+   emean$last.2yr.mwd            = rep(NA,times=ntimes)
+   emean$last.3yr.mwd            = rep(NA,times=ntimes)
    emean$malhi.deficit           = rep(NA,times=ntimes)
    emean$leaf.gsw                = rep(NA,times=ntimes)
    emean$leaf.gbw                = rep(NA,times=ntimes)
@@ -331,6 +368,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$leaf.gbw          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$leaf.gsw          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$wood.gbw          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$leaf.temp         = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$wood.temp         = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$leaf.vpd          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$demand            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$supply            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$nplant            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
@@ -357,8 +397,6 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$bseeds            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$hflxlc            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$wflxlc            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
-   szpft$transp            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
-   szpft$wue               = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.lai        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.wai        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.tai        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
@@ -386,6 +424,30 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$leaf.par          = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$leaf.rshort       = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    szpft$leaf.rlong        = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$transp            = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.1yr.transp   = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.2yr.transp   = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.3yr.transp   = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$wue               = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.1yr.wue      = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.2yr.wue      = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.3yr.wue      = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$anpp              = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.1yr.anpp     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.2yr.anpp     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.3yr.anpp     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$bnpp              = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.1yr.bnpp     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.2yr.bnpp     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.3yr.bnpp     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$arue              = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.1yr.arue     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.2yr.arue     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.3yr.arue     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$brue              = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.1yr.brue     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.2yr.brue     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$last.3yr.brue     = array(data=0.,dim=c(ntimes,ndbh+1,npft+1))
    #---------------------------------------------------------------------------------------#
 
 
@@ -651,6 +713,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$leaf.par      = list()
    cohort$leaf.rshort   = list()
    cohort$leaf.rlong    = list()
+   cohort$anpp          = list()
+   cohort$bnpp          = list()
+   cohort$arue          = list()
+   cohort$brue          = list()
    #---------------------------------------------------------------------------------------#
 
 
@@ -732,8 +798,6 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$intercepted    [idx ] = old.datum$emean$intercepted
    new.datum$emean$wshed          [idx ] = old.datum$emean$wshed
    new.datum$emean$evap           [idx ] = old.datum$emean$evap
-   new.datum$emean$transp         [idx ] = old.datum$emean$transp
-   new.datum$emean$wue            [idx ] = old.datum$emean$wue
    new.datum$emean$ustar          [idx ] = old.datum$emean$ustar
    new.datum$emean$atm.vels       [idx ] = old.datum$emean$atm.vels
    new.datum$emean$atm.prss       [idx ] = old.datum$emean$atm.prss
@@ -761,10 +825,47 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$wai            [idx ] = old.datum$emean$wai
    new.datum$emean$tai            [idx ] = old.datum$emean$tai
    new.datum$emean$area           [idx ] = old.datum$emean$area
+   new.datum$emean$et             [idx ] = old.datum$emean$et
+   new.datum$emean$last.1yr.et    [idx ] = old.datum$emean$last.1yr.et
+   new.datum$emean$last.2yr.et    [idx ] = old.datum$emean$last.2yr.et
+   new.datum$emean$last.3yr.et    [idx ] = old.datum$emean$last.3yr.et
+   new.datum$emean$transp         [idx ] = old.datum$emean$transp
+   new.datum$emean$last.1yr.transp[idx ] = old.datum$emean$last.1yr.transp
+   new.datum$emean$last.2yr.transp[idx ] = old.datum$emean$last.2yr.transp
+   new.datum$emean$last.3yr.transp[idx ] = old.datum$emean$last.3yr.transp
+   new.datum$emean$wue            [idx ] = old.datum$emean$wue
+   new.datum$emean$last.1yr.wue   [idx ] = old.datum$emean$last.1yr.wue
+   new.datum$emean$last.2yr.wue   [idx ] = old.datum$emean$last.2yr.wue
+   new.datum$emean$last.3yr.wue   [idx ] = old.datum$emean$last.3yr.wue
+   new.datum$emean$etue           [idx ] = old.datum$emean$etue
+   new.datum$emean$last.1yr.etue  [idx ] = old.datum$emean$last.1yr.etue
+   new.datum$emean$last.2yr.etue  [idx ] = old.datum$emean$last.2yr.etue
+   new.datum$emean$last.3yr.etue  [idx ] = old.datum$emean$last.3yr.etue
    new.datum$emean$rain           [idx ] = old.datum$emean$rain
    new.datum$emean$last.1yr.rain  [idx ] = old.datum$emean$last.1yr.rain
    new.datum$emean$last.2yr.rain  [idx ] = old.datum$emean$last.2yr.rain
    new.datum$emean$last.3yr.rain  [idx ] = old.datum$emean$last.3yr.rain
+   new.datum$emean$ra.rain        [idx ] = old.datum$emean$ra.rain
+   new.datum$emean$nmon.lt.090    [idx ] = old.datum$emean$nmon.lt.090
+   new.datum$emean$nmon.lt.100    [idx ] = old.datum$emean$nmon.lt.100
+   new.datum$emean$nmon.lt.110    [idx ] = old.datum$emean$nmon.lt.110
+   new.datum$emean$nmon.lt.120    [idx ] = old.datum$emean$nmon.lt.120
+   new.datum$emean$anpp           [idx ] = old.datum$emean$anpp
+   new.datum$emean$last.1yr.anpp  [idx ] = old.datum$emean$last.1yr.anpp
+   new.datum$emean$last.2yr.anpp  [idx ] = old.datum$emean$last.2yr.anpp
+   new.datum$emean$last.3yr.anpp  [idx ] = old.datum$emean$last.3yr.anpp
+   new.datum$emean$bnpp           [idx ] = old.datum$emean$bnpp
+   new.datum$emean$last.1yr.bnpp  [idx ] = old.datum$emean$last.1yr.bnpp
+   new.datum$emean$last.2yr.bnpp  [idx ] = old.datum$emean$last.2yr.bnpp
+   new.datum$emean$last.3yr.bnpp  [idx ] = old.datum$emean$last.3yr.bnpp
+   new.datum$emean$arue           [idx ] = old.datum$emean$arue
+   new.datum$emean$last.1yr.arue  [idx ] = old.datum$emean$last.1yr.arue
+   new.datum$emean$last.2yr.arue  [idx ] = old.datum$emean$last.2yr.arue
+   new.datum$emean$last.3yr.arue  [idx ] = old.datum$emean$last.3yr.arue
+   new.datum$emean$brue           [idx ] = old.datum$emean$brue
+   new.datum$emean$last.1yr.brue  [idx ] = old.datum$emean$last.1yr.brue
+   new.datum$emean$last.2yr.brue  [idx ] = old.datum$emean$last.2yr.brue
+   new.datum$emean$last.3yr.brue  [idx ] = old.datum$emean$last.3yr.brue
    new.datum$emean$gnd.temp       [idx ] = old.datum$emean$gnd.temp
    new.datum$emean$gnd.shv        [idx ] = old.datum$emean$gnd.shv
    new.datum$emean$workload       [idx ] = old.datum$emean$workload
@@ -778,7 +879,6 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$wflxgc         [idx ] = old.datum$emean$wflxgc
    new.datum$emean$wflxlc         [idx ] = old.datum$emean$wflxlc
    new.datum$emean$wflxwc         [idx ] = old.datum$emean$wflxwc
-   new.datum$emean$et             [idx ] = old.datum$emean$et
    new.datum$emean$rshort         [idx ] = old.datum$emean$rshort
    new.datum$emean$rshort.beam    [idx ] = old.datum$emean$rshort.beam
    new.datum$emean$rshort.diff    [idx ] = old.datum$emean$rshort.diff
@@ -802,6 +902,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$npat.global    [idx ] = old.datum$emean$npat.global
    new.datum$emean$ncoh.global    [idx ] = old.datum$emean$ncoh.global
    new.datum$emean$water.deficit  [idx ] = old.datum$emean$water.deficit
+   new.datum$emean$last.1yr.mwd   [idx ] = old.datum$emean$last.1yr.mwd
+   new.datum$emean$last.2yr.mwd   [idx ] = old.datum$emean$last.2yr.mwd
+   new.datum$emean$last.3yr.mwd   [idx ] = old.datum$emean$last.3yr.mwd
    new.datum$emean$malhi.deficit  [idx ] = old.datum$emean$malhi.deficit
    new.datum$emean$i.gpp          [idx ] = old.datum$emean$i.gpp
    new.datum$emean$i.npp          [idx ] = old.datum$emean$i.npp
@@ -894,6 +997,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$leaf.gbw       [idx,,] = old.datum$szpft$leaf.gbw
    new.datum$szpft$leaf.gsw       [idx,,] = old.datum$szpft$leaf.gsw
    new.datum$szpft$wood.gbw       [idx,,] = old.datum$szpft$wood.gbw
+   new.datum$szpft$leaf.temp      [idx,,] = old.datum$szpft$leaf.temp
+   new.datum$szpft$wood.temp      [idx,,] = old.datum$szpft$wood.temp
+   new.datum$szpft$leaf.vpd       [idx,,] = old.datum$szpft$leaf.vpd
    new.datum$szpft$demand         [idx,,] = old.datum$szpft$demand
    new.datum$szpft$supply         [idx,,] = old.datum$szpft$supply
    new.datum$szpft$nplant         [idx,,] = old.datum$szpft$nplant
@@ -920,8 +1026,6 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$bseeds         [idx,,] = old.datum$szpft$bseeds
    new.datum$szpft$hflxlc         [idx,,] = old.datum$szpft$hflxlc
    new.datum$szpft$wflxlc         [idx,,] = old.datum$szpft$wflxlc
-   new.datum$szpft$transp         [idx,,] = old.datum$szpft$transp
-   new.datum$szpft$wue            [idx,,] = old.datum$szpft$wue
    new.datum$szpft$census.lai     [idx,,] = old.datum$szpft$census.lai
    new.datum$szpft$census.wai     [idx,,] = old.datum$szpft$census.wai
    new.datum$szpft$census.tai     [idx,,] = old.datum$szpft$census.tai
@@ -949,6 +1053,30 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$leaf.par       [idx,,] = old.datum$szpft$leaf.par
    new.datum$szpft$leaf.rshort    [idx,,] = old.datum$szpft$leaf.rshort
    new.datum$szpft$leaf.rlong     [idx,,] = old.datum$szpft$leaf.rlong
+   new.datum$szpft$transp         [idx,,] = old.datum$szpft$transp
+   new.datum$szpft$last.1yr.transp[idx,,] = old.datum$szpft$last.1yr.transp
+   new.datum$szpft$last.2yr.transp[idx,,] = old.datum$szpft$last.2yr.transp
+   new.datum$szpft$last.3yr.transp[idx,,] = old.datum$szpft$last.3yr.transp
+   new.datum$szpft$wue            [idx,,] = old.datum$szpft$wue
+   new.datum$szpft$last.1yr.wue   [idx,,] = old.datum$szpft$last.1yr.wue
+   new.datum$szpft$last.2yr.wue   [idx,,] = old.datum$szpft$last.2yr.wue
+   new.datum$szpft$last.3yr.wue   [idx,,] = old.datum$szpft$last.3yr.wue
+   new.datum$szpft$anpp           [idx,,] = old.datum$szpft$anpp
+   new.datum$szpft$last.1yr.anpp  [idx,,] = old.datum$szpft$last.1yr.anpp
+   new.datum$szpft$last.2yr.anpp  [idx,,] = old.datum$szpft$last.2yr.anpp
+   new.datum$szpft$last.3yr.anpp  [idx,,] = old.datum$szpft$last.3yr.anpp
+   new.datum$szpft$bnpp           [idx,,] = old.datum$szpft$bnpp
+   new.datum$szpft$last.1yr.bnpp  [idx,,] = old.datum$szpft$last.1yr.bnpp
+   new.datum$szpft$last.2yr.bnpp  [idx,,] = old.datum$szpft$last.2yr.bnpp
+   new.datum$szpft$last.3yr.bnpp  [idx,,] = old.datum$szpft$last.3yr.bnpp
+   new.datum$szpft$arue           [idx,,] = old.datum$szpft$arue
+   new.datum$szpft$last.1yr.arue  [idx,,] = old.datum$szpft$last.1yr.arue
+   new.datum$szpft$last.2yr.arue  [idx,,] = old.datum$szpft$last.2yr.arue
+   new.datum$szpft$last.3yr.arue  [idx,,] = old.datum$szpft$last.3yr.arue
+   new.datum$szpft$brue           [idx,,] = old.datum$szpft$brue
+   new.datum$szpft$last.1yr.brue  [idx,,] = old.datum$szpft$last.1yr.brue
+   new.datum$szpft$last.2yr.brue  [idx,,] = old.datum$szpft$last.2yr.brue
+   new.datum$szpft$last.3yr.brue  [idx,,] = old.datum$szpft$last.3yr.brue
    #---------------------------------------------------------------------------------------#
 
 
@@ -1206,6 +1334,10 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$leaf.par     = old.datum$cohort$leaf.par
    new.datum$cohort$leaf.rshort  = old.datum$cohort$leaf.rshort
    new.datum$cohort$leaf.rlong   = old.datum$cohort$leaf.rlong
+   new.datum$cohort$anpp         = old.datum$cohort$anpp
+   new.datum$cohort$bnpp         = old.datum$cohort$bnpp
+   new.datum$cohort$arue         = old.datum$cohort$arue
+   new.datum$cohort$brue         = old.datum$cohort$brue
    #---------------------------------------------------------------------------------------#
 
 

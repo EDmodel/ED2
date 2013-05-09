@@ -3744,9 +3744,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "sinop"             
                   , longname        = "Sinop, MT"                   
                   , iata            = "ops"
-                  , lon             = -55.325
-                  , lat             = -11.412
-                  , alt             = NA
+                  , lon             = -55.322
+                  , lat             = -11.421
+                  , alt             = 423
                   , wmo             = NA
                   , isoilflg        = 2
                   , ntext           = 2
@@ -3830,8 +3830,8 @@ poitmp[[u]] = list( short           = "tarauaca"
                   , iata            = "trq"
                   , lon             = -70.781
                   , lat             =  -8.157
-                  , alt             = NA
-                  , wmo             = NA
+                  , alt             = 197
+                  , wmo             = 82807
                   , isoilflg        = 1
                   , ntext           = 1
                   , sand            = -1.000

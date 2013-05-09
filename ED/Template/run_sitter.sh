@@ -1307,7 +1307,7 @@ then
                   sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
                   sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
                   sed -i s@mytoler@${toler}@g                  ${ED2IN}
-                  sed -i s@RUNFLAG@HISTORY@g                   ${ED2IN}
+                  sed -i s@RUNFLAG@${runflag}@g                ${ED2IN}
                   sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
                   sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
                   sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
@@ -1633,8 +1633,20 @@ then
 
 
 
+               #----- If last history is the first year, switch it to initial. ------------#
+               if [ ${year} -eq ${yeara} ] || [ ${runt} == 'INITIAL' ]
+               then
+                  runflag='INITIAL'
+               else
+                  runflag='HISTORY'
+               fi
+               #---------------------------------------------------------------------------#
+
+
+
+
                #----- Check whether to use SFILIN as restart or history. ------------------#
-               if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
+               if [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
                then
                   thissfilin=${thisbiomin}
                else
@@ -1642,8 +1654,12 @@ then
                fi
                #---------------------------------------------------------------------------#
 
+
+
+
                #----- Update the polygon information on ED2IN. ----------------------------#
                sed -i s@paththere@${there}@g                ${ED2IN}
+               sed -i s@RUNFLAG@${runflag}@g                ${ED2IN}
                sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
                sed -i s@mymontha@${montha}@g                ${ED2IN}
                sed -i s@mydatea@${datea}@g                  ${ED2IN}
@@ -1768,13 +1784,6 @@ then
                sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
                sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
                sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
-               #----- Change run type. ----------------------------------------------------#
-               if [ ${runt} == 'INITIAL' ]
-               then
-                  sed -i s@RUNFLAG@${runt}@g      ${ED2IN}
-              else
-                  sed -i s@RUNFLAG@HISTORY@g      ${ED2IN}
-               fi
                #---------------------------------------------------------------------------#
 
 
@@ -3099,25 +3108,6 @@ echo " Number of polygons that became desert                : ${n_extinct}" >> $
 echo " Number of polygons that have reached steady state    : ${n_ststate}" >> ${statfile}
 echo " Number of polygons that have reached the end         : ${n_the_end}" >> ${statfile}
 echo "--------------------------------------------------------------------" >> ${statfile}
-#------------------------------------------------------------------------------------------#
-
-
-
-
-#----- Convert the figure files to an e-mail friendly format. -----------------------------#
-if [ ${plotstatus} -eq 1 ]
-then
-   echo 'Converting the PNG files to e-mail format...'
-   for fichier in ${R_figlist}
-   do
-      ext=`echo ${fichier##*.}`
-      path=`dirname ${fichier}`
-      base=`basename ${fichier}`
-      prefix=`basename ${base} .${ext}`
-      text="${path}/${prefix}.txt"
-      uuencode ${fichier} ${base} > ${text}
-   done
-fi
 #------------------------------------------------------------------------------------------#
 
 

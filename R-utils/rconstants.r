@@ -303,6 +303,20 @@ mos.2.kt       <<- 1. / kt.2.mos        # m/s         => knots
 et.malhi <<- 100  # [mm/month]
 #------------------------------------------------------------------------------------------#
 
+
+#------------------------------------------------------------------------------------------#
+#     Mean global wood density, from:                                                      #
+#                                                                                          #
+# Kraft, N. J. B., M. R. Metz, R. S. Condit, and J. Chave. The relationship between wood   #
+#     density and mortality in a global tropical forest data set. New Phytol.,             #
+#     188(4):1124-1136, Dec 2010. doi:10.1111/j.1469-8137.2010.03444.x                     #
+#                                                                                          #
+#------------------------------------------------------------------------------------------#
+mean.wood.dens.global <<- 0.58
+#------------------------------------------------------------------------------------------#
+
+
+
 #------------------------------------------------------------------------------------------#
 #     These are the lower and upper bounds in which we compute exponentials.  This is to   #
 # avoid overflows and/or underflows when we compute exponentials.                          #

@@ -121,20 +121,20 @@ xyz.plot = function( x
       emat   = cbind(lo.box$mat.off,rep(1,times=lo.box$nrow))
       layout( mat     = emat
             , heights = rep(1/lo.box$nrow,times=lo.box$nrow)
-            , widths  = c(rep(4/lo.box$ncol,times=lo.box$ncol),1)
+            , widths  = c(rep(6/lo.box$ncol,times=lo.box$ncol),1)
             )#end layout
       off.xlab  = 0
-      off.right = 1/5
+      off.right = 1/7
    }else{
       emat   = rbind( cbind(lo.box$mat.off2,rep(2,times=lo.box$nrow))
                     , c(rep(1,times=lo.box$ncol),0)
                     )#end rbind
       layout( mat     = emat
             , heights = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
-            , widths  = c(rep(9/lo.box$ncol,times=lo.box$ncol),1)
+            , widths  = c(rep(6/lo.box$ncol,times=lo.box$ncol),1)
             )#end layout
       off.xlab  = 1/6
-      off.right = 1/10
+      off.right = 1/7
    }#end if
    #---------------------------------------------------------------------------------------#
    #=======================================================================================#
@@ -165,7 +165,7 @@ xyz.plot = function( x
    #=======================================================================================#
    #      Next plot (or first plot): the key scale.                                        #
    #---------------------------------------------------------------------------------------#
-   par(mar = c(0.5,1.0,3,2.5)+0.1)
+   par(mar = c(0.5,1,3,4)+0.1)
    plot.new()
    #---------------------------------------------------------------------------------------#
    #     Plot in the horizontal or vertical depending on where the scale is going to       #
@@ -294,7 +294,14 @@ xyz.plot = function( x
 
 
       #----- Call the function that actually plots the data. ------------------------------#
-      points(x=x[[p]],y=y[[p]],pch=pch[[p]],cex=cex[[p]],col=zcol,...)
+      shf      = sample(x=length(x  [[p]]))
+      shf.x    = pmin(shf,length(x  [[p]]))
+      shf.y    = pmin(shf,length(y  [[p]]))
+      shf.pch  = pmin(shf,length(pch[[p]]))
+      shf.cex  = pmin(shf,length(cex[[p]]))
+      shf.zcol = pmin(shf,length(zcol    ))
+      points(x=x[[p]][shf.x],y=y[[p]][shf.y],pch=pch[[p]][shf.pch]
+            ,cex=cex[[p]][shf.cex],col=zcol[shf.zcol],...)
       #------------------------------------------------------------------------------------#
    }#end for
    #=======================================================================================#

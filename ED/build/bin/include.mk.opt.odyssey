@@ -284,9 +284,9 @@ ifeq ($(KIND_COMP),D)
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -unroll -static -traceback -axP
+   F_OPTS= -FR -O3 -recursive -unroll -static -traceback
    C_OPTS= -O3 -DLITTLE -static -traceback 
-   LOADER_OPTS= -FR -O3 -unroll -traceback -axP
+   LOADER_OPTS= -FR -O3 -unroll -traceback
    C_LOADER_OPTS=-v -static 
    #---------------------------------------------------------------------------------------#
 endif

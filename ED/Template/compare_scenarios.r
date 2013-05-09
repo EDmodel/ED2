@@ -16,7 +16,7 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 here          = getwd()                     # Current directory
 srcdir        = "/n/home00/mlongo/util/Rsc" # Script directory
-stext.default = "stext06"                   # Default soil texture
+stext.default = "stext16"                   # Default soil texture
 ibackground   = 0                           # Target background colour:
                                             #    (to adjust foreground colours accordingly)
                                             # 0 -- White
@@ -48,12 +48,13 @@ rdata.path       = file.path(here,"RData_gyf+s67") # Path for the scenario compa
 #  FALSE -- skip them altogether                                                           #
 #------------------------------------------------------------------------------------------#
 plot.panel       = c(FALSE,TRUE,NA)[2]
-plot.tseries     = c(FALSE,TRUE,NA)[1]
+plot.tseries     = c(FALSE,TRUE,NA)[2]
 plot.szpft       = c(FALSE,TRUE,NA)[2]
-plot.barplot     = c(FALSE,TRUE,NA)[1]
-plot.xyzvars     = c(FALSE,TRUE,NA)[1]
-plot.scencomp    = c(FALSE,TRUE,NA)[1]
-plot.panelbox    = c(FALSE,TRUE,NA)[1]
+plot.barplot     = c(FALSE,TRUE,NA)[2]
+plot.xyzvars     = c(FALSE,TRUE,NA)[2]
+plot.scencomp    = c(FALSE,TRUE,NA)[2]
+plot.panelbox    = c(FALSE,TRUE,NA)[2]
+plot.panelxyz    = c(FALSE,TRUE,NA)[2]
 #------------------------------------------------------------------------------------------#
 
 
@@ -128,7 +129,7 @@ ylim.fix.all = NA
 # (only key, desc, and pattern are defined).                                               #
 #------------------------------------------------------------------------------------------#
 name.template    = "tPPP_rRRRR_tTTTT_real-ZZ_iphenDDD_stextSS"
-use.global       = c(1)   # Which global to use (TRUE means all of them)
+use.global       = 1   # Which global to use (TRUE means all of them)
 #----- Global variables. ------------------------------------------------------------------#
 global         = list()
 #global$stext   = list( key     = c("stext02","stext06","stext08","stext16","stext11")
@@ -230,7 +231,7 @@ idbh.type      = 3            # Type of DBH class
 #------------------------------------------------------------------------------------------#
 #       Plot options.                                                                      #
 #------------------------------------------------------------------------------------------#
-outform        = c("png","eps","pdf")  # Formats for output file.  Supported formats are:
+outform        = c("pdf")              # Formats for output file.  Supported formats are:
                                        #   - "X11" - for printing on screen
                                        #   - "eps" - for postscript printing
                                        #   - "png" - for PNG printing
@@ -240,6 +241,7 @@ byeold         = TRUE                  # Remove old files of the given format?
 
 depth          = 96                    # PNG resolution, in pixels per inch
 paper          = "letter"              # Paper size, to define the plot shape
+wpaper         = "long"                # Paper size for wide plots.
 ptsz           = 16                    # Font size.
 lwidth         = 2.5                   # Line width
 plotgrid       = TRUE                  # Should I plot the grid in the background? 
@@ -334,8 +336,8 @@ options(locatorBell=FALSE)
 
 #----- Define plot window size ------------------------------------------------------------#
 size  = plotsize(proje=FALSE,paper=paper)
-wsize = modifyList(x=size,val=list(width=size$width*4/3,ratio=size$ratio*4/3))
-wsize = size
+wsize = plotsize(proje=FALSE,paper=wpaper)
+#wsize = modifyList(x=size,val=list(width=size$width*4/3,ratio=size$ratio*4/3))
 #------------------------------------------------------------------------------------------#
 
 
@@ -1026,6 +1028,36 @@ for (o in 1:nout){
                   #------------------------------------------------------------------------#
                }#end for
                #---------------------------------------------------------------------------#
+
+
+               #---- Create the panels comparing the annual means for xyz variables. ------#
+               root.panel.xyz  = file.path(gnow$main,"panel_xyz"    )
+               if (! file.exists(root.panel.xyz)) dir.create(root.panel.xyz)
+               #---------------------------------------------------------------------------#
+
+
+               #---- Loop over scenarios. -------------------------------------------------#
+               gnow$panel.xyz      = matrix(NA_character_,nrow=n.scenario,ncol=npanel.yvar)
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Loop over all scenarios and Y variables for parameter space and      #
+               # create the paths as needed.                                               #
+               #---------------------------------------------------------------------------#
+               for (s in loop.scenario){
+                  idx.s = match(s,loop.scenario)
+                  root.now = file.path(root.panel.xyz,simul$scenario$level[s])
+                  if (! file.exists(root.now)) dir.create(root.now)
+                  for (n in 1:npanel.yvar){
+                     gnow$panel.xyz[idx.s,n] = file.path(root.now,panel.xyz$yvar$vname[n])
+                     if (! file.exists(gnow$panel.xyz[idx.s,n])){
+                        dir.create(gnow$panel.xyz[idx.s,n])
+                     }#end if
+                  }#end for
+               }#end for
+               #---------------------------------------------------------------------------#
             }#end for
             #------------------------------------------------------------------------------#
          }#end if
@@ -1149,7 +1181,7 @@ for (o in 1:nout){
 
             #----- Initialise the name for the XYZ plots by PFT, DBH, and season. ---------#
             root.xyz.all.yvar = file.path(root.xyz.all       ,scen.xyz$yvar$vname)
-            snow$xyz.all      = array(NA_character_,dim=c(n.dbh,n.season.mp,nscen.yvar))
+            snow$xyz.all      = array(NA_character_,dim=c(n.dbh,n.season,nscen.yvar))
             #------------------------------------------------------------------------------#
 
 
@@ -1650,6 +1682,7 @@ for (g in loop.global){
          #---------------------------------------------------------------------------------#
          #     Decide which simulations to include for plot limit estimation.              #
          #---------------------------------------------------------------------------------#
+         sel  = p.sel & s.sel
          if (is.na(ylim.fix.all)){
             l.sel = s.sel
          }else if(ylim.fix.all){
@@ -1665,7 +1698,6 @@ for (g in loop.global){
          #---------------------------------------------------------------------------------#
          #      Build the total selection, the total description, and the total suffix.    #
          #---------------------------------------------------------------------------------#
-         sel  = p.sel & s.sel
          if (simul$scenario$n.level == 0){
             if (simul$panel$n.level == 0){
                if (simul$global$n.level == 0){
@@ -4809,11 +4841,64 @@ for (g in loop.global){
             y.plog     = scen.xyz$yvar$plog    [y]
             y.plog.dbh = scen.xyz$yvar$plog.dbh[y]
             y.leg      = scen.xyz$yvar$leg     [y]
+            y.pft      = scen.xyz$yvar$pftvar  [y]
+            y.dbh      = scen.xyz$yvar$dbhvar  [y]
 
-            y.ts    = eft[[y.vname]]$ts      [sel,,,season.mp]
-            y.tspft = eft[[y.vname]]$tspft   [sel,,,n.season,pft.mp]
-            y.tsdbh = eft[[y.vname]]$tspftdbh[sel,,,n.season,dbh.mp,n.pft]
-            y.tsall = eft[[y.vname]]$tspftdbh[sel,,,,,pft.mp]
+            cat  ("           = Y variable: ",y.desc,"...","\n")
+
+            #----- Time series. -----------------------------------------------------------#
+            y.ts      = eft[[y.vname]]$ts      [sel,,y.sel,season.mp]
+            #------------------------------------------------------------------------------#
+
+
+            #----- Make sure the PFT version is PFT-dependent. ----------------------------#
+            if (y.pft){
+               y.tspft = eft[[y.vname]]$tspft[sel,,y.sel,n.season,pft.mp]
+            }else{
+               y.tspft    = eft[[y.vname]]$ts      [sel,,y.sel,n.season]
+               y.dim      = c(dim(y.tspft),n.pft.mp)
+               y.dimnames = c(dimnames(y.tspft),list(pft.mp.key))
+               y.tspft    = array(NA,dim=y.dim,dimnames=y.dimnames)
+               for (f in 1:n.pft.mp){
+                  y.tspft[,,,f] = eft[[y.vname]]$ts[sel,,y.sel,n.season]
+               }#end for
+            }#end if
+      
+      
+      
+            #------------------------------------------------------------------------------#
+
+
+            #----- Make sure that the DBH version is DBH-dependent. -----------------------#
+            if (y.dbh){
+               y.tsdbh = eft[[y.vname]]$tspftdbh[sel,,y.sel,n.season,dbh.mp,n.pft]
+            }else{
+               y.tsdbh    = eft[[y.vname]]$ts      [sel,,y.sel,n.season]
+               y.dim      = c(dim(y.tsdbh),n.dbh.mp)
+               y.dimnames = c(dimnames(y.tsdbh),list(dbh.mp.key))
+               y.tsdbh    = array(NA,dim=y.dim,dimnames=y.dimnames)
+               for (d in 1:n.dbh.mp){
+                  y.tsdbh[,,,d] = eft[[y.vname]]$ts[sel,,y.sel,n.season]
+               }#end for
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #----- Make sure that the DBH+PFT version has both DBH and PFT dimensions. ----#
+            if (y.dbh){
+               y.tsall = eft[[y.vname]]$tspftdbh[sel,,y.sel,,,pft.mp]
+            }else{
+               y.tsall    = eft[[y.vname]]$ts      [sel,,y.sel,]
+               y.dim      = c(dim(y.tsall),n.dbh,n.pft.mp)
+               y.dimnames = c(dimnames(y.tsall),list(dbh.key),list(pft.mp.key))
+               y.tsall = array(NA,dim=y.dim,dimnames=y.dimnames)
+               for (d in 1:n.dbh){
+                  for (f in 1:n.pft.mp){
+                     y.tsall[,,,,d,f] = eft[[y.vname]]$ts[sel,,y.sel,]
+                  }#end for
+               }#end for
+            }#end if
+            #------------------------------------------------------------------------------#
 
 
             #----- Create indices to split the arrays into lists. -------------------------#
@@ -4853,30 +4938,45 @@ for (g in loop.global){
                x.leg      = scen.xyz$xvar$leg     [x]
                x.pft      = scen.xyz$xvar$pftvar  [x]
                x.dbh      = scen.xyz$xvar$dbhvar  [x]
-               x.ts       = eft[[x.vname]]$ts     [sel,,,season.mp]
+
+
+               #----- Time series. --------------------------------------------------------#
+               x.ts       = eft[[x.vname]]$ts     [sel,,y.sel,season.mp]
+               #---------------------------------------------------------------------------#
+
+
+               #----- Make sure the PFT version is PFT-dependent. -------------------------#
                if (x.pft){
-                  x.tspft = eft[[x.vname]]$tspft[sel,,,n.season,pft.mp]
+                  x.tspft = eft[[x.vname]]$tspft[sel,,y.sel,n.season,pft.mp]
                }else{
                   x.tspft = array(NA,dim(y.tspft),dimnames=dimnames(y.tspft))
                   for (f in 1:n.pft.mp){
-                     x.tspft[,,,f] = eft[[x.vname]]$ts[sel,,,n.season]
+                     x.tspft[,,,f] = eft[[x.vname]]$ts[sel,,y.sel,n.season]
                   }#end for
                }#end if
+               #---------------------------------------------------------------------------#
+
+
+               #----- Make sure the DBH version is DBH-dependent. -------------------------#
                if (x.dbh){
-                  x.tsdbh = eft[[x.vname]]$tspftdbh[sel,,,n.season,dbh.mp,n.pft]
+                  x.tsdbh = eft[[x.vname]]$tspftdbh[sel,,y.sel,n.season,dbh.mp,n.pft]
                }else{
                   x.tsdbh = array(NA,dim(y.tsdbh),dimnames=dimnames(y.tsdbh))
                   for (d in 1:n.dbh.mp){
-                     x.tsdbh[,,,d] = eft[[x.vname]]$ts[sel,,,n.season]
+                     x.tsdbh[,,,d] = eft[[x.vname]]$ts[sel,,y.sel,n.season]
                   }#end for
                }#end if
+               #---------------------------------------------------------------------------#
+
+
+               #----- Make sure the DBH+PFT version depends on both DBH and PFT. ----------#
                if (x.dbh){
-                  x.tsall = eft[[x.vname]]$tspftdbh[sel,,,,,pft.mp]
+                  x.tsall = eft[[x.vname]]$tspftdbh[sel,,y.sel,,,pft.mp]
                }else{
                   x.tsall = array(NA,dim(y.tsall),dimnames=dimnames(y.tsall))
                   for (d in 1:n.dbh){
                      for (f in 1:n.pft.mp){
-                        x.tsall[,,,,d,f] = eft[[x.vname]]$ts[sel,,,]
+                        x.tsall[,,,,d,f] = eft[[x.vname]]$ts[sel,,y.sel,]
                      }#end for
                   }#end for
                }#end if
@@ -4910,542 +5010,567 @@ for (g in loop.global){
                      z.pft      = scen.xyz$zvar$pftvar        [z]
                      z.dbh      = scen.xyz$zvar$dbhvar        [z]
                      z.cscheme  = get(scen.xyz$zvar$col.scheme[z])
-                     z.ts       = eft[[z.vname]]$ts   [sel,,,season.mp]
-                     if (z.pft){
-                        z.tspft   = eft[[z.vname]]$tspft[sel,,,n.season,pft.mp]
-                     }else{
-                        z.tspft   = array(NA,dim=dim(y.tspft),dimnames=dimnames(y.tspft))
-                        for (f in 1:n.pft.mp){
-                           z.tspft[,,,f] = eft[[z.vname]]$ts   [sel,,,n.season]
-                        }#end z.tspft
-                     }#end if (z.pft)
-                     if (z.dbh){
-                        z.tsdbh   = eft[[z.vname]]$tspftdbh[sel,,,n.season,dbh.mp,n.pft]
-                     }else{
-                        z.tsdbh   = array(NA,dim=dim(y.tsdbh),dimnames=dimnames(y.tsdbh))
-                        for (d in 1:n.dbh.mp){
-                           z.tsdbh[,,,d] = eft[[z.vname]]$ts   [sel,,,n.season]
-                        }#end z.tspft
-                     }#end if (z.dbh)
-                     if (z.dbh){
-                        z.tsall = eft[[z.vname]]$tspftdbh[sel,,,,,pft.mp]
-                     }else{
-                        z.tsall = array(NA,dim(y.tsall),dimnames=dimnames(y.tsall))
-                        for (d in 1:n.dbh){
+
+
+                     #---------------------------------------------------------------------#
+                     #     Plot only when x, y, and z are different.                       #
+                     #---------------------------------------------------------------------#
+                     if (! z.vname %in% c(x.vname,y.vname)){
+                        #----- Time series. -----------------------------------------------#
+                        z.ts       = eft[[z.vname]]$ts   [sel,,y.sel,season.mp]
+                        #------------------------------------------------------------------#
+
+
+                        #----- Make sure the PFT version is PFT-dependent. ----------------#
+                        if (z.pft){
+                           z.tspft = eft[[z.vname]]$tspft[sel,,y.sel,n.season,pft.mp]
+                        }else{
+                           z.tspft = array(NA,dim=dim(y.tspft),dimnames=dimnames(y.tspft))
                            for (f in 1:n.pft.mp){
-                              z.tsall[,,,,d,f] = eft[[z.vname]]$ts[sel,,,]
+                              z.tspft[,,,f] = eft[[z.vname]]$ts[sel,,y.sel,n.season]
+                           }#end z.tspft
+                        }#end if (z.pft)
+                        #------------------------------------------------------------------#
+
+
+                        #----- Make sure the DBH version is DBH-dependent. ----------------#
+                        if (z.dbh){
+                           z.tsdbh = eft[[z.vname]]$tspftdbh
+                           z.tsdbh = z.tsdbh[sel,,y.sel,n.season,dbh.mp,n.pft]
+                        }else{
+                           z.tsdbh = array(NA,dim=dim(y.tsdbh),dimnames=dimnames(y.tsdbh))
+                           for (d in 1:n.dbh.mp){
+                              z.tsdbh[,,,d] = eft[[z.vname]]$ts[sel,,y.sel,n.season]
+                           }#end z.tspft
+                        }#end if (z.dbh)
+                        #------------------------------------------------------------------#
+
+
+                        #----- Make sure the DBH+PFT version depends on both DBH and PFT. -#
+                        if (z.dbh){
+                           z.tsall = eft[[z.vname]]$tspftdbh[sel,,y.sel,,,pft.mp]
+                        }else{
+                           z.tsall = array(NA,dim(y.tsall),dimnames=dimnames(y.tsall))
+                           for (d in 1:n.dbh){
+                              for (f in 1:n.pft.mp){
+                                 z.tsall[,,,,d,f] = eft[[z.vname]]$ts[sel,,y.sel,]
+                              }#end for
                            }#end for
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #     Split the arrays into lists.                                 #
+                        #------------------------------------------------------------------#
+                        x.list    = split(x=x.ts  ,f=ai.ts[,4])
+                        y.list    = split(x=y.ts  ,f=ai.ts[,4])
+                        z.list    = split(x=z.ts  ,f=ai.ts[,4])
+                        pch.list  = split(x=pch.ts,f=ai.ts[,4])
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #      Fix the titles.                                             #
+                        #------------------------------------------------------------------#
+                        letitre   = paste("Seasonal means - ",z.desc,"\n",out.desc,sep="")
+                        lex       = desc.unit(desc=x.desc,unit=x.unit)
+                        ley       = desc.unit(desc=y.desc,unit=y.unit)
+                        lacle     = desc.unit(desc=NULL  ,unit=z.unit)
+                        #------------------------------------------------------------------#
+
+
+
+
+                        #------------------------------------------------------------------#
+                        #     Plot the parameter space by season.                          #
+                        #------------------------------------------------------------------#
+                        for (o in 1:nout){
+                           #----- Get the path. -------------------------------------------#
+                           now.scenario = outpath[[o]]$global[[g]]$scenario[[s]]
+                           now.outpath  = now.scenario$xyz.season[y]
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Open file or display. -----------------------------------#
+                           fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
+                                          ,"_z-",z.vname,"-",out.suffix,"-season."
+                                          ,outform[o],sep="")
+                           if (outform[o] == "x11"){
+                              X11(width=size$width,height=size$height,pointsize=ptsz)
+                           }else if(outform[o] == "png"){
+                              png(filename=fichier,width=size$width*depth
+                                 ,height=size$height*depth,pointsize=ptsz,res=depth)
+                           }else if(outform[o] == "eps"){
+                              postscript(file=fichier,width=size$width,height=size$height
+                                        ,pointsize=ptsz,paper=size$paper)
+                           }else if(outform[o] == "pdf"){
+                              pdf(file=fichier,onefile=FALSE,width=size$width
+                                 ,height=size$height,pointsize=ptsz,paper=size$paper)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #      Plot the boxes.                                          #
+                           #---------------------------------------------------------------#
+                           leg.ncol    = min(3,pretty.box(n.now)$ncol)
+                           leg.letitre = expression(bold("Simulation"))
+                           par(par.user)
+                           xyz.plot( x              = x.list
+                                   , y              = y.list
+                                   , z              = z.list
+                                   , fixed.xlim     = TRUE
+                                   , fixed.ylim     = TRUE
+                                   , xy.log         = xy.plog
+                                   , pch            = pch.list
+                                   , cex            = 1.2
+                                   , nlevels        = n.colourbar
+                                   , colour.palette = z.cscheme
+                                   , xyz.sub        = season.mp.desc
+                                   , xyz.title      = list( main      = letitre
+                                                          , xlab      = lex
+                                                          , ylab      = ley
+                                                          , line.xlab = 4.1
+                                                          , line.ylab = 2.6
+                                                          , cex.main  = 1.1 * cex.ptsz
+                                                          )#end list
+                                   , xyz.more       = list(grid=list(col=grid.colour
+                                                                    ,lty="solid"))
+                                   , key.log        = z.plog
+                                   , key.title      = list(main=lacle,cex.main=.8*cex.main)
+                                   , xyz.legend     = list( x      = "bottom"
+                                                          , inset  = 0.0
+                                                          , legend = now$desc
+                                                          , pch    = now$pch
+                                                          , col    = grey.fg
+                                                          , border = foreground
+                                                          , bg     = background
+                                                          , ncol   = leg.ncol
+                                                          , title  = leg.letitre
+                                                          , cex    = 1.0
+                                                          , xpd    = TRUE
+                                                          )#end legend
+                                   )#end xyz.plot
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Close the device. ---------------------------------------#
+                           if (outform[o] == "x11"){
+                              locator(n=1)
+                              dev.off()
+                           }else{
+                              dev.off()
+                           }#end if
+                           clean.tmp()
+                           #---------------------------------------------------------------#
                         }#end for
-                     }#end if
-
-
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #     Split the arrays into lists.                                    #
-                     #---------------------------------------------------------------------#
-                     x.list    = split(x=x.ts  ,f=ai.ts[,4])
-                     y.list    = split(x=y.ts  ,f=ai.ts[,4])
-                     z.list    = split(x=z.ts  ,f=ai.ts[,4])
-                     pch.list  = split(x=pch.ts,f=ai.ts[,4])
-                     #---------------------------------------------------------------------#
-
-
-
-                     #---------------------------------------------------------------------#
-                     #      Fix the titles.                                                #
-                     #---------------------------------------------------------------------#
-                     letitre   = paste("Seasonal means - ",z.desc,"\n",out.desc,sep="")
-                     lex       = desc.unit(desc=x.desc,unit=x.unit)
-                     ley       = desc.unit(desc=y.desc,unit=y.unit)
-                     lacle     = desc.unit(desc=NULL  ,unit=z.unit)
-                     #---------------------------------------------------------------------#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 
 
 
-                     #---------------------------------------------------------------------#
-                     #     Plot the parameter space by season.                             #
-                     #---------------------------------------------------------------------#
-                     for (o in 1:nout){
-                        #----- Get the path. ----------------------------------------------#
-                        now.outpath  = outpath[[o]]$global[[g]]$scenario[[s]]$xyz.season[y]
+
+
+
+
+
+
+
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #     XYZ plots by PFT (annual means).                             #
                         #------------------------------------------------------------------#
 
 
 
-                        #----- Open file or display. --------------------------------------#
-                        fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
-                                       ,"_z-",z.vname,"-",out.suffix,"-season."
-                                       ,outform[o],sep="")
-                        if (outform[o] == "x11"){
-                           X11(width=size$width,height=size$height,pointsize=ptsz)
-                        }else if(outform[o] == "png"){
-                           png(filename=fichier,width=size$width*depth
-                              ,height=size$height*depth,pointsize=ptsz,res=depth)
-                        }else if(outform[o] == "eps"){
-                           postscript(file=fichier,width=size$width,height=size$height
-                                     ,pointsize=ptsz,paper=size$paper)
-                        }else if(outform[o] == "pdf"){
-                           pdf(file=fichier,onefile=FALSE,width=size$width
-                              ,height=size$height,pointsize=ptsz,paper=size$paper)
-                        }#end if
+                        #----- Split the arrays into lists. -------------------------------#
+                        x.list    = split(x=x.tspft  ,f=ai.tspft[,4])
+                        y.list    = split(x=y.tspft  ,f=ai.tspft[,4])
+                        z.list    = split(x=z.tspft  ,f=ai.tspft[,4])
+                        pch.list  = split(x=pch.tspft,f=ai.tspft[,4])
                         #------------------------------------------------------------------#
 
 
 
-                        #------------------------------------------------------------------#
-                        #      Plot the boxes.                                             #
-                        #------------------------------------------------------------------#
-                        leg.ncol    = min(3,pretty.box(n.now)$ncol)
-                        leg.letitre = expression(bold("Simulation"))
-                        par(par.user)
-                        xyz.plot( x              = x.list
-                                , y              = y.list
-                                , z              = z.list
-                                , fixed.xlim     = TRUE
-                                , fixed.ylim     = TRUE
-                                , xy.log         = xy.plog
-                                , pch            = pch.list
-                                , cex            = 1.2
-                                , nlevels        = n.colourbar
-                                , colour.palette = z.cscheme
-                                , xyz.sub        = season.mp.desc
-                                , xyz.title      = list( main      = letitre
-                                                       , xlab      = lex
-                                                       , ylab      = ley
-                                                       , line.xlab = 4.1
-                                                       , line.ylab = 2.6
-                                                       , cex.main  = 1.1 * cex.ptsz
-                                                       )#end list
-                                , xyz.more       = list(grid=list(col=grid.colour
-                                                                 ,lty="solid"))
-                                , key.log        = z.plog
-                                , key.title      = list(main=lacle,cex.main=0.8*cex.main)
-                                , xyz.legend     = list( x      = "bottom"
-                                                       , inset  = 0.0
-                                                       , legend = now$desc
-                                                       , pch    = now$pch
-                                                       , col    = grey.fg
-                                                       , border = foreground
-                                                       , bg     = background
-                                                       , ncol   = leg.ncol
-                                                       , title  = leg.letitre
-                                                       , cex    = 1.0
-                                                       , xpd    = TRUE
-                                                       )#end legend
-                                )#end xyz.plot
+                        #----- Fix the titles. --------------------------------------------#
+                        letitre   = paste("Annual means - ",z.desc,"\n",out.desc,sep="")
+                        lex       = desc.unit(desc=x.desc,unit=x.unit)
+                        ley       = desc.unit(desc=y.desc,unit=y.unit)
+                        lacle     = desc.unit(desc=NULL  ,unit=z.unit)
                         #------------------------------------------------------------------#
 
 
 
-                        #----- Close the device. ------------------------------------------#
-                        if (outform[o] == "x11"){
-                           locator(n=1)
-                           dev.off()
-                        }else{
-                           dev.off()
-                        }#end if
-                        clean.tmp()
-                        #------------------------------------------------------------------#
-                     }#end for
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-
-
-
-
-
-
-
-
-
-
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #     XYZ plots by PFT (annual means).                                #
-                     #---------------------------------------------------------------------#
-
-
-
-                     #----- Split the arrays into lists. ----------------------------------#
-                     x.list    = split(x=x.tspft  ,f=ai.tspft[,4])
-                     y.list    = split(x=y.tspft  ,f=ai.tspft[,4])
-                     z.list    = split(x=z.tspft  ,f=ai.tspft[,4])
-                     pch.list  = split(x=pch.tspft,f=ai.tspft[,4])
-                     #---------------------------------------------------------------------#
-
-
-
-                     #----- Fix the titles. -----------------------------------------------#
-                     letitre   = paste("Annual means - ",z.desc,"\n",out.desc,sep="")
-                     lex       = desc.unit(desc=x.desc,unit=x.unit)
-                     ley       = desc.unit(desc=y.desc,unit=y.unit)
-                     lacle     = desc.unit(desc=NULL  ,unit=z.unit)
-                     #---------------------------------------------------------------------#
-
-
-
-
-                     #----- Plot the parameter space by PFT. ------------------------------#
-                     for (o in 1:nout){
-                        #----- Get the path. ----------------------------------------------#
-                        now.outpath  = outpath[[o]]$global[[g]]$scenario[[s]]$xyz.pft[y]
-                        #------------------------------------------------------------------#
-
-                        #----- Open file or display. --------------------------------------#
-                        fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
-                                       ,"_z-",z.vname,"-",out.suffix,"-pft."
-                                       ,outform[o],sep="")
-                        if (outform[o] == "x11"){
-                           X11(width=size$width,height=size$height,pointsize=ptsz)
-                        }else if(outform[o] == "png"){
-                           png(filename=fichier,width=size$width*depth
-                              ,height=size$height*depth,pointsize=ptsz,res=depth)
-                        }else if(outform[o] == "eps"){
-                           postscript(file=fichier,width=size$width,height=size$height
-                                     ,pointsize=ptsz,paper=size$paper)
-                        }else if(outform[o] == "pdf"){
-                           pdf(file=fichier,onefile=FALSE,width=size$width
-                              ,height=size$height,pointsize=ptsz,paper=size$paper)
-                        }#end if
-                        #------------------------------------------------------------------#
-
-
-
-                        #------------------------------------------------------------------#
-                        #      Plot the boxes.                                             #
-                        #------------------------------------------------------------------#
-                        par(par.user)
-                        leg.ncol    = min(3,pretty.box(n.now)$ncol)
-                        leg.title   = expression(bold("Simulation"))
-                        xyz.plot( x              = x.list
-                                , y              = y.list
-                                , z              = z.list
-                                , fixed.xlim     = TRUE
-                                , fixed.ylim     = TRUE
-                                , xy.log         = xy.plog
-                                , pch            = pch.list
-                                , cex            = 1.2
-                                , nlevels        = n.colourbar
-                                , colour.palette = z.cscheme
-                                , xyz.title      = list( main      = letitre
-                                                       , xlab      = lex
-                                                       , ylab      = ley
-                                                       , line.xlab = 4.1
-                                                       , line.ylab = 2.6
-                                                       , cex.main  = 1.1 * cex.ptsz
-                                                       )#end list
-                                , xyz.sub        = pft.desc[pft.mp]
-                                , xyz.more       = list(grid=list(col=grid.colour
-                                                                 ,lty="solid"))
-                                , key.log        = z.plog
-                                , key.title      = list(main=lacle,cex.main=0.8*cex.main)
-                                , xyz.legend     = list( x       = "bottom"
-                                                       , inset   = 0.0
-                                                       , legend  = now$desc
-                                                       , pch     = now$pch
-                                                       , col     = grey.fg
-                                                       , border  = foreground
-                                                       , bg      = background
-                                                       , ncol    = leg.ncol
-                                                       , title   = leg.title
-                                                       , cex     = cex.ptsz
-                                                       , xpd     = TRUE
-                                                       )#end legend
-                                )#end xyz.plot
-                        #------------------------------------------------------------------#
-
-
-
-                        #----- Close the device. ------------------------------------------#
-                        if (outform[o] == "x11"){
-                           locator(n=1)
-                           dev.off()
-                        }else{
-                           dev.off()
-                        }#end if
-                        clean.tmp()
-                        #------------------------------------------------------------------#
-                     }#end for
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-
-
-
-
-
-
-
-
-
-
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #     XYZ plots by DBH (annual means).                                #
-                     #---------------------------------------------------------------------#
-
-                     #----- Split the arrays into lists. ----------------------------------#
-                     x.list    = split(x=x.tsdbh  ,f=ai.tsdbh[,4])
-                     y.list    = split(x=y.tsdbh  ,f=ai.tsdbh[,4])
-                     z.list    = split(x=z.tsdbh  ,f=ai.tsdbh[,4])
-                     pch.list  = split(x=pch.tsdbh,f=ai.tsdbh[,4])
-                     #---------------------------------------------------------------------#
-
-
-
-                     #------ Fix the titles. ----------------------------------------------#
-                     letitre   = paste("Annual means - ",z.desc,"\n",out.desc,sep="")
-                     lex       = desc.unit(desc=x.desc,unit=x.unit)
-                     ley       = desc.unit(desc=y.desc,unit=y.unit)
-                     lacle     = desc.unit(desc=NULL  ,unit=z.unit)
-                     #---------------------------------------------------------------------#
-
-
-
-
-                     #----- Plot the parameter space by DBH class. ------------------------#
-                     for (o in 1:nout){
-                        #----- Get the path. ----------------------------------------------#
-                        now.outpath  = outpath[[o]]$global[[g]]$scenario[[s]]$xyz.dbh[y]
-                        #------------------------------------------------------------------#
-
-                        #----- Open file or display. --------------------------------------#
-                        fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
-                                       ,"_z-",z.vname,"-",out.suffix,"-dbh."
-                                       ,outform[o],sep="")
-                        if (outform[o] == "x11"){
-                           X11(width=size$width,height=size$height,pointsize=ptsz)
-                        }else if(outform[o] == "png"){
-                           png(filename=fichier,width=size$width*depth
-                              ,height=size$height*depth,pointsize=ptsz,res=depth)
-                        }else if(outform[o] == "eps"){
-                           postscript(file=fichier,width=size$width,height=size$height
-                                     ,pointsize=ptsz,paper=size$paper)
-                        }else if(outform[o] == "pdf"){
-                           pdf(file=fichier,onefile=FALSE,width=size$width
-                              ,height=size$height,pointsize=ptsz,paper=size$paper)
-                        }#end if
-                        #------------------------------------------------------------------#
-
-
-
-                        #------------------------------------------------------------------#
-                        #      Plot the boxes.                                             #
-                        #------------------------------------------------------------------#
-                        par(par.user)
-                        leg.ncol    = min(3,pretty.box(n.now)$ncol)
-                        leg.title   = expression(bold("Simulation"))
-                        xyz.plot( x              = x.list
-                                , y              = y.list
-                                , z              = z.list
-                                , fixed.xlim     = TRUE
-                                , fixed.ylim     = TRUE
-                                , xy.log         = xy.plog.dbh
-                                , pch            = pch.list
-                                , cex            = 1.2
-                                , nlevels        = n.colourbar
-                                , colour.palette = z.cscheme
-                                , xyz.title      = list( main      = letitre
-                                                       , xlab      = lex
-                                                       , ylab      = ley
-                                                       , line.xlab = 4.1
-                                                       , line.ylab = 2.6
-                                                       , cex.main  = 1.1 * cex.ptsz
-                                                       )#end list
-                                , xyz.sub        = dbh.desc[dbh.mp]
-                                , xyz.more       = list(grid=list(col=grid.colour
-                                                                 ,lty="solid"))
-                                , key.log        = z.plog.dbh
-                                , key.title      = list(main=lacle,cex.main=0.8*cex.main)
-                                , xyz.legend     = list( x       = "bottom"
-                                                       , inset   = 0.0
-                                                       , legend  = now$desc
-                                                       , pch     = now$pch
-                                                       , col     = grey.fg
-                                                       , border  = foreground
-                                                       , bg      = background
-                                                       , ncol    = leg.ncol
-                                                       , title   = leg.title
-                                                       , cex     = cex.ptsz
-                                                       , xpd     = TRUE
-                                                       )#end legend
-                                )#end xyz.plot
-                        #------------------------------------------------------------------#
-
-
-
-                        #----- Close the device. ------------------------------------------#
-                        if (outform[o] == "x11"){
-                           locator(n=1)
-                           dev.off()
-                        }else{
-                           dev.off()
-                        }#end if
-                        clean.tmp()
-                        #------------------------------------------------------------------#
-                     }#end for
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #     XYZ plots by PFT (DBH class, seasonal means).                   #
-                     #---------------------------------------------------------------------#
-                     for (e in 1:n.season){
-                        for (d in 1:n.dbh){
-
-                           #----- Keep only the elements that will go to this plot. -------#
-                           x.tsnow = x.tsall[,,,e,d,]
-                           y.tsnow = y.tsall[,,,e,d,]
-                           z.tsnow = z.tsall[,,,e,d,]
-
-                           #----- Create indices to split the arrays into lists. ----------#
-                           ai.tsnow = arrayInd(sequence(length(y.tsnow))
-                                              ,.dim=dim(y.tsnow))
+                        #----- Plot the parameter space by PFT. ---------------------------#
+                        for (o in 1:nout){
+                           #----- Get the path. -------------------------------------------#
+                           now.outpath  = outpath[[o]]$global[[g]]$scenario[[s]]$xyz.pft[y]
                            #---------------------------------------------------------------#
 
-
-                           #----- Find the format of the points for the plots. ------------#
-                           idx       = arrayInd( 1:length(y.tsnow),.dim=dim(y.tsnow))[,1]
-                           pch.tsnow = array(data=now$pch[idx],dim=dim(y.tsnow))
+                           #----- Open file or display. -----------------------------------#
+                           fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
+                                          ,"_z-",z.vname,"-",out.suffix,"-pft."
+                                          ,outform[o],sep="")
+                           if (outform[o] == "x11"){
+                              X11(width=size$width,height=size$height,pointsize=ptsz)
+                           }else if(outform[o] == "png"){
+                              png(filename=fichier,width=size$width*depth
+                                 ,height=size$height*depth,pointsize=ptsz,res=depth)
+                           }else if(outform[o] == "eps"){
+                              postscript(file=fichier,width=size$width,height=size$height
+                                        ,pointsize=ptsz,paper=size$paper)
+                           }else if(outform[o] == "pdf"){
+                              pdf(file=fichier,onefile=FALSE,width=size$width
+                                 ,height=size$height,pointsize=ptsz,paper=size$paper)
+                           }#end if
                            #---------------------------------------------------------------#
 
 
 
-                           #----- Split the arrays into lists. ----------------------------#
-                           x.list    = split(x=x.tsnow  ,f=ai.tsnow[,4])
-                           y.list    = split(x=y.tsnow  ,f=ai.tsnow[,4])
-                           z.list    = split(x=z.tsnow  ,f=ai.tsnow[,4])
-                           pch.list  = split(x=pch.tsnow,f=ai.tsnow[,4])
+                           #---------------------------------------------------------------#
+                           #      Plot the boxes.                                          #
+                           #---------------------------------------------------------------#
+                           par(par.user)
+                           leg.ncol    = min(3,pretty.box(n.now)$ncol)
+                           leg.title   = expression(bold("Simulation"))
+                           xyz.plot( x              = x.list
+                                   , y              = y.list
+                                   , z              = z.list
+                                   , fixed.xlim     = TRUE
+                                   , fixed.ylim     = TRUE
+                                   , xy.log         = xy.plog
+                                   , pch            = pch.list
+                                   , cex            = 1.2
+                                   , nlevels        = n.colourbar
+                                   , colour.palette = z.cscheme
+                                   , xyz.title      = list( main      = letitre
+                                                          , xlab      = lex
+                                                          , ylab      = ley
+                                                          , line.xlab = 4.1
+                                                          , line.ylab = 2.6
+                                                          , cex.main  = 1.1 * cex.ptsz
+                                                          )#end list
+                                   , xyz.sub        = pft.desc[pft.mp]
+                                   , xyz.more       = list(grid=list(col=grid.colour
+                                                                    ,lty="solid"))
+                                   , key.log        = z.plog
+                                   , key.title      = list(main=lacle,cex.main=.8*cex.main)
+                                   , xyz.legend     = list( x       = "bottom"
+                                                          , inset   = 0.0
+                                                          , legend  = now$desc
+                                                          , pch     = now$pch
+                                                          , col     = grey.fg
+                                                          , border  = foreground
+                                                          , bg      = background
+                                                          , ncol    = leg.ncol
+                                                          , title   = leg.title
+                                                          , cex     = cex.ptsz
+                                                          , xpd     = TRUE
+                                                          )#end legend
+                                   )#end xyz.plot
                            #---------------------------------------------------------------#
 
 
 
-                           #------ Fix the titles. ----------------------------------------#
-                           letitre   = paste(z.desc," - ",season.mp.desc[e]," means"
-                                            ," - DBH: ",dbh.desc[d]
-                                            ,"\n",out.desc,sep="")
-                           lex       = desc.unit(desc=x.desc,unit=x.unit)
-                           ley       = desc.unit(desc=y.desc,unit=y.unit)
-                           lacle     = desc.unit(desc=NULL  ,unit=z.unit)
+                           #----- Close the device. ---------------------------------------#
+                           if (outform[o] == "x11"){
+                              locator(n=1)
+                              dev.off()
+                           }else{
+                              dev.off()
+                           }#end if
+                           clean.tmp()
                            #---------------------------------------------------------------#
+                        }#end for
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 
 
 
-                           #----- Plot the parameter space by DBH class. ------------------#
-                           for (o in 1:nout){
-                              #----- Get the path. ----------------------------------------#
-                              scen.out     = outpath[[o]]$global[[g]]$scenario[[s]]
-                              now.outpath  = scen.out$xyz.all[d,e,y]
-                              #------------------------------------------------------------#
-
-                              #----- Open file or display. --------------------------------#
-                              fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
-                                             ,"_z-",z.vname,"-",out.suffix,"-"
-                                             ,dbh.key[d],"-",season.suffix[e],"."
-                                             ,outform[o],sep="")
-                              if (outform[o] == "x11"){
-                                 X11(width=size$width,height=size$height,pointsize=ptsz)
-                              }else if(outform[o] == "png"){
-                                 png(filename=fichier,width=size$width*depth
-                                    ,height=size$height*depth,pointsize=ptsz,res=depth)
-                              }else if(outform[o] == "eps"){
-                                 postscript(file=fichier,width=size$width
-                                           ,height=size$height,pointsize=ptsz
-                                           ,paper=size$paper)
-                              }else if(outform[o] == "pdf"){
-                                 pdf(file=fichier,onefile=FALSE,width=size$width
-                                    ,height=size$height,pointsize=ptsz,paper=size$paper)
-                              }#end if
-                              #------------------------------------------------------------#
 
 
 
-                              #------------------------------------------------------------#
-                              #      Plot the boxes.                                       #
-                              #------------------------------------------------------------#
-                              par(par.user)
-                              leg.ncol    = min(3,pretty.box(n.now)$ncol)
-                              leg.title   = expression(bold("Simulation"))
-                              xyz.plot( x              = x.list
-                                      , y              = y.list
-                                      , z              = z.list
-                                      , fixed.xlim     = TRUE
-                                      , fixed.ylim     = TRUE
-                                      , xy.log         = xy.plog
-                                      , pch            = pch.list
-                                      , cex            = 1.2
-                                      , nlevels        = n.colourbar
-                                      , colour.palette = z.cscheme
-                                      , xyz.title      = list( main      = letitre
-                                                             , xlab      = lex
-                                                             , ylab      = ley
-                                                             , line.xlab = 4.1
-                                                             , line.ylab = 2.6
-                                                             , cex.main  = 0.9 * cex.ptsz
-                                                             )#end list
-                                      , xyz.sub        = pft.desc[pft.mp]
-                                      , xyz.more       = list(grid=list(col=grid.colour
-                                                                       ,lty="solid"))
-                                      , key.log        = z.plog.dbh
-                                      , key.title      = list(main=lacle
-                                                             ,cex.main=0.8*cex.main)
-                                      , xyz.legend     = list( x       = "bottom"
-                                                             , inset   = 0.0
-                                                             , legend  = now$desc
-                                                             , pch     = now$pch
-                                                             , col     = grey.fg
-                                                             , border  = foreground
-                                                             , bg      = background
-                                                             , ncol    = leg.ncol
-                                                             , title   = leg.title
-                                                             , cex     = cex.ptsz
-                                                             , xpd     = TRUE
-                                                             )#end legend
-                                      )#end xyz.plot
-                              #------------------------------------------------------------------#
 
 
 
-                              #----- Close the device. ------------------------------------------#
-                              if (outform[o] == "x11"){
-                                 locator(n=1)
-                                 dev.off()
-                              }else{
-                                 dev.off()
-                              }#end if
-                              clean.tmp()
-                              #------------------------------------------------------------#
-                           }#end for (o in 1:nout)
-                           #---------------------------------------------------------------#
-                        }#end for (d in 1:n.dbh)
+
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #     XYZ plots by DBH (annual means).                             #
                         #------------------------------------------------------------------#
-                     }#end for (e in 1:n.season.mp)
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-                  }#end for
+
+                        #----- Split the arrays into lists. -------------------------------#
+                        x.list    = split(x=x.tsdbh  ,f=ai.tsdbh[,4])
+                        y.list    = split(x=y.tsdbh  ,f=ai.tsdbh[,4])
+                        z.list    = split(x=z.tsdbh  ,f=ai.tsdbh[,4])
+                        pch.list  = split(x=pch.tsdbh,f=ai.tsdbh[,4])
+                        #------------------------------------------------------------------#
+
+
+
+                        #------ Fix the titles. -------------------------------------------#
+                        letitre   = paste("Annual means - ",z.desc,"\n",out.desc,sep="")
+                        lex       = desc.unit(desc=x.desc,unit=x.unit)
+                        ley       = desc.unit(desc=y.desc,unit=y.unit)
+                        lacle     = desc.unit(desc=NULL  ,unit=z.unit)
+                        #------------------------------------------------------------------#
+
+
+
+
+                        #----- Plot the parameter space by DBH class. ---------------------#
+                        for (o in 1:nout){
+                           #----- Get the path. -------------------------------------------#
+                           now.outpath  = outpath[[o]]$global[[g]]$scenario[[s]]$xyz.dbh[y]
+                           #---------------------------------------------------------------#
+
+                           #----- Open file or display. -----------------------------------#
+                           fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
+                                          ,"_z-",z.vname,"-",out.suffix,"-dbh."
+                                          ,outform[o],sep="")
+                           if (outform[o] == "x11"){
+                              X11(width=size$width,height=size$height,pointsize=ptsz)
+                           }else if(outform[o] == "png"){
+                              png(filename=fichier,width=size$width*depth
+                                 ,height=size$height*depth,pointsize=ptsz,res=depth)
+                           }else if(outform[o] == "eps"){
+                              postscript(file=fichier,width=size$width,height=size$height
+                                        ,pointsize=ptsz,paper=size$paper)
+                           }else if(outform[o] == "pdf"){
+                              pdf(file=fichier,onefile=FALSE,width=size$width
+                                 ,height=size$height,pointsize=ptsz,paper=size$paper)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
+                           #---------------------------------------------------------------#
+                           #      Plot the boxes.                                          #
+                           #---------------------------------------------------------------#
+                           par(par.user)
+                           leg.ncol    = min(3,pretty.box(n.now)$ncol)
+                           leg.title   = expression(bold("Simulation"))
+                           xyz.plot( x              = x.list
+                                   , y              = y.list
+                                   , z              = z.list
+                                   , fixed.xlim     = TRUE
+                                   , fixed.ylim     = TRUE
+                                   , xy.log         = xy.plog.dbh
+                                   , pch            = pch.list
+                                   , cex            = 1.2
+                                   , nlevels        = n.colourbar
+                                   , colour.palette = z.cscheme
+                                   , xyz.title      = list( main      = letitre
+                                                          , xlab      = lex
+                                                          , ylab      = ley
+                                                          , line.xlab = 4.1
+                                                          , line.ylab = 2.6
+                                                          , cex.main  = 1.1 * cex.ptsz
+                                                          )#end list
+                                   , xyz.sub        = dbh.desc[dbh.mp]
+                                   , xyz.more       = list(grid=list(col=grid.colour
+                                                                    ,lty="solid"))
+                                   , key.log        = z.plog.dbh
+                                   , key.title      = list(main=lacle,cex.main=.8*cex.main)
+                                   , xyz.legend     = list( x       = "bottom"
+                                                          , inset   = 0.0
+                                                          , legend  = now$desc
+                                                          , pch     = now$pch
+                                                          , col     = grey.fg
+                                                          , border  = foreground
+                                                          , bg      = background
+                                                          , ncol    = leg.ncol
+                                                          , title   = leg.title
+                                                          , cex     = cex.ptsz
+                                                          , xpd     = TRUE
+                                                          )#end legend
+                                   )#end xyz.plot
+                           #---------------------------------------------------------------#
+
+
+
+                           #----- Close the device. ---------------------------------------#
+                           if (outform[o] == "x11"){
+                              locator(n=1)
+                              dev.off()
+                           }else{
+                              dev.off()
+                           }#end if
+                           clean.tmp()
+                           #---------------------------------------------------------------#
+                        }#end for
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #     XYZ plots by PFT (DBH class, seasonal means).                #
+                        #------------------------------------------------------------------#
+                        for (e in 1:n.season){
+                           for (d in 1:n.dbh){
+
+                              #----- Keep only the elements that will go to this plot. ----#
+                              x.tsnow = x.tsall[,,,e,d,]
+                              y.tsnow = y.tsall[,,,e,d,]
+                              z.tsnow = z.tsall[,,,e,d,]
+
+                              #----- Create indices to split the arrays into lists. -------#
+                              ai.tsnow = arrayInd(sequence(length(y.tsnow))
+                                                 ,.dim=dim(y.tsnow))
+                              #------------------------------------------------------------#
+
+
+                              #----- Find the format of the points for the plots. ---------#
+                              idx       = arrayInd(1:length(y.tsnow),.dim=dim(y.tsnow))[,1]
+                              pch.tsnow = array(data=now$pch[idx],dim=dim(y.tsnow))
+                              #------------------------------------------------------------#
+
+
+
+                              #----- Split the arrays into lists. -------------------------#
+                              x.list    = split(x=x.tsnow  ,f=ai.tsnow[,4])
+                              y.list    = split(x=y.tsnow  ,f=ai.tsnow[,4])
+                              z.list    = split(x=z.tsnow  ,f=ai.tsnow[,4])
+                              pch.list  = split(x=pch.tsnow,f=ai.tsnow[,4])
+                              #------------------------------------------------------------#
+
+
+
+                              #------ Fix the titles. -------------------------------------#
+                              letitre   = paste(z.desc," - ",season.mp.desc[e]," means"
+                                               ," - DBH: ",dbh.desc[d]
+                                               ,"\n",out.desc,sep="")
+                              lex       = desc.unit(desc=x.desc,unit=x.unit)
+                              ley       = desc.unit(desc=y.desc,unit=y.unit)
+                              lacle     = desc.unit(desc=NULL  ,unit=z.unit)
+                              #------------------------------------------------------------#
+
+
+
+
+                              #----- Plot the parameter space by DBH class. ---------------#
+                              for (o in 1:nout){
+                                 #----- Get the path. -------------------------------------#
+                                 scen.out     = outpath[[o]]$global[[g]]$scenario[[s]]
+                                 now.outpath  = scen.out$xyz.all[d,e,y]
+                                 #---------------------------------------------------------#
+
+                                 #----- Open file or display. -----------------------------#
+                                 fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
+                                                ,"_z-",z.vname,"-",out.suffix,"-dbh_"
+                                                ,dbh.key[d],"-season_",season.suffix[e],"."
+                                                ,outform[o],sep="")
+                                 if (outform[o] == "x11"){
+                                    X11(width=size$width,height=size$height,pointsize=ptsz)
+                                 }else if(outform[o] == "png"){
+                                    png(filename=fichier,width=size$width*depth
+                                       ,height=size$height*depth,pointsize=ptsz,res=depth)
+                                 }else if(outform[o] == "eps"){
+                                    postscript(file=fichier,width=size$width
+                                              ,height=size$height,pointsize=ptsz
+                                              ,paper=size$paper)
+                                 }else if(outform[o] == "pdf"){
+                                    pdf(file=fichier,onefile=FALSE,width=size$width
+                                       ,height=size$height,pointsize=ptsz,paper=size$paper)
+                                 }#end if
+                                 #---------------------------------------------------------#
+
+
+
+                                 #---------------------------------------------------------#
+                                 #      Plot the boxes.                                    #
+                                 #---------------------------------------------------------#
+                                 par(par.user)
+                                 leg.ncol    = min(3,pretty.box(n.now)$ncol)
+                                 leg.title   = expression(bold("Simulation"))
+                                 xyz.plot( x              = x.list
+                                         , y              = y.list
+                                         , z              = z.list
+                                         , fixed.xlim     = TRUE
+                                         , fixed.ylim     = TRUE
+                                         , xy.log         = xy.plog
+                                         , pch            = pch.list
+                                         , cex            = 1.2
+                                         , nlevels        = n.colourbar
+                                         , colour.palette = z.cscheme
+                                         , xyz.title      = list( main      = letitre
+                                                                , xlab      = lex
+                                                                , ylab      = ley
+                                                                , line.xlab = 4.1
+                                                                , line.ylab = 2.6
+                                                                , cex.main  = 0.9*cex.ptsz
+                                                                )#end list
+                                         , xyz.sub        = pft.desc[pft.mp]
+                                         , xyz.more       = list(grid=list(col=grid.colour
+                                                                          ,lty="solid"))
+                                         , key.log        = z.plog.dbh
+                                         , key.title      = list(main=lacle
+                                                                ,cex.main=0.8*cex.main)
+                                         , xyz.legend     = list( x       = "bottom"
+                                                                , inset   = 0.0
+                                                                , legend  = now$desc
+                                                                , pch     = now$pch
+                                                                , col     = grey.fg
+                                                                , border  = foreground
+                                                                , bg      = background
+                                                                , ncol    = leg.ncol
+                                                                , title   = leg.title
+                                                                , cex     = cex.ptsz
+                                                                , xpd     = TRUE
+                                                                )#end legend
+                                         )#end xyz.plot
+                                 #---------------------------------------------------------#
+
+
+
+                                 #----- Close the device. ---------------------------------#
+                                 if (outform[o] == "x11"){
+                                    locator(n=1)
+                                    dev.off()
+                                 }else{
+                                    dev.off()
+                                 }#end if
+                                 clean.tmp()
+                                 #---------------------------------------------------------#
+                              }#end for (o in 1:nout)
+                              #------------------------------------------------------------#
+                           }#end for (d in 1:n.dbh)
+                           #---------------------------------------------------------------#
+                        }#end for (e in 1:n.season.mp)
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                     }#end if (! z.vname in c(x.vname,y.vname))
+                     #---------------------------------------------------------------------#
+                  }#end for (z in loop.z)
                   #------------------------------------------------------------------------#
                }#end if (x.vname != y.vname)
                #---------------------------------------------------------------------------#
-            }#end for
+            }#end for (x in loop.x)
             #------------------------------------------------------------------------------#
-         }#end for
+         }#end for (y in loop.y)
          #.................................................................................#
          #.................................................................................#
       }#end for (s in loop.scenario)
@@ -6984,6 +7109,356 @@ for (g in loop.global){
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
 
+
+
+
+
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #    Check whether to create XYZ panel comparisons for sites.                           #
+   #---------------------------------------------------------------------------------------#
+   if (n.scenario == 2){
+      if (is.na(plot.panelxyz)){
+         loop.x = sequence(npanel.xvar)[1]
+         loop.y = sequence(npanel.yvar)[1]
+         loop.z = sequence(npanel.zvar)[1]
+      }else if (plot.panelxyz){
+         loop.x = sequence(npanel.xvar)
+         loop.y = sequence(npanel.yvar)
+         loop.z = sequence(npanel.zvar)
+      }else{
+         loop.x = integer(0)
+         loop.y = integer(0)
+         loop.z = integer(0)
+      }#end if
+   }else{
+      loop.x = integer(0)
+      loop.y = integer(0)
+      loop.z = integer(0)
+   }#end if
+   cat  ("         ~ Plotting the parameter space comparison...","\n")
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Retrieve the scenarios and the default for each scenario.                        #
+   #---------------------------------------------------------------------------------------#
+   s.type         = simul$dim.type == "scenario"
+   s.name         = names(simul$dim[s.type])
+   s.dim          = simul$dim[s.type]
+   s.dnames       = simul$panel$level
+   s.value        = simul$value[g.sel,s.type]
+   s.key          = simul$key[g.sel,s.type]
+   s.level        = split(x=simul$scenario$level,f=simul$scenario$idxcol)
+   names(s.level) = names(simul$dim)[s.type]
+   s.default      = split(simul$default[s.type],index(simul$default[s.type]))
+   s.ind          = data.frame( apply(X=simul$scenario$index,MARGIN=2,FUN="[",g.sel)
+                              , stringsAsFactors = FALSE
+                              )#end data.frame
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the panel information. -----------------------------------------------------#
+   p.type         = simul$dim.type == "panel"
+   p.name         = "panel"
+   p.ind          = simul$panel$index  [g.sel]
+   p.key          = simul$key[g.sel,p.type]
+   p.level        = list(simul$panel$level)
+   p.dim          = simul$panel$n.level
+   p.seq          = sequence(p.dim)
+   names(p.dim)   = "panel"
+   names(p.level) = "panel"
+   p.title        = gsub(pattern="Phenology: ",replacement="",x=simul$panel$title)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Loop over scenarios.                                                              #
+   #---------------------------------------------------------------------------------------#
+   for (s in loop.scenario){
+      idx.s      = match(s,loop.scenario)
+      out.desc   = paste(simul$scenario$title[s],simul$global$title  [g],sep=" - ")
+      out.suffix = paste(simul$scenario$level[s],simul$global$level  [g],sep="-")
+
+      #------------------------------------------------------------------------------------#
+      #    Find the column with the plot information.                                      #
+      #------------------------------------------------------------------------------------#
+      if (simul$scenario$n.level == 0){
+         now = scenario[[1]]
+      }else{
+         now = scenario[-simul$scenario$idxcol[s]][[1]]
+      }#end if
+      n.now = length(now$key)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Select the runs that belong to this panel.                                     #
+      #------------------------------------------------------------------------------------#
+      if (simul$scenario$n.level == 0){
+         s.sel = rep(TRUE,times=n.gsel)
+      }else{
+         s.sel = simul$scenario$idxoff[g.sel,simul$scenario$idxcol[s]] == s
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Loop over Y variables.                                                         #
+      #------------------------------------------------------------------------------------#
+      for (y in loop.y){
+         y.vname    = panel.xyz$yvar$vname   [y]
+         y.desc     = panel.xyz$yvar$desc    [y]
+         y.unit     = panel.xyz$yvar$unit    [y]
+         y.plog     = panel.xyz$yvar$plog    [y]
+         y.plog.dbh = panel.xyz$yvar$plog.dbh[y]
+         y.leg      = panel.xyz$yvar$leg     [y]
+
+         cat  ("           = Y variable: ",y.desc," scenario ",simul$scenario$title[s]
+                                          ,"...","\n")
+
+         #----- Grab the time series for Y. -----------------------------------------------#
+         y.ts    = eft[[y.vname]]$ts      [s.sel,,y.sel,n.season]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Grab the dimensions.                                                       #
+         #---------------------------------------------------------------------------------#
+         r.dim   = dim(y.ts)[-1]      ; names(r.dim  ) = c("real","year")
+         r.dname = dimnames(y.ts)[-1] ; names(r.dname) = c("real","year")
+         r.seq   = mapply( FUN = sequence, nvec = r.dim, SIMPLIFY = FALSE)
+         o.dim   = dim(y.ts)[-1]      ; names(o.dim  ) = c("real","year")
+         o.dname = dimnames(y.ts)[-1] ; names(o.dname) = c("real","year")
+         o.seq   = mapply( FUN = sequence, nvec = o.dim, SIMPLIFY = FALSE)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Find the array names.                                                      #
+         #---------------------------------------------------------------------------------#
+         a.dim     = sapply(X=c(p.dim,s.dim[-idx.s],o.dim  ),FUN=c)
+         a.dnames  = c(p.level,s.level[-idx.s],o.dname)
+         n.a.dim   = length(a.dim)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Split the stuff into panels, and create the scenario maps.                 #
+         #---------------------------------------------------------------------------------#
+         y.ts     = aperm( a    = array(data=y.ts,dim=a.dim,dimnames=a.dnames)
+                         , perm = c(2,sequence(n.a.dim)[-2])
+                         )#end aperm
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Create indices to split the arrays into lists. ----------------------------#
+         ai.ts    = arrayInd(sequence(length(y.ts   )),.dim=dim(y.ts   ))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Find the format of the points for the plots. ------------------------------#
+         pch.ts    = array( data = now$pch[arrayInd(1:length(y.ts   )
+                                                   ,.dim=dim(y.ts   ))[,1]]
+                          , dim  = dim(y.ts)
+                          )#end array
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Loop over X variables.                                                      #
+         #---------------------------------------------------------------------------------#
+         for (x in loop.x){
+            x.vname    = panel.xyz$xvar$vname   [x]
+            x.desc     = panel.xyz$xvar$desc    [x]
+            x.unit     = panel.xyz$xvar$unit    [x]
+            x.plog     = panel.xyz$xvar$plog    [x]
+            x.plog.dbh = panel.xyz$xvar$plog.dbh[x]
+            x.leg      = panel.xyz$xvar$leg     [x]
+            x.pft      = panel.xyz$xvar$pftvar  [x]
+            x.dbh      = panel.xyz$xvar$dbhvar  [x]
+
+
+            #------------------------------------------------------------------------------#
+            #      Split the stuff into panels, and create the scenario maps.              #
+            #------------------------------------------------------------------------------#
+            x.ts     = eft[[x.vname]]$ts     [s.sel,,y.sel,n.season]
+            x.ts     = aperm( a    = array(data=x.ts,dim=a.dim,dimnames=a.dnames)
+                            , perm = c(2,sequence(n.a.dim)[-2])
+                            )#end aperm
+            #---------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot only when x and y are different.                                    #
+            #------------------------------------------------------------------------------#
+            if (x.vname != y.vname){
+               #----- Build the log info. -------------------------------------------------#
+               xy.plog=paste(ifelse(x.plog,"x",""),ifelse(y.plog,"y",""),sep="")
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Loop over Z variables.                                                #
+               #---------------------------------------------------------------------------#
+               for (z in loop.z){
+                  z.vname    = panel.xyz$zvar$vname         [z]
+                  z.desc     = panel.xyz$zvar$desc          [z]
+                  z.unit     = panel.xyz$zvar$unit          [z]
+                  z.plog     = panel.xyz$zvar$plog          [z]
+                  z.plog.dbh = panel.xyz$zvar$plog.dbh      [z]
+                  z.pft      = panel.xyz$zvar$pftvar        [z]
+                  z.dbh      = panel.xyz$zvar$dbhvar        [z]
+                  z.cscheme  = get(panel.xyz$zvar$col.scheme[z])
+
+
+                  #------------------------------------------------------------------------#
+                  #     Plot only when x and y are different.                              #
+                  #------------------------------------------------------------------------#
+                  if ( ! z.vname %in% c(x.vname,y.vname)){
+                     #---------------------------------------------------------------------#
+                     #      Split the stuff into panels, and create the scenario maps.     #
+                     #---------------------------------------------------------------------#
+                     z.ts       = eft[[z.vname]]$ts   [s.sel,,y.sel,n.season]
+                     z.ts     = aperm( a    = array(data=z.ts,dim=a.dim,dimnames=a.dnames)
+                                     , perm = c(2,sequence(n.a.dim)[-2])
+                                     )#end aperm
+                     #---------------------------------------------------------------------#
+                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                     #     Split the arrays into lists.                                    #
+                     #---------------------------------------------------------------------#
+                     x.list    = split(x=x.ts  ,f=ai.ts[,2])
+                     y.list    = split(x=y.ts  ,f=ai.ts[,2])
+                     z.list    = split(x=z.ts  ,f=ai.ts[,2])
+                     pch.list  = split(x=pch.ts,f=ai.ts[,2])
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Fix the titles.                                                #
+                     #---------------------------------------------------------------------#
+                     letitre   = paste(z.desc,"\n",out.desc,sep="")
+                     lex       = desc.unit(desc=x.desc,unit=x.unit)
+                     ley       = desc.unit(desc=y.desc,unit=y.unit)
+                     lacle     = desc.unit(desc=NULL  ,unit=z.unit)
+                     #---------------------------------------------------------------------#
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Plot the parameter space by season.                             #
+                     #---------------------------------------------------------------------#
+                     for (o in 1:nout){
+                        #----- Get the path. ----------------------------------------------#
+                        now.outpath  = outpath[[o]]$global[[g]]$panel.xyz[idx.s,y]
+                        #------------------------------------------------------------------#
+
+
+
+                        #----- Open file or display. --------------------------------------#
+                        fichier = paste(now.outpath,"/y-",y.vname,"_x-",x.vname
+                                       ,"_z-",z.vname,"-",out.suffix,"-panelcomp."
+                                       ,outform[o],sep="")
+                        if (outform[o] == "x11"){
+                           X11(width=size$width,height=size$height,pointsize=ptsz)
+                        }else if(outform[o] == "png"){
+                           png(filename=fichier,width=size$width*depth
+                              ,height=size$height*depth,pointsize=ptsz,res=depth)
+                        }else if(outform[o] == "eps"){
+                           postscript(file=fichier,width=size$width,height=size$height
+                                     ,pointsize=ptsz,paper=size$paper)
+                        }else if(outform[o] == "pdf"){
+                           pdf(file=fichier,onefile=FALSE,width=size$width
+                              ,height=size$height,pointsize=ptsz,paper=size$paper)
+                        }#end if
+                        #------------------------------------------------------------------#
+
+
+
+                        #------------------------------------------------------------------#
+                        #      Plot the boxes.                                             #
+                        #------------------------------------------------------------------#
+                        leg.ncol    = min(3,pretty.box(n.now)$ncol)
+                        leg.letitre = expression(bold("Simulation"))
+                        par(par.user)
+                        xyz.plot( x              = x.list
+                                , y              = y.list
+                                , z              = z.list
+                                , fixed.xlim     = TRUE
+                                , fixed.ylim     = TRUE
+                                , xy.log         = xy.plog
+                                , pch            = pch.list
+                                , cex            = 1.2
+                                , nlevels        = n.colourbar
+                                , colour.palette = z.cscheme
+                                , xyz.sub        = p.title
+                                , xyz.title      = list( main      = letitre
+                                                       , xlab      = lex
+                                                       , ylab      = ley
+                                                       , line.xlab = 4.1
+                                                       , line.ylab = 2.6
+                                                       , cex.main  = 1.1 * cex.ptsz
+                                                       )#end list
+                                , xyz.more       = list(grid=list(col=grid.colour
+                                                                 ,lty="solid"))
+                                , key.log        = z.plog
+                                , key.title      = list(main=lacle,cex.main=0.8*cex.main)
+                                , xyz.legend     = list( x      = "bottom"
+                                                       , inset  = 0.0
+                                                       , legend = now$desc
+                                                       , pch    = now$pch
+                                                       , col    = grey.fg
+                                                       , border = foreground
+                                                       , bg     = background
+                                                       , ncol   = leg.ncol
+                                                       , title  = leg.letitre
+                                                       , cex    = 1.0
+                                                       , xpd    = TRUE
+                                                       )#end legend
+                                )#end xyz.plot
+                        #------------------------------------------------------------------#
+
+
+
+                        #----- Close the device. ------------------------------------------#
+                        if (outform[o] == "x11"){
+                           locator(n=1)
+                           dev.off()
+                        }else{
+                           dev.off()
+                        }#end if
+                        clean.tmp()
+                        #------------------------------------------------------------------#
+                     }#end for
+                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                  }#end if (! z.vname %in% c(x.vname,y.vname))
+                  #------------------------------------------------------------------------#
+               }#end for (z in loop.z)
+               #---------------------------------------------------------------------------#
+            }#end if (x.vname != y.vname)
+            #------------------------------------------------------------------------------#
+         }#end for (x in loop.x)
+         #---------------------------------------------------------------------------------#
+      }#end for (y in loop.y)
+      #------------------------------------------------------------------------------------#
+   }#end for (s in loop.scenario)
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
 
    rm(eft)
 }#end for (g in loop.global)

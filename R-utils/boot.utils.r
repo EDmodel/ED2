@@ -96,6 +96,33 @@ boot.growth <<- function(dat,idx){
    ans           = weighted.mean(x=x,w=w,na.rm=TRUE)
    return(ans)
 }#end boot.growth
+#----- Accumulated recruitment. -----------------------------------------------------------#
+boot.acc.recruit <<- function(dat,idx,dtime){
+   n.idx         = length(idx)
+   p.use         = rbinom(n=n.idx,size=1,prob=dat$p.use        [idx])
+   p.established = rbinom(n=n.idx,size=1,prob=dat$p.established[idx])
+
+   p.recruit     = p.use * ( 1. - p.established)
+
+   ans           = sum( dat$property   [idx] * p.recruit / dtime    ,na.rm=TRUE)
+   return(ans)
+}#end boot.recruit
+#----- Accumulated mortality. -------------------------------------------------------------#
+boot.acc.mortality <<- function(dat,idx,dtime){
+   n.idx         = length(idx)
+   p.use         = rbinom(n=n.idx,size=1,prob=dat$p.use        [idx])
+   p.survivor    = rbinom(n=n.idx,size=1,prob=dat$p.survivor   [idx])
+
+   p.dead        = p.use * (1. - p.survivor)
+   ans           = sum( dat$property   [idx] * p.dead / dtime      ,na.rm=TRUE)
+   return(ans)
+}#end boot.mortality
+#----- Above-ground net primary productivity. ---------------------------------------------#
+boot.acc.growth <<- function(dat,idx){
+   n.idx = length(idx)
+   ans   = sum(dat$pop[idx] * ( dat$nok[idx] - dat$lok[idx] )  / dat$dtime[idx] )
+   return(ans)
+}#end boot.growth
 #==========================================================================================#
 #==========================================================================================#
 

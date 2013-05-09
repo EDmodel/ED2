@@ -130,7 +130,7 @@
    n            = n + 1
    scen.ts[[n]] = list( vname    = "cba"
                       , desc     = "Carbon balance"
-                      , unit     = untab$kgcom2oyr
+                      , unit     = untab$kgcom2
                       , f.aggr   = "mean"
                       , add      = 0
                       , mult     = 1
@@ -368,9 +368,84 @@
                       , plt      = TRUE
                       )#end list
    n            = n + 1
+   scen.ts[[n]] = list( vname    = "bsa.mort"
+                      , desc     = "Mortality rate"
+                      , unit     = untab$pcbaoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "bsa.ncbmort"
+                      , desc     = "Mortality rate - Neg. C balance"
+                      , unit     = untab$pcbaoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "bsa.dimort"
+                      , desc     = "Mortality rate - Density-independent"
+                      , unit     = untab$pcbaoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = TRUE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "bsa.recr"
+                      , desc     = "Recruitment rate"
+                      , unit     = untab$pcbaoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = TRUE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "bsa.growth"
+                      , desc     = "Growth rate"
+                      , unit     = untab$pcbaoyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = TRUE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
    scen.ts[[n]] = list( vname    = "cbamax"
                       , desc     = "Maximum carbon balance"
-                      , unit     = untab$kgcom2oyr
+                      , unit     = untab$kgcom2
                       , f.aggr   = "mean"
                       , add      = 0
                       , mult     = 1
@@ -518,9 +593,369 @@
                       , plt      = TRUE
                       )#end list
    n            = n + 1
+   scen.ts[[n]] = list( vname    = "ra.rain"
+                      , desc     = "Rainfall running average"
+                      , unit     = untab$mmomo
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "nmon.lt.090"
+                      , desc     = "Drought length"
+                      , unit     = untab$nmo.090
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "nmon.lt.100"
+                      , desc     = "Drought length"
+                      , unit     = untab$nmo.100
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "nmon.lt.110"
+                      , desc     = "Drought length"
+                      , unit     = untab$nmo.110
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "nmon.lt.120"
+                      , desc     = "Drought length"
+                      , unit     = untab$nmo.120
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "anpp"
+                      , desc     = "Above-ground Net Primary Production"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.anpp"
+                      , desc     = "ANPP of the past 12 months"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.anpp"
+                      , desc     = "ANPP of the past 24 months"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.anpp"
+                      , desc     = "ANPP of the past 36 months"
+                      , unit     = untab$kgcom2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "bnpp"
+                      , desc     = "Basal-area Net Primary Production"
+                      , unit     = untab$cm2om2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.bnpp"
+                      , desc     = "BA-NPP of the past 12 months"
+                      , unit     = untab$cm2om2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.bnpp"
+                      , desc     = "BA-NPP of the past 12 months"
+                      , unit     = untab$cm2om2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.bnpp"
+                      , desc     = "BA-NPP of the past 36 months"
+                      , unit     = untab$cm2om2oyr
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "arue"
+                      , desc     = "Rainfall Use Efficiency"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.arue"
+                      , desc     = "RUE of the past 12 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.arue"
+                      , desc     = "RUE of the past 24 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.arue"
+                      , desc     = "RUE of the past 36 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "brue"
+                      , desc     = "Rainfall Use Efficiency"
+                      , unit     = untab$mm2okgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.brue"
+                      , desc     = "RUE of the past 12 months"
+                      , unit     = untab$mm2okgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.brue"
+                      , desc     = "RUE of the past 24 months"
+                      , unit     = untab$mm2okgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.brue"
+                      , desc     = "RUE of the past 36 months"
+                      , unit     = untab$mm2okgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
    scen.ts[[n]] = list( vname    = "water.deficit"
                       , desc     = "Water deficit (ED-2.2)"
-                      , unit     = untab$mmoyr
+                      , unit     = untab$mm
+                      , f.aggr   = "max"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.mwd"
+                      , desc     = "MWD of the past 12 months"
+                      , unit     = untab$mm
+                      , f.aggr   = "max"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.mwd"
+                      , desc     = "MWD of the past 24 months"
+                      , unit     = untab$mm
+                      , f.aggr   = "max"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.mwd"
+                      , desc     = "MWD of the past 36 months"
+                      , unit     = untab$mm
                       , f.aggr   = "max"
                       , add      = 0
                       , mult     = 1
@@ -818,6 +1253,111 @@
                       , plt      = TRUE
                       )#end list
    n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.transp"
+                      , desc     = "Transp. of the past 12 months"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.transp"
+                      , desc     = "Transp. of the past 24 months"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.transp"
+                      , desc     = "Transp. of the past 36 months"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "et"
+                      , desc     = "Evapotranspiration"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.et"
+                      , desc     = "ET of the past 12 months"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.et"
+                      , desc     = "ET of the past 24 months"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.et"
+                      , desc     = "ET of the past 36 months"
+                      , unit     = untab$kgwom2oday
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
    scen.ts[[n]] = list( vname    = "i.gpp"
                       , desc     = "Mean Gross Primary Production"
                       , unit     = untab$kgcoployr
@@ -865,7 +1405,7 @@
    n            = n + 1
    scen.ts[[n]] = list( vname    = "i.cba"
                       , desc     = "Mean Carbon balance"
-                      , unit     = untab$kgcoployr
+                      , unit     = untab$kgcopl
                       , f.aggr   = "mean"
                       , add      = 0
                       , mult     = 1
@@ -878,8 +1418,8 @@
                       , plt      = TRUE
                       )#end list
    n            = n + 1
-   scen.ts[[n]] = list( vname    = "i.cbamax"
-                      , desc     = "Mean Maximum C balance"
+   scen.ts[[n]] = list( vname    = "i.mco"
+                      , desc     = "Mean Maintenance Costs"
                       , unit     = untab$kgcoployr
                       , f.aggr   = "mean"
                       , add      = 0
@@ -999,13 +1539,118 @@
                       )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "wue"
-                      , desc     = "Water use efficiency"
+                      , desc     = "Actual Water use efficiency"
                       , unit     = untab$gcokgw
                       , f.aggr   = "mean"
                       , add      = 0
                       , mult     = 1
                       , pftvar   = TRUE
                       , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.wue"
+                      , desc     = "AWUE of the past 12 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.wue"
+                      , desc     = "AWUE of the past 24 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.wue"
+                      , desc     = "AWUE of the past 36 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "etue"
+                      , desc     = "Bulk water use efficiency"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.1yr.etue"
+                      , desc     = "BWUE of the past 12 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.2yr.etue"
+                      , desc     = "BWUE of the past 24 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "last.3yr.etue"
+                      , desc     = "BWUE of the past 36 months"
+                      , unit     = untab$gcokgw
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = FALSE
+                      , dbhvar   = FALSE
                       , mort     = FALSE
                       , recr     = FALSE
                       , plog     = FALSE
@@ -1090,7 +1735,7 @@
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.cba"
                       , desc     = "Carbon balance"
-                      , unit     = untab$pcbiooyr
+                      , unit     = untab$pcbio
                       , f.aggr   = "mean"
                       , add      = 0
                       , mult     = 1
@@ -1240,26 +1885,32 @@
 #             plots will be generated).                                                    #
 #------------------------------------------------------------------------------------------#
    #----- All that we need here is the variable name. -------------------------------------#
-   scen.szpft = data.frame( vname = c(          "agb",          "lai",           "ba"
-                                     ,         "recr",         "mort",      "ncbmort"
-                                     ,       "dimort",       "growth",     "agb.recr"
-                                     ,     "agb.mort",  "agb.ncbmort",   "agb.dimort"
-                                     ,   "agb.growth",          "gpp",          "npp"
-                                     ,   "plant.resp",          "cba",          "mco"
-                                     ,     "bstorage",       "bseeds",      "fs.open"
-                                     ,       "supply",       "demand",       "hflxlc"
-                                     ,       "wflxlc",       "transp",        "i.gpp"
-                                     , "i.plant.resp",        "i.npp",        "i.cba"
-                                     ,     "i.transp",       "cbamax",     "i.hflxlc"
-                                     ,     "i.wflxlc",          "wue",     "i.cbamax"
-                                     ,     "leaf.gsw",     "leaf.gbw",        "f.gpp"
-                                     ,        "f.npp",        "f.cba",   "f.bstorage"
-                                     ,      "f.bleaf",     "f.bseeds",         "rain"
-                                     ,"last.1yr.rain","last.2yr.rain","last.3yr.rain"
-                                     ,       "runoff",  "intercepted","water.deficit"
-                                     ,"malhi.deficit",      "atm.vpd",     "leaf.vpd"
-                                     ,    "leaf.temp",     "atm.temp",     "leaf.par"
-                                     ,       "nplant"
+   scen.szpft = data.frame( vname = c(            "agb",            "lai",             "ba"
+                                     ,           "recr",           "mort",        "ncbmort"
+                                     ,         "dimort",         "growth",       "agb.recr"
+                                     ,       "agb.mort",    "agb.ncbmort",     "agb.dimort"
+                                     ,     "agb.growth",       "bsa.recr",       "bsa.mort"
+                                     ,    "bsa.ncbmort",     "bsa.dimort",     "bsa.growth"
+                                     ,            "gpp",            "npp",     "plant.resp"
+                                     ,            "cba",            "mco",       "bstorage"
+                                     ,         "bseeds",        "fs.open",         "supply"
+                                     ,         "demand",         "hflxlc",         "wflxlc"
+                                     ,         "transp","last.1yr.transp",          "i.gpp"
+                                     ,   "i.plant.resp",          "i.npp",          "i.cba"
+                                     ,       "i.transp",         "cbamax",       "i.hflxlc"
+                                     ,       "i.wflxlc",            "wue",   "last.1yr.wue"
+                                     ,          "i.mco",       "leaf.gsw",       "leaf.gbw"
+                                     ,          "f.gpp",          "f.npp",          "f.cba"
+                                     ,     "f.bstorage",        "f.bleaf",       "f.bseeds"
+                                     ,           "rain",  "last.1yr.rain",    "nmon.lt.090"
+                                     ,    "nmon.lt.100",    "nmon.lt.110",    "nmon.lt.120"
+                                     ,        "ra.rain",         "runoff",    "intercepted"
+                                     ,   "last.1yr.mwd",  "malhi.deficit",        "atm.vpd"
+                                     ,       "leaf.vpd",      "leaf.temp",       "atm.temp"
+                                     ,       "leaf.par",         "nplant",           "anpp"
+                                     ,  "last.1yr.anpp",           "bnpp",  "last.1yr.bnpp"
+                                     ,           "arue",  "last.1yr.arue",           "brue"
+                                     ,  "last.1yr.brue"
                                      )#end c
                           , stringsAsFactors = FALSE
                           )#end vname
@@ -1380,39 +2031,43 @@
 #------------------------------------------------------------------------------------------#
    #----- All that we need here is the variable name, legend position or colour scheme. ---#
    scen.xyz = list()
-   scen.xyz$xvar      = list( list( vname = "rshort"       , leg        = "right"  )
-                            , list( vname = "leaf.temp"    , leg        = "right"  )
-                            , list( vname = "leaf.par"     , leg        = "right"  )
-                            , list( vname = "leaf.vpd"     , leg        = "right"  )
-                            , list( vname = "leaf.gsw"     , leg        = "right"  )
-                            , list( vname = "rain"         , leg        = "right"  )
-                            , list( vname = "intercepted"  , leg        = "right"  )
-                            , list( vname = "runoff"       , leg        = "right"  )
-                            , list( vname = "last.1yr.rain", leg        = "right"  )
-                            , list( vname = "last.2yr.rain", leg        = "right"  )
-                            , list( vname = "last.3yr.rain", leg        = "right"  )
-                            , list( vname = "smpot"        , leg        = "right"  )
-                            , list( vname = "water.deficit", leg        = "right"  )
-                            , list( vname = "bstorage"     , leg        = "right"  )
-                            , list( vname = "f.bstorage"   , leg        = "right"  )
-                            , list( vname = "bseeds"       , leg        = "right"  )
-                            , list( vname = "f.bseeds"     , leg        = "right"  )
-                            , list( vname = "leaf.gsw"     , leg        = "right"  )
-                            , list( vname = "cba"          , leg        = "top"    )
-                            , list( vname = "f.cba"        , leg        = "top"    )
+   scen.xyz$xvar      = list( list( vname = "rshort"         , leg        = "right"  )
+                            , list( vname = "leaf.temp"      , leg        = "right"  )
+                            , list( vname = "leaf.par"       , leg        = "right"  )
+                            , list( vname = "leaf.vpd"       , leg        = "right"  )
+                            , list( vname = "leaf.gsw"       , leg        = "right"  )
+                            , list( vname = "last.1yr.rain"  , leg        = "right"  )
+                            , list( vname = "last.1yr.transp", leg        = "right"  )
+                            , list( vname = "nmon.lt.090"    , leg        = "right"  )
+                            , list( vname = "nmon.lt.100"    , leg        = "right"  )
+                            , list( vname = "nmon.lt.110"    , leg        = "right"  )
+                            , list( vname = "last.1yr.anpp"  , leg        = "right"  )
+                            , list( vname = "last.1yr.mwd"   , leg        = "right"  )
+                            , list( vname = "bstorage"       , leg        = "right"  )
+                            , list( vname = "f.bstorage"     , leg        = "right"  )
+                            , list( vname = "bseeds"         , leg        = "right"  )
+                            , list( vname = "f.bseeds"       , leg        = "right"  )
+                            , list( vname = "cba"            , leg        = "right"  )
+                            , list( vname = "f.cba"          , leg        = "right"  )
                             )#end list
-   scen.xyz$yvar      = list( list( vname = "recr"         , leg        = "top"    )
-                            , list( vname = "mort"         , leg        = "top"    )
-                            , list( vname = "ncbmort"      , leg        = "top"    )
-                            , list( vname = "growth"       , leg        = "top"    )
-                            , list( vname = "agb.recr"     , leg        = "top"    )
-                            , list( vname = "agb.mort"     , leg        = "top"    )
-                            , list( vname = "agb.ncbmort"  , leg        = "top"    )
-                            , list( vname = "agb.growth"   , leg        = "top"    )
-                            , list( vname = "leaf.gsw"     , leg        = "top"    )
+   scen.xyz$yvar      = list( list( vname = "recr"           , leg        = "top"    )
+                            , list( vname = "ncbmort"        , leg        = "top"    )
+                            , list( vname = "growth"         , leg        = "top"    )
+                            , list( vname = "agb.recr"       , leg        = "top"    )
+                            , list( vname = "agb.ncbmort"    , leg        = "top"    )
+                            , list( vname = "agb.growth"     , leg        = "top"    )
+                            , list( vname = "last.1yr.rain"  , leg        = "top"    )
+                            , list( vname = "last.1yr.transp", leg        = "top"    )
+                            , list( vname = "last.1yr.anpp"  , leg        = "top"    )
+                            , list( vname = "last.1yr.wue"   , leg        = "top"    )
+                            , list( vname = "last.1yr.arue"  , leg        = "top"    )
                             )#end list
-   scen.xyz$zvar      = list( list( vname = "lai"          , col.scheme = "clife" )
-                            , list( vname = "ba"           , col.scheme = "clife" )
+   scen.xyz$zvar      = list( list( vname = "lai"            , col.scheme = "clife"   )
+                            , list( vname = "ba"             , col.scheme = "clife"   )
+                            , list( vname = "last.1yr.wue"   , col.scheme = "visible" )
+                            , list( vname = "last.1yr.arue"  , col.scheme = "visible" )
+                            , list( vname = "ncbmort"        , col.scheme = "iclife"  )
+                            , list( vname = "agb.ncbmort"    , col.scheme = "iclife"  )
                             )#end list
    #---------------------------------------------------------------------------------------#
 
@@ -1558,8 +2213,9 @@
                    , list( vname =         "i.npp", low = "purple"   , high = "green"    )
                    , list( vname =  "i.plant.resp", low = "green"    , high = "purple"   )
                    , list( vname =         "i.cba", low = "purple"   , high = "green"    )
-                   , list( vname =      "i.cbamax", low = "purple"   , high = "green"    )
-                   , list( vname =           "wue", low = "purple"   , high = "green"    )
+                   , list( vname =         "i.mco", low = "green"    , high = "purple"   )
+                   , list( vname =           "wue", low = "orangered", high = "blue"     )
+                   , list( vname =          "etue", low = "orangered", high = "blue"     )
                    , list( vname =      "leaf.gbw", low = "orangered", high = "blue"     )
                    , list( vname =      "leaf.gsw", low = "orangered", high = "blue"     )
                    , list( vname =      "leaf.par", low = "blue"     , high = "orangered")
@@ -1644,7 +2300,7 @@
                                     ,       "wflxgc",       "wflxca",     "i.hflxlc"
                                     ,     "i.wflxlc",     "i.transp",        "i.gpp"
                                     ,        "i.npp", "i.plant.resp",        "i.cba"
-                                    ,     "i.cbamax",          "wue",     "leaf.gbw"
+                                    ,        "i.mco",          "wue",     "leaf.gbw"
                                     ,     "leaf.gsw",     "leaf.par",  "leaf.rshort"
                                     ,        "f.gpp",        "f.npp",        "f.cba"
                                     ,   "f.bstorage",     "f.bseeds",      "f.bleaf"
@@ -1688,6 +2344,174 @@
 
 
 
+
+#==========================================================================================#
+#==========================================================================================#
+#     XYZ plots, to explore the parameter space.  Units, description, and log scale will   #
+# be copied from scen.ts.                                                                  #
+#                                                                                          #
+#   IMPORTANT: All variables here MUST come from one of the variables defined in scen.ts!! #
+#------------------------------------------------------------------------------------------#
+   #----- All that we need here is the variable name, legend position or colour scheme. ---#
+   panel.xyz = list()
+   panel.xyz$xvar      = list( list( vname = "rshort"         , leg        = "right"  )
+                             , list( vname = "leaf.temp"      , leg        = "right"  )
+                             , list( vname = "leaf.par"       , leg        = "right"  )
+                             , list( vname = "leaf.vpd"       , leg        = "right"  )
+                             , list( vname = "leaf.gsw"       , leg        = "right"  )
+                             , list( vname = "rain"           , leg        = "right"  )
+                             , list( vname = "last.1yr.rain"  , leg        = "right"  )
+                             , list( vname = "last.2yr.rain"  , leg        = "right"  )
+                             , list( vname = "last.3yr.rain"  , leg        = "right"  )
+                             , list( vname = "transp"         , leg        = "right"  )
+                             , list( vname = "last.1yr.transp", leg        = "right"  )
+                             , list( vname = "last.2yr.transp", leg        = "right"  )
+                             , list( vname = "last.3yr.transp", leg        = "right"  )
+                             , list( vname = "et"             , leg        = "right"  )
+                             , list( vname = "last.1yr.et"    , leg        = "right"  )
+                             , list( vname = "last.2yr.et"    , leg        = "right"  )
+                             , list( vname = "last.3yr.et"    , leg        = "right"  )
+                             , list( vname = "nmon.lt.090"    , leg        = "right"  )
+                             , list( vname = "nmon.lt.100"    , leg        = "right"  )
+                             , list( vname = "nmon.lt.110"    , leg        = "right"  )
+                             , list( vname = "nmon.lt.120"    , leg        = "right"  )
+                             , list( vname = "anpp"           , leg        = "right"  )
+                             , list( vname = "last.1yr.anpp"  , leg        = "right"  )
+                             , list( vname = "last.2yr.anpp"  , leg        = "right"  )
+                             , list( vname = "last.3yr.anpp"  , leg        = "right"  )
+                             , list( vname = "water.deficit"  , leg        = "right"  )
+                             , list( vname = "last.1yr.mwd"   , leg        = "right"  )
+                             , list( vname = "last.2yr.mwd"   , leg        = "right"  )
+                             , list( vname = "last.3yr.mwd"   , leg        = "right"  )
+                             , list( vname = "bstorage"       , leg        = "right"  )
+                             , list( vname = "f.bstorage"     , leg        = "right"  )
+                             , list( vname = "bseeds"         , leg        = "right"  )
+                             , list( vname = "f.bseeds"       , leg        = "right"  )
+                             , list( vname = "cba"            , leg        = "right"  )
+                             , list( vname = "f.cba"          , leg        = "right"  )
+                             , list( vname = "last.1yr.wue"   , leg        = "right"  )
+                             , list( vname = "last.2yr.wue"   , leg        = "right"  )
+                             , list( vname = "last.3yr.wue"   , leg        = "right"  )
+                             , list( vname = "last.1yr.etue"  , leg        = "right"  )
+                             , list( vname = "last.2yr.etue"  , leg        = "right"  )
+                             , list( vname = "last.3yr.etue"  , leg        = "right"  )
+                             , list( vname = "last.1yr.arue"  , leg        = "right"  )
+                             , list( vname = "last.2yr.arue"  , leg        = "right"  )
+                             , list( vname = "last.3yr.arue"  , leg        = "right"  )
+                             )#end list
+   panel.xyz$yvar      = list( list( vname = "recr"           , leg        = "top"    )
+                             , list( vname = "ncbmort"        , leg        = "top"    )
+                             , list( vname = "growth"         , leg        = "top"    )
+                             , list( vname = "agb.recr"       , leg        = "top"    )
+                             , list( vname = "agb.ncbmort"    , leg        = "top"    )
+                             , list( vname = "agb.growth"     , leg        = "top"    )
+                             , list( vname = "rain"           , leg        = "top"    )
+                             , list( vname = "last.1yr.rain"  , leg        = "top"    )
+                             , list( vname = "transp"         , leg        = "top"    )
+                             , list( vname = "last.1yr.transp", leg        = "top"    )
+                             , list( vname = "et"             , leg        = "top"    )
+                             , list( vname = "last.1yr.et"    , leg        = "top"    )
+                             , list( vname = "anpp"           , leg        = "top"    )
+                             , list( vname = "last.1yr.anpp"  , leg        = "top"    )
+                             , list( vname = "last.1yr.wue"   , leg        = "top"    )
+                             , list( vname = "last.2yr.wue"   , leg        = "top"    )
+                             , list( vname = "last.3yr.wue"   , leg        = "top"    )
+                             , list( vname = "last.1yr.etue"  , leg        = "top"    )
+                             , list( vname = "last.2yr.etue"  , leg        = "top"    )
+                             , list( vname = "last.3yr.etue"  , leg        = "top"    )
+                             , list( vname = "last.1yr.arue"  , leg        = "top"    )
+                             , list( vname = "last.2yr.arue"  , leg        = "top"    )
+                             , list( vname = "last.3yr.arue"  , leg        = "top"    )
+                             )#end list
+   panel.xyz$zvar      = list( list( vname = "lai"            , col.scheme = "clife"   )
+                             , list( vname = "agb"            , col.scheme = "clife"   )
+                             , list( vname = "ba"             , col.scheme = "clife"   )
+                             , list( vname = "ncbmort"        , col.scheme = "iclife"  )
+                             , list( vname = "agb.ncbmort"    , col.scheme = "iclife"  )
+                             , list( vname = "growth"         , col.scheme = "clife"   )
+                             , list( vname = "agb.growth"     , col.scheme = "clife"   )
+                             , list( vname = "recr"           , col.scheme = "iclife"  )
+                             , list( vname = "agb.recr"       , col.scheme = "iclife"  )
+                             , list( vname = "cba"            , col.scheme = "clife"   )
+                             , list( vname = "f.cba"          , col.scheme = "clife"   )
+                             , list( vname = "bstorage"       , col.scheme = "clife"   )
+                             , list( vname = "f.bstorage"     , col.scheme = "clife"   )
+                             )#end list
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Replace the list by a data frame.                                                 #
+   #---------------------------------------------------------------------------------------#
+   panel.xyz$xvar = data.frame( apply(X=sapply(X=panel.xyz$xvar,FUN=c),MARGIN=1,FUN=unlist)
+                             , stringsAsFactors = FALSE
+                             )#end data.frame
+   panel.xyz$yvar = data.frame( apply(X=sapply(X=panel.xyz$yvar,FUN=c),MARGIN=1,FUN=unlist)
+                             , stringsAsFactors = FALSE
+                             )#end data.frame
+   panel.xyz$zvar = data.frame( apply(X=sapply(X=panel.xyz$zvar,FUN=c),MARGIN=1,FUN=unlist)
+                             , stringsAsFactors = FALSE
+                             )#end data.frame
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Fill in the XYZ list with information brought from scen.ts.                       #
+   #---------------------------------------------------------------------------------------#
+   #----- Get all the names that shall be added. ------------------------------------------#
+   which.names = names(scen.ts) 
+   keep        = ( ! which.names %in% union( union( names(panel.xyz$xvar)
+                                                  , names(panel.xyz$yvar)
+                                                  )#end union
+                                           , names(panel.xyz$zvar)
+                                           )#end union
+                 )#end keep
+   which.names = which.names[keep]
+   #----- Match the lists based on vname. -------------------------------------------------#
+   x.idx = match(panel.xyz$xvar$vname,scen.ts$vname)
+   y.idx = match(panel.xyz$yvar$vname,scen.ts$vname)
+   z.idx = match(panel.xyz$zvar$vname,scen.ts$vname)
+   #----- Look for variables that weren't defined in scen.ts. -----------------------------#
+   x.sel = is.na(x.idx)
+   y.sel = is.na(y.idx)
+   z.sel = is.na(z.idx)
+   if (any(x.sel) | any(y.sel) | any(z.sel)){
+      if (any(x.sel)){
+         cat(" - The following variables in panel.xyz$xvar are missing from scen.ts:","\n")
+         cat(paste("   * ",panel.xyz$xvar$vname[x.sel],sep=""),sep="\n")
+      }#end if(any(x.sel))
+      if (any(y.sel)){
+         cat(" - The following variables in panel.xyz$yvar are missing from scen.ts:","\n")
+         cat(paste("   * ",panel.xyz$yvar$vname[y.sel],sep=""),sep="\n")
+      }#end if(any(y.sel))
+      if (any(z.sel)){
+         cat(" - The following variables in panel.xyz$zvar are missing from scen.ts:","\n")
+         cat(paste("   * ",panel.xyz$zvar$vname[z.sel],sep=""),sep="\n")
+      }#end if(any(z.sel))
+      stop(" - All variables defined in panel.xyz must be defined in scen.ts!!!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Append the information to the data frame. ---------------------------------------#
+   for (wn in which.names){
+      panel.xyz$xvar[[wn]] = scen.ts[[wn]][x.idx]
+      panel.xyz$yvar[[wn]] = scen.ts[[wn]][y.idx]
+      panel.xyz$zvar[[wn]] = scen.ts[[wn]][z.idx]
+   }#end for
+   #---------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
 #==========================================================================================#
 #==========================================================================================#
 #     Turn the variables that matter global.                                               #
@@ -1699,12 +2523,15 @@ scen.xyz      <<- scen.xyz
 scen.comp     <<- scen.comp
 panel.box     <<- panel.box
 nscen.ts      <<- nrow(scen.ts)
-nscen.szpft   <<- nrow(scen.szpft   )
-nscen.barplot <<- nrow(scen.barplot )
-nscen.xvar    <<- nrow(scen.xyz$xvar)
-nscen.yvar    <<- nrow(scen.xyz$yvar)
-nscen.zvar    <<- nrow(scen.xyz$zvar)
-nscen.comp    <<- nrow(scen.comp    )
-npanel.box    <<- nrow(panel.box    )
+nscen.szpft   <<- nrow(scen.szpft    )
+nscen.barplot <<- nrow(scen.barplot  )
+nscen.xvar    <<- nrow(scen.xyz$xvar )
+nscen.yvar    <<- nrow(scen.xyz$yvar )
+nscen.zvar    <<- nrow(scen.xyz$zvar )
+nscen.comp    <<- nrow(scen.comp     )
+npanel.box    <<- nrow(panel.box     )
+npanel.xvar   <<- nrow(panel.xyz$xvar)
+npanel.yvar   <<- nrow(panel.xyz$yvar)
+npanel.zvar   <<- nrow(panel.xyz$zvar)
 #==========================================================================================#
 #==========================================================================================#

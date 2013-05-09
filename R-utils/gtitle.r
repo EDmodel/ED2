@@ -66,10 +66,10 @@ gtitle <<- function( main      = NULL
    par(par.now)
    plot.new()
    plot.window(xlim=c(0,1),ylim=c(0,1))
-   if (! is.null(main)) title(main = main,line=line.main,outer=FALSE,...)
-   if (! is.null(sub )) title(sub  = sub ,line=line.sub ,outer=FALSE,...)
-   if (! is.null(xlab)) title(xlab = xlab,line=line.xlab,outer=FALSE,...)
-   if (! is.null(ylab)) title(ylab = ylab,line=line.ylab,outer=FALSE,...)
+   if (! is.null(main)) title(main = main,line=line.main       ,outer=FALSE,...)
+   if (! is.null(sub )) title(sub  = sub ,line=line.sub ,font=2,outer=FALSE,...)
+   if (! is.null(xlab)) title(xlab = xlab,line=line.xlab       ,outer=FALSE,...)
+   if (! is.null(ylab)) title(ylab = ylab,line=line.ylab       ,outer=FALSE,...)
    #---------------------------------------------------------------------------------------#
 
 
