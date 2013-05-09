@@ -18,8 +18,9 @@ module ed_state_vars
 !============================================================================!
 !============================================================================!
 
-
-
+! Debugging notes:
+! Line  took out :opti from SFCWATER_DEPTH   SPS 1/30/2013
+! Allows for the writing of -T- files with treefall disturbance > 0
 
 
 !============================================================================!
@@ -13967,7 +13968,12 @@ contains
       if (associated(csite%sfcwater_depth)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%sfcwater_depth,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist:opti') 
+           var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist')
+           
+           ! Removed :opti from SFCWATER_DEPTH SPS 01/30/2013
+           !call vtable_edio_r(npts,csite%sfcwater_depth,nvar,igr,init,csite%paglob_id, &
+           !var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist:opti')
+ 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','m') 
       end if
 
