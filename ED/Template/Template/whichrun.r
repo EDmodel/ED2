@@ -156,6 +156,7 @@ if (hasoutput){
       agb   = 0.
       bsa   = 0.
       lai   = 0.
+      npa   = 0.
    }else{
       areapa = mydata$AREA*rep(mydata$AREA.SI,times=mydata$SIPA.N)
       areapa = areapa / sum(areapa)
@@ -163,6 +164,7 @@ if (hasoutput){
       agb    = sum(mydata$NPLANT * mydata$AGB.CO * area)
       bsa    = sum(mydata$NPLANT * mydata$BA.CO  * area)
       lai    = sum(                mydata$LAI.CO * area)
+      npa    = mydata$NPATCHES.GLOBAL
    }#end if
    scb = mydata$FAST.SOIL.C.PY+mydata$STRUCT.SOIL.C.PY+mydata$SLOW.SOIL.C.PY
    #---------------------------------------------------------------------------------------#
@@ -282,6 +284,7 @@ if (hasoutput){
    bsa       = sprintf("%7.3f",NA    )
    lai       = sprintf("%7.3f",NA    )
    scb       = sprintf("%7.3f",NA    )
+   npa       = sprintf("%7.3f",NA    )
    extinct   = FALSE
    ststate   = FALSE
    #---------------------------------------------------------------------------------------#
@@ -296,36 +299,36 @@ if (hasoutput){
 #------------------------------------------------------------------------------------------#
 if (running && hasoutput){
    if (extinct){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"EXTINCT",agb,bsa,lai,scb,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"EXTINCT",agb,bsa,lai,scb,npa,sep=" ")
    }else if(ststate){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"STSTATE",agb,bsa,lai,scb,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"STSTATE",agb,bsa,lai,scb,npa,sep=" ")
    }else{
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,npa,sep=" ")
    }#end if
 }else if(running){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,npa,sep=" ")
 }else if (sigsegv){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"SIGSEGV",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"SIGSEGV",agb,bsa,lai,scb,npa,sep=" ")
 }else if(crashed){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"CRASHED",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"CRASHED",agb,bsa,lai,scb,npa,sep=" ")
 }else if(bad.met){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"BAD_MET",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"BAD_MET",agb,bsa,lai,scb,npa,sep=" ")
 }else if (metmiss){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"METMISS",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"METMISS",agb,bsa,lai,scb,npa,sep=" ")
 }else if(stopped){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"STOPPED",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"STOPPED",agb,bsa,lai,scb,npa,sep=" ")
 }else if(finished){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"THE_END",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"THE_END",agb,bsa,lai,scb,npa,sep=" ")
 }else if(hasoutput){
    if (extinct){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"EXTINCT",agb,bsa,lai,scb,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"EXTINCT",agb,bsa,lai,scb,npa,sep=" ")
    }else if(ststate){
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"STSTATE",agb,bsa,lai,scb,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"STSTATE",agb,bsa,lai,scb,npa,sep=" ")
    }else{
-      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,sep=" ")
+      status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,npa,sep=" ")
    }#end if
 }else{
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,npa,sep=" ")
 }#end if
 #------------------------------------------------------------------------------------------#
 

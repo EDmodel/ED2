@@ -12,6 +12,8 @@ moi=`whoami`
 desc=`basename ${here}`
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit='/n/home00/mlongo/protected/data/ed2_data/site_bio_data'
+#----- Path and file prefix for init_mode = 5. --------------------------------------------#
+restart='/x/xxxxxx/xxxxxx/xxxxxxxxx/xxxx/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
 lonlat=${here}'/joborder.txt'
 #----- Should the output be in a disk other than the one set in "here"? -------------------#
@@ -1027,6 +1029,17 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
+   elif [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 5 ]
+   then
+      if [ ${restart} == '/x/xxxxxx/xxxxxx/xxxxxxxxx/xxxx/ed2_data/restarts_XXX' ]
+      then
+         echo " Directory restart has not been set!"
+         echo " Change the variable restart at the beginning of the script"
+         exit 44
+      else
+         runt='INITIAL'
+         thissfilin=${restart}
+      fi
    elif [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}

@@ -786,11 +786,11 @@ $END
    ! and it is a coupled run, then you must set up VEG_DATABASE and/or SOIL_DATABASE,      !
    ! respectively.                                                                         !
    !---------------------------------------------------------------------------------------!
-   ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
-   ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/W',
-   IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_defsce/bau2002/BAU-2002_',
-   ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_brams406/RADAM+Quesada+IGBP/RADAM+Quesada+IGBP_',
-    NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/lai-modis/2001LAI',
+   ITOPTFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/topo/EL',
+   ISSTFN   = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/weeklysst/W',
+   IVEGTFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/veg_defsce/bau2002/BAU-2002_',
+   ISOILFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/soil_brams406/RADAM+Quesada+IGBP/RADAM+Quesada+IGBP_',
+    NDVIFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/lai-modis/2001LAI',
    !---------------------------------------------------------------------------------------!
 
 
@@ -1482,7 +1482,7 @@ $MODEL_OPTIONS
       !------------------------------------------------------------------------------------!
       SOIL_MOIST = 'i',
       SOIL_MOIST_FAIL = 's',
-      USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soilmoisture/mysmds/GL_SM.mysmds.',
+      USDATA_IN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/soilmoisture/mysmds/GL_SM.mysmds.',
       USMODEL_IN = 'myoutpath/surfa/mysimul-lesmo',
       !------------------------------------------------------------------------------------!
 
@@ -2022,7 +2022,7 @@ $ED2_INFO
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   SFILIN   = '/n/moorcroft_data/data/ed2_data/restarts_sci_006/potveg/PVE_',
+   SFILIN   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/potveg/PVE_',
    !---------------------------------------------------------------------------------------!
 
 
@@ -2047,12 +2047,12 @@ $ED2_INFO
    !                    option will be extended to all IED_INIT_MODE options except 0.     !
    !  THSUMS_DATABASE - input directory for chd and dgd (not sure for what this is used).  !
    !---------------------------------------------------------------------------------------!
-   VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
-   SOIL_DATABASE     = '/n/moorcroft_data/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
-   LU_DATABASE       = '/n/moorcroft_data/mlongo/scenarios/glu-3.3.1+sb1/one/glu-3.3.1+sb1-',
+   VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_',
+   SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
+   LU_DATABASE       = '/n/home00/mlongo/protected/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-',
    PLANTATION_FILE   = '',
-   LU_RESCALE_FILE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/rescale/SA1relative.lu.area-22km-2008.txt',
-   THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
+   LU_RESCALE_FILE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/rescale/SA1relative.lu.area-22km-2008.txt',
+   THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/',
    !---------------------------------------------------------------------------------------!
 
 
@@ -2062,8 +2062,8 @@ $ED2_INFO
    !                ISOILSTATEINIT is set to 1.                                            !
    ! SOILDEPTH_DB -  Soil depth database, used only when ISOILDEPTHFLG is set to 1.        !
    !---------------------------------------------------------------------------------------!
-   SOILSTATE_DB = './ined2/STW1996OCT.dat',
-   SOILDEPTH_DB = './ined2/soil_depths.dat',
+   SOILSTATE_DB = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat',
+   SOILDEPTH_DB = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat',
    !---------------------------------------------------------------------------------------!
 
 
@@ -2349,7 +2349,7 @@ $ED2_INFO
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   ICANRAD        =      1,
+   ICANRAD        =      2,
    LTRANS_VIS     =  0.050,
    LTRANS_NIR     =  0.230,
    LREFLECT_VIS   =  0.100,
@@ -2376,7 +2376,7 @@ $ED2_INFO
    !                      rates when it is close to the optimal, plumetting when it is     !
    !                      almost saturated.                                                !
    !---------------------------------------------------------------------------------------!
-   DECOMP_SCHEME   = 0,
+   DECOMP_SCHEME   = 2,
    !---------------------------------------------------------------------------------------!
 
 
@@ -3008,9 +3008,9 @@ $ISAN_CONTROL
    ! IARAWI  -- Radiosonde files                                                           !
    ! IARSFCE -- Surface observation files                                                  !
    !---------------------------------------------------------------------------------------!
-   IAPR    = '/n/moorcroft_data/data/brams_data/era-interim/eraint-g01-',
-   IARAWI  = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/radio/ir',
-   IASRFCE = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/weasta/es',
+   IAPR    = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/era-interim/eraint-g01-',
+   IARAWI  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/barcab/radio/ir',
+   IASRFCE = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/barcab/weasta/es',
    !---------------------------------------------------------------------------------------!
 
 

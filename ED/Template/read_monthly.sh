@@ -21,14 +21,14 @@ openlava='n'
 #----- Yearly comparison . ----------------------------------------------------------------#
 seasonmona=1
 #----- Census comparison. -----------------------------------------------------------------#
-varcycle='TRUE'  # Find the average mortality for various cycles (TRUE/FALSE).
+varcycle='FALSE' # Find the average mortality for various cycles (TRUE/FALSE).
 #----- Hourly comparison. -----------------------------------------------------------------#
 usedistrib='edf' # Which distribution to plot on top of histograms:
                  #   norm -- Normal distribution
                  #   sn   -- Skewed normal distribution      (requires package sn)
                  #   edf  -- Empirical distribution function (function density)
 #----- Output format. ---------------------------------------------------------------------#
-outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
+outform='c("pdf")'             # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
@@ -38,7 +38,7 @@ idbhtype=3                     # Type of DBH class
                                # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                                # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
 #----- Force to run again from scratch. ---------------------------------------------------#
-irerun=1                       # Options for re-running:
+irerun=0                       # Options for re-running:
                                # 0 -- never; updates only.
                                # 1 -- re-run only those that have not finished yet
                                # 2 -- re-run everything, including the finished ones.

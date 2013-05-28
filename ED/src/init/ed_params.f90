@@ -4946,7 +4946,8 @@ subroutine init_ff_coms
                                  , print_fuse_details & ! intent(out)
                                  , fuse_prefix        ! ! intent(out)
    use consts_coms        , only : onethird           & ! intent(out)
-                                 , twothirds          ! ! intent(in)
+                                 , twothirds          & ! intent(in)
+                                 , onesixth           ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    real              :: exp_patfus
@@ -4957,28 +4958,30 @@ subroutine init_ff_coms
    fusetol_h         = 0.5
    lai_fuse_tol      = 0.8
    lai_tol           = 1.0
-   ff_nhgt           = 7
+   ff_nhgt           = 8
    coh_tolerance_max = 10.0    ! Original 2.0
 
    !----- Define the number of height classes. --------------------------------------------!
    allocate (hgt_class(ff_nhgt))
-   hgt_class( 1) =  2.0
-   hgt_class( 2) =  5.0
-   hgt_class( 3) =  9.0
-   hgt_class( 4) = 14.0
-   hgt_class( 5) = 20.0
-   hgt_class( 6) = 26.0
-   hgt_class( 7) = 35.0
+   hgt_class( 1) =  0.0
+   hgt_class( 2) =  2.5
+   hgt_class( 3) =  7.5
+   hgt_class( 4) = 12.5
+   hgt_class( 5) = 17.5
+   hgt_class( 6) = 22.5
+   hgt_class( 7) = 27.5
+   hgt_class( 8) = 32.5
 
-   niter_patfus       = 25
-   exp_patfus         = 1. / real(niter_patfus)
+   niter_patfus       = 100
+   exp_patfus         = 1. / real(niter_patfus-1)
 
-   dark_cumlai_min    = 5.0
-   dark_cumlai_max    = 7.0
-   sunny_cumlai_min   = 0.5
-   sunny_cumlai_max   = 1.0
-   light_toler_min    = 0.20
-   light_toler_max    = twothirds
+   dark_cumlai_min    = 5.5
+   dark_cumlai_max    = 8.0
+   sunny_cumlai_min   = 0.1
+   sunny_cumlai_max   = 0.3
+   light_toler_min    = 0.01
+   light_toler_max    = onethird
+
    sunny_cumlai_mult  = (sunny_cumlai_max/sunny_cumlai_min)**exp_patfus
    dark_cumlai_mult   = (dark_cumlai_min /dark_cumlai_max )**exp_patfus
    light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus

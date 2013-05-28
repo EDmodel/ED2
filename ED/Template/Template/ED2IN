@@ -553,14 +553,14 @@ $ED_NL
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
-   NL%VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_'
-   NL%SOIL_DATABASE     = '/n/moorcroft_data/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
-   NL%LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-'
+   NL%VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_'
+   NL%SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
+   NL%LU_DATABASE       = '/n/home00/mlongo/protected/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
    NL%PLANTATION_FILE   = ''
-   NL%THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/'
-   NL%ED_MET_DRIVER_DB = 'mymetdriverdb'
-   NL%SOILSTATE_DB='/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/STW1996OCT.dat'
-   NL%SOILDEPTH_DB='/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/soil_depths.dat'
+   NL%THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/'
+   NL%ED_MET_DRIVER_DB  = 'mymetdriverdb'
+   NL%SOILSTATE_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat'
+   NL%SOILDEPTH_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat'
    !---------------------------------------------------------------------------------------!
 
 
@@ -1443,7 +1443,7 @@ $ED_NL
    NL%IPHENYSF = 2003
    NL%IPHENYF1 = 1992
    NL%IPHENYFF = 2003
-   NL%PHENPATH   = '/n/moorcroft_data/data/ed2_data/phenology/phenology'
+   NL%PHENPATH   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/phenology/phenology'
    !---------------------------------------------------------------------------------------!
 
 

@@ -112,7 +112,7 @@ potveg='/n/home00/mlongo/protected/data/ed2_data/restarts_sci_006/potveg'
 # restart     -- Path to where to copy restart files in case copyrestart = 'y'.            #
 #------------------------------------------------------------------------------------------#
 copyrestart='n'
-restart='/n/home00/mlongo/protected/mlongo/ed2_data/restarts_XXX'
+restart='/n/home00/mlongo/protected/data/ed2_data/restarts_XXX'
 #------------------------------------------------------------------------------------------#
 
 
@@ -193,15 +193,11 @@ mailprog="/n/home00/mlongo/util/mutt"
 plotstatus=1
 Rscript_plot="${situtils}/plot.status.r"
 R_figlist="${situtils}/stt_stext16.png
-           ${situtils}/stt_stext06.png
            ${situtils}/agb_stext16.png
-           ${situtils}/agb_stext06.png
            ${situtils}/bsa_stext16.png
-           ${situtils}/bsa_stext06.png
            ${situtils}/lai_stext16.png
-           ${situtils}/lai_stext06.png
            ${situtils}/scb_stext16.png
-           ${situtils}/scb_stext06.png"
+           ${situtils}/npa_stext16.png"
 emailbody="${situtils}/email.txt"
 headfile="${situtils}/head.txt"
 tailfile="${situtils}/tail.txt"
@@ -1048,6 +1044,7 @@ then
          bsa='NA'
          lai='NA'
          scb='NA'
+         npa='NA'
          echo "${ff} H:-\ ${polyname} doesn't have a home directory..."
       else
 
@@ -1088,6 +1085,7 @@ then
             bsa=`cat ${statrun}    | awk '{print  $8}'`
             lai=`cat ${statrun}    | awk '{print  $9}'`
             scb=`cat ${statrun}    | awk '{print $10}'`
+            npa=`cat ${statrun}    | awk '{print $11}'`
          else
             yearh=${yeara}
             monthh=${montha}
@@ -1098,6 +1096,7 @@ then
             bsa='NA'
             lai='NA'
             scb='NA'
+            npa='NA'
          fi
          #---------------------------------------------------------------------------------#
 
@@ -1125,6 +1124,7 @@ then
             bsa=`cat ${statrun}   | awk '{print  $8}'`
             lai=`cat ${statrun}   | awk '{print  $9}'`
             scb=`cat ${statrun}   | awk '{print $10}'`
+            npa=`cat ${statrun}   | awk '{print $11}'`
          # fi
          #---------------------------------------------------------------------------------#
 
@@ -1264,6 +1264,9 @@ then
                   if [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
                   then
                      thissfilin=${thisbiomin}
+                  elif [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 5 ]
+                  then
+                     thissfilin=${restart}
                   else
                      thissfilin=${there}/${polyname}/histo/${polyname}
                   fi
@@ -1477,6 +1480,7 @@ then
                   bsa='NA'
                   lai='NA'
                   scb='NA'
+                  npa='NA'
                   #------------------------------------------------------------------------#
 
                else
@@ -1649,6 +1653,9 @@ then
                if [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
                then
                   thissfilin=${thisbiomin}
+               elif [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 5 ]
+               then
+                  thissfilin=${restart}
                else
                   thissfilin=${there}/${polyname}/histo/${polyname}
                fi
@@ -1839,6 +1846,7 @@ then
                bsa='NA'
                lai='NA'
                scb='NA'
+               npa='NA'
             else
                echo "${polyname} is running/pending..." >> ${situation}
             fi # [ ${running} -eq 0 ]
@@ -1910,7 +1918,7 @@ then
 
       #----- Write polygon check into a single table. -------------------------------------#
       output="${polyname} ${polylon} ${polylat} ${year} ${month} ${day} ${hhmm}"
-      output="${output} ${runt} ${agb} ${bsa} ${lai} ${scb}"
+      output="${output} ${runt} ${agb} ${bsa} ${lai} ${scb} ${npa}"
       echo ${output} >> ${outcheck}
       #------------------------------------------------------------------------------------#
 

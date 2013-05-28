@@ -497,6 +497,8 @@ pft01 = list( name               = "C4 grass"
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
             , leaf.width         = lwidth.grass
+            , init.density       = 0.1
+            , veg.hcap.min       = 3.68093E+00
             )
 
 pft02 = list( name               = "Early tropical"
@@ -552,6 +554,8 @@ pft02 = list( name               = "Early tropical"
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
             , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 9.75446E+00
             )
 
 pft03 = list( name               = "Mid tropical"
@@ -607,6 +611,8 @@ pft03 = list( name               = "Mid tropical"
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
             , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 1.30673E+01
             )
 
 pft04 = list( name               = "Late tropical"
@@ -662,6 +668,8 @@ pft04 = list( name               = "Late tropical"
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
             , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 1.65642E+01
             )
 
 pft05 = list( name               = "Temperate C3 Grass"
@@ -717,6 +725,8 @@ pft05 = list( name               = "Temperate C3 Grass"
             , orient.factor      = -0.30
             , clumping.factor    =  1.00
             , leaf.width         = lwidth.grass
+            , init.density       = 0.1
+            , veg.hcap.min       = 9.16551E+00
             )
 
 pft06 = list( name               = "North Pine"
@@ -772,6 +782,8 @@ pft06 = list( name               = "North Pine"
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
             , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 2.34683E-01
             )
 
 pft07 = list( name               = "South Pine"
@@ -827,6 +839,8 @@ pft07 = list( name               = "South Pine"
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
             , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 2.34683E-01
             )
 
 pft08 = list( name               = "Late conifer"
@@ -882,6 +896,8 @@ pft08 = list( name               = "Late conifer"
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
             , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 6.80074E-01
             )
 
 pft09 = list( name               = "Early hardwood"
@@ -937,6 +953,8 @@ pft09 = list( name               = "Early hardwood"
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
             , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 8.95049E-02
             )
 
 pft10 = list( name               = "Mid hardwood"
@@ -992,6 +1010,8 @@ pft10 = list( name               = "Mid hardwood"
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
             , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 7.65271E-01
             )
 
 pft11 = list( name               = "Late hardwood"
@@ -1047,6 +1067,8 @@ pft11 = list( name               = "Late hardwood"
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
             , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 1.60601E-01
             )
 
 pft12 = pft05; pft12$name = "C3 crop"   ; pft12$key = "CC3"; pft12$colour="purple4"
@@ -1107,6 +1129,8 @@ pft16 = list( name               = "C3 grass"
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
             , leaf.width         = lwidth.grass
+            , init.density       = 0.1
+            , veg.hcap.min       = 3.68093E+00
             )
 
 pft17 = list( name               = "Araucaria"
@@ -1162,6 +1186,8 @@ pft17 = list( name               = "Araucaria"
             , orient.factor      = orient.aa
             , clumping.factor    = clumping.aa
             , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 9.93851E+00
             )
 pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour=all.colour
 #------------------------------------------------------------------------------------------#
@@ -1185,6 +1211,8 @@ for (p in 1:(npft+1)){
 
 
 #----- Minimum and Maximum DBH. -----------------------------------------------------------#
+pft$dbh.min  = rep(NA,times=npft+1)
+pft$dbh.crit = rep(NA,times=npft+1)
 for (ipft in 1:npft){
    if (pft$tropical[ipft]){
       if (iallom == 0 | iallom == 1){
@@ -1211,12 +1239,21 @@ for (ipft in 1:npft){
 #    Specific leaf area for those PFTs whose specific leaf area depends on the leaf turn-  #
 # over rate.                                                                               #
 #------------------------------------------------------------------------------------------#
+pft$SLA = rep(NA,times=npft+1)
 for (ipft in 1:npft){
    if (is.na(pft$SLA[ipft])){
       pft$SLA[ipft] = ( 10^( (2.4 - 0.46 * log10(12./pft$leaf.turnover.rate[ipft]))) 
                       * C2B * 0.1 )
    }#end if
 }#end for
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Minimum bleaf and leaf area index that is resolvable.                                 #
+#------------------------------------------------------------------------------------------#
+pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
+pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
 #------------------------------------------------------------------------------------------#
 
 #----- Constants shared by both bdead and bleaf -------------------------------------------#
@@ -1238,7 +1275,14 @@ b2l   =   0.605
 c2l   =   0.848
 d2l   =   0.438
 #------------------------------------------------------------------------------------------#
-
+pft$b1Bl       = rep(NA,times=npft+1)
+pft$b2Bl       = rep(NA,times=npft+1)
+pft$b1Bs.small = rep(NA,times=npft+1)
+pft$b2Bs.small = rep(NA,times=npft+1)
+pft$b1Bs.large = rep(NA,times=npft+1)
+pft$b2Bs.large = rep(NA,times=npft+1)
+pft$b1Ca       = rep(NA,times=npft+1)
+pft$b2Ca       = rep(NA,times=npft+1)
 for (ipft in 1:npft){
    if (pft$tropical[ipft]){
       #------------------------------------------------------------------------------------#
@@ -1309,6 +1353,7 @@ for (ipft in 1:npft){
 #------------------------------------------------------------------------------------------#
 #    Rooting depth coefficients.                                                                               #
 #------------------------------------------------------------------------------------------#
+pft$b1Rd = rep(NA,times=npft+1)
 if (iallom == 0){
    #----- Original ED-2.1 scheme, based on standing volume. -------------------------------#
    pft$b1Rd[ 1:17] = NA

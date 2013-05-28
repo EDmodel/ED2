@@ -97,6 +97,9 @@ idbh.type      = myidbhtype   # Type of DBH class
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
 ed22.ci        = TRUE         # Plot confidence interval for ED?
 n.boot         = 1000         # Number of realisations for bootstrap
+iint.photo     = myiintphoto  # Time-interval for some photosynthesis variables
+                              # 0 -- 24h/day
+                              # 1 -- daytime only
 #------------------------------------------------------------------------------------------#
 
 

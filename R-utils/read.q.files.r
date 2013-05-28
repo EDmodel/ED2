@@ -135,6 +135,16 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
 
 
+
+      #------------------------------------------------------------------------------------#
+      #     Set daytime flag.                                                              #
+      #------------------------------------------------------------------------------------#
+      phap        = mymont$QMEAN.ATM.RSHORT.PY > phap.min | iint.photo == 0
+      polar.night = ! any(phap,na.rm=TRUE)
+      #------------------------------------------------------------------------------------#
+
+
+
       #------------------------------------------------------------------------------------#
       #     Find the mean latent heat of vaporisation.  Because we assume it to be a       #
       # linear function of temperature, the mean can be found a posteriori.  The mean      #
@@ -191,6 +201,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$gnd.temp        [m] =   mymont$MMEAN.GND.TEMP.PY   - t00
       emean$gnd.shv         [m] =   mymont$MMEAN.GND.SHV.PY    * kg2g
       emean$leaf.temp       [m] =   mymont$MMEAN.LEAF.TEMP.PY  - t00
+      emean$leaf.water      [m] =   mymont$MMEAN.LEAF.WATER.PY
       emean$leaf.vpd        [m] =   mymont$MMEAN.LEAF.VPDEF.PY * 0.01
       emean$wood.temp       [m] =   mymont$MMEAN.WOOD.TEMP.PY  - t00
       emean$hflxca          [m] = - mymont$MMEAN.SENSIBLE.AC.PY
@@ -212,42 +223,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                   + mymont$MMEAN.VAPOR.LC.PY
                                   + mymont$MMEAN.VAPOR.WC.PY ) * day.sec
       emean$transp          [m] =   mymont$MMEAN.TRANSP.PY     * day.sec
-
-      #----- Save ET and the past ET [mm/day]. --------------------------------------------#
       emean$et              [m] = emean$evap[m] + emean$transp[m]
-      emean$last.1yr.et     [m] = mean(emean$et  [max(m-11,1):m])
-      emean$last.2yr.et     [m] = mean(emean$et  [max(m-23,1):m])
-      emean$last.3yr.et     [m] = mean(emean$et  [max(m-35,1):m])
-      #------------------------------------------------------------------------------------#
+      emean$rain            [m] = mymont$MMEAN.PCPG.PY * mondays * day.sec
 
-
-      #----- Save rainfall and the past rainfall. -----------------------------------------#
-      emean$rain            [m] =   mymont$MMEAN.PCPG.PY * mondays * day.sec
-      emean$last.1yr.rain   [m] = sum(emean$rain[max(m-11,1):m])
-      emean$last.2yr.rain   [m] = sum(emean$rain[max(m-23,1):m]) * 0.5
-      emean$last.3yr.rain   [m] = sum(emean$rain[max(m-35,1):m]) * onethird
-      #------------------------------------------------------------------------------------#
-
-      if ( m == 1){
-         emean$ra.rain    [m] = emean$rain[m]
-         emean$nmon.lt.090[m] = as.numeric(emean$ra.rain[m] <  90  )
-         emean$nmon.lt.100[m] = as.numeric(emean$ra.rain[m] < 100  )
-         emean$nmon.lt.110[m] = as.numeric(emean$ra.rain[m] < 110  )
-         emean$nmon.lt.120[m] = as.numeric(emean$ra.rain[m] < 120  )
-      }else{
-         emean$ra.rain    [m] = ( emean$rain[m] + 11. * emean$ra.rain[m-1] ) / 12
-         emean$nmon.lt.090[m] = ( as.numeric(emean$ra.rain[m] < 90  )
-                                * ( emean$nmon.lt.090[m-1] + 1 ) )
-         emean$nmon.lt.100[m] = ( as.numeric(emean$ra.rain[m] < 100 )
-                                * ( emean$nmon.lt.100[m-1] + 1 ) )
-         emean$nmon.lt.110[m] = ( as.numeric(emean$ra.rain[m] < 110 )
-                                * ( emean$nmon.lt.110[m-1] + 1 ) )
-         emean$nmon.lt.120[m] = ( as.numeric(emean$ra.rain[m] < 120 )
-                                * ( emean$nmon.lt.120[m-1] + 1 ) )
-      }#end if
-
-
-      emean$fs.open         [m] =   mymont$MMEAN.FS.OPEN.PY
+      emean$sm.stress       [m] =   1. - mymont$MMEAN.FS.OPEN.PY
       emean$rshort          [m] =   mymont$MMEAN.ATM.RSHORT.PY
       emean$rshort.beam     [m] = ( mymont$MMEAN.ATM.RSHORT.PY
                                   - mymont$MMEAN.ATM.RSHORT.DIFF.PY )
@@ -407,6 +386,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$atm.temp    [m,] =   mymont$QMEAN.ATM.TEMP.PY     - t00
       qmean$can.temp    [m,] =   mymont$QMEAN.CAN.TEMP.PY     - t00
       qmean$leaf.temp   [m,] =   mymont$QMEAN.LEAF.TEMP.PY    - t00
+      qmean$leaf.water  [m,] =   mymont$QMEAN.LEAF.WATER.PY
       qmean$wood.temp   [m,] =   mymont$QMEAN.WOOD.TEMP.PY    - t00
       qmean$gnd.temp    [m,] =   mymont$QMEAN.GND.TEMP.PY     - t00
       qmean$atm.shv     [m,] =   mymont$QMEAN.ATM.SHV.PY      * kg2g
@@ -421,7 +401,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$ustar       [m,] =   mymont$QMEAN.USTAR.PY
       qmean$atm.prss    [m,] =   mymont$QMEAN.ATM.PRSS.PY     * 0.01
       qmean$can.prss    [m,] =   mymont$QMEAN.CAN.PRSS.PY     * 0.01
-      qmean$fs.open     [m,] =   mymont$QMEAN.FS.OPEN.PY
+      qmean$sm.stress   [m,] =   1. - mymont$QMEAN.FS.OPEN.PY
       qmean$rain        [m,] =   mymont$QMEAN.PCPG.PY         * day.sec
       qmean$rshort      [m,] =   mymont$QMEAN.ATM.RSHORT.PY
       qmean$rshort.beam [m,] = ( mymont$QMEAN.ATM.RSHORT.PY 
@@ -515,13 +495,6 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          emean$malhi.deficit [m] = max( 0., emean$malhi.deficit [m-1] 
                                           + et.malhi - emean$rain [m] )
       }#end if
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Keep the maximum water deficit of the past period. ---------------------------#
-      emean$last.1yr.mwd [m] = max(emean$water.deficit[max(m-11,1):m])
-      emean$last.2yr.mwd [m] = max(emean$water.deficit[max(m-23,1):m])
-      emean$last.3yr.mwd [m] = max(emean$water.deficit[max(m-35,1):m])
       #------------------------------------------------------------------------------------#
 
 
@@ -649,16 +622,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Find the temperature and liquid fraction of leaf and wood. ----------------#
-         leaf.empty               = leaf.hcap.pa == 0
-         wood.empty               = wood.hcap.pa == 0
-         leaf.temp.pa             = uextcm2tl( uext    = leaf.energy.pa
-                                             , wmass   = leaf.water.pa
-                                             , dryhcap = leaf.hcap.pa   )$temp - t00
-         wood.temp.pa             = uextcm2tl( uext    = wood.energy.pa
-                                             , wmass   = wood.water.pa
-                                             , dryhcap = wood.hcap.pa   )$temp - t00
-         leaf.temp.pa[leaf.empty] = NA
-         wood.temp.pa[wood.empty] = NA
+         leaf.empty                = leaf.hcap.pa == 0
+         wood.empty                = wood.hcap.pa == 0
+         leaf.temp.pa              = uextcm2tl( uext    = leaf.energy.pa
+                                              , wmass   = leaf.water.pa
+                                              , dryhcap = leaf.hcap.pa   )$temp - t00
+         wood.temp.pa              = uextcm2tl( uext    = wood.energy.pa
+                                              , wmass   = wood.water.pa
+                                              , dryhcap = wood.hcap.pa   )$temp - t00
+         leaf.water.pa             = leaf.water.pa / lai.pa
+         leaf.temp.pa [leaf.empty] = NA
+         leaf.water.pa[leaf.empty] = NA
+         wood.temp.pa [wood.empty] = NA
          #---------------------------------------------------------------------------------#
 
 
@@ -729,9 +704,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
          patch$lai       [[plab]][idx              ] = lai.pa
          patch$wai       [[plab]][idx              ] = wai.pa
-         patch$leaf.temp [[plab]][idx[! leaf.empty]] = leaf.temp.pa[! leaf.empty]
-         patch$leaf.vpd  [[plab]][idx[! leaf.empty]] = leaf.vpd.pa [! leaf.empty]
-         patch$wood.temp [[plab]][idx[! wood.empty]] = wood.temp.pa[! wood.empty]
+         patch$leaf.temp [[plab]][idx[! leaf.empty]] = leaf.temp.pa [! leaf.empty]
+         patch$leaf.water[[plab]][idx[! leaf.empty]] = leaf.water.pa[! leaf.empty]
+         patch$leaf.vpd  [[plab]][idx[! leaf.empty]] = leaf.vpd.pa  [! leaf.empty]
+         patch$wood.temp [[plab]][idx[! wood.empty]] = wood.temp.pa [! wood.empty]
          patch$gpp       [[plab]][idx              ] = gpp.pa
          patch$npp       [[plab]][idx              ] = npp.pa
          patch$plant.resp[[plab]][idx              ] = npp.pa
@@ -761,10 +737,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       # we must check whether there is any cohort to be read.  If not, assign NA to        #
       # all variables.                                                                     #
       #------------------------------------------------------------------------------------#
+      one.cohort = sum(ncohorts) == 1
+      one.patch  = sum(npatches) == 1
       if (any (ncohorts > 0)){
-
-
-
 
          areaconow  = rep(areapa,times=ncohorts)
 
@@ -799,10 +774,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          pftconow          = mymont$PFT
          nplantconow       = mymont$NPLANT
          heightconow       = mymont$HITE
+         wood.densconow    = pft$rho[pftconow]
          baconow           = mymont$BA.CO
          agbconow          = mymont$AGB.CO
          laiconow          = mymont$MMEAN.LAI.CO
          waiconow          = mymont$WAI.CO
+         caiconow          = pmin(1.,nplantconow * dbh2ca(dbh=dbhconow,ipft=pftconow))
          taiconow          = laiconow + waiconow
          gppconow          = mymont$MMEAN.GPP.CO
          leaf.respconow    = mymont$MMEAN.LEAF.RESP.CO
@@ -812,13 +789,23 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                              + mymont$MMEAN.GROWTH.RESP.CO + mymont$MMEAN.STORAGE.RESP.CO
                              + mymont$MMEAN.VLEAF.RESP.CO  )
          nppconow          = gppconow-plant.respconow
-         
+
+
+         #----- Flags to tell whether leaves and branchwood were resolvable. --------------#
+         leaf.okconow      = ( is.finite(mymont$MMEAN.LEAF.HCAP.CO)
+                             & mymont$MMEAN.LEAF.HCAP.CO >= pft$veg.hcap.min[pftconow] )
+         wood.okconow      = ( is.finite(mymont$MMEAN.WOOD.HCAP.CO)
+                             & mymont$MMEAN.WOOD.HCAP.CO >= pft$veg.hcap.min[pftconow] )
+         #---------------------------------------------------------------------------------#
+
+
+
          if (kludgecbal){
             cbaconow          = mymont$MMEAN.CB - (mondays - 1) * mymont$MMEAN.BSTORAGE.CO
-            #---------------------------------------------------------------------------------#
-            #     Temporary fix to correct the carbon balance.                                #
-            #---------------------------------------------------------------------------------#
-            if (sum(ncohorts) == 1){
+            #------------------------------------------------------------------------------#
+            #     Temporary fix to correct the carbon balance.                             #
+            #------------------------------------------------------------------------------#
+            if (one.cohort){
                cbalightconow     = ( mymont$CB.LIGHTMAX[thismonth] 
                                    - (mondays - 1) * mymont$MMEAN.BSTORAGE.CO )
                cbamoistconow     = ( mymont$CB.MOISTMAX[thismonth]
@@ -829,20 +816,20 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                cbamoistconow     = ( mymont$CB.MOISTMAX[,thismonth]
                                    - (mondays - 1) * mymont$MMEAN.BSTORAGE.CO )
             }#end if
-            #---------------------------------------------------------------------------------#
+            #------------------------------------------------------------------------------#
          }else{
             cbaconow             = mymont$MMEAN.CB
-            #---------------------------------------------------------------------------------#
-            #     Temporary fix to correct the carbon balance.                                #
-            #---------------------------------------------------------------------------------#
-            if (sum(ncohorts) == 1){
+            #------------------------------------------------------------------------------#
+            #     Temporary fix to correct the carbon balance.                             #
+            #------------------------------------------------------------------------------#
+            if (one.cohort){
                cbalightconow     = mymont$CB.LIGHTMAX[thismonth]
                cbamoistconow     = mymont$CB.MOISTMAX[thismonth]
             }else{
                cbalightconow     = mymont$CB.LIGHTMAX[,thismonth]
                cbamoistconow     = mymont$CB.MOISTMAX[,thismonth]
             }#end if
-            #---------------------------------------------------------------------------------#
+            #------------------------------------------------------------------------------#
          }#end if
 
          cbamaxconow       = klight * cbalightconow + (1. - klight) * cbamoistconow
@@ -850,14 +837,19 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mcostconow        = ( mymont$MMEAN.LEAF.MAINTENANCE.CO
                              + mymont$MMEAN.ROOT.MAINTENANCE.CO ) * yr.day
          ldropconow        = mymont$MMEAN.LEAF.DROP.CO * yr.day
-         fs.openconow      = mymont$MMEAN.FS.OPEN.CO
+         sm.stressconow    = 1. - mymont$MMEAN.FS.OPEN.CO
          lightconow        = mymont$MMEAN.LIGHT.LEVEL.CO
          light.beamconow   = mymont$MMEAN.LIGHT.LEVEL.BEAM.CO
          light.diffconow   = mymont$MMEAN.LIGHT.LEVEL.DIFF.CO
 
          bdeadconow        = mymont$BDEAD
          bleafconow        = mymont$MMEAN.BLEAF.CO
-         brootconow        = mymont$MMEAN.BROOT.CO
+         if (all(mymont$MMEAN.BROOT.CO == 0)){
+            brootconow        = ( dbh2bl(dbh=dbhconow.lastmon,ipft=pftconow)
+                                * pft$qroot[pftconow] )
+         }else{
+            brootconow        = mymont$MMEAN.BROOT.CO
+         }#end if
          bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
          baliveconow       = bleafconow + brootconow + bsapwoodconow
          bstorageconow     = mymont$MMEAN.BSTORAGE.CO
@@ -868,16 +860,24 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
 
 
+         #---------------------------------------------------------------------------------#
+         #      Solve the change in storage .                                              #
+         #---------------------------------------------------------------------------------#
+         dcbadtconow       = nppconow - mcostconow - ldropconow
+         #---------------------------------------------------------------------------------#
 
-         #----- Allocation and productivity relative to the total biomass. ----------------#
-         f.gppconow        =  100. * gppconow        / biomassconow
-         f.plant.respconow =  100. * plant.respconow / biomassconow
-         f.nppconow        =  100. * nppconow        / biomassconow
-         f.cbaconow        =  100. * cbaconow        / biomassconow
-         f.bstorageconow   = 1000. * bstorageconow   / biomassconow
-         f.bleafconow      = 1000. * bleafconow      / biomassconow
-         f.brootconow      = 1000. * brootconow      / biomassconow
-         f.bseedsconow     = 1000. * bseedsconow     / biomassconow
+
+         #----- Allocation and productivity relative to the total living biomass. ---------#
+         f.gppconow        =  100. * gppconow        / pmax(baliveconow,0.01)
+         f.plant.respconow =  100. * plant.respconow / pmax(baliveconow,0.01)
+         f.nppconow        =  100. * nppconow        / pmax(baliveconow,0.01)
+         f.mcoconow        =  100. * mcostconow      / pmax(baliveconow,0.01)
+         f.dcbadtconow     =  100. * dcbadtconow     / pmax(baliveconow,0.01)
+         f.cbaconow        =         cbaconow        / pmax(baliveconow,0.01)
+         f.bstorageconow   =         bstorageconow   / pmax(baliveconow,0.01)
+         f.bleafconow      =         bleafconow      / pmax(baliveconow,0.01)
+         f.brootconow      =         brootconow      / pmax(baliveconow,0.01)
+         f.bseedsconow     =         bseedsconow     / pmax(baliveconow,0.01)
          #---------------------------------------------------------------------------------#
 
 
@@ -886,15 +886,34 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          hflxlcconow       = mymont$MMEAN.SENSIBLE.LC.CO           / nplantconow
          wflxlcconow       = mymont$MMEAN.VAPOR.LC.CO    * day.sec / nplantconow
          transpconow       = mymont$MMEAN.TRANSP.CO      * day.sec / nplantconow
+         i.hflxlcconow     = ifelse( leaf.okconow
+                                   , mymont$MMEAN.SENSIBLE.LC.CO           / laiconow
+                                   , NA
+                                   )#end ifelse
+         i.wflxlcconow     = ifelse( leaf.okconow
+                                   , mymont$MMEAN.VAPOR.LC.CO    * day.sec / laiconow
+                                   , NA
+                                   )#end ifelse
+         i.transpconow     = ifelse( leaf.okconow
+                                   , mymont$MMEAN.TRANSP.CO      * day.sec / laiconow
+                                   , NA
+                                   )#end ifelse
          #---------------------------------------------------------------------------------#
+
 
 
          #---------------------------------------------------------------------------------#
          #     Find the leaf interstitial space and boundary layer specific humidities to  #
          # convert conductance to kgW/m2/day.                                              #
          #---------------------------------------------------------------------------------#
-         lpsiconow      = ifelse(laiconow > 1.e-10,mymont$MMEAN.TRANSP.CO/laiconow,0.)
-         wpsiconow      = ifelse(waiconow > 1.e-10,mymont$MMEAN.WFLXWC.CO/waiconow,0.)
+         lpsiconow      = ifelse( leaf.okconow
+                                , mymont$MMEAN.TRANSP.CO/laiconow
+                                , NA
+                                )#end ifelse
+         wpsiconow      = ifelse( wood.okconow
+                                , mymont$MMEAN.WFLXWC.CO/waiconow
+                                , NA
+                                )#end ifelse
          can.shv.conow  = rep(mymont$MMEAN.CAN.SHV.PA,times=ncohorts)
          #---- Net conductance, combining stomatal and boundary layer. --------------------#
          leaf.gnw.conow = ifelse( mymont$MMEAN.LEAF.GBW.CO+mymont$MMEAN.LEAF.GSW.CO>1.e-10
@@ -919,17 +938,17 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Find the net radiation for leaves (in m2/leaf!). --------------------------#
-         leaf.parconow    = ifelse( laiconow > 1.e-10
+         leaf.parconow    = ifelse( leaf.okconow
                                   , mymont$MMEAN.PAR.L.CO / laiconow *  Watts.2.Ein
-                                  , 0.
+                                  , NA
                                   )#end ifelse
-         leaf.rshortconow = ifelse( laiconow > 1.e-10
+         leaf.rshortconow = ifelse( leaf.okconow
                                   , mymont$MMEAN.RSHORT.L.CO / laiconow
-                                  , 0.
+                                  , NA
                                   )#end ifelse
-         leaf.rlongconow  = ifelse( laiconow > 1.e-10
+         leaf.rlongconow  = ifelse( leaf.okconow
                                   , mymont$MMEAN.RLONG.L.CO  / laiconow
-                                  , 0.
+                                  , NA
                                   )#end ifelse
          #---------------------------------------------------------------------------------#
 
@@ -938,10 +957,25 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
          #     Leaf/wood thermal properties.                                               #
          #---------------------------------------------------------------------------------#
-         leaf.tempconow    = mymont$MMEAN.LEAF.TEMP.CO  - t00
-         wood.tempconow    = mymont$MMEAN.WOOD.TEMP.CO  - t00
-         leaf.vpdconow     = mymont$MMEAN.LEAF.VPDEF.CO * 0.01
+         leaf.waterconow   = ifelse( leaf.okconow
+                                   , mymont$MMEAN.LEAF.WATER.CO / laiconow
+                                   , NA
+                                   )#end ifelse
+         leaf.tempconow    = ifelse( leaf.okconow
+                                   , mymont$MMEAN.LEAF.TEMP.CO  - t00
+                                   , NA
+                                   )#end ifelse
+         wood.tempconow    = ifelse( wood.okconow
+                                   , mymont$MMEAN.WOOD.TEMP.CO  - t00
+                                   , NA
+                                   )#end ifelse
+         leaf.vpdconow     = ifelse( leaf.okconow
+                                   , mymont$MMEAN.LEAF.VPDEF.CO  * 0.01
+                                   , NA
+                                   )#end ifelse
          #---------------------------------------------------------------------------------#
+
+
 
 
          #------ Find the demand and supply by m2gnd. -------------------------------------#
@@ -955,27 +989,137 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          ncbmortconow    = pmax(0,mymont$MMEAN.MORT.RATE.CO[,2])
          dimortconow     = pmax(0,mortconow - ncbmortconow)
          recruitconow    = mymont$RECRUIT.DBH
-         growthconow     = 100. * pmax(0,mymont$DLNDBH.DT)
-         agb.growthconow = 100. * pmax(0,mymont$DLNAGB.DT)
-         bsa.growthconow = 100. * pmax(0,mymont$DLNBA.DT )
+         growthconow     = pmax(0,mymont$DLNDBH.DT)
+         agb.growthconow = pmax(0,mymont$DLNAGB.DT)
+         bsa.growthconow = pmax(0,mymont$DLNBA.DT )
          #---------------------------------------------------------------------------------#
 
 
-         #------ Find ANPP, BNPP and rainfall use efficiencies. ---------------------------#
-         oldconow        = dbhconow.lastmon >= recruit.dbh.min
-         agb.deltaconow  = ( mortconow - 0.01 * agb.growthconow ) / 12.
-         bsa.deltaconow  = ( mortconow - 0.01 * bsa.growthconow ) / 12.
-         
-         anppconow       = 12. * agbconow * ( 1. - oldconow * exp(agb.deltaconow) )
-         bnppconow       = 12. * baconow  * ( 1. - oldconow * exp(bsa.deltaconow) )
-         arueconow       = 1000. * anppconow / max(12. * emean$rain[m],0.01)
-         brueconow       = 100.  * bnppconow / max(12. * emean$rain[m],0.01)
+         #------ Find the AGB and basal area of the previous month. -----------------------#
+         agbcolmon        = agbconow * exp(-agb.growthconow/12.)
+         bacolmon         = baconow  * exp(-bsa.growthconow/12.)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Use efficiencies.  Do not calculate if transpiration is insignificant.      #
+         #---------------------------------------------------------------------------------#
+         tfineconow        = transpconow*yr.day >= 1.0
+         rfineconow        = 12*emean$rain[m]   >= 1.0
+         etconow           = transpconow + wflxlcconow
+         #------ Find Rainfall use Efficiencies. ------------------------------------------#
+         rueconow  = 1000. * nppconow    / ifelse( rfineconow, 12. * emean$rain[m]  , NA )
+         wueconow  = 1000. * nppconow    / ifelse( tfineconow, transpconow * yr.day , NA )
+         etueconow = 1000. * nppconow    / ifelse( tfineconow, etconow     * yr.day , NA )
+         cueconow  =         nppconow    / ifelse( tfineconow, gppconow             , NA )
+         ecueconow =         dcbadtconow / ifelse( tfineconow, gppconow             , NA )
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #   Canopy height and open canopy fraction.                                       #
+         #---------------------------------------------------------------------------------#
+         opencanconow            = unlist( tapply( X     = 1 - caiconow
+                                                 , INDEX = ipaconow
+                                                 , FUN   = cumprod
+                                                 )#end tapply
+                                         )#end unlist
+         names(opencanconow)     = NULL
+         zeroconow               = is.finite(opencanconow) & opencanconow <= 2^-23
+         opencanconow[zeroconow] = 0.
          #---------------------------------------------------------------------------------#
 
 
 
-         #----- Find the water use efficiency. --------------------------------------------#
-         wueconow = ifelse(transpconow > 1.e-10, 1000. * anppconow/transpconow/yr.day, 0.)
+         #----- Find some averages for photoperiod. ---------------------------------------#
+         if (polar.night){
+            phap.lparconow     = NA + pftconow
+            phap.ltempconow    = NA + pftconow
+            phap.lwaterconow   = NA + pftconow
+            phap.lvpdconow     = NA + pftconow
+            phap.fs.openconow  = NA + pftconow
+            phap.lpsiconow     = NA + pftconow
+            phap.leaf.gbaconow = NA + pftconow
+            phap.leaf.gsaconow = NA + pftconow
+            phap.can.shv.conow = NA + pftconow
+         }else if (one.cohort){
+            phap.lparconow     = mean(mymont$QMEAN.PAR.L.CO     [phap])
+            phap.ltempconow    = mean(mymont$QMEAN.LEAF.TEMP.CO [phap])
+            phap.lwaterconow   = mean(mymont$QMEAN.LEAF.WATER.CO[phap])
+            phap.lvpdconow     = mean(mymont$QMEAN.LEAF.VPDEF.CO[phap])
+            phap.fs.openconow  = mean(mymont$QMEAN.FS.OPEN.CO   [phap])
+            phap.lpsiconow     = mean(mymont$QMEAN.TRANSP.CO    [phap])
+            phap.leaf.gbaconow = mean(mymont$QMEAN.LEAF.GBW.CO  [phap])
+            phap.leaf.gsaconow = mean(mymont$QMEAN.LEAF.GSW.CO  [phap])
+            phap.can.shv.conow = rep(mean(mymont$QMEAN.CAN.SHV.PA[phap]),times=ncohorts)
+         }else{
+            phap.lparconow     = rowMeans(mymont$QMEAN.PAR.L.CO     [,phap])
+            phap.ltempconow    = rowMeans(mymont$QMEAN.LEAF.TEMP.CO [,phap])
+            phap.lwaterconow   = rowMeans(mymont$QMEAN.LEAF.WATER.CO[,phap])
+            phap.lvpdconow     = rowMeans(mymont$QMEAN.LEAF.VPDEF.CO[,phap])
+            phap.fs.openconow  = rowMeans(mymont$QMEAN.FS.OPEN.CO   [,phap])
+            phap.lpsiconow     = rowMeans(mymont$QMEAN.TRANSP.CO    [,phap])
+            phap.leaf.gbaconow = rowMeans(mymont$QMEAN.LEAF.GBW.CO  [,phap])
+            phap.leaf.gsaconow = rowMeans(mymont$QMEAN.LEAF.GSW.CO  [,phap])
+            if (one.patch){
+               phap.can.shv.conow = rep( x     = mean(mymont$QMEAN.CAN.SHV.PA[phap])
+                                       , times = ncohorts
+                                       )#end rep
+            }else{
+               phap.can.shv.conow = rep( x     = rowMeans(mymont$QMEAN.CAN.SHV.PA[,phap])
+                                       , times = ncohorts
+                                       )#end rep
+            }#end if
+            #------------------------------------------------------------------------------#
+         }#end if
+         phap.lparconow      = ifelse( leaf.okconow
+                                     , phap.lparconow  / laiconow * Watts.2.Ein * 1.e6
+                                     , NA
+                                     )#end ifelse
+         phap.ltempconow     = ifelse( leaf.okconow, phap.ltempconow - t00      , NA )
+         phap.lwaterconow    = ifelse( leaf.okconow, phap.lwaterconow / laiconow, NA )
+         phap.lvpdconow      = ifelse( leaf.okconow, phap.lvpdconow * 0.01      , NA )
+         phap.smsconow       = ifelse( leaf.okconow, 1 - phap.fs.openconow      , NA )
+         phap.lpsiconow      = ifelse( leaf.okconow, phap.lpsiconow / laiconow  , NA )
+         phap.leaf.gbaconow  = ifelse( leaf.okconow, phap.leaf.gbaconow         , NA )
+         phap.leaf.gsaconow  = ifelse( leaf.okconow, phap.leaf.gsaconow         , NA )
+         phap.can.shv.conow  = ifelse( leaf.okconow, phap.can.shv.conow         , NA )
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the leaf interstitial space and boundary layer specific humidities to  #
+         # convert conductance to kgW/m2/day.                                              #
+         #---------------------------------------------------------------------------------#
+         #---- Net conductance, combining stomatal and boundary layer. --------------------#
+         fine.cond          = is.finite(phap.leaf.gbaconow) & is.finite(phap.leaf.gsaconow)
+         enough.cond        = ( fine.cond
+                              & ( phap.leaf.gbaconow + phap.leaf.gsaconow ) > 1.e-10 )
+         phap.leaf.gnaconow = ifelse( fine.cond
+                                    , ifelse( enough.cond
+                                            , ( phap.leaf.gbaconow * phap.leaf.gsaconow )
+                                            / ( phap.leaf.gbaconow + phap.leaf.gsaconow )
+                                            , pmin(phap.leaf.gbaconow,phap.leaf.gsaconow)
+                                            )#end ifelse
+                                    , NA
+                                    )#end ifelse
+         phap.lbl.shv.conow = ( phap.can.shv.conow
+                              + phap.lpsiconow / pmax(phap.leaf.gbaconow,1.e-10) )
+         phap.lis.shv.conow = ( phap.can.shv.conow
+                              + phap.lpsiconow / pmax(phap.leaf.gnaconow,1.e-10) )
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Find the conductances in kgW/m2/day. --------------------------------------#
+         phap.lgbwconow  = ( phap.leaf.gbaconow * day.sec * ep
+                           * (1 + epim1 * phap.can.shv.conow) 
+                           * (1 + epim1 * phap.lbl.shv.conow)
+                           )#end phap.lgbwconow
+         phap.lgswconow  = ( phap.leaf.gsaconow * day.sec * ep
+                           * (1 + epim1 * phap.lbl.shv.conow) 
+                           * (1 + epim1 * phap.lis.shv.conow)
+                           )#end phap.lgswconow
          #---------------------------------------------------------------------------------#
 
 
@@ -983,87 +1127,104 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
       }else{
          #----- Make everything NA. -------------------------------------------------------#
-         ipaconow          = NA
-         icoconow          = NA
-         areaconow         = NA
-         luconow           = NA
-         dbhconow          = NA
-         dbhcut            = NA
-         dbhlevs           = NA
-         dbhfac            = NA
-         dbhconow.1ago     = NA
-         dbhcut.1ago       = NA
-         dbhlevs.1ago      = NA
-         dbhfac.1ago       = NA
-         ageconow          = NA
-         pftconow          = NA
-         nplantconow       = NA
-         heightconow       = NA
-         baconow           = NA
-         agbconow          = NA
-         bgbconow          = NA
-         biomassconow      = NA
-         laiconow          = NA
-         waiconow          = NA
-         taiconow          = NA
-         gppconow          = NA
-         leaf.respconow    = NA
-         root.respconow    = NA
-         growth.respconow  = NA
-         plant.respconow   = NA
-         nppconow          = NA
-         cbaconow          = NA
-         cbamaxconow       = NA
-         cbalightconow     = NA
-         cbamoistconow     = NA
-         cbarelconow       = NA
-         mcostconow        = NA
-         ldropconow        = NA
-         fs.openconow      = NA
-         lightconow        = NA
-         light.beamconow   = NA
-         light.diffconow   = NA
-         baliveconow       = NA
-         bdeadconow        = NA
-         bleafconow        = NA
-         brootconow        = NA
-         bsapwoodconow     = NA
-         bstorageconow     = NA
-         bseedsconow       = NA
-         hflxlcconow       = NA
-         wflxlcconow       = NA
-         transpconow       = NA
-         wueconow          = NA
-         leaf.tempconow    = NA
-         wood.tempconow    = NA
-         leaf.vpdconow     = NA
-         demandconow       = NA
-         supplyconow       = NA
-         mortconow         = NA
-         ncbmortconow      = NA
-         dimortconow       = NA
-         recruitconow      = NA
-         growthconow       = NA
-         agb.growthconow   = NA
-         bsa.growthconow   = NA
-         leaf.gbwconow     = NA
-         leaf.gswconow     = NA
-         wood.gbwconow     = NA
-         f.gppconow        = NA
-         f.plant.respconow = NA
-         f.nppconow        = NA
-         f.cbaconow        = NA
-         f.bstorageconow   = NA
-         f.bleafconow      = NA
-         f.brootconow      = NA
-         f.bseedsconow     = NA
-         leaf.parconow     = NA
-         leaf.rshortconow  = NA
-         leaf.rlongconow   = NA
-         anppconow         = NA
-         bnppconow         = NA
-         arueconow         = NA
-         brueconow         = NA
+         ipaconow            = NA
+         icoconow            = NA
+         areaconow           = NA
+         luconow             = NA
+         dbhconow            = NA
+         dbhcut              = NA
+         dbhlevs             = NA
+         dbhfac              = NA
+         dbhconow.1ago       = NA
+         dbhcut.1ago         = NA
+         dbhlevs.1ago        = NA
+         dbhfac.1ago         = NA
+         ageconow            = NA
+         pftconow            = NA
+         nplantconow         = NA
+         heightconow         = NA
+         wood.densconow      = NA
+         baconow             = NA
+         agbconow            = NA
+         bgbconow            = NA
+         biomassconow        = NA
+         laiconow            = NA
+         waiconow            = NA
+         taiconow            = NA
+         gppconow            = NA
+         leaf.respconow      = NA
+         root.respconow      = NA
+         growth.respconow    = NA
+         plant.respconow     = NA
+         nppconow            = NA
+         cbaconow            = NA
+         cbamaxconow         = NA
+         cbalightconow       = NA
+         cbamoistconow       = NA
+         cbarelconow         = NA
+         mcostconow          = NA
+         ldropconow          = NA
+         dcbadtconow         = NA
+         sm.stressconow      = NA
+         lightconow          = NA
+         light.beamconow     = NA
+         light.diffconow     = NA
+         baliveconow         = NA
+         bdeadconow          = NA
+         bleafconow          = NA
+         brootconow          = NA
+         bsapwoodconow       = NA
+         bstorageconow       = NA
+         bseedsconow         = NA
+         hflxlcconow         = NA
+         wflxlcconow         = NA
+         transpconow         = NA
+         i.hflxlcconow       = NA
+         i.wflxlcconow       = NA
+         i.transpconow       = NA
+         wueconow            = NA
+         cueconow            = NA
+         ecueconow           = NA
+         etueconow           = NA
+         leaf.tempconow      = NA
+         leaf.waterconow     = NA
+         wood.tempconow      = NA
+         leaf.vpdconow       = NA
+         demandconow         = NA
+         supplyconow         = NA
+         mortconow           = NA
+         ncbmortconow        = NA
+         dimortconow         = NA
+         recruitconow        = NA
+         growthconow         = NA
+         agb.growthconow     = NA
+         bsa.growthconow     = NA
+         leaf.gbwconow       = NA
+         leaf.gswconow       = NA
+         wood.gbwconow       = NA
+         f.gppconow          = NA
+         f.plant.respconow   = NA
+         f.nppconow          = NA
+         f.mcoconow          = NA
+         f.dcbadtconow       = NA
+         f.cbaconow          = NA
+         f.bstorageconow     = NA
+         f.bleafconow        = NA
+         f.brootconow        = NA
+         f.bseedsconow       = NA
+         leaf.parconow       = NA
+         leaf.rshortconow    = NA
+         leaf.rlongconow     = NA
+         rueconow            = NA
+         opencanconow        = NA
+         useconow            = NA
+         phap.lparconow      = NA
+         phap.ltempconow     = NA
+         phap.lwaterconow    = NA
+         phap.lvpdconow      = NA
+         phap.sm.stressconow = NA
+         phap.leaf.gbwconow  = NA
+         phap.leaf.gswconow  = NA
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1077,7 +1238,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       w.lai     = laiconow     * areaconow
       w.wai     = waiconow     * areaconow
       w.tai     = taiconow     * areaconow
-      w.biomass = biomassconow * nplantconow
+      w.biomass = biomassconow * w.nplant
+      w.balive  = baliveconow  * w.nplant
+      w.basarea = baconow      * w.nplant
       #------------------------------------------------------------------------------------#
 
 
@@ -1140,172 +1303,335 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             if (any(sel)){
                #----- Extensive properties. -----------------------------------------------#
                szpft$lai        [m,d,p] = sum( laiconow         [sel] 
-                                             * areaconow        [sel] )
+                                             * areaconow        [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$wai        [m,d,p] = sum( waiconow         [sel]  
-                                             * areaconow        [sel] )
+                                             * areaconow        [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$tai        [m,d,p] = sum( taiconow         [sel]  
-                                             * areaconow        [sel] )
+                                             * areaconow        [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$nplant     [m,d,p] = sum( nplantconow      [sel]  
-                                             * areaconow        [sel] )
+                                             * areaconow        [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$demand     [m,d,p] = sum( demandconow      [sel]  
-                                             * areaconow        [sel] )
+                                             * areaconow        [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$supply     [m,d,p] = sum( supplyconow      [sel]  
-                                             * areaconow        [sel] )
+                                             * areaconow        [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                #----- Intensive properties, use nplant to make them extensive. ------------#
                szpft$agb        [m,d,p] = sum( w.nplant         [sel]  
-                                             * agbconow         [sel] )
+                                             * agbconow         [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$bgb        [m,d,p] = sum( w.nplant         [sel]  
-                                             * bgbconow         [sel] )
+                                             * bgbconow         [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$biomass    [m,d,p] = sum( w.nplant         [sel]  
-                                             * biomassconow     [sel] )
+                                             * biomassconow     [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$ba         [m,d,p] = sum( w.nplant         [sel]  
-                                             * baconow          [sel] )
+                                             * baconow          [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$gpp        [m,d,p] = sum( w.nplant         [sel]  
-                                             * gppconow         [sel] )
+                                             * gppconow         [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$npp        [m,d,p] = sum( w.nplant         [sel]  
-                                             * nppconow         [sel] )
+                                             * nppconow         [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$mco        [m,d,p] = sum( w.nplant         [sel]  
-                                             * mcostconow       [sel] )
+                                             * mcostconow       [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
+               szpft$dcbadt     [m,d,p] = sum( w.nplant         [sel]  
+                                             * dcbadtconow      [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$cba        [m,d,p] = sum( w.nplant         [sel]  
-                                             * cbaconow         [sel] )
+                                             * cbaconow         [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$cbamax     [m,d,p] = sum( w.nplant         [sel]  
-                                             * cbamaxconow      [sel] )
+                                             * cbamaxconow      [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$cbalight   [m,d,p] = sum( w.nplant         [sel]  
-                                             * cbalightconow    [sel] )
+                                             * cbalightconow    [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$cbamoist   [m,d,p] = sum( w.nplant         [sel]  
-                                             * cbamoistconow    [sel] )
+                                             * cbamoistconow    [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$ldrop      [m,d,p] = sum( w.nplant         [sel]  
-                                             * ldropconow       [sel] )
+                                             * ldropconow       [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$leaf.resp  [m,d,p] = sum( w.nplant         [sel] 
-                                             * leaf.respconow   [sel] )
+                                             * leaf.respconow   [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$root.resp  [m,d,p] = sum( w.nplant         [sel] 
-                                             * root.respconow   [sel] )
+                                             * root.respconow   [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$growth.resp[m,d,p] = sum( w.nplant         [sel] 
-                                             * growth.respconow [sel] )
+                                             * growth.respconow [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$plant.resp [m,d,p] = sum( w.nplant         [sel] 
-                                             * plant.respconow  [sel] )
+                                             * plant.respconow  [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$bdead      [m,d,p] = sum( w.nplant         [sel] 
-                                             * bdeadconow       [sel] )
+                                             * bdeadconow       [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
+               szpft$balive     [m,d,p] = sum( w.nplant         [sel] 
+                                             * baliveconow      [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$bleaf      [m,d,p] = sum( w.nplant         [sel]
-                                             * bleafconow       [sel] )
+                                             * bleafconow       [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$broot      [m,d,p] = sum( w.nplant         [sel]
-                                             * brootconow       [sel] )
+                                             * brootconow       [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$bsapwood   [m,d,p] = sum( w.nplant         [sel]
-                                             * bsapwoodconow    [sel] )
+                                             * bsapwoodconow    [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$bstorage   [m,d,p] = sum( w.nplant         [sel] 
-                                             * bstorageconow    [sel] )
+                                             * bstorageconow    [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$bseeds     [m,d,p] = sum( w.nplant         [sel] 
-                                             * bseedsconow      [sel] )
+                                             * bseedsconow      [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$hflxlc     [m,d,p] = sum( w.nplant         [sel]
-                                             * hflxlcconow      [sel] )
+                                             * hflxlcconow      [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$wflxlc     [m,d,p] = sum( w.nplant         [sel]
-                                             * wflxlcconow      [sel] )
+                                             * wflxlcconow      [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                szpft$transp     [m,d,p] = sum( w.nplant         [sel]
-                                             * transpconow      [sel] )
-               szpft$anpp       [m,d,p] = sum( w.nplant         [sel]
-                                             * anppconow        [sel] )
-               szpft$bnpp       [m,d,p] = sum( w.nplant         [sel]
-                                             * bnppconow        [sel] )
-               szpft$arue       [m,d,p] = sum( w.nplant         [sel]
-                                             * arueconow        [sel] )
-               szpft$brue       [m,d,p] = sum( w.nplant         [sel]
-                                             * brueconow        [sel] )
+                                             * transpconow      [sel] 
+                                             , na.rm = TRUE
+                                             )#end if
                #---------------------------------------------------------------------------#
 
 
 
                #----- Leaf/wood intensive properties , weighted means using LAI/WAI. ------#
-               szpft$fs.open    [m,d,p] = weighted.mean( x = fs.openconow    [sel] 
-                                                       , w = laiconow        [sel]
+               szpft$sm.stress  [m,d,p] = weighted.mean( x     = sm.stressconow  [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
                                                        )#end weighted.mean
-               szpft$leaf.par   [m,d,p] = weighted.mean( x = leaf.parconow   [sel] 
-                                                       , w = laiconow        [sel]
+               szpft$phap.sms   [m,d,p] = weighted.mean( x     = phap.smsconow   [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
                                                        )#end weighted.mean
-               szpft$leaf.rshort[m,d,p] = weighted.mean( x = leaf.rshortconow[sel] 
-                                                       , w = laiconow        [sel]
+               szpft$leaf.par   [m,d,p] = weighted.mean( x     = leaf.parconow   [sel] 
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
                                                        )#end weighted.mean
-               szpft$leaf.rlong [m,d,p] = weighted.mean( x = leaf.rlongconow [sel] 
-                                                       , w = laiconow        [sel]
+               szpft$phap.lpar  [m,d,p] = weighted.mean( x     = phap.lparconow  [sel] 
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
                                                        )#end weighted.mean
-               szpft$leaf.temp  [m,d,p] = weighted.mean( x = leaf.tempconow  [sel]
-                                                       , w = laiconow        [sel]
+               szpft$leaf.rshort[m,d,p] = weighted.mean( x     = leaf.rshortconow[sel] 
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
                                                        )#end weighted.mean
-               szpft$wood.temp  [m,d,p] = weighted.mean( x = wood.tempconow  [sel]
-                                                       , w = waiconow        [sel]
+               szpft$leaf.rlong [m,d,p] = weighted.mean( x     = leaf.rlongconow [sel] 
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
                                                        )#end weighted.mean
-               szpft$leaf.vpd   [m,d,p] = weighted.mean( x = leaf.vpdconow   [sel]
-                                                       , w = laiconow        [sel]
+               szpft$leaf.temp  [m,d,p] = weighted.mean( x     = leaf.tempconow  [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$phap.ltemp [m,d,p] = weighted.mean( x     = phap.ltempconow [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$leaf.water [m,d,p] = weighted.mean( x     = leaf.waterconow [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$phap.lwater[m,d,p] = weighted.mean( x     = phap.lwaterconow[sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$wood.temp  [m,d,p] = weighted.mean( x     = wood.tempconow  [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$leaf.vpd   [m,d,p] = weighted.mean( x     = leaf.vpdconow   [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$phap.lvpd  [m,d,p] = weighted.mean( x     = phap.lvpdconow  [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$i.transp   [m,d,p] = weighted.mean( x     = i.transpconow   [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$i.wflxlc   [m,d,p] = weighted.mean( x     = i.wflxlcconow   [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$i.hflxlc   [m,d,p] = weighted.mean( x     = i.hflxlcconow   [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$leaf.gbw   [m,d,p] = weighted.mean( x     = leaf.gbwconow   [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$phap.lgbw  [m,d,p] = weighted.mean( x     = phap.lgbwconow  [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$leaf.gsw   [m,d,p] = weighted.mean( x     = leaf.gswconow   [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$phap.lgsw  [m,d,p] = weighted.mean( x     = phap.lgswconow  [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$wood.gbw   [m,d,p] = weighted.mean( x     = wood.gbwconow   [sel]
+                                                       , w     = w.wai           [sel]
+                                                       , na.rm = TRUE
                                                        )#end weighted.mean
                #---------------------------------------------------------------------------#
 
 
                #----- Individual-based properties, use weighted mean by Nplant. -----------#
-               szpft$cbarel       [m,d,p] = weighted.mean( x = cbarelconow     [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.gpp        [m,d,p] = weighted.mean( x = gppconow        [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.npp        [m,d,p] = weighted.mean( x = nppconow        [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.plant.resp [m,d,p] = weighted.mean( x = plant.respconow [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.mco        [m,d,p] = weighted.mean( x = mcostconow      [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.cba        [m,d,p] = weighted.mean( x = cbaconow        [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.cbamax     [m,d,p] = weighted.mean( x = cbamaxconow     [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.cbalight   [m,d,p] = weighted.mean( x = cbalightconow   [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.cbamoist   [m,d,p] = weighted.mean( x = cbamoistconow   [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.transp     [m,d,p] = weighted.mean( x = transpconow     [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.wflxlc     [m,d,p] = weighted.mean( x = wflxlcconow     [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$i.hflxlc     [m,d,p] = weighted.mean( x = hflxlcconow     [sel]
-                                                         , w = w.nplant        [sel])
-               szpft$leaf.gbw     [m,d,p] = weighted.mean( x = leaf.gbwconow   [sel]
-                                                         , w = w.lai           [sel])
-               szpft$leaf.gsw     [m,d,p] = weighted.mean( x = leaf.gswconow   [sel]
-                                                         , w = w.lai           [sel])
-               szpft$wood.gbw     [m,d,p] = weighted.mean( x = wood.gbwconow   [sel]
-                                                         , w = w.wai           [sel])
+               szpft$cbarel       [m,d,p] = weighted.mean( x     = cbarelconow      [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.gpp        [m,d,p] = weighted.mean( x     = gppconow         [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.npp        [m,d,p] = weighted.mean( x     = nppconow         [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.plant.resp [m,d,p] = weighted.mean( x     = plant.respconow  [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.mco        [m,d,p] = weighted.mean( x     = mcostconow       [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.cba        [m,d,p] = weighted.mean( x     = cbaconow         [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.cbamax     [m,d,p] = weighted.mean( x     = cbamaxconow      [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.cbalight   [m,d,p] = weighted.mean( x     = cbalightconow    [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$i.cbamoist   [m,d,p] = weighted.mean( x     = cbamoistconow    [sel]
+                                                         , w     = w.nplant         [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
                #---------------------------------------------------------------------------#
 
 
-               #---------------------------------------------------------------------------#
-               # WUE: use the bulk value because this is closer to what would be           #
-               #      measured.                                                            #
-               #---------------------------------------------------------------------------#
-               szpft$wue          [m,d,p] = ifelse( szpft$transp[m,d,p] > 1.e-10
-                                                  , 1000. * szpft$anpp  [m,d,p]
-                                                          / szpft$transp[m,d,p]
-                                                          / yr.day
-                                                  , 0.
-                                                  )#end ifelse
-               #---------------------------------------------------------------------------#
-
-
-
-               #----- Fractional biomass, use biomass as the weighting. -------------------#
-               szpft$f.gpp        [m,d,p] = weighted.mean( x = f.gppconow        [sel]
-                                                         , w = w.biomass         [sel]) 
-               szpft$f.plant.resp [m,d,p] = weighted.mean( x = f.plant.respconow [sel]
-                                                         , w = w.biomass         [sel]) 
-               szpft$f.npp        [m,d,p] = weighted.mean( x = f.nppconow        [sel]
-                                                         , w = w.biomass         [sel]) 
-               szpft$f.cba        [m,d,p] = weighted.mean( x = f.cbaconow        [sel]
-                                                         , w = w.biomass         [sel]) 
-               szpft$f.bstorage   [m,d,p] = weighted.mean( x = f.bstorageconow   [sel]
-                                                         , w = w.biomass         [sel]) 
-               szpft$f.bleaf      [m,d,p] = weighted.mean( x = f.bleafconow      [sel]
-                                                         , w = w.biomass         [sel]) 
-               szpft$f.broot      [m,d,p] = weighted.mean( x = f.brootconow      [sel]
-                                                         , w = w.biomass         [sel]) 
-               szpft$f.bseeds     [m,d,p] = weighted.mean( x = f.bseedsconow     [sel]
-                                                         , w = w.biomass         [sel]) 
+               #----- Wood density: averaged by basal area. -------------------------------#
+               szpft$wood.dens    [m,d,p] = weighted.mean( x     = wood.densconow  [sel]
+                                                         , w     = w.basarea       [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
                #---------------------------------------------------------------------------#
             }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            # Use efficiency: use the bulk value to reduce biases towards large numbers.   #
+            #                 Also, if none of the trees exist, or if the denominator      #
+            #                 would be too close to zero, we don't calculate: instead we   #
+            #                 make them NA.  Also, we use the past year data to reduce     #
+            #                 noise.                                                       #
+            #------------------------------------------------------------------------------#
+            last.12              = seq (from=max(m-11,1),to=m,by=1)
+            #----- Last year average, use na.rm=FALSE to skip extinctions. ----------------#
+            last.1yr.transp      = mean(szpft$transp[last.12,d,p], na.rm=FALSE) * yr.day
+            last.1yr.rain        = sum (emean$rain  [last.12]    , na.rm=FALSE)
+            last.1yr.gpp         = mean(szpft$gpp   [last.12,d,p], na.rm=FALSE)
+            last.1yr.npp         = mean(szpft$npp   [last.12,d,p], na.rm=FALSE)
+            last.1yr.dcbadt      = mean(szpft$dcbadt[last.12,d,p], na.rm=FALSE)
+            if ( d == ndbh+1 & p == npft+1){
+                last.1yr.et      = mean(emean$et[last.12], na.rm=FALSE) * yr.day
+            }else{
+                last.1yr.et      = mean( szpft$transp[last.12,d,p] 
+                                       + szpft$wflxlc[last.12,d,p], na.rm=FALSE ) * yr.day
+            }#end if
+            #----- Make sure that plants were doing something. ----------------------------#
+            tfine                = is.finite(last.1yr.transp) & last.1yr.transp >= 1.0
+            rfine                = is.finite(last.1yr.rain)   & last.1yr.rain   >= 1.0
+            #----- Find use efficiencies only if things are fine. -------------------------#
+            if (tfine){
+               szpft$wue [m,d,p] = 1000. * last.1yr.npp    / last.1yr.transp
+               szpft$etue[m,d,p] = 1000. * last.1yr.npp    / last.1yr.et
+               szpft$cue [m,d,p] =         last.1yr.npp    / last.1yr.gpp
+               szpft$ecue[m,d,p] =         last.1yr.dcbadt / last.1yr.gpp
+            }#end if
+            if (rfine){
+               szpft$rue [m,d,p] = 1000. * last.1yr.npp / last.1yr.rain
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            # Fractional biomass: use the total variable and divide by the total biomass   #
+            #                     so it gives a full community fraction.  Like in the UE   #
+            #                     case, force values to be NA if no cohort matches this    #
+            #                     class, or if it didn't have much living biomass.         #
+            #------------------------------------------------------------------------------#
+            balive.szpft              = szpft$balive[m,d,p]
+            balive.szpft              = ifelse(balive.szpft > 1.e-7,balive.szpft,NA)
+            szpft$f.gpp       [m,d,p] = 100. * szpft$gpp       [m,d,p] / balive.szpft
+            szpft$f.plant.resp[m,d,p] = 100. * szpft$plant.resp[m,d,p] / balive.szpft
+            szpft$f.npp       [m,d,p] = 100. * szpft$npp       [m,d,p] / balive.szpft
+            szpft$f.mco       [m,d,p] = 100. * szpft$mco       [m,d,p] / balive.szpft
+            szpft$f.dcbadt    [m,d,p] = 100. * szpft$dcbadt    [m,d,p] / balive.szpft
+            szpft$f.cba       [m,d,p] =        szpft$cba       [m,d,p] / balive.szpft
+            szpft$f.bstorage  [m,d,p] =        szpft$bstorage  [m,d,p] / balive.szpft
+            szpft$f.bleaf     [m,d,p] =        szpft$bleaf     [m,d,p] / balive.szpft
+            szpft$f.broot     [m,d,p] =        szpft$broot     [m,d,p] / balive.szpft
+            szpft$f.bseeds    [m,d,p] =        szpft$bseeds    [m,d,p] / balive.szpft
             #------------------------------------------------------------------------------#
 
 
@@ -1318,15 +1644,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             sel = sel.pft & sel.dbh & dbhconow >= dbhminconow
             if (any(sel)){
                #----- Growth rates are weighted by population. ----------------------------#
-               szpft$growth     [m,d,p] = weighted.mean( x = growthconow    [sel]
-                                                       , w = w.nplant       [sel]
-                                                       )#end weighted.mean
-               szpft$agb.growth [m,d,p] = weighted.mean( x = agb.growthconow[sel]
-                                                       , w = w.nplant       [sel]
-                                                       )#end weighted.mean
-               szpft$bsa.growth [m,d,p] = weighted.mean( x = bsa.growthconow[sel]
-                                                       , w = w.nplant       [sel]
-                                                       )#end weighted.mean
+               szpft$growth     [m,d,p] = 100. * weighted.mean( x     = growthconow    [sel]
+                                                              , w     = w.nplant       [sel]
+                                                              , na.rm = TRUE
+                                                              )#end weighted.mean
+               szpft$agb.growth [m,d,p] = 100. * weighted.mean( x     = agb.growthconow[sel]
+                                                              , w     = w.nplant       [sel]
+                                                              , na.rm = TRUE
+                                                              )#end weighted.mean
+               szpft$bsa.growth [m,d,p] = 100. * weighted.mean( x     = bsa.growthconow[sel]
+                                                              , w     = w.nplant       [sel]
+                                                              , na.rm = TRUE
+                                                              )#end weighted.mean
                #---------------------------------------------------------------------------#
 
 
@@ -1350,13 +1679,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                #      Find the total AGB and previous AGB if the only mortality was the    #
                # mortality we test.                                                        #
                #---------------------------------------------------------------------------#
-               survivor                 = sum( w.nplant[sel] * agbconow[sel])
-               previous                 = sum( w.nplant[sel] * agbconow[sel]
-                                             * exp(mortconow           [sel] ) )
-               ncb.previous             = sum( w.nplant[sel] * agbconow[sel]
-                                             * exp(ncbmortconow        [sel] ) )
-               di.previous              = sum( w.nplant[sel] * agbconow[sel]
-                                             * exp(dimortconow         [sel] ) )
+               survivor                 = sum( w.nplant[sel] * agbcolmon[sel])
+               previous                 = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(mortconow            [sel] ) )
+               ncb.previous             = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(ncbmortconow         [sel] ) )
+               di.previous              = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(dimortconow          [sel] ) )
                szpft$agb.mort   [m,d,p] = log( previous     / survivor )
                szpft$agb.ncbmort[m,d,p] = log( ncb.previous / survivor )
                szpft$agb.dimort [m,d,p] = log( di.previous  / survivor )
@@ -1368,13 +1697,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                #      Find the total basal area and previous basal area if the only        #
                # mortality was the mortality we test.                                      #
                #---------------------------------------------------------------------------#
-               survivor                 = sum( w.nplant[sel] * baconow[sel])
-               previous                 = sum( w.nplant[sel] * baconow[sel]
-                                             * exp(mortconow          [sel] ) )
-               ncb.previous             = sum( w.nplant[sel] * baconow[sel]
-                                             * exp(ncbmortconow       [sel] ) )
-               di.previous              = sum( w.nplant[sel] * baconow[sel]
-                                             * exp(dimortconow        [sel] ) )
+               survivor                 = sum( w.nplant[sel] * bacolmon[sel])
+               previous                 = sum( w.nplant[sel] * bacolmon[sel]
+                                             * exp(mortconow           [sel] ) )
+               ncb.previous             = sum( w.nplant[sel] * bacolmon[sel]
+                                             * exp(ncbmortconow        [sel] ) )
+               di.previous              = sum( w.nplant[sel] * bacolmon[sel]
+                                             * exp(dimortconow         [sel] ) )
                szpft$bsa.mort   [m,d,p] = log( previous     / survivor )
                szpft$bsa.ncbmort[m,d,p] = log( ncb.previous / survivor )
                szpft$bsa.dimort [m,d,p] = log( di.previous  / survivor )
@@ -1434,6 +1763,25 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                szpft$census.ba [m,d,p] = sum(baconow [sel] * w.nplant[sel])
             }#end if
             #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Change of basic properties.                                              #
+            #------------------------------------------------------------------------------#
+            if (m == 1){
+               szpft$change     [m,d,p] = 0.
+               szpft$agb.change [m,d,p] = 0.
+               szpft$bsa.change [m,d,p] = 0.
+            }else{
+               szpft$change     [m,d,p] = ( 12. * log( szpft$nplant[m  ,d,p]
+                                                     / szpft$nplant[m-1,d,p] ) )
+               szpft$agb.change [m,d,p] = ( 12. * log( szpft$agb   [m  ,d,p]
+                                                     / szpft$agb   [m-1,d,p] ) )
+               szpft$bsa.change [m,d,p] = ( 12. * log( szpft$ba    [m  ,d,p]
+                                                     / szpft$ba    [m-1,d,p] ) )
+            }#end if
+            #------------------------------------------------------------------------------#
          }#end for PFT
          #---------------------------------------------------------------------------------#
       }#end for DBH
@@ -1443,84 +1791,32 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
       #------------------------------------------------------------------------------------#
-      #       Find the above-ground NPP and rain use efficiency.                           #
+      #       Find the polygon-average depth and area.                                     #
       #------------------------------------------------------------------------------------#
-      szpft$last.1yr.anpp  [m,,] = apply( X      = szpft$anpp  [max(1,m-12):m,,,drop=FALSE]
-                                        , MARGIN = c(2,3)
-                                        , FUN    = mean
-                                        )
-      szpft$last.2yr.anpp  [m,,] = apply( X      = szpft$anpp  [max(1,m-24):m,,,drop=FALSE]
-                                        , MARGIN = c(2,3)
-                                        , FUN    = mean
-                                        )
-      szpft$last.3yr.anpp  [m,,] = apply( X      = szpft$anpp  [max(1,m-36):m,,,drop=FALSE]
-                                        , MARGIN = c(2,3)
-                                        , FUN    = mean
-                                        )
-      szpft$last.1yr.bnpp  [m,,] = apply( X      = szpft$bnpp  [max(1,m-12):m,,,drop=FALSE]
-                                        , MARGIN = c(2,3)
-                                        , FUN    = mean
-                                        )
-      szpft$last.2yr.bnpp  [m,,] = apply( X      = szpft$bnpp  [max(1,m-24):m,,,drop=FALSE]
-                                        , MARGIN = c(2,3)
-                                        , FUN    = mean
-                                        )
-      szpft$last.3yr.bnpp  [m,,] = apply( X      = szpft$bnpp  [max(1,m-36):m,,,drop=FALSE]
-                                        , MARGIN = c(2,3)
-                                        , FUN    = mean
-                                        )
-      szpft$last.1yr.transp[m,,] = apply( X      = szpft$transp[max(1,m-12):m,,,drop=FALSE]
-                                      , MARGIN = c(2,3)
-                                      , FUN    = mean
-                                      )
-      szpft$last.2yr.transp[m,,] = apply( X      = szpft$transp[max(1,m-24):m,,,drop=FALSE]
-                                      , MARGIN = c(2,3)
-                                      , FUN    = mean
-                                      )
-      szpft$last.3yr.transp[m,,] = apply( X      = szpft$transp[max(1,m-36):m,,,drop=FALSE]
-                                      , MARGIN = c(2,3)
-                                      , FUN    = mean
-                                      )
-      szpft$last.1yr.arue  [m,,] = 1000. * ( szpft$last.1yr.anpp[m,,] 
-                                           / max(emean$last.1yr.rain[m],0.01) )
-      szpft$last.2yr.arue  [m,,] = 1000. * ( szpft$last.2yr.anpp[m,,] 
-                                           / max(emean$last.2yr.rain[m],0.01) )
-      szpft$last.3yr.arue  [m,,] = 1000. * ( szpft$last.3yr.anpp[m,,]
-                                           / max(emean$last.3yr.rain[m],0.01) )
-      szpft$last.1yr.brue  [m,,] = 100.  * ( szpft$last.1yr.bnpp[m,,] 
-                                           / max(emean$last.1yr.rain[m],0.01) )
-      szpft$last.2yr.brue  [m,,] = 100.  * ( szpft$last.2yr.bnpp[m,,] 
-                                           / max(emean$last.2yr.rain[m],0.01) )
-      szpft$last.3yr.brue  [m,,] = 100.  * ( szpft$last.3yr.bnpp[m,,] 
-                                           / max(emean$last.3yr.rain[m],0.01) )
+      if (ncohorts > 0){
+         useconow     = as.numeric(opencanconow > 0)
+         xconow       = heightconow  * nplantconow * baconow * ( opencanconow > 2^-23 )
+         wconow       = nplantconow  * baconow * ( opencanconow > 2^-23 )
+         oconow       = opencanconow * ( opencanconow > 2^-23 )
+         can.depth.pa = (    tapply(X = xconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
+                        /    tapply(X = wconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
+                        )#end can.depth.pa
+         can.area.pa  = 1. - tapply(X = oconow, INDEX = ipaconow, FUN = min, na.rm = TRUE)
+
+         emean$can.depth [m] = can.depth.pa * areapa
+         emean$can.area  [m] = can.area.pa  * areapa
+      }else{
+         emean$can.depth [m] = 0.
+         emean$can.area  [m] = 0.
+      }#end if
       #------------------------------------------------------------------------------------#
 
-
-
-      #----- Find the water use efficiency. -----------------------------------------------#
-      szpft$last.1yr.wue[m,,] = ifelse( szpft$last.1yr.transp [m,,] > 1.e-10
-                                      , 1000 * szpft$last.1yr.anpp   [m,,]
-                                             / szpft$last.1yr.transp [m,,] / yr.day
-                                      , 0
-                                      )#end ifelse
-      szpft$last.2yr.wue[m,,] = ifelse( szpft$last.2yr.transp [m,,] > 1.e-10
-                                      , 1000 * szpft$last.2yr.anpp   [m,,]
-                                             / szpft$last.2yr.transp [m,,] / yr.day
-                                      , 0
-                                      )#end ifelse
-      szpft$last.3yr.wue[m,,] = ifelse( szpft$last.3yr.transp [m,,] > 1.e-10
-                                      , 1000 * szpft$last.3yr.anpp   [m,,]
-                                             / szpft$last.3yr.transp [m,,] / yr.day
-                                      , 0
-                                      )#end ifelse
-      #------------------------------------------------------------------------------------#
 
 
 
       #------------------------------------------------------------------------------------#
       #       Build the derived variables.                                                 #
       #------------------------------------------------------------------------------------#
-      emean$npp             [m] = szpft$npp            [m,ndbh+1,npft+1]
       emean$mco             [m] = szpft$mco            [m,ndbh+1,npft+1]
       emean$cba             [m] = szpft$cba            [m,ndbh+1,npft+1]
       emean$cbamax          [m] = szpft$cbamax         [m,ndbh+1,npft+1]
@@ -1551,54 +1847,299 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$f.gpp           [m] = szpft$f.gpp          [m,ndbh+1,npft+1]
       emean$f.plant.resp    [m] = szpft$f.plant.resp   [m,ndbh+1,npft+1]
       emean$f.npp           [m] = szpft$f.npp          [m,ndbh+1,npft+1]
+      emean$f.mco           [m] = szpft$f.mco          [m,ndbh+1,npft+1]
       emean$f.cba           [m] = szpft$f.cba          [m,ndbh+1,npft+1]
       emean$f.bstorage      [m] = szpft$f.bstorage     [m,ndbh+1,npft+1]
       emean$f.bleaf         [m] = szpft$f.bleaf        [m,ndbh+1,npft+1]
       emean$f.broot         [m] = szpft$f.broot        [m,ndbh+1,npft+1]
       emean$f.bseeds        [m] = szpft$f.bseeds       [m,ndbh+1,npft+1]
+      emean$f.dcbadt        [m] = szpft$f.dcbadt       [m,ndbh+1,npft+1]
       emean$leaf.par        [m] = szpft$leaf.par       [m,ndbh+1,npft+1]
       emean$leaf.rshort     [m] = szpft$leaf.rshort    [m,ndbh+1,npft+1]
       emean$leaf.rlong      [m] = szpft$leaf.rlong     [m,ndbh+1,npft+1]
       emean$transp          [m] = szpft$transp         [m,ndbh+1,npft+1]
-      emean$last.1yr.transp [m] = szpft$last.1yr.transp[m,ndbh+1,npft+1]
-      emean$last.2yr.transp [m] = szpft$last.2yr.transp[m,ndbh+1,npft+1]
-      emean$last.3yr.transp [m] = szpft$last.3yr.transp[m,ndbh+1,npft+1]
       emean$wue             [m] = szpft$wue            [m,ndbh+1,npft+1]
-      emean$last.1yr.wue    [m] = szpft$last.1yr.wue   [m,ndbh+1,npft+1]
-      emean$last.2yr.wue    [m] = szpft$last.2yr.wue   [m,ndbh+1,npft+1]
-      emean$last.3yr.wue    [m] = szpft$last.3yr.wue   [m,ndbh+1,npft+1]
-      emean$anpp            [m] = szpft$anpp           [m,ndbh+1,npft+1]
-      emean$last.1yr.anpp   [m] = szpft$last.1yr.anpp  [m,ndbh+1,npft+1]
-      emean$last.2yr.anpp   [m] = szpft$last.2yr.anpp  [m,ndbh+1,npft+1]
-      emean$last.3yr.anpp   [m] = szpft$last.3yr.anpp  [m,ndbh+1,npft+1]
-      emean$bnpp            [m] = szpft$bnpp           [m,ndbh+1,npft+1]
-      emean$last.1yr.bnpp   [m] = szpft$last.1yr.bnpp  [m,ndbh+1,npft+1]
-      emean$last.2yr.bnpp   [m] = szpft$last.2yr.bnpp  [m,ndbh+1,npft+1]
-      emean$last.3yr.bnpp   [m] = szpft$last.3yr.bnpp  [m,ndbh+1,npft+1]
-      emean$arue            [m] = szpft$arue           [m,ndbh+1,npft+1]
-      emean$last.1yr.arue   [m] = szpft$last.1yr.arue  [m,ndbh+1,npft+1]
-      emean$last.2yr.arue   [m] = szpft$last.2yr.arue  [m,ndbh+1,npft+1]
-      emean$last.3yr.arue   [m] = szpft$last.3yr.arue  [m,ndbh+1,npft+1]
-      emean$brue            [m] = szpft$brue           [m,ndbh+1,npft+1]
-      emean$last.1yr.brue   [m] = szpft$last.1yr.brue  [m,ndbh+1,npft+1]
-      emean$last.2yr.brue   [m] = szpft$last.2yr.brue  [m,ndbh+1,npft+1]
-      emean$last.3yr.brue   [m] = szpft$last.3yr.brue  [m,ndbh+1,npft+1]
+      emean$npp             [m] = szpft$npp            [m,ndbh+1,npft+1]
+      emean$dcbadt          [m] = szpft$dcbadt         [m,ndbh+1,npft+1]
+      emean$rue             [m] = szpft$rue            [m,ndbh+1,npft+1]
+      emean$etue            [m] = szpft$etue           [m,ndbh+1,npft+1]
+      emean$cue             [m] = szpft$cue            [m,ndbh+1,npft+1]
+      emean$ecue            [m] = szpft$ecue           [m,ndbh+1,npft+1]
+      emean$agb.growth      [m] = szpft$agb.growth     [m,ndbh+1,npft+1]
+      emean$agb.mort        [m] = szpft$agb.mort       [m,ndbh+1,npft+1]
+      emean$agb.dimort      [m] = szpft$agb.dimort     [m,ndbh+1,npft+1]
+      emean$agb.ncbmort     [m] = szpft$agb.ncbmort    [m,ndbh+1,npft+1]
+      emean$agb.change      [m] = szpft$agb.change     [m,ndbh+1,npft+1]
+      emean$wood.dens       [m] = szpft$wood.dens      [m,ndbh+1,npft+1]
+      emean$phap.lpar       [m] = szpft$phap.lpar      [m,ndbh+1,npft+1]
+      emean$phap.ltemp      [m] = szpft$phap.ltemp     [m,ndbh+1,npft+1]
+      emean$phap.lvpd       [m] = szpft$phap.lvpd      [m,ndbh+1,npft+1]
+      emean$phap.lwater     [m] = szpft$phap.lwater    [m,ndbh+1,npft+1]
+      emean$phap.lgsw       [m] = szpft$phap.lgsw      [m,ndbh+1,npft+1]
+      emean$phap.lgbw       [m] = szpft$phap.lgbw      [m,ndbh+1,npft+1]
+      emean$phap.sms        [m] = szpft$phap.sms       [m,ndbh+1,npft+1]
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Convert leaf water to kg/m2leaf.                                              #
+      #------------------------------------------------------------------------------------#
+      emean$leaf.water  [m ] = emean$leaf.water[m ] / pmax(emean$lai[m],0.01)
+      qmean$leaf.water  [m,] = qmean$leaf.water[m,] / pmax(emean$lai[m],0.01)
       #------------------------------------------------------------------------------------#
 
 
 
 
+
       #------------------------------------------------------------------------------------#
-      #     Define evapotranspiration use efficiency.                                      #
+      #      Find the last-123 variables that are directly averaged/summed/maximised.      #
       #------------------------------------------------------------------------------------#
-      emean$etue         [m] =   emean$anpp[m] / max(emean$et[m]*yr.day,0.01)
-      emean$last.1yr.etue[m] = ( 1000. * emean$last.1yr.anpp[m] 
-                               / max(emean$last.1yr.et[m]*yr.day,0.01) )
-      emean$last.2yr.etue[m] = ( 1000. * emean$last.2yr.anpp[m] 
-                               / max(emean$last.2yr.et[m]*yr.day,0.01) )
-      emean$last.3yr.etue[m] = ( 1000. * emean$last.3yr.anpp[m] 
-                               / max(emean$last.3yr.et[m]*yr.day,0.01) )
+      last.12 = seq(from=max(m-11,1),to=m,by=1)
+      last.24 = seq(from=max(m-23,1),to=m,by=1)
+      last.36 = seq(from=max(m-35,1),to=m,by=1)
+      #----- Gross primary productivity. --------------------------------------------------#
+      emean$last.1yr.gpp     [m] = mean(emean$gpp           [last.12],na.rm=TRUE)
+      emean$last.2yr.gpp     [m] = mean(emean$gpp           [last.24],na.rm=TRUE)
+      emean$last.3yr.gpp     [m] = mean(emean$gpp           [last.36],na.rm=TRUE)
+      #----- Plant respiration. -----------------------------------------------------------#
+      emean$last.1yr.plresp  [m] = mean(emean$plant.resp    [last.12],na.rm=TRUE)
+      emean$last.2yr.plresp  [m] = mean(emean$plant.resp    [last.24],na.rm=TRUE)
+      emean$last.3yr.plresp  [m] = mean(emean$plant.resp    [last.36],na.rm=TRUE)
+      #----- Carbon balance. --------------------------------------------------------------#
+      emean$last.1yr.cba     [m] = mean(emean$cba           [last.12],na.rm=TRUE)
+      emean$last.2yr.cba     [m] = mean(emean$cba           [last.24],na.rm=TRUE)
+      emean$last.3yr.cba     [m] = mean(emean$cba           [last.36],na.rm=TRUE)
+      #----- Evaporation. -----------------------------------------------------------------#
+      emean$last.1yr.evap    [m] = mean(emean$evap          [last.12],na.rm=TRUE)
+      emean$last.2yr.evap    [m] = mean(emean$evap          [last.24],na.rm=TRUE)
+      emean$last.3yr.evap    [m] = mean(emean$evap          [last.36],na.rm=TRUE)
+      #----- Net primary production. ------------------------------------------------------#
+      emean$last.1yr.npp     [m] = mean(emean$npp           [last.12],na.rm=TRUE)
+      emean$last.2yr.npp     [m] = mean(emean$npp           [last.24],na.rm=TRUE)
+      emean$last.3yr.npp     [m] = mean(emean$npp           [last.36],na.rm=TRUE)
+      #----- Change in carbon balance. ----------------------------------------------------#
+      emean$last.1yr.dcbadt  [m] = mean(emean$dcbadt        [last.12],na.rm=TRUE)
+      emean$last.2yr.dcbadt  [m] = mean(emean$dcbadt        [last.24],na.rm=TRUE)
+      emean$last.3yr.dcbadt  [m] = mean(emean$dcbadt        [last.36],na.rm=TRUE)
+      #----- Evapotranspiration. ----------------------------------------------------------#
+      emean$last.1yr.et      [m] = mean(emean$et            [last.12],na.rm=TRUE)
+      emean$last.2yr.et      [m] = mean(emean$et            [last.24],na.rm=TRUE)
+      emean$last.3yr.et      [m] = mean(emean$et            [last.36],na.rm=TRUE)
+      #----- Transpiration. ---------------------------------------------------------------#
+      emean$last.1yr.transp  [m] = mean(emean$transp        [last.12],na.rm=TRUE)
+      emean$last.2yr.transp  [m] = mean(emean$transp        [last.24],na.rm=TRUE)
+      emean$last.3yr.transp  [m] = mean(emean$transp        [last.36],na.rm=TRUE)
+      #----- Rainfall. --------------------------------------------------------------------#
+      emean$last.1yr.rain    [m] = mean(emean$rain          [last.12],na.rm=TRUE) * 12.
+      emean$last.2yr.rain    [m] = mean(emean$rain          [last.24],na.rm=TRUE) * 12.
+      emean$last.3yr.rain    [m] = mean(emean$rain          [last.36],na.rm=TRUE) * 12.
+      #----- Shortwave radiation. ---------------------------------------------------------#
+      emean$last.1yr.rshort  [m] = mean(emean$rshort        [last.12],na.rm=TRUE)
+      emean$last.2yr.rshort  [m] = mean(emean$rshort        [last.24],na.rm=TRUE)
+      emean$last.3yr.rshort  [m] = mean(emean$rshort        [last.36],na.rm=TRUE)
+      #----- Soil matric potential. -------------------------------------------------------#
+      emean$last.1yr.smpot   [m] = mean(emean$smpot         [last.12],na.rm=TRUE)
+      emean$last.2yr.smpot   [m] = mean(emean$smpot         [last.24],na.rm=TRUE)
+      emean$last.3yr.smpot   [m] = mean(emean$smpot         [last.36],na.rm=TRUE)
+      #----- Maximum water deficit of the past period. ------------------------------------#
+      emean$last.1yr.mwd     [m] = max (emean$water.deficit [last.12],na.rm=TRUE)
+      emean$last.2yr.mwd     [m] = max (emean$water.deficit [last.24],na.rm=TRUE)
+      emean$last.3yr.mwd     [m] = max (emean$water.deficit [last.36],na.rm=TRUE)
+      #----- Growth rate. -----------------------------------------------------------------#
+      emean$last.1yr.growth  [m] = mean(emean$agb.growth    [last.12],na.rm=TRUE)
+      emean$last.2yr.growth  [m] = mean(emean$agb.growth    [last.24],na.rm=TRUE)
+      emean$last.3yr.growth  [m] = mean(emean$agb.growth    [last.36],na.rm=TRUE)
+      #----- Mortality rate. --------------------------------------------------------------#
+      emean$last.1yr.mort    [m] = mean(emean$agb.mort      [last.12],na.rm=TRUE)
+      emean$last.2yr.mort    [m] = mean(emean$agb.mort      [last.24],na.rm=TRUE)
+      emean$last.3yr.mort    [m] = mean(emean$agb.mort      [last.36],na.rm=TRUE)
+      #----- Density-independent mortality rate. ------------------------------------------#
+      emean$last.1yr.dimort  [m] = mean(emean$agb.dimort    [last.12],na.rm=TRUE)
+      emean$last.2yr.dimort  [m] = mean(emean$agb.dimort    [last.24],na.rm=TRUE)
+      emean$last.3yr.dimort  [m] = mean(emean$agb.dimort    [last.36],na.rm=TRUE)
+      #----- Density-dependent mortality rate. --------------------------------------------#
+      emean$last.1yr.ncbmort [m] = mean(emean$agb.ncbmort   [last.12],na.rm=TRUE)
+      emean$last.2yr.ncbmort [m] = mean(emean$agb.ncbmort   [last.24],na.rm=TRUE)
+      emean$last.3yr.ncbmort [m] = mean(emean$agb.ncbmort   [last.36],na.rm=TRUE)
+      #----- AGB change. ------------------------------------------------------------------#
+      emean$last.1yr.change  [m] = mean(emean$agb.change    [last.12],na.rm=TRUE)
+      emean$last.2yr.change  [m] = mean(emean$agb.change    [last.24],na.rm=TRUE)
+      emean$last.3yr.change  [m] = mean(emean$agb.change    [last.36],na.rm=TRUE)
+      #----- The following variables depend on whether to use PhAP or 24 hours. -----------#
+      if (iint.photo == 0){
+         #----- Leaf absorbed PAR. --------------------------------------------------------#
+         emean$last.1yr.lpar    [m] = mean(emean$leaf.par      [last.12],na.rm=TRUE)
+         emean$last.2yr.lpar    [m] = mean(emean$leaf.par      [last.24],na.rm=TRUE)
+         emean$last.3yr.lpar    [m] = mean(emean$leaf.par      [last.36],na.rm=TRUE)
+         #----- Leaf temperature. ---------------------------------------------------------#
+         emean$last.1yr.ltemp   [m] = mean(emean$leaf.temp     [last.12],na.rm=TRUE)
+         emean$last.2yr.ltemp   [m] = mean(emean$leaf.temp     [last.24],na.rm=TRUE)
+         emean$last.3yr.ltemp   [m] = mean(emean$leaf.temp     [last.36],na.rm=TRUE)
+         #----- Leaf vapour pressure deficit. ---------------------------------------------#
+         emean$last.1yr.lvpd    [m] = mean(emean$leaf.vpd      [last.12],na.rm=TRUE)
+         emean$last.2yr.lvpd    [m] = mean(emean$leaf.vpd      [last.24],na.rm=TRUE)
+         emean$last.3yr.lvpd    [m] = mean(emean$leaf.vpd      [last.36],na.rm=TRUE)
+         #----- Leaf water. ---------------------------------------------------------------#
+         emean$last.1yr.lwater  [m] = mean(emean$leaf.water    [last.12],na.rm=TRUE)
+         emean$last.2yr.lwater  [m] = mean(emean$leaf.water    [last.24],na.rm=TRUE)
+         emean$last.3yr.lwater  [m] = mean(emean$leaf.water    [last.36],na.rm=TRUE)
+         #----- Stomatal conductance. -----------------------------------------------------#
+         emean$last.1yr.lgsw    [m] = mean(emean$leaf.gsw      [last.12],na.rm=TRUE)
+         emean$last.2yr.lgsw    [m] = mean(emean$leaf.gsw      [last.24],na.rm=TRUE)
+         emean$last.3yr.lgsw    [m] = mean(emean$leaf.gsw      [last.36],na.rm=TRUE)
+         #----- Soil moisture stress. -----------------------------------------------------#
+         emean$last.1yr.sms     [m] = mean(emean$sm.stress     [last.12],na.rm=TRUE)
+         emean$last.2yr.sms     [m] = mean(emean$sm.stress     [last.24],na.rm=TRUE)
+         emean$last.3yr.sms     [m] = mean(emean$sm.stress     [last.36],na.rm=TRUE)
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Leaf absorbed PAR. --------------------------------------------------------#
+         emean$last.1yr.lpar    [m] = mean(emean$phap.lpar     [last.12],na.rm=TRUE)
+         emean$last.2yr.lpar    [m] = mean(emean$phap.lpar     [last.24],na.rm=TRUE)
+         emean$last.3yr.lpar    [m] = mean(emean$phap.lpar     [last.36],na.rm=TRUE)
+         #----- Leaf temperature. ---------------------------------------------------------#
+         emean$last.1yr.ltemp   [m] = mean(emean$phap.ltemp    [last.12],na.rm=TRUE)
+         emean$last.2yr.ltemp   [m] = mean(emean$phap.ltemp    [last.24],na.rm=TRUE)
+         emean$last.3yr.ltemp   [m] = mean(emean$phap.ltemp    [last.36],na.rm=TRUE)
+         #----- Leaf vapour pressure deficit. ---------------------------------------------#
+         emean$last.1yr.lvpd    [m] = mean(emean$phap.lvpd     [last.12],na.rm=TRUE)
+         emean$last.2yr.lvpd    [m] = mean(emean$phap.lvpd     [last.24],na.rm=TRUE)
+         emean$last.3yr.lvpd    [m] = mean(emean$phap.lvpd     [last.36],na.rm=TRUE)
+         #----- Leaf water. ---------------------------------------------------------------#
+         emean$last.1yr.lwater  [m] = mean(emean$phap.lwater   [last.12],na.rm=TRUE)
+         emean$last.2yr.lwater  [m] = mean(emean$phap.lwater   [last.24],na.rm=TRUE)
+         emean$last.3yr.lwater  [m] = mean(emean$phap.lwater   [last.36],na.rm=TRUE)
+         #----- Stomatal conductance. -----------------------------------------------------#
+         emean$last.1yr.lgsw    [m] = mean(emean$phap.lgsw     [last.12],na.rm=TRUE)
+         emean$last.2yr.lgsw    [m] = mean(emean$phap.lgsw     [last.24],na.rm=TRUE)
+         emean$last.3yr.lgsw    [m] = mean(emean$phap.lgsw     [last.36],na.rm=TRUE)
+         #----- Soil moisture stress. -----------------------------------------------------#
+         emean$last.1yr.sms     [m] = mean(emean$phap.sms      [last.12],na.rm=TRUE)
+         emean$last.2yr.sms     [m] = mean(emean$phap.sms      [last.24],na.rm=TRUE)
+         emean$last.3yr.sms     [m] = mean(emean$phap.sms      [last.36],na.rm=TRUE)
+         #---------------------------------------------------------------------------------#
+      }#end if
       #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find derived rates using the full period and the community averages, to avoid  #
+      # biases towards large numbers.                                                      #
+      #------------------------------------------------------------------------------------#
+      #----- Carbon use efficiency. -------------------------------------------------------#
+      last.1yr.gpp           = ifelse( emean$last.1yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.1yr.gpp   [m]
+                                     , NA
+                                     )#end ifelse
+      last.2yr.gpp           = ifelse( emean$last.2yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.2yr.gpp   [m]
+                                     , NA
+                                  )#end ifelse
+      last.3yr.gpp           = ifelse( emean$last.3yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.3yr.gpp   [m]
+                                     , NA
+                                     )#end ifelse
+      emean$last.1yr.cue [m] =         emean$last.1yr.npp[m] / last.1yr.gpp
+      emean$last.2yr.cue [m] =         emean$last.2yr.npp[m] / last.2yr.gpp
+      emean$last.3yr.cue [m] =         emean$last.3yr.npp[m] / last.3yr.gpp
+      #----- Effective CUE. ---------------------------------------------------------------#
+      last.1yr.gpp           = ifelse( emean$last.1yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.1yr.gpp   [m]
+                                     , NA
+                                     )#end ifelse
+      last.2yr.gpp           = ifelse( emean$last.2yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.2yr.gpp   [m]
+                                     , NA
+                                  )#end ifelse
+      last.3yr.gpp           = ifelse( emean$last.3yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.3yr.gpp   [m]
+                                     , NA
+                                     )#end ifelse
+      emean$last.1yr.ecue[m] =         emean$last.1yr.dcbadt[m] / last.1yr.gpp
+      emean$last.2yr.ecue[m] =         emean$last.2yr.dcbadt[m] / last.2yr.gpp
+      emean$last.3yr.ecue[m] =         emean$last.3yr.dcbadt[m] / last.3yr.gpp
+      #----- Water use efficiency. --------------------------------------------------------#
+      last.1yr.transp        = ifelse( emean$last.1yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.1yr.transp[m] * yr.day
+                                     , NA
+                                     )#end ifelse
+      last.2yr.transp        = ifelse( emean$last.2yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.2yr.transp[m] * yr.day
+                                     , NA
+                                  )#end ifelse
+      last.3yr.transp        = ifelse( emean$last.3yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.3yr.transp[m] * yr.day
+                                     , NA
+                                     )#end ifelse
+      emean$last.1yr.wue [m] = 1000. * emean$last.1yr.npp[m] / last.1yr.transp
+      emean$last.2yr.wue [m] = 1000. * emean$last.2yr.npp[m] / last.2yr.transp
+      emean$last.3yr.wue [m] = 1000. * emean$last.3yr.npp[m] / last.3yr.transp
+      #----- Bulk water use efficiency. ---------------------------------------------------#
+      last.1yr.et            = ifelse( emean$last.1yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.1yr.et    [m] * yr.day
+                                     , NA
+                                     )#end ifelse
+      last.2yr.et            = ifelse( emean$last.2yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.2yr.et    [m] * yr.day
+                                     , NA
+                                  )#end ifelse
+      last.3yr.et            = ifelse( emean$last.3yr.transp[m] * yr.day >= 1.0
+                                     , emean$last.3yr.et    [m] * yr.day
+                                     , NA
+                                     )#end ifelse
+      emean$last.1yr.etue[m] = 1000. * emean$last.1yr.npp[m] / last.1yr.et
+      emean$last.2yr.etue[m] = 1000. * emean$last.2yr.npp[m] / last.2yr.et
+      emean$last.3yr.etue[m] = 1000. * emean$last.3yr.npp[m] / last.3yr.et
+      #----- Rain use efficiency. ---------------------------------------------------------#
+      last.1yr.rain          = ifelse( emean$last.1yr.rain  [m] >= 1.0
+                                     , emean$last.1yr.rain  [m]
+                                     , NA
+                                     )#end ifelse
+      last.2yr.rain          = ifelse( emean$last.2yr.rain  [m] >= 1.0
+                                     , emean$last.2yr.rain  [m]
+                                     , NA
+                                  )#end ifelse
+      last.3yr.rain          = ifelse( emean$last.3yr.rain  [m] >= 1.0
+                                     , emean$last.3yr.rain  [m]
+                                     , NA
+                                     )#end ifelse
+      emean$last.1yr.rue [m] = 1000. * emean$last.1yr.npp[m] / last.1yr.rain
+      emean$last.2yr.rue [m] = 1000. * emean$last.2yr.npp[m] / last.2yr.rain
+      emean$last.3yr.rue [m] = 1000. * emean$last.3yr.npp[m] / last.3yr.rain
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Find drought length using rainfall running average. --------------------------#
+      if ( m == 1){
+         ra.rain              = emean$last.1yr.rain[m] / 12
+         emean$nmon.lt.090[m] = as.numeric(emean$last.1yr.rain[m] <  90  )
+         emean$nmon.lt.100[m] = as.numeric(emean$last.1yr.rain[m] < 100  )
+         emean$nmon.lt.110[m] = as.numeric(emean$last.1yr.rain[m] < 110  )
+         emean$nmon.lt.120[m] = as.numeric(emean$last.1yr.rain[m] < 120  )
+         emean$nmon.wdef  [m] = as.numeric(emean$water.deficit[m] >  10  )
+         emean$nmon.mdef  [m] = as.numeric(emean$malhi.deficit[m] >  10  )
+      }else{
+         ra.rain              = emean$last.1yr.rain[m] / 12
+         wdef                 = emean$water.deficit[m]
+         mdef                 = emean$malhi.deficit[m]
+         emean$nmon.lt.090[m] = as.numeric(ra.rain <  90) * ( emean$nmon.lt.090[m-1] + 1 )
+         emean$nmon.lt.100[m] = as.numeric(ra.rain < 100) * ( emean$nmon.lt.100[m-1] + 1 )
+         emean$nmon.lt.110[m] = as.numeric(ra.rain < 110) * ( emean$nmon.lt.110[m-1] + 1 )
+         emean$nmon.lt.120[m] = as.numeric(ra.rain < 120) * ( emean$nmon.lt.120[m-1] + 1 )
+         emean$nmon.wdef  [m] = as.numeric(wdef    >  10) * ( emean$nmon.wdef  [m-1] + 1 )
+         emean$nmon.mdef  [m] = as.numeric(mdef    >  10) * ( emean$nmon.mdef  [m-1] + 1 )
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+
+
 
 
 
@@ -1637,7 +2178,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$cbarel       [[clab]] = cbarelconow
          cohort$mcost        [[clab]] = mcostconow
          cohort$ldrop        [[clab]] = ldropconow
-         cohort$fs.open      [[clab]] = fs.openconow
+         cohort$dcbadt       [[clab]] = dcbadtconow
+         cohort$sm.stress    [[clab]] = sm.stressconow
          cohort$light        [[clab]] = lightconow
          cohort$light.beam   [[clab]] = light.beamconow
          cohort$light.diff   [[clab]] = light.diffconow
@@ -1652,30 +2194,32 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$wflxlc       [[clab]] = wflxlcconow
          cohort$transp       [[clab]] = transpconow
          cohort$wue          [[clab]] = wueconow
+         cohort$cue          [[clab]] = cueconow
+         cohort$ecue         [[clab]] = ecueconow
+         cohort$etue         [[clab]] = etueconow
          cohort$demand       [[clab]] = demandconow
          cohort$supply       [[clab]] = supplyconow
          cohort$mort         [[clab]] = 100. * (1.0 - exp(-mortconow      ))
          cohort$ncbmort      [[clab]] = 100. * (1.0 - exp(-ncbmortconow   ))
          cohort$dimort       [[clab]] = 100. * (1.0 - exp(-dimortconow    ))
-         cohort$recruit      [[clab]] = 100. * (exp(recruitconow) - 1.0)
-         cohort$growth       [[clab]] = growthconow
-         cohort$agb.growth   [[clab]] = agb.growthconow
-         cohort$bsa.growth   [[clab]] = bsa.growthconow
+         cohort$recruit      [[clab]] = recruitconow
+         cohort$growth       [[clab]] = 100. * growthconow
+         cohort$agb.growth   [[clab]] = 100. * agb.growthconow
+         cohort$bsa.growth   [[clab]] = 100. * bsa.growthconow
          cohort$f.gpp        [[clab]] = f.gppconow
          cohort$f.plant.resp [[clab]] = f.plant.respconow
          cohort$f.npp        [[clab]] = f.nppconow
+         cohort$f.mco        [[clab]] = f.mcoconow
          cohort$f.cba        [[clab]] = f.cbaconow
          cohort$f.bstorage   [[clab]] = f.bstorageconow
          cohort$f.bleaf      [[clab]] = f.bleafconow
          cohort$f.broot      [[clab]] = f.brootconow
          cohort$f.bseeds     [[clab]] = f.bseedsconow
+         cohort$f.dcbadt     [[clab]] = f.dcbadtconow
          cohort$leaf.par     [[clab]] = leaf.parconow
          cohort$leaf.rshort  [[clab]] = leaf.rshortconow
          cohort$leaf.rlong   [[clab]] = leaf.rlongconow
-         cohort$anpp         [[clab]] = anppconow
-         cohort$bnpp         [[clab]] = bnppconow
-         cohort$arue         [[clab]] = arueconow
-         cohort$brue         [[clab]] = brueconow
+         cohort$rue          [[clab]] = rueconow
       } #end if month=sasmonth
       #------------------------------------------------------------------------------------#
    }# end for (m in tresume,ntimes)

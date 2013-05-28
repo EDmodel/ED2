@@ -483,7 +483,7 @@ for (place in myplaces){
    #     Remove all elements of the DBH/PFT class that do not have a single valid cohort   #
    # at any given time.                                                                    #
    #---------------------------------------------------------------------------------------#
-   empty = szpft$nplant == 0
+   empty = is.na(szpft$nplant) | szpft$nplant == 0
    for (vname in names(szpft)) szpft[[vname]][empty] = NA
    #---------------------------------------------------------------------------------------#
 
@@ -772,7 +772,7 @@ for (place in myplaces){
    #      Time series by DBH, by PFT.                                                      #
    #---------------------------------------------------------------------------------------#
    #----- Find the PFTs to plot. ----------------------------------------------------------#
-   pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
+   pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
    pftuse  = pftuse[pftuse != (npft+1)]
    for (v in 1:ntspftdbh){
       thistspftdbh   = tspftdbh[[v]]
@@ -786,7 +786,8 @@ for (place in myplaces){
       thisvar = szpft[[vnam]]
       if (plog){
          xylog="y"
-         thisvar[thisvar <= 0] = NA
+         badlog = is.finite(thisvar) & thisvar <= 0
+         thisvar[badlog] = NA
       }else{
          xylog=""
       }#end if
@@ -3021,7 +3022,7 @@ for (place in myplaces){
    cat("    + Bar plot by DBH classes...","\n")
    monbplot    = which(nummonths(datum$tomonth) %in% sasmonth)
    nmonbplot   = length(monbplot)
-   pftuse      = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
+   pftuse      = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
    pftuse      = pftuse[pftuse != (npft+1)]
    npftuse     = length(pftuse)
    pftname.use = pft$name  [pftuse]

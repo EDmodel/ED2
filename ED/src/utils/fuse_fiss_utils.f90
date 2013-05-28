@@ -2944,6 +2944,7 @@ module fuse_fiss_utils
       !----- Locally saved variables. --------------------------------------------------------!
       logical                   , save    :: first_time = .true.
       logical                   , save    :: dont_force_fuse
+      logical                   , save    :: force_fuse
       !------------------------------------------------------------------------------------!
 
 
@@ -2951,7 +2952,8 @@ module fuse_fiss_utils
       !     First time here.  Delete all files.                                            !
       !------------------------------------------------------------------------------------!
       if (first_time) then
-         dont_force_fuse = abs(maxpatch) /= 1
+         force_fuse      = abs(maxpatch) == 1
+         dont_force_fuse = .not. force_fuse
          if (print_fuse_details) then
             do jpy = 1, cgrid%npolygons
                jpoly => cgrid%polygon(jpy)
@@ -2983,6 +2985,9 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       if (maxpatch == 0) return
       !------------------------------------------------------------------------------------!
+
+
+
 
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -3485,7 +3490,7 @@ module fuse_fiss_utils
 
                   !----- Increment tolerance ----------------------------------------------!
                   sunny_toler =     sunny_toler * sunny_cumlai_mult
-                  dark_toler  = max(dark_toler  * dark_cumlai_mult , dark_lai80 )
+                  dark_toler  = max( dark_toler * dark_cumlai_mult , dark_lai80 )
                   light_toler =     light_toler * light_toler_mult
                   !------------------------------------------------------------------------!
                end do mainfuseloopa
@@ -3803,9 +3808,7 @@ module fuse_fiss_utils
                ! less than the target, or if we have reached the maximum tolerance and the !
                ! patch fusion still can't find similar patches, we quit the fusion loop.   !
                !---------------------------------------------------------------------------!
-               if ( (.not. dont_force_fuse) .and. npatches_new <= abs(maxpatch)) then
-                  exit mainfuseloop
-               end if
+               if (npatches_new <= abs(maxpatch))  exit mainfuseloop
                !---------------------------------------------------------------------------!
 
 
@@ -3829,7 +3832,7 @@ module fuse_fiss_utils
 
                !----- Increment tolerance -------------------------------------------------!
                sunny_toler =     sunny_toler * sunny_cumlai_mult
-               dark_toler  = max(dark_toler  * dark_cumlai_mult , dark_lai80 )
+               dark_toler  = max( dark_toler * dark_cumlai_mult , dark_lai80 )
                light_toler =     light_toler * light_toler_mult
                !---------------------------------------------------------------------------!
             end do mainfuseloop
@@ -6064,7 +6067,7 @@ module fuse_fiss_utils
 
          !----- Find the PFT class. -------------------------------------------------------!
          ipft    = cpatch%pft(ico)
-         ihgt    = min(ff_nhgt,1 + count(hgt_class < cpatch%hite(ico)))
+         ihgt    = min(ff_nhgt,max(1,count(hgt_class < cpatch%hite(ico))))
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
@@ -6076,7 +6079,7 @@ module fuse_fiss_utils
 
 
          !----- Find the height class. ----------------------------------------------------!
-         ihgt    = min(ff_nhgt,1 + count(hgt_class < cpatch%hite(ico)))
+         ihgt    = min(ff_nhgt,max(1,count(hgt_class < cpatch%hite(ico))))
          !---------------------------------------------------------------------------------!
 
 

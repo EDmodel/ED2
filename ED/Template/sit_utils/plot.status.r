@@ -134,7 +134,7 @@ jobs$realisation = as.numeric(substring(jobs$run,23,24))
 # last line to avoid trouble, unless the file is complete.                                 #
 #------------------------------------------------------------------------------------------#
 names.check   = c("run","lon","lat","year","month","day","hhmm","runt"
-                 ,"agb","bsa","lai","scb")
+                 ,"agb","bsa","lai","scb","npa")
 cat (" + Reading ",basename(lastcheck),"...","\n")
 last          = read.table(file=lastcheck,skip=0,header=FALSE,comment.char=""
                           ,col.names=names.check,stringsAsFactors=FALSE)
@@ -197,6 +197,7 @@ datum      = list ( agb    = template
                   , lai    = template
                   , bsa    = template
                   , scb    = template
+                  , npa    = template
                   , status = template
                   , yearn  = template
                   )#end list
@@ -214,6 +215,7 @@ jobs$agb    = rep(NA,times=njobs)
 jobs$bsa    = rep(NA,times=njobs)
 jobs$lai    = rep(NA,times=njobs)
 jobs$scb    = rep(NA,times=njobs)
+jobs$npa    = rep(NA,times=njobs)
 
 il = match(last$run,jobs$run); l.sel = ! is.na(il)
 ic = match(curr$run,jobs$run); c.sel = ! is.na(ic)
@@ -222,6 +224,7 @@ jobs$agb   [il[l.sel]] = last$agb [l.sel]  ; jobs$agb   [ic[c.sel]] = curr$agb [
 jobs$lai   [il[l.sel]] = last$lai [l.sel]  ; jobs$lai   [ic[c.sel]] = curr$lai [c.sel]
 jobs$bsa   [il[l.sel]] = last$bsa [l.sel]  ; jobs$bsa   [ic[c.sel]] = curr$bsa [c.sel]
 jobs$scb   [il[l.sel]] = last$scb [l.sel]  ; jobs$scb   [ic[c.sel]] = curr$scb [c.sel]
+jobs$npa   [il[l.sel]] = last$npa [l.sel]  ; jobs$npa   [ic[c.sel]] = curr$npa [c.sel]
 jobs$yearn [il[l.sel]] = last$year[l.sel]  ; jobs$yearn [ic[c.sel]] = curr$year[c.sel]
 
 
@@ -230,7 +233,7 @@ jobs$yearn [il[l.sel]] = last$year[l.sel]  ; jobs$yearn [ic[c.sel]] = curr$year[
 
 keep            = names(jobs) %in% c("drain","dtemp","realisation","iphen","iata","istext"
                                     ,"yeara","yearz","yearn","status"
-                                    ,"agb","bsa","lai","scb")
+                                    ,"agb","bsa","lai","scb","npa")
 jobs            = jobs[,keep]
 weird           = is.finite(jobs$lai) & abs(jobs$lai) > 20
 jobs$lai[weird] = NA
@@ -252,6 +255,7 @@ datum$agb   [index] = jobs$agb
 datum$lai   [index] = jobs$lai
 datum$bsa   [index] = jobs$bsa
 datum$scb   [index] = jobs$scb
+datum$npa   [index] = jobs$npa
 datum$status[index] = jobs$status
 datum$yearn [index] = jobs$yearn
 #------------------------------------------------------------------------------------------#
@@ -459,9 +463,9 @@ for (st in 1:n.stext){
 #      Create parameter space maps for all other variables.                                #
 #------------------------------------------------------------------------------------------#
 cat(" Plot the current properties...","\n")
-key.var  = c("lai","bsa","agb","scb")
+key.var  = c("lai","bsa","agb","scb","npa")
 desc.var = c("Leaf area index [m2/m2]","Basal area [cm2/m2]"
-            ,"Above-ground biomass [kgC/m2]","Soil carbon [kgC/m2]")
+            ,"Above-ground biomass [kgC/m2]","Soil carbon [kgC/m2]","Patch count [---]")
 n.var    = length(key.var)
 lo.box = pretty.box(n.iphen*n.iata)
 for (v in 1:n.var){

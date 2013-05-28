@@ -14,6 +14,8 @@ fvis.beam.def <<- 0.43
 fnir.beam.def <<- 1.0 - fvis.beam.def
 fvis.diff.def <<- 0.52
 fnir.diff.def <<- 1.0 - fvis.diff.def
+phap.min      <<- 25                    # Minimum incoming radiation to be considered 
+                                        # daytime
 #------------------------------------------------------------------------------------------#
 
 
@@ -207,6 +209,58 @@ if (idbh.type == 1){
    cat(" In globdims.r:","\n")
    cat(" IDBH.TYPE = ",idbh.type,"\n")
    stop(" Invalid IDBH.TYPE, it must be between 1 and 5 (feel free to add more options.")
+}#end if
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Define which height classes to use based on the DBH flag.                            #
+#------------------------------------------------------------------------------------------#
+if ("ihgt.type" %in% ls()){
+   ihgt.type <<- ihgt.type
+}else{
+   ihgt.type <<- 1   
+}#end if
+if (ihgt.type == 1){
+   nhgt       <<- 8
+   classhgt   <<- c(0,5,10,15,20,25,30,35)-0.001
+   roundhgt   <<- round(classhgt,0)
+   breakhgt   <<- c(-Inf,classhgt[-1],Inf)
+   hgtlabel   <<- "08_htclss"
+   hgtkeys    <<- paste(classhgt,"-",c(roundhgt[-1],Inf),sep="")
+   hgtnames   <<- paste( c("<",paste(roundhgt[-c(1,nhgt)],"-",sep=""),">")
+                       , c(roundhgt[-1],roundhgt[nhgt]),"m"
+                       , sep=""
+                       )#end paste
+   hgtcols    <<- c(      "slateblue4",      "steelblue3",     "deepskyblue"
+                   ,         "#004E00",     "chartreuse3", "lightgoldenrod3"
+                   ,     "darkorange1",       "firebrick",        all.colour
+                   )#end c
+}else if (ihgt.type == 2){
+   nhgt       <<-  13
+   classhgt   <<- c(0,1,4,7,10,13,16,19,22,25,28,31,34)
+   hgtlabel   <<- "13_szclss"
+   breakhgt   <<- c(-Inf,classhgt[-1],Inf)
+   hgtkeys    <<- paste(classhgt,"-",c(classhgt[-1],Inf),sep="")
+   hgtnames   <<- paste( c("<",paste(classhgt[-c(1,nhgt)],"-",sep=""),">")
+                       , c(classhgt[-1],classhgt[nhgt]),"cm"
+                       , sep=""
+                       )#end paste
+   hgtcols    <<- c(         "purple3",   "mediumpurple1",      "royalblue4"
+                   ,      "steelblue3",     "deepskyblue",         "#004E00"
+                   ,     "chartreuse3",      "olivedrab3", "lightgoldenrod3"
+                   ,         "yellow3",     "darkorange1",            "red3"
+                   ,      "firebrick4",        all.colour
+                   )#end c
+}else{
+   cat(" In globdims.r:","\n")
+   cat(" IHGT.TYPE = ",ihgt.type,"\n")
+   stop(" Invalid IHGT.TYPE, it must be between 1 and 2 (feel free to add more options.")
 }#end if
 #==========================================================================================#
 #==========================================================================================#

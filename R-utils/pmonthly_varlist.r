@@ -305,7 +305,7 @@ tspftdbh[[n]]     = list( vnam     = "nplant"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
-tspftdbh[[n]]     = list( vnam     = "fs.open"
+tspftdbh[[n]]     = list( vnam     = "sm.stress"
                         , desc     = "Soil moisture stress factor"
                         , e.unit   = untab$empty
                         , i.unit   = untab$empty
@@ -1262,7 +1262,7 @@ squeeze[[n]] = list( vnam       = "wshed"
                    , box.plot   = FALSE
                    )#end list
 n            = n + 1
-squeeze[[n]] = list( vnam       = "fs.open"
+squeeze[[n]] = list( vnam       = "sm.stress"
                    , desc       = "Fraction of open stomata"
                    , unit       = untab$empty
                    , col.scheme = "imuitas"
@@ -2735,8 +2735,8 @@ yc.tvar[[n]] = list( vnam      = "wflxca"
                    , cumul     = FALSE
                    )#end list
 n            = n + 1
-yc.tvar[[n]] = list( vnam      = "fs.open"
-                   , desc      = "Water Stress index"
+yc.tvar[[n]] = list( vnam      = "sm.stress"
+                   , desc      = "Water Stress factor"
                    , unit      = untab$empty
                    , plt       = TRUE
                    , cumul     = FALSE
@@ -2901,8 +2901,8 @@ yc.xyzvar$xvar = list( list ( vname = "rain"
                             , unit  = untab$kgwom2oday
                             , leg   = "left"
                             )#end list
-                     , list ( vname = "fs.open"
-                            , desc  = "Soil water stress"
+                     , list ( vname = "sm.stress"
+                            , desc  = "Soil moisture stress factor"
                             , unit  = untab$empty
                             , leg   = "left"
                             )#end list

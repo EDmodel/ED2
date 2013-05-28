@@ -138,8 +138,7 @@ dbh2ca = function(dbh,ipft){
    crown         = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
 
    #----- Local LAI / Crown area should never be less than one. ---------------------------#
-   small        = crown < loclai
-   crown[small] = loclai[small]
+   crown = pmin(crown,loclai)
 
    return(crown)
 }#end function dbh2ca

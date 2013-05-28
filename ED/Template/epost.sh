@@ -21,14 +21,14 @@ openlava='n'
 #----- Yearly comparison . ----------------------------------------------------------------#
 seasonmona=1
 #----- Census comparison. -----------------------------------------------------------------#
-varcycle='TRUE'  # Find the average mortality for various cycles (TRUE/FALSE).
+varcycle='FALSE' # Find the average mortality for various cycles (TRUE/FALSE).
 #----- Hourly comparison. -----------------------------------------------------------------#
 usedistrib='edf' # Which distribution to plot on top of histograms:
                  #   norm -- Normal distribution
                  #   sn   -- Skewed normal distribution      (requires package sn)
                  #   edf  -- Empirical distribution function (function density)
 #----- Output format. ---------------------------------------------------------------------#
-outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
+outform='c("pdf")'             # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
@@ -833,6 +833,7 @@ do
       sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
       sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
       sed -i s@mybackground@${background}@g       ${scriptnow}
+      sed -i s@myiintphoto@${iint_photo}@g        ${scriptnow}
       sed -i s@myklight@${klight}@g               ${scriptnow}
       sed -i s@myefttrim@${efttrim}@g             ${scriptnow}
       sed -i s@myeftyeara@${eftyeara}@g           ${scriptnow}

@@ -17,13 +17,16 @@ graphics.off()
 here          = getwd()                     # Current directory
 srcdir        = "/n/home00/mlongo/util/Rsc" # Script directory
 stext.default = "stext16"                   # Default soil texture
+drain.default = "r+000"                     # Default rainfall
 ibackground   = 0                           # Target background colour:
                                             #    (to adjust foreground colours accordingly)
                                             # 0 -- White
                                             # 1 -- Pitch black
                                             # 2 -- Dark grey
 bg.default    = paste("ibg",sprintf("%2.2i",ibackground),sep="")
-outroot       = file.path(here,paste("comp_gyf+s67",stext.default,bg.default,sep="_"))
+outroot       = file.path(here
+                         ,paste("scencomp",stext.default,drain.default,bg.default,sep="_")
+                         )#end file.path
 comp.prefix   = "stext"
 #------------------------------------------------------------------------------------------#
 
@@ -48,10 +51,10 @@ rdata.path       = file.path(here,"RData_gyf+s67") # Path for the scenario compa
 #  FALSE -- skip them altogether                                                           #
 #------------------------------------------------------------------------------------------#
 plot.panel       = c(FALSE,TRUE,NA)[2]
-plot.tseries     = c(FALSE,TRUE,NA)[2]
+plot.tseries     = c(FALSE,TRUE,NA)[1]
 plot.szpft       = c(FALSE,TRUE,NA)[2]
 plot.barplot     = c(FALSE,TRUE,NA)[2]
-plot.xyzvars     = c(FALSE,TRUE,NA)[2]
+plot.xyzvars     = c(FALSE,TRUE,NA)[1]
 plot.scencomp    = c(FALSE,TRUE,NA)[2]
 plot.panelbox    = c(FALSE,TRUE,NA)[2]
 plot.panelxyz    = c(FALSE,TRUE,NA)[2]
@@ -60,10 +63,15 @@ plot.panelxyz    = c(FALSE,TRUE,NA)[2]
 
 
 
-#---- Select the function you would like to use to aggregate years for box plots. ---------#
-tseries.aggr = median
-boxplot.aggr = median
-barplot.aggr = mean
+#------------------------------------------------------------------------------------------#
+#     Select the function you would like to use to aggregate years for box plots.  Options #
+# are: mean, median, sum (or similar), or in case you want to use all data points (boxplot #
+# only, this is not a possibility for others), use unlist or c.                            #
+# Important: use the name of the function in quotes.                                       #
+#------------------------------------------------------------------------------------------#
+tseries.aggr = "median"
+boxplot.aggr = "mean"
+barplot.aggr = "mean"
 #------------------------------------------------------------------------------------------#
 
 
@@ -71,11 +79,12 @@ barplot.aggr = mean
 
 #------------------------------------------------------------------------------------------#
 #     The following variable allows you to set how to change the limits between runs:      #
-# FALSE -- Each panel will get the best scale for that particular plot.                    #
-# TRUE  -- All plots are with fixed limits for all panels and scenarios                    #
-# NA    -- Plots are with fixed limits for all panels within each fixed scenario           #
+# 0 -- Each panel will get the best scale for that particular plot.                        #
+# 1 -- All plots are with fixed limits for all panels and scenarios                        #
+# 2 -- Plots are with fixed limits for all panels within each fixed scenario               #
+# 3 -- Plots are with fixed limits for all panels of the same site for each fixed scenario #
 #------------------------------------------------------------------------------------------#
-ylim.fix.all = NA
+ylim.fix.all = 3
 #------------------------------------------------------------------------------------------#
 
 
@@ -184,7 +193,7 @@ scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-10
                      , desc    = c("dR =  0.00 S","dR = -0.20 S","dR = -0.40 S"
                                   ,"dR = -0.60 S","dR = -0.80 S","dR = -1.00 S")
                      , pattern = "rRRRR"
-                     , default = "r+000"
+                     , default = drain.default
                      , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0)
                      , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0)
                      , colour  = c("royalblue3","deepskyblue","chartreuse3","goldenrod"
@@ -200,7 +209,7 @@ scenario$stext = list( key     = c("stext02","stext06","stext08","stext16","stex
                      , value   = c(1,2,3,4,5)
                      , label   = c("LSa","SaCL","CL","CSa","C")
                      , colour  = c("yellow3","sandybrown","darkorange2","firebrick2","red4")
-                     , pch     = c(18L,17L,13L,15L,6L)
+                     , pch     = c(12L,13L,5L,6L,8L)
                      , alabel  = c("Soil texture")
                      )#end list
 #----- Realisation variables. -------------------------------------------------------------#
@@ -302,6 +311,7 @@ cex.ptsz = min(15/ptsz,1.0)
 n.global      = length(global         )
 n.panel       = length(panel          )
 n.scenario    = length(scenario       )
+n.allscen     = n.scenario + 1
 n.realisation = length(realisation$key)
 #------------------------------------------------------------------------------------------#
 
@@ -755,6 +765,7 @@ for (o in 1:nout){
       }#end if
       loop.panel     = sequence(max(1,simul$panel$n.level   ))
       loop.scenario  = which(simul$scenario$level %in% simul$default)
+      loop.allscen   = c(loop.scenario,0)
       for (g in loop.global){
          gnow      = list()
 
@@ -1037,7 +1048,7 @@ for (o in 1:nout){
 
 
                #---- Loop over scenarios. -------------------------------------------------#
-               gnow$panel.xyz      = matrix(NA_character_,nrow=n.scenario,ncol=npanel.yvar)
+               gnow$panel.xyz      = matrix(NA_character_,nrow=n.allscen,ncol=npanel.yvar)
                #---------------------------------------------------------------------------#
 
 
@@ -1046,14 +1057,18 @@ for (o in 1:nout){
                #      Loop over all scenarios and Y variables for parameter space and      #
                # create the paths as needed.                                               #
                #---------------------------------------------------------------------------#
-               for (s in loop.scenario){
-                  idx.s = match(s,loop.scenario)
-                  root.now = file.path(root.panel.xyz,simul$scenario$level[s])
+               for (s in loop.allscen){
+                  odx.s = match(s,loop.allscen)
+                  if (s == 0){
+                     root.now = file.path(root.panel.xyz,"allscen")
+                  }else{
+                     root.now = file.path(root.panel.xyz,simul$scenario$level[s])
+                  }#end if
                   if (! file.exists(root.now)) dir.create(root.now)
                   for (n in 1:npanel.yvar){
-                     gnow$panel.xyz[idx.s,n] = file.path(root.now,panel.xyz$yvar$vname[n])
-                     if (! file.exists(gnow$panel.xyz[idx.s,n])){
-                        dir.create(gnow$panel.xyz[idx.s,n])
+                     gnow$panel.xyz[odx.s,n] = file.path(root.now,panel.xyz$yvar$vname[n])
+                     if (! file.exists(gnow$panel.xyz[odx.s,n])){
+                        dir.create(gnow$panel.xyz[odx.s,n])
                      }#end if
                   }#end for
                }#end for
@@ -1099,13 +1114,13 @@ for (o in 1:nout){
             snow$boxpft.year        = file.path(snow$main,"boxpft_year"       )
             snow$boxdbh.season      = file.path(snow$main,"boxdbh_season"     )
             snow$boxdbh.year        = file.path(snow$main,"boxdbh_year"       )
-            snow$boxpftdbh          = file.path(snow$main,"boxpftdbh"         )
             snow$barplot.season     = file.path(snow$main,"barplot_season"    )
             snow$barplot.year       = file.path(snow$main,"barplot_year"      )
 
             root.tspft.season       = file.path(snow$main,"tspft_season"      )
             root.tsdbh.season       = file.path(snow$main,"tsdbh_season"      )
             root.tspftdbh           = file.path(snow$main,"tspftdbh"          )
+            root.boxpftdbh          = file.path(snow$main,"boxpftdbh"         )
             root.xyz.season         = file.path(snow$main,"xyz_season"        )
             root.xyz.pft            = file.path(snow$main,"xyz_pft"           )
             root.xyz.dbh            = file.path(snow$main,"xyz_dbh"           )
@@ -1121,12 +1136,12 @@ for (o in 1:nout){
             if (! file.exists(snow$boxpft.year       )) dir.create(snow$boxpft.year       )
             if (! file.exists(snow$boxdbh.season     )) dir.create(snow$boxdbh.season     )
             if (! file.exists(snow$boxdbh.year       )) dir.create(snow$boxdbh.year       )
-            if (! file.exists(snow$boxpftdbh         )) dir.create(snow$boxpftdbh         )
             if (! file.exists(snow$barplot.season    )) dir.create(snow$barplot.season    )
             if (! file.exists(snow$barplot.year      )) dir.create(snow$barplot.year      )
             if (! file.exists(root.tspft.season      )) dir.create(root.tspft.season      )
             if (! file.exists(root.tsdbh.season      )) dir.create(root.tsdbh.season      )
             if (! file.exists(root.tspftdbh          )) dir.create(root.tspftdbh          )
+            if (! file.exists(root.boxpftdbh         )) dir.create(root.boxpftdbh         )
             if (! file.exists(root.xyz.season        )) dir.create(root.xyz.season        )
             if (! file.exists(root.xyz.pft           )) dir.create(root.xyz.pft           )
             if (! file.exists(root.xyz.dbh           )) dir.create(root.xyz.dbh           )
@@ -1136,23 +1151,31 @@ for (o in 1:nout){
 
 
             #----- Directories that have sub-directories. ---------------------------------#
-            snow$tspft.season       = file.path(root.tspft.season   ,pft.key)
-            snow$tsdbh.season       = file.path(root.tsdbh.season   ,dbh.key)
-            snow$tspftdbh           = file.path(root.tspftdbh       ,dbh.key)
+            snow$tspft.season       = file.path(root.tspft.season   ,pft.suffix   )
+            snow$tsdbh.season       = file.path(root.tsdbh.season   ,dbh.suffix   )
+            snow$tspftdbh           = file.path(root.tspftdbh       ,dbh.suffix   )
+            snow$boxpftdbh          = file.path(root.boxpftdbh      ,season.suffix)
             #------------------------------------------------------------------------------#
 
 
             #----- Create the sub-subdirectories by PFT. ----------------------------------#
-            for (f in 1:(n.pft-1)){
+            for (f in sequence(n.pft-1)){
                if (! file.exists(snow$tspft.season[f])) dir.create(snow$tspft.season[f])
             }#end for
             #------------------------------------------------------------------------------#
 
 
             #----- Create the sub-subdirectories by PFT. ----------------------------------#
-            for (d in 1:n.dbh){
+            for (d in sequence(n.dbh)){
                if (! file.exists(snow$tsdbh.season[d])) dir.create(snow$tsdbh.season[d])
                if (! file.exists(snow$tspftdbh    [d])) dir.create(snow$tspftdbh    [d])
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            #----- Create the sub-subdirectories by season. -------------------------------#
+            for (e in sequence(n.season)){
+               if (! file.exists(snow$boxpftdbh[e])) dir.create(snow$boxpftdbh[e])
             }#end for
             #------------------------------------------------------------------------------#
 
@@ -1258,7 +1281,8 @@ if (is.na(plot.panel)){
 }else{
    loop.panel     = integer(0)
 }#end if
-loop.scenario  = which(simul$scenario$level %in% simul$default)
+loop.scenario   = which(simul$scenario$level %in% simul$default)
+loop.allscen    = c(loop.scenario,0)
 #------------------------------------------------------------------------------------------#
 #     Loop over all global dimensions.                                                     #
 #------------------------------------------------------------------------------------------#
@@ -1517,13 +1541,13 @@ for (g in loop.global){
                                                                          , eft$ss.season
                                                                          )#end list
                                                            , DIM   = 1
-                                                           , FUN   = mean
+                                                           , FUN   = var.f.aggr
                                                            , na.rm = TRUE
                                                            )#end qapply
                   eft[[var.vname]]$tspft[j,r,,e5,] = qapply( X     = var.now
                                                            , INDEX = eft$ss.year
                                                            , DIM   = 1
-                                                           , FUN   = mean
+                                                           , FUN   = var.f.aggr
                                                            , na.rm = TRUE
                                                            )#end qapply
                   #------------------------------------------------------------------------#
@@ -1548,13 +1572,13 @@ for (g in loop.global){
                                                                              ,eft$ss.season
                                                                              )#end list
                                                                , DIM   = 1
-                                                               , FUN   = mean
+                                                               , FUN   = var.f.aggr
                                                                , na.rm = TRUE
                                                                )#end qapply
                   eft[[var.vname]]$tspftdbh[j,r,,e5,,] = qapply( X     = var.now
                                                                , INDEX = eft$ss.year
                                                                , DIM   = 1
-                                                               , FUN   = mean
+                                                               , FUN   = var.f.aggr
                                                                , na.rm = TRUE
                                                                )#end qapply
                   #------------------------------------------------------------------------#
@@ -1659,12 +1683,21 @@ for (g in loop.global){
 
 
 
+      #------------------------------------------------------------------------------------#
+      #     Find out the site we are processing now, and select all simulations for this   #
+      # site.                                                                              #
+      #------------------------------------------------------------------------------------#
+      iata.now = unique(simul$key$iata[g.sel][p.sel])
+      i.sel    = simul$key$iata[g.sel] == iata.now
+      #------------------------------------------------------------------------------------#
+
+
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
       #       Loop over all scenarios.                                                     #
       #------------------------------------------------------------------------------------#
-      for (s in loop.scenario){
+      for (s in loop.scenario[1]){
          #---------------------------------------------------------------------------------#
          #     Select the runs that belong to this panel.                                  #
          #---------------------------------------------------------------------------------#
@@ -1682,13 +1715,15 @@ for (g in loop.global){
          #---------------------------------------------------------------------------------#
          #     Decide which simulations to include for plot limit estimation.              #
          #---------------------------------------------------------------------------------#
-         sel  = p.sel & s.sel
-         if (is.na(ylim.fix.all)){
-            l.sel = s.sel
-         }else if(ylim.fix.all){
-            l.sel = rep(TRUE,times=n.gsel)
-         }else{
+         sel   = p.sel & s.sel
+         if (ylim.fix.all == 0){
             l.sel = sel
+         }else if (ylim.fix.all == 1){
+            l.sel = rep(TRUE,times=n.gsel)
+         }else if (ylim.fix.all == 2){
+            l.sel = s.sel
+         }else if (ylim.fix.all == 3){
+            l.sel = i.sel & s.sel
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -1864,7 +1899,11 @@ for (g in loop.global){
                #     Find the X and Y limits for all data (same scale for all).            #
                #---------------------------------------------------------------------------#
                var.now       = eft[[var.vname]]$ts
-               every         = apply(X=var.now,MARGIN=c(1,3,4),FUN=tseries.aggr,na.rm=TRUE)
+               every         = apply( X      = var.now
+                                    , MARGIN = c(1,3,4)
+                                    , FUN    = get(tseries.aggr)
+                                    , na.rm  = TRUE
+                                    )#end apply
                xlimit        = pretty.xylim( u       = year.use
                                            , fracexp = 0.0
                                            , is.log  = FALSE
@@ -2169,8 +2208,11 @@ for (g in loop.global){
                #     Grab all data (to build the same scale for all).                      #
                #---------------------------------------------------------------------------#
                var.now       = eft[[var.vname]]$tspft
-               every         = apply(X=var.now,MARGIN=c(1,3,4,5),FUN=tseries.aggr
-                                    ,na.rm=TRUE)
+               every         = apply( X      = var.now
+                                    , MARGIN = c(1,3,4,5)
+                                    , FUN    = get(tseries.aggr)
+                                    , na.rm  = TRUE
+                                    )#end apply
                xlimit        = pretty.xylim( u       = year.use
                                            , fracexp = 0.0
                                            , is.log  = FALSE
@@ -2527,7 +2569,7 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                var.now = apply( X      = eft[[var.vname]]$tspftdbh
                               , MARGIN = c(1,3,4,5,6)
-                              , FUN    = tseries.aggr
+                              , FUN    = get(tseries.aggr)
                               , na.rm  = TRUE
                               )#end apply
                every   = var.now[,,,,n.pft]
@@ -3098,10 +3140,25 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                if (n.real == 1){
                   every = eft[[var.vname]]$ts[,1,y.sel,]
+               }else if(boxplot.aggr %in% c("c","unlist")){
+                  original = eft[[var.vname]]$ts[,,y.sel,]
+                  concat   = apply( X      = expand.grid( dimnames(original)[[2]]
+                                                        , dimnames(original)[[3]]
+                                                        )#end expand.grid
+                                  , MARGIN = 1
+                                  , FUN    = paste
+                                  , collapse = "+"
+                                  )#end apply
+                  every    = apply( X      = original
+                                  , MARGIN = c(1,4)
+                                  , FUN    = unlist
+                                  )#end apply
+                  every    = aperm(a=every,perm=c(2,1,3))
+                  dimnames(every)[[2]] = concat
                }else{
                   every = apply( X      = eft[[var.vname]]$ts[,,y.sel,]
                                , MARGIN = c(1,2,4)
-                               , FUN    = boxplot.aggr
+                               , FUN    = get(boxplot.aggr)
                                , na.rm  = TRUE
                                )#end apply
                }#end if
@@ -3160,16 +3217,16 @@ for (g in loop.global){
                   fichier = paste(now.outpath,"/",var.vname,"-",out.suffix
                                  ,"-boxplot_season.",outform[o],sep="")
                   if (outform[o] == "x11"){
-                     X11(width=size$width,height=size$height,pointsize=ptsz)
+                     X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
                   }else if(outform[o] == "png"){
-                     png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
-                     postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=size$paper)
+                     postscript(file=fichier,width=wsize$width,height=wsize$height
+                               ,pointsize=ptsz,paper=wsize$paper)
                   }else if(outform[o] == "pdf"){
-                     pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-                        ,pointsize=ptsz,paper=size$paper)
+                     pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
+                        ,pointsize=ptsz,paper=wsize$paper)
                   }#end if
                   #------------------------------------------------------------------------#
 
@@ -3295,7 +3352,7 @@ for (g in loop.global){
 
                #----- Set the title. ------------------------------------------------------#
                letitre = paste(var.desc," (Annual means)","\n",out.desc,sep="")
-               lex     = desc.unit(desc="DBH class",unit=untab$cm)
+               lex     = now$alabel
                ley     = desc.unit(desc=var.desc,unit=var.unit)
                #---------------------------------------------------------------------------#
 
@@ -3398,10 +3455,25 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                if (n.real == 1){
                   every = eft[[var.vname]]$tspft[,1,y.sel,,pft.bp]
+               }else if (boxplot.aggr %in% c("c","unlist")){
+                  original = eft[[var.vname]]$tspft[,,y.sel,,pft.bp]
+                  concat   = apply( X      = expand.grid( dimnames(original)[[2]]
+                                                        , dimnames(original)[[3]]
+                                                        )#end expand.grid
+                                  , MARGIN = 1
+                                  , FUN    = paste
+                                  , collapse = "+"
+                                  )#end apply
+                  every    = apply( X      = original
+                                  , MARGIN = c(1,4,5)
+                                  , FUN    = unlist
+                                  )#end apply
+                  every    = aperm(a=every,perm=c(2,1,3,4))
+                  dimnames(every)[[2]] = concat
                }else{
                   every = apply( X      = eft[[var.vname]]$tspft[,,y.sel,,pft.bp]
                                , MARGIN = c(1,2,4,5)
-                               , FUN    = boxplot.aggr
+                               , FUN    = get(boxplot.aggr)
                                , na.rm  = TRUE
                                )#end apply
                }#end if
@@ -3455,16 +3527,16 @@ for (g in loop.global){
                   fichier = paste(now.outpath,"/",var.vname,"-",out.suffix
                                  ,"-boxpft_season.",outform[o],sep="")
                   if (outform[o] == "x11"){
-                     X11(width=size$width,height=size$height,pointsize=ptsz)
+                     X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
                   }else if(outform[o] == "png"){
-                     png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
-                     postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=size$paper)
+                     postscript(file=fichier,width=wsize$width,height=wsize$height
+                               ,pointsize=ptsz,paper=wsize$paper)
                   }else if(outform[o] == "pdf"){
-                     pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-                        ,pointsize=ptsz,paper=size$paper)
+                     pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
+                        ,pointsize=ptsz,paper=wsize$paper)
                   }#end if
                   #------------------------------------------------------------------------#
 
@@ -3746,10 +3818,25 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                if (n.real == 1){
                   every = eft[[var.vname]]$tspftdbh[,1,y.sel,,dbh.bp,n.pft]
+               }else if (boxplot.aggr %in% c("c","unlist")){
+                  original = eft[[var.vname]]$tspftdbh[,,y.sel,,dbh.bp,n.pft]
+                  concat   = apply( X      = expand.grid( dimnames(original)[[2]]
+                                                        , dimnames(original)[[3]]
+                                                        )#end expand.grid
+                                  , MARGIN = 1
+                                  , FUN    = paste
+                                  , collapse = "+"
+                                  )#end apply
+                  every    = apply( X      = original
+                                  , MARGIN = c(1,4,5)
+                                  , FUN    = unlist
+                                  )#end apply
+                  every    = aperm(a=every,perm=c(2,1,3,4))
+                  dimnames(every)[[2]] = concat
                }else{
                   every = apply( X      = eft[[var.vname]]$tspftdbh[,,y.sel,,dbh.bp,n.pft]
                                , MARGIN = c(1,2,4,5)
-                               , FUN    = boxplot.aggr
+                               , FUN    = get(boxplot.aggr)
                                , na.rm  = TRUE
                                )#end apply
                }#end if
@@ -3801,16 +3888,16 @@ for (g in loop.global){
                   fichier = paste(now.outpath,"/",var.vname,"-",out.suffix
                                  ,"-boxdbh_season.",outform[o],sep="")
                   if (outform[o] == "x11"){
-                     X11(width=size$width,height=size$height,pointsize=ptsz)
+                     X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
                   }else if(outform[o] == "png"){
-                     png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
-                     postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=size$paper)
+                     postscript(file=fichier,width=wsize$width,height=wsize$height
+                               ,pointsize=ptsz,paper=wsize$paper)
                   }else if(outform[o] == "pdf"){
-                     pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-                        ,pointsize=ptsz,paper=size$paper)
+                     pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
+                        ,pointsize=ptsz,paper=wsize$paper)
                   }#end if
                   #------------------------------------------------------------------------#
 
@@ -4087,10 +4174,25 @@ for (g in loop.global){
                #---------------------------------------------------------------------------#
                if (n.real == 1){
                   every = eft[[var.vname]]$tspftdbh[,1,y.sel,,dbh.bp,pft.mp]
+               }else if (boxplot.aggr %in% c("c","unlist")){
+                  original = eft[[var.vname]]$tspftdbh[,,y.sel,,dbh.bp,pft.mp]
+                  concat   = apply( X      = expand.grid( dimnames(original)[[2]]
+                                                        , dimnames(original)[[3]]
+                                                        )#end expand.grid
+                                  , MARGIN = 1
+                                  , FUN    = paste
+                                  , collapse = "+"
+                                  )#end apply
+                  every    = apply( X      = original
+                                  , MARGIN = c(1,4,5,6)
+                                  , FUN    = unlist
+                                  )#end apply
+                  every    = aperm(a=every,perm=c(2,1,3,4,5))
+                  dimnames(every)[[2]] = concat
                }else{
                   every = apply( X      = eft[[var.vname]]$tspftdbh[,,y.sel,,dbh.bp,pft.mp]
                                , MARGIN = c(1,2,4,5,6)
-                               , FUN    = boxplot.aggr
+                               , FUN    = get(boxplot.aggr)
                                , na.rm  = TRUE
                                )#end apply
                }#end if
@@ -4155,7 +4257,7 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   for (o in 1:nout){
                      #----- Get the path. -------------------------------------------------#
-                     now.outpath  = outpath[[o]]$global[[g]]$scenario[[s]]$boxpftdbh
+                     now.outpath  = outpath[[o]]$global[[g]]$scenario[[s]]$boxpftdbh[e]
                      #---------------------------------------------------------------------#
 
 
@@ -4163,16 +4265,16 @@ for (g in loop.global){
                      fichier = paste(now.outpath,"/",var.vname,"-",out.suffix
                                     ,"-boxpftdbh-year.",outform[o],sep="")
                      if (outform[o] == "x11"){
-                        X11(width=size$width,height=size$height,pointsize=ptsz)
+                        X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
                      }else if(outform[o] == "png"){
-                        png(filename=fichier,width=size$width*depth
-                           ,height=size$height*depth,pointsize=ptsz,res=depth)
+                        png(filename=fichier,width=wsize$width*depth
+                           ,height=wsize$height*depth,pointsize=ptsz,res=depth)
                      }else if(outform[o] == "eps"){
-                        postscript(file=fichier,width=size$width,height=size$height
-                                  ,pointsize=ptsz,paper=size$paper)
+                        postscript(file=fichier,width=wsize$width,height=wsize$height
+                                  ,pointsize=ptsz,paper=wsize$paper)
                      }else if(outform[o] == "pdf"){
-                        pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-                           ,pointsize=ptsz,paper=size$paper)
+                        pdf(file=fichier,onefile=FALSE,width=wsize$width
+                           ,height=wsize$height,pointsize=ptsz,paper=wsize$paper)
                      }#end if
                      #---------------------------------------------------------------------#
 
@@ -4344,7 +4446,7 @@ for (g in loop.global){
                every = eft[[var.vname]]$tspftdbh[,,y.sel,,,pft.bp,drop=FALSE]
                every = apply( X      = every
                             , MARGIN = c(1,4,5,6)
-                            , FUN    = barplot.aggr
+                            , FUN    = get(barplot.aggr)
                             , na.rm  = TRUE
                             )#end apply
                every = apply( X = every, MARGIN = c(1,2,3)  , FUN = cumsum)
@@ -4478,16 +4580,16 @@ for (g in loop.global){
                   fichier = paste(now.outpath,"/",var.vname,"-",out.suffix
                                  ,"-barplot_season.",outform[o],sep="")
                   if (outform[o] == "x11"){
-                     X11(width=size$width,height=size$height,pointsize=ptsz)
+                     X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
                   }else if(outform[o] == "png"){
-                     png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
-                     postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=size$paper)
+                     postscript(file=fichier,width=wsize$width,height=wsize$height
+                               ,pointsize=ptsz,paper=wsize$paper)
                   }else if(outform[o] == "pdf"){
-                     pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-                        ,pointsize=ptsz,paper=size$paper)
+                     pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
+                        ,pointsize=ptsz,paper=wsize$paper)
                   }#end if
                   #------------------------------------------------------------------------#
 
@@ -6783,8 +6885,26 @@ for (g in loop.global){
 
 
          #----- Retrieve all simulations from this panel. ---------------------------------#
-         every   = eft[[var.vname]]$ts[,,y.sel,,drop=FALSE]
-         every   = apply(X = every, FUN = mean, MARGIN = c(1,2,4),na.rm=TRUE)
+         if (boxplot.aggr %in% c("unlist","c")){
+            original = eft[[var.vname]]$ts[,,y.sel,,drop=FALSE]
+            concat   = apply( X        = expand.grid( dimnames(original)[[2]]
+                                                    , dimnames(original)[[3]]
+                                                    )#end expand.grid
+                            , MARGIN   = 1
+                            , FUN      = paste
+                            , collapse = "+"
+                            )#end apply
+            every   = apply(X = original, FUN = unlist, MARGIN = c(1,4))
+            every   = aperm(a = every   , perm = c(2,1,3))
+            dimnames(every)[[2]] = concat
+         }else{
+            every   = eft[[var.vname]]$ts[,,y.sel,,drop=FALSE]
+            every   = apply(X = every, FUN = mean, MARGIN = c(1,2,4),na.rm=TRUE)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #------ Get dimensions. ----------------------------------------------------------#
          r.dim   = dim(every)[-1]      ; names(r.dim  ) = c("real","season")
          r.dname = dimnames(every)[-1] ; names(r.dname) = c("real","season")
          r.seq   = mapply( FUN = sequence, nvec = r.dim, SIMPLIFY = FALSE)
@@ -7178,16 +7298,28 @@ for (g in loop.global){
    #---------------------------------------------------------------------------------------#
    #     Loop over scenarios.                                                              #
    #---------------------------------------------------------------------------------------#
-   for (s in loop.scenario){
-      idx.s      = match(s,loop.scenario)
-      out.desc   = paste(simul$scenario$title[s],simul$global$title  [g],sep=" - ")
-      out.suffix = paste(simul$scenario$level[s],simul$global$level  [g],sep="-")
+   for (s in loop.allscen){
+      if (s == 0){
+         idx.s         = 1
+         odx.s         = match(s,loop.allscen)
+         out.desc      = simul$global$title  [g]
+         out.suffix    = simul$global$level  [g]
+         scen.headline = "All scenarios"
+      }else{
+         idx.s         = match(s,loop.allscen)
+         odx.s         = idx.s
+         out.desc      = paste(simul$scenario$title[s],simul$global$title  [g],sep=" - ")
+         out.suffix    = paste(simul$scenario$level[s],simul$global$level  [g],sep="-")
+         scen.headline = simul$scenario$title[s]
+      }#end if
 
       #------------------------------------------------------------------------------------#
       #    Find the column with the plot information.                                      #
       #------------------------------------------------------------------------------------#
       if (simul$scenario$n.level == 0){
          now = scenario[[1]]
+      }else if (s == 0){
+         now = scenario[-simul$scenario$idxcol[1]][[1]]
       }else{
          now = scenario[-simul$scenario$idxcol[s]][[1]]
       }#end if
@@ -7199,7 +7331,7 @@ for (g in loop.global){
       #------------------------------------------------------------------------------------#
       #     Select the runs that belong to this panel.                                     #
       #------------------------------------------------------------------------------------#
-      if (simul$scenario$n.level == 0){
+      if (simul$scenario$n.level == 0 | s == 0){
          s.sel = rep(TRUE,times=n.gsel)
       }else{
          s.sel = simul$scenario$idxoff[g.sel,simul$scenario$idxcol[s]] == s
@@ -7219,8 +7351,7 @@ for (g in loop.global){
          y.plog.dbh = panel.xyz$yvar$plog.dbh[y]
          y.leg      = panel.xyz$yvar$leg     [y]
 
-         cat  ("           = Y variable: ",y.desc," scenario ",simul$scenario$title[s]
-                                          ,"...","\n")
+         cat  ("           = Y variable: ",y.desc," scenario ",scen.headline,"...","\n")
 
          #----- Grab the time series for Y. -----------------------------------------------#
          y.ts    = eft[[y.vname]]$ts      [s.sel,,y.sel,n.season]
@@ -7241,19 +7372,27 @@ for (g in loop.global){
 
 
          #---------------------------------------------------------------------------------#
-         #      Find the array names.                                                      #
+         #      Find the array names.  For the special case in which we keep all           #
+         # scenarios, we must re-arrange arrays differently.                               #
          #---------------------------------------------------------------------------------#
-         a.dim     = sapply(X=c(p.dim,s.dim[-idx.s],o.dim  ),FUN=c)
-         a.dnames  = c(p.level,s.level[-idx.s],o.dname)
-         n.a.dim   = length(a.dim)
+         if (s == 0){
+            a.dim     = sapply(X=c(p.dim,s.dim[idx.s],s.dim[-idx.s],o.dim  ),FUN=c)
+            a.dnames  = c(p.level,s.level[idx.s],s.level[-idx.s],o.dname)
+            n.a.dim   = length(a.dim)
+            d.1st     = 3
+         }else{
+            a.dim     = sapply(X=c(p.dim,s.dim[-idx.s],o.dim  ),FUN=c)
+            a.dnames  = c(p.level,s.level[-idx.s],o.dname)
+            n.a.dim   = length(a.dim)
+            d.1st     = 2
+         }#end if
          #---------------------------------------------------------------------------------#
-
 
          #---------------------------------------------------------------------------------#
          #      Split the stuff into panels, and create the scenario maps.                 #
          #---------------------------------------------------------------------------------#
          y.ts     = aperm( a    = array(data=y.ts,dim=a.dim,dimnames=a.dnames)
-                         , perm = c(2,sequence(n.a.dim)[-2])
+                         , perm = c(d.1st,sequence(n.a.dim)[-d.1st])
                          )#end aperm
          #---------------------------------------------------------------------------------#
 
@@ -7292,7 +7431,7 @@ for (g in loop.global){
             #------------------------------------------------------------------------------#
             x.ts     = eft[[x.vname]]$ts     [s.sel,,y.sel,n.season]
             x.ts     = aperm( a    = array(data=x.ts,dim=a.dim,dimnames=a.dnames)
-                            , perm = c(2,sequence(n.a.dim)[-2])
+                            , perm = c(d.1st,sequence(n.a.dim)[-d.1st])
                             )#end aperm
             #---------------------------------------------------------------------------------#
 
@@ -7316,6 +7455,7 @@ for (g in loop.global){
                   z.unit     = panel.xyz$zvar$unit          [z]
                   z.plog     = panel.xyz$zvar$plog          [z]
                   z.plog.dbh = panel.xyz$zvar$plog.dbh      [z]
+                  z.plog.xyz = panel.xyz$zvar$plog.xyz      [z]
                   z.pft      = panel.xyz$zvar$pftvar        [z]
                   z.dbh      = panel.xyz$zvar$dbhvar        [z]
                   z.cscheme  = get(panel.xyz$zvar$col.scheme[z])
@@ -7330,7 +7470,7 @@ for (g in loop.global){
                      #---------------------------------------------------------------------#
                      z.ts       = eft[[z.vname]]$ts   [s.sel,,y.sel,n.season]
                      z.ts     = aperm( a    = array(data=z.ts,dim=a.dim,dimnames=a.dnames)
-                                     , perm = c(2,sequence(n.a.dim)[-2])
+                                     , perm = c(d.1st,sequence(n.a.dim)[-d.1st])
                                      )#end aperm
                      #---------------------------------------------------------------------#
                      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -7364,7 +7504,7 @@ for (g in loop.global){
                      #---------------------------------------------------------------------#
                      for (o in 1:nout){
                         #----- Get the path. ----------------------------------------------#
-                        now.outpath  = outpath[[o]]$global[[g]]$panel.xyz[idx.s,y]
+                        now.outpath  = outpath[[o]]$global[[g]]$panel.xyz[odx.s,y]
                         #------------------------------------------------------------------#
 
 
@@ -7415,7 +7555,7 @@ for (g in loop.global){
                                                        )#end list
                                 , xyz.more       = list(grid=list(col=grid.colour
                                                                  ,lty="solid"))
-                                , key.log        = z.plog
+                                , key.log        = z.plog.xyz
                                 , key.title      = list(main=lacle,cex.main=0.8*cex.main)
                                 , xyz.legend     = list( x      = "bottom"
                                                        , inset  = 0.0
@@ -7456,7 +7596,7 @@ for (g in loop.global){
          #---------------------------------------------------------------------------------#
       }#end for (y in loop.y)
       #------------------------------------------------------------------------------------#
-   }#end for (s in loop.scenario)
+   }#end for (s in loop.allscen)
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
 

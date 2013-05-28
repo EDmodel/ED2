@@ -122,7 +122,7 @@ boot.acc.growth <<- function(dat,idx){
    n.idx = length(idx)
    ans   = sum(dat$pop[idx] * ( dat$nok[idx] - dat$lok[idx] )  / dat$dtime[idx] )
    return(ans)
-}#end boot.growth
+}#end boot.acc.growth
 #==========================================================================================#
 #==========================================================================================#
 

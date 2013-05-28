@@ -981,9 +981,9 @@ simul.description <<- function(ici,testpoi,max.char=66){
       nz     = c(       14,         22)
    }else if (lenici == 23){
       nparms = 3
-      param  = c("idiversity","icanrad","isas")
-      na     = c(          9,        18,    21)
-      nz     = c(         10,        19,    23)
+      param  = c("met.forcing","iphen.scheme","include.fire")
+      na     = c(            6,            14,            22)
+      nz     = c(            8,            16,            23)
    }else if (lenici == 24){
       nparms = 3
       param  = c("met.forcing","icanrad","init.mode")
