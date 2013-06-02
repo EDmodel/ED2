@@ -19,6 +19,7 @@ map.colour    = "black"
 miss.colour   = "grey94"
 miss.colour.2 = "grey86"
 all.colour    = "grey22"
+washed.3g     = c("grey80"              ,"grey87"              ,"grey94"              )
 grey.3g       = c("grey25"              ,"grey50"              ,"grey75"              )
 purple.3g     = c("purple4"             ,"purple1"             ,"mediumpurple1"       )
 indigo.3g     = c("slateblue4"          ,"slateblue"           ,"#A0A0FF"             )
@@ -94,6 +95,7 @@ miss.colour   <<- negative.col(x=miss.colour  ,fg=foreground,bg=background)
 miss.colour.2 <<- negative.col(x=miss.colour.2,fg=foreground,bg=background)
 all.colour    <<- negative.col(x=all.colour   ,fg=foreground,bg=background)
 gcol          <<- c(switch.col(x="lightblue"  ,fg=foreground,bg=background),background)
+washed.3g     <<- switch.col  (x=washed.3g    ,fg=foreground,bg=background)
 grey.3g       <<- switch.col  (x=grey.3g      ,fg=foreground,bg=background)
 purple.3g     <<- switch.col  (x=purple.3g    ,fg=foreground,bg=background)
 indigo.3g     <<- switch.col  (x=indigo.3g    ,fg=foreground,bg=background)
@@ -125,8 +127,8 @@ red.rbow      <<- switch.col  (x=red.7g       ,fg=foreground,bg=background,may.r
 #------------------------------------------------------------------------------------------#
 #     Define the colours for different hues.                                               #
 #------------------------------------------------------------------------------------------#
-fmg.cols  <<- c("grey","purple","indigo","blue","royalblue","steelblue","sky","pink"
-               ,"green","chartreuse","olive","khaki","yellow","gold","orange","red"
+fmg.cols  <<- c("washed","grey","purple","indigo","blue","royalblue","steelblue","sky"
+               ,"pink","green","chartreuse","olive","khaki","yellow","gold","orange","red"
                ,"firebrick","brown")
 for (fmg.col in fmg.cols){
    threeg = get(paste(fmg.col,"3g",sep="."))

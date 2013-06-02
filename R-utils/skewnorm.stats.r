@@ -3,13 +3,87 @@ n.min.skew.norm <<- 15
 
 #==========================================================================================#
 #==========================================================================================#
+#    This function finds all three parameters for skew normal distribution.                #
+#------------------------------------------------------------------------------------------#
+sn.stats = function(x,na.rm=FALSE,maxit=9999){
+   #----- Stop if package fGarch isn't loaded. --------------------------------------------#
+   if (! "package:sn" %in% search()){
+      stop("Function sn.stats requires package sn!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- If na.rm is TRUE, we select only the data that is finite. -----------------------#
+   if (na.rm){
+      sel = is.finite(x)
+      xsel = x[sel]
+   }else{
+      xsel = x
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     The default is to try the maximum likelihood estimator.  It is fast, but it       #
+   # doesn't always converge.  In case it fails, we fall back to EM algorithm, which is    #
+   # more robust but a lot slower.  If none of them work, then falls back to Gaussian, as  #
+   # this usually happens when there are very few points, or all points being the same.    #
+   #---------------------------------------------------------------------------------------#
+   myfit.mle = try(sn.mle(y=xsel,plot.it=FALSE,control=list(maxit=maxit)),silent=TRUE)
+   if ("try-error" %in% is(myfit.mle)){
+      warning(" - MLE failed, falling back to EM")
+      converged = FALSE
+   }else{
+      dp         = cp.to.dp(myfit.mle$cp)
+      ans        = c(dp,0)
+      converged  = myfit.mle$optim$convergence == 0
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Run EM if it failed.                                                              #
+   #---------------------------------------------------------------------------------------#
+   if (! converged){
+      myfit.em = try(sn.em(y=xsel),silent=TRUE)
+      if ("try-error" %in% is(myfit.em)){
+         #---------------------------------------------------------------------------------#
+         #      Not enough point, assume Gaussian and warn the user...                     #
+         #---------------------------------------------------------------------------------#
+         warning("EM failed too, using mean instead.")
+         ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
+         #---------------------------------------------------------------------------------#
+      }else{
+         ans = c(myfit.em$dp,0)
+      }#end if
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Return the answer.                                                                #
+   #---------------------------------------------------------------------------------------#
+   names(ans) = c("location","scale","shape","gaussian")
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function sn.stats
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #    This function finds the location parameter for a skew normal distribution.  In case   #
 # the distribution is not skewed, location parameter becomes the mean.                     #
 #------------------------------------------------------------------------------------------#
 sn.location = function(x,na.rm=FALSE,maxit=9999){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function sn.location requires package sn!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -84,7 +158,7 @@ sn.location = function(x,na.rm=FALSE,maxit=9999){
 sn.scale = function(x,na.rm=FALSE,maxit=9999){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function sn.scale requires package sn!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -159,7 +233,7 @@ sn.scale = function(x,na.rm=FALSE,maxit=9999){
 sn.shape = function(x,na.rm=FALSE,maxit=9999){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function sn.shape requires package sn!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -234,7 +308,7 @@ sn.shape = function(x,na.rm=FALSE,maxit=9999){
 sn.converged = function(x,na.rm=FALSE){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function sn.converged requires package sn!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -294,7 +368,7 @@ sn.converged = function(x,na.rm=FALSE){
 skew2normal = function(x,location,scale,shape,idx=rep(1,times=length(x))){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function skew2normal requires package sn!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -329,10 +403,10 @@ skew2normal = function(x,location,scale,shape,idx=rep(1,times=length(x))){
       }#end if
    }#end for
    #---------------------------------------------------------------------------------------#
-   
 
 
-   #------Find the equivalent quantile for the Gaussian distribution. ---------------------#
+
+   #----- Find the equivalent quantile for the Gaussian distribution. ---------------------#
    xnorm    = qnorm(p=cdf.skew,mean=0,sd=1)
    #---------------------------------------------------------------------------------------#
 

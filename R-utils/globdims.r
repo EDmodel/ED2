@@ -271,6 +271,46 @@ if (ihgt.type == 1){
 
 #==========================================================================================#
 #==========================================================================================#
+#     Define which height classes to use based on the DBH flag.                            #
+#------------------------------------------------------------------------------------------#
+if ("isld.type" %in% ls()){
+   isld.type <<- isld.type
+}else{
+   isld.type <<- 1
+}#end if
+if (isld.type == 1){
+   nsld       <<- 12
+   belowsld   <<- c(-6.0,-5.5,-5.0,-4.5,-4.0,-3.5,-3.0,-2.5,-2.0,-1.5,-1.0,-0.5)
+   abovesld   <<- c(belowsld[-1],0)
+   thicksld  <<- diff(c(belowsld,0))
+   roundsld   <<- round(belowsld,2)
+   breaksld   <<- c(-Inf,belowsld[-1],Inf)
+   sldlabel   <<- "cc_sdclss"
+   sldkeys    <<- paste(roundsld,"-",c(roundsld[-1],0),sep="")
+   sldnames   <<- paste( c("<",paste(roundsld[-c(1,nsld)],"-",sep=""),">")
+                       , c(roundsld[-1],roundsld[nhgt]),"m"
+                       , sep=""
+                       )#end paste
+   sldcols    <<- c(         "purple3",   "mediumpurple1",      "royalblue4"
+                   ,      "steelblue3",     "deepskyblue",         "#004E00"
+                   ,     "chartreuse3",      "olivedrab3", "lightgoldenrod3"
+                   ,         "yellow3",     "darkorange1",            "red3"
+                   ,      "firebrick4",        all.colour
+                   )#end c
+}else{
+   cat(" In globdims.r:","\n")
+   cat(" ISLD.TYPE = ",isld.type,"\n")
+   stop(" Invalid ISLD.TYPE, it must be C or H (feel free to add more options.")
+}#end if
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     Define default weighting factor for carbon balance.                                  #
 #------------------------------------------------------------------------------------------#
 if ("klight" %in% ls()){

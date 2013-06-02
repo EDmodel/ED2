@@ -1793,18 +1793,25 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
       #       Find the polygon-average depth and area.                                     #
       #------------------------------------------------------------------------------------#
-      if (ncohorts > 0){
-         useconow     = as.numeric(opencanconow > 0)
-         xconow       = heightconow  * nplantconow * baconow * ( opencanconow > 2^-23 )
-         wconow       = nplantconow  * baconow * ( opencanconow > 2^-23 )
-         oconow       = opencanconow * ( opencanconow > 2^-23 )
-         can.depth.pa = (    tapply(X = xconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
-                        /    tapply(X = wconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
-                        )#end can.depth.pa
-         can.area.pa  = 1. - tapply(X = oconow, INDEX = ipaconow, FUN = min, na.rm = TRUE)
+      if (any(ncohorts > 0)){
+         useconow      = as.numeric(opencanconow > 0)
+         xconow        = heightconow  * nplantconow * baconow * ( opencanconow > 2^-23 )
+         wconow        = nplantconow  * baconow * ( opencanconow > 2^-23 )
+         oconow        = opencanconow * ( opencanconow > 2^-23 )
+         can.depth.idx = (    tapply(X = xconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
+                         /    tapply(X = wconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
+                         )#end can.depth.pa
+         can.area.idx  = 1. - tapply(X = oconow, INDEX = ipaconow, FUN = min, na.rm = TRUE)
+         
+         can.depth.pa      = rep(NA,times=sum(npatches))
+         can.area.pa       = rep(NA,times=sum(npatches))
 
-         emean$can.depth [m] = can.depth.pa * areapa
-         emean$can.area  [m] = can.area.pa  * areapa
+         idx               = as.numeric(names(can.depth.idx))
+         can.depth.pa[idx] = can.depth.idx
+         can.area.pa [idx] = can.area.idx
+
+         emean$can.depth [m] = sum(can.depth.pa * areapa)
+         emean$can.area  [m] = sum(can.area.pa  * areapa)
       }else{
          emean$can.depth [m] = 0.
          emean$can.area  [m] = 0.

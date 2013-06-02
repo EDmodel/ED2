@@ -3,16 +3,19 @@
 #    This function that defines the size of the figure to be plotted in case of maps.      #
 # In case the plot is a map, it correct sizes so the map doesn't look distorted.           #
 #------------------------------------------------------------------------------------------#
-plotsize = function( proje                 #  Map projection? [T|F]
-                   , limlon    = NULL      #  Longitude range, if proje = TRUE
-                   , limlat    = NULL      #  Latitude range, if proje = TRUE
-                   , deg       = TRUE      #  Are longitude and latitude in degrees?
-                   , stdheight = NULL      #  Standard height
-                   , stdwidth  = NULL      #  Standard 
-                   , extendfc  = FALSE     #  Extend width for filled.contour [T|F]
-                   , paper     = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
+plotsize = function( proje                  #  Map projection? [T|F]
+                   , limlon     = NULL      #  Longitude range, if proje = TRUE
+                   , limlat     = NULL      #  Latitude range, if proje = TRUE
+                   , deg        = TRUE      #  Are longitude and latitude in degrees?
+                   , stdheight  = NULL      #  Standard height
+                   , stdwidth   = NULL      #  Standard 
+                   , extendfc   = FALSE     #  Extend width for filled.contour [T|F]
+                   , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
+                   , landscape  = TRUE      #  Landscape? (if not swap width and height)
                    ){
 
+
+   null.std = is.null(stdheight) | is.null(stdwidth)
 
    #---------------------------------------------------------------------------------------#
    #     Check whether projection is TRUE or false.  In case it is TRUE, limlon and limlat #
@@ -129,6 +132,19 @@ plotsize = function( proje                 #  Map projection? [T|F]
       #------------------------------------------------------------------------------------#
 
    }#end if (proje)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Swap height and width if portrait.                                              #
+   #---------------------------------------------------------------------------------------#
+   if (! landscape & null.std ){
+      phold = height
+      height = width
+      width  = phold
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 

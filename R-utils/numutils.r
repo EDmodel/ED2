@@ -378,7 +378,7 @@ kurt <<- function (x, na.rm = FALSE){
 #                  Last modified on 25 Oct 2012 - 10:56 EST                                #
 #                                                                                          #
 #                  The script now recognises whether the arr.ind is a vector, matrix, or   #
-#                  list and call it self recursively to return the full list. 
+#                  list and call it self recursively to return the full list.              #
 #------------------------------------------------------------------------------------------#
 whichInd <<- function(ai, dims){
 
@@ -455,6 +455,23 @@ lit.sample <<- function(x,size,replace=FALSE,prob=NULL){
    }else{
       ans = sample(x,size,replace,prob)
    }#end if
+   return(ans)
+}#end function lit.sample
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function creates a sequence of integers that has the same length as the length  #
+# of the argument.                                                                         #
+#------------------------------------------------------------------------------------------#
+seq.len <<- function(x){
+   ans = sequence(length(x))
    return(ans)
 }#end function lit.sample
 #==========================================================================================#

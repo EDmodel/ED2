@@ -1,12 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 
 #---------------------------------- Change settings here ----------------------------------#
 root='thisroot'
 moi='myname'
-here=${root}/'thispoly'                        # Directory to start the run
-exe=${here}'/myexec'                               # Executable
-logfile=${here}'/serial_out.out'               # Log file of the executable run
-errfile=${here}'/serial_out.err'               # Executable error file
+here="${root}/thispoly"                        # Directory to start the run
+exe="${here}/myexec"                           # Executable
+initrc='myinitrc'                              # Script to load before doing anything
+logfile="${here}/serial_out.out"               # Log file of the executable run
+errfile="${here}/serial_out.err"               # Executable error file
 currloc=`pwd`                                  # Current location
 
 mddir='met_driver'
@@ -14,6 +15,26 @@ scendir='myscenmain'
 datasrc='mypackdata'
 datadest="/scratch/${moi}"
 scenario='myscenario'
+#------------------------------------------------------------------------------------------#
+
+
+#----- Source script. ---------------------------------------------------------------------#
+. ${initrc}
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Check whether there is rsync in this machine or not.                                 #
+#------------------------------------------------------------------------------------------#
+rsync_here=`which rsync 2> /dev/null`
+if [ "x${rsync_here}" == "x" ]
+then
+   cp_here=`which cp | grep -v alias | sed s@"\t"@""@g`
+   rsync="${cp_here} -ruva"
+else
+   rsync="${rsync_here} -Pruvaz"
+fi
 #------------------------------------------------------------------------------------------#
 
 
@@ -90,7 +111,6 @@ echo " "                                                      1>> ${logfile} 2>>
 #------------------------------------------------------------------------------------------#
 
 
-
 #------------------------------------------------------------------------------------------#
 #    Decide whether to copy files or not.                                                  #
 #------------------------------------------------------------------------------------------#
@@ -150,7 +170,7 @@ else
          #----- Copy the meteorological forcing. ------------------------------------------#
          blah='  - Copying the meterological forcing driver...'
          echo ${blah} 1>> ${logfile} 2>> ${errfile}
-         rsync -Pruvaz ${source_thisscen} ${node_scenroot} 1>> ${logfile} 2>> ${errfile}
+         ${rsync} ${source_thisscen} ${node_scenroot} 1>> ${logfile} 2>> ${errfile}
 
 
          #----- Copy finished.  Create a file to unlock this node. ------------------------#
@@ -205,7 +225,7 @@ else
             #----- Copy the meteorological forcing. ---------------------------------------#
             blah='  - Copying the meterological forcing driver...'
             echo ${blah} 1>> ${logfile} 2>> ${errfile}
-            rsync -Pruvaz ${source_thisscen} ${node_scenroot} 1>> ${logfile} 2>> ${errfile}
+            ${rsync} ${source_thisscen} ${node_scenroot} 1>> ${logfile} 2>> ${errfile}
 
 
             #----- Copy finished.  Create a file to unlock this node. ---------------------#

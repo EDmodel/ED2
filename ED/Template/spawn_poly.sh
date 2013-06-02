@@ -53,8 +53,12 @@ toldef='0.01'
 callunpa=${here}'/callunpa.sh'
 unparun=${here}'/unparun.sh'
 
-#----- Executable name. -------------------------------------------------------------------#
-execname='ed_2.1-opt'
+#----- Executable names. ------------------------------------------------------------------#
+optname='ed_2.1-opt'               # Normal executable, for most queues
+cs6name='ed_2.1-cs6'               # Executable compiled in CentOS 6
+#----- Initialisation scripts. ------------------------------------------------------------#
+optinit="${HOME}/.bashrc"          # Initialisation script for most nodes
+cs6init="${HOME}/util/centos6.rc"  # Initialisation script for CentOS 6 nodes
 #------------------------------------------------------------------------------------------#
 #==========================================================================================#
 #==========================================================================================#
@@ -517,7 +521,7 @@ do
    gyf)
       dtcensus=24
       let yr1stcensus=${yeara}+${yodd}
-      mon1stcensus=7
+      mon1stcensus=3
       minrecruitdbh=10
       ;;
    s67)
@@ -1242,12 +1246,14 @@ do
    sed -i s@thisdesc@${desc}@g      ${srun}
    sed -i s@zzzzzzzz@${wtime}@g     ${srun}
    sed -i s@myorder@${ff}@g         ${srun}
+   sed -i s@myinitrc@${initrc}@g    ${srun}
 
    #----- Change the callserial.sh file. --------------------------------------------------#
    callserial=${here}'/'${polyname}'/callserial.sh'
    sed -i s@thisroot@${here}@g          ${callserial}
    sed -i s@thispoly@${polyname}@g      ${callserial}
    sed -i s@myexec@${execname}@g        ${callserial}
+   sed -i s@myinitrc@${initrc}@g        ${callserial}
    sed -i s@myname@${moi}@g             ${callserial}
    sed -i s@mypackdata@${packdatasrc}@g ${callserial}
    sed -i s@myscenario@${iscenario}@g   ${callserial}

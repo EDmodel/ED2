@@ -1,0 +1,337 @@
+#!/bin/bash
+# Create ncarg-dummy library **************************
+#
+# Compile ncar, if you are using the NCAR dummy libraries
+#
+# by Daniel Merli Lamosa PAD/CPTEC/INPE
+# *****************************************************
+
+# Set HDF path -----------------------------------------
+SET_HDF() {
+ 
+  echo "*******************************************************************************"
+  echo "*       HDF4 requires jpeg, szip and zlib libraries to be installed           *"
+  echo "* 							       	 	      *"
+  echo "* Check the BRAMS site (www.cptec.inpe.br/brams) for                          *"
+  echo "* instructions of how to install HDF and others libraries.                    *"
+  echo "*                                                                             *"
+  echo "*******************************************************************************"
+  echo
+  read -a option -p "Did you install HDF in your system? [Y,n]:"
+
+  if [ "$option" == "Y" -o "$option" == "y" -o "x$option" == "x" ] ; then 
+   
+    option=""
+    clear
+    echo "************************************************************************************"
+    echo " A common installation of jpeg, szip and zlib and hdf uses a single parent directory " 
+    echo " for all libraries. Please, let me know whether " 
+    echo "  hdf4/lib/libdf.a "
+    echo "  hdf4/lib/libmfhdf.a "
+    echo "  jpeg-6b/lib/libjpeg.a "
+    echo "  zlib/lib/libz.a "
+    echo "  szip/lib/libsz.a "
+    echo " are all at the same parent diretory"
+    echo " (default if hdf was installed by script install-hdf.sh from the BRAMS website.) "
+    echo
+    echo "*****************************************************************************"
+    echo
+    read -a option -p "Are the above files at the same parent directory? [Y,n]:"
+    clear  
+    if [ "x$option" == "x" -o "$option" == "Y" ] ; then
+     
+      read -a option -p "Enter the full path of this parent directory:"
+      if [ ! "x$option" == "x" ] ; then
+        # Test if directory is founded
+        ls "$option" >/dev/null 2>&1
+        # If = true
+        if [ ! $? -ne 0 ] ; then
+          mkdir -p ./.hdf4_libs
+          cd ./.hdf4_libs
+          ln -sf $option/hdf4/lib/libdf.a libdf.a
+          ln -sf $option/hdf4/lib/libmfhdf.a libmfhdf.a
+          ln -sf $option/jpeg-6b/lib/libjpeg.a libjpeg.a
+          ln -sf $option/zlib/lib/libz.a libz.a
+          ln -sf $option/szip/lib/libsz.a libsz.a
+          cd ..
+        else
+          echo 
+          echo "ERROR! Directory $option does not exist!"
+          exit 8
+        fi
+      # If - Inform path
+      else
+        echo " Path not informed!" 
+        exit 8
+      fi
+    #If - using script
+    else
+      # Manual setting ---------------------------------------------------------------------
+      clear 
+      echo "******************************************************" 
+      echo " Manual configure: Please, enter the following paths:" 
+      echo "******************************************************"
+      echo
+      option=""
+      read -a option -p "Inform HDF library path:"
+      if [ "x$option" == "x" ] ; then
+        echo
+        echo "HDF PATH not informed!"
+        exit 8
+      else
+        mkdir -p ./.hdf4_libs
+        cd ./.hdf4_libs
+        ln -sf $option/lib/libdf.a libdf.a
+        ln -sf $option/lib/libmfhdf.a libmfhdf.a
+      fi
+ 
+      option=""
+      read -a option -p "Inform jpeg library path:"
+      if [ "x$option" == "x" ] ; then
+        echo
+        echo "jpeg PATH not informed!"
+        exit 8
+      else
+        ln -sf $option/lib/libjpeg.a libjpeg.a
+      fi
+
+      option=""
+      read -a option -p "Inform zlib library path:"
+      if [ "x$option" == "x" ] ; then
+        echo
+        echo "zlib PATH not informed!"
+        exit 8
+      else
+        ln -sf $option/lib/libz.a libz.a
+      fi
+
+      option=""
+      read -a option -p "Inform szip library path:"
+      if [ "x$option" == "x" ] ; then
+        echo
+        echo "szip PATH not informed!"
+        exit 8
+      else
+        ln -sf $option/lib/libsz.a libsz.a
+        cd ..
+      fi
+      # ------------------------------------------------------------------------------------
+    fi
+  # If - Install hdf
+  else
+    echo
+    echo "Install HDF before starting this script again"
+    exit 8
+  fi
+
+}
+# ------------------------------------------------------
+
+# Set RAMS_ROOT in paths.mk file -----------------------
+Update_path() {
+ 
+ echo 
+ echo "Configuring PATHS...."
+ echo
+ home_dir=`pwd`
+ home_dir=`dirname $home_dir`
+ home_dir=`dirname $home_dir`
+
+ TEMP=`more paths.mk|grep RAMS_ROOT=`
+ sed s!$TEMP!RAMS_ROOT=${home_dir}!g paths.mk > paths.tmp
+ mv -f paths.tmp paths.mk
+
+ echo "PATH is now OK!"
+ echo
+ 
+}
+# ------------------------------------------------------
+
+# Set Compiler options --------------------------
+Make_include() {
+  
+  echo 
+  echo "Set compilers options...."
+  rm -f include.mk.opt
+  ln -s include.mk.opt.${1} include.mk.opt
+  echo "Compilers options OK!"
+  echo 
+}
+# -----------------------------------------------
+
+
+# Check mpif90 version with compiler
+Check_mpi_comp() {
+
+  echo
+  echo "Verifing mpif90 with $1 compiler...."
+ 
+  if [ $1 -eq sxf90 ] ; then
+     TEMP=`sxmpif90 -compile-info |grep $1 |wc -l | awk '{print $1}'`
+  else
+     TEMP=`mpif90 -compile-info |grep $1 |wc -l | awk '{print $1}'`
+  fi
+  if [ $TEMP -eq 0 ]; then  
+    echo "ERROR! Mpich not is compatible with compiler!"
+    echo "Verify your PATH or install mpich with $1 compiler."
+    echo
+    echo "Instructions in www.cptec.inpe.br/brams"
+    exit 8
+  fi
+
+  echo  
+  echo "mpif90 OK!"
+  echo
+}
+
+# List MPICH in system PATH 
+Find_compiler() {
+
+echo
+echo "Set compiler and mpif90 paths..."
+
+TEXT_COMP="NO MPICH at PATH"
+COMP=""
+#For pgf90 compiler
+TEMP=`mpif90 -compile-info |grep pgf90 |wc -l | awk '{print $1}'`
+if [ $TEMP -ne 0 ]; then
+  TEXT_COMP="MPICH with Portland pgf90 compiler"
+  COMP=pgi
+  #return
+fi
+# for ifort compiler
+TEMP=`mpif90 -compile-info |grep ifort |wc -l | awk '{print $1}'`
+if [ $TEMP -ne 0 ]; then
+  TEXT_COMP="MPICH with Intel ifort compiler"
+  COMP=intel
+  #return
+fi
+# for g95 compiler
+TEMP=`mpif90 -compile-info |grep g95 |wc -l | awk '{print $1}'`
+if [ $TEMP -ne 0 ]; then
+  TEXT_COMP="MPICH with Gnu g95 compiler"
+  COMP=gnu
+  #return
+fi
+# for NEC SX-6 compiler
+TEMP=`mpif90 -compile-info |grep sxf90 |wc -l | awk '{print $1}'`
+if [ $TEMP -ne 0 ]; then
+  TEXT_COMP="MPICH with NEC SX-6 Fortran 90 compiler"
+  COMP=nec
+  #return
+fi
+
+
+echo
+echo "mpif90 using $COMP compiler."
+echo
+
+}
+
+Check_compiler() {
+
+echo
+echo "Checking compiler..."
+if [ "$COMP" = "intel" ]; then
+  Check_mpi_comp ifort
+  Make_include intel  
+elif [ "$COMP" = "pgi" ]; then
+  Check_mpi_comp pgf90
+  Make_include pgi
+elif [ "$COMP" = "gnu" ]; then
+  Check_mpi_comp g95
+  Make_include gnu
+elif [ "$COMP" = "nec" ]; then
+  Check_mpi_comp nec
+  Make_include nec
+else
+  echo
+  echo "Error! Fortran Compiler not detected!"
+  echo "Tested ifort, g95, pgf90 and sxf90 compilers.."
+  echo "For others compilers contact brams team:"
+  echo
+  echo "mail: brams@cptec.inpe.br"
+  echo
+  echo "Thank you for using brams!"
+  exit 8
+fi
+
+
+} 
+
+Install_ncargdummy() {
+
+echo
+echo "Creating ncarg dummy library...."
+
+PATH_NCARG=../../src/utils/2.0/ncargd
+
+if [ "$COMP" = "intel" ]; then
+  mpif90 ${PATH_NCARG}/ncarg_dummy.f90 -c -o libncarg-dummy.a
+elif [ "$COMP" = "pgi" ]; then
+  mpif90 ${PATH_NCARG}/ncarg_dummy.f90 -c -o libncarg-dummy.a
+elif [ "$COMP" = "gnu" ]; then
+  mpif90 ${PATH_NCARG}/ncarg_dummy.f90 -c -o libncarg-dummy.a
+else
+  echo
+  echo "Error! mpif90 not detected!"
+  echo
+  exit 8
+fi
+
+echo "Ncarg dummy library was successfuly created"
+
+}
+
+
+Clean_all() {
+  
+  home_dir=`pwd`
+  rm -rf ${home_dir}/.hdf4_libs
+  rm -f libncarg-dummy.a
+  rm -f include.mk.opt
+  TEMP=`more paths.mk |grep RAMS_ROOT=`
+  sed s!$TEMP!RAMS_ROOT=path_to_BRAMS32!g paths.mk > paths.tmp
+  mv -f paths.tmp paths.mk
+
+}
+
+# Main script -----------------------------------------------------------------
+#
+# Update_path:    Set RAMS_ROOT variable in paths.mk file
+# Find_HDF:       Set paths to HDF
+# Check_mpi_comp: Set mpi paths to correct compiler
+# -----------------------------------------------------------------------------
+
+if [ "$1" == "clean" ] ; then
+  echo "Cleanning file...."
+  Clean_all
+  echo "Finishing clean"
+else
+
+  echo
+  echo "Starts configuring brams..................."
+  echo
+
+  # Set HDF paths
+  SET_HDF
+  # Set paths.mk
+  Update_path
+  # Set COMP with mpif90 found in PATH system
+  Find_compiler
+  # Check if compiler is the same created  mpif90 scripts
+  Check_compiler
+  # Install ncarg_dummy library
+  #Install_ncargdummy
+
+  echo
+  echo 
+  echo "Brams successfuly configured!"
+  echo 
+  echo "Run install.sh script to generate brams executable"
+  echo 
+  echo "Thank you for using brams.."
+  echo "Brams team"
+  echo
+fi
+

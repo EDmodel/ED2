@@ -3017,9 +3017,9 @@ poitmp[[u]] = list( short           = "paracou"
                   , ntext           = 6
                   , sand            = 0.562
                   , clay            = 0.345
-                  , depth           = "C"
-                  , isoilbc         = 2
-                  , sldrain         = 6.
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Paracou"
                   , yeara           = 1999

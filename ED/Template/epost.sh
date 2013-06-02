@@ -9,7 +9,7 @@ lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 outroot='/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX'
 submit='y'       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+useperiod='a'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # 'a' -- All period
                  # 't' -- One eddy flux tower met cycle
                  # 'u' -- User defined period, defined by the variables below.
