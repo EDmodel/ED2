@@ -97,9 +97,6 @@ idbh.type      = myidbhtype   # Type of DBH class
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
 ed22.ci        = TRUE         # Plot confidence interval for ED?
 n.boot         = 1000         # Number of realisations for bootstrap
-iint.photo     = myiintphoto  # Time-interval for some photosynthesis variables
-                              # 0 -- 24h/day
-                              # 1 -- daytime only
 #------------------------------------------------------------------------------------------#
 
 
@@ -133,8 +130,8 @@ source(file.path(srcdir,"load.everything.r"))
 pop.vars      = c("n","agb","ba","acc")
 pop.labels    = c("Individuals","Above Ground Biomass","Basal area","Accumulated")
 pop.units     = c(untab$pcpopoyr,untab$pcagboyr,untab$pcbaoyr,untab$kgcom2oyr)
-growth.vars   = c("dbh","agb","ba","anpp")
-growth.labels = c("DBH","Above Ground Biomass","Basal Area","ANPP")
+growth.vars   = c("dbh","agb","ba","acc")
+growth.labels = c("DBH","Above Ground Biomass","Basal Area","Accumulated")
 growth.units  = c(untab$pcdbhoyr,untab$pcagboyr,untab$pcbaoyr,untab$kgcom2oyr)
 #------------------------------------------------------------------------------------------#
 
@@ -1094,7 +1091,7 @@ for (place in myplaces){
                         mean.dlnbadt  = weighted.mean( x  = dlnbadtconow  [sel.grow]
                                                      , w  = w.nplant      [sel.grow]
                                                      )#end 
-                        total.anpp    = sum( w.nplant       [sel.grow]
+                        total.growth  = sum( w.nplant       [sel.grow]
                                            * ( agbconow     [sel.grow]
                                              - agbconow.1ago[sel.grow] ) )
                         #------------------------------------------------------------------#
@@ -1105,7 +1102,7 @@ for (place in myplaces){
                         ts.growth.size$dbh [p,d,m,u] = mean.dlndbhdt
                         ts.growth.size$agb [p,d,m,u] = mean.dlnagbdt
                         ts.growth.size$ba  [p,d,m,u] = mean.dlnbadt
-                        ts.growth.size$anpp[p,d,m,u] = total.anpp
+                        ts.growth.size$acc [p,d,m,u] = total.growth
                         #------------------------------------------------------------------#
                      }#end if
                      #---------------------------------------------------------------------#
@@ -2050,7 +2047,7 @@ for (place in myplaces){
 
 
             #----- Load the modelled rates. -----------------------------------------------#
-            mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+            mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc"))
             sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
             sta.expected = mult * sta.mod[1,,]
             sta.q025     = mult * sta.mod[2,,]
@@ -2323,7 +2320,7 @@ for (place in myplaces){
 
 
             #----- Load the modelled rates. -----------------------------------------------#
-            mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+            mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc"))
             sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
             sta.expected = mult * sta.mod[1,-1]
             sta.q025     = mult * sta.mod[2,-1]
@@ -2636,7 +2633,7 @@ for (place in myplaces){
 
 
                      #----- Load the modelled rates. --------------------------------------#
-                     mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+                     mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc"))
                      sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
                      sta.expected = mult * sta.mod[1,d,-1]
                      sta.q025     = mult * sta.mod[2,d,-1]
@@ -2825,7 +2822,7 @@ for (place in myplaces){
 
 
             #----- Load the modelled rates. -----------------------------------------------#
-            mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+            mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc"))
             sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
             sta.expected = mult * sta.mod[1,-1]
             sta.q025     = mult * sta.mod[2,-1]
@@ -3019,7 +3016,7 @@ for (place in myplaces){
 
 
                #----- Load the modelled rates. --------------------------------------------#
-               mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
+               mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc"))
                sta.mod      = sta[[sta.rate]][[indiv[i]]]$global
                sta.expected = mult * sta.mod[1,,-1]
                sta.q025     = mult * sta.mod[2,,-1]

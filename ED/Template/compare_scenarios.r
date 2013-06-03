@@ -52,12 +52,12 @@ rdata.path       = file.path(here,"RData_gyf+s67") # Path for the scenario compa
 #------------------------------------------------------------------------------------------#
 plot.panel       = c(FALSE,TRUE,NA)[2]
 plot.tseries     = c(FALSE,TRUE,NA)[1]
-plot.szpft       = c(FALSE,TRUE,NA)[2]
-plot.barplot     = c(FALSE,TRUE,NA)[2]
-plot.xyzvars     = c(FALSE,TRUE,NA)[1]
-plot.scencomp    = c(FALSE,TRUE,NA)[2]
-plot.panelbox    = c(FALSE,TRUE,NA)[2]
-plot.panelxyz    = c(FALSE,TRUE,NA)[2]
+plot.szpft       = c(FALSE,TRUE,NA)[1]
+plot.barplot     = c(FALSE,TRUE,NA)[1]
+plot.xyzvars     = c(FALSE,TRUE,NA)[2]
+plot.scencomp    = c(FALSE,TRUE,NA)[1]
+plot.panelbox    = c(FALSE,TRUE,NA)[1]
+plot.panelxyz    = c(FALSE,TRUE,NA)[1]
 #------------------------------------------------------------------------------------------#
 
 
@@ -1697,7 +1697,7 @@ for (g in loop.global){
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
       #       Loop over all scenarios.                                                     #
       #------------------------------------------------------------------------------------#
-      for (s in loop.scenario){
+      for (s in loop.scenario[1]){
          #---------------------------------------------------------------------------------#
          #     Select the runs that belong to this panel.                                  #
          #---------------------------------------------------------------------------------#
@@ -7298,7 +7298,7 @@ for (g in loop.global){
    #---------------------------------------------------------------------------------------#
    #     Loop over scenarios.                                                              #
    #---------------------------------------------------------------------------------------#
-   for (s in loop.allscen){
+   for (s in loop.allscen[-1]){
       if (s == 0){
          idx.s         = 1
          odx.s         = match(s,loop.allscen)

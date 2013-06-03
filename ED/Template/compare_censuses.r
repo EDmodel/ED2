@@ -78,7 +78,7 @@ n.boot         = 1000         # Number of realisations for bootstrap
 
 #----- Simulation settings. ---------------------------------------------------------------#
 place = list()
-year.list = sprintf("%+2.2i",seq(from=-50,to=-5,by=5))
+year.list = sprintf("%+2.2i",seq(from=-60,to=-5,by=5))
 place[[ 1]] = list( iata   = "gyf" 
                   , config = list( yeara    = paste("yra",year.list,sep="")
                                  , iphen    = iphen.key
