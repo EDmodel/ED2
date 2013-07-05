@@ -28,6 +28,8 @@ outroot       = file.path(here
                          ,paste("scencomp",stext.default,drain.default,bg.default,sep="_")
                          )#end file.path
 comp.prefix   = "stext"
+save.every    = 100                         # Save the partial processing every (save.every)
+                                            #    steps
 #------------------------------------------------------------------------------------------#
 
 
@@ -35,9 +37,9 @@ comp.prefix   = "stext"
 #------------------------------------------------------------------------------------------#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
-retrieve.siminfo = FALSE                           # Retrieve previously loaded simul. info
-retrieve.global  = TRUE                            # Retrieve previously loaded data
-rdata.path       = file.path(here,"RData_gyf+s67") # Path for the scenario comparison.
+retrieve.siminfo = FALSE                            # Retrieve previously loaded sim. info
+retrieve.global  = TRUE                             # Retrieve previously loaded data
+rdata.path       = file.path(here,"RData_scenario") # Path with R object.
 #------------------------------------------------------------------------------------------#
 
 
@@ -52,12 +54,12 @@ rdata.path       = file.path(here,"RData_gyf+s67") # Path for the scenario compa
 #------------------------------------------------------------------------------------------#
 plot.panel       = c(FALSE,TRUE,NA)[2]
 plot.tseries     = c(FALSE,TRUE,NA)[1]
-plot.szpft       = c(FALSE,TRUE,NA)[1]
-plot.barplot     = c(FALSE,TRUE,NA)[1]
-plot.xyzvars     = c(FALSE,TRUE,NA)[2]
-plot.scencomp    = c(FALSE,TRUE,NA)[1]
-plot.panelbox    = c(FALSE,TRUE,NA)[1]
-plot.panelxyz    = c(FALSE,TRUE,NA)[1]
+plot.szpft       = c(FALSE,TRUE,NA)[2]
+plot.barplot     = c(FALSE,TRUE,NA)[2]
+plot.xyzvars     = c(FALSE,TRUE,NA)[1]
+plot.scencomp    = c(FALSE,TRUE,NA)[2]
+plot.panelbox    = c(FALSE,TRUE,NA)[2]
+plot.panelxyz    = c(FALSE,TRUE,NA)[2]
 #------------------------------------------------------------------------------------------#
 
 
@@ -156,7 +158,9 @@ global         = list()
 #                     , alabel  = NA_character_
 #                     )#end list
 global$dtemp   = list( key     = c("t+000","t+100","t+200","t+300")
-                     , desc    = c("dT = +0.0 K","dT = +1.0 K","dT = +2.0 K","dT = +3.0 K")
+                     , desc    = c("","","","")
+                     , legend  = c("","","","")
+                     , parse   = FALSE
                      , pattern = "tTTTT"
                      , default = NA_integer_
                      , value   = NA_real_
@@ -169,6 +173,8 @@ global$dtemp   = list( key     = c("t+000","t+100","t+200","t+300")
 panel          = list()
 panel$iata     = list( key     = c("gyf","s67")
                      , desc    = c("Paracou","Santarem")
+                     , legend  = c("Paracou","Santarem")
+                     , parse   = FALSE
                      , pattern = "PPP"
                      , default = NA_character_
                      , value   = NA_real_
@@ -179,6 +185,8 @@ panel$iata     = list( key     = c("gyf","s67")
                      )#end list
 panel$iphen    = list( key     = c("iphen-01","iphen+02")
                      , desc    = paste("Phenology:",c("Evergreen","Drought Deciduous"))
+                     , legend  = paste("Phenology:",c("Evergreen","Drought Deciduous"))
+                     , parse   = FALSE
                      , pattern = "iphenDDD"
                      , default = NA_character_
                      , value   = NA_real_
@@ -189,34 +197,46 @@ panel$iphen    = list( key     = c("iphen-01","iphen+02")
                      )#end list
 #----- Scenario variables. ----------------------------------------------------------------#
 scenario       = list()
-scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-100")
-                     , desc    = c("dR =  0.00 S","dR = -0.20 S","dR = -0.40 S"
-                                  ,"dR = -0.60 S","dR = -0.80 S","dR = -1.00 S")
+scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-100"
+                                  ,"r-120","r-140","r-160")
+                     , desc    = c("dR =  0.0S","dR = -0.2S","dR = -0.4S","dR = -0.6S"
+                                  ,"dR = -0.8S","dR = -1.0S","dR = -1.2S","dR = -1.4S"
+                                  ,"dR = -1.6S")
+                     , legend  = c("Delta*xi =  0.0*omega","Delta*xi = -0.2*omega"
+                                  ,"Delta*xi = -0.4*omega","Delta*xi = -0.6*omega"
+                                  ,"Delta*xi = -0.8*omega","Delta*xi = -1.0*omega"
+                                  ,"Delta*xi = -1.2*omega","Delta*xi = -1.4*omega"
+                                  ,"Delta*xi = -1.6*omega")
+                     , parse   = TRUE
                      , pattern = "rRRRR"
                      , default = drain.default
-                     , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0)
-                     , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0)
-                     , colour  = c("royalblue3","deepskyblue","chartreuse3","goldenrod"
-                                  ,"orangered","firebrick4")
-                     , pch     = c(15L,17L,12L,13L,6L,8L)
-                     , alabel  = paste(c("Mean rainfall change [Scale]",sep=""))
+                     , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0,  1.2,  1.4,  1.6)
+                     , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0, -1.2, -1.4, -1.6)
+                     , colour  = c("#694AFF","#1A9BE3","#26D4EE","#009000","#A08240"
+                                  ,"#FFA020","#FF0000","#BE0000","#800000")
+                     , pch     = c(12L,9L,10L,0L,5L,1L,2L,6L,8L)
+                     , alabel  = c("Mean rainfall change [Scale]")
                     )#end list
 scenario$stext = list( key     = c("stext02","stext06","stext08","stext16","stext11")
-                     , desc    = c("Loamy sand","Sandy clay loam","Clayey loam"
+                     , desc    = c("Loamy sand","Sandy clay loam","Clay loam"
                                   ,"Clayey sand","Clay")
+                     , legend  = c("Loamy sand","Sandy clay loam","Clay loam"
+                                  ,"Clayey sand","Clay")
+                     , parse   = FALSE
                      , pattern = "stextSS"
                      , default = stext.default
                      , value   = c(1,2,3,4,5)
                      , label   = c("LSa","SaCL","CL","CSa","C")
-                     , colour  = c("yellow3","sandybrown","darkorange2","firebrick2","red4")
+                     , colour  = c("#F0F000","#A08240","#FF6C20","#BE0000","#800000")
                      , pch     = c(12L,13L,5L,6L,8L)
                      , alabel  = c("Soil texture")
                      )#end list
 #----- Realisation variables. -------------------------------------------------------------#
-realisation = list( key     = paste("real",sprintf("%2.2i",0:9),sep="-")
-                  , desc    = paste("Realisation",sprintf("%2.2i",0:9),sep=" ")
-                  , pattern = "real-ZZ"
-                  )#end list
+key.realisation = sprintf("%2.2i",seq(from=0,to=15,by=1))
+realisation     = list( key     = paste("real",key.realisation,sep="-")
+                      , desc    = paste("Realisation",key.realisation,sep=" ")
+                      , pattern = "real-ZZ"
+                      )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -224,7 +244,7 @@ realisation = list( key     = paste("real",sprintf("%2.2i",0:9),sep="-")
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
-yeara          = 1972         # First year we will include
+yeara          = 1952         # First year we will include
 yeare          = 1972         # First year to use in the averaged output
 yearz          = 2011         # Last year we will include
 slz.min        = -5.0         # The deepest depth that trees access water.
@@ -470,14 +490,15 @@ if (retrieve.siminfo && file.exists(rdata.siminfo)){
    #---------------------------------------------------------------------------------------#
    cat ("   - Finding the parameter space dimensions for these simulations...","\n")
       #----- Combine all the dimensions we are going to explore. --------------------------#
-      rdims    = c("global","panel","scenario")
-      simul.a  = NULL
-      simul.b  = NULL
-      dim.type = NULL
-      pattern  = NULL
-      default  = NULL
-      alabel   = NULL
-      for (r in 1:length(rdims)){
+      rdims      = c("global","panel","scenario")
+      loop.rdims = seq.len(rdims)
+      simul.a    = NULL
+      simul.b    = NULL
+      dim.type   = NULL
+      pattern    = NULL
+      default    = NULL
+      alabel     = NULL
+      for (r in loop.rdims){
          this     = get(rdims[r])
          this.a   = lapply(X=this  ,FUN= data.frame,stringsAsFactors=FALSE)
          this.b   = sapply(X=this.a,FUN=rbind                             )
@@ -578,7 +599,7 @@ if (retrieve.siminfo && file.exists(rdata.siminfo)){
          #     No realisation, still make a dummy matrix.                                  #
          #---------------------------------------------------------------------------------#
          simul$n.real         = 1
-         n.real               = simul$nreal
+         n.real               = simul$n.real
          simul$name           = matrix(simul$name,nrow=n.simul,ncol=n.real)
          dimnames(simul$name) = list(sim.label,"real-00")
          #---------------------------------------------------------------------------------#
@@ -1320,6 +1341,23 @@ for (g in loop.global){
 
 
 
+   #----- File name for this global scenario. ---------------------------------------------#
+   rdata.status = file.path( rdata.path
+                           , paste("status_",comp.prefix,"_sim_",simul$global$level[g]
+                                  ,".txt",sep="")
+                           )#end file.path
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #------ Find the total number of simulations to read. ----------------------------------#
+   n.total = n.gsel * n.real
+   #---------------------------------------------------------------------------------------#
+
+
+
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    #     Retrieve or load the data.                                                        #
@@ -1330,23 +1368,52 @@ for (g in loop.global){
       load(rdata.global)
       eft = get(simul$global$level[g])
       rm(list=simul$global$level[g])
+      n.when     = length(eft$when)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------ Check which global simulation was last read. --------------------------------#
+      if (rj.last == n.total){
+         loop.rj = numeric(0)
+      }else{
+         loop.rj = seq(from=rj.last+1,to=n.total,by=1)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Make some arrays with the right dimensions.                                    #
+      #------------------------------------------------------------------------------------#
+      empty          = rep  (NA,times=n.when)
+      empty.pft      = array(NA,dim=c(n.when,n.pft))
+      empty.pftdbh   = array(NA,dim=c(n.when,n.dbh,n.pft))
+      ts.array       = array( data     = NA
+                            , dim      = c   (       n.gsel,   n.real,  n.year,  n.season)
+                            , dimnames = list(gsel.name[,1],real.name,year.key,season.key)
+                            )#end array
+      tspft.array    = array( data     = NA
+                            , dim      = c   (        n.gsel,   n.real,  n.year
+                                             ,      n.season,    n.pft)
+                            , dimnames = list( gsel.name[,1],real.name,year.key
+                                             ,    season.key,  pft.key)
+                            )#end array
+      tspftdbh.array = array( data     = NA
+                            , dim      = c   (       n.gsel,   n.real,  n.year
+                                             ,     n.season,    n.dbh,  n.pft)
+                            , dimnames = list(gsel.name[,1],real.name,year.key
+                                             ,   season.key,  dbh.key,pft.key)
+                            )#end array
       #------------------------------------------------------------------------------------#
    }else{
-      #----- Grab data from previously loaded variable. -----------------------------------#
+      cat("   - Start loading data from global: ",simul$global$title[g],"...","\n")
 
-      #------------------------------------------------------------------------------------#
-      #     Initialise the list of variables.                                              #
-      #------------------------------------------------------------------------------------#
-      eft   = list()
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #     Select the runs that belong to this global dimension.                          #
-      #------------------------------------------------------------------------------------#
-      cat("   - Load data from global: ",simul$global$title[g],"...","\n")
-      #------------------------------------------------------------------------------------#
-
+      eft = list()
 
       #------------------------------------------------------------------------------------#
       #     Create a general time stamp that works for all simulations.                    #
@@ -1366,6 +1433,9 @@ for (g in loop.global){
       eft$toseason  = unique(eft$season)
       eft$toyear    = unique(eft$ss.year)
       #------------------------------------------------------------------------------------#
+
+
+
 
 
 
@@ -1423,219 +1493,233 @@ for (g in loop.global){
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
 
 
-
-
-
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #      Loop over all global variables.                                               #
+      #------ Set the counter to the beginning. -------------------------------------------#
+      rj.last = 0
+      loop.rj = seq(from=rj.last+1,to=n.total,by=1)
       #------------------------------------------------------------------------------------#
-      cat ("   - Reading the output from each simulation...","\n")
-      jr      = 0
-      n.total = n.gsel * n.real
-      for (j in sequence(n.gsel)){
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-         for (r in sequence(n.real)){
-            jr = jr + 1
 
-            #------------------------------------------------------------------------------#
-            #     Load the data set.                                                       #
-            #------------------------------------------------------------------------------#
-            rdata.simul = paste(here,"/",gsel.name[j,r],"/rdata_month/",gsel.name[j,r]
-                               ,".RData",sep="")
-
-            cat  ("     * Load data from file ",paste("(",jr,"/",n.total,")",sep="")
-                                               ,basename(rdata.simul),"...","\n")
-            dummy = load (rdata.simul)
-            emean = datum$emean
-            szpft = datum$szpft
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
-            #     Find the indices for mapping the data from the original data set to the  #
-            # combined one.                                                                #
-            #------------------------------------------------------------------------------#
-            idx   = match(eft$when,datum$when)
-            w.sel = is.finite(idx)
-            idx   = idx[w.sel]
-            #------------------------------------------------------------------------------#
-
-
-
-
-            #------------------------------------------------------------------------------#
-            #      These are shorter versions of the season indices.                       #
-            #------------------------------------------------------------------------------#
-            ee = sequence(n.season.mp)
-            e5 = n.season
-            #------------------------------------------------------------------------------#
-
-
-
-            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-            #     Copy the time variables to the consolidated list.                        #
-            #------------------------------------------------------------------------------#
-            for (v in 1:nscen.ts){
-               #----- Copy variable info. -------------------------------------------------#
-               var.vname  = scen.ts$vname [v]
-               var.desc   = scen.ts$desc  [v]
-               var.f.aggr = get(scen.ts$f.aggr[v])
-               var.add    = scen.ts$add   [v]
-               var.mult   = scen.ts$mult  [v]
-               is.pft     = scen.ts$pft   [v]
-               is.dbh     = scen.ts$dbh   [v]
-               is.mort    = scen.ts$mort  [v]
-               is.recr    = scen.ts$recr  [v]
-               cat  ("       > Processing ",var.desc,"...","\n")
-               #---------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
 
 
 
 
 
-               #---------------------------------------------------------------------------#
-               #     Grab the time series.                                                 #
-               #---------------------------------------------------------------------------#
-               var.now        = empty
-               if (is.pft){
-                  var.now[w.sel] = szpft[[var.vname]][idx,a.dbh,a.pft]
-               }else{
-                  var.now[w.sel] = emean[[var.vname]][idx]
-               }#end if
-               #------ Change units if required by the user. ------------------------------#
-               var.now = var.add + var.now * var.mult
-               #------ Find the means/sum by year and by season. --------------------------#
-               eft[[var.vname]]$ts[j,r,,ee] = tapply( X     = var.now
-                                                    , INDEX = list(eft$ss.year
-                                                                  ,eft$ss.season)
-                                                    , FUN   = var.f.aggr
-                                                    , na.rm = TRUE
-                                                    )#end tapply
-               eft[[var.vname]]$ts[j,r,,e5] = tapply( X     = var.now
-                                                    , INDEX = eft$ss.year
-                                                    , FUN   = var.f.aggr
-                                                    , na.rm = TRUE
-                                                    )#end tapply
-               #---------------------------------------------------------------------------#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #      Loop over all global variables.                                                  #
+   #---------------------------------------------------------------------------------------#
+   RJ.mat  = arrayInd(ind=sequence(n.total),.dim=c(n.real,n.gsel))
+   for (rj in loop.rj){
+      #----- Get current indices. ---------------------------------------------------------#
+      r       = RJ.mat[rj,1]
+      j       = RJ.mat[rj,2]
+      rj.last = rj
+      #------------------------------------------------------------------------------------#
 
 
 
-               #---------------------------------------------------------------------------#
-               #     Check what to do depending on whether the variable is a PFT and/or    #
-               # DBH.                                                                      #
-               #---------------------------------------------------------------------------#
-               if (is.pft){
-                  var.now         = empty.pft
-                  var.now[w.sel,] = szpft[[var.vname]][idx,a.dbh,pft.use]
-                  #------ Change units if required by the user. ---------------------------#
-                  var.now = var.add + var.now * var.mult
-
-
-                  #----- Find the means/sum by year and by season. ------------------------#
-                  eft[[var.vname]]$tspft[j,r,,ee,] = qapply( X     = var.now
-                                                           , INDEX = list( eft$ss.year
-                                                                         , eft$ss.season
-                                                                         )#end list
-                                                           , DIM   = 1
-                                                           , FUN   = var.f.aggr
-                                                           , na.rm = TRUE
-                                                           )#end qapply
-                  eft[[var.vname]]$tspft[j,r,,e5,] = qapply( X     = var.now
-                                                           , INDEX = eft$ss.year
-                                                           , DIM   = 1
-                                                           , FUN   = var.f.aggr
-                                                           , na.rm = TRUE
-                                                           )#end qapply
-                  #------------------------------------------------------------------------#
-               }#end if (var.pft)
-               #---------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
+      #     Load the data set.                                                             #
+      #------------------------------------------------------------------------------------#
+      rdata.simul = file.path(here,gsel.name[j,r],"rdata_month"
+                             ,paste(gsel.name[j,r],"RData",sep="."))
+      if (file.exists(rdata.simul)){
+         cat  ("     * Load data from file ",paste("(",rj,"/",n.total,")",sep="")
+                                            ,basename(rdata.simul),"...","\n")
+         dummy = load (rdata.simul)
+         emean = datum$emean
+         szpft = datum$szpft
+         #---------------------------------------------------------------------------------#
+      }else{
+         cat ("     * File ",basename(rdata.simul)," doesn't exist!","\n")
+         stop(" - Input RData files are missing...")
+      }#end if
+      #------------------------------------------------------------------------------------#
 
 
 
-               #---------------------------------------------------------------------------#
-               #     Check what to do depending on whether the variable is a PFT and/or    #
-               # DBH.                                                                      #
-               #---------------------------------------------------------------------------#
-               if (is.dbh){
-                  var.now          = empty.pftdbh
-                  var.now[w.sel,,] = szpft[[var.vname]][idx,dbh.use,pft.use]
-                  #------ Change units if required by the user. ---------------------------#
-                  var.now = var.add + var.now * var.mult
 
-                  #----- Find the means/sum by year and by season. ------------------------#
-                  eft[[var.vname]]$tspftdbh[j,r,,ee,,] = qapply( X     = var.now
-                                                               , INDEX = list(eft$ss.year
-                                                                             ,eft$ss.season
-                                                                             )#end list
-                                                               , DIM   = 1
-                                                               , FUN   = var.f.aggr
-                                                               , na.rm = TRUE
-                                                               )#end qapply
-                  eft[[var.vname]]$tspftdbh[j,r,,e5,,] = qapply( X     = var.now
-                                                               , INDEX = eft$ss.year
-                                                               , DIM   = 1
-                                                               , FUN   = var.f.aggr
-                                                               , na.rm = TRUE
-                                                               )#end qapply
-                  #------------------------------------------------------------------------#
-               }#end if (var.dbh)
-               #---------------------------------------------------------------------------#
-            }#end for (v in 1:nscen.ts)
-            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-            #------------------------------------------------------------------------------#
-            #     Remove the temporary variables.                                          #
-            #------------------------------------------------------------------------------#
-            rm(datum,emean,szpft)
-            #------------------------------------------------------------------------------#
-
-         }#end for (r in 1:n.real)
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-      }#end for (j in 1:n.gsel)
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #------------------------------------------------------------------------------------#
+      #     Find the indices for mapping the data from the original data set to the        #
+      # combined one.                                                                      #
+      #------------------------------------------------------------------------------------#
+      idx   = match(eft$when,datum$when)
+      w.sel = is.finite(idx)
+      idx   = idx[w.sel]
+      #------------------------------------------------------------------------------------#
 
 
 
+
+      #------------------------------------------------------------------------------------#
+      #      These are shorter versions of the season indices.                             #
+      #------------------------------------------------------------------------------------#
+      ee = sequence(n.season.mp)
+      e5 = n.season
+      #------------------------------------------------------------------------------------#
 
 
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-      #      Loop over variables and find the ones that are mortality or recruitment.  We  #
-      # must transform them so they are always between 0 and 100.                          #
+      #     Copy the time variables to the consolidated list.                              #
       #------------------------------------------------------------------------------------#
-      cat  ("       > Transforming mortality and recruitment variables...","\n")
       for (v in 1:nscen.ts){
          #----- Copy variable info. -------------------------------------------------------#
-         v.vname    = scen.ts$vname[v]
-         v.desc     = scen.ts$desc [v]
-         is.pft     = scen.ts$pft  [v]
-         is.dbh     = scen.ts$dbh  [v]
-         is.mort    = scen.ts$mort [v]
-         is.recr    = scen.ts$recr [v]
-
-         #----- Transform mortality data. -------------------------------------------------#
-         if (is.mort){
-            eft[[v.vname]]$ts                  = 100.*(1. - exp(-eft[[v.vname]]$ts      ))
-            if(is.pft) eft[[v.vname]]$tspft    = 100.*(1. - exp(-eft[[v.vname]]$tspft   ))
-            if(is.dbh) eft[[v.vname]]$tspftdbh = 100.*(1. - exp(-eft[[v.vname]]$tspftdbh))
-         }#end if
+         var.vname  = scen.ts$vname [v]
+         var.desc   = scen.ts$desc  [v]
+         var.f.aggr = get(scen.ts$f.aggr[v])
+         var.add    = scen.ts$add   [v]
+         var.mult   = scen.ts$mult  [v]
+         is.pft     = scen.ts$pft   [v]
+         is.dbh     = scen.ts$dbh   [v]
+         is.mort    = scen.ts$mort  [v]
+         is.recr    = scen.ts$recr  [v]
+         cat  ("       > Processing ",var.desc,"...","\n")
          #---------------------------------------------------------------------------------#
 
 
 
+
+
+         #---------------------------------------------------------------------------------#
+         #     Grab the time series.                                                       #
+         #---------------------------------------------------------------------------------#
+         var.now        = empty
+         if (is.pft){
+            var.now[w.sel] = szpft[[var.vname]][idx,a.dbh,a.pft]
+         }else{
+            var.now[w.sel] = emean[[var.vname]][idx]
+         }#end if
+         #------ Change units if required by the user. ------------------------------------#
+         var.now = var.add + var.now * var.mult
+         #------ Find the means/sum by year and by season. --------------------------------#
+         eft[[var.vname]]$ts[j,r,,ee] = tapply( X     = var.now
+                                              , INDEX = list(eft$ss.year
+                                                            ,eft$ss.season)
+                                              , FUN   = var.f.aggr
+                                              , na.rm = TRUE
+                                              )#end tapply
+         eft[[var.vname]]$ts[j,r,,e5] = tapply( X     = var.now
+                                              , INDEX = eft$ss.year
+                                              , FUN   = var.f.aggr
+                                              , na.rm = TRUE
+                                              )#end tapply
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check what to do depending on whether the variable is a PFT and/or          #
+         # DBH.                                                                            #
+         #---------------------------------------------------------------------------------#
+         if (is.pft){
+            var.now         = empty.pft
+            var.now[w.sel,] = szpft[[var.vname]][idx,a.dbh,pft.use]
+            #------ Change units if required by the user. ---------------------------------#
+            var.now = var.add + var.now * var.mult
+
+
+            #----- Find the means/sum by year and by season. ------------------------------#
+            eft[[var.vname]]$tspft[j,r,,ee,] = qapply( X     = var.now
+                                                     , INDEX = list( eft$ss.year
+                                                                   , eft$ss.season
+                                                                   )#end list
+                                                     , DIM   = 1
+                                                     , FUN   = var.f.aggr
+                                                     , na.rm = TRUE
+                                                     )#end qapply
+            eft[[var.vname]]$tspft[j,r,,e5,] = qapply( X     = var.now
+                                                     , INDEX = eft$ss.year
+                                                     , DIM   = 1
+                                                     , FUN   = var.f.aggr
+                                                     , na.rm = TRUE
+                                                     )#end qapply
+            #------------------------------------------------------------------------------#
+         }#end if (var.pft)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check what to do depending on whether the variable is a PFT and/or          #
+         # DBH.                                                                            #
+         #---------------------------------------------------------------------------------#
+         if (is.dbh){
+            var.now          = empty.pftdbh
+            var.now[w.sel,,] = szpft[[var.vname]][idx,dbh.use,pft.use]
+            #------ Change units if required by the user. ---------------------------------#
+            var.now = var.add + var.now * var.mult
+
+            #----- Find the means/sum by year and by season. ------------------------------#
+            eft[[var.vname]]$tspftdbh[j,r,,ee,,] = qapply( X     = var.now
+                                                         , INDEX = list(eft$ss.year
+                                                                       ,eft$ss.season
+                                                                       )#end list
+                                                         , DIM   = 1
+                                                         , FUN   = var.f.aggr
+                                                         , na.rm = TRUE
+                                                         )#end qapply
+            eft[[var.vname]]$tspftdbh[j,r,,e5,,] = qapply( X     = var.now
+                                                         , INDEX = eft$ss.year
+                                                         , DIM   = 1
+                                                         , FUN   = var.f.aggr
+                                                         , na.rm = TRUE
+                                                         )#end qapply
+            #------------------------------------------------------------------------------#
+         }#end if (var.dbh)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #----- Transform mortality data. -------------------------------------------------#
+         if (is.mort){
+            mort.ts          = 100. * (1. - exp(-eft[[var.vname]]$ts[j,r,,]))
+            eft[[var.vname]]$ts         [j,r,,  ] = mort.ts
+            rm(mort.ts)
+            #----- PFT-dependent variable. ------------------------------------------------#
+            if (is.pft){
+               mort.tspft    = 100. * (1. - exp(-eft[[var.vname]]$tspft[j,r,,,]))
+               eft[[var.vname]]$tspft   [j,r,,, ] = mort.tspft
+               rm(mort.tspft)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #----- DBH-dependent variable. ------------------------------------------------#
+            if (is.dbh){
+               mort.tspftdbh = 100. * (1. - exp(-eft[[var.vname]]$tspftdbh[j,r,,,,]))
+               eft[[var.vname]]$tspftdbh[j,r,,,,] = mort.tspftdbh
+               rm(mort.tspftdbh)
+            }#end if
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
          #----- Transform recruitment data. -----------------------------------------------#
          if (is.recr){
-            eft[[v.vname]]$ts                  = 100.*(exp(eft[[v.vname]]$ts      ) - 1.0)
-            if(is.pft) eft[[v.vname]]$tspft    = 100.*(exp(eft[[v.vname]]$tspft   ) - 1.0)
-            if(is.dbh) eft[[v.vname]]$tspftdbh = 100.*(exp(eft[[v.vname]]$tspftdbh) - 1.0)
+            recr.ts          = 100. * (exp(eft[[var.vname]]$ts[j,r,,]) - 1.0)
+            eft[[var.vname]]$ts         [j,r,,  ] = recr.ts
+            rm(recr.ts)
+            #----- PFT-dependent variable. ------------------------------------------------#
+            if (is.pft){
+               recr.tspft    = 100. * (exp(eft[[var.vname]]$tspft[j,r,,,]) - 1.0)
+               eft[[var.vname]]$tspft   [j,r,,, ] = recr.tspft
+               rm(recr.tspft)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+            #----- DBH-dependent variable. ------------------------------------------------#
+            if (is.dbh){
+               recr.tspftdbh = 100. * (exp(eft[[var.vname]]$tspftdbh[j,r,,,,]) - 1.0)
+               eft[[var.vname]]$tspftdbh[j,r,,,,] = recr.tspftdbh
+               rm(recr.tspftdbh)
+            }#end if (is.dbh)
+            #------------------------------------------------------------------------------#
          }#end if
          #---------------------------------------------------------------------------------#
       }#end for (v in 1:nscen.ts)
@@ -1643,21 +1727,65 @@ for (g in loop.global){
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 
-      #----- Save this variable to the global structure. ----------------------------------#
-      cat (" + Copying simulation to the structure...","\n")
-      dummy = assign(x=simul$global$level[g],value=eft)
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Remove the temporary variables.                                                #
+      #------------------------------------------------------------------------------------#
+      rm(datum,emean,szpft)
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Save object simul to the R file but keep using eft. --------------------------#
-      cat (" + Saving the simulation output to ",basename(rdata.global),"...","\n")
-      save(list=simul$global$level[g],file=rdata.global)
-      rm  (list=simul$global$level[g])
+      if ((rj %% save.every) == 0 || rj == n.total){
+
+
+         #----- Save this variable to the global structure. -------------------------------#
+         cat (" + Copying simulation to the structure...","\n")
+         dummy = assign(x=simul$global$level[g],value=eft)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Save partial data frame to RData and free memory. -------------------------#
+         cat (" + Saving the simulation output to ",basename(rdata.global),"...","\n")
+         save(list=c("rj.last",simul$global$level[g]),file=rdata.global)
+         rm  (list=simul$global$level[g])
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      R becomes slow once too many files are loaded.  Quit if not all files      #
+         # have been processed, so it refreshes the memory.                                #
+         #---------------------------------------------------------------------------------#
+         if (rj != n.total){
+            cat (" + Quitting...","\n")
+            q("no")
+         }else{
+
+            #----- Save status file so we know it is complete. ----------------------------#
+            cat (" + Saving the simulation status to ",basename(rdata.status),"...","\n")
+            status = data.frame( rj = rj, total = n.total, complete = rj == n.total)
+            write.table( x         = status
+                       , file      = rdata.status
+                       , append    = FALSE
+                       , quote     = FALSE
+                       , row.names = FALSE
+                       , col.names = TRUE
+                       )#end write.table
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+      }#end if
       #------------------------------------------------------------------------------------#
-   }#end if
+   }#end for (rj in loop.rj)
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
 
 
 
@@ -1984,7 +2112,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = 0.0
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , col     = now$colour
                          , lwd     = 2.0
                          , pch     = 16
@@ -2140,7 +2272,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = inset
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , col     = now$colour
                          , lwd     = 2.0
                          , pch     = 16
@@ -2300,7 +2436,11 @@ for (g in loop.global){
                      plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                      legend ( x       = "bottom"
                             , inset   = 0.0
-                            , legend  = now$desc
+                            , legend  = if (any(now$parse)){
+                                           parse(text=now$legend)
+                                        }else{
+                                           now$legend
+                                        }#end if
                             , col     = now$colour
                             , lwd     = 2.0
                             , pch     = 16
@@ -2460,7 +2600,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = 0.0
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , col     = now$colour
                          , lwd     = 2.0
                          , pch     = 16
@@ -2660,7 +2804,11 @@ for (g in loop.global){
                      plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                      legend ( x       = "bottom"
                             , inset   = 0.0
-                            , legend  = now$desc
+                            , legend  = if (any(now$parse)){
+                                           parse(text=now$legend)
+                                        }else{
+                                           now$legend
+                                        }#end if
                             , col     = now$colour
                             , lwd     = 2.0
                             , pch     = 16
@@ -2821,7 +2969,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = 0.0
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , col     = now$colour
                          , lwd     = 2.0
                          , pch     = 16
@@ -2997,7 +3149,11 @@ for (g in loop.global){
                      plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                      legend ( x       = "bottom"
                             , inset   = 0.0
-                            , legend  = now$desc
+                            , legend  = if (any(now$parse)){
+                                           parse(text=now$legend)
+                                        }else{
+                                           now$legend
+                                        }#end if
                             , col     = now$colour
                             , lwd     = 2.0
                             , pch     = 16
@@ -3563,7 +3719,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = 0.0
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , fill    = now$colour
                          , border  = foreground
                          , bg      = background
@@ -3751,7 +3911,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = inset
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , fill    = now$colour
                          , border  = foreground
                          , bg      = background
@@ -3924,7 +4088,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = 0.0
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , fill    = now$colour
                          , border  = foreground
                          , bg      = background
@@ -4114,7 +4282,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = inset
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , fill    = now$colour
                          , border  = foreground
                          , bg      = background
@@ -4301,7 +4473,11 @@ for (g in loop.global){
                      plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                      legend ( x       = "bottom"
                             , inset   = 0.0
-                            , legend  = now$desc
+                            , legend  = if (any(now$parse)){
+                                           parse(text=now$legend)
+                                        }else{
+                                           now$legend
+                                        }#end if
                             , fill    = now$colour
                             , border  = foreground
                             , bg      = background
@@ -4626,7 +4802,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = 0.0
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , fill    = now$colour
                          , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
@@ -4833,7 +5013,11 @@ for (g in loop.global){
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
                          , inset   = 0.0
-                         , legend  = now$desc
+                         , legend  = if (any(now$parse)){
+                                        parse(text=now$legend)
+                                     }else{
+                                        now$legend
+                                     }#end if
                          , fill    = now$colour
                          , bg      = background
                          , ncol    = min(3,pretty.box(n.now)$ncol)
@@ -5223,6 +5407,11 @@ for (g in loop.global){
                            #---------------------------------------------------------------#
                            leg.ncol    = min(3,pretty.box(n.now)$ncol)
                            leg.letitre = expression(bold("Simulation"))
+                           leg.legend  = if (any(now$parse)){
+                                            parse(text=now$legend)
+                                         }else{
+                                            now$legend
+                                         }#end if
                            par(par.user)
                            xyz.plot( x              = x.list
                                    , y              = y.list
@@ -5248,7 +5437,7 @@ for (g in loop.global){
                                    , key.title      = list(main=lacle,cex.main=.8*cex.main)
                                    , xyz.legend     = list( x      = "bottom"
                                                           , inset  = 0.0
-                                                          , legend = now$desc
+                                                          , legend = leg.legend
                                                           , pch    = now$pch
                                                           , col    = grey.fg
                                                           , border = foreground
@@ -5344,6 +5533,11 @@ for (g in loop.global){
                            par(par.user)
                            leg.ncol    = min(3,pretty.box(n.now)$ncol)
                            leg.title   = expression(bold("Simulation"))
+                           leg.legend  = if (any(now$parse)){
+                                            parse(text=now$legend)
+                                         }else{
+                                            now$legend
+                                         }#end if
                            xyz.plot( x              = x.list
                                    , y              = y.list
                                    , z              = z.list
@@ -5368,7 +5562,7 @@ for (g in loop.global){
                                    , key.title      = list(main=lacle,cex.main=.8*cex.main)
                                    , xyz.legend     = list( x       = "bottom"
                                                           , inset   = 0.0
-                                                          , legend  = now$desc
+                                                          , legend  = leg.legend
                                                           , pch     = now$pch
                                                           , col     = grey.fg
                                                           , border  = foreground
@@ -5462,6 +5656,11 @@ for (g in loop.global){
                            par(par.user)
                            leg.ncol    = min(3,pretty.box(n.now)$ncol)
                            leg.title   = expression(bold("Simulation"))
+                           leg.legend  = if (any(now$parse)){
+                                            parse(text=now$legend)
+                                         }else{
+                                            now$legend
+                                         }#end if
                            xyz.plot( x              = x.list
                                    , y              = y.list
                                    , z              = z.list
@@ -5486,7 +5685,7 @@ for (g in loop.global){
                                    , key.title      = list(main=lacle,cex.main=.8*cex.main)
                                    , xyz.legend     = list( x       = "bottom"
                                                           , inset   = 0.0
-                                                          , legend  = now$desc
+                                                          , legend  = leg.legend
                                                           , pch     = now$pch
                                                           , col     = grey.fg
                                                           , border  = foreground
@@ -5608,6 +5807,11 @@ for (g in loop.global){
                                  par(par.user)
                                  leg.ncol    = min(3,pretty.box(n.now)$ncol)
                                  leg.title   = expression(bold("Simulation"))
+                                 leg.legend  = if (any(now$parse)){
+                                                  parse(text=now$legend)
+                                               }else{
+                                                  now$legend
+                                               }#end if
                                  xyz.plot( x              = x.list
                                          , y              = y.list
                                          , z              = z.list
@@ -5633,7 +5837,7 @@ for (g in loop.global){
                                                                 ,cex.main=0.8*cex.main)
                                          , xyz.legend     = list( x       = "bottom"
                                                                 , inset   = 0.0
-                                                                , legend  = now$desc
+                                                                , legend  = leg.legend
                                                                 , pch     = now$pch
                                                                 , col     = grey.fg
                                                                 , border  = foreground
@@ -5962,9 +6166,13 @@ for (g in loop.global){
                   par(mar=c(0.2,4.4,0.1,2.1))
                   plot.new()
                   plot.window(xlim=c(0,1),ylim=c(0,1))
-                  legend( x = "bottom"
-                        , inset = inset
-                        , legend = now$desc
+                  legend( x      = "bottom"
+                        , inset  = inset
+                        , legend = if (any(now$parse)){
+                                      parse(text=now$legend)
+                                   }else{
+                                      now$legend
+                                   }#end if
                         , col    = now$colour
                         , pch    = 16
                         , lwd    = 2.5
@@ -6331,9 +6539,13 @@ for (g in loop.global){
                      par(mar=c(0.2,4.4,0.1,2.1))
                      plot.new()
                      plot.window(xlim=c(0,1),ylim=c(0,1))
-                     legend( x = "bottom"
-                           , inset = inset
-                           , legend = now$desc
+                     legend( x      = "bottom"
+                           , inset  = inset
+                           , legend = if (any(now$parse)){
+                                         parse(text=now$legend)
+                                      }else{
+                                         now$legend
+                                      }#end if
                            , col    = now$colour
                            , pch    = 16
                            , lwd    = 2.5
@@ -6704,9 +6916,13 @@ for (g in loop.global){
                      par(mar=c(0.2,4.4,0.1,2.1))
                      plot.new()
                      plot.window(xlim=c(0,1),ylim=c(0,1))
-                     legend( x = "bottom"
-                           , inset = inset
-                           , legend = now$desc
+                     legend( x      = "bottom"
+                           , inset  = inset
+                           , legend = if (any(now$parse)){
+                                         parse(text=now$legend)
+                                      }else{
+                                         now$legend
+                                      }#end if
                            , col    = now$colour
                            , pch    = 16
                            , lwd    = 2.5
@@ -7121,7 +7337,11 @@ for (g in loop.global){
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x      = "bottom"
                      , inset  = 0.0
-                     , legend = sc2$desc
+                     , legend = if (any(sc2$parse)){
+                                   parse(text=sc2$legend)
+                                }else{
+                                   sc2$legend
+                                }#end if
                      , fill   = sc2$colour
                      , border = foreground
                      , ncol   = min(n.sc2,max(3,pretty.box(n=n.sc2)$ncol))
@@ -7298,7 +7518,7 @@ for (g in loop.global){
    #---------------------------------------------------------------------------------------#
    #     Loop over scenarios.                                                              #
    #---------------------------------------------------------------------------------------#
-   for (s in loop.allscen[-1]){
+   for (s in loop.allscen){
       if (s == 0){
          idx.s         = 1
          odx.s         = match(s,loop.allscen)
@@ -7534,6 +7754,12 @@ for (g in loop.global){
                         #------------------------------------------------------------------#
                         leg.ncol    = min(3,pretty.box(n.now)$ncol)
                         leg.letitre = expression(bold("Simulation"))
+                        leg.legend  = if (any(now$parse)){
+                                         parse(text=now$legend)
+                                      }else{
+                                         now$legend
+                                      }#end if
+
                         par(par.user)
                         xyz.plot( x              = x.list
                                 , y              = y.list
@@ -7559,7 +7785,7 @@ for (g in loop.global){
                                 , key.title      = list(main=lacle,cex.main=0.8*cex.main)
                                 , xyz.legend     = list( x      = "bottom"
                                                        , inset  = 0.0
-                                                       , legend = now$desc
+                                                       , legend = leg.legend
                                                        , pch    = now$pch
                                                        , col    = grey.fg
                                                        , border = foreground
@@ -7602,5 +7828,26 @@ for (g in loop.global){
 
    rm(eft)
 }#end for (g in loop.global)
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Save status file so we know it is complete.                                          #
+#------------------------------------------------------------------------------------------#
+cat (" + Saving the simulation status to ",basename(rdata.status),"...","\n")
+cat (" + Saving the simulation status to ",basename(rdata.status),"...","\n")
+status = data.frame( rj = rj, total = n.total, complete = rj == n.total)
+write.table( x         = status
+           , file      = rdata.status
+           , append    = FALSE
+           , quote     = FALSE
+           , row.names = FALSE
+           , col.names = TRUE
+           )#end write.table
 #==========================================================================================#
 #==========================================================================================#

@@ -408,10 +408,6 @@ for (place in myplaces){
             cday   = sprintf("%2.2i",numdays  (model$when[tt]))
             chour  = sprintf("%2.2i",hours    (model$when[tt]))
             cminu  = sprintf("%2.2i",minutes  (model$when[tt]))
-            myfile = paste(inpref,"-I-",cyear,"-",cmonth,"-",cday,"-",chour,cminu
-                           ,"00-g01.h5",sep="")
-            if (last.cday != cday) cat("     * ",basename(myfile),"...","\n")
-            last.cday   = cday
             #------------------------------------------------------------------------------#
 
 
@@ -419,7 +415,25 @@ for (place in myplaces){
             #      Read the data in case the file exists.  In case it doesn't, save what   #
             # has been already read and quit.                                              #
             #------------------------------------------------------------------------------#
-            if (! file.exists(myfile)){
+            h5file       = paste(inpref,"-I-",cyear,"-",cmonth,"-",cday,"-",chour,cminu
+                                ,"00-g01.h5",sep="")
+            h5file.bz2   = paste(h5file,"bz2",sep=".")
+            h5file.gz    = paste(h5file,"gz" ,sep=".")
+            if (file.exists(h5file)){
+               myinst    = hdf5load(file=h5file,load=FALSE,verbosity=0,tidy=TRUE)
+
+            }else if(file.exists(h5file.bz2)){
+               temp.file = file.path(tempdir(),basename(h5file))
+               dummy     = bunzip2(filename=h5file.bz2,destname=temp.file,remove=FALSE)
+               myinst    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+               dummy     = file.remove(temp.file)
+
+            }else if(file.exists(h5file.gz)){
+               temp.file = file.path(tempdir(),basename(h5file))
+               dummy     = gunzip(filename=h5file.gz,destname=temp.file,remove=FALSE)
+               myinst    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+               dummy     = file.remove(temp.file)
+            }else{
                eddy.complete = FALSE
                eddy.tresume  = tt
                cat("   - Simulation not ready yet.  Saving partial ED-2.2 data to "
@@ -428,9 +442,9 @@ for (place in myplaces){
                    , file = ed22.rdata)
                cat("Quitting","\n")
                q("no")
-            }else{
-               myinst = hdf5load(file=myfile,load=FALSE,verbosity=0,tidy=TRUE)
             }#end if
+            if (last.cday != cday) cat("     * ",basename(myinst),"...","\n")
+            last.cday   = cday
             #------------------------------------------------------------------------------#
             model$atm.tmp  [tt] =   myinst$FMEAN.ATM.TEMP.PY       - t00
             model$atm.shv  [tt] =   myinst$FMEAN.ATM.SHV.PY        * 1000.

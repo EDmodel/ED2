@@ -11,9 +11,10 @@ openlava='y'
 #------------------------------------------------------------------------------------------#
 #    Grab arguments and also set some defaults.                                            #
 #------------------------------------------------------------------------------------------#
-nargs=$#  # Number of arguments
-args=$@   # List of arguments
-ibg="0"   # Background is white by default
+nargs=$#               # Number of arguments
+args=$@                # List of arguments
+ibg="0"                # Background is white by default
+rdata="RData_scenario"
 #------------------------------------------------------------------------------------------#
 
 
@@ -173,6 +174,15 @@ case ${irain} in
 10|"r-100")
    rain="r-100"
    ;;
+12|"r-120")
+   rain="r-120"
+   ;;
+14|"r-140")
+   rain="r-140"
+   ;;
+16|"r-160")
+   rain="r-160"
+   ;;
 *)
    echo "Invalid 'rain' argument (${irain})"
    let bad=${bad}+1
@@ -246,17 +256,21 @@ stext_ostr=`grep stext.default ${R_Submit} | head -1`
 temp_ostr=`grep use.global ${R_Submit} | head -1`
 rain_ostr=`grep drain.default ${R_Submit} | head -1`
 bg_ostr=`grep ibackground ${R_Submit} | head -1`
+rdata_ostr=`grep rdata.path ${R_Submit} | head -1`
 
 stext_nstr="stext.default = \"${stext}\"                   # Default soil texture"
 temp_nstr="use.global       = ${idxtemp}   # Which global to use (TRUE means all of them)"
 rain_nstr="drain.default = \"${rain}\"                   # Default rainfall scenario"
 bg_nstr="ibackground   = ${ibg}                           # Target background colour:"
-
+rdata_nstr="rdata.path       = file.path(here,\"${rdata}\") # Path with R object."
 sed -i s@"${stext_ostr}"@"${stext_nstr}"@g ${R_Submit}
 sed -i s@"${rain_ostr}"@"${rain_nstr}"@g   ${R_Submit}
 sed -i s@"${temp_ostr}"@"${temp_nstr}"@g   ${R_Submit}
 sed -i s@"${bg_ostr}"@"${bg_nstr}"@g       ${R_Submit}
+sed -i s@"${rdata_ostr}"@"${rdata_nstr}"@g ${R_Submit}
 #------------------------------------------------------------------------------------------#
+
+
 
 
 
@@ -266,8 +280,14 @@ sed -i s@"${bg_ostr}"@"${bg_nstr}"@g       ${R_Submit}
 cspost="${here}/.${job}.sh"
 csout="${here}/.${job}_lsf.out"
 cscomm="${R_Comm} ${R_Submit} ${R_Out}"
-echo '#!/bin/bash' >  ${cspost}
-echo ${cscomm}     >> ${cspost}
+status="${here}/${rdata}/status_stext_sim_${temp}.txt"
+echo "#!/bin/bash"              >  ${cspost}
+echo "/bin/rm -fr ${status}"    >> ${cspost}
+echo "while [ ! -s ${status} ]" >> ${cspost}
+echo "do"                       >> ${cspost}
+echo "   sleep 3"               >> ${cspost}
+echo "   ${cscomm}"             >> ${cspost}
+echo "done"                     >> ${cspost}
 chmod +x ${cspost}
 #------------------------------------------------------------------------------------------#
 

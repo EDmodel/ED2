@@ -9,7 +9,7 @@ lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 outroot='/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX'
 submit='y'       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-useperiod='a'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # 'a' -- All period
                  # 't' -- One eddy flux tower met cycle
                  # 'u' -- User defined period, defined by the variables below.
@@ -21,14 +21,14 @@ openlava='n'
 #----- Yearly comparison . ----------------------------------------------------------------#
 seasonmona=1
 #----- Census comparison. -----------------------------------------------------------------#
-varcycle='FALSE' # Find the average mortality for various cycles (TRUE/FALSE).
+varcycle='TRUE'  # Find the average mortality for various cycles (TRUE/FALSE).
 #----- Hourly comparison. -----------------------------------------------------------------#
 usedistrib='edf' # Which distribution to plot on top of histograms:
                  #   norm -- Normal distribution
                  #   sn   -- Skewed normal distribution      (requires package sn)
                  #   edf  -- Empirical distribution function (function density)
 #----- Output format. ---------------------------------------------------------------------#
-outform='c("pdf")'             # x11 - On screen (deprecated on shell scripts)
+outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
@@ -41,6 +41,9 @@ idbhtype=3                     # Type of DBH class
 background=0                   # 0 -- White
                                # 1 -- Pitch black
                                # 2 -- Dark grey
+#----- Select integration interval for some photosynthesis-related variables. -------------#
+iint_photo=1                   # 0 -- 24h
+                               # 1 -- daytime only
 #----- Trim the year comparison for tower years only? -------------------------------------#
 efttrim="TRUE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
@@ -127,33 +130,38 @@ fi
 #    Make sure that the directory there exists, if not, create all parent directories      #
 # needed.                                                                                  #
 #------------------------------------------------------------------------------------------#
-while [ ! -s ${outroot} ]
-do
-   namecheck=`basename ${outroot}`
-   dircheck=`dirname ${outroot}`
-   while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+if [ "x${outroot}" == "x" ]
+then
+   outroot=${here}
+else
+   while [ ! -s ${outroot} ]
    do
-      namecheck=`basename ${dircheck}`
-      dircheck=`dirname ${dircheck}`
-   done
+      namecheck=`basename ${outroot}`
+      dircheck=`dirname ${outroot}`
+      while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+      do
+         namecheck=`basename ${dircheck}`
+         dircheck=`dirname ${dircheck}`
+      done
 
-   if [ ${namecheck} == '/' ]
-   then
-      echo 'Invalid disk for variable outroot:'
-      echo ' DISK ='${diskhere}
-      exit 58
-   elif [ ${namecheck} == 'xxxxxxxx' ] || [ ${namecheck} == 'xxx_XXX' ] ||
-        [ ${namecheck} == 'XXXXXXXXXXX' ]
-   then
-      echo " - Found this directory in your path: ${namecheck} ..."
-      echo " - Outroot given: ${outroot} ..."
-      echo " - It looks like you forgot to set up your outroot path, check it!"
-      exit 92
-   else
-      echo 'Making directory: '${dircheck}/${namecheck}
-      mkdir ${dircheck}/${namecheck}
-   fi
-done
+      if [ ${namecheck} == '/' ]
+      then
+         echo 'Invalid disk for variable outroot:'
+         echo ' DISK ='${diskhere}
+         exit 58
+      elif [ ${namecheck} == 'xxxxxxxx' ] || [ ${namecheck} == 'xxx_XXX' ] ||
+           [ ${namecheck} == 'XXXXXXXXXXX' ]
+      then
+         echo " - Found this directory in your path: ${namecheck} ..."
+         echo " - Outroot given: ${outroot} ..."
+         echo " - It looks like you forgot to set up your outroot path, check it!"
+         exit 92
+      else
+         echo 'Making directory: '${dircheck}/${namecheck}
+         mkdir ${dircheck}/${namecheck}
+      fi
+   done
+fi
 #------------------------------------------------------------------------------------------#
 
 

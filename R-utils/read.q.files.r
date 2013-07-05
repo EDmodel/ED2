@@ -132,6 +132,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                         - mymont$QMEAN.ATM.PAR.DIFF.PY     )
       mymont$QMEAN.ATM.NIR.BEAM.PY    = ( mymont$QMEAN.ATM.RSHORT.BEAM.PY
                                         - mymont$QMEAN.ATM.PAR.BEAM.PY     )
+      #----- If NPOLYGONS.GLOBAL doesn't make sense, fix the dimensions. ------------------#
+      if (mymont$NPOLYGONS.GLOBAL > 100000){
+         mymont$NPOLYGONS.GLOBAL = length(mymont$LON)
+         mymont$NSITES.GLOBAL    = length(mymont$LSL)
+         mymont$NPATCHES.GLOBAL  = length(mymont$AGE)
+         mymont$NCOHORTS.GLOBAL  = length(mymont$PFT)
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
@@ -985,7 +992,14 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #------ Find the demographic rates. ----------------------------------------------#
-         mortconow       = pmax(0,rowSums(mymont$MMEAN.MORT.RATE.CO))
+         if (one.cohort){
+            mortconow    = sum(mymont$MMEAN.MORT.RATE.CO)
+            mortconow    = max(0,mortconow)
+         }else{
+            mortconow    = try(rowSums(mymont$MMEAN.MORT.RATE.CO))
+            if ("try-error" %in% is(mortconow)) browser()
+            mortconow    = pmax(0,mortconow)
+         }#end if
          ncbmortconow    = pmax(0,mymont$MMEAN.MORT.RATE.CO[,2])
          dimortconow     = pmax(0,mortconow - ncbmortconow)
          recruitconow    = mymont$RECRUIT.DBH

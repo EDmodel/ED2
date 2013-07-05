@@ -48,6 +48,9 @@ background=0                   # 0 -- White
                                # 2 -- Dark grey
 #----- Trim the year comparison for tower years only? -------------------------------------#
 efttrim="FALSE"
+#----- Simple = 1 means that the output is going to be simple. ----------------------------#
+simple=0                       # 0 -- default
+                               # 1 -- simplified output
 #----- Path with R scripts that are useful. -----------------------------------------------#
 rscpath="${HOME}/EDBRAMS/R-utils"
 #------------------------------------------------------------------------------------------#
@@ -178,6 +181,27 @@ echo 'Number of polygons: '${npolys}'...'
 
 
 
+
+#------------------------------------------------------------------------------------------#
+#      Set the correct script (full or simple).                                            #
+#------------------------------------------------------------------------------------------#
+case ${simple} in
+0)
+   read_monthly="read_monthly.r"
+   rmon="rmon"
+   rdata_path="rdata_month"
+   ;;
+1)
+   read_monthly="read_simple.r"
+   rmon="rsim"
+   rdata_path="rdata_simple"
+   ;;
+esac
+#------------------------------------------------------------------------------------------#
+
+
+
+
 #------------------------------------------------------------------------------------------#
 #      Loop over all polygons.                                                             #
 #------------------------------------------------------------------------------------------#
@@ -291,6 +315,18 @@ do
    minua=`echo ${timea}  | awk '{print substr($1,3,2)}'`
    hourz=`echo ${timez}  | awk '{print substr($1,1,2)}'`
    minuz=`echo ${timez}  | awk '{print substr($1,3,2)}'`
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the last output time. ------------------------------------------------------#
+   let monthf=${monthz}-1
+   if [ ${monthf} == 0 ]
+   then
+      monthf=12
+      let yearf=${yearz}-1
+   else
+      yearf=${yearz}
+   fi
    #---------------------------------------------------------------------------------------#
 
 
@@ -472,10 +508,10 @@ do
       #------------------------------------------------------------------------------------#
       #      Define the job name, and the names of the output files.                       #
       #------------------------------------------------------------------------------------#
-      epostout='rmon_epost.out'
-      epostsh='rmon_epost.sh'
-      epostlsf='rmon_epost.lsf'
-      epostjob='eb-rmon-'${polyname}
+      epostout="${rmon}_epost.out"
+      epostsh="${rmon}_epost.sh"
+      epostlsf="${rmon}_epost.lsf"
+      epostjob="eb-${rmon}-${polyname}"
       #------------------------------------------------------------------------------------#
 
 
@@ -497,12 +533,12 @@ do
       #      We submit only the jobs that haven't finished.  If the job has just finished, #
       # we submit once again, but save a file to remember that this polygon is loaded.     #
       #------------------------------------------------------------------------------------#
-      status="${here}/${polyname}/rdata_month/status_${polyname}.txt"
+      status="${here}/${polyname}/${rdata_path}/status_${polyname}.txt"
       if [ -s ${status} ]
       then
          yearl=`cat ${status} | awk '{print $1}'`
          monthl=`cat ${status} | awk '{print $2}'`
-         if [ ${yearl} -eq ${yearz} ] && [ ${monthl} -eq ${monthz} ]
+         if [ ${yearl} -eq ${yearf} ] && [ ${monthl} -eq ${monthf} ]
          then
             cestfini="y"
          else
@@ -594,8 +630,8 @@ do
          #---------------------------------------------------------------------------------#
 
          #----- Copy the R script from the Template folder to the local path. -------------#
-         cp -f ${here}/Template/read_monthly.r ${here}/${polyname}
-         scriptnow=${here}/${polyname}/read_monthly.r
+         cp -f ${here}/Template/${read_monthly} ${here}/${polyname}
+         scriptnow=${here}/${polyname}/${read_monthly}
          #---------------------------------------------------------------------------------#
 
 

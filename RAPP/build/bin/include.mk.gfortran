@@ -8,7 +8,7 @@
 MAKE = /usr/bin/make
 
 # RAPP root directory
-RAPP_ROOT=/mypath/RAPP
+RAPP_ROOT=../../../../EDBRAMS/RAPP
 
 #------------------------------------------------------------------------------------------#
 #    HDF5 libraries. You don't have to include them if you don't want to use anything in   #

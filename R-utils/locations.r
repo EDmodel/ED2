@@ -67,7 +67,29 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       lat     = poilist$lat[pp]
       wmo     = poilist$wmo[pp]
 
-      lieu     = simul.description(ici,testpoi)
+      lieu     = simul.description(ici,testpoi,iata=TRUE)
+      pathroot = paste(here,ici,sep="/")
+      pathin   = paste(pathroot,"analy",ici,sep="/")
+      pathrst  = paste(here,ici,"histo",ici,sep="/")
+      pathout  = paste(pathroot,"epost",sep="/")
+
+   }else if( substring(ici,4,4) == "_" & substring(ici,9,9) == "_"){
+      #---- Convert back to upper case. ---------------------------------------------------#
+      ici      = paste(toupper(substring(ici,1,3)),substring(ici,4),sep="")
+
+      #---- Regional polygon. -------------------------------------------------------------#
+      pnumber  = as.numeric(substring(ici,5,8))
+      testpoi  = paste("Polygon",pnumber)
+
+      #----- Grab the "IATA" code. --------------------------------------------------------#
+      iata    = substring(ici,1,8)
+
+      #----- Put the name of the place and the meteorological forcing. --------------------#
+      lon     = as.numeric(substring(ici,13,18))
+      lat     = as.numeric(substring(ici,23,28))
+      wmo     = NA
+
+      lieu     = simul.description(ici,testpoi,iata=FALSE)
       pathroot = paste(here,ici,sep="/")
       pathin   = paste(pathroot,"analy",ici,sep="/")
       pathrst  = paste(here,ici,"histo",ici,sep="/")
@@ -329,7 +351,7 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 #==========================================================================================#
 #     This function finds a good name to describe the simulation.                          #
 #------------------------------------------------------------------------------------------#
-simul.description <<- function(ici,testpoi,max.char=66){
+simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
 
    #---------------------------------------------------------------------------------------#
    #     This block contains names for the commonest settings for variables that are       #
@@ -914,6 +936,16 @@ simul.description <<- function(ici,testpoi,max.char=66){
                                      , fmt   = "%4.4i"
                                      , off   =   0.0
                                      , mult  =   1.0)
+   numvar[["lon"  ]]           = list( descr = "Longitude"
+                                     , unit  = ""
+                                     , fmt   = "%.2f"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
+   numvar[["lat"  ]]           = list( descr = "Latitude"
+                                     , unit  = ""
+                                     , fmt   = "%.2f"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
    #---------------------------------------------------------------------------------------#
 
 
@@ -923,142 +955,152 @@ simul.description <<- function(ici,testpoi,max.char=66){
    #         The following list is currently hardcoded, it could be better designed in the #
    # future so the script would recognise the terms automatically.                         #
    #---------------------------------------------------------------------------------------#
-   lenici = nchar(ici)
-   if (lenici == 8){
-      nparms = 1
-      param  = c("met.forcing")
-      na     = c(     6)
-      nz     = c(     8)
-   }else if (lenici == 11){
-      nparms = 1
-      param  = c("revision")
-      na     = c(         9)
-      nz     = c(        11)
-   }else if (lenici == 12){
-      nparms = 2
-      param  = c("met.forcing","isas")
-      na     = c(            6,    10)
-      nz     = c(            8,    12)
-   }else if (lenici == 14){
-      nparms = 1
-      param  = c("icanrad")
-      na     = c(        13)
-      nz     = c(        15)
-   }else if (lenici == 15){
-      nparms = 1
-      param  = c("revision")
-      na     = c(        13)
-      nz     = c(        15)
-   }else if (lenici == 16){
-      nparms = 2
-      param  = c("igrass","icanturb")
-      na     = c(       7,        15)
-      nz     = c(       8,        16)
-   }else if (lenici == 17){
-      nparms = 2
-      param  = c("iphen.scheme","isas")
-      na     = c(            11,    15)
-      nz     = c(            13,    17)
-   }else if (lenici == 18){
-      nparms = 2
-      param  = c("icanturb","isas")
-      na     = c(        13,    16)
-      nz     = c(        14,    18)
-   }else if (lenici == 19){
-      nparms = 2
-      param  = c("isoilcol","leaf.absorb.nir")
-      na     = c(        10,               17)
-      nz     = c(        11,               19)
-   }else if (lenici == 21){
-      nparms = 3
-      param  = c("isas","iage","idiversity")
-      na     = c(     6,    14,          20)
-      nz     = c(     8,    15,          21)
-   }else if (lenici == 22){
-      nparms = 2
-      param  = c("icanrad","crown.mod")
-      na     = c(       13,         21)
-      nz     = c(       14,         22)
-   }else if (lenici == 23){
-      nparms = 3
-      param  = c("met.forcing","iphen.scheme","include.fire")
-      na     = c(            6,            14,            22)
-      nz     = c(            8,            16,            23)
-   }else if (lenici == 24){
-      nparms = 3
-      param  = c("met.forcing","icanrad","init.mode")
-      na     = c(            6,      14,          22)
-      nz     = c(            8,      16,          24)
-   }else if (lenici == 25){
-      nparms = 3
-      param  = c("iphen.scheme","d0","include.fire")
-      na     = c(            10,  16,            24)
-      nz     = c(            12,  18,            25)
-   }else if (lenici == 26){
-      nparms = 3
-      param  = c("soil.depth","dd.mort.control", "iphen.scheme")
-      na     = c(          10,               17,             24)
-      nz     = c(          11,               18,             26)
-   }else if (lenici == 27){
-      nparms = 3
-      param  = c("soil.depth","sand", "clay")
-      na     = c(          10,    17,     25)
-      nz     = c(          11,    19,     27)
-   }else if (lenici == 28){
-      nparms = 3
-      param  = c("iphen.scheme", "isoil.text","treefall")
-      na     = c(            11,           20,        25)
-      nz     = c(            13,           21,        28)
-   }else if (lenici == 29){
-      nparms = 3
-      param  = c("yeara","iphen.scheme", "isoil.text")
-      na     = c(      9,            19,           28)
-      nz     = c(     12,            21,           29)
-   }else if (lenici == 30){
-      nparms = 3
-      param  = c("iscenario","iphen.scheme","isoil.text")
-      na     = c(         11,            20,          29)
-      nz     = c(         14,            22,          30)
-   }else if (lenici == 31){
-      nparms = 3
-      param  = c("iphen.scheme","iddmort.scheme","treefall")
-      na     = c(            11,              20,        28)
-      nz     = c(            13,              21,        31)
-   }else if (lenici == 32){
-      nparms = 4
-      param  = c("isoil.text","include.fire","fire.parameter","sm.fire")
-      na     = c(         10,             17,              24,       29)
-      nz     = c(         11,             18,              25,       32)
-   }else if (lenici == 33){
-      nparms = 5
-      param  = c("met.forcing","isas","iage","idiversity","include.fire")
-      na     = c(            6,    10,    18,          24,            32)
-      nz     = c(            8,    12,    19,          25,            33)
-   }else if (lenici == 36){
-      nparms = 4
-      param  = c("imet.drought","isoil.text","iphen.scheme","idrought")
-      na     = c(             9,          17,            24,        35)
-      nz     = c(            10,          18,            26,        36)
-   }else if (lenici == 37){
-      nparms = 4
-      param  = c("yeara","iphen.scheme","isoil.text","treefall")
-      na     = c(      9,            18,          27,        35)
-      nz     = c(     11,            20,          28,        37)
-   }else if (lenici == 39){
-      nparms = 6
-      param  = c("met.forcing","isas","iage","idiversity","iphen.scheme","include.fire")
-      na     = c(            6,    10,    17,          23,            30,            38)
-      nz     = c(            8,    12,    18,          24,            32,            39)
-   }else if (lenici == 40){
-      nparms = 5
-      param  = c("iphen.scheme","iddmort.scheme","treefall","include.fire","isas")
-      na     = c(            10,              18,        26,            35,    38)
-      nz     = c(            12,              19,        29,            36,    40)
-   }else if (lenici == 41){
-      nparms = 5
-      param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
-      na     = c(            7,           13,           23,            31,          40)
-      nz     = c(           10,           16,           24,            33,          41)
+   if (iata){
+      lenici = nchar(ici)
+      if (lenici == 8){
+         nparms = 1
+         param  = c("met.forcing")
+         na     = c(     6)
+         nz     = c(     8)
+      }else if (lenici == 11){
+         nparms = 1
+         param  = c("revision")
+         na     = c(         9)
+         nz     = c(        11)
+      }else if (lenici == 12){
+         nparms = 2
+         param  = c("met.forcing","isas")
+         na     = c(            6,    10)
+         nz     = c(            8,    12)
+      }else if (lenici == 14){
+         nparms = 1
+         param  = c("icanrad")
+         na     = c(        13)
+         nz     = c(        15)
+      }else if (lenici == 15){
+         nparms = 1
+         param  = c("revision")
+         na     = c(        13)
+         nz     = c(        15)
+      }else if (lenici == 16){
+         nparms = 2
+         param  = c("igrass","icanturb")
+         na     = c(       7,        15)
+         nz     = c(       8,        16)
+      }else if (lenici == 17){
+         nparms = 2
+         param  = c("iphen.scheme","isas")
+         na     = c(            11,    15)
+         nz     = c(            13,    17)
+      }else if (lenici == 18){
+         nparms = 2
+         param  = c("icanturb","isas")
+         na     = c(        13,    16)
+         nz     = c(        14,    18)
+      }else if (lenici == 19){
+         nparms = 2
+         param  = c("isoilcol","leaf.absorb.nir")
+         na     = c(        10,               17)
+         nz     = c(        11,               19)
+      }else if (lenici == 21){
+         nparms = 3
+         param  = c("isas","iage","idiversity")
+         na     = c(     6,    14,          20)
+         nz     = c(     8,    15,          21)
+      }else if (lenici == 22){
+         nparms = 2
+         param  = c("icanrad","crown.mod")
+         na     = c(       13,         21)
+         nz     = c(       14,         22)
+      }else if (lenici == 23){
+         nparms = 3
+         param  = c("met.forcing","iphen.scheme","include.fire")
+         na     = c(            6,            14,            22)
+         nz     = c(            8,            16,            23)
+      }else if (lenici == 24){
+         nparms = 3
+         param  = c("met.forcing","icanrad","init.mode")
+         na     = c(            6,      14,          22)
+         nz     = c(            8,      16,          24)
+      }else if (lenici == 25){
+         nparms = 3
+         param  = c("iphen.scheme","d0","include.fire")
+         na     = c(            10,  16,            24)
+         nz     = c(            12,  18,            25)
+      }else if (lenici == 26){
+         nparms = 3
+         param  = c("soil.depth","dd.mort.control", "iphen.scheme")
+         na     = c(          10,               17,             24)
+         nz     = c(          11,               18,             26)
+      }else if (lenici == 27){
+         nparms = 3
+         param  = c("soil.depth","sand", "clay")
+         na     = c(          10,    17,     25)
+         nz     = c(          11,    19,     27)
+      }else if (lenici == 28){
+         nparms = 3
+         param  = c("iphen.scheme", "isoil.text","treefall")
+         na     = c(            11,           20,        25)
+         nz     = c(            13,           21,        28)
+      }else if (lenici == 29){
+         nparms = 3
+         param  = c("yeara","iphen.scheme", "isoil.text")
+         na     = c(      9,            19,           28)
+         nz     = c(     12,            21,           29)
+      }else if (lenici == 30){
+         nparms = 3
+         param  = c("iscenario","iphen.scheme","isoil.text")
+         na     = c(         11,            20,          29)
+         nz     = c(         14,            22,          30)
+      }else if (lenici == 31){
+         nparms = 3
+         param  = c("iphen.scheme","iddmort.scheme","treefall")
+         na     = c(            11,              20,        28)
+         nz     = c(            13,              21,        31)
+      }else if (lenici == 32){
+         nparms = 4
+         param  = c("isoil.text","include.fire","fire.parameter","sm.fire")
+         na     = c(         10,             17,              24,       29)
+         nz     = c(         11,             18,              25,       32)
+      }else if (lenici == 33){
+         nparms = 5
+         param  = c("met.forcing","isas","iage","idiversity","include.fire")
+         na     = c(            6,    10,    18,          24,            32)
+         nz     = c(            8,    12,    19,          25,            33)
+      }else if (lenici == 36){
+         nparms = 4
+         param  = c("imet.drought","isoil.text","iphen.scheme","idrought")
+         na     = c(             9,          17,            24,        35)
+         nz     = c(            10,          18,            26,        36)
+      }else if (lenici == 37){
+         nparms = 4
+         param  = c("yeara","iphen.scheme","isoil.text","treefall")
+         na     = c(      9,            18,          27,        35)
+         nz     = c(     11,            20,          28,        37)
+      }else if (lenici == 39){
+         nparms = 6
+         param  = c("met.forcing","isas","iage","idiversity","iphen.scheme","include.fire")
+         na     = c(            6,    10,    17,          23,            30,            38)
+         nz     = c(            8,    12,    18,          24,            32,            39)
+      }else if (lenici == 40){
+         nparms = 5
+         param  = c("iphen.scheme","iddmort.scheme","treefall","include.fire","isas")
+         na     = c(            10,              18,        26,            35,    38)
+         nz     = c(            12,              19,        29,            36,    40)
+      }else if (lenici == 41){
+         nparms = 5
+         param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
+         na     = c(            7,           13,           23,            31,          40)
+         nz     = c(           10,           16,           24,            33,          41)
+      }#end if
+   }else{
+      lenici = nchar(ici)
+      if (lenici == 28){
+         nparms = 2
+         param  = c("lon","lat")
+         na     = c(   13,   23)
+         nz     = c(   18,   28)
+      }#end if
    }#end if
    #---------------------------------------------------------------------------------------#
 

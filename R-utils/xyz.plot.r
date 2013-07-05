@@ -48,9 +48,21 @@ xyz.plot = function( x
                    , xyz.xaxis      = NULL
                    , xyz.yaxis      = NULL
                    , xyz.more       = NULL
+                   , xyz.before     = xyz.more
+                   , xyz.after      = NULL
                    , key.title      = NULL
                    , key.log        = FALSE
                    , key.axis       = NULL
+                   , key.width      = if (is.list(x)){
+                                         if (length(x) > 1){7}else{5}
+                                      }else{
+                                         4.5
+                                      }#end if
+                   , leg.height     = if (is.list(x)){
+                                         if (length(x) > 2){5}else{6}
+                                      }else{
+                                         6
+                                      }#end if
                    , ...
                    ){
 
@@ -110,31 +122,35 @@ xyz.plot = function( x
 
 
 
+   #----- Check whether to add outer margins (we add it only if npanels > 1). -------------#
+   par(oma = c(0.2,3,4.5,0)*(npanels > 1))
+   #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #      Split the screen into multiple blocks, plus one extra line for the legend and    #
    # one extra row for the colour bar.                                                     #
    #---------------------------------------------------------------------------------------#
-   par(oma = c(0.2,3,4.5,0))
    lo.box = pretty.box(npanels)
    if (is.null(xyz.legend)){
       emat   = cbind(lo.box$mat.off,rep(1,times=lo.box$nrow))
       layout( mat     = emat
             , heights = rep(1/lo.box$nrow,times=lo.box$nrow)
-            , widths  = c(rep(6/lo.box$ncol,times=lo.box$ncol),1)
+            , widths  = c(rep(key.width/lo.box$ncol,times=lo.box$ncol),1)
             )#end layout
       off.xlab  = 0
-      off.right = 1/7
+      off.right = 1/(key.width+1)
    }else{
       emat   = rbind( cbind(lo.box$mat.off2,rep(2,times=lo.box$nrow))
                     , c(rep(1,times=lo.box$ncol),0)
                     )#end rbind
       layout( mat     = emat
-            , heights = c(rep(5/lo.box$nrow,times=lo.box$nrow),1)
-            , widths  = c(rep(6/lo.box$ncol,times=lo.box$ncol),1)
+            , heights = c(rep(leg.height/lo.box$nrow,times=lo.box$nrow),1)
+            , widths  = c(rep(key.width /lo.box$ncol,times=lo.box$ncol),1)
             )#end layout
-      off.xlab  = 1/6
-      off.right = 1/7
+      off.xlab  = 1/(leg.height+1)
+      off.right = 1/(key.width +1)
    }#end if
    #---------------------------------------------------------------------------------------#
    #=======================================================================================#
@@ -165,7 +181,7 @@ xyz.plot = function( x
    #=======================================================================================#
    #      Next plot (or first plot): the key scale.                                        #
    #---------------------------------------------------------------------------------------#
-   par(mar = c(0.5,1,3,4)+0.1)
+   par(mar = lo.box$mar.key)
    plot.new()
    #---------------------------------------------------------------------------------------#
    #     Plot in the horizontal or vertical depending on where the scale is going to       #
@@ -218,18 +234,12 @@ xyz.plot = function( x
    #=======================================================================================#
    #      Now we plot the other panels.                                                    #
    #---------------------------------------------------------------------------------------#
-   for (p in 1:npanels){
-      #----- Find out where is this box going, and set up axes and margins. ---------------#
-      left    = (p %% lo.box$ncol) == 1 || lo.box$ncol == 1
-      right   = (p %% lo.box$ncol) == 0
-      top     = p <= lo.box$ncol
-      bottom  = p > (lo.box$nrow - 1) * lo.box$ncol
-      mar.now = c( 1 + 4 * ( bottom | (! fixed.xlim)  )
-                 , 1 + 3 * ( left   | (! fixed.ylim)  )
-                 , 1 + 4 * ( top    &    fixed.xlim   )
-                 , 1 + 3 * ( right  &    fixed.ylim   ) ) + 0.1
+   for (p in sequence(npanels)){
+      #------ Decide the margins based upon the XY axes limits. ---------------------------#
+      mar.now = lo.box$mar[p]
+      if (! fixed.xlim) mar.now[c(1,3)] = lo.box$mar0[c(1,3)]
+      if (! fixed.ylim) mar.now[c(2,4)] = lo.box$mar0[c(2,4)]
       #------------------------------------------------------------------------------------#
-
 
 
       #------------------------------------------------------------------------------------#
@@ -246,7 +256,9 @@ xyz.plot = function( x
       plot.new()
       plot.window(xlim=xlim.now,ylim=ylim.now,log=xy.log,...)
       box()
-      title(main=xyz.sub[p],xlab="",ylab="",line=0.5)
+      if (npanels != 1){
+         title(main=xyz.sub[p],xlab="",ylab="",line=0.5)
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
@@ -265,15 +277,15 @@ xyz.plot = function( x
       #------------------------------------------------------------------------------------#
       #     Check whether there are especial instructions for plotting the axes.           #
       #------------------------------------------------------------------------------------#
-      if (is.null(xyz.xaxis) && ( bottom | ! fixed.xlim) ){
+      if (is.null(xyz.xaxis) && ( lo.box$bottom[p] | ! fixed.xlim) ){
          axis(side=1)
-      }else if ( bottom | ! fixed.xlim ){
+      }else if ( lo.box$bottom[p] | ! fixed.xlim ){
          if (! "side" %in% names(xyz.xaxis)) xyz.xaxis$side = 1
          do.call("axis",xyz.xaxis)
       }#end if
-      if (is.null(xyz.yaxis) && ( left | ! fixed.ylim) ){
+      if (is.null(xyz.yaxis) && ( lo.box$left[p] | ! fixed.ylim) ){
          axis(side=2)
-      }else if ( left | ! fixed.ylim ){
+      }else if ( lo.box$left[p] | ! fixed.ylim ){
          if (! "side" %in% names(xyz.yaxis)) xyz.yaxis$side = 2
          do.call("axis",xyz.yaxis)
       }#end if
@@ -284,9 +296,9 @@ xyz.plot = function( x
       #------------------------------------------------------------------------------------#
       #     Check whether there are additional instructions to plot. 
       #------------------------------------------------------------------------------------#
-      if (! is.null(xyz.more)) {
-         for (m in 1:length(xyz.more)){
-            do.call(names(xyz.more)[m],xyz.more[[m]])
+      if (! is.null(xyz.before)) {
+         for (m in 1:length(xyz.before)){
+            do.call(names(xyz.before)[m],xyz.before[[m]])
          }#end for
       }#end if
       #------------------------------------------------------------------------------------#
@@ -302,6 +314,18 @@ xyz.plot = function( x
       shf.zcol = pmin(shf,length(zcol    ))
       points(x=x[[p]][shf.x],y=y[[p]][shf.y],pch=pch[[p]][shf.pch]
             ,cex=cex[[p]][shf.cex],col=zcol[shf.zcol],...)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Check whether there are additional instructions to plot. 
+      #------------------------------------------------------------------------------------#
+      if (! is.null(xyz.after)) {
+         for (m in 1:length(xyz.after)){
+            do.call(names(xyz.after)[m],xyz.after[[m]])
+         }#end for
+      }#end if
       #------------------------------------------------------------------------------------#
    }#end for
    #=======================================================================================#
@@ -319,12 +343,28 @@ xyz.plot = function( x
       }else if (! "main" %in% names(xyz.title)){
          names(xyz.title)[[1]] = "main"
       }#end if
-      xyz.title = modifyList(x=xyz.title,val=list(off.xlab=off.xlab,off.right=off.right))
-      do.call("gtitle",xyz.title)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #       Check whether to use title or gtitle.                                        #
+      #------------------------------------------------------------------------------------#
+      if (npanels == 1){
+         xyz.title = modifyList(x=xyz.title,val=list(sub=xyz.sub[1]))
+         do.call(what="title",args=xyz.title)
+      }else{
+         xyz.title = modifyList( x   = xyz.title
+                               , val = list(off.xlab=off.xlab,off.right=off.right)
+                               )#end modifyList
+         do.call(what="gtitle",args=xyz.title)
+      }#end if
+      #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
 
    invisible()
-}#end function colourmap
+}#end function xyz.plot
 #==========================================================================================#
 #==========================================================================================#

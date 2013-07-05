@@ -18,12 +18,12 @@
 #------ Extensions. -----------------------------------------------------------------------#
 exts=".c .f90 .F90"
 #------ Sub-directories to be compared. ---------------------------------------------------#
-subdirs="BRAMS ED"
+subdirs="BRAMS"
 #------ Editor to use (I've only tested with nedit, use others at your own risk). ---------#
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
 here="/n/home00/mlongo/EDBRAMS"
-there="/n/gstore/Labs/moorcroft_lab_protected/Users/rknox/arm-310/EDBRAMS"
+there="/n/home09/aswann/EDBRAMS"
 #------------------------------------------------------------------------------------------#
 
 

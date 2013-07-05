@@ -3,6 +3,23 @@
 #     This is just a wrapper for boot.ci, in which we retrieve the lower bound of the      #
 # confidence interval only.                                                                #
 #------------------------------------------------------------------------------------------#
+boot.expected <<- function(data,statistic,R,...){
+    ans = boot(data,statistic,R)$t0
+    return(ans)
+}#end boot.ci.lower
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This is just a wrapper for boot.ci, in which we retrieve the lower bound of the      #
+# confidence interval only.                                                                #
+#------------------------------------------------------------------------------------------#
 boot.ci.lower <<- function(boot.out,...){
     ci.now = boot.ci(boot.out,...)$percent
     if (length(ci.now) == 5){

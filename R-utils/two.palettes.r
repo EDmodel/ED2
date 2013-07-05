@@ -93,7 +93,7 @@ two.palettes <<- function(x,n=20,white=1,low="blue",high="orangered"){
 #      Below is the list of colour palettes by the hue.                                    #
 #------------------------------------------------------------------------------------------#
 #----- Blue. ------------------------------------------------------------------------------#
-hue.blue <<- function(n){
+hue.blue <<- function(n,inv=FALSE){
    nodes     = c("skyblue","deepskyblue","dodgerblue","royalblue3","midnightblue")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
@@ -105,7 +105,7 @@ hue.blue <<- function(n){
    return(rgb.out)
 }#end hue.blue
 #----- Orange-Red. ------------------------------------------------------------------------#
-hue.orangered <<- function(n){
+hue.orangered <<- function(n,inv=FALSE){
    nodes     = c("gold","goldenrod","darkorange1","orangered","#7E0000")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
@@ -117,7 +117,7 @@ hue.orangered <<- function(n){
    return(rgb.out)
 }#end hue.orangered
 #----- Green. -----------------------------------------------------------------------------#
-hue.green <<- function(n){
+hue.green <<- function(n,inv=FALSE){
    nodes     = c("darkolivegreen1","olivedrab3","chartreuse2","forestgreen","#004000")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
@@ -154,7 +154,10 @@ hue.grey <<- function(n){
 }#end hue.orangered
 #----- Purple. ----------------------------------------------------------------------------#
 hue.purple <<- function(n){
-   nodes     = c("#C0ACCF","lightslateblue","slateblue","purple2","#3F1368")
+   nodes     = c("#DEE1FF","#B0BCFF","#7E76FF","#6B4EFF"
+                ,"#6337C9","#581BA2","#440084","#2A0053")
+   nodes     = c("#DEE1FF","#B0BCFF","#7E76FF","#6B4EFF"
+                ,"#581BA2","#2A0053")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
    rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y
@@ -164,3 +167,11 @@ hue.purple <<- function(n){
    rgb.out   = rgb(r=rgb.out$red,g=rgb.out$green,b=rgb.out$blue,maxColorValue=255)
    return(rgb.out)
 }#end hue.orangered
+#------ Inverted scale. -------------------------------------------------------------------#
+ihue.blue      <<- function(n) rev(hue.blue     (n))
+ihue.orangered <<- function(n) rev(hue.orangered(n))
+ihue.green     <<- function(n) rev(hue.green    (n))
+ihue.brown     <<- function(n) rev(hue.brown    (n))
+ihue.grey      <<- function(n) rev(hue.grey     (n))
+ihue.purple    <<- function(n) rev(hue.purple   (n))
+#------------------------------------------------------------------------------------------#

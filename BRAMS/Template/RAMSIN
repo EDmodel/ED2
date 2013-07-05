@@ -19,7 +19,7 @@
 $MODEL_GRIDS
 
    !----- Simulation title (64 characters). -----------------------------------------------!
-   EXPNME   = 'BRAMS, version 4.0.6',
+   EXPNME   = 'SimAmazonia - 20XX-20XX',
    !---------------------------------------------------------------------------------------!
 
 
@@ -92,9 +92,9 @@ $MODEL_GRIDS
    !           a lot, leave this set to 1.  One value for all grids.                       ! 
    !---------------------------------------------------------------------------------------!
    NGRIDS   =    1,
-   NNXP     =  177,  68, 230,
-   NNYP     =   98,  56, 161,
-   NNZP     =   44,  44,  44,
+   NNXP     =   64,  68, 230,
+   NNYP     =   75,  56, 161,
+   NNZP     =   52,  52,  52,
    NZG      =   16,
    NZS      =    1,
    !---------------------------------------------------------------------------------------!
@@ -154,10 +154,10 @@ $MODEL_GRIDS
    ! DZMAX  -- maximum grid spacing in metres.                                             !
    ! ZZ     -- discrete layers in case you set DELTAZ to zero.                             !
    !---------------------------------------------------------------------------------------!
-   DELTAX   =    25000.,
-   DELTAY   =    25000.,
-   DELTAZ   =      100.,
-   DZRAT    =      1.08,
+   DELTAX   =    22239.,
+   DELTAY   =    22239.,
+   DELTAZ   =       90.,
+   DZRAT    =      1.06,
    DZMAX    =     1000.,
    ZZ       =       0.0,      20.0,      46.0,      80.0,     120.0,     165.0,     220.0,
                   290.0,     380.0,     480.0,     590.0,     720.0,     870.0,    1030.0,
@@ -232,10 +232,10 @@ $MODEL_GRIDS
    ! CENTLAT -- Latitude of the central point.  One value for each grid.                   !
    ! CENTLON -- Longitude of the central point.  One value for each grid.                  !
    !---------------------------------------------------------------------------------------!
-   POLELAT  =  -4.00,
-   POLELON  = -53.00,
-   CENTLAT  =  -4.00,
-   CENTLON  = -53.00,
+   POLELAT  =  -7.50,
+   POLELON  = -61.50,
+   CENTLAT  =  -7.50,
+   CENTLON  = -61.50,
    !---------------------------------------------------------------------------------------!
 
 
@@ -418,7 +418,7 @@ $END
    !---------------------------------------------------------------------------------------!
    NUDLAT        =      5 ,
    TNUDLAT       =   3600.,
-   TNUDCENT      =  43200.,
+   TNUDCENT      =  64800.,
    TNUDTOP       =  10800.,
    ZNUDTOP       =  18000.,
    WT_NUDGE_GRID =      1., 0.80,
@@ -1290,7 +1290,7 @@ $MODEL_OPTIONS
       !  UGBMIN -- minimum wind speed at the leaf level                             [ m/s] !
       !  USTMIN -- minimum friction velocity, u*, in m/s.                           [ m/s] !
       !---------------------------------------------------------------------------------------!
-      UBMIN          = 0.65,
+      UBMIN          = 1.00,
       UGBMIN         = 0.25,
       USTMIN         = 0.05,
       !---------------------------------------------------------------------------------------!
@@ -2022,7 +2022,7 @@ $ED2_INFO
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   SFILIN   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/potveg/PVE_',
+   SFILIN   = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/brams_data/ed22_restarts/sa1_myyeara/SA1_',
    !---------------------------------------------------------------------------------------!
 
 

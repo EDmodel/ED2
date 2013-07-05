@@ -277,7 +277,14 @@ skill.plot  <<- function ( obs
          #------ Find the range, making sure that 0 is always included. -------------------#
          bias.max  = max(mean.res)
          bias.min  = min(mean.res)
-         if (bias.min > 0 && bias.max > 0){
+         if (bias.min == bias.max && bias.min == 0){
+            bias.min = -0.25
+            bias.max =  0.25
+         }else if (bias.min == bias.max){
+            #----- Biases switch sign.  Coerce them to be simmetric. ----------------------#
+            bias.min = -abs(bias.min)
+            bias.max =  abs(bias.max)
+         }else if (bias.min > 0 && bias.max > 0){
             #----- All biases are positive.  Coerce maximum to be zero. -------------------#
             bias.min = 0
          }else if (bias.min < 0 && bias.max < 0){

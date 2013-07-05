@@ -702,9 +702,11 @@ subroutine update_polygon_derived_props(cgrid)
                                                + cpatch%nplant             (ico)           &
                                                * patch_wgt
                cgrid%lai             (p,d,ipy) = cgrid%lai             (p,d,ipy)           &
-                                               + cpatch%lai                (ico)
+                                               + cpatch%lai                (ico)           &
+                                               * patch_wgt
                cgrid%wai             (p,d,ipy) = cgrid%wai             (p,d,ipy)           &
-                                               + cpatch%wai                (ico)
+                                               + cpatch%wai                (ico)           &
+                                               * patch_wgt
                cgrid%agb             (p,d,ipy) = cgrid%agb             (p,d,ipy)           &
                                                + cpatch%agb                (ico)           &
                                                * cpatch%nplant             (ico)           &

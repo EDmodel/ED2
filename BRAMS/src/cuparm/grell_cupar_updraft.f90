@@ -210,7 +210,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    !---------------------------------------------------------------------------------------!
    if (klou > kbmax) then
       !------ Gave up... Cloud would be too high to be a cumulus. -------------------------!
-      ierr = 3
+      ierr = 2
       return
    end if
    call lcl_il(thil_cup(klou),p_cup(klou),t_cup(klou),qtot_cup(klou),qvap_cup(klou)        &

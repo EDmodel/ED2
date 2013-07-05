@@ -21,6 +21,7 @@ pft.breaks <<- c(-Inf,pft.dens[2:n.pfts]-0.5*diff(pft.dens),Inf)
 standard.common.name <<- function(x){
 
    #----- Full replacements. --------------------------------------------------------------#
+   sel = (! is.na(x) & x == "?"                       ); x[sel] = NA
    sel = (! is.na(x) & x == "araticu"                 ); x[sel] = "araticum"
    sel = (! is.na(x) & x == "baubarana"               ); x[sel] = "embaubarana"
    sel = (! is.na(x) & x == "breu/louro preto?"       ); x[sel] = NA
@@ -31,6 +32,7 @@ standard.common.name <<- function(x){
    sel = (! is.na(x) & x == "cajuba"                  ); x[sel] = "caju"
    sel = (! is.na(x) & x == "castanha"                ); x[sel] = "castanha do para"
    sel = (! is.na(x) & x == "castanheiro"             ); x[sel] = "castanha do para"
+   sel = (! is.na(x) & x == "cip"                     ); x[sel] = "cipo"
    sel = (! is.na(x) & x == "cipo(dbh a 0.9m do chao)"); x[sel] = "cipo"
    sel = (! is.na(x) & x == "cipo+arapo"              ); x[sel] = "cipo"
    sel = (! is.na(x) & x == "cutiti"                  ); x[sel] = "abiu cutite"
@@ -270,12 +272,16 @@ standard.scientific.name <<- function(dat){
    gs.list                  = sapply(X = tolower(dat$scientific),FUN=strsplit,split=" ")
    gs.length                = sapply(X = gs.list, FUN = length)
    gs.mat                   = do.call(rbind,gs.list)
-   g.only                   = gs.length < 2
-   gs.mat[g.only,2]         = NA
+   if (dim(gs.mat)[2] == 1){
+      gs.mat = cbind(gs.mat,rep(NA_character_,times=nplants))
+   }else{
+      g.only                   = gs.length < 2
+      gs.mat[g.only,2]         = NA_character_
+   }#end if
    g                        = capwords(gs.mat[,1],strict=TRUE)
    s                        = tolower(gs.mat[,2])
    g.s                      = paste(g,s,sep=" ")
-   g.s[is.na(g) & is.na(s)] = NA
+   g.s[is.na(g) & is.na(s)] = NA_character_
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
