@@ -218,7 +218,9 @@ if (! all(isok)){
    miss = which(! isok)
    cat(" You must install the following packages before using the scripts:","\n")
    for (m in miss) cat(" -> ",names(isok)[m],"\n")
-   stop("Missing packages!!!")
+   risky = readline(" Are you sure you want to proceed [y|N]? ")
+   risky = tolower(risky)
+   if (! risky %in% c("y","yes")) stop("Missing packages!!!")
 }#end if
 #------------------------------------------------------------------------------------------#
 

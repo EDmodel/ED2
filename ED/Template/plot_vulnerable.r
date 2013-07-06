@@ -71,7 +71,7 @@ pch.wmo         = 16              # Type of point to use in wmo plots
 #------------------------------------------------------------------------------------------#
 #     Options for computing the vulnerability.                                             #
 #------------------------------------------------------------------------------------------#
-ntry.max        = 10              # Maximum number of attempts to find the score shift.
+ntry.max        = 20              # Maximum number of attempts to find the score shift.
 loud            = FALSE           # loud (verbose).
 wmo.nyears.min  = 25              # Minimum number of years to consider the station valid
 n.lsq.min       = 5               # Minimum number of years to consider in the LSQ
@@ -216,16 +216,16 @@ statvar[[ 4]] = list( vname   = "dlocation.rel"
 statvar[[ 5]] = list( vname   = "dscale.rel"
                     , desc    = "Vulnerability (Scale)"
                     , cscheme = "ihue.hot"
-                    , unit    = "pc"
+                    , unit    = "empty"
                     , min     =  0.0
-                    , max     =  1.5
+                    , max     =  3.0
                     , plog    = FALSE
                     )#end list
 statvar[[ 6]] = list( vname   = "dshape.abs"
                     , desc    = "Vulnerability (Shape)"
                     , cscheme = "hue.hot"
                     , unit    = "empty"
-                    , min     = -6.0
+                    , min     = -3.0
                     , max     =  0.0
                     , plog    = FALSE
                     )#end list
@@ -325,9 +325,9 @@ site[[ 2]] = list( iata = "s67"
                  , fnt  = 2
                  , cex  = 0.6
                  )#end list
-site[[ 3]] = list( iata = "lvd"
-                 , lon  = -60.40
-                 , lat  =   4.00
+site[[ 3]] = list( iata = "bvb"
+                 , lon  = -60.61
+                 , lat  =   2.92
                  , col1 = "deeppink3"
                  , col2 = "turquoise2"
                  , fnt  = 2
@@ -349,9 +349,33 @@ site[[ 5]] = list( iata = "chb"
                  , fnt  = 2
                  , cex  = 0.6
                  )#end list
-site[[ 6]] = list( iata = "scd"
+site[[ 6]] = list( iata = "scz"
                  , lon  = -62.50
                  , lat  = -14.50
+                 , col1 = "deeppink3"
+                 , col2 = "turquoise2"
+                 , fnt  = 2
+                 , cex  = 0.6
+                 )#end list
+site[[ 7]] = list( iata = "pnd"
+                 , lon  = -66.50
+                 , lat  = -10.50
+                 , col1 = "deeppink3"
+                 , col2 = "turquoise2"
+                 , fnt  = 2
+                 , cex  = 0.6
+                 )#end list
+site[[ 8]] = list( iata = "pcl"
+                 , lon  = -74.57
+                 , lat  =  -8.38
+                 , col1 = "deeppink3"
+                 , col2 = "turquoise2"
+                 , fnt  = 2
+                 , cex  = 0.6
+                 )#end list
+site[[ 9]] = list( iata = "mab"
+                 , lon  = -49.14
+                 , lat  =  -5.37
                  , col1 = "deeppink3"
                  , col2 = "turquoise2"
                  , fnt  = 2
@@ -1043,8 +1067,8 @@ if (retrieve.data & file.exists(rdata.vulnerable)){
                again        = TRUE
                while (again & ntry < ntry.max){
                   ntry      = ntry + 1
-                  now.lower = now.scale / 10^ntry
-                  now.upper = now.scale * 10^ntry
+                  now.lower = now.scale / 100^ntry
+                  now.upper = now.scale * 100^ntry
                   #----- Use try to ensure it doesn't crash. ------------------------------#
                   ans       = try( qsn.mult( z        = now.drought
                                            , n        = n.years
@@ -1097,8 +1121,8 @@ if (retrieve.data & file.exists(rdata.vulnerable)){
                again        = TRUE
                while (again & ntry < ntry.max){
                   ntry      = ntry + 1
-                  now.lower = - abs(now.shape) * 2^ntry
-                  now.upper = + abs(now.shape) * 2^ntry
+                  now.lower = - abs(now.shape) * 10^ntry
+                  now.upper = + abs(now.shape) * 10^ntry
                   #----- Use try to ensure it doesn't crash. ------------------------------#
                   ans       = try( qsn.mult( z        = now.drought
                                            , n        = n.years
@@ -2360,6 +2384,7 @@ skill.n  [discard] = NA
 #----- Standardise the bias and scattering of residuals. ----------------------------------#
 mod.bias  = apply(X=skill.res,MARGIN=c(1,3),FUN=mean,na.rm=TRUE) / obs.sdev
 mod.sigma = apply(X=skill.res,MARGIN=c(1,3),FUN=sd  ,na.rm=TRUE) / obs.sdev
+mod.n     = apply(X=skill.n  ,MARGIN=c(1,3),FUN=commonest ,na.rm=TRUE)
 mod.bias [!is.finite(mod.bias )] = NA
 mod.sigma[!is.finite(mod.sigma)] = NA
 #------------------------------------------------------------------------------------------#
