@@ -431,7 +431,7 @@ use io_params
 
 implicit none
 
-character(len=*) :: sstfilin
+character(len=str_len) :: sstfilin
 integer :: ierr
 
 integer :: nc,nf,lnf,nftot,ng
@@ -461,7 +461,7 @@ do ng = 1, ngrids
    nftot = -1
    write(cgrid,'(i1)') ng
    thisfile = trim(sstfilin)//'-W-*-g'//cgrid//'.vfm'
-   call RAMS_filelist(fnames,thisfile,nftot)
+   call RAMS_filelist(maxfiles,fnames,thisfile,nftot)
 
    if(nftot <= 0) then
       print*,'No sst files for grid '//cgrid
@@ -482,8 +482,9 @@ do ng = 1, ngrids
    nsstfiles(ng)=0
    do nf=1,nftot
       lnf=len_trim(fnames(nf))
-      read(fnames(nf)(lnf-23:lnf-7),20) inyear,inmonth,indate,inhour
-      20 format(i4,1x,i2,1x,i2,1x,i6)
+      read(fnames(nf)(lnf-23:lnf-7),fmt='(i4,1x,i2,1x,i2,1x,i6)') &
+          inyear,inmonth,indate,inhour
+
 
       ! Check the file headers
       call sst_check_header(ng,fnames(nf),ierr)
@@ -505,18 +506,17 @@ do ng = 1, ngrids
    !  start printing section
    !--------------------------------------------------------------
 
-   print*,' '
-   print*,' '
-   print*,' '
-   print*,'-------------------------------------------------------------'
-   print*,'-----------  SST Input File Inventory: Grid '//cgrid
-   print*,'-------------------------------------------------------------'
+   write(unit=*,fmt='(a)'      ) ' '
+   write(unit=*,fmt='(a)'      ) ' '
+   write(unit=*,fmt='(a)'      ) ' '
+   write(unit=*,fmt='(a)'      )  '-------------------------------------------------------'
+   write(unit=*,fmt='(a,1x,i4)')  '  SST Input File Inventory: Grid ',ng
+   write(unit=*,fmt='(a)'      )  '-------------------------------------------------------'
    do nf=1,nsstfiles(ng)
-      print*,  itotdate_sst(nf,ng),'   ',trim(fnames_sst(nf,ng))
-   enddo
-   print*,'------------------------------------------------------'
-
-enddo
+      write(unit=*,fmt='(i6,1x,f12.0,1x,a)') nf,itotdate_sst(nf,ng),trim(fnames_sst(nf,ng))
+   end do
+   write(unit=*,fmt='(a)'      )  '-------------------------------------------------------'
+end do
 
 ! Check the cyclic data condition.
 !   WE ARE ONLY ALLOWING CYCLIC ON ALL GRIDS

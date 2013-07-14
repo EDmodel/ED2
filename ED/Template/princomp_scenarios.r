@@ -35,7 +35,7 @@ comp.prefix   = "stext"
 #------------------------------------------------------------------------------------------#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
-rdata.path       = file.path(here,"RData_gyf+s67") # Path for the scenario comparison.
+rdata.path       = file.path(here,"RData_scenario") # Path with R object.
 #------------------------------------------------------------------------------------------#
 
 
@@ -107,7 +107,9 @@ global         = list()
 #                     , alabel  = NA_character_
 #                     )#end list
 global$dtemp   = list( key     = c("t+000","t+100","t+200","t+300")
-                     , desc    = c("dT = +0.0 K","dT = +1.0 K","dT = +2.0 K","dT = +3.0 K")
+                     , desc    = c("","","","")
+                     , legend  = c("","","","")
+                     , parse   = FALSE
                      , pattern = "tTTTT"
                      , default = NA_integer_
                      , value   = NA_real_
@@ -120,6 +122,8 @@ global$dtemp   = list( key     = c("t+000","t+100","t+200","t+300")
 panel          = list()
 panel$iata     = list( key     = c("gyf","s67")
                      , desc    = c("Paracou","Santarem")
+                     , legend  = c("Paracou","Santarem")
+                     , parse   = FALSE
                      , pattern = "PPP"
                      , default = NA_character_
                      , value   = NA_real_
@@ -130,6 +134,8 @@ panel$iata     = list( key     = c("gyf","s67")
                      )#end list
 panel$iphen    = list( key     = c("iphen-01","iphen+02")
                      , desc    = paste("Phenology:",c("Evergreen","Drought Deciduous"))
+                     , legend  = paste("Phenology:",c("Evergreen","Drought Deciduous"))
+                     , parse   = FALSE
                      , pattern = "iphenDDD"
                      , default = NA_character_
                      , value   = NA_real_
@@ -140,32 +146,43 @@ panel$iphen    = list( key     = c("iphen-01","iphen+02")
                      )#end list
 #----- Scenario variables. ----------------------------------------------------------------#
 scenario       = list()
-scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-100")
-                     , desc    = c("dR =  0.00 S","dR = -0.20 S","dR = -0.40 S"
-                                  ,"dR = -0.60 S","dR = -0.80 S","dR = -1.00 S")
+scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-100"
+                                  ,"r-120","r-140","r-160")
+                     , desc    = c("dR =  0.0S","dR = -0.2S","dR = -0.4S","dR = -0.6S"
+                                  ,"dR = -0.8S","dR = -1.0S","dR = -1.2S","dR = -1.4S"
+                                  ,"dR = -1.6S")
+                     , legend  = c("Delta*xi ==  0.0*omega","Delta*xi == -0.2*omega"
+                                  ,"Delta*xi == -0.4*omega","Delta*xi == -0.6*omega"
+                                  ,"Delta*xi == -0.8*omega","Delta*xi == -1.0*omega"
+                                  ,"Delta*xi == -1.2*omega","Delta*xi == -1.4*omega"
+                                  ,"Delta*xi == -1.6*omega")
+                     , parse   = TRUE
                      , pattern = "rRRRR"
                      , default = drain.default
-                     , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0)
-                     , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0)
-                     , colour  = c("royalblue3","deepskyblue","chartreuse3","goldenrod"
-                                  ,"orangered","firebrick4")
-                     , pch     = c(15L,17L,12L,13L,6L,8L)
-                     , alabel  = paste(c("Mean rainfall change [Scale]",sep=""))
+                     , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0,  1.2,  1.4,  1.6)
+                     , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0, -1.2, -1.4, -1.6)
+                     , colour  = c("#003264","#0082C8","#46B4FF","#B4E6FF","#DAF7F1"
+                                  ,"#E6E6B4","#FFB43C","#C85A0A","#960000")
+                     , pch     = c(12L,9L,10L,0L,5L,1L,2L,6L,8L)
+                     , alabel  = c("Mean rainfall change [Scale]")
                     )#end list
 scenario$stext = list( key     = c("stext02","stext06","stext08","stext16","stext11")
-                     , desc    = c("Loamy sand","Sandy clay loam","Clayey loam"
+                     , desc    = c("Loamy sand","Sandy clay loam","Clay loam"
                                   ,"Clayey sand","Clay")
+                     , legend  = c("Loamy sand","Sandy clay loam","Clay loam"
+                                  ,"Clayey sand","Clay")
+                     , parse   = FALSE
                      , pattern = "stextSS"
                      , default = stext.default
                      , value   = c(1,2,3,4,5)
                      , label   = c("LSa","SaCL","CL","CSa","C")
-                     , colour  = c("yellow3","sandybrown","darkorange2","firebrick2","red4")
+                     , colour  = c("#FED164","#FDA531","#FF5308","#D90B00","#6E0500")
                      , pch     = c(12L,13L,5L,6L,8L)
                      , alabel  = c("Soil texture")
                      )#end list
 #----- Realisation variables. -------------------------------------------------------------#
-realisation = list( key     = paste("real",sprintf("%2.2i",0:9),sep="-")
-                  , desc    = paste("Realisation",sprintf("%2.2i",0:9),sep=" ")
+realisation = list( key     = paste("real",sprintf("%2.2i",0:15),sep="-")
+                  , desc    = paste("Realisation",sprintf("%2.2i",0:15),sep=" ")
                   , pattern = "real-ZZ"
                   )#end list
 #------------------------------------------------------------------------------------------#
@@ -175,8 +192,8 @@ realisation = list( key     = paste("real",sprintf("%2.2i",0:9),sep="-")
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
-yeara          = 1972         # First year we will include
-yeare          = 1972         # First year to use in the averaged output
+yeara          = 1952         # First year we will include
+yeare          = 1982         # First year to use in the averaged output
 yearz          = 2011         # Last year we will include
 slz.min        = -5.0         # The deepest depth that trees access water.
 idbh.type      = 3            # Type of DBH class
@@ -304,9 +321,11 @@ if (! ( ok.global && ok.panel && ok.scenario)){
 
 #----- Make sure that the base directory exists. ------------------------------------------#
 if (! file.exists(outroot)) dir.create(outroot)
-pcaroot = file.path(outroot,outform,"pcadbh_year")
+pcadbhroot = file.path(outroot,outform,"pcadbh_year")
+pcaallroot  = file.path(outroot,outform,"pcaall_year")
 for (o in sequence(nout)){
-   if (! file.exists(pcaroot[o]) && outform[o] != "x11") dir.create(pcaroot[o])
+   if (! file.exists(pcadbhroot[o]) && outform[o] != "x11") dir.create(pcadbhroot[o])
+   if (! file.exists(pcaallroot[o]) && outform[o] != "x11") dir.create(pcaallroot[o])
 }#end for
 #------------------------------------------------------------------------------------------#
 
@@ -545,8 +564,12 @@ for (g in loop.global){
       #     Loop over all DBH classes.                                                     #
       #------------------------------------------------------------------------------------#
       pca.dbh = list()
-      for (d in sequence(n.dbh)){
-         cat("     * DBH class: ",dbh.desc[d],"...","\n")
+      for (d in sequence(n.dbh+1)){
+         if ( d == n.dbh+1 ){
+            cat("     * Community-wide...","\n")
+         }else{
+            cat("     * DBH class: ",dbh.desc[d],"...","\n")
+         }#end if
 
          #---------------------------------------------------------------------------------#
          #     Loop over all explanatory variables.                                        #
@@ -557,7 +580,11 @@ for (g in loop.global){
             exp.unit  = pca.explain$unit  [ev]
 
             #----- Load the data. ---------------------------------------------------------#
-            now      = c(eft[[exp.vname]]$tspftdbh[p.sel,,y.sel,n.season,d,n.pft])
+            if ( d == n.dbh+1 ){
+               now      = c(eft[[exp.vname]]$ts      [p.sel,,y.sel,n.season])
+            }else{
+               now      = c(eft[[exp.vname]]$tspftdbh[p.sel,,y.sel,n.season,d,n.pft])
+            }#end if
             now[!is.finite(now)] = NA
             mean.now = mean(now,na.rm=TRUE)
             sdev.now = sd  (now,na.rm=TRUE)
@@ -582,19 +609,27 @@ for (g in loop.global){
          #----- Calculate the principal component. ----------------------------------------#
          pca.dbh[[d]] = prcomp(datum)
          #---------------------------------------------------------------------------------#
-      }#end for (d in sequence(n.dbh+))
+      }#end for (d in sequence(n.dbh+1))
       #------------------------------------------------------------------------------------#
 
 
 
 
-      #------------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
       #     Plot all PCAs with labels near the arrows.                                     #
       #------------------------------------------------------------------------------------#
-      cat("     * Plot PCA...","\n")
+      cat("     * Plot PCA by DBH...","\n")
       for (o in sequence(nout)){
          #----- Open file or display. -----------------------------------------------------#
-         fichier = file.path( pcaroot[o]
+         fichier = file.path( pcadbhroot[o]
                             , paste( "noleg-pcadbh-year-",simul$panel$level[p]
                                    , ".",outform[o],sep="")
                             )#end file.path
@@ -719,21 +754,152 @@ for (g in loop.global){
          clean.tmp()
          #---------------------------------------------------------------------------------#
       }#end for for (o in sequence(nout))
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+
+
+
+
+
+
+
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #     Plot all PCAs with labels near the arrows.                                     #
       #------------------------------------------------------------------------------------#
-
-
-
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Plot all PCAs with legends at the bottom.                                      #
-      #------------------------------------------------------------------------------------#
-      cat("     * Plot PCA...","\n")
+      cat("     * Plot community-wide PCA...","\n")
       for (o in sequence(nout)){
          #----- Open file or display. -----------------------------------------------------#
-         fichier = file.path( pcaroot[o]
+         fichier = file.path( pcaallroot[o]
+                            , paste( "noleg-pcaall-year-",simul$panel$level[p]
+                                   , ".",outform[o],sep="")
+                            )#end file.path
+         if (outform[o] == "x11"){
+            X11(width=ssize$width,height=ssize$height,pointsize=ptsz)
+         }else if(outform[o] == "png"){
+            png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+               ,pointsize=ptsz,res=depth)
+         }else if(outform[o] == "eps"){
+            postscript(file=fichier,width=ssize$width,height=ssize$height,pointsize=ptsz
+                      ,paper=ssize$paper)
+         }else if(outform[o] == "pdf"){
+            pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
+               ,pointsize=ptsz,paper=ssize$paper)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Load PCA. -----------------------------------------------------------------#
+         pca.now  = pca.dbh[[n.dbh+1]]
+         summ.pca = summary(pca.now)
+         scores   = pca.now$x
+         rota     = pca.now$rotation
+         npca     = nrow(scores)
+         lam      = pca.now$sdev * sqrt(npca)
+         pca.pts  = t(t(scores) / lam)
+         pca.vec  = t(t(rota  ) * lam)
+         explain  = round(100*summ.pca$importance[2,],1)
+         sig.vec  = sqrt(rota[,1]^2+rota[,2]^2) >= 0.1
+         lwd.vec  = ifelse(sig.vec,      2,       2)
+         lty.vec  = ifelse(sig.vec,"solid","dashed")
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #   Make axes.                                                                    #
+         #---------------------------------------------------------------------------------#
+         pvar.explained = paste("Component",sequence(npca)
+                               ," - ", sprintf("%.1f",explain),"%",sep="")
+         #---------------------------------------------------------------------------------#
+
+
+
+         #------ Find limits. -------------------------------------------------------------#
+         pxlimit  = max(abs(pca.pts[,1])) * c(-1,1)
+         pylimit  = max(abs(pca.pts[,2])) * c(-1,1)
+         vxlimit  = max(abs(pca.vec[,1])) * c(-2.0,2.0)
+         vylimit  = max(abs(pca.vec[,2])) * c(-2.0,2.0)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Plot the PCA points. ------------------------------------------------------#
+         par(par.user)
+         plot.new()
+         plot.window(xlim=pxlimit,ylim=pylimit)
+         abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
+         axis(side=1)
+         axis(side=2)
+         title( main = simul$panel$title[p]
+              , xlab = pvar.explained[1]
+              , ylab = pvar.explained[2]
+              )#end title
+         points(x=pca.pts[,1],y=pca.pts[,2],col=washed.mg,cex=0.5,pch=16)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+         #----- Plot the PCA vectors. -----------------------------------------------------#
+         plot.window(xlim=vxlimit,ylim=vylimit)
+         if (plot.vec.axes){
+            axis(side=3,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+            axis(side=4,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+         }#end if
+         box()
+         for (u in sequence(npca.explain)){
+            arrows(x0=0,y0=0,x1=pca.vec[u,1],y1=pca.vec[u,2]
+                  ,col=pca.explain$colour[u],length=0.10
+                  ,lwd=lwd.vec[u],lty=lty.vec[u])
+         }#end for
+         for (u in sequence(npca.explain)){
+            rot = 180*atan2(pca.vec[u,2],pca.vec[u,1])/pi
+            if (rot >  90 & rot <=  180) rot = rot + 180
+            if (rot < -90 & rot >= -180) rot = rot + 180
+            mult = 1.50 + runif(n=1,min=-0.20,max=0.20)
+            text  (x=mult*pca.vec[u,1],y=mult*pca.vec[u,2]
+                  ,labels=parse(text=pca.explain$short[u]),col=pca.explain$colour[u]
+                  ,cex=0.9,srt=rot)
+         }#end for
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Close the device. ---------------------------------------------------------#
+         if (outform[o] == "x11"){
+            locator(n=1)
+            dev.off()
+         }else{
+            dev.off()
+         }#end if
+         clean.tmp()
+         #---------------------------------------------------------------------------------#
+      }#end for for (o in sequence(nout))
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+
+
+
+
+
+
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #     Plot all PCAs with legends at the bottom.                                      #
+      #------------------------------------------------------------------------------------#
+      cat("     * Plot PCA by DBH with legend...","\n")
+      for (o in sequence(nout)){
+         #----- Open file or display. -----------------------------------------------------#
+         fichier = file.path( pcadbhroot[o]
                             , paste( "legend-pcadbh-year-",simul$panel$level[p]
                                    , ".",outform[o],sep="")
                             )#end file.path
@@ -869,18 +1035,151 @@ for (g in loop.global){
          clean.tmp()
          #---------------------------------------------------------------------------------#
       }#end for for (o in sequence(nout))
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+
+
+
+
+
+
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #     Plot all PCAs with legends at the bottom.                                      #
       #------------------------------------------------------------------------------------#
+      cat("     * Plot community-wide PCA with legend...","\n")
+      for (o in sequence(nout)){
+         #----- Open file or display. -----------------------------------------------------#
+         fichier = file.path( pcaallroot[o]
+                            , paste( "legend-pcaall-year-",simul$panel$level[p]
+                                   , ".",outform[o],sep="")
+                            )#end file.path
+         if (outform[o] == "x11"){
+            X11(width=psize$width,height=psize$height,pointsize=ptsz)
+         }else if(outform[o] == "png"){
+            png(filename=fichier,width=psize$width*depth,height=psize$height*depth
+               ,pointsize=ptsz,res=depth)
+         }else if(outform[o] == "eps"){
+            postscript(file=fichier,width=psize$width,height=psize$height,pointsize=ptsz
+                      ,paper=psize$paper)
+         }else if(outform[o] == "pdf"){
+            pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
+               ,pointsize=ptsz,paper=psize$paper)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Split the panel. ----------------------------------------------------------#
+         par(par.user)
+         par(oma=c(0,0,2,0))
+         layout(mat= rbind(2,1),heights=c(5,1))
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     First, the legend.                                                          #
+         #---------------------------------------------------------------------------------#
+         par(mar=c(0.1,0.1,0.1,0.1))
+         plot.new()
+         plot.window(xlim=c(0,1),ylim=c(0,1))
+         legend( x      = "center"
+               , inset  = 0.0
+               , legend = pca.explain$lname
+               , fill   = pca.explain$colour
+               , border = foreground
+               , title  = expression(bold("Variables - Annual Means"))
+               , xpd    = TRUE
+               , cex    = 0.8 * cex.ptsz
+               , ncol   = 6 # min(5,pretty.box(npca.explain)$ncol)
+               )#end legend
+         #---------------------------------------------------------------------------------#
 
 
 
 
+         #---------------------------------------------------------------------------------#
+         #     Load and plot the PCA analysis.                                             #
+         #---------------------------------------------------------------------------------#
+         pca.now  = pca.dbh[[n.dbh+1]]
+         summ.pca = summary(pca.now)
+         scores   = pca.now$x
+         rota     = pca.now$rotation
+         npca     = nrow(scores)
+         lam      = pca.now$sdev * sqrt(npca)
+         pca.pts  = t(t(scores) / lam)
+         pca.vec  = t(t(rota  ) * lam)
+         explain  = round(100*summ.pca$importance[2,],1)
+         sig.vec  = sqrt(rota[,1]^2+rota[,2]^2) >= 0.1
+         lwd.vec  = ifelse(sig.vec,      2,       2)
+         lty.vec  = ifelse(sig.vec,"solid","dashed")
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #   Make axes.                                                                    #
+         #---------------------------------------------------------------------------------#
+         pvar.explained = paste("Component",sequence(npca)
+                               ," - ", sprintf("%.1f",explain),"%",sep="")
+         #---------------------------------------------------------------------------------#
 
 
 
+         #------ Find limits. -------------------------------------------------------------#
+         pxlimit  = max(abs(pca.pts[,1])) * c(-1,1)
+         pylimit  = max(abs(pca.pts[,2])) * c(-1,1)
+         vxlimit  = max(abs(pca.vec[,1])) * c(-1,1)
+         vylimit  = max(abs(pca.vec[,2])) * c(-1,1)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Plot the PCA points. ------------------------------------------------------#
+         par(mar=c(4.1,4.1,5.1,2.1))
+         plot.new()
+         plot.window(xlim=pxlimit,ylim=pylimit)
+         abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
+         axis(side=1)
+         axis(side=2)
+         title( main = simul$panel$title[p]
+              , xlab = pvar.explained[1]
+              , ylab = pvar.explained[2]
+              )#end title
+         points(x=pca.pts[,1],y=pca.pts[,2],col=washed.bg,cex=0.5,pch=16)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Plot the PCA vectors. -----------------------------------------------------#
+         plot.window(xlim=vxlimit,ylim=vylimit)
+         if (plot.vec.axes){
+            axis(side=3,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+            axis(side=4,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+         }#end if
+         box()
+         for (u in sequence(npca.explain)){
+            arrows(x0=0,y0=0,x1=pca.vec[u,1],y1=pca.vec[u,2]
+                  ,col=pca.explain$colour[u],length=0.10
+                  ,lwd=lwd.vec[u],lty=lty.vec[u])
+         }#end for
+         #---------------------------------------------------------------------------------#
 
 
 
-
+         #----- Close the device. ---------------------------------------------------------#
+         if (outform[o] == "x11"){
+            locator(n=1)
+            dev.off()
+         }else{
+            dev.off()
+         }#end if
+         clean.tmp()
+         #---------------------------------------------------------------------------------#
+      }#end for for (o in sequence(nout))
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    }#end for (p in loop.panel)
    #---------------------------------------------------------------------------------------#
 }#end for (g in loop.global)

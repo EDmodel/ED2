@@ -244,7 +244,7 @@ skew2normal <<- function(x,location,scale,shape,idx=rep(1,times=length(x))){
 #     This function normalises the dataset, using the skewed normal distribution.  The     #
 # output values is the normalised value equivalent to the normal distribution.             #
 #------------------------------------------------------------------------------------------#
-normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(x))){
+normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(xnorm))){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
       stop("Function normal2skew requires package sn!")
@@ -283,7 +283,7 @@ normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(x))){
    #---------------------------------------------------------------------------------------#
    #     Return the answer.                                                                #
    #---------------------------------------------------------------------------------------#
-   rm(unique.idx,nidx,cdf.skew,x,sel,stats.ok)
+   rm(unique.idx,nidx,cdf.skew,sel,stats.ok)
    return(x)
    #---------------------------------------------------------------------------------------#
 }#end function

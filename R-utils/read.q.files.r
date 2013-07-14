@@ -132,13 +132,6 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                         - mymont$QMEAN.ATM.PAR.DIFF.PY     )
       mymont$QMEAN.ATM.NIR.BEAM.PY    = ( mymont$QMEAN.ATM.RSHORT.BEAM.PY
                                         - mymont$QMEAN.ATM.PAR.BEAM.PY     )
-      #----- If NPOLYGONS.GLOBAL doesn't make sense, fix the dimensions. ------------------#
-      if (mymont$NPOLYGONS.GLOBAL > 100000){
-         mymont$NPOLYGONS.GLOBAL = length(mymont$LON)
-         mymont$NSITES.GLOBAL    = length(mymont$LSL)
-         mymont$NPATCHES.GLOBAL  = length(mymont$AGE)
-         mymont$NCOHORTS.GLOBAL  = length(mymont$PFT)
-      }#end if
       #------------------------------------------------------------------------------------#
 
 

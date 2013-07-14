@@ -267,7 +267,7 @@ standard.scientific.name <<- function(dat){
    #---------------------------------------------------------------------------------------#
    nplants = nrow(dat)
    #----- Remove cf., assume that we know all species for sure. ---------------------------#
-   dat$scientific = sub("cf.","",x=dat$scientific)
+   dat$scientific = sub("cf\\.","",x=dat$scientific)
    #----- Break into genus and species. ---------------------------------------------------#
    gs.list                  = sapply(X = tolower(dat$scientific),FUN=strsplit,split=" ")
    gs.length                = sapply(X = gs.list, FUN = length)
@@ -285,24 +285,17 @@ standard.scientific.name <<- function(dat){
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
-   #      Full substitutions (only if the entire name matches).                            #
-   #---------------------------------------------------------------------------------------#
-   g.s[g.s == "Dialium sp" ] = "Dialium"
-   g.s[g.s == "Eugenia sp."] = "Eugenia"
-   #---------------------------------------------------------------------------------------#
-
-   #---------------------------------------------------------------------------------------#
    #      Substitutions of scientific name.  We standardise these first so family becomes  #
    # easier.                                                                               #
    #---------------------------------------------------------------------------------------#
-   g.s = sub("Agonadra sp."               ,"Agonandra"                    ,x=g.s)
+   g.s = sub("Agonadra sp\\."             ,"Agonandra"                    ,x=g.s)
    g.s = sub("Aiouea densiflora"          ,"Aiouea laevis"                ,x=g.s)
    g.s = sub("Allophyllus floribunda"     ,"Allophylus floribundus"       ,x=g.s)
    g.s = sub("Ampelocera endentula"       ,"Ampelocera edentula"          ,x=g.s)
    g.s = sub("Amphirrhox surinamensis"    ,"Amphirrhox longifolia"        ,x=g.s)
    g.s = sub("Anadenanthera falcata"      ,"Anadenanthera peregrina"      ,x=g.s)
    g.s = sub("Aniba roseodora"            ,"Aniba rosaeodora"             ,x=g.s)
-   g.s = sub("Aniba sp."                  ,"Aniba"                        ,x=g.s)
+   g.s = sub("Aniba sp\\."                ,"Aniba"                        ,x=g.s)
    g.s = sub("Annona decicoma"            ,"Annona densicoma"             ,x=g.s)
    g.s = sub("Apeiba burchelii"           ,"Apeiba glabra"                ,x=g.s)
    g.s = sub("Aspidosperma aracanga"      ,"Aspidosperma araracanga"      ,x=g.s)
@@ -318,7 +311,7 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Bauhinia jarensis"          ,"Bauhinia"                     ,x=g.s)
    g.s = sub("Bellucia grossulariodis"    ,"Bellucia grossularioides"     ,x=g.s)
    g.s = sub("Brosimum autifolium"        ,"Brosimum acutifolium"         ,x=g.s)
-   g.s = sub("Brosimum sp."               ,"Brosimum"                     ,x=g.s)
+   g.s = sub("Brosimum sp\\."             ,"Brosimum"                     ,x=g.s)
    g.s = sub("Brosimum lactascens"        ,"Brosimum lactescens"          ,x=g.s)
    g.s = sub("Byrsonima schultesiana"     ,"Byrsonima arthropoda"         ,x=g.s)
    g.s = sub("Byrsonima estipulacea"      ,"Byrsonima stipulacea"         ,x=g.s)
@@ -334,15 +327,15 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Connarus perrottetes"       ,"Connarus perrottetii"         ,x=g.s)
    g.s = sub("Connarus spermattetii"      ,"Connarus perrotettii"         ,x=g.s)
    g.s = sub("Cordia scrabida"            ,"Cordia exaltata"              ,x=g.s)
-   g.s = sub("Coupeia sp."                ,"Couepia"                      ,x=g.s)
+   g.s = sub("Coupeia sp\\."              ,"Couepia"                      ,x=g.s)
    g.s = sub("Coussarea racemosa"         ,"Coussarea albescens"          ,x=g.s)
    g.s = sub("Crepidospermum gondotiano"  ,"Crepidospermum goudotianum"   ,x=g.s)
    g.s = sub("Crepidospermum goudotiano"  ,"Crepidospermum goudotianum"   ,x=g.s)
    g.s = sub("Cupania hirta"              ,"Cupania hirsuta"              ,x=g.s)
    g.s = sub("Cybistax antisiphyllitica"  ,"Cybistax antisyphilitica"     ,x=g.s)
-   g.s = sub("Dendrobangia sp."           ,"Dendrobangia"                 ,x=g.s)
+   g.s = sub("Dendrobangia sp\\."         ,"Dendrobangia"                 ,x=g.s)
    g.s = sub("Dendrobrangea boliviana"    ,"Dendrobangia boliviana"       ,x=g.s)
-   g.s = sub("Dialium sp."                ,"Dialium"                      ,x=g.s)
+   g.s = sub("Dialium sp\\."              ,"Dialium"                      ,x=g.s)
    g.s = sub("Dialium guianensis"         ,"Dialium guianense"            ,x=g.s)
    g.s = sub("Diclinanonna matogrossensis","Diclinanona matogrossensis"   ,x=g.s)
    g.s = sub("Didymopanax vinosum"        ,"Schefflera vinosa"            ,x=g.s)
@@ -363,7 +356,7 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Eschweilera idatimom"       ,"Lecythis idatimon"            ,x=g.s)
    g.s = sub("Eschweilera observa"        ,"Eschweilera obversa"          ,x=g.s)
    g.s = sub("Eschweilera pedicelata"     ,"Eschweilera pedicellata"      ,x=g.s)
-   g.s = sub("Eschweilera sp."            ,"Eschweilera"                  ,x=g.s)
+   g.s = sub("Eschweilera sp\\."          ,"Eschweilera"                  ,x=g.s)
    g.s = sub("Eugenia ni"                 ,"Eugenia"                      ,x=g.s)
    g.s = sub("Eugenia pacumensis"         ,"Austromyrtus ploumensis"      ,x=g.s)
    g.s = sub("Eugenia schumburgkii"       ,"Eugenia lambertiana"          ,x=g.s)
@@ -380,7 +373,7 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Inga dibaldiana"            ,"Inga thibaudiana"             ,x=g.s)
    g.s = sub("Inga paraenses"             ,"Inga paraensis"               ,x=g.s)
    g.s = sub("Inga poliphylla"            ,"Inga"                         ,x=g.s)
-   g.s = sub("Inga sp."                   ,"Inga"                         ,x=g.s)
+   g.s = sub("Inga sp\\."                 ,"Inga"                         ,x=g.s)
    g.s = sub("Jacaraitia espinhosa"       ,"Jacaratia spinosa"            ,x=g.s)
    g.s = sub("Joannesia hevioides"        ,"Joannesia heveoides"          ,x=g.s)
    g.s = sub("Lacmelea aculeata"          ,"Lacmellea aculeata"           ,x=g.s)
@@ -390,7 +383,7 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Lucanarea"                  ,"Lacunaria"                    ,x=g.s)
    g.s = sub("Luheopsis duckeana"         ,"Lueheopsis duckeana"          ,x=g.s)
    g.s = sub("Lustema pubescei"           ,"Lacistema pubescens"          ,x=g.s)
-   g.s = sub("Mabea sp."                  ,"Mabea"                        ,x=g.s)
+   g.s = sub("Mabea sp\\."                ,"Mabea"                        ,x=g.s)
    g.s = sub("Maluria"                    ,"Marlierea umbraticola"        ,x=g.s)
    g.s = sub("Maquira callophylla"        ,"Maquira calophylla"           ,x=g.s)
    g.s = sub("Marmaroxylon racemosum"     ,"Zygia racemosa"               ,x=g.s)
@@ -400,11 +393,11 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Mezelaurus"                 ,"Mezilaurus"                   ,x=g.s)
    g.s = sub("Mezelaurus itauba"          ,"Mezilaurus itauba"            ,x=g.s)
    g.s = sub("Miconia chrysophyllum"      ,"Miconia chrysophylla"         ,x=g.s)
-   g.s = sub("Michopholis sp."            ,"Micropholis"                  ,x=g.s)
+   g.s = sub("Michopholis sp\\."          ,"Micropholis"                  ,x=g.s)
    g.s = sub("Michopholis venulosa"       ,"Micropholis venulosa"         ,x=g.s)
    g.s = sub("Microphilis"                ,"Micropholis"                  ,x=g.s)
    g.s = sub("Micropholis guianensis"     ,"Micropholis guyanensis"       ,x=g.s)
-   g.s = sub("Micropholis sp."            ,"Micropholis"                  ,x=g.s)
+   g.s = sub("Micropholis sp\\."          ,"Micropholis"                  ,x=g.s)
    g.s = sub("Microphylis acutangula"     ,"Micropholis acutangula"       ,x=g.s)
    g.s = sub("Microphylis sp."            ,"Micropholis"                  ,x=g.s)
    g.s = sub("Mouriri abnormis"           ,"Votomita guianensis"          ,x=g.s)
@@ -413,7 +406,7 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Newtonia psilostachya"      ,"Pseudopiptadenia psilostachya",x=g.s)
    g.s = sub("Ocotea baturitensis"        ,"Ocotea"                       ,x=g.s)
    g.s = sub("Ocotea caudata"             ,"Ocotea cernua"                ,x=g.s)
-   g.s = sub("Ocotea sp."                 ,"Ocotea"                       ,x=g.s)
+   g.s = sub("Ocotea sp\\."               ,"Ocotea"                       ,x=g.s)
    g.s = sub("Omedia perebea"             ,"Perebea mollis"               ,x=g.s)
    g.s = sub("Onichiopetalum amazonico"   ,"Onychopetalum amazonicum"     ,x=g.s)
    g.s = sub("Pausandra densiflora"       ,"Pausandra trianae"            ,x=g.s)
@@ -424,9 +417,10 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Pouteria lasiocarpa"        ,"Pouteria caimito"             ,x=g.s)
    g.s = sub("Pouteria heterosepala"      ,"Pouteria polysepala"          ,x=g.s)
    g.s = sub("Pouteria paraensis"         ,"Pouteria macrocarpa"          ,x=g.s)
-   g.s = sub("Pouteria sp."               ,"Pouteria"                     ,x=g.s)
+   g.s = sub("Pouteria sp\\."             ,"Pouteria"                     ,x=g.s)
+   g.s = sub("Protiumuceanum"             ,"Protium spruceanum"           ,x=g.s)
    g.s = sub("Protium heptafilum"         ,"Protium heptaphyllum"         ,x=g.s)
-   g.s = sub("Protium sp."                ,"Protium"                      ,x=g.s)
+   g.s = sub("Protium sp\\."              ,"Protium"                      ,x=g.s)
    g.s = sub("Prumes myrtifoliu"          ,"Prunus myrtifolia"            ,x=g.s)
    g.s = sub("Prunus myrtifolius"         ,"Prunus myrtifolia"            ,x=g.s)
    g.s = sub("Pseudolmedia murure"        ,"Pseudolmedia macrophylla"     ,x=g.s)
@@ -445,29 +439,28 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Rolinha esxuccar"           ,"Rollinia exsucca"             ,x=g.s)
    g.s = sub("Rollinia esxucca"           ,"Rollinia exsucca"             ,x=g.s)
    g.s = sub("Sacrogrotis guianensis"     ,"Sacoglottis guianensis"       ,x=g.s)
-   g.s = sub("Sagotia sp."                ,"Sagotia"                      ,x=g.s)
+   g.s = sub("Sagotia sp\\."              ,"Sagotia"                      ,x=g.s)
    g.s = sub("Salacea"                    ,"Salacia"                      ,x=g.s)
    g.s = sub("Salacia imprissifolia"      ,"Salacia impressifolia"        ,x=g.s)
-   g.s = sub("Sapium sp."                 ,"Sapium"                       ,x=g.s)
+   g.s = sub("Sapium sp\\."               ,"Sapium"                       ,x=g.s)
    g.s = sub("Sclerolobium chrysophylum"  ,"Tachigali chrysophylla"       ,x=g.s)
    g.s = sub("Sclerolobium chrysophyllum" ,"Tachigali chrysophylla"       ,x=g.s)
    g.s = sub("Sclerolobium guianensis"    ,"Tachigali guianensis"         ,x=g.s)
    g.s = sub("Sclerolobium guianense"     ,"Tachigali guianensis"         ,x=g.s)
-   g.s = sub("Sclerolobium sp."           ,"Sclerolobium"                 ,x=g.s)
+   g.s = sub("Sclerolobium sp\\."         ,"Sclerolobium"                 ,x=g.s)
    g.s = sub("Simaba guianenses"          ,"Simaba guianensis"            ,x=g.s)
-   g.s = sub("Simabacedron planch."       ,"Simaba cedron"                ,x=g.s)
+   g.s = sub("Simabacedron planch\\."     ,"Simaba cedron"                ,x=g.s)
    g.s = sub("Simarouba armara"           ,"Simarouba amara"              ,x=g.s)
    g.s = sub("Simaruba armara"            ,"Simarouba amara"              ,x=g.s)
-   g.s = sub("Sipararuna cristata"        ,"Siparuna cristata"            ,x=g.s)
-   g.s = sub("Sipararuna decipiens"       ,"Siparuna decipiens"           ,x=g.s)
+   g.s = sub("Sipararuna"                 ,"Siparuna"                     ,x=g.s)
    g.s = sub("Stryphnodendron pulchrrimum","Stryphnodendron pulcherrimum" ,x=g.s)
-   g.s = sub("Stryphnodendron sp."        ,"Stryphnodendron"              ,x=g.s)
+   g.s = sub("Stryphnodendron sp\\."      ,"Stryphnodendron"              ,x=g.s)
    g.s = sub("Styrax ferrugineum"         ,"Styrax ferrugineus"           ,x=g.s)
    g.s = sub("Swartzia arborensis"        ,"Swartzia arborescens"         ,x=g.s)
    g.s = sub("Swartzia flamingii"         ,"Swartzia flaemingii"          ,x=g.s)
    g.s = sub("Swartizia microcarpum"      ,"Swartzia microcarpa"          ,x=g.s)
    g.s = sub("Swartzia retusa"            ,"Swartzia recurva"             ,x=g.s)
-   g.s = sub("Swartzia sp."               ,"Swartzia"                     ,x=g.s)
+   g.s = sub("Swartzia sp\\."             ,"Swartzia"                     ,x=g.s)
    g.s = sub("Tachigalia alba"            ,"Tachigali alba"               ,x=g.s)
    g.s = sub("Tachigalia myrmecophila"    ,"Tachigali myrmecophila"       ,x=g.s)
    g.s = sub("Tachigalia paniculata"      ,"Tachigali paniculata"         ,x=g.s)
@@ -479,12 +472,12 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Terminalia amazonica"       ,"Terminalia amazonia"          ,x=g.s)
    g.s = sub("Theobroma subincaum"        ,"Theobroma subincanum"         ,x=g.s)
    g.s = sub("Thyrsodium paraense"        ,"Thyrsodium spruceanum"        ,x=g.s)
-   g.s = sub("Thysodium sp."              ,"Thyrsodium"                   ,x=g.s)
+   g.s = sub("Thysodium sp\\."            ,"Thyrsodium"                   ,x=g.s)
    g.s = sub("Trattinickia laurencei"     ,"Trattinnickia lawrancei"      ,x=g.s)
    g.s = sub("Trattinickia laurense"      ,"Trattinnickia lawrancei"      ,x=g.s)
    g.s = sub("Trattinickia rhoifolia"     ,"Trattinnickia rhoifolia"      ,x=g.s)
    g.s = sub("Trichilia lequente"         ,"Trichilia lecointei"          ,x=g.s)
-   g.s = sub("Trichilia sp."              ,"Trichilia"                    ,x=g.s)
+   g.s = sub("Trichilia sp\\."            ,"Trichilia"                    ,x=g.s)
    g.s = sub("Triquilia lequente"         ,"Trichilia lecointei"          ,x=g.s)
    g.s = sub("Trymatococcus paraensis"    ,"Trymatococcus amazonicus"     ,x=g.s)
    g.s = sub("Vataicreopesis speciosa"    ,"Vataireopsis speciosa"        ,x=g.s)
@@ -505,7 +498,10 @@ standard.scientific.name <<- function(dat){
 
 
    #----- Break again into genus and species. ---------------------------------------------#
-   gs.mat      = t(as.data.frame(sapply(X=g.s,FUN=strsplit,split=" ")))
+   gs.list     = sapply(X=g.s,FUN=strsplit,split=" ")
+   gs.mat      = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                      , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                      )#end cbind
    del         = gs.mat == "na"
    gs.mat[del] = NA
    g           = capwords(gs.mat[,1],strict=TRUE)
@@ -1767,9 +1763,9 @@ scientific.lookup.tnf <<- function(datum){
    #---------------------------------------------------------------------------------------#
    gs.list          = sapply(X = tolower(datum$scientific),FUN=strsplit,split=" ")
    gs.length        = sapply(X = gs.list, FUN = length)
-   gs.mat           = t(as.data.frame(gs.list))
-   g.only           = gs.length < 2
-   gs.mat[g.only,2] = NA
+   gs.mat           = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                           , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                           )#end cbind
    datum$genus      = capwords(gs.mat[,1],strict=TRUE)
    datum$scientific = paste(datum$genus,tolower (gs.mat[,2]),sep=" ")
    #---------------------------------------------------------------------------------------#
@@ -1778,7 +1774,7 @@ scientific.lookup.tnf <<- function(datum){
    #---------------------------------------------------------------------------------------#
    #      Fill in the family.                                                              #
    #---------------------------------------------------------------------------------------#
-   datum$family = standard.family.name(datum)
+   datum = standard.family.name(datum)
    #---------------------------------------------------------------------------------------#
 
    return(datum)
@@ -2065,9 +2061,9 @@ scientific.lookup.mao <<- function(datum,lookup.path){
    #----- Break into genus and species. ---------------------------------------------------#
    gs.list                  = sapply(X = tolower(look.up$scientific),FUN=strsplit,split=" ")
    gs.length                = sapply(X = gs.list, FUN = length)
-   gs.mat                   = t(as.data.frame(gs.list))
-   g.only                   = gs.length < 2
-   gs.mat[g.only,2]         = NA
+   gs.mat                   = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                                   , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                                   )#end cbind
    g                        = capwords(gs.mat[,1],strict=TRUE)
    s                        = tolower(gs.mat[,2])
    g.s                      = paste(g,s,sep=" ")
@@ -2160,9 +2156,9 @@ scientific.lookup.rja <<- function(datum,lookup.path){
    #----- Break into genus and species. ---------------------------------------------------#
    gs.list                  = sapply(X = tolower(look.up$scientific),FUN=strsplit,split=" ")
    gs.length                = sapply(X = gs.list, FUN = length)
-   gs.mat                   = t(as.data.frame(gs.list))
-   g.only                   = gs.length < 2
-   gs.mat[g.only,2]         = NA
+   gs.mat                   = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                                   , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                                   )#end cbind
    g                        = capwords(gs.mat[,1],strict=TRUE)
    s                        = tolower(gs.mat[,2])
    g.s                      = paste(g,s,sep=" ")

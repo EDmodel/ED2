@@ -30,13 +30,14 @@ crit.loss      = 0.2                         # Critical loss of biomass (% of in
 n.sample       = 1000                        # Number of samples
 n.pred         = 20000                       # Number of points for curve drawing
 std.pret.limit = c(1,500)                    # Fixed return period
-skew.optim     = TRUE                        # Use skew normal distribution for residuals?
+skew.optim     = FALSE                       # Use skew normal distribution for residuals?
                                              #     (FALSE uses normal distribution aka 
                                              #      least squares maximisation)
 verbose.optim  = FALSE                       # Dump optimisation progress on screen?
                                              # 0 or FALSE -- No
                                              # 1 or TRUE  -- Optimiser main step
                                              # 2 or > 2   -- Optimiser step and sub-step
+save.every     = 2880                        # Save the partially loaded data every...
 #------------------------------------------------------------------------------------------#
 
 
@@ -44,7 +45,7 @@ verbose.optim  = FALSE                       # Dump optimisation progress on scr
 #------------------------------------------------------------------------------------------#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
-rdata.path       = file.path(here,"RData_gyf+s67") # Path for the scenario comparison.
+rdata.path       = file.path(here,"RData_scenario") # Path with R object.
 #------------------------------------------------------------------------------------------#
 
 
@@ -160,18 +161,18 @@ scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-10
                      , desc    = c("dR =  0.0S","dR = -0.2S","dR = -0.4S","dR = -0.6S"
                                   ,"dR = -0.8S","dR = -1.0S","dR = -1.2S","dR = -1.4S"
                                   ,"dR = -1.6S")
-                     , legend  = c("Delta*xi =  0.0*omega","Delta*xi = -0.2*omega"
-                                  ,"Delta*xi = -0.4*omega","Delta*xi = -0.6*omega"
-                                  ,"Delta*xi = -0.8*omega","Delta*xi = -1.0*omega"
-                                  ,"Delta*xi = -1.2*omega","Delta*xi = -1.4*omega"
-                                  ,"Delta*xi = -1.6*omega")
+                     , legend  = c("Delta*xi ==  0.0*omega","Delta*xi == -0.2*omega"
+                                  ,"Delta*xi == -0.4*omega","Delta*xi == -0.6*omega"
+                                  ,"Delta*xi == -0.8*omega","Delta*xi == -1.0*omega"
+                                  ,"Delta*xi == -1.2*omega","Delta*xi == -1.4*omega"
+                                  ,"Delta*xi == -1.6*omega")
                      , parse   = TRUE
                      , pattern = "rRRRR"
                      , default = drain.default
                      , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0,  1.2,  1.4,  1.6)
                      , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0, -1.2, -1.4, -1.6)
-                     , colour  = c("#694AFF","#1A9BE3","#26D4EE","#009000","#A08240"
-                                  ,"#FFA020","#FF0000","#BE0000","#800000")
+                     , colour  = c("#003264","#0082C8","#46B4FF","#B4E6FF","#DAF7F1"
+                                  ,"#E6E6B4","#FFB43C","#C85A0A","#960000")
                      , pch     = c(12L,9L,10L,0L,5L,1L,2L,6L,8L)
                      , alabel  = c("Mean rainfall change [Scale]")
                     )#end list
@@ -185,7 +186,7 @@ scenario$stext = list( key     = c("stext02","stext06","stext08","stext16","stex
                      , default = stext.default
                      , value   = c(1,2,3,4,5)
                      , label   = c("LSa","SaCL","CL","CSa","C")
-                     , colour  = c("#F0F000","#A08240","#FF6C20","#BE0000","#800000")
+                     , colour  = c("#FED164","#FDA531","#FF5308","#D90B00","#6E0500")
                      , pch     = c(12L,13L,5L,6L,8L)
                      , alabel  = c("Soil texture")
                      )#end list
@@ -574,6 +575,16 @@ for (g in loop.global){
    #---------------------------------------------------------------------------------------#
 
 
+
+   #----- Total number of files. ----------------------------------------------------------#
+   n.total  = n.gsel * n.real
+   RJ.mat   = arrayInd(ind=sequence(n.total),.dim=c(n.real,n.gsel))
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
    #----- File name for this global scenario. ---------------------------------------------#
    return.global = file.path( rdata.path
                             , paste("return_sim_",simul$global$level[g],".RData"
@@ -590,165 +601,180 @@ for (g in loop.global){
       cat("   - Retrieving return period from file: ",basename(return.global),"...","\n")
       load(return.global)
       #------------------------------------------------------------------------------------#
-
    }else{
-      #----- File isn't there, create it. -------------------------------------------------#
+
+      #----- File is not there, start over. -----------------------------------------------#
+      cat("   - Starting return period...","\n")
+      dft     = list()#end list
+      rj.last = 0
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
 
 
 
+
+   #---------------------------------------------------------------------------------------#
+   #     Loop over the data that must be read.                                             #
+   #---------------------------------------------------------------------------------------#
+   if (rj.last < n.total){
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
       #     Loop over all files and get the full time series.                              #
       #------------------------------------------------------------------------------------#
-      cat ("   - Reading the output from each simulation...","\n")
-      jr       = 0
-      n.total  = n.gsel * n.real
-      ts.array = array( data     = NA
-                      , dim      = c(n.gsel,n.real,n.drought)
-                      , dimnames = list(gsel.name[,1],real.name,drought.name)
-                      )#end array
+      cat ("   - Reading the output from simulations...","\n")
+      loop.rj = seq(from=rj.last+1,to=n.total,by=1)
+      for (rj in loop.rj){
+         #----- Get current indices. ------------------------------------------------------#
+         r       = RJ.mat[rj,1]
+         j       = RJ.mat[rj,2]
+         rj.last = rj
+         #---------------------------------------------------------------------------------#
 
-      dft      = list()#end list
-      for (j in sequence(n.gsel)){
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-         for (r in sequence(n.real)){
-            jr = jr + 1
 
-            sim.name  = gsel.name[j,r]
-            sim.iphen =                      simul$index[g.sel,"iphen"][j]
-            sim.drain = scenario$drain$value[simul$index[g.sel,"drain"][j]]
-            sim.stext = scenario$stext$value[simul$index[g.sel,"stext"][j]]
-            sim.iata  =                      simul$index[g.sel,"iata" ][j]
+
+
+         #------ Grab simulation. ---------------------------------------------------------#
+         sim.name  = gsel.name[j,r]
+         sim.iphen =                      simul$index[g.sel,"iphen"][j]
+         sim.drain = scenario$drain$value[simul$index[g.sel,"drain"][j]]
+         sim.stext = scenario$stext$value[simul$index[g.sel,"stext"][j]]
+         sim.iata  =                      simul$index[g.sel,"iata" ][j]
+
+
+         #---------------------------------------------------------------------------------#
+         #     Load the data set.                                                          #
+         #---------------------------------------------------------------------------------#
+         rdata.simul = paste(here,"/",sim.name,"/rdata_month/",sim.name,".RData",sep="")
+
+         cat  ("     * Load data from file ",paste("(",jr,"/",n.total,")",sep="")
+                                            ,basename(rdata.simul),"...","\n")
+         dummy = load (rdata.simul)
+         emean = datum$emean
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the drought length.                                                    #
+         #---------------------------------------------------------------------------------#
+         dry          = emean$nmon.wdef > 0
+         ndry         = length(dry)
+         didx         = cumsum(dry & c(FALSE,! dry[-ndry]))
+         dry.length   = tapply(X=emean$nmon.wdef    [dry],INDEX=didx[dry],FUN=max )
+         dry.begin    = tapply(X=sequence(ndry)     [dry],INDEX=didx[dry],FUN=min )
+         dry.end      = tapply(X=sequence(ndry)     [dry],INDEX=didx[dry],FUN=max )
+         dry.mwd      = tapply(X=emean$water.deficit[dry],INDEX=didx[dry],FUN=max )
+         dry.smpot    = tapply(X=emean$smpot        [dry],INDEX=didx[dry],FUN=max )
+         dry.agb.min  = tapply(X=emean$agb          [dry],INDEX=didx[dry],FUN=max )
+         dry.agb.mean = tapply(X=emean$agb          [dry],INDEX=didx[dry],FUN=mean)
+         dry.ddmort   = tapply(X=emean$agb.ncbmort  [dry],INDEX=didx[dry],FUN=mean)
+         dry.dimort   = tapply(X=emean$agb.dimort   [dry],INDEX=didx[dry],FUN=mean)
+         dry.agb.1st  = emean$agb[dry.begin]
+         dry.agb.last = emean$agb[dry.end  ]
+         dry.change   = 1200. * log(dry.agb.last/dry.agb.1st) / (dry.end-dry.begin+1)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find annual rainfall and statistics.                                        #
+         #---------------------------------------------------------------------------------#
+         yft.rain  = tapply(X=emean$rain, INDEX=datum$year,FUN=sum)
+         yft.stat  = sn.stats(yft.rain)
+         rain.loc  = yft.stat[1]
+         rain.sca  = yft.stat[2]
+         rain.shp  = yft.stat[3]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find simulation averages.                                                   #
+         #---------------------------------------------------------------------------------#
+         sim.agb.1st  = emean$agb[1]
+         sim.agb.last = emean$agb[ndry]
+         sim.agb.mean = mean(emean$agb)
+         sim.agb.min  = min (emean$agb)
+         sim.agb.max  = max (emean$agb)
+         sim.et       = mean(emean$wflxca*yr.day)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #------ Bind all data from this simulation to a list element. --------------------#
+         dft[[rj]] = list( idx          = rj            + 0 * dry.length
+                         , realisation  = r - 1         + 0 * dry.length
+                         , iata         = sim.iata      + 0 * dry.length
+                         , iphen        = sim.iphen     + 0 * dry.length
+                         , drain        = sim.drain     + 0 * dry.length
+                         , stext        = sim.stext     + 0 * dry.length
+                         , length       = dry.length    + 0 * dry.length
+                         , mwd          = dry.mwd       + 0 * dry.length
+                         , smpot        = dry.smpot     + 0 * dry.length
+                         , agb.min      = dry.agb.min   + 0 * dry.length
+                         , agb.mean     = dry.agb.mean  + 0 * dry.length
+                         , agb.1st      = dry.agb.1st   + 0 * dry.length
+                         , agb.last     = dry.agb.last  + 0 * dry.length
+                         , change       = dry.change    + 0 * dry.length
+                         , ddmort       = dry.ddmort    + 0 * dry.length
+                         , dimort       = dry.dimort    + 0 * dry.length
+                         , rain.loc     = rain.loc      + 0 * dry.length
+                         , rain.sca     = rain.sca      + 0 * dry.length
+                         , rain.shp     = rain.shp      + 0 * dry.length
+                         , sim.agb.1st  = sim.agb.1st   + 0 * dry.length
+                         , sim.agb.last = sim.agb.last  + 0 * dry.length
+                         , sim.agb.mean = sim.agb.mean  + 0 * dry.length
+                         , sim.agb.min  = sim.agb.min   + 0 * dry.length
+                         , sim.agb.max  = sim.agb.max   + 0 * dry.length
+                         , sim.et       = sim.et        + 0 * dry.length
+                         )#end list
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #    Save it if it is time to save.                                               #
+         #---------------------------------------------------------------------------------#
+         if (rj == n.total){
+            #----- Final save, we convert it to data frame. -------------------------------#
+            dft = data.frame( apply(X=sapply(X=dft,FUN=c),MARGIN=1,FUN=unlist)
+                            , row.names        = NULL
+                            , stringsAsFactors = FALSE
+                            )#end data.frame
+            #------------------------------------------------------------------------------#
+
 
 
             #------------------------------------------------------------------------------#
-            #     Load the data set.                                                       #
+            #     Map the evapotranspiration of the observed case (r+000, real-00) to all  #
+            # cases with the same soil texture and site.                                   #
             #------------------------------------------------------------------------------#
-            rdata.simul = paste(here,"/",sim.name,"/rdata_month/",sim.name,".RData",sep="")
-
-            cat  ("     * Load data from file ",paste("(",jr,"/",n.total,")",sep="")
-                                               ,basename(rdata.simul),"...","\n")
-            dummy = load (rdata.simul)
-            emean = datum$emean
-            #------------------------------------------------------------------------------#
-
-
-            #------------------------------------------------------------------------------#
-            #     Find the drought length.                                                 #
-            #------------------------------------------------------------------------------#
-            dry          = emean$nmon.wdef > 0
-            ndry         = length(dry)
-            didx         = cumsum(dry & c(FALSE,! dry[-ndry]))
-            dry.length   = tapply(X=emean$nmon.wdef    [dry],INDEX=didx[dry],FUN=max )
-            dry.begin    = tapply(X=sequence(ndry)     [dry],INDEX=didx[dry],FUN=min )
-            dry.end      = tapply(X=sequence(ndry)     [dry],INDEX=didx[dry],FUN=max )
-            dry.mwd      = tapply(X=emean$water.deficit[dry],INDEX=didx[dry],FUN=max )
-            dry.smpot    = tapply(X=emean$smpot        [dry],INDEX=didx[dry],FUN=max )
-            dry.agb.min  = tapply(X=emean$agb          [dry],INDEX=didx[dry],FUN=max )
-            dry.agb.mean = tapply(X=emean$agb          [dry],INDEX=didx[dry],FUN=mean)
-            dry.ddmort   = tapply(X=emean$agb.ncbmort  [dry],INDEX=didx[dry],FUN=mean)
-            dry.dimort   = tapply(X=emean$agb.dimort   [dry],INDEX=didx[dry],FUN=mean)
-            dry.agb.1st  = emean$agb[dry.begin]
-            dry.agb.last = emean$agb[dry.end  ]
-            dry.change   = 1200. * log(dry.agb.last/dry.agb.1st) / (dry.end-dry.begin+1)
+            cat("     * Map the default evapotranspiration onto the default scenario..."
+               ,"\n")
+            z.sel       = ( dft$drain       == which(scenario$drain$key == "r+000")
+                          & dft$realisation == 0 )
+            zft         = dft[z.sel,]
+            iuse        = apply(X=dft,MARGIN=1,FUN=idx.zrain,default=zft)
+            dft$sim.et0 = zft$sim.et[iuse]
             #------------------------------------------------------------------------------#
 
 
-
+            #----- Save data to an R object file. -----------------------------------------#
+            cat("   - Save return period to: ",basename(return.global),"...","\n")
+            save(list=c("rj.last","dft"),file=return.global)
             #------------------------------------------------------------------------------#
-            #     Find annual rainfall and statistics.                                     #
+         }else if ((rj %% save.every) == 0){
+            #----- Save data to an R object file. -----------------------------------------#
+            cat("   - Save return period to: ",basename(return.global),"...","\n")
+            save(list=c("rj.last","dft"),file=return.global)
+            cat("   - Quitting...","\n")
+            q("no")
             #------------------------------------------------------------------------------#
-            yft.rain  = tapply(X=emean$rain, INDEX=datum$year,FUN=sum)
-            yft.stat  = sn.stats(yft.rain)
-            rain.loc  = yft.stat[1]
-            rain.sca  = yft.stat[2]
-            rain.shp  = yft.stat[3]
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
-            #     Find simulation averages.                                                #
-            #------------------------------------------------------------------------------#
-            sim.agb.1st  = emean$agb[1]
-            sim.agb.last = emean$agb[ndry]
-            sim.agb.mean = mean(emean$agb)
-            sim.agb.min  = min (emean$agb)
-            sim.agb.max  = max (emean$agb)
-            sim.et       = mean(emean$wflxca*yr.day)
-            #------------------------------------------------------------------------------#
-
-
-
-
-            #------ Bind all data from this simulation to a list element. -----------------#
-            dft[[jr]] = list( idx          = jr            + 0 * dry.length
-                            , realisation  = r - 1         + 0 * dry.length
-                            , iata         = sim.iata      + 0 * dry.length
-                            , iphen        = sim.iphen     + 0 * dry.length
-                            , drain        = sim.drain     + 0 * dry.length
-                            , stext        = sim.stext     + 0 * dry.length
-                            , length       = dry.length    + 0 * dry.length
-                            , mwd          = dry.mwd       + 0 * dry.length
-                            , smpot        = dry.smpot     + 0 * dry.length
-                            , agb.min      = dry.agb.min   + 0 * dry.length
-                            , agb.mean     = dry.agb.mean  + 0 * dry.length
-                            , agb.1st      = dry.agb.1st   + 0 * dry.length
-                            , agb.last     = dry.agb.last  + 0 * dry.length
-                            , change       = dry.change    + 0 * dry.length
-                            , ddmort       = dry.ddmort    + 0 * dry.length
-                            , dimort       = dry.dimort    + 0 * dry.length
-                            , rain.loc     = rain.loc      + 0 * dry.length
-                            , rain.sca     = rain.sca      + 0 * dry.length
-                            , rain.shp     = rain.shp      + 0 * dry.length
-                            , sim.agb.1st  = sim.agb.1st   + 0 * dry.length
-                            , sim.agb.last = sim.agb.last  + 0 * dry.length
-                            , sim.agb.mean = sim.agb.mean  + 0 * dry.length
-                            , sim.agb.min  = sim.agb.min   + 0 * dry.length
-                            , sim.agb.max  = sim.agb.max   + 0 * dry.length
-                            , sim.et       = sim.et        + 0 * dry.length
-                            )#end list
-            #------------------------------------------------------------------------------#
-         }#end for (r in 1:n.real)
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-         #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;#
-      }#end for (j in 1:n.gsel)
+         }#end if
+         #---------------------------------------------------------------------------------#
+      }#end for (rj in loop.rj)
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-
-
-
-      #----- Convert the list into a data frame. ------------------------------------------#
-      dft = data.frame( apply(X=sapply(X=dft,FUN=c),MARGIN=1,FUN=unlist)
-                      , row.names        = NULL
-                      , stringsAsFactors = FALSE
-                      )#end data.frame
-      #------------------------------------------------------------------------------------#
-
-
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Map the evapotranspiration of the observed case (r+000, real-00) to all cases  #
-      # with the same soil texture and site.                                               #
-      #------------------------------------------------------------------------------------#
-      cat("     * Map the default evapotranspiration onto the default scenario...","\n")
-      z.sel       = ( dft$drain       == which(scenario$drain$key == "r+000")
-                    & dft$realisation == 0 )
-      zft         = dft[z.sel,]
-      iuse        = apply(X=dft,MARGIN=1,FUN=idx.zrain,default=zft)
-      dft$sim.et0 = zft$sim.et[iuse]
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Save data to an R object file. -----------------------------------------------#
-      cat("   - Save return period to: ",basename(return.global),"...","\n")
-      save(dft,file=return.global)
-      #------------------------------------------------------------------------------------#
    }#end if (file.exists(return.global))
    #---------------------------------------------------------------------------------------#
 

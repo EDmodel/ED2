@@ -55,7 +55,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    #     If the user wants to use the flags, loop over them and check for dead trees.      #
    #---------------------------------------------------------------------------------------#
    if (use.flags){
-      for (y in 1:n.years){
+      for (y in sequence(n.years)){
          this.dead = paste("dead",year4[y],sep=".")
          this.dbh  = paste("dbh" ,year4[y],sep=".")
          if (this.dead %in% names(datum)){
@@ -77,7 +77,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    # Then we assign the death year.                                                        #
    #---------------------------------------------------------------------------------------#
    if (use.notes){
-      for (y in 1:n.years){
+      for (y in sequence(n.years)){
          this.notes = paste("notes",year4[y],sep=".")
          x          = datum[[this.notes]]
 
@@ -124,13 +124,13 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
          x = sub( pattern     = "not  -- assume dead"            
                 , replacement = "missing"                      
                 , x           = x )
-         x = sub( pattern     = "not found.assume dead"          
+         x = sub( pattern     = "not found\\.assume dead"          
                 , replacement = "missing"                      
                 , x           = x )
-         x = sub( pattern     = "couldn.t find??? dead??"        
+         x = sub( pattern     = "couldn\\.t find??? dead??"        
                 , replacement = "missing"                      
                 , x           = x )
-         x = sub( pattern     = "couldn.t find; probably dead; in a large tree fall."                                            
+         x = sub( pattern     = "couldn\\.t find; probably dead; in a large tree fall\\."                                            
                 , replacement = "missing; area has tree fall." 
                 , x           = x )
          x = sub( pattern     = "partially dead"                 
@@ -139,16 +139,16 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
          x = sub( pattern     = "99% dead"                       
                 , replacement = "dying"                        
                 , x           = x )
-         x = sub( pattern     = "dead; it.s alive now"           
+         x = sub( pattern     = "dead; it\\.s alive now"           
                 , replacement = "alive"                        
                 , x           = x )
          x = sub( pattern     = "dead; alive now"           
                 , replacement = "alive"                        
                 , x           = x )
-         x = sub( pattern     = "half of tree it.s dead"         
+         x = sub( pattern     = "half of tree it\\.s dead"         
                 , replacement = "dying"                        
                 , x           = x )
-         x = sub( pattern     = "not found.  assume dead"        
+         x = sub( pattern     = "not found\\.  assume dead"        
                 , replacement = "missing"                      
                 , x           = x )
          x = sub( pattern     = "half of the tree is dead"       
@@ -178,7 +178,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
          x = sub( pattern     = "dead? or not measured?"
                 , replacement = "missing"
                 , x           = x )
-         x = sub( pattern     = "alive. previously reported as dead"
+         x = sub( pattern     = "alive\\. previously reported as dead"
                 , replacement = "alive"
                 , x           = x )
          x = sub( pattern     = "grew inside of other dead tree"
@@ -187,7 +187,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
          x = sub( pattern     = "meia morto"
                 , replacement = "dying"
                 , x           = x )
-         x = sub( pattern     = "nao foi encontrado... perdido ou morto?"
+         x = sub( pattern     = "nao foi encontrado\\.\\.\\. perdido ou morto?"
                 , replacement = "missing"
                 , x           = x )
          x = sub( pattern     = "nao morto"
@@ -242,7 +242,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
       # for death.  Because of the possible misidentifications, we keep updating it every  #
       # year.                                                                              #
       #------------------------------------------------------------------------------------#
-      for (y in 1:n.years){
+      for (y in sequence(n.years)){
          this.notes = paste("notes",year4[y],sep=".")
          x          = datum[[this.notes]]
 
@@ -286,7 +286,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    #     Now we loop over all trees, correct the death flags, and move the DBH of dead     #
    # trees to the notes.                                                                   #
    #---------------------------------------------------------------------------------------#
-   for (y in 2:n.years){
+   for (y in sequence(n.years)[-1]){
       #------------------------------------------------------------------------------------#
       #      Retrieve information from 
       #------------------------------------------------------------------------------------#
@@ -342,7 +342,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    datum$year.1st  = rep(NA,times=n.datum)
    datum$year.last = rep(NA,times=n.datum)
    
-   for (y in 1:n.years){
+   for (y in sequence(n.years)){
       yr                       = year4[y]
       dbh.now                  = datum[[paste("dbh",yr,sep=".")]]
       sel.dbh                  = is.finite(dbh.now)
@@ -360,12 +360,13 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    # again.                                                                                #
    #---------------------------------------------------------------------------------------#
    datum$year.goodbye = rep(Inf,times=n.datum)
-   for (y in 1:n.years){
+   for (y in sequence(n.years)){
       yr                             = year4[y]
       dbh.now                        = datum[[paste("dbh",yr,sep=".")]]
       sel.dbh                        = is.finite(dbh.now)
       sel.bye                        = datum$year.1st < yr & is.na(dbh.now)
       datum$year.goodbye[sel.dbh]    = Inf
+      if (any(is.na(sel.bye))) browser()
       if (any(sel.bye)){
          datum$year.goodbye[sel.bye] = pmin(datum$year.goodbye[sel.bye],yr)
       }#end if

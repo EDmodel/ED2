@@ -237,6 +237,7 @@ xyz.plot = function( x
    for (p in sequence(npanels)){
       #------ Decide the margins based upon the XY axes limits. ---------------------------#
       mar.now = lo.box$mar[p]
+      if (length(mar.now) != 4) browser()
       if (! fixed.xlim) mar.now[c(1,3)] = lo.box$mar0[c(1,3)]
       if (! fixed.ylim) mar.now[c(2,4)] = lo.box$mar0[c(2,4)]
       #------------------------------------------------------------------------------------#

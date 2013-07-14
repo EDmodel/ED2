@@ -119,7 +119,7 @@ nc=len_trim(hfilin)
 nhftot=-1
 hpref=hfilin(1:nc)
 thisfile = trim(hpref)//'*-head.txt'
-call RAMS_filelist(fnames,thisfile,nhftot)
+call RAMS_filelist(maxnudfiles,fnames,thisfile,nhftot)
 
 if(nhftot > maxnudfiles) then
    print*,'too many nud history files'

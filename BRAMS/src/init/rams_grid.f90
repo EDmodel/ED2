@@ -100,6 +100,7 @@ subroutine grid_setup(num)
 
      enddo
   endif
+  return
 end subroutine grid_setup
 
 
@@ -167,6 +168,7 @@ subroutine gridinit
      nnxysp(ngrid) = nnxp(ngrid) * nnyp(ngrid) * (nzg+nzs+3) * npatch
      nnxyp(ngrid) = nnxp(ngrid) * nnyp(ngrid)
   enddo
+  return
 end subroutine gridinit
 
 
@@ -225,6 +227,7 @@ subroutine polarst(n2,n3,glat,glon,fmapu,fmapv,fmapt,fmapm  &
      call ae0(n2*n3,fmapti,1.)
      call ae0(n2*n3,fmapmi,1.)
   endif
+  return
 end subroutine polarst
 
 
@@ -282,6 +285,7 @@ subroutine grdspc(n2,n3,dxu,dxv,dxt,dxm,dyu,dyv,dyt,dym  &
         enddo
      enddo
   endif
+  return
 end subroutine grdspc
 
 
@@ -360,6 +364,7 @@ subroutine fill_toptuvm(n2,n3,topt,topu,topv,topm,topta,topma)
         enddo
      enddo
   endif
+  return
 end subroutine fill_toptuvm
 
 
@@ -452,6 +457,7 @@ subroutine transfm(n2,n3,topt,topu,topv,topm,rtgt,rtgu,rtgv,rtgm  &
         f23m(i,n3) = f23u(i,n3)
      endif
   enddo
+  return
 end subroutine transfm
 
 
@@ -555,4 +561,5 @@ subroutine newgrid(ngr)
   i0=mi0(ngr)
   j0=mj0(ngr)
   ibcon=mibcon(ngr)
+  return
 end subroutine newgrid

@@ -130,7 +130,7 @@ if(oda_upaprefix(1:1) /= ' ' .and. oda_upaprefix(1:1) /= char(0) ) then
    nc=len_trim(oda_upaprefix)
    nupatot=-1
    thisfile = oda_upaprefix(1:nc)//'*00'
-   call RAMS_filelist(fnames,thisfile,nupatot)
+   call RAMS_filelist(maxodafiles,fnames,thisfile,nupatot)
 
    if(nupatot > maxodafiles) then
       print*,'too many oda upper air files'
@@ -170,7 +170,7 @@ if(oda_sfcprefix(1:1) /= ' '.and. oda_sfcprefix(1:1) /= char(0) ) then
    nc=len_trim(oda_sfcprefix)
    nsfctot=-1
    thisfile = oda_sfcprefix(1:nc)//'*00'
-   call RAMS_filelist(fnames,thisfile,nsfctot)
+   call RAMS_filelist(maxodafiles,fnames,thisfile,nsfctot)
 
    if(nsfctot > maxodafiles) then
       print*,'too many oda surface air files'

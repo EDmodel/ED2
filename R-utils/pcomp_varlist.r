@@ -3589,7 +3589,7 @@
                              , plog.xyz   = FALSE
                              )#end list
                        , list( vname      = "last.1yr.wue"
-                             , col.scheme = "ivisible"
+                             , col.scheme = "ipanoply"
                              , plog.xyz   = FALSE
                              )#end list
                        )#end list
@@ -3921,7 +3921,7 @@
                               , plog.xyz   = FALSE
                               )#end list
                         , list( vname      = "last.1yr.etue"
-                              , col.scheme = "ivisible"
+                              , col.scheme = "ipanoply"
                               , plog.xyz   = FALSE
                               )#end list
                         , list( vname      = "last.1yr.gpp"
@@ -3945,15 +3945,15 @@
                               , plog.xyz   = FALSE
                               )#end list
                         , list( vname      = "last.1yr.rue"
-                              , col.scheme = "ivisible"
+                              , col.scheme = "ipanoply"
                               , plog.xyz   = FALSE
                               )#end list
                         , list( vname      = "last.1yr.transp"
-                              , col.scheme = "ivisible"
+                              , col.scheme = "ipanoply"
                               , plog.xyz   = FALSE
                               )#end list
                         , list( vname      = "last.1yr.wue"
-                              , col.scheme = "ivisible"
+                              , col.scheme = "ipanoply"
                               , plog.xyz   = FALSE
                               )#end list
                         , list( vname      = "wood.dens"

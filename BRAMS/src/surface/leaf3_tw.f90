@@ -1244,7 +1244,7 @@ subroutine leaf3_adjust_sfcw(mzg,mzs,soil_energy,soil_water,soil_text,sfcwater_n
    !     There may be a tiny amount of free standing water left.  We dump what we can in   !
    ! the soil, and if there is still some water to be removed we  evaporate what is left.  !
    !---------------------------------------------------------------------------------------!
-   if (wmass_free >= 0.0) then
+   if (wmass_free > 0.0) then
       wmass_room  = max(0.0, slmsts(nsoil) - soil_water(mzg)) * wdns * dslz(mzg)
       energy_room = energy_free * wmass_room / wmass_free
 

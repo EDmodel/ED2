@@ -202,18 +202,18 @@ scenario$drain = list( key     = c("r+000","r-020","r-040","r-060","r-080","r-10
                      , desc    = c("dR =  0.0S","dR = -0.2S","dR = -0.4S","dR = -0.6S"
                                   ,"dR = -0.8S","dR = -1.0S","dR = -1.2S","dR = -1.4S"
                                   ,"dR = -1.6S")
-                     , legend  = c("Delta*xi =  0.0*omega","Delta*xi = -0.2*omega"
-                                  ,"Delta*xi = -0.4*omega","Delta*xi = -0.6*omega"
-                                  ,"Delta*xi = -0.8*omega","Delta*xi = -1.0*omega"
-                                  ,"Delta*xi = -1.2*omega","Delta*xi = -1.4*omega"
-                                  ,"Delta*xi = -1.6*omega")
+                     , legend  = c("Delta*xi ==  0.0*omega","Delta*xi == -0.2*omega"
+                                  ,"Delta*xi == -0.4*omega","Delta*xi == -0.6*omega"
+                                  ,"Delta*xi == -0.8*omega","Delta*xi == -1.0*omega"
+                                  ,"Delta*xi == -1.2*omega","Delta*xi == -1.4*omega"
+                                  ,"Delta*xi == -1.6*omega")
                      , parse   = TRUE
                      , pattern = "rRRRR"
                      , default = drain.default
                      , value   = c(  0.0,  0.2,  0.4,  0.6,  0.8,  1.0,  1.2,  1.4,  1.6)
                      , label   = c(  0.0, -0.2, -0.4, -0.6, -0.8, -1.0, -1.2, -1.4, -1.6)
-                     , colour  = c("#694AFF","#1A9BE3","#26D4EE","#009000","#A08240"
-                                  ,"#FFA020","#FF0000","#BE0000","#800000")
+                     , colour  = c("#003264","#0082C8","#46B4FF","#B4E6FF","#DAF7F1"
+                                  ,"#E6E6B4","#FFB43C","#C85A0A","#960000")
                      , pch     = c(12L,9L,10L,0L,5L,1L,2L,6L,8L)
                      , alabel  = c("Mean rainfall change [Scale]")
                     )#end list
@@ -227,7 +227,7 @@ scenario$stext = list( key     = c("stext02","stext06","stext08","stext16","stex
                      , default = stext.default
                      , value   = c(1,2,3,4,5)
                      , label   = c("LSa","SaCL","CL","CSa","C")
-                     , colour  = c("#F0F000","#A08240","#FF6C20","#BE0000","#800000")
+                     , colour  = c("#FED164","#FDA531","#FF5308","#D90B00","#6E0500")
                      , pch     = c(12L,13L,5L,6L,8L)
                      , alabel  = c("Soil texture")
                      )#end list
@@ -1527,13 +1527,49 @@ for (g in loop.global){
       if (file.exists(rdata.simul)){
          cat  ("     * Load data from file ",paste("(",rj,"/",n.total,")",sep="")
                                             ,basename(rdata.simul),"...","\n")
-         dummy = load (rdata.simul)
+         dummy = try(load(rdata.simul))
+
+         #------ Make sure that the data have been properly loaded, otherwise, quit. ------#
+         if ("try-error" %in% is(dummy)){
+            cat("       ~ Failed loading data.  Check input!","\n")
+
+            #----- Save status file so we know it is complete. ----------------------------#
+            cat ("       ~ Saving report on corruped file to "
+                ,basename(rdata.status),"...","\n")
+            status = data.frame( rj = rj, total = n.total, failed = basename(rdata.simul))
+            write.table( x         = status
+                       , file      = rdata.status
+                       , append    = FALSE
+                       , quote     = FALSE
+                       , row.names = FALSE
+                       , col.names = TRUE
+                       )#end write.table
+            cat(" + Quitting...","\n")
+            q("no")
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
          emean = datum$emean
          szpft = datum$szpft
          #---------------------------------------------------------------------------------#
       }else{
-         cat ("     * File ",basename(rdata.simul)," doesn't exist!","\n")
-         stop(" - Input RData files are missing...")
+         cat ("       ~ File ",basename(rdata.simul)," doesn't exist!","\n")
+
+         #----- Save status file so we know it is complete. -------------------------------#
+         cat ("       ~ Saving report on missing file to ",basename(rdata.status)
+             ,"...","\n")
+         status = data.frame( rj = rj, total = n.total, failed = basename(rdata.simul))
+         write.table( x         = status
+                    , file      = rdata.status
+                    , append    = FALSE
+                    , quote     = FALSE
+                    , row.names = FALSE
+                    , col.names = TRUE
+                    )#end write.table
+         cat(" + Quitting...","\n")
+         q("no")
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1825,7 +1861,7 @@ for (g in loop.global){
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
       #       Loop over all scenarios.                                                     #
       #------------------------------------------------------------------------------------#
-      for (s in loop.scenario[1]){
+      for (s in loop.scenario){
          #---------------------------------------------------------------------------------#
          #     Select the runs that belong to this panel.                                  #
          #---------------------------------------------------------------------------------#
@@ -7841,7 +7877,7 @@ for (g in loop.global){
 #------------------------------------------------------------------------------------------#
 cat (" + Saving the simulation status to ",basename(rdata.status),"...","\n")
 cat (" + Saving the simulation status to ",basename(rdata.status),"...","\n")
-status = data.frame( rj = rj, total = n.total, complete = rj == n.total)
+status = data.frame( rj = n.total, total = n.total, complete = rj == n.total)
 write.table( x         = status
            , file      = rdata.status
            , append    = FALSE

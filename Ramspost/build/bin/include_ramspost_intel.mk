@@ -104,9 +104,9 @@ ifeq ($(KIND_COMP),D)
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -Vaxlib -traceback -axP -assume byterecl
+   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl
    C_OPTS= -O3 -DLITTLE -traceback
-   LOADER_OPTS= -FR -O3 -Vaxlib  -traceback -axP -assume byterecl
+   LOADER_OPTS= -FR -O3  -traceback -assume byterecl
    C_LOADER_OPTS=-v -traceback
    #---------------------------------------------------------------------------------------#
 endif
