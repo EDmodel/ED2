@@ -1620,6 +1620,27 @@ poitmp[[u]] = list( short           = "calabozo"
                   , iphen           = 2
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "campo_grande"          
+                  , longname        = "Campo Grande, MS"                
+                  , iata            = "cgr"
+                  , lon             = -54.538
+                  , lat             = -20.438
+                  , alt             = 677
+                  , wmo             = 83612
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Campo_Grande"
+                  , yeara           = 2002
+                  , yearz           = 2013
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "canarana"          
                   , longname        = "Canarana, MT"                
                   , iata            = "qnr"
@@ -1833,9 +1854,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "cuiaba"            
                   , longname        = "Cuiaba, MT"                  
                   , iata            = "cgb"
-                  , lon             = -56.100
-                  , lat             = -15.600
-                  , alt             = 187
+                  , lon             = -56.070
+                  , lat             = -15.555
+                  , alt             = 185
                   , wmo             = 83362
                   , isoilflg        = 1
                   , ntext           = 1
@@ -1845,9 +1866,9 @@ poitmp[[u]] = list( short           = "cuiaba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Cuiaba"
+                  , yeara           = 2002
+                  , yearz           = 2013
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2418,6 +2439,27 @@ poitmp[[u]] = list( short           = "joao_pessoa"
                   , iphen           = 2
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "joinville"       
+                  , longname        = "Joinville, SC"             
+                  , iata            = "joi"
+                  , lon             = -48.858
+                  , lat             = -26.252
+                  , alt             = 48
+                  , wmo             = 83905
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Joinville"
+                  , yeara           = 2004
+                  , yearz           = 2013
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "kenia"             
                   , longname        = "Kenia, BOL"                  
                   , iata            = "qea"
@@ -2925,9 +2967,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "natal"           
                   , longname        = "Natal, RN"                
                   , iata            = "nat"
-                  , lon             = -35.250
-                  , lat             = -5.920
-                  , alt             = 49
+                  , lon             = -35.206
+                  , lat             = -5.837
+                  , alt             = 58
                   , wmo             = 82599
                   , isoilflg        = 1
                   , ntext           = 1
@@ -2937,9 +2979,9 @@ poitmp[[u]] = list( short           = "natal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Natal"
+                  , yeara           = 2004
+                  , yearz           = 2013
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -3633,6 +3675,27 @@ poitmp[[u]] = list( short           = "sao_luis"
                   , met.driver      = "Sheffield"
                   , yeara           = 1964
                   , yearz           = 2009
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "sao_martinho"          
+                  , longname        = "Sao Martinho da Serra, RS"                
+                  , iata            = "ria"
+                  , lon             = -53.823
+                  , lat             = -29.443
+                  , alt             = 489
+                  , wmo             = 83937
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sao_Martinho"
+                  , yeara           = 2000
+                  , yearz           = 2013
                   , iphen           = 2
                   )#end list
 u           = u + 1

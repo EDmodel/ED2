@@ -4112,6 +4112,58 @@
 
 
 
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This list tells which variables to do the autocorrelation comparing for all          #
+# scenarios.                                                                               #
+#                                                                                          #
+# IMPORTANT:  All variables here MUST come from one of the variables defined in scen.ts.   #
+#------------------------------------------------------------------------------------------#
+   #----- All that we need here is the variable name. -------------------------------------#
+   acorr.plot = data.frame( vname = c(          "agb",          "lai",           "ba"
+                                     ,          "gpp",          "npp",   "agb.change"
+                                     ,     "bstorage",    "can.depth"
+                                     )#end vname
+                          , stringsAsFactors = FALSE
+                          )#end data.frame
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Fill in the box plot list with information brought from scen.ts.                  #
+   #---------------------------------------------------------------------------------------#
+   #----- Find the variable names to be added. --------------------------------------------#
+   which.names = names(scen.ts)
+   keep        = ! ( which.names %in% names(acorr.plot))
+   which.names = which.names[keep]
+   #----- Match the lists based on vname. -------------------------------------------------#
+   comp.idx = match(acorr.plot$vname,scen.ts$vname)
+   #----- Look for variables that weren't defined in scen.ts. -----------------------------#
+   comp.miss = is.na(comp.idx)
+   if (any(comp.miss)){
+      cat(" - The following variables in acorr.plot are missing from scen.ts:","\n")
+      cat(paste("   * ",acorr.plot$vname[comp.miss],sep=""),sep="\n")
+      stop(" - All variables defined in acorr.plot must be defined in scen.ts!!!")
+   }#end if(any(x.sel))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Append the information to the data frame. ---------------------------------------#
+   for (wn in which.names) acorr.plot[[wn]] = scen.ts[[wn]][comp.idx]
+   #---------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
 #==========================================================================================#
 #==========================================================================================#
 #     Turn the variables that matter global.                                               #
@@ -4123,6 +4175,7 @@ scen.xyz      <<- scen.xyz
 scen.comp     <<- scen.comp
 panel.box     <<- panel.box
 pca.explain   <<- pca.explain
+acorr.plot    <<- acorr.plot
 nscen.ts      <<- nrow(scen.ts)
 nscen.szpft   <<- nrow(scen.szpft    )
 nscen.barplot <<- nrow(scen.barplot  )
@@ -4135,5 +4188,6 @@ npanel.xvar   <<- nrow(panel.xyz$xvar)
 npanel.yvar   <<- nrow(panel.xyz$yvar)
 npanel.zvar   <<- nrow(panel.xyz$zvar)
 npca.explain  <<- nrow(pca.explain   )
+nacorr.plot   <<- nrow(acorr.plot    )
 #==========================================================================================#
 #==========================================================================================#

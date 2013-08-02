@@ -21,15 +21,21 @@ outdata        = file.path(here,"Rdata_census",sep="/")
 #------------------------------------------------------------------------------------------#
 
 
-#----- Background and output path. --------------------------------------------------------#
-ibackground =     0                     # Sought background colour (actual background will
-                                        #  be transparent, but foreground colours will 
-                                        #  change)
-                                        #  0 -- white background
-                                        #  1 -- black background
-                                        #  2 -- dark grey background
+#----- Options that make path names change. -----------------------------------------------#
+ibackground = 0       # Sought background colour (actual background will be transparent, 
+                      #     but foreground colours will change)
+                      #   0 -- white background
+                      #   1 -- black background
+                      #   2 -- dark grey background
+oldgrowth   = TRUE    # Use old growth patches only? (FALSE uses everything)
+#------------------------------------------------------------------------------------------#
+
+
+
 #----- Main path for output. --------------------------------------------------------------#
-outroot     = file.path(here,paste("census_comp_ibg",sprintf("%2.2i",ibackground),sep=""))
+outprefix   = ifelse(oldgrowth,"oldgrowth_comp_ibg","census_comp_ibg")
+outroot     = file.path(here,paste(outprefix,sprintf("%2.2i",ibackground),sep=""))
+reload      = FALSE # Should I reload data?
 #------------------------------------------------------------------------------------------#
 
 
@@ -45,7 +51,7 @@ tfall.desc     = c("Treefall = 1.11%/yr","Treefall = 1.25%/yr","Treefall = 1.40%
 
 
 #----- Plot options. ----------------------------------------------------------------------#
-outform        = c("eps","png","pdf")   # Formats for output file.  Supported formats are:
+outform        = c("pdf")               # Formats for output file.  Supported formats are:
                                         #   - "X11" - for printing on screen
                                         #   - "eps" - for postscript printing
                                         #   - "png" - for PNG printing
@@ -72,6 +78,7 @@ idbh.type      =    2         # Type of DBH class
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                               # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
 ed22.ci        = TRUE         # Plot confidence interval for ED?
+global.ylim    = TRUE         # Global limits
 n.boot         = 1000         # Number of realisations for bootstrap
 #------------------------------------------------------------------------------------------#
 
@@ -296,6 +303,20 @@ pratetheme[[1]] = list( ed2.rate   = c("ddmort","dimort","mort")
                       , theme.desc = "Mortality Rates"
                       , plog       = ""
                       )#end list
+pratetheme[[2]] = list( ed2.rate   = "growth"
+                      , sta.rate   = "growth"
+                      , sizetoo    = TRUE
+                      , pfttoo     = TRUE
+                      , desc.rate  = c("ED-2.2")
+                      , unit.rate  = growth.units
+                      , col.ed2    = c(chartreuse.fg,chartreuse.bg)
+                      , col.sta    = c(grey.mg,grey.bg)
+                      , indiv      = growth.vars
+                      , desc.indiv = growth.labels
+                      , theme      = "productivity"
+                      , theme.desc = "Growth rates"
+                      , plog       = ""
+                      )#end list
 #---- 4. Plot expected values and confidence intervals for themes. ------------------------#
 pratethbpw      = list()
 pratethbpw[[1]] = list( ed2.rate   = c("mort","dimort","ddmort")
@@ -386,6 +407,7 @@ wide.size$width = 1.33 * size$width
 
 #---- Create the main output directory in case there is none. -----------------------------#
 if (! file.exists(outroot)) dir.create(outroot)
+if (! file.exists(outdata)) dir.create(outdata)
 #------------------------------------------------------------------------------------------#
 
 
@@ -398,112 +420,275 @@ nplaces = length(place)
 #------------------------------------------------------------------------------------------#
 #     Big place loop starts here...                                                        #
 #------------------------------------------------------------------------------------------#
-for (p in sequence(nplaces)){
+for (pl in sequence(nplaces)){
    #----- Build the list of site runs. ----------------------------------------------------#
-   iata      = place[[p]]$iata
+   iata      = place[[pl]]$iata
    idx       = match(iata,poilist$iata)
    longname  = poilist$longname[idx]
-   config    = expand.grid(place[[p]]$config,stringsAsFactors=FALSE)
+   config    = expand.grid(place[[pl]]$config,stringsAsFactors=FALSE)
    simul.all = paste("t",iata,"_",apply(X=config,MARGIN=1,FUN=paste,collapse="_")
                     ,sep="")
+   #---------------------------------------------------------------------------------------#
 
 
 
-   cat (" + Site: ",longname,"\n")
+
+   #----- Find the census observations for this particular site. --------------------------#
+   if (iata == "mao" | iata == "bdf"){
+      census.name = "census.m34"
+   }else if(iata == "stm" | iata == "s66"){
+      census.name = "census.s67"
+   }else if(iata == "rao"){
+      census.name = "census.pdg"
+   }else if(iata == "jpr"){
+      census.name = "census.fns"
+   }else if(iata == "btr"){
+      census.name = "census.s77"
+   }else{
+      census.name = paste("census.",iata,sep="")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
 
    #---------------------------------------------------------------------------------------#
-   #     Treefall loop.                                                                    #
+   #     We only run this part of the code if there are observations to compare with       #
+   # the model.                                                                            #
    #---------------------------------------------------------------------------------------#
-   for (tf in sequence(n.tfall)){
-      #----- Set up the path for this treefall. -------------------------------------------#
-      outfall = file.path(outroot,tfall.key[tf])
-      if (! file.exists(outfall)) dir.create(outfall)
+   if (census.name %in% ls()){
+
+      #------------------------------------------------------------------------------------#
+      #     Obs.rdata is similar to the input census data, but with extra variables to     #
+      # control plots.                                                                     #
+      #------------------------------------------------------------------------------------#
+      cat (" + Site: ",longname,"\n")
+      if (oldgrowth){
+         ylim.rdata = file.path(outdata
+                               ,paste("oldgrowth_",iata,"_","limits",".RData",sep=""))
+      }else{
+         ylim.rdata = file.path(outdata
+                               ,paste("census_",iata,"_","limits",".RData",sep=""))
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Load the census data, from the monthly means.                                  #
+      #------------------------------------------------------------------------------------#
+      sta         = get(census.name)
+      n.census    = length(sta$when)
+      n.dbh       = length(sta$dbh.breaks)-1
+      
+      x.edge      = c(10,      sta$dbh.breaks[-c(1,n.dbh+1)]
+                        , 2. * sta$dbh.breaks[n.dbh] - sta$dbh.breaks[n.dbh-1] )
+      x.dbh       = 0.5 * ( x.edge[-1] + x.edge[-(n.dbh+1)] )
+      xlimit      = pretty.xylim(u=x.edge,fracexp=0.0,is.log=FALSE)
+      dbh.names   = dimnames(sta$mort.size$n$expected)[[2]]
+      year4       = numyears(sta$when)
+      when4       = sta$when
+      when.label  = paste(month.abb[nummonths(when4)],year4,sep="-")
+      when.limit  = c(chron(paste(1,1,min(year4)  ,sep="/"))
+                     ,chron(paste(1,1,max(year4)+1,sep="/")))
+      whenmid4    = chron(0.5 * ( as.numeric( sta$when[       -1] )
+                                + as.numeric( sta$when[-n.census] ) ) )
+
+      delta       = diff(as.numeric(sta$when))
+      mid.label   = c(chron(sta$when[1]-delta[1]),sta$when)
+      month.label = month.abb[nummonths(mid.label)]
+      year.label  = numyears(mid.label)
+      
+      summ.label  = paste(month.label,year.label,sep="/")
+      n.label     = length(summ.label)
+
+      census.desc = paste(summ.label[-n.label],summ.label[-1],sep=" - ")
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Loop over all months to grab all the census data.                             #
+      #------------------------------------------------------------------------------------#
+      census.idx   = NULL
+      for (y in 2:n.census){
+         #----- Find the first and last time to be averaged for this census. --------------#
+         ts.montha  = ( nummonths(sta$when[y-1]) %% 12 )
+         ts.yeara   = numyears (sta$when[y-1])
+         ts.monthz  = ( ( (nummonths(sta$when[y]) - 1) %% 12 )
+                      + 12 * as.integer(nummonths(sta$when[y]) == 1) )
+         ts.yearz   = numyears (sta$when[y]) - as.integer(ts.monthz == 12)
+         n.inter    = (ts.yearz-ts.yeara-1)*12 + ts.monthz + (12 - ts.montha + 1)
+         #---------------------------------------------------------------------------------#
+         census.idx = c(census.idx,rep(y,times=n.inter))
+      }#end for
       #------------------------------------------------------------------------------------#
 
 
 
       #------------------------------------------------------------------------------------#
-      #     Phenology loop.                                                                #
+      #     Find the average rates for the census period using log-normal.                 #
       #------------------------------------------------------------------------------------#
-      for (ph in sequence(n.iphen)){
+      mypfts = sort(match(unique(names(sta$classes)),pft$name))
+      npfts  = length(mypfts)
+      #------------------------------------------------------------------------------------#
 
-         cat ("  - Group: ",tfall.desc[tf]," - ",iphen.desc[ph],"\n")
 
 
-
-         #----- Use only this phenology and treefall combination. -------------------------#
-         aux.iphen.key=sub(pattern="\\+",replacement=".",x=iphen.key)
-         aux.tfall.key=sub(pattern="\\+",replacement=".",x=tfall.key)
-         aux.simul.all=sub(pattern="\\+",replacement=".",x=simul.all)
-         keep    = ( regexpr(pattern=aux.iphen.key[ph],text=aux.simul.all) > 0
-                   & regexpr(pattern=aux.tfall.key[tf],text=aux.simul.all) > 0 )
-         simul   = simul.all[keep]
-         n.simul = length(simul)
+      #------------------------------------------------------------------------------------#
+      #      Loop over all the possible rates and initialise the limits.                   #
+      #------------------------------------------------------------------------------------#
+      ylt = list()
+      for (r in sequence(npratets)){
          #---------------------------------------------------------------------------------#
-
-
-
-
-         #----- Find the census observations for this particular site. --------------------#
-         if (iata == "mao" | iata == "bdf"){
-            census.name = "census.m34"
-         }else if(iata == "stm" | iata == "s66"){
-            census.name = "census.s67"
-         }else if(iata == "rao"){
-            census.name = "census.pdg"
-         }else if(iata == "jpr"){
-            census.name = "census.fns"
-         }else if(iata == "btr"){
-            census.name = "census.s77"
-         }else{
-            census.name = paste("census.",iata,sep="")
-         }#end if
+         #     Load the rate information.                                                  #
+         #---------------------------------------------------------------------------------#
+         this.rate = pratets[[ r]]
+         ed2.rate  = this.rate$ed2.rate
+         sta.rate  = this.rate$sta.rate
+         sizetoo   = this.rate$sizetoo
+         desc.rate = this.rate$desc.rate
+         indiv     = this.rate$indiv
+         cat(" - Initialising limits for ",desc.rate," tables...","\n")
          #---------------------------------------------------------------------------------#
 
 
 
          #---------------------------------------------------------------------------------#
-         #     We only run this part of the code if there are observations to compare with #
-         # the model.                                                                      #
+         #      Load plot-level and size-level data.                                       #
          #---------------------------------------------------------------------------------#
-         if (census.name %in% ls()){
-
-            #------------------------------------------------------------------------------#
-            #     Load the census data, from the monthly means.                            #
-            #------------------------------------------------------------------------------#
-            sta         = get(census.name)
-            n.census    = length(sta$when)
-            n.dbh       = length(sta$dbh.breaks)-1
-            
-            x.edge      = c(10,      sta$dbh.breaks[-c(1,n.dbh+1)]
-                              , 2. * sta$dbh.breaks[n.dbh] - sta$dbh.breaks[n.dbh-1] )
-            x.dbh       = 0.5 * ( x.edge[-1] + x.edge[-(n.dbh+1)] )
-            xlimit      = pretty.xylim(u=x.edge,fracexp=0.0,is.log=FALSE)
-            dbh.names   = dimnames(sta$mort.size$n$expected)[[2]]
-            year4       = numyears(sta$when)
-            ymid4       = 0.5 * ( year4[-1] + year4[-n.census] )
-            biocyca     = year4[2]
-            biocycz     = year4[length(year4)]
-            dyear       = c(NA,diff(year4))
-            census.desc = paste(year4-c(NA,diff(year4)),year4,sep="-")
+         sta.plot   = paste(sta.rate,"plot",sep=".")
+         sta.size   = paste(sta.rate,"size",sep=".")
+         ed2.plot   = paste(ed2.rate,"plot",sep=".")
+         ed2.size   = paste(ed2.rate,"size",sep=".")
+         #---------------------------------------------------------------------------------#
 
 
+         #---------------------------------------------------------------------------------#
+         #       Find how many individuals to retrieve.                                    #
+         #---------------------------------------------------------------------------------#
+         nindiv = length(indiv)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Loop over the different types of individuals.                               #
+         #---------------------------------------------------------------------------------#
+         ylt[[ed2.plot]] = list()
+         ylt[[ed2.size]] = list()
+         for (v in 1:nindiv){
+            #----- Set up the individuals. ------------------------------------------------#
+            vn   = indiv[v]
+            yy   = 2:n.census
             #------------------------------------------------------------------------------#
-            #      Loop over all months to grab all the census data.                       #
+
+
+            #----- Grab minima and maxima from quantiles. ---------------------------------#
+            sta.now         = sta[[sta.plot]][[vn]]
+            ylim.min.global = min(sta.now$global[2,],na.rm=TRUE)
+            ylim.max.global = max(sta.now$global[3,],na.rm=TRUE)
+            ylim.min.taxon  = apply(sta.now$q025,MARGIN=1,FUN=min,na.rm=TRUE)
+            ylim.max.taxon  = apply(sta.now$q975,MARGIN=1,FUN=max,na.rm=TRUE)
             #------------------------------------------------------------------------------#
-            census.idx   = NULL
-            for (y in 2:n.census){
-               #----- Find the first and last time to be averaged for this census. --------#
-               ts.montha  = ( nummonths(sta$when[y-1]) %% 12 )
-               ts.yeara   = numyears (sta$when[y-1])
-               ts.monthz  = ( ( (nummonths(sta$when[y]) - 1) %% 12 )
-                            + 12 * as.integer(nummonths(sta$when[y]) == 1) )
-               ts.yearz   = numyears (sta$when[y]) - as.integer(ts.monthz == 12)
-               n.inter    = (ts.yearz-ts.yeara-1)*12 + ts.monthz + (12 - ts.montha + 1)
+
+
+
+            #----- Initialise the plot-level structure. -----------------------------------#
+            ylt[[ed2.plot]][[vn]] = list( global = list ( min = ylim.min.global
+                                                        , max = ylim.max.global
+                                                        )#end list
+                                        , taxon  = list ( min = ylim.min.taxon
+                                                        , max = ylim.max.taxon
+                                                        )#end list
+                                        )#end list
+            rm(sta.now)
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #    Now the size-dependent variables, if this is a size-dependent rate.       #
+            #------------------------------------------------------------------------------#
+            if (sizetoo){
+
+
+               #----- Grab minima and maxima from quantiles. ------------------------------#
+               sta.now         = sta[[sta.size]][[vn]]
+               ylim.min.global = apply(sta.now$global[2,,],1,min,na.rm=TRUE)
+               ylim.max.global = apply(sta.now$global[3,,],1,max,na.rm=TRUE)
+               ylim.min.taxon  = apply(sta.now$q025,c(1,2),FUN=min,na.rm=TRUE)
+               ylim.max.taxon  = apply(sta.now$q975,c(1,2),FUN=max,na.rm=TRUE)
                #---------------------------------------------------------------------------#
-               census.idx = c(census.idx,rep(y,times=n.inter))
-            }#end for
+
+
+               #----- Initialise the size-level structure. --------------------------------#
+               ylt[[ed2.size]][[vn]] = list( global = list ( min = ylim.min.global
+                                                           , max = ylim.max.global
+                                                           )#end list
+                                           , taxon  = list ( min   = ylim.min.taxon
+                                                           , max   = ylim.max.taxon
+                                                           )#end list
+                                           )#end list
+               rm(sta.now)
+               #---------------------------------------------------------------------------#
+            }#end if
             #------------------------------------------------------------------------------#
+         }#end for
+         #---------------------------------------------------------------------------------#
+      }#end for
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Treefall loop.                                                                 #
+      #------------------------------------------------------------------------------------#
+      for (tf in sequence(n.tfall)){
+         #----- Set up the path for this treefall. ----------------------------------------#
+         outfall = file.path(outroot,tfall.key[tf])
+         if (! file.exists(outfall)) dir.create(outfall)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Phenology loop.                                                             #
+         #---------------------------------------------------------------------------------#
+         for (ph in sequence(n.iphen)){
+
+            cat ("  - Group: ",tfall.desc[tf]," - ",iphen.desc[ph],"\n")
+
+
+
+            #----- Use only this phenology and treefall combination. ----------------------#
+            aux.iphen.key=sub(pattern="\\+",replacement=".",x=iphen.key)
+            aux.tfall.key=sub(pattern="\\+",replacement=".",x=tfall.key)
+            aux.simul.all=sub(pattern="\\+",replacement=".",x=simul.all)
+            keep    = ( regexpr(pattern=aux.iphen.key[ph],text=aux.simul.all) > 0
+                      & regexpr(pattern=aux.tfall.key[tf],text=aux.simul.all) > 0 )
+            simul   = simul.all[keep]
+            n.simul = length(simul)
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------ Find the output file. -------------------------------------------------#
+            if (! file.exists(outdata)) dir.create(outdata)
+            if (oldgrowth){
+               ed22.rdata = file.path(outdata,paste("oldgrowth_",iata,"_",iphen.key[ph],"_"
+                                                   ,tfall.key[tf],".RData",sep=""))
+            }else{
+               ed22.rdata = file.path(outdata,paste("census_",iata,"_",iphen.key[ph],"_"
+                                                   ,tfall.key[tf],".RData",sep=""))
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
 
 
             #------------------------------------------------------------------------------#
@@ -528,8 +713,13 @@ for (p in sequence(nplaces)){
                #---------------------------------------------------------------------------#
                #     Load the data for this simulation.                                    #
                #---------------------------------------------------------------------------#
-               this.rdata = file.path(outmain,"rdata_census"
-                                     ,paste("census_",simul[s],".RData",sep=""))
+               if (oldgrowth){
+                  this.rdata = file.path(outmain,"rdata_census"
+                                        ,paste("oldgrowth_",simul[s],".RData",sep=""))
+               }else{
+                  this.rdata = file.path(outmain,"rdata_census"
+                                        ,paste("census_",simul[s],".RData",sep=""))
+               }#end if
                load(this.rdata)
                #---------------------------------------------------------------------------#
 
@@ -669,8 +859,10 @@ for (p in sequence(nplaces)){
                         ts.plot.now       = c(ts.this.size[[v.now]][p,n.dbh+1,i.sel,,])
                         ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                         if (any(is.finite(ts.plot.now))){
-                           boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
-                           ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                           boot.now = shhh(fun=boot,data=ts.plot.now,statistic=mean.fun
+                                          ,R=n.boot)
+                           ci.now   = try(shhh(fun=boot.ci,boot.out=boot.now
+                                              ,conf=0.95,type="perc")
                                          ,silent=TRUE)
                            if ("try-error" %in% is(ci.now)){
                               warning("Failed using bootstrap...")
@@ -688,10 +880,12 @@ for (p in sequence(nplaces)){
                            ts.size.now         = c(ts.this.size[[v.now]][p,d,i.sel,,])
                            ms.mean.size[p,d,i] = mean(ts.size.now,na.rm=TRUE) 
                            if (any(is.finite(ts.size.now))){
-                              boot.now = boot(data=ts.size.now,statistic=mean.fun,R=n.boot)
-                              ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95
-                                                    ,type="perc")
+                              boot.now = shhh(fun=boot,data=ts.size.now,statistic=mean.fun
+                                             ,R=n.boot)
+                              ci.now   = try(shhh(fun=boot.ci,boot.out=boot.now
+                                                 ,conf=0.95,type="perc")
                                             ,silent=TRUE)
+
                               if ("try-error" %in% is(ci.now)){
                                  warning("Failed using bootstrap...")
                               }else if (length(ci.now$percent) == 5){
@@ -777,9 +971,12 @@ for (p in sequence(nplaces)){
                         ts.plot.now       = c(ts.this.size[[v.now]][p,n.dbh+1,i.sel,,])
                         ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                         if (any(is.finite(ts.plot.now))){
-                           boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
-                           ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                           boot.now = shhh(fun=boot,data=ts.plot.now,statistic=mean.fun
+                                          ,R=n.boot)
+                           ci.now   = try(shhh(fun=boot.ci,boot.out=boot.now
+                                              ,conf=0.95,type="perc")
                                          ,silent=TRUE)
+
                            if ("try-error" %in% is(ci.now)){
                               warning("Failed using bootstrap...")
                            }else if (length(ci.now$percent) == 5){
@@ -796,9 +993,10 @@ for (p in sequence(nplaces)){
                            ts.size.now         = c(ts.this.size[[v.now]][p,d,i.sel,,])
                            ms.mean.size[p,d,i] = mean(ts.size.now,na.rm=TRUE) 
                            if (any(is.finite(ts.size.now))){
-                              boot.now = boot(data=ts.size.now,statistic=mean.fun,R=n.boot)
-                              ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95
-                                                    ,type="perc")
+                              boot.now = shhh(fun=boot,data=ts.size.now,statistic=mean.fun
+                                             ,R=n.boot)
+                              ci.now   = try(shhh(fun=boot.ci,boot.out=boot.now
+                                                 ,conf=0.95,type="perc")
                                             ,silent=TRUE)
                               if ("try-error" %in% is(ci.now)){
                                  warning("Failed using bootstrap...")
@@ -885,8 +1083,10 @@ for (p in sequence(nplaces)){
                         ts.plot.now       = c(ts.this.size[[v.now]][p,n.dbh+1,i.sel,,])
                         ms.mean.plot[p,i] = mean(ts.plot.now,na.rm=TRUE) 
                         if (any(is.finite(ts.plot.now))){
-                           boot.now = boot   (data=ts.plot.now,statistic=mean.fun,R=n.boot)
-                           ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95,type="perc")
+                           boot.now = shhh(fun=boot,data=ts.plot.now,statistic=mean.fun
+                                          ,R=n.boot)
+                           ci.now   = try(shhh(fun=boot.ci,boot.out=boot.now
+                                              ,conf=0.95,type="perc")
                                          ,silent=TRUE)
                            if ("try-error" %in% is(ci.now)){
                               warning("Failed using bootstrap...")
@@ -904,9 +1104,10 @@ for (p in sequence(nplaces)){
                            ts.size.now         = c(ts.this.size[[v.now]][p,d,i.sel,,])
                            ms.mean.size[p,d,i] = mean(ts.size.now,na.rm=TRUE) 
                            if (any(is.finite(ts.size.now))){
-                              boot.now = boot(data=ts.size.now,statistic=mean.fun,R=n.boot)
-                              ci.now   = try(boot.ci(boot.out=boot.now,conf=0.95
-                                                    ,type="perc")
+                              boot.now = shhh(fun=boot,data=ts.size.now,statistic=mean.fun
+                                             ,R=n.boot)
+                              ci.now   = try(shhh(fun=boot.ci,boot.out=boot.now
+                                                 ,conf=0.95,type="perc")
                                             ,silent=TRUE)
                               if ("try-error" %in% is(ci.now)){
                                  warning("Failed using bootstrap...")
@@ -950,15 +1151,6 @@ for (p in sequence(nplaces)){
 
 
             #------------------------------------------------------------------------------#
-            #     Find the average rates for the census period using log-normal.           #
-            #------------------------------------------------------------------------------#
-            mypfts = sort(match(unique(names(sta$classes)),pft$name))
-            npfts  = length(mypfts)
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
             #      Retrieve the factor, classes and wood density used for the obser-       #
             # vations.  We can't switch the factors between observation and statistics     #
             # because we use observations to drive the statistics.                         #
@@ -976,9 +1168,9 @@ for (p in sequence(nplaces)){
 
 
             #------------------------------------------------------------------------------#
-            #      Recruitment rates.  Only global values can be found.                    #
+            #      Loop over all the possible rates.                                       #
             #------------------------------------------------------------------------------#
-            for (r in 1:npratets){
+            for (r in sequence(npratets)){
                #---------------------------------------------------------------------------#
                #     Load the rate information.                                            #
                #---------------------------------------------------------------------------#
@@ -1051,6 +1243,40 @@ for (p in sequence(nplaces)){
 
 
 
+
+
+                  #------------------------------------------------------------------------#
+                  #     Update limits.                                                     #
+                  #------------------------------------------------------------------------#
+                  ed2.now = ed2[[ed2.plot]][[vn]]
+                  ylt.now = ylt[[ed2.plot]][[vn]]
+                  ylim.min.global = min  (x=ed2.now$global[2,],na.rm=TRUE)
+                  ylim.max.global = max  (x=ed2.now$global[3,],na.rm=TRUE)
+                  ylim.min.taxon  = apply(X=ed2.now$q025,MARGIN=1,FUN=min,na.rm=TRUE)
+                  ylim.max.taxon  = apply(X=ed2.now$q975,MARGIN=1,FUN=max,na.rm=TRUE)
+
+                  ylt[[ed2.plot]][[vn]]$global$min = min ( ylt.now$global$min
+                                                         , ylim.min.global
+                                                         , na.rm=TRUE
+                                                         )#end min
+                  ylt[[ed2.plot]][[vn]]$global$max = max ( ylt.now$global$max
+                                                         , ylim.max.global
+                                                         , na.rm=TRUE
+                                                         )#end max
+                  ylt[[ed2.plot]][[vn]]$taxon$min  = pmin( ylt.now$taxon$min
+                                                         , ylim.min.taxon
+                                                         , na.rm = TRUE
+                                                         )#end pmin
+                  ylt[[ed2.plot]][[vn]]$taxon$max  = pmax( ylt.now$taxon$max
+                                                         , ylim.max.taxon
+                                                         , na.rm = TRUE
+                                                         )#end pmax
+                  rm(ed2.now,ylt.now)
+                  #------------------------------------------------------------------------#
+
+
+
+
                   #------------------------------------------------------------------------#
                   #    Now the size-dependent variables, if this is a size-dependent rate. #
                   #------------------------------------------------------------------------#
@@ -1081,6 +1307,40 @@ for (p in sequence(nplaces)){
                      ed2[[ed2.size]][[vn]]$q025    [ ,,yy] = ms.size$q025    [mypfts,,yy]
                      ed2[[ed2.size]][[vn]]$q975    [ ,,yy] = ms.size$q975    [mypfts,,yy]
                      #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #    Update limits.                                                   #
+                     #---------------------------------------------------------------------#
+                     ed2.now = ed2[[ed2.size]][[vn]]
+                     ylt.now = ylt[[ed2.size]][[vn]]
+
+                     ylim.min.global = apply(X=ed2.now$global[2,,],1     ,min,na.rm=TRUE)
+                     ylim.max.global = apply(X=ed2.now$global[3,,],1     ,max,na.rm=TRUE)
+                     ylim.min.taxon  = apply(X=ed2.now$q025       ,c(1,2),min,na.rm=TRUE)
+                     ylim.max.taxon  = apply(X=ed2.now$q975       ,c(1,2),max,na.rm=TRUE)
+
+                     ylt[[ed2.size]][[vn]]$global$min = pmin( ylt.now$global$min
+                                                            , ylim.min.global
+                                                            , na.rm=TRUE
+                                                            )#end min
+                     ylt[[ed2.size]][[vn]]$global$max = pmax( ylt.now$global$max
+                                                            , ylim.max.global
+                                                            , na.rm=TRUE
+                                                            )#end max
+                     ylt[[ed2.size]][[vn]]$taxon$min  = pmin( ylt.now$taxon$min
+                                                            , ylim.min.taxon
+                                                            , na.rm = TRUE
+                                                            )#end pmin
+                     ylt[[ed2.size]][[vn]]$taxon$max  = pmax( ylt.now$taxon$max
+                                                            , ylim.max.taxon
+                                                            , na.rm = TRUE
+                                                            )#end pmax
+                     rm(ed2.now,ylt.now)
+                     #---------------------------------------------------------------------#
                   }#end if
                   #------------------------------------------------------------------------#
                }#end for
@@ -1091,16 +1351,191 @@ for (p in sequence(nplaces)){
 
 
             #------------------------------------------------------------------------------#
-            #     Make the directories.                                                    #
+            #      Make the RData file name,                                               #
             #------------------------------------------------------------------------------#
-            outplot   = paste(outfall,"census_plot"  ,sep="/")
-            outsize   = paste(outfall,"census_size"  ,sep="/")
-            pftplot   = paste(outfall,"pft_plot"     ,sep="/")
-            pftsize   = paste(outfall,"pft_size"     ,sep="/")
-            if (! file.exists(outplot)) dir.create(outplot)
-            if (! file.exists(outsize)) dir.create(outsize)
-            if (! file.exists(pftplot)) dir.create(pftplot)
-            if (! file.exists(pftsize)) dir.create(pftsize)
+            cat (" + Saving simulation to ",basename(ed22.rdata),"...","\n")
+            assign(x=iata,value=ed2)
+            save(list=c(iata),file=ed22.rdata)
+            rm(ed2)
+            #------------------------------------------------------------------------------#
+         }#end for phenology
+         #---------------------------------------------------------------------------------#
+      }#end for tfall
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Make the RData file name,                                                     #
+      #------------------------------------------------------------------------------------#
+      cat (" + Saving limits to ",basename(ylim.rdata),"...","\n")
+      assign(x=iata,value=ylt)
+      save(list=c(iata),file=ylim.rdata)
+      rm(ylt)
+      #------------------------------------------------------------------------------------#
+   }#end if (census.name %in% ls())
+   #=======================================================================================#
+   #=======================================================================================#
+}#end for places
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     The other big place loop starts here...                                              #
+#------------------------------------------------------------------------------------------#
+for (pl in sequence(nplaces)){
+   #----- Build the list of site runs. ----------------------------------------------------#
+   iata      = place[[pl]]$iata
+   idx       = match(iata,poilist$iata)
+   longname  = poilist$longname[idx]
+   config    = expand.grid(place[[pl]]$config,stringsAsFactors=FALSE)
+   simul.all = paste("t",iata,"_",apply(X=config,MARGIN=1,FUN=paste,collapse="_")
+                    ,sep="")
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #----- Find the census observations for this particular site. --------------------------#
+   if (iata == "mao" | iata == "bdf"){
+      census.name = "census.m34"
+   }else if(iata == "stm" | iata == "s66"){
+      census.name = "census.s67"
+   }else if(iata == "rao"){
+      census.name = "census.pdg"
+   }else if(iata == "jpr"){
+      census.name = "census.fns"
+   }else if(iata == "btr"){
+      census.name = "census.s77"
+   }else{
+      census.name = paste("census.",iata,sep="")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     We only run this part of the code if there are observations to compare with the   #
+   # model.                                                                                #
+   #---------------------------------------------------------------------------------------#
+   if (census.name %in% ls()){
+      #------------------------------------------------------------------------------------#
+      #     Load the census data, from the monthly means.                                  #
+      #------------------------------------------------------------------------------------#
+      cat (" + Site: ",longname,"\n")
+      sta         = get(census.name)
+      n.census    = length(sta$when)
+      n.dbh       = length(sta$dbh.breaks)-1
+      
+      x.edge      = c(10,      sta$dbh.breaks[-c(1,n.dbh+1)]
+                        , 2. * sta$dbh.breaks[n.dbh] - sta$dbh.breaks[n.dbh-1] )
+      x.dbh       = 0.5 * ( x.edge[-1] + x.edge[-(n.dbh+1)] )
+      xlimit      = pretty.xylim(u=x.edge,fracexp=0.0,is.log=FALSE)
+      dbh.names   = dimnames(sta$mort.size$n$expected)[[2]]
+      year4       = numyears(sta$when)
+      when4       = sta$when
+      when.label  = paste(month.abb[nummonths(when4)],year4,sep="-")
+      when.limit  = c(chron(paste(1,1,min(year4)  ,sep="/"))
+                     ,chron(paste(1,1,max(year4)+1,sep="/")))
+      whenmid4    = chron(0.5 * ( as.numeric( sta$when[       -1] )
+                                + as.numeric( sta$when[-n.census] ) ) )
+
+      delta       = diff(as.numeric(sta$when))
+      mid.label   = c(chron(sta$when[1]-delta[1]),sta$when)
+      month.label = month.abb[nummonths(mid.label)]
+      year.label  = numyears(mid.label)
+      
+      summ.label  = paste(month.label,year.label,sep="/")
+      n.label     = length(summ.label)
+
+      census.desc = paste(summ.label[-n.label],summ.label[-1],sep=" - ")
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Load limits for this place.                                                   #
+      #------------------------------------------------------------------------------------#
+      ylim.rdata = file.path(outdata,paste("census_",iata,"_","limits",".RData",sep=""))
+      load(ylim.rdata)
+      ylt = get(iata)
+      rm(iata)
+      iata      = place[[pl]]$iata
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Treefall loop.                                                                 #
+      #------------------------------------------------------------------------------------#
+      for (tf in sequence(n.tfall)){
+         #----- Set up the path for this treefall. ----------------------------------------#
+         outfall = file.path(outroot,tfall.key[tf])
+         if (! file.exists(outfall)) dir.create(outfall)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Make the directories.                                                       #
+         #---------------------------------------------------------------------------------#
+         outplot   = file.path(outfall,"census_plot")
+         outsize   = file.path(outfall,"census_size")
+         pftplot   = file.path(outfall,"pft_plot"   )
+         pftsize   = file.path(outfall,"pft_size"   )
+         if (! file.exists(outplot)) dir.create(outplot)
+         if (! file.exists(outsize)) dir.create(outsize)
+         if (! file.exists(pftplot)) dir.create(pftplot)
+         if (! file.exists(pftsize)) dir.create(pftsize)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Phenology loop.                                                             #
+         #---------------------------------------------------------------------------------#
+         for (ph in sequence(n.iphen)){
+
+            cat ("  - Group: ",tfall.desc[tf]," - ",iphen.desc[ph],"\n")
+
+
+
+            #----- Use only this phenology and treefall combination. -------------------------#
+            aux.iphen.key=sub(pattern="\\+",replacement=".",x=iphen.key)
+            aux.tfall.key=sub(pattern="\\+",replacement=".",x=tfall.key)
+            aux.simul.all=sub(pattern="\\+",replacement=".",x=simul.all)
+            keep    = ( regexpr(pattern=aux.iphen.key[ph],text=aux.simul.all) > 0
+                      & regexpr(pattern=aux.tfall.key[tf],text=aux.simul.all) > 0 )
+            simul   = simul.all[keep]
+            n.simul = length(simul)
+            #---------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Load current observation.                                               #
+            #------------------------------------------------------------------------------#
+            ed22.rdata = file.path(outdata
+                                  ,paste("census_",iata,"_",iphen.key[ph],"_",tfall.key[tf]
+                                        ,".RData",sep=""))
+            load(ed22.rdata)
+            ed2 = get(iata)
+            rm(iata)
+            iata      = place[[pl]]$iata
             #------------------------------------------------------------------------------#
 
 
@@ -1172,6 +1607,9 @@ for (p in sequence(nplaces)){
                   ed2.expected = mult * ed2.mod[1,,]
                   ed2.q025     = mult * ed2.mod[2,,]
                   ed2.q975     = mult * ed2.mod[3,,]
+                  ylt.mod      = ylt[[ed2.rate]][[indiv[i]]]$global
+                  ylt.min      = mult * ylt.mod$min
+                  ylt.max      = mult * ylt.mod$max
                   #------------------------------------------------------------------------#
 
 
@@ -1282,20 +1720,24 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
 
 
+
+                     #---------------------------------------------------------------------#
+                     #     Overwrite limits in case the user wants global limits.          #
+                     #---------------------------------------------------------------------#
+                     if (global.ylim){
+                        ylimit = pretty.xylim(u=c(ylt.min,ylt.max),fracexp=0.0,is.log=ylog)
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
                      #---------------------------------------------------------------------#
                      #      Loop over all years.                                           #
                      #---------------------------------------------------------------------#
                      for (y in 2:n.census){
                         k       = y - 1
-                        left    = (k %% lo.box$ncol) == 1
-                        right   = (k %% lo.box$ncol) == 0
-                        top     = k <= lo.box$ncol
-                        bottom  = k > (lo.box$nrow - 1) * lo.box$ncol
-                        mar.now = c(1.1 + 4 * bottom
-                                   ,1.1 + 3 * left
-                                   ,1.1 + 4 * top
-                                   ,1.1 + 3 * right
-                                   )#end c
+                        left    = lo.box$left  [k ]
+                        bottom  = lo.box$bottom[k ]
+                        mar.now = lo.box$mar   [k,]
 
 
 
@@ -1420,13 +1862,16 @@ for (p in sequence(nplaces)){
                         #----- Load the modelled rates. -----------------------------------#
                         mult         = 100 - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                         sta.mod      = sta[[sta.rate]][[indiv[i]]]
-                        sta.expected = mult * sta.mod$expected[p,,]
-                        sta.q025     = mult * sta.mod$q025    [p,,]
-                        sta.q975     = mult * sta.mod$q975    [p,,]
+                        sta.expected = mult * sta.mod$expected [p,,]
+                        sta.q025     = mult * sta.mod$q025     [p,,]
+                        sta.q975     = mult * sta.mod$q975     [p,,]
                         ed2.mod      = ed2[[ed2.rate]][[indiv[i]]]
-                        ed2.expected = mult * ed2.mod$expected[p,,]
-                        ed2.q025     = mult * ed2.mod$q025    [p,,]
-                        ed2.q975     = mult * ed2.mod$q975    [p,,]
+                        ed2.expected = mult * ed2.mod$expected [p,,]
+                        ed2.q025     = mult * ed2.mod$q025     [p,,]
+                        ed2.q975     = mult * ed2.mod$q975     [p,,]
+                        ylt.mod      = ylt[[ed2.rate]][[indiv[i]]]
+                        ylt.min      = mult * ylt.mod$taxon$min[p, ]
+                        ylt.max      = mult * ylt.mod$taxon$min[p, ]
                         #------------------------------------------------------------------#
 
 
@@ -1539,20 +1984,26 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
 
 
+
+                           #---------------------------------------------------------------#
+                           #      Overwrite if global.ylim is TRUE.                        #
+                           #---------------------------------------------------------------#
+                           if (global.ylim){
+                              ylimit = pretty.xylim(u=c(ylt.min,ylt.max),fracexp=0.0
+                                                   ,is.log=ylog)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+
                            #---------------------------------------------------------------#
                            #      Loop over all years.                                     #
                            #---------------------------------------------------------------#
                            for (y in 2:n.census){
                               k       = y - 1
-                              left    = (k %% lo.box$ncol) == 1
-                              right   = (k %% lo.box$ncol) == 0
-                              top     = k <= lo.box$ncol
-                              bottom  = k > (lo.box$nrow - 1) * lo.box$ncol
-                              mar.now = c(1.1 + 4 * bottom
-                                         ,1.1 + 3 * left
-                                         ,1.1 + 4 * top
-                                         ,1.1 + 3 * right
-                                         )#end c
+                              left    = lo.box$left  [k ]
+                              bottom  = lo.box$bottom[k ]
+                              mar.now = lo.box$mar   [k,]
 
 
 
@@ -1691,6 +2142,7 @@ for (p in sequence(nplaces)){
 
                nindiv     = length(indiv)
                nrate      = length(this.plot$ed2.rate)
+               col.ed2    = matrix(col.ed2,nrow=nrate)
 
                cat(" + Plotting theme time series of ",theme.desc,"...","\n")
                #---------------------------------------------------------------------------#
@@ -1722,12 +2174,12 @@ for (p in sequence(nplaces)){
                   mult   = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                   mdot   = list()
                   mci    = list()
-                  xlimit = range(year4)
+                  xlimit = when.limit
                   ylimit = NULL
                   ny     = n.census
                   for (r in sequence(nrate+1)){
                      if (r == nrate+1){
-                        mod.now      = sta[[sta.rate]][[indiv[i]]]$global
+                        mod.now      = sta[[sta.rate       ]][[indiv[i]]]$global
                         cimult       = mult
                         col.exp      = col.sta[1]
                         col.ci       = col.sta[2]
@@ -1743,13 +2195,13 @@ for (p in sequence(nplaces)){
                      }#end if
 
                      #----- Store polygons. -----------------------------------------------#
-                     mdot[[r]] = list( x      = ymid4
+                     mdot[[r]] = list( x      = whenmid4
                                      , y      = mult*mod.now[1,-1]
                                      , col    = col.exp
                                      , pch    = 16
                                      , type   = "o"
                                      )#end list
-                     mci [[r]] = list( x = c(ymid4,rev(ymid4))
+                     mci [[r]] = list( x = c(whenmid4,rev(whenmid4))
                                      , y = cimult * c(mod.now[2,-1],rev(mod.now[3,-1]))
                                      , col   = col.ci
                                      , angle = angle.ci
@@ -1763,7 +2215,13 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Update y range.                                                 #
                      #---------------------------------------------------------------------#
-                     ylimit=range(c(ylimit,mdot[[r]]$y,mci[[r]]$y),na.rm=TRUE)
+                     if (global.ylim && r != (nrate + 1)){
+                        ylt.min = mult * ylt[[ed2.rate[r]]][[indiv[i]]]$global$min
+                        ylt.max = mult * ylt[[ed2.rate[r]]][[indiv[i]]]$global$max
+                        ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                     }else{
+                        ylimit  = range(c(ylimit,mdot[[r]]$y,mci[[r]]$y),na.rm=TRUE)
+                     }#end if
                      #---------------------------------------------------------------------#
                   }#end for (r in sequence(nrate+1))
                   #------------------------------------------------------------------------#
@@ -1844,10 +2302,10 @@ for (p in sequence(nplaces)){
                      par(mar=c(5.1,4.4,4.1,2.1))
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                     axis(side=1,at=year4)
+                     axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
                      axis(side=2)
                      title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
-                     abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
+                     abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
                      box()
                      #----- Plot the confidence interval. ---------------------------------#
                      for (r in sequence(nrate+1)){
@@ -1898,10 +2356,9 @@ for (p in sequence(nplaces)){
 
 
                      #---------------------------------------------------------------------#
-                     #    Find the DBH for x scale.                                        #
+                     #    Find the times for x scale.                                      #
                      #---------------------------------------------------------------------#
-                     x.years  = year4[2:n.census]
-                     xlimit   = range(x.years)
+                     xlimit   = when.limit
                      #---------------------------------------------------------------------#
 
 
@@ -1982,10 +2439,9 @@ for (p in sequence(nplaces)){
                         #    Loop over all DBH classes.                                    #
                         #------------------------------------------------------------------#
                         for (d in 1:n.dbh){
-                           left    = (d %% lo.box$ncol) == 1
-                           right   = (d %% lo.box$ncol) == 0
-                           top     = d <= lo.box$ncol
-                           bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
+                           left    = lo.box$left  [d ]
+                           bottom  = lo.box$bottom[d ]
+                           mar.now = lo.box$mar   [d,]
 
 
 
@@ -1995,7 +2451,7 @@ for (p in sequence(nplaces)){
                            mult   = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                            mdot   = list()
                            mci    = list()
-                           xlimit = range(year4)
+                           xlimit = when.limit
                            ylimit = NULL
                            ny     = n.census
                            for (r in sequence(nrate+1)){
@@ -2016,13 +2472,13 @@ for (p in sequence(nplaces)){
                               }#end if
 
                               #----- Store polygons. --------------------------------------#
-                              mdot[[r]] = list( x      = ymid4
+                              mdot[[r]] = list( x      = whenmid4
                                               , y      = mult*mod.now[1,d,-1]
                                               , col    = col.exp
                                               , pch    = 16
                                               , type   = "o"
                                               )#end list
-                              mci [[r]] = list( x = c(ymid4,rev(ymid4))
+                              mci [[r]] = list( x = c(whenmid4,rev(whenmid4))
                                               , y = cimult * c( mod.now[2,d,-1]
                                                               , rev(mod.now[3,d,-1])
                                                               )#end c
@@ -2038,7 +2494,15 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
                               #     Update y range.                                        #
                               #------------------------------------------------------------#
-                              ylimit=range(c(ylimit,mdot[[r]]$y,mci[[r]]$y),na.rm=TRUE)
+                              if (global.ylim && r != (nrate + 1)){
+                                 ylt.now = ylt[[ed2.rate[r]]][[indiv[i]]]
+                                 ylt.min = mult * ylt.now$global$min[d]
+                                 ylt.max = mult * ylt.now$global$max[d]
+                                 ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                              }else{
+                                 ylimit  = range( c(ylimit,mdot[[r]]$y,mci[[r]]$y)
+                                                , na.rm=TRUE)
+                              }#end if
                               #------------------------------------------------------------#
                            }#end for (r in sequence(nrate+1))
                            #------------------------------------------------------------------------#
@@ -2055,10 +2519,10 @@ for (p in sequence(nplaces)){
                            #----- Plotting window and grid. -------------------------------#
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           axis(side=1,at=year4)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
                            axis(side=2)
                            title(main=lesub,xlab="",ylab="")
-                           abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
+                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
                            box()
                            #----- Plot the confidence interval. ---------------------------#
                            for (r in sequence(nrate+1)){
@@ -2160,7 +2624,7 @@ for (p in sequence(nplaces)){
                      mult   = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                      mdot   = list()
                      mci    = list()
-                     xlimit = range(year4)
+                     xlimit = when.limit
                      ylimit = NULL
                      ny     = n.census
                      for (p in sequence(npfts+1)){
@@ -2198,13 +2662,13 @@ for (p in sequence(nplaces)){
 
 
                            #----- Store polygons. -----------------------------------------#
-                           mdot[[p]][[r]] = list( x      = ymid4
+                           mdot[[p]][[r]] = list( x      = whenmid4
                                                 , y      = expected.now
                                                 , col    = col.exp
                                                 , pch    = 16
                                                 , type   = "o"
                                                 )#end list
-                           mci [[p]][[r]] = list( x = c(ymid4,rev(ymid4))
+                           mci [[p]][[r]] = list( x = c(whenmid4,rev(whenmid4))
                                                 , y = c(q025.now,rev(q975.now))
                                                 , col   = col.ci
                                                 , angle = angle.ci
@@ -2218,9 +2682,9 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
                            #     Update y range.                                           #
                            #---------------------------------------------------------------#
-                           ylimit=range( c(ylimit,mdot[[p]][[r]]$y,mci[[p]][[r]]$y)
-                                       , na.rm=TRUE
-                                       )#end range
+                           ylimit  = range( c(ylimit,mdot[[p]][[r]]$y,mci[[p]][[r]]$y)
+                                          , na.rm=TRUE
+                                          )#end range
                            #---------------------------------------------------------------#
                         }#end for (r in sequence(nrate+1))
                         #------------------------------------------------------------------#
@@ -2301,27 +2765,62 @@ for (p in sequence(nplaces)){
                            }else{
                               pft.label = pft$name[mypfts[p]]
                            }#end if
+                           #---------------------------------------------------------------#
 
 
                            #---------------------------------------------------------------#
-                           #     Define margins.                                           #
+                           #     Update y range.                                           #
                            #---------------------------------------------------------------#
-                           left    = (p %% lo.pft$ncol) == 1
-                           right   = (p %% lo.pft$ncol) == 0
-                           top     = p <= lo.pft$ncol
-                           bottom  = p > (lo.pft$nrow - 1) * lo.pft$ncol
+                           if (global.ylim){
+                              ylimit = NULL
+                              for (r in sequence(nrate)){
+                                 ylt.now = ylt[[ed2.rate [r]]][[indiv[i]]]
+                                 if (p == npfts+1){
+                                    ylt.min = mult * ylt.now$global$min
+                                    ylt.max = mult * ylt.now$global$max
+                                 }else{
+                                    ylt.min = mult * ylt.now$taxon$min[p]
+                                    ylt.max = mult * ylt.now$taxon$max[p]
+                                 }#end if
+                                 #---------------------------------------------------------#
+                                 ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                              }#end for
+                              #------------------------------------------------------------#
+
+
+
+
+
+
+                              #------------------------------------------------------------#
+                              #     Define margins.                                        #
+                              #------------------------------------------------------------#
+                              left    = TRUE
+                              bottom  = TRUE
+                              mar.now = lo.pft$mar0
+                              #------------------------------------------------------------#
+                           }else{
+                              #------------------------------------------------------------#
+                              #     Define margins.                                        #
+                              #------------------------------------------------------------#
+                              left    = lo.pft$left  [p ]
+                              bottom  = lo.pft$bottom[p ]
+                              mar.now = lo.pft$mar   [p,]
+                              #------------------------------------------------------------#
+                           }#end if
                            #---------------------------------------------------------------#
 
 
 
 
                            #----- Plotting window and grid. -------------------------------#
-                           par(mar=c(4.1,3.1,2.1,2.1))
+                           par(mar=mar.now)
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
-                           axis(side=1,at=year4)
-                           axis(side=2)
+                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                           if (bottom) axis.rt(side=1,at=when4,labels=when.label
+                                              ,las=5,cex=.8,off=.05)
+                           if (left)   axis(side=2)
                            title(main=pft.label)
                            box()
                            #----- Plot the confidence interval. ---------------------------#
@@ -2335,8 +2834,6 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
                         }#end for (p in sequence(npfts)
                         #------------------------------------------------------------------#
-
-
 
 
 
@@ -2519,25 +3016,12 @@ for (p in sequence(nplaces)){
                            #    Loop over all DBH classes.                                 #
                            #---------------------------------------------------------------#
                            for (d in 1:n.dbh){
-                              left    = (d %% lo.box$ncol) == 1
-                              right   = (d %% lo.box$ncol) == 0
-                              top     = d <= lo.box$ncol
-                              bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
-                              #------------------------------------------------------------#
-
-
-
-
-
-
-
-
 
                               #----- Load the modelled rates. -----------------------------#
                               mult = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                               mdot = list()
                               mci  = list()
-                              xlimit = range(year4)
+                              xlimit = when.limit
                               ylimit = NULL
                               ny     = n.census
                               for (r in sequence(nrate+1)){
@@ -2566,13 +3050,13 @@ for (p in sequence(nplaces)){
 
 
                                  #----- Store polygons. -----------------------------------#
-                                 mdot[[r]] = list( x      = ymid4
+                                 mdot[[r]] = list( x      = whenmid4
                                                  , y      = expected.now
                                                  , col    = col.exp
                                                  , pch    = 16
                                                  , type   = "o"
                                                  )#end list
-                                 mci [[r]] = list( x     = c(ymid4,rev(ymid4))
+                                 mci [[r]] = list( x     = c(whenmid4,rev(whenmid4))
                                                  , y     = c(q025.now,rev(q975.now))
                                                  , col   = col.ci
                                                  , angle = angle.ci
@@ -2583,11 +3067,20 @@ for (p in sequence(nplaces)){
                                  #---------------------------------------------------------#
 
 
-                                 #---------------------------------------------------------#
-                                 #     Update y range.                                     #
-                                 #---------------------------------------------------------#
-                                 ylimit=range(c(ylimit,mdot[[r]]$y,mci[[r]]$y),na.rm=TRUE)
-                                 #---------------------------------------------------------#
+                                 #---------------------------------------------------------------------#
+                                 #     Update y range.                                                 #
+                                 #---------------------------------------------------------------------#
+                                 if (global.ylim && r != (nrate + 1)){
+                                    ylt.now = ylt[[ed2.rate[r]]][[indiv[i]]]
+                                    ylt.min = mult * ylt.now$taxon$min[p,d]
+                                    ylt.max = mult * ylt.now$taxon$max[p,d]
+                                    ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                                 }else{
+                                    ylimit  = range( c(ylimit,mdot[[r]]$y,mci[[r]]$y)
+                                                   , na.rm = TRUE
+                                                   )#end range
+                                 }#end if
+                                 #---------------------------------------------------------------------#
                               }#end for (r in sequence(nrate+1))
                               #------------------------------------------------------------#
 
@@ -2597,13 +3090,13 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
 
 
-                              #----- Plot the box plot. -----------------------------------#
-                              par(mar=c(4.1,3.1,2.1,2.1))
                               #----- Plotting window and grid. ----------------------------#
+                              par(mar=lo.box$mar0)
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                              abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
-                              axis(side=1,at=year4)
+                              abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                              axis.rt(side=1,at=when4,labels=when.label,las=5
+                                     ,cex=.8,off=.05)
                               axis(side=2)
                               box()
                               title(main=lesub,xlab="",ylab="")
@@ -2695,6 +3188,7 @@ for (p in sequence(nplaces)){
 
                nindiv     = length(indiv)
                nrate      = length(this.plot$ed2.rate)
+               col.ed2    = matrix(col.ed2,nrow=nrate)
 
                cat(" + Plotting flat time series of ",theme.desc,"...","\n")
                #---------------------------------------------------------------------------#
@@ -2727,7 +3221,7 @@ for (p in sequence(nplaces)){
                   mexp   = list()
                   mdot   = list()
                   mci    = list()
-                  xlimit = range(year4)
+                  xlimit = when.limit
                   ylimit = NULL
                   ny     = n.census
                   for (r in sequence(nrate+1)){
@@ -2748,21 +3242,21 @@ for (p in sequence(nplaces)){
                      }#end if
 
                      #----- Store polygons. -----------------------------------------------#
-                     mexp[[r]] = list( x0     = year4[-ny]
-                                     , x1     = year4[ -1]
+                     mexp[[r]] = list( x0     = when4[-ny]
+                                     , x1     = when4[ -1]
                                      , y0     = mult*mod.now[1,-1]
                                      , y1     = mult*mod.now[1,-1]
                                      , col    = col.exp
                                      , lwd    = 2.0
                                      )#end list
-                     mdot[[r]] = list( x      = ymid4
+                     mdot[[r]] = list( x      = whenmid4
                                      , y      = mult*mod.now[1,-1]
                                      , col    = col.exp
                                      , pch    = 16
                                      , type   = "p"
                                      )#end list
-                     mci [[r]] = list( x = c( rbind( year4[-ny], year4[ -1]
-                                                   , year4[ -1], year4[-ny]
+                     mci [[r]] = list( x = c( rbind( when4[-ny], when4[ -1]
+                                                   , when4[ -1], when4[-ny]
                                                    , NA) )
                                      , y = cimult * c( rbind( mod.now[2,-1],mod.now[2,-1]
                                                             , mod.now[3,-1],mod.now[3,-1]
@@ -2780,7 +3274,13 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #     Update y range.                                                 #
                      #---------------------------------------------------------------------#
-                     ylimit=range(c(ylimit,mexp[[r]]$y0,mci[[r]]$y),na.rm=TRUE)
+                     if (global.ylim && r != (nrate + 1)){
+                        ylt.min = mult * ylt[[ed2.rate[r]]][[indiv[i]]]$global$min
+                        ylt.max = mult * ylt[[ed2.rate[r]]][[indiv[i]]]$global$max
+                        ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                     }else{
+                        ylimit  = range(c(ylimit,mdot[[r]]$y,mci[[r]]$y),na.rm=TRUE)
+                     }#end if
                      #---------------------------------------------------------------------#
                   }#end for (r in sequence(nrate+1))
                   #------------------------------------------------------------------------#
@@ -2861,10 +3361,10 @@ for (p in sequence(nplaces)){
                      par(mar=c(5.1,4.4,4.1,2.1))
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                     axis(side=1,at=year4)
+                     axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
                      axis(side=2)
                      title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
-                     abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
+                     abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
                      box()
                      #----- Plot the confidence interval. ---------------------------------#
                      for (r in sequence(nrate+1)){
@@ -2918,8 +3418,7 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #    Find the DBH for x scale.                                        #
                      #---------------------------------------------------------------------#
-                     x.years  = year4[2:n.census]
-                     xlimit   = range(x.years)
+                     xlimit   = when.limit
                      #---------------------------------------------------------------------#
 
 
@@ -3000,21 +3499,12 @@ for (p in sequence(nplaces)){
                         #    Loop over all DBH classes.                                    #
                         #------------------------------------------------------------------#
                         for (d in 1:n.dbh){
-                           left    = (d %% lo.box$ncol) == 1
-                           right   = (d %% lo.box$ncol) == 0
-                           top     = d <= lo.box$ncol
-                           bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
-
-
-
-
-
                            #----- Load the modelled rates. --------------------------------#
                            mult   = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                            mexp   = list()
                            mdot   = list()
                            mci    = list()
-                           xlimit = range(year4)
+                           xlimit = when.limit
                            ylimit = NULL
                            ny     = n.census
                            for (r in sequence(nrate+1)){
@@ -3035,21 +3525,21 @@ for (p in sequence(nplaces)){
                               }#end if
 
                               #----- Store polygons. --------------------------------------#
-                              mexp[[r]] = list( x0     = year4[-ny]
-                                              , x1     = year4[ -1]
+                              mexp[[r]] = list( x0     = when4[-ny]
+                                              , x1     = when4[ -1]
                                               , y0     = mult*mod.now[1,d,-1]
                                               , y1     = mult*mod.now[1,d,-1]
                                               , col    = col.exp
                                               , lwd    = 2.0
                                               )#end list
-                              mdot[[r]] = list( x      = ymid4
+                              mdot[[r]] = list( x      = whenmid4
                                               , y      = mult*mod.now[1,d,-1]
                                               , col    = col.exp
                                               , pch    = 16
                                               , type   = "p"
                                               )#end list
-                              mci [[r]] = list( x = c( rbind( year4[-ny], year4[ -1]
-                                                            , year4[ -1], year4[-ny]
+                              mci [[r]] = list( x = c( rbind( when4[-ny], when4[ -1]
+                                                            , when4[ -1], when4[-ny]
                                                             , NA) )
                                               , y = cimult * c( rbind( mod.now[2,d,-1]
                                                                      , mod.now[2,d,-1]
@@ -3069,7 +3559,15 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
                               #     Update y range.                                        #
                               #------------------------------------------------------------#
-                              ylimit=range(c(ylimit,mexp[[r]]$y0,mci[[r]]$y),na.rm=TRUE)
+                              if (global.ylim && r != (nrate + 1)){
+                                 ylt.now = ylt[[ed2.rate[r]]][[indiv[i]]]
+                                 ylt.min = mult * ylt.now$global$min[d]
+                                 ylt.max = mult * ylt.now$global$max[d]
+                                 ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                              }else{
+                                 ylimit  = range( c(ylimit,mdot[[r]]$y,mci[[r]]$y)
+                                                , na.rm=TRUE)
+                              }#end if
                               #------------------------------------------------------------#
                            }#end for (r in sequence(nrate+1))
                            #------------------------------------------------------------------------#
@@ -3081,15 +3579,14 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
 
 
-                           #----- Plot the box plot. --------------------------------------#
-                           par(mar=c(4.1,3.1,2.1,2.1))
                            #----- Plotting window and grid. -------------------------------#
+                           par(mar=lo.box$mar0)
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           axis(side=1,at=year4)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
                            axis(side=2)
                            title(main=lesub,xlab="",ylab="")
-                           abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
+                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
                            box()
                            #----- Plot the confidence interval. ---------------------------#
                            for (r in sequence(nrate+1)){
@@ -3194,7 +3691,7 @@ for (p in sequence(nplaces)){
                      mexp   = list()
                      mdot   = list()
                      mci    = list()
-                     xlimit = range(year4)
+                     xlimit = when.limit
                      ylimit = NULL
                      ny     = n.census
                      for (p in sequence(npfts+1)){
@@ -3233,21 +3730,21 @@ for (p in sequence(nplaces)){
 
 
                            #----- Store polygons. -----------------------------------------#
-                           mexp[[p]][[r]] = list( x0     = year4[-ny]
-                                                , x1     = year4[ -1]
+                           mexp[[p]][[r]] = list( x0     = when4[-ny]
+                                                , x1     = when4[ -1]
                                                 , y0     = expected.now
                                                 , y1     = expected.now
                                                 , col    = col.exp
                                                 , lwd    = 2.0
                                                 )#end list
-                           mdot[[p]][[r]] = list( x      = ymid4
+                           mdot[[p]][[r]] = list( x      = whenmid4
                                                 , y      = expected.now
                                                 , col    = col.exp
                                                 , pch    = 16
                                                 , type   = "p"
                                                 )#end list
-                           mci [[p]][[r]] = list( x = c( rbind( year4[-ny], year4[ -1]
-                                                              , year4[ -1], year4[-ny]
+                           mci [[p]][[r]] = list( x = c( rbind( when4[-ny], when4[ -1]
+                                                              , when4[ -1], when4[-ny]
                                                               , NA) )
                                                 , y = c( rbind( q025.now,q025.now
                                                               , q975.now,q975.now
@@ -3265,9 +3762,9 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
                            #     Update y range.                                           #
                            #---------------------------------------------------------------#
-                           ylimit=range( c(ylimit,mexp[[p]][[r]]$y0,mci[[p]][[r]]$y)
-                                       , na.rm=TRUE
-                                       )#end range
+                           ylimit  = range( c(ylimit,mdot[[p]][[r]]$y,mci[[p]][[r]]$y)
+                                          , na.rm=TRUE
+                                          )#end range
                            #---------------------------------------------------------------#
                         }#end for (r in sequence(nrate+1))
                         #------------------------------------------------------------------#
@@ -3351,24 +3848,54 @@ for (p in sequence(nplaces)){
 
 
                            #---------------------------------------------------------------#
-                           #     Define margins.                                           #
+                           #     Update y range.                                           #
                            #---------------------------------------------------------------#
-                           left    = (p %% lo.pft$ncol) == 1
-                           right   = (p %% lo.pft$ncol) == 0
-                           top     = p <= lo.pft$ncol
-                           bottom  = p > (lo.pft$nrow - 1) * lo.pft$ncol
+                           if (global.ylim){
+                              ylimit = NULL
+                              for (r in sequence(nrate)){
+                                 ylt.now = ylt[[ed2.rate [r]]][[indiv[i]]]
+                                 if (p == npfts+1){
+                                    ylt.min = mult * ylt.now$global$min
+                                    ylt.max = mult * ylt.now$global$max
+                                 }else{
+                                    ylt.min = mult * ylt.now$taxon$min[p]
+                                    ylt.max = mult * ylt.now$taxon$max[p]
+                                 }#end if
+                                 #---------------------------------------------------------#
+                                 ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                              }#end for
+                              #------------------------------------------------------------#
+                              #------------------------------------------------------------#
+                              #     Define margins.                                        #
+                              #------------------------------------------------------------#
+                              left    = TRUE
+                              bottom  = TRUE
+                              mar.now = lo.pft$mar0
+                              #------------------------------------------------------------#
+                           }else{
+
+
+                              #------------------------------------------------------------#
+                              #     Define margins.                                        #
+                              #------------------------------------------------------------#
+                              left    = lo.pft$left  [p ]
+                              bottom  = lo.pft$bottom[p ]
+                              mar.now = lo.pft$mar   [p,]
+                              #------------------------------------------------------------#
+                           }#end if
                            #---------------------------------------------------------------#
 
 
 
 
                            #----- Plotting window and grid. -------------------------------#
-                           par(mar=c(4.1,3.1,2.1,2.1))
+                           par(mar=mar.now)
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
-                           axis(side=1,at=year4)
-                           axis(side=2)
+                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                           if (bottom) axis.rt(side=1,at=when4,labels=when.label
+                                              ,las=5,cex=.8,off=.05)
+                           if (left)   axis(side=2)
                            title(main=pft.label)
                            box()
                            #----- Plot the confidence interval. ---------------------------#
@@ -3568,26 +4095,12 @@ for (p in sequence(nplaces)){
                            #    Loop over all DBH classes.                                 #
                            #---------------------------------------------------------------#
                            for (d in 1:n.dbh){
-                              left    = (d %% lo.box$ncol) == 1
-                              right   = (d %% lo.box$ncol) == 0
-                              top     = d <= lo.box$ncol
-                              bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
-                              #------------------------------------------------------------#
-
-
-
-
-
-
-
-
-
                               #----- Load the modelled rates. -----------------------------#
                               mult = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
                               mexp = list()
                               mdot = list()
                               mci  = list()
-                              xlimit = range(year4)
+                              xlimit = when.limit
                               ylimit = NULL
                               ny     = n.census
                               for (r in sequence(nrate+1)){
@@ -3616,21 +4129,21 @@ for (p in sequence(nplaces)){
 
 
                                  #----- Store polygons. -----------------------------------#
-                                 mexp[[r]] = list( x0     = year4[-ny]
-                                                 , x1     = year4[ -1]
+                                 mexp[[r]] = list( x0     = when4[-ny]
+                                                 , x1     = when4[ -1]
                                                  , y0     = expected.now
                                                  , y1     = expected.now
                                                  , col    = col.exp
                                                  , lwd    = 2.0
                                                  )#end list
-                                 mdot[[r]] = list( x      = ymid4
+                                 mdot[[r]] = list( x      = whenmid4
                                                  , y      = expected.now
                                                  , col    = col.exp
                                                  , pch    = 16
                                                  , type   = "p"
                                                  )#end list
-                                 mci [[r]] = list( x = c( rbind( year4[-ny], year4[ -1]
-                                                               , year4[ -1], year4[-ny]
+                                 mci [[r]] = list( x = c( rbind( when4[-ny], when4[ -1]
+                                                               , when4[ -1], when4[-ny]
                                                                , NA) )
                                                  , y = c( rbind( q025.now,q025.now
                                                                , q975.now,q975.now
@@ -3645,13 +4158,20 @@ for (p in sequence(nplaces)){
                                  #---------------------------------------------------------#
 
 
-                                 #---------------------------------------------------------#
-                                 #     Update y range.                                     #
-                                 #---------------------------------------------------------#
-                                 ylimit=range( c(ylimit,mexp[[r]]$y0,mci[[r]]$y)
-                                             , na.rm=TRUE
-                                             )#end range
-                                 #---------------------------------------------------------#
+                                 #---------------------------------------------------------------------#
+                                 #     Update y range.                                                 #
+                                 #---------------------------------------------------------------------#
+                                 if (global.ylim && r != (nrate + 1)){
+                                    ylt.now = ylt[[ed2.rate[r]]][[indiv[i]]]
+                                    ylt.min = mult * ylt.now$taxon$min[p,d]
+                                    ylt.max = mult * ylt.now$taxon$max[p,d]
+                                    ylimit  = range(c(ylimit,ylt.min,ylt.max))
+                                 }else{
+                                    ylimit  = range( c(ylimit,mdot[[r]]$y,mci[[r]]$y)
+                                                   , na.rm = TRUE
+                                                   )#end range
+                                 }#end if
+                                 #---------------------------------------------------------------------#
                               }#end for (r in sequence(nrate+1))
                               #------------------------------------------------------------#
 
@@ -3662,12 +4182,13 @@ for (p in sequence(nplaces)){
 
 
                               #----- Plot the box plot. -----------------------------------#
-                              par(mar=c(4.1,3.1,2.1,2.1))
+                              par(mar=lo.box$mar0)
                               #----- Plotting window and grid. ----------------------------#
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                              abline(v=year4,h=axTicks(2),col=grid.colour,lty="solid")
-                              axis(side=1,at=year4)
+                              abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                              axis.rt(side=1,at=when4,labels=when.label
+                                     ,las=5,cex=.8,off=.05)
                               axis(side=2)
                               box()
                               title(main=lesub,xlab="",ylab="")
@@ -3801,8 +4322,8 @@ for (p in sequence(nplaces)){
                   #------------------------------------------------------------------------#
                   #    Find the DBH for x scale.                                           #
                   #------------------------------------------------------------------------#
-                  x.years  = year4[2:n.census]
-                  xlimit   = range(x.years)
+                  x.years  = whenmid4
+                  xlimit   = when.limit
                   #------------------------------------------------------------------------#
 
 
@@ -3810,6 +4331,7 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #    Make the polygons.                                               #
                      #---------------------------------------------------------------------#
+
                      plot.poly     = list()
                      plot.poly$x   = c(x.years ,rev(x.years) ,NA,x.years ,rev(x.years) )
                      plot.poly$y   = c(sta.q025,rev(sta.q975),NA,ed2.q025,rev(ed2.q975))
@@ -3847,6 +4369,16 @@ for (p in sequence(nplaces)){
                   #------------------------------------------------------------------------#
 
 
+                  #------------------------------------------------------------------------#
+                  #     Over-write with global rate.                                       #
+                  #------------------------------------------------------------------------#
+                  if (global.ylim){
+                     ylt.mod = ylt[[ed2.rate]][[indiv[i]]]$global
+                     ylt.min = mult * ylt.mod$min
+                     ylt.max = mult * ylt.mod$max
+                     ylimit  = pretty.xylim(u=c(ylt.min,ylt.max),fracexp=0.0,is.log=ylog)
+                  }#end if
+                  #------------------------------------------------------------------------#
 
                   #------------------------------------------------------------------------#
                   #     Loop over all formats, and make the plots.                         #
@@ -3936,14 +4468,19 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      par(mar=c(5.1,4.4,4.1,2.1))
                      #----- Plotting window and grid. -------------------------------------#
-                     plot(x=x.years,y=sta.expected,xlim=xlimit,ylim=ylimit,type="n"
-                         ,main=letitre,xlab=lex,ylab=ley,log=plog,cex.main=0.7)
-                     if (plotgrid) grid(col=grid.colour,lty="solid")
+                     plot.new()
+                     plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+                     title(main=letitre,xlab=lex,ylab=ley,log=plog,cex.main=0.7*cex.main)
+                     if (plotgrid) abline(h=axTicks(2),v=when4,col=grid.colour,lty="solid")
+                     axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
+                     axis(side=2)
                      #----- Plot the taxon rate with confidence interval. -----------------#
                      epolygon(x=plot.poly$x,y=plot.poly$y,col=plot.poly$col,angle=c(-45,45)
                              ,density=40,lty="solid",lwd=1.0)
-                     lines(x=x.years,y=sta.expected,type="o",col=col.sta[1],pch=16,lwd=2.0)
-                     lines(x=x.years,y=ed2.expected,type="o",col=col.ed2[1],pch=16,lwd=2.0)
+                     lines (x=whenmid4,y=sta.expected,lwd=2.0,col=col.sta[1])
+                     lines (x=whenmid4,y=ed2.expected,lwd=2.0,col=col.ed2[1])
+                     points(x=whenmid4,y=sta.expected,pch=16 ,col=col.sta[1])
+                     points(x=whenmid4,y=ed2.expected,pch=16 ,col=col.ed2[1])
 
 
                      #----- Close the device. ---------------------------------------------#
@@ -3999,8 +4536,8 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #    Find the DBH for x scale.                                        #
                      #---------------------------------------------------------------------#
-                     x.years  = year4[2:n.census]
-                     xlimit   = range(x.years)
+                     x.years  = whenmid4
+                     xlimit   = when.limit
                      #---------------------------------------------------------------------#
 
 
@@ -4098,11 +4635,6 @@ for (p in sequence(nplaces)){
                         #    Loop over all DBH classes.                                    #
                         #------------------------------------------------------------------#
                         for (d in 1:n.dbh){
-                           left    = (d %% lo.box$ncol) == 1
-                           right   = (d %% lo.box$ncol) == 0
-                           top     = d <= lo.box$ncol
-                           bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
-
                            if (ed22.ci){
                               #------------------------------------------------------------#
                               #     Find the plot limit for the y scale.                   #
@@ -4117,7 +4649,7 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
                               #    Make the polygons.                                      #
                               #------------------------------------------------------------#
-                              size.poly  = list()
+                              size.poly     = list()
                               size.poly$x   = c(x.years     ,rev(x.years)     ,NA
                                                ,x.years     ,rev(x.years)         )
                               size.poly$y   = c(sta.q025[d,],rev(sta.q975[d,]),NA
@@ -4147,28 +4679,43 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
 
 
+                           #---------------------------------------------------------------#
+                           #     Over-write with global rate.                              #
+                           #---------------------------------------------------------------#
+                           if (global.ylim){
+                              ylt.mod = ylt[[ed2.rate]][[indiv[i]]]$global
+                              ylt.min = mult * ylt.mod$min[d]
+                              ylt.max = mult * ylt.mod$max[d]
+                              ylimit  = pretty.xylim(u=c(ylt.min,ylt.max)
+                                                    ,fracexp=0.0,is.log=ylog)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
                            #----- Set up the title and axes labels. -----------------------#
                            lesub = paste("DBH class:",dbh.names[d],sep="")
                            #---------------------------------------------------------------#
 
 
                            #----- Plot the box plot. --------------------------------------#
-                           par(mar=c(4.1,3.1,2.1,2.1))
+                           par(mar=lo.box$mar0)
                            #----- Plotting window and grid. -------------------------------#
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           axis(side=1)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
                            axis(side=2)
                            box()
                            title(main=lesub,xlab="",ylab="")
-                           if (plotgrid) grid(col=grid.colour,lty="solid")
+                           if (plotgrid){
+                              abline(h=axTicks(2),v=when4,col=grid.colour,lty="solid")
+                           }#end if
                            #----- Plot the taxon rate with confidence interval. -----------#
                            epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
                                    ,angle=c(-45,45),density=40,lty="solid",lwd=1.0)
-                           lines(x=x.years,y=sta.expected[d,],type="o",pch=16,lwd=2.0
-                                ,col=col.sta[1])
-                           lines(x=x.years,y=ed2.expected[d,],type="o",pch=16,lwd=2.0
-                                ,col=col.ed2[1])
+                           lines (x=whenmid4,y=sta.expected[d,],lwd=2.0,col=col.sta[1])
+                           lines (x=whenmid4,y=ed2.expected[d,],lwd=2.0,col=col.ed2[1])
+                           points(x=whenmid4,y=sta.expected[d,],pch=16 ,col=col.sta[1])
+                           points(x=whenmid4,y=ed2.expected[d,],pch=16 ,col=col.ed2[1])
                            #---------------------------------------------------------------#
                         }#end for (d in 1:n.dbh)
                         #------------------------------------------------------------------#
@@ -4260,8 +4807,8 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #    Find the DBH for x scale.                                        #
                      #---------------------------------------------------------------------#
-                     x.years  = year4[2:n.census]
-                     xlimit   = range(x.years)
+                     x.years  = whenmid4
+                     xlimit   = when.limit
                      #---------------------------------------------------------------------#
 
 
@@ -4389,12 +4936,32 @@ for (p in sequence(nplaces)){
 
 
                            #---------------------------------------------------------------#
-                           #     Define margins.                                           #
+                           #     Over-write with global rate.                              #
                            #---------------------------------------------------------------#
-                           left    = (p %% lo.pft$ncol) == 1
-                           right   = (p %% lo.pft$ncol) == 0
-                           top     = p <= lo.pft$ncol
-                           bottom  = p > (lo.pft$nrow - 1) * lo.pft$ncol
+                           if (global.ylim){
+                              ylt.mod = ylt[[ed2.rate]][[indiv[i]]]$taxon
+                              ylt.min = mult * ylt.mod$min
+                              ylt.max = mult * ylt.mod$max
+                              ylimit  = pretty.xylim(u=c(ylt.min,ylt.max)
+                                                    ,fracexp=0.0,is.log=ylog)
+                              #------------------------------------------------------------#
+                              #     Define margins.                                        #
+                              #------------------------------------------------------------#
+                              left    = TRUE
+                              top     = TRUE
+                              mar.now = lo.pft$mar0
+                              #------------------------------------------------------------#
+                           }else{
+
+
+                              #------------------------------------------------------------#
+                              #     Define margins.                                        #
+                              #------------------------------------------------------------#
+                              left    = lo.pft$left [p ]
+                              top     = lo.pft$right[p ]
+                              mar.now = lo.pft$mar  [p,]
+                              #------------------------------------------------------------#
+                           }#end if
                            #---------------------------------------------------------------#
 
 
@@ -4423,23 +4990,25 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
                            #     Go on and plot stuff.                                     #
                            #---------------------------------------------------------------#
-                           par(mar=c(4.1,3.1,2.1,2.1))
+                           par(mar=mar.now)
                            #----- Plotting window and grid. -------------------------------#
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                            box()
-                           axis(side=1)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
                            axis(side=2)
                            title(main=pft.label)
-                           if (plotgrid) grid(col=grid.colour,lty="solid")
+                           if (plotgrid){
+                              abline(h=axTicks(2),v=when4,col=grid.colour,lty="solid")
+                           }#end if
 
                            #----- Plot the taxon rate with confidence interval. -----------#
                            epolygon(x=plot.poly$x,y=plot.poly$y,col=plot.poly$col
                                    ,angle=c(-45,45),density=40,lty="solid",lwd=1.0)
-                           lines(x=x.years,y=sta.expected[p,],type="o",col=col.sta[1]
-                                ,pch=16,lwd=2.0)
-                           lines(x=x.years,y=ed2.expected[p,],type="o",col=col.ed2[1]
-                                ,pch=16,lwd=2.0)
+                           lines (x=x.years,y=sta.expected[p,],col=col.sta[1],lwd=2.0)
+                           lines (x=x.years,y=ed2.expected[p,],col=col.ed2[1],lwd=2.0)
+                           points(x=x.years,y=sta.expected[p,],col=col.sta[1],pch=16 )
+                           points(x=x.years,y=ed2.expected[p,],col=col.ed2[1],pch=16 )
                            #---------------------------------------------------------------#
                         }#end for (p in sequence(npfts))
                         #------------------------------------------------------------------#
@@ -4532,8 +5101,8 @@ for (p in sequence(nplaces)){
                      #---------------------------------------------------------------------#
                      #    Find the DBH for x scale.                                        #
                      #---------------------------------------------------------------------#
-                     x.years  = year4[2:n.census]
-                     xlimit   = range(x.years)
+                     x.years  = whenmid4
+                     xlimit   = when.limit
                      #---------------------------------------------------------------------#
 
 
@@ -4640,10 +5209,6 @@ for (p in sequence(nplaces)){
                            #    Loop over all DBH classes.                                 #
                            #---------------------------------------------------------------#
                            for (d in 1:n.dbh){
-                              left    = (d %% lo.box$ncol) == 1
-                              right   = (d %% lo.box$ncol) == 0
-                              top     = d <= lo.box$ncol
-                              bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
 
                               if (ed22.ci){
                                  #---------------------------------------------------------#
@@ -4691,13 +5256,27 @@ for (p in sequence(nplaces)){
                               #------------------------------------------------------------#
 
 
+
+                              #------------------------------------------------------------#
+                              #     Over-write with global rate.                           #
+                              #------------------------------------------------------------#
+                              if (global.ylim){
+                                 ylt.mod = ylt[[ed2.rate]][[indiv[i]]]$taxon
+                                 ylt.min = mult * ylt.mod$min[p,d]
+                                 ylt.max = mult * ylt.mod$max[p,d]
+                                 ylimit  = pretty.xylim(u=c(ylt.min,ylt.max)
+                                                       ,fracexp=0.0,is.log=ylog)
+                              }#end if
+                              #------------------------------------------------------------#
+
+
                               #----- Set up the title and axes labels. --------------------#
                               lesub = paste("DBH class:",dbh.names[d],sep="")
                               #------------------------------------------------------------#
 
 
                               #----- Plot the box plot. -----------------------------------#
-                              par(mar=c(4.1,3.1,2.1,2.1))
+                              par(mar=lo.box$mar0)
                               #----- Plotting window and grid. ----------------------------#
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
@@ -4709,10 +5288,10 @@ for (p in sequence(nplaces)){
                               #----- Plot the taxon rate with confidence interval. --------#
                               epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
                                       ,angle=c(-45,45),density=40,lty="solid",lwd=1.0)
-                              lines(x=x.years,y=sta.expected[p,d,],type="o",pch=16,lwd=2.0
-                                   ,col=col.sta[1])
-                              lines(x=x.years,y=ed2.expected[p,d,],type="o",pch=16,lwd=2.0
-                                   ,col=col.ed2[1])
+                              lines (x=x.years,y=sta.expected[p,d,],lwd=2.0,col=col.sta[1])
+                              lines (x=x.years,y=ed2.expected[p,d,],lwd=2.0,col=col.ed2[1])
+                              points(x=x.years,y=sta.expected[p,d,],pch=16 ,col=col.sta[1])
+                              points(x=x.years,y=ed2.expected[p,d,],pch=16 ,col=col.ed2[1])
                               #------------------------------------------------------------#
                            }#end for (d in 1:n.dbh)
                            #---------------------------------------------------------------#
@@ -4793,6 +5372,7 @@ for (p in sequence(nplaces)){
 
                nindiv     = length(indiv)
                nrate      = length(this.plot$ed2.rate)
+               col.ed2    = matrix(col.ed2,nrow=nrate)
 
                cat(" + Plotting time series of ",theme.desc,"...","\n")
                #---------------------------------------------------------------------------#
@@ -4824,7 +5404,7 @@ for (p in sequence(nplaces)){
                   #      Define the limits between boxes.                                  #
                   #------------------------------------------------------------------------#
                   off        = 0.1
-                  width.bar  = (year4[-1] - year4[-n.census])
+                  width.bar  = (when4[-1] - when4[-n.census])
                   width.year = (nrate + 1) * width.bar + 1
                   x.bounds   = c(0, cumsum(width.year))
                   xlimit     = range(x.bounds)
@@ -4942,7 +5522,7 @@ for (p in sequence(nplaces)){
                      par(mar=c(5.1,4.4,4.1,2.1))
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
-                     axis(side=1,at=x.bounds,labels=year4)
+                     axis.rt(side=1,at=x.bounds,labels=when.label,las=5,cex=.8,off=.05)
                      axis(side=2)
                      abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
                      box()
@@ -5025,7 +5605,7 @@ for (p in sequence(nplaces)){
                      #      Define the limits between boxes.                               #
                      #---------------------------------------------------------------------#
                      off        = 0.1
-                     width.bar  = (year4[-1] - year4[-n.census])
+                     width.bar  = (when4[-1] - when4[-n.census])
                      width.year = (nrate + 1) * width.bar + 1
                      x.bounds   = c(0, cumsum(width.year))
                      xlimit     = range(x.bounds)
@@ -5106,10 +5686,6 @@ for (p in sequence(nplaces)){
                         #    Loop over all DBH classes.                                    #
                         #------------------------------------------------------------------#
                         for (d in 1:n.dbh){
-                           left    = (d %% lo.box$ncol) == 1
-                           right   = (d %% lo.box$ncol) == 0
-                           top     = d <= lo.box$ncol
-                           bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
 
 
 
@@ -5164,10 +5740,11 @@ for (p in sequence(nplaces)){
 
 
                            #----- Plotting window and grid. -------------------------------#
-                           par(mar=c(4.1,3.1,2.1,2.1))
+                           par(mar=lo.box$mar0)
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
-                           axis(side=1,at=x.bounds,labels=year4)
+                           axis.rt(side=1,at=x.bounds,labels=when.label
+                                  ,las=5,cex=.8,off=.05)
                            axis(side=2)
                            abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
                            box()
@@ -5281,7 +5858,7 @@ for (p in sequence(nplaces)){
                      #      Define the limits between boxes.                               #
                      #---------------------------------------------------------------------#
                      off        = 0.1
-                     width.bar  = (year4[-1] - year4[-n.census])
+                     width.bar  = (when4[-1] - when4[-n.census])
                      width.year = (nrate + 1) * width.bar + 1
                      x.bounds   = c(0, cumsum(width.year))
                      xlimit     = range(x.bounds)
@@ -5422,10 +5999,9 @@ for (p in sequence(nplaces)){
                            #---------------------------------------------------------------#
                            #     Define margins.                                           #
                            #---------------------------------------------------------------#
-                           left    = (p %% lo.pft$ncol) == 1
-                           right   = (p %% lo.pft$ncol) == 0
-                           top     = p <= lo.pft$ncol
-                           bottom  = p > (lo.pft$nrow - 1) * lo.pft$ncol
+                           left    = lo.pft$left [p ]
+                           right   = lo.pft$right[p ]
+                           mar.now = lo.pft$mar  [p,]
                            #---------------------------------------------------------------#
 
 
@@ -5436,7 +6012,8 @@ for (p in sequence(nplaces)){
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
                            box()
-                           axis(side=1,at=x.bounds,labels=year4)
+                           axis.rt(side=1,at=x.bounds,labels=when.label
+                                  ,las=5,cex=.8,off=.05)
                            axis(side=2)
                            abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
                            title(main=pft.label)
@@ -5550,7 +6127,7 @@ for (p in sequence(nplaces)){
                      #      Define the limits between boxes.                               #
                      #---------------------------------------------------------------------#
                      off        = 0.1
-                     width.bar  = (year4[-1] - year4[-n.census])
+                     width.bar  = (when4[-1] - when4[-n.census])
                      width.year = (nrate + 1) * width.bar + 1
                      x.bounds   = c(0, cumsum(width.year))
                      xlimit     = range(x.bounds)
@@ -5640,18 +6217,6 @@ for (p in sequence(nplaces)){
                            #    Loop over all DBH classes.                                 #
                            #---------------------------------------------------------------#
                            for (d in 1:n.dbh){
-                              #----- Find out which side this plot goes. ------------------#
-                              left    = (d %% lo.box$ncol) == 1
-                              right   = (d %% lo.box$ncol) == 0
-                              top     = d <= lo.box$ncol
-                              bottom  = d > (lo.box$nrow - 1) * lo.box$ncol
-                              #------------------------------------------------------------#
-
-
-
-
-
-
 
                               #----- Load the modelled rates. -----------------------------#
                               mult = 100. - 99 * as.numeric(indiv[i] %in% c("acc","anpp"))
@@ -5703,10 +6268,11 @@ for (p in sequence(nplaces)){
 
 
                               #----- Plotting window and grid. ----------------------------#
-                              par(mar=c(4.1,3.1,2.1,2.1))
+                              par(mar=lo.box$mar0)
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
-                              axis(side=1,at=x.bounds,labels=year4)
+                              axis.rt(side=1,at=x.bounds,labels=when.label
+                                     ,las=5,cex=.8,off=.05)
                               axis(side=2)
                               abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
                               box()
@@ -5793,27 +6359,6 @@ for (p in sequence(nplaces)){
          }#end if (census.name %in% ls())
          #=================================================================================#
          #=================================================================================#
-
-
-
-
-
-
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #      Make the RData file name,                                                  #
-         #---------------------------------------------------------------------------------#
-         if (! file.exists(outdata)) dir.create(outdata)
-         ed22.rdata = file.path(outdata
-                               ,paste("census_",iata,"_",iphen.key[ph],"_",tfall.key[tf]
-                                     ,".RData",sep=""))
-         assign(x=iata,value=ed2)
-         save(list=c(iata),file=ed22.rdata)
-         rm(ed2)
-         #---------------------------------------------------------------------------------#
       }#end for phenology
       #------------------------------------------------------------------------------------#
 

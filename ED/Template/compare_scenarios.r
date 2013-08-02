@@ -7877,7 +7877,7 @@ for (g in loop.global){
 #------------------------------------------------------------------------------------------#
 cat (" + Saving the simulation status to ",basename(rdata.status),"...","\n")
 cat (" + Saving the simulation status to ",basename(rdata.status),"...","\n")
-status = data.frame( rj = n.total, total = n.total, complete = rj == n.total)
+status = data.frame( rj = n.total, total = n.total, complete = TRUE)
 write.table( x         = status
            , file      = rdata.status
            , append    = FALSE

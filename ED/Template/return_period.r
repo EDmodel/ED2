@@ -30,6 +30,8 @@ crit.loss      = 0.2                         # Critical loss of biomass (% of in
 n.sample       = 1000                        # Number of samples
 n.pred         = 20000                       # Number of points for curve drawing
 std.pret.limit = c(1,500)                    # Fixed return period
+nls.optim      = TRUE                        # Use nls for optimisation (FALSE uses optim)
+robust         = TRUE                        # Use robust fitting in the NLS
 skew.optim     = FALSE                       # Use skew normal distribution for residuals?
                                              #     (FALSE uses normal distribution aka 
                                              #      least squares maximisation)
@@ -502,6 +504,12 @@ crit.change = 100. * log(1.0 - crit.loss) / n.year
 #------------------------------------------------------------------------------------------#
 
 
+#----- Suffix for return period. ----------------------------------------------------------#
+optim.suffix = paste( ifelse(nls.optim,ifelse(robust,"nlrob","nls"),"optim")
+                    , ifelse(skew.optim & ! nls.optim,"skewn","gauss")
+                    , sep = "_"
+                    )#end paste
+#------------------------------------------------------------------------------------------#
 
 
 #==========================================================================================#
@@ -924,11 +932,19 @@ for (g in loop.global){
 
 
             #----- Use nls to fit the data. -----------------------------------------------#
-            ans = change.return.optim( datum   = data.now
-                                     , y.crit  = crit.change
-                                     , skew    = skew.optim
-                                     , verbose = verbose.optim
-                                     )#end change.return.optim
+            if (nls.optim){
+               ans = change.return.nls  ( datum   = data.now
+                                        , y.crit  = crit.change
+                                        , verbose = verbose.optim
+                                        , robust  = robust
+                                        )#end change.return.optim
+            }else{
+               ans = change.return.optim( datum   = data.now
+                                        , y.crit  = crit.change
+                                        , skew    = skew.optim
+                                        , verbose = verbose.optim
+                                        )#end change.return.optim
+            }#end if
             #------------------------------------------------------------------------------#
 
 
@@ -1151,6 +1167,12 @@ for (g in loop.global){
    #     Plot the biomass loss as a function of return period.                             #
    #---------------------------------------------------------------------------------------#
    cat(" + Plotting biomass loss as a function of return period...","\n",sep="")
+   if (robust && nls.optim){
+      form.fit = expression(paste("Robust Fit: ",delta[A*G*B] == delta[0] + a / tau[D*1]^b))
+   }else{
+      form.fit = expression(paste("MLE Fit: ",delta[A*G*B] == delta[0] + a / tau[D*1]^b))
+   }#end if
+   
    leg.fit = c( expression(paste("MLE Fit: "
                                 ,delta[A*G*B] == delta[0] + a / tau[D*1]^b))
               , expression(paste("Predicted Critical value: ("
@@ -1196,7 +1218,8 @@ for (g in loop.global){
       #------------------------------------------------------------------------------------#
       for (o in sequence(nout)){
          #----- Open file or display. -----------------------------------------------------#
-         fichier = paste("return_loss_",drought.key[d],".",outform[o],sep="")
+         fichier = paste("return_loss_",drought.key[d],"_",optim.suffix
+                        ,".",outform[o],sep="")
          fichier = file.path(outroot,fichier)
          if (outform[o] == "x11"){
             X11(width=size$width,height=size$height,pointsize=ptsz)
@@ -1342,6 +1365,23 @@ for (g in loop.global){
    }#end for (d in loop.drought)
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+   #------ Re-format table for easy display. ----------------------------------------------#
+   summ.tab = signif(summ.tab[,,,1],4)
+   idx      = arrayInd( ind       = seq.len(summ.tab)
+                      , .dim      = dim(summ.tab)
+                      , .dimnames = dimnames(summ.tab)
+                      )#end arrayInd
+   summ.tab = split(x=summ.tab,f=idx[,1])
+   summ.tab = lapply( X   = summ.tab
+                    , FUN = matrix
+                    , nrow = n.iphen
+                    , ncol = n.summ
+                    , dimnames = list(panel$iphen$key,summ.key)
+                    )#end lapply
+   names(summ.tab) = scenario$stext$key
+   #---------------------------------------------------------------------------------------#
 }#end for (g in loop.global)
 #==========================================================================================#
 #==========================================================================================#

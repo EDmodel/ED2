@@ -40,6 +40,19 @@ maxit  <<- 150    # Maximum number of iterations in general
 
 
 
+#------ Define the colours and labels for IGBP land use maps. -----------------------------#
+igbp.col <<- c("midnightblue","steelblue4","#004E00","slategray3","green3"
+              ,"forestgreen","lightgoldenrod4","goldenrod","chartreuse3","yellowgreen"
+              ,"gold","turquoise4","mediumpurple1","grey29","yellow3","powderblue"
+              ,"firebrick","grey94")
+igbp.leg <<- c("H2O","ENF","EBF","DNF","DBF","MXF","CSH","OSH","WSV","SAV","GSL","PWL"
+              ,"CRL","URB","CVM","ICE","DES","MSS")
+igbp.val <<- seq(from=0,to=17,by=1)
+#------------------------------------------------------------------------------------------#
+
+
+
+
 #----- Define some default legend colours and names. --------------------------------------#
 lunames   <<- c("Agricultural","Secondary","Primary","Total")
 lucols    <<- c("goldenrod","chartreuse","darkgreen",all.colour)

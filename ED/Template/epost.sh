@@ -14,6 +14,7 @@ useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # 't' -- One eddy flux tower met cycle
                  # 'u' -- User defined period, defined by the variables below.
                  # 'f' -- Force the tower cycle.  You may need to edit the script, though
+                 # 'b' -- Force one biometry cycle.
 yusera=1972      # First year to use
 yuserz=2011      # Last year to use
 #----- Check whether to use openlava or typical job submission. ---------------------------#
@@ -28,7 +29,7 @@ usedistrib='edf' # Which distribution to plot on top of histograms:
                  #   sn   -- Skewed normal distribution      (requires package sn)
                  #   edf  -- Empirical distribution function (function density)
 #----- Output format. ---------------------------------------------------------------------#
-outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
+outform='c("pdf")'             # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
@@ -46,6 +47,8 @@ iint_photo=1                   # 0 -- 24h
                                # 1 -- daytime only
 #----- Trim the year comparison for tower years only? -------------------------------------#
 efttrim="TRUE"
+#----- Use only old-growth patches for census comparison? (plot_census.r only). -----------#
+oldgrowth="FALSE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
 rscpath="${HOME}/EDBRAMS/R-utils"
 #------------------------------------------------------------------------------------------#
@@ -404,11 +407,34 @@ do
 
 
 
+   #---- The eddy flux tower cycles. ------------------------------------------------------#
+   case ${polyiata} in
+   gyf)
+      bioyeara=2004
+      bioyearz=2010
+      ;;
+   s67)
+      bioyeara=1999
+      bioyearz=2011
+      ;;
+   *)
+      bioyeara=${eftcyca}
+      bioyearz=${eftcycz}
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
    #---- Cheat and force the met cycle to be the tower cycle. -----------------------------#
    if [ ${useperiod} == "f" ]
    then
       metcyca=${eftyeara}
       metcycz=${eftyearz}
+   elif [ ${useperiod} == "b" ]
+   then
+      metcyca=${bioyeara}
+      metcycz=${bioyearz}
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -491,6 +517,14 @@ do
             thisyeara=${eftyeara}
             thisyearz=${eftyearz}
             #------------------------------------------------------------------------------#
+
+         elif [ ${useperiod} == 'b' ]
+         then
+            #----- The user said to use the eddy flux period. -----------------------------#
+            thisyeara=${bioyeara}
+            thisyearz=${bioyearz}
+            #------------------------------------------------------------------------------#
+
          else
             #----- Grab all years that the simulation is supposed to run. -----------------#
             thisyeara=${yeara}
@@ -844,6 +878,7 @@ do
       sed -i s@myiintphoto@${iint_photo}@g        ${scriptnow}
       sed -i s@myklight@${klight}@g               ${scriptnow}
       sed -i s@myefttrim@${efttrim}@g             ${scriptnow}
+      sed -i s@myoldgrowth@${oldgrowth}@g         ${scriptnow}
       sed -i s@myeftyeara@${eftyeara}@g           ${scriptnow}
       sed -i s@myeftyearz@${eftyearz}@g           ${scriptnow}
       #------------------------------------------------------------------------------------#

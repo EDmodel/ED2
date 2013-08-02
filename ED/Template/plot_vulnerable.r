@@ -71,7 +71,7 @@ pch.wmo         = 16              # Type of point to use in wmo plots
 #------------------------------------------------------------------------------------------#
 #     Options for computing the vulnerability.                                             #
 #------------------------------------------------------------------------------------------#
-ntry.max        = 10              # Maximum number of attempts to find the score shift.
+ntry.max        = 20              # Maximum number of attempts to find the score shift.
 loud            = FALSE           # loud (verbose).
 wmo.nyears.min  = 25              # Minimum number of years to consider the station valid
 n.lsq.min       = 5               # Minimum number of years to consider in the LSQ
@@ -85,8 +85,8 @@ datrain      = list()
 datrain[[1]] = list(vname="precl",desc="PREC-L"       ,colour="firebrick"  ,order=5)
 datrain[[2]] = list(vname="udel" ,desc="UDel-3.01"    ,colour="darkorange" ,order=4)
 datrain[[3]] = list(vname="gpcc" ,desc="GPCC-6.0"     ,colour="yellow3"    ,order=6)
-datrain[[4]] = list(vname="cru"  ,desc="CRU-3.10.01"  ,colour="deepskyblue",order=3)
-datrain[[5]] = list(vname="sheff",desc="PGMF"         ,colour="steelblue"  ,order=2)
+datrain[[4]] = list(vname="sheff",desc="PGMF"         ,colour="steelblue"  ,order=3)
+datrain[[5]] = list(vname="gpcp" ,desc="GPCP-2.2"     ,colour="deepskyblue",order=2)
 datrain[[6]] = list(vname="trmm" ,desc="TRMM/3B43-7.0",colour="purple3"    ,order=1)
 #------------------------------------------------------------------------------------------#
 
@@ -216,16 +216,16 @@ statvar[[ 4]] = list( vname   = "dlocation.rel"
 statvar[[ 5]] = list( vname   = "dscale.rel"
                     , desc    = "Vulnerability (Scale)"
                     , cscheme = "ihue.hot"
-                    , unit    = "pc"
+                    , unit    = "empty"
                     , min     =  0.0
-                    , max     =  1.5
+                    , max     =  3.0
                     , plog    = FALSE
                     )#end list
 statvar[[ 6]] = list( vname   = "dshape.abs"
                     , desc    = "Vulnerability (Shape)"
                     , cscheme = "hue.hot"
                     , unit    = "empty"
-                    , min     = -6.0
+                    , min     = -3.0
                     , max     =  0.0
                     , plog    = FALSE
                     )#end list
@@ -289,8 +289,8 @@ sheff.yearz  = 2008
 
 
 #----- Texture-dependent return period. ---------------------------------------------------#
-stext.pret  = c(       2,       6,       8,      16,      11)
-lookup.pret = c(1.115212,1.356634,1.607524,2.310261,3.362190)
+stext.pret  = c(    2,   6,   8,  16, 11)
+lookup.pret = c(1.740,1.95,2.26,4.73,7.6)
 use.stext   = c(2,2,2,8,8,6,8,8,6,8,11,16,16,8,11,16,11)
 #------------------------------------------------------------------------------------------#
 
@@ -325,9 +325,9 @@ site[[ 2]] = list( iata = "s67"
                  , fnt  = 2
                  , cex  = 0.6
                  )#end list
-site[[ 3]] = list( iata = "lvd"
-                 , lon  = -60.40
-                 , lat  =   4.00
+site[[ 3]] = list( iata = "bvb"
+                 , lon  = -60.61
+                 , lat  =   2.92
                  , col1 = "deeppink3"
                  , col2 = "turquoise2"
                  , fnt  = 2
@@ -349,9 +349,33 @@ site[[ 5]] = list( iata = "chb"
                  , fnt  = 2
                  , cex  = 0.6
                  )#end list
-site[[ 6]] = list( iata = "scd"
+site[[ 6]] = list( iata = "scz"
                  , lon  = -62.50
                  , lat  = -14.50
+                 , col1 = "deeppink3"
+                 , col2 = "turquoise2"
+                 , fnt  = 2
+                 , cex  = 0.6
+                 )#end list
+site[[ 7]] = list( iata = "pnd"
+                 , lon  = -66.50
+                 , lat  = -10.50
+                 , col1 = "deeppink3"
+                 , col2 = "turquoise2"
+                 , fnt  = 2
+                 , cex  = 0.6
+                 )#end list
+site[[ 8]] = list( iata = "pcl"
+                 , lon  = -74.57
+                 , lat  =  -8.38
+                 , col1 = "deeppink3"
+                 , col2 = "turquoise2"
+                 , fnt  = 2
+                 , cex  = 0.6
+                 )#end list
+site[[ 9]] = list( iata = "mab"
+                 , lon  = -49.14
+                 , lat  =  -5.37
                  , col1 = "deeppink3"
                  , col2 = "turquoise2"
                  , fnt  = 2
@@ -1043,8 +1067,8 @@ if (retrieve.data & file.exists(rdata.vulnerable)){
                again        = TRUE
                while (again & ntry < ntry.max){
                   ntry      = ntry + 1
-                  now.lower = now.scale / 10^ntry
-                  now.upper = now.scale * 10^ntry
+                  now.lower = now.scale / 100^ntry
+                  now.upper = now.scale * 100^ntry
                   #----- Use try to ensure it doesn't crash. ------------------------------#
                   ans       = try( qsn.mult( z        = now.drought
                                            , n        = n.years
@@ -1097,8 +1121,8 @@ if (retrieve.data & file.exists(rdata.vulnerable)){
                again        = TRUE
                while (again & ntry < ntry.max){
                   ntry      = ntry + 1
-                  now.lower = - abs(now.shape) * 2^ntry
-                  now.upper = + abs(now.shape) * 2^ntry
+                  now.lower = - abs(now.shape) * 10^ntry
+                  now.upper = + abs(now.shape) * 10^ntry
                   #----- Use try to ensure it doesn't crash. ------------------------------#
                   ans       = try( qsn.mult( z        = now.drought
                                            , n        = n.years
@@ -1585,6 +1609,163 @@ for (v in sequence(nstatvar)){
    }#end for (o in sequence(nout))
    #---------------------------------------------------------------------------------------#
 }#end for (v in sequence(nstatvar))
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Plot the statistics for all maps.                                                    #
+#------------------------------------------------------------------------------------------#
+cat (" + Plot the RMSE for each site and data set...","\n")
+
+   #---- Select colour for sites. ---------------------------------------------------------#
+   if ("panoply" %in% col1.schemes){
+      col.key = "col1"
+   }else{
+      col.key = "col2"
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---- Get the counts and the root mean square error. -----------------------------------#
+   rmse.use        = ( sqrt(wmo$mod.bias[,datrain$vname]^2+wmo$mod.sigma[,datrain$vname]^2)
+                     / rep(wmo$sdev[,1],times=length(datrain$vname)) )
+   count.use       = wmo$mod.n[,datrain$vname]
+   skip            = count.use < n.lsq.min
+   rmse.use [skip] = NA
+   count.use[skip] = NA
+   lon.use   = wmo$lon + 0 * rmse.use
+   lat.use   = wmo$lat + 0 * rmse.use
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Limits for the z key scale. ----------------------------------------------------#
+   this.limit   = range(unlist(rmse.use),na.rm=TRUE)
+   this.levels  = pretty(this.limit,n=n.colourbar)
+   this.levels  = c( min(this.levels) - mean(diff(this.levels))
+                   , this.levels
+                   , max(this.levels) + mean(diff(this.levels))
+                   )#end c
+   this.nlevels = length(this.levels)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Get the number of available years and find the size scale. ----------------------#
+   nyears.min  = min(unlist(count.use),na.rm=TRUE)
+   nyears.max  = max(unlist(count.use),na.rm=TRUE)
+   nyears.leg  = sort(unique(c(nyears.min,nyears.max,pretty(unlist(wmo$mod.n),n=4))))
+   keep        = nyears.leg %in% seq(from=nyears.min,to=nyears.max,by=1)
+   nyears.leg  = nyears.leg[keep]
+   mod.n.cex   = 0.7 + 1.3 * ( count.use  - nyears.min ) / ( nyears.max - nyears.min )
+   cex.leg     = 0.7 + 1.3 * ( nyears.leg - nyears.min ) / ( nyears.max - nyears.min )
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Create lists. -------------------------------------------------------------------#
+   bycol     = unlist(col(rmse.use))
+   lon.list  = split(x=unlist(lon.use  ),f=bycol); names(lon.list)  = datrain$desc
+   lat.list  = split(x=unlist(lat.use  ),f=bycol); names(lat.list)  = datrain$desc
+   rmse.list = split(x=unlist(rmse.use ),f=bycol); names(rmse.list) = datrain$desc
+   cex.list  = split(x=unlist(mod.n.cex),f=bycol); names(cex.list)  = datrain$desc
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Pack the legend options to a list. ----------------------------------------------#
+   xyz.legend  = list( x      = "center"
+                     , inset  = 0.0
+                     , legend = nyears.leg
+                     , col    = foreground
+                     , pch    = pch.wmo
+                     , pt.cex = cex.leg
+                     , title  = expression(bold("Comparable years"))
+                     , ncol   = length(nyears.leg)
+                     , cex    = 0.9 * cex.ptsz
+                     , xpd    = TRUE
+                     )#end legend
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #----- Loop over output format. --------------------------------------------------------#
+   for (o in sequence(nout)){
+      #------ Open file. ------------------------------------------------------------------#
+      fichier = file.path(outroot,paste("rmse_rain",outform[o],sep="."))
+      if(outform[o] == "x11"){
+         X11(width=size$width,height=size$height,pointsize=ptsz)
+      }else if(outform[o] == "png"){
+         png(filename=fichier,width=size$width*depth,height=size$height*depth
+            ,pointsize=ptsz,res=depth)
+      }else if(outform[o] == "eps"){
+         postscript(file=fichier,width=size$width,height=size$height
+                   ,pointsize=ptsz,paper=size$paper)
+      }else if(outform[o] == "pdf"){
+         pdf(file=fichier,onefile=FALSE
+            ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Plot the skew plot.                                                           #
+      #------------------------------------------------------------------------------------#
+      par(par.user)
+      xyz.plot  ( x              = lon.list
+                , y              = lat.list
+                , z              = rmse.list
+                , fixed.xlim     = TRUE
+                , fixed.ylim     = TRUE
+                , xlim           = longitude.limit
+                , ylim           = latitude.limit
+                , colour.palette = panoply
+                , levels         = this.levels
+                , nlevels        = this.nlevels
+                , pch            = pch.wmo
+                , cex            = cex.list
+                , xyz.before     = list( southammap = list(col=grey.mg)
+                                       , amazonmap  = list(col=foreground,lwd=2.0)
+                                       )#end list
+                , xyz.after      = list( text       = list( x      = site$lon
+                                                          , y      = site$lat
+                                                          , labels = site$iata
+                                                          , col    = site[[col.key]]
+                                                          , cex    = 1.2*site$cex
+                                                          , font   = site$fnt
+                                                          )#end list
+                                       )#end list
+                , xyz.title      = list ( main = "Relative root mean square error")
+                , key.title      = title( main = desc.unit(desc=NULL,unit=untab$empty))
+                , xyz.xaxis      = list(side=1,at=lonplot$at,labels=lonplot$labels)
+                , xyz.yaxis      = list(side=2,at=latplot$at,labels=latplot$labels,las=1)
+                , xyz.legend     = xyz.legend
+                , key.width      = 7.0
+                , leg.height     = 8.0
+                )#end skill.plot
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Close the device. ------------------------------------------------------------#
+      if (outform[o] == "x11"){
+         locator(n=1)
+         dev.off()
+      }else{
+         dev.off()
+      }#end if
+      bye = clean.tmp()
+      #------------------------------------------------------------------------------------#
+   }#end for (o in sequence(nout))
+   #---------------------------------------------------------------------------------------#
 #==========================================================================================#
 #==========================================================================================#
 
@@ -2360,6 +2541,7 @@ skill.n  [discard] = NA
 #----- Standardise the bias and scattering of residuals. ----------------------------------#
 mod.bias  = apply(X=skill.res,MARGIN=c(1,3),FUN=mean,na.rm=TRUE) / obs.sdev
 mod.sigma = apply(X=skill.res,MARGIN=c(1,3),FUN=sd  ,na.rm=TRUE) / obs.sdev
+mod.n     = apply(X=skill.n  ,MARGIN=c(1,3),FUN=commonest ,na.rm=TRUE)
 mod.bias [!is.finite(mod.bias )] = NA
 mod.sigma[!is.finite(mod.sigma)] = NA
 #------------------------------------------------------------------------------------------#
@@ -2482,7 +2664,7 @@ for (o in sequence(nout)){
                              , mod.options    = list( col = now.col
                                                     , pch = pch.skill
                                                     , cex = now.cex
-                                                    , lwd = 2
+                                                    , lwd = 3
                                                     )#end list
                              , main           = "Annual rainfall"
                              , bias.lim       = bias.range
@@ -2557,6 +2739,7 @@ xyz.legend  = list( x      = "center"
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
 for (v in sequence(nstatvar)){
    this.stat     = statvar[[v]]
    this.vname    = this.stat$vname

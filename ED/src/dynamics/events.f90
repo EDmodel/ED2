@@ -379,7 +379,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  cpatch%bstorage(ico)  = max(0.0,bstore_new)
                  
                  if(bleaf_new .le. tiny(1.0)) then
-                    cpatch%phenology_status(ico) = 2
+                    cpatch%phenology_status(ico) = -2
                     cpatch%elongf(ico)           = 0.0
                     !----- No leaves, then set it to zero. --------------------------------!
                     cpatch%bleaf(ico)      = 0.0
@@ -792,7 +792,7 @@ subroutine event_till(rval8)
                                                     ,cpatch%wood_water(ico)                &
                                                     ,cpatch%wood_temp (ico)                &
                                                     ,cpatch%wood_fliq (ico))
-                 cpatch%phenology_status(ico) = 2
+                 cpatch%phenology_status(ico) = -2
                  cpatch%elongf(ico)           = 0.0
                  
               enddo

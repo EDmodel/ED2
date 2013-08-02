@@ -34,6 +34,7 @@ various.cycles = myvarcycle
 sasmonth.short = c(2,5,8,11)
 sasmonth.long  = 5
 nyears.long    = 25
+oldgrowth      = myoldgrowth
 #------------------------------------------------------------------------------------------#
 
 
@@ -776,6 +777,7 @@ for (place in myplaces){
                }else{
                   cat (" - File      : ",basename(myfile)    ,"\n")
                   cat (" - File (bz2): ",basename(myfile.bz2),"\n")
+                  cat (" - File (gz) : ",basename(myfile.gz ),"\n")
                   stop(" Neither the expanded nor the compressed files were found!")
 
                }#end if
@@ -826,6 +828,7 @@ for (place in myplaces){
 
                #----- Read a few patch-level variables. -----------------------------------#
                areapa     = mymont$AREA * rep(areasi,times=npatches)
+               agepa      = mymont$AGE
                #---------------------------------------------------------------------------#
 
 
@@ -855,15 +858,60 @@ for (place in myplaces){
                # assign NA to all variables.                                               #
                #---------------------------------------------------------------------------#
                ncohorts   = mymont$PACO.N
+               one.cohort = sum(ncohorts) == 1
                if (any (ncohorts > 0)){
+
+
+                  #----- Make a cohort-level age. -----------------------------------------#
+                  ageconow = rep(agepa,times=ncohorts)
+                  #------------------------------------------------------------------------#
+
+
                   #----- Make a cohort-level area. ----------------------------------------#
                   areaconow    = rep(areapa,times=ncohorts)
                   #------------------------------------------------------------------------#
 
 
+                  #------------------------------------------------------------------------#
+                  #      Decide whether to include all cohorts or only those that are old- #
+                  # growth.                                                                #
+                  #------------------------------------------------------------------------#
+                  if (oldgrowth){
+                     #----- Flag cohorts that are in old-growth patches. ------------------#
+                     keep = ageconow >= ( now.year - yearbeg )
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Correct the area since we may have excluded some patches. -----#
+                     areaconow = areaconow[keep] / sum(areaconow[keep])
+                     #---------------------------------------------------------------------#
+                  }else{
+                     keep = is.finite(ageconow)
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+
+                  #----- We only read cohorts if there is anything to be read. ------------#
+                  read.cohorts = length(areaconow) > 0
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- Empty polygon. ---------------------------------------------------#
+                  read.cohorts = FALSE
+                  #------------------------------------------------------------------------#
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Make sure that there is at least one cohort to include.               #
+               #---------------------------------------------------------------------------#
+               if (read.cohorts){
+
+
                   #----- Define the DBH classes. ------------------------------------------#
-                  dbhconow     = mymont$DBH
-                  dbhcut       = cut(dbhconow,breaks=sta$dbh.breaks)
+                  dbhconow     = mymont$DBH[keep]
+                  dbhcut       = cut(dbhconow,breaks=sta$dbh.breaks,right=FALSE)
                   dbhlevs      = levels(dbhcut)
                   dbhfac       = match(dbhcut,dbhlevs)
                   n.dbh        = length(dbhlevs)
@@ -871,33 +919,46 @@ for (place in myplaces){
 
 
                   #----- Define the previous DBH class (for recruitment). -----------------#
-                  dbhconow.1ago   = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT))
-                  dbhcut.1ago     = cut(dbhconow.1ago,breaks=sta$dbh.breaks)
-                  dbhlevs.1ago    = levels(dbhcut.1ago)
-                  dbhfac.1ago     = match(dbhcut.1ago,dbhlevs.1ago)
+                  dbhconow.1ago = dbhconow * exp(-pmax(0,mymont$DLNDBH.DT[keep]))
+                  dbhcut.1ago   = cut(dbhconow.1ago,breaks=sta$dbh.breaks,right=FALSE)
+                  dbhlevs.1ago  = levels(dbhcut.1ago)
+                  dbhfac.1ago   = match(dbhcut.1ago,dbhlevs.1ago)
                   #------------------------------------------------------------------------#
 
 
                   #------------------------------------------------------------------------#
                   #     Load the other cohort-level variables of interest.                 #
                   #------------------------------------------------------------------------#
-                  pftconow        = mymont$PFT
-                  nplantconow     = mymont$NPLANT
-                  agbconow        = mymont$AGB.CO
-                  agbconow.1ago   = mymont$AGB.CO * exp(-pmax(0,mymont$DLNAGB.DT))
-                  baconow         = mymont$BA.CO
-                  baconow.1ago    = mymont$BA.CO  * exp(-pmax(0,mymont$DLNBA.DT))
-                  laiconow        = mymont$LAI.CO
-                  mortconow       = rowSums(mymont$MMEAN.MORT.RATE.CO)
-                  ddmortconow     = mymont$MMEAN.MORT.RATE.CO[,2]
-                  dimortconow     = mortconow - ddmortconow
-                  recruitconow    = mymont$RECRUIT.DBH
-                  censtatusconow  = mymont$CENSUS.STATUS
-                  dlndbhdtconow   = mymont$DLNDBH.DT
-                  dlnagbdtconow   = mymont$DLNAGB.DT
-                  dlnbadtconow    = mymont$DLNBA.DT
-                  cbalightconow   = rowMeans(mymont$CB.LIGHTMAX[,1:12])
-                  cbamoistconow   = rowMeans(mymont$CB.MOISTMAX[,1:12])
+                  pftconow        = mymont$PFT   [keep]
+                  nplantconow     = mymont$NPLANT[keep]
+                  agbconow        = mymont$AGB.CO[keep]
+                  agbconow.1ago   = agbconow * exp(-pmax(0,mymont$DLNAGB.DT[keep]))
+                  baconow         = mymont$BA.CO [keep]
+                  baconow.1ago    = baconow  * exp(-pmax(0,mymont$DLNBA.DT [keep]))
+                  laiconow        = mymont$LAI.CO[keep]
+                  #----- Find the demographic rates. --------------------------------------#
+                  if (one.cohort){
+                     mortconow    = max(0,sum(mymont$MMEAN.MORT.RATE.CO))
+                     ddmortconow  = pmax(0,mymont$MMEAN.MORT.RATE.CO[2])
+                  }else{
+                     mortconow    = rowSums(mymont$MMEAN.MORT.RATE.CO[keep,])
+                     ddmortconow  = pmax(0,mymont$MMEAN.MORT.RATE.CO[keep,2])
+                  }#end if
+                  dimortconow     = pmax(0,mortconow - ddmortconow)
+                  #----- Get recruitment flags and census status
+                  recruitconow    = mymont$RECRUIT.DBH  [keep]
+                  censtatusconow  = mymont$CENSUS.STATUS[keep]
+                  dbh.growthconow = mymont$DLNDBH.DT    [keep]
+                  agb.growthconow = mymont$DLNAGB.DT    [keep]
+                  bsa.growthconow = mymont$DLNBA.DT     [keep]
+                  #----- Find the potential carbon balance. -------------------------------#
+                  if (one.cohort){
+                     cbalightconow = mean(mymont$CB.LIGHTMAX[1:12])
+                     cbamoistconow = mean(mymont$CB.MOISTMAX[1:12])
+                  }else{
+                     cbalightconow = rowMeans(mymont$CB.LIGHTMAX[keep,1:12])
+                     cbamoistconow = rowMeans(mymont$CB.MOISTMAX[keep,1:12])
+                  }#end if
                   #------------------------------------------------------------------------#
 
                }else{
@@ -920,9 +981,9 @@ for (place in myplaces){
                   dimortconow     = NA
                   recruitconow    = NA
                   censtatusconow  = NA
-                  dlndbhdtconow   = NA
-                  dlnagbdtconow   = NA
-                  dlnbadtconow    = NA
+                  dbh.growthconow = NA
+                  agb.growthconow = NA
+                  bsa.growthconow = NA
                   cbalightconow   = NA
                   cbamoistconow   = NA
                }#end if
@@ -966,9 +1027,9 @@ for (place in myplaces){
                      #---------------------------------------------------------------------#
                   }else{
                      sel.dbh       = ( ( dbhfac      == d | d == (n.dbh+1) )
-                                     & dbhconow > census.dbh.min )
+                                     & dbhconow >= census.dbh.min )
                      sel.dbh.1ago  = ( ( dbhfac.1ago == d | d == (n.dbh+1) ) 
-                                     & dbhconow.1ago > census.dbh.min )
+                                     & dbhconow.1ago >= census.dbh.min )
 
                      #----- Define the minimum DBH. ---------------------------------------#
                      dbhminconow   = census.dbh.min + 0 * pftconow
@@ -1004,55 +1065,74 @@ for (place in myplaces){
 
                      sel.mort  = sel.pft & sel.dbh.1ago & recruitconow == 2
                      if (any(sel.mort)){
-                        #---- Mortality in terms of demographic density. ------------------#
-                        survivor                    = sum( w.nplant        [sel.mort] )
-                        previous                    = sum( w.nplant        [sel.mort]
-                                                         * exp(mortconow   [sel.mort]))
-                        di.previous                 = sum( w.nplant        [sel.mort] 
-                                                         * exp(dimortconow [sel.mort]))
-                        dd.previous                 = sum( w.nplant        [sel.mort] 
-                                                         * exp(ddmortconow [sel.mort]))
-                        ts.mort.size$n    [p,d,m,u] = log(    previous / survivor )
-                        ts.dimort.size$n  [p,d,m,u] = log( di.previous / survivor )
-                        ts.ddmort.size$n  [p,d,m,u] = log( dd.previous / survivor )
+
+
+                        #---- Mortality in terms of population. ---------------------------#
+                        mort.wm    = log(weighted.mean( x = exp(mortconow   [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        ddmort.wm  = log(weighted.mean( x = exp(ddmortconow [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        dimort.wm  = log(weighted.mean( x = exp(dimortconow [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        ts.mort.size$n    [p,d,m,u] =   mort.wm
+                        ts.ddmort.size$n  [p,d,m,u] = ddmort.wm
+                        ts.dimort.size$n  [p,d,m,u] = dimort.wm
                         #------------------------------------------------------------------#
+
+
 
 
 
                         #---- Mortality in terms of AGB. ----------------------------------#
-                        survivor                    = sum( w.nplant        [sel.mort]
-                                                         * agbconow.1ago   [sel.mort] )
-                        previous                    = sum( w.nplant        [sel.mort]
-                                                         * agbconow.1ago   [sel.mort]
-                                                         * exp(mortconow   [sel.mort]))
-                        di.previous                 = sum( w.nplant        [sel.mort] 
-                                                         * agbconow.1ago   [sel.mort]
-                                                         * exp(dimortconow [sel.mort]))
-                        dd.previous                 = sum( w.nplant        [sel.mort] 
-                                                         * agbconow.1ago   [sel.mort]
-                                                         * exp(ddmortconow [sel.mort]))
-                        ts.mort.size$agb  [p,d,m,u] = log(    previous / survivor )
-                        ts.dimort.size$agb[p,d,m,u] = log( di.previous / survivor )
-                        ts.ddmort.size$agb[p,d,m,u] = log( dd.previous / survivor )
+                        mort.wm    = log(weighted.mean( x = exp(mortconow   [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                          * agbconow.1ago   [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        ddmort.wm  = log(weighted.mean( x = exp(ddmortconow [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                          * agbconow.1ago   [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        dimort.wm  = log(weighted.mean( x = exp(dimortconow [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                          * agbconow.1ago   [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        ts.mort.size$agb  [p,d,m,u] =   mort.wm
+                        ts.ddmort.size$agb[p,d,m,u] = ddmort.wm
+                        ts.dimort.size$agb[p,d,m,u] = dimort.wm
                         #------------------------------------------------------------------#
 
 
 
-                        #---- Mortality in terms of Basal area. ---------------------------#
-                        survivor                    = sum( w.nplant        [sel.mort]
-                                                         * baconow.1ago    [sel.mort] )
-                        previous                    = sum( w.nplant        [sel.mort]
-                                                         * baconow.1ago    [sel.mort]
-                                                         * exp(mortconow   [sel.mort]))
-                        di.previous                 = sum( w.nplant        [sel.mort] 
-                                                         * baconow.1ago    [sel.mort]
-                                                         * exp(dimortconow [sel.mort]))
-                        dd.previous                 = sum( w.nplant        [sel.mort] 
-                                                         * baconow.1ago    [sel.mort]
-                                                         * exp(ddmortconow [sel.mort]))
-                        ts.mort.size$ba   [p,d,m,u] = log(    previous / survivor )
-                        ts.dimort.size$ba [p,d,m,u] = log( di.previous / survivor )
-                        ts.ddmort.size$ba [p,d,m,u] = log( dd.previous / survivor )
+
+
+                        #---- Mortality in terms of AGB. ----------------------------------#
+                        mort.wm    = log(weighted.mean( x = exp(mortconow   [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                          * baconow.1ago    [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        ddmort.wm  = log(weighted.mean( x = exp(ddmortconow [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                          * baconow.1ago    [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        dimort.wm  = log(weighted.mean( x = exp(dimortconow [sel.mort])
+                                                      , w = w.nplant        [sel.mort]
+                                                          * baconow.1ago    [sel.mort]
+                                                      )#end weighted.mean
+                                        )#end log
+                        ts.mort.size$ba   [p,d,m,u] =   mort.wm
+                        ts.ddmort.size$ba [p,d,m,u] = ddmort.wm
+                        ts.dimort.size$ba [p,d,m,u] = dimort.wm
                         #------------------------------------------------------------------#
 
 
@@ -1082,27 +1162,36 @@ for (place in myplaces){
                      sel.grow  = sel & recruitconow == 2
                      if (any(sel)){
                         #----- Estimate the mean of this population. ----------------------#
-                        mean.dlndbhdt = weighted.mean( x  = dlndbhdtconow [sel.grow]
-                                                     , w  = w.nplant      [sel.grow]
-                                                     )#end 
-                        mean.dlnagbdt = weighted.mean( x  = dlnagbdtconow [sel.grow]
-                                                     , w  = w.nplant      [sel.grow]
-                                                     )#end 
-                        mean.dlnbadt  = weighted.mean( x  = dlnbadtconow  [sel.grow]
-                                                     , w  = w.nplant      [sel.grow]
-                                                     )#end 
-                        total.growth  = sum( w.nplant       [sel.grow]
-                                           * ( agbconow     [sel.grow]
-                                             - agbconow.1ago[sel.grow] ) )
+                        m.exp.dbh.growth = exp(-dbh.growthconow[sel.grow])
+                        m.exp.agb.growth = exp(-agb.growthconow[sel.grow])
+                        m.exp.bsa.growth = exp(-bsa.growthconow[sel.grow])
+                        w.dbh            = w.nplant[sel.grow] * dbhconow     [sel.grow]
+                        w.agb            = w.nplant[sel.grow] * agbconow     [sel.grow]
+                        w.agb.1ago       = w.nplant[sel.grow] * agbconow.1ago[sel.grow]
+                        w.bsa            = w.nplant[sel.grow] * baconow      [sel.grow]
+
+                        mean.dbh.growth  = - log( weighted.mean( x = m.exp.dbh.growth
+                                                               , w = w.dbh
+                                                               )#end weighted.mean
+                                                )#end log
+                        mean.agb.growth  = - log( weighted.mean( x = m.exp.agb.growth
+                                                               , w = w.agb
+                                                               )#end weighted.mean
+                                                )#end log
+                        mean.bsa.growth  = - log( weighted.mean( x = m.exp.bsa.growth
+                                                               , w = w.bsa
+                                                               )#end weighted.mean
+                                                )#end log
+                        mean.acc.growth  =   sum( w.agb - w.agb.1ago )
                         #------------------------------------------------------------------#
 
                         #------------------------------------------------------------------#
                         #     Copy the results to the arrays.                              #
                         #------------------------------------------------------------------#
-                        ts.growth.size$dbh [p,d,m,u] = mean.dlndbhdt
-                        ts.growth.size$agb [p,d,m,u] = mean.dlnagbdt
-                        ts.growth.size$ba  [p,d,m,u] = mean.dlnbadt
-                        ts.growth.size$acc [p,d,m,u] = total.growth
+                        ts.growth.size$dbh [p,d,m,u] = mean.dbh.growth
+                        ts.growth.size$agb [p,d,m,u] = mean.agb.growth
+                        ts.growth.size$ba  [p,d,m,u] = mean.bsa.growth
+                        ts.growth.size$acc [p,d,m,u] = mean.acc.growth
                         #------------------------------------------------------------------#
                      }#end if
                      #---------------------------------------------------------------------#
@@ -1160,274 +1249,6 @@ for (place in myplaces){
          }#end for (m in 1:n.months)
          #---------------------------------------------------------------------------------#
       }#end for (u in 1:nfullcyc)
-      #====================================================================================#
-      #====================================================================================#
-
-
-
-
-      #====================================================================================#
-      #====================================================================================#
-      #     Make the parameter space.                                                      #
-      #------------------------------------------------------------------------------------#
-      cat("   - Creating the parameter space...","\n")
-         #----- Make the point and legend name sequence. ----------------------------------#
-         yeara            = c(qapply(X=ts.census.year,INDEX=census.idx,DIM=1
-                                    ,FUN=min,na.rm=TRUE))
-         yearz            = c(qapply(X=ts.census.year,INDEX=census.idx,DIM=1
-                                    ,FUN=max,na.rm=TRUE))
-         pspace$pch       = eft.pch[match(yearz,eft.year)]
-         pspace$leg.label = paste(sort(unique(yeara[is.finite(yeara)]))
-                                 ,sort(unique(yearz[is.finite(yearz)])),sep="-")
-         pspace$leg.pch   = eft.pch[match(sort(unique(yearz[is.finite(yearz)])),eft.year)]
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Environment variables. ----------------------------------------------------#
-         pspace$rshort           = c(qapply( X     = ts.rshort
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = mean
-                                           , na.rm = TRUE
-                                           ))
-         pspace$fs.open          = c(qapply( X     = ts.fs.open
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.20
-                                           , na.rm = TRUE
-                                           , lower = TRUE
-                                           ))
-         pspace$paw              = c(qapply( X     = ts.paw
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.20
-                                           , na.rm = TRUE
-                                           , lower = TRUE
-                                           ))
-         pspace$smpot            = c(qapply( X     = ts.smpot
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.80
-                                           , na.rm = TRUE
-                                           , lower = FALSE
-                                           ))
-         pspace$atm.vpd          = c(qapply( X     = ts.atm.vpd
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.80
-                                           , na.rm = TRUE
-                                           , lower = FALSE
-                                           ))
-         pspace$leaf.vpd         = c(qapply( X     = ts.leaf.vpd
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.80
-                                           , na.rm = TRUE
-                                           , lower = FALSE
-                                           ))
-         pspace$leaf.gsw        = c(qapply( X     = ts.leaf.gsw
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.80
-                                           , na.rm = TRUE
-                                           , lower = FALSE
-                                           ))
-         pspace$leaf.gbw        = c(qapply( X     = ts.leaf.gbw
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.80
-                                           , na.rm = TRUE
-                                           , lower = FALSE
-                                           ))
-         pspace$cba.light       = c(qapply( X     = ts.cba.light
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.80
-                                           , na.rm = TRUE
-                                           , lower = FALSE
-                                           ))
-         pspace$cba.moist       = c(qapply( X     = ts.cba.moist
-                                           , INDEX = census.idx
-                                           , DIM   = 1
-                                           , FUN   = qu.mean
-                                           , p     = 0.80
-                                           , na.rm = TRUE
-                                           , lower = FALSE
-                                           ))
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Plot-level variables. -----------------------------------------------------#
-         pp = npft  + 1
-         dd = n.dbh + 1
-         pspace$lai.plot.mean     = c(qapply( X     = ts.lai.size       [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean 
-                                            , na.rm = TRUE
-                                            ))
-         pspace$ba.plot.mean      = c(qapply( X     = ts.ba.size        [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean 
-                                            , na.rm = TRUE
-                                            ))
-         pspace$agb.plot.mean     = c(qapply( X     = ts.agb.size       [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean 
-                                            , na.rm = TRUE
-                                            ))
-         pspace$recr.plot.mean    = c(qapply( X     = ts.recr.size$n    [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean 
-                                            , na.rm = TRUE
-                                            ))
-         pspace$mort.plot.mean    = c(qapply( X     = ts.mort.size$n    [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean
-                                            , na.rm = TRUE
-                                            ))
-         pspace$dimort.plot.mean  = c(qapply( X     = ts.dimort.size$n  [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean
-                                            , na.rm = TRUE
-                                            ))
-         pspace$ddmort.plot.mean  = c(qapply( X     = ts.ddmort.size$n  [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean
-                                            , na.rm = TRUE
-                                            ))
-         pspace$growdbh.plot.mean = c(qapply( X     = ts.growth.size$dbh[pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean
-                                            , na.rm = TRUE
-                                            ))
-         pspace$growagb.plot.mean = c(qapply( X     = ts.growth.size$agb[pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean
-                                            , na.rm = TRUE
-                                            ))
-         pspace$growba.plot.mean  = c(qapply( X     = ts.growth.size$ba [pp,dd,,]
-                                            , INDEX = census.idx
-                                            , DIM   = 1
-                                            , FUN   = mean
-                                            , na.rm = TRUE
-                                            ))
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Size-level variables. -----------------------------------------------------#
-         pp = npft + 1
-         dd = 1:n.dbh
-         pspace$lai.size.mean     = matrix(qapply( X     = ts.lai.size   [pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$ba.size.mean      = matrix(qapply( X     = ts.ba.size    [pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$agb.size.mean     = matrix(qapply( X     = ts.agb.size   [pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$recr.size.mean    = matrix(qapply( X     = ts.recr.size$n[pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$mort.size.mean    = matrix(qapply( X     = ts.mort.size$n[pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$dimort.size.mean  = matrix(qapply( X     = ts.dimort.size$n[pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$ddmort.size.mean  = matrix(qapply( X     = ts.ddmort.size$n[pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$growdbh.size.mean = matrix(qapply( X     = ts.growth.size$dbh[pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$growagb.size.mean = matrix(qapply( X     = ts.growth.size$agb[pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         pspace$growba.size.mean  = matrix(qapply( X     = ts.growth.size$ba [pp,dd,,]
-                                                 , INDEX = census.idx
-                                                 , DIM   = 2
-                                                 , FUN   = mean
-                                                 , na.rm = TRUE
-                                                 )
-                                          , nrow = n.dbh
-                                          , ncol = nfullcyc*(n.census-1)
-                                          )#end matrix
-         #---------------------------------------------------------------------------------#
       #====================================================================================#
       #====================================================================================#
 
@@ -1986,9 +1807,13 @@ for (place in myplaces){
       #      Make the RData file name, then we check whether we must read the files again  #
       # or use the stored RData.                                                           #
       #------------------------------------------------------------------------------------#
-      path.data  = paste(here,place,"rdata_census",sep="/")
+      path.data  = file.path(here,place,"rdata_census",sep="/")
       if (! file.exists(path.data)) dir.create(path.data)
-      ed22.rdata = paste(path.data,paste("census_",place,".RData",sep=""),sep="/")
+      if (oldgrowth){
+         ed22.rdata = file.path(path.data,paste("oldgrowth_",place,".RData",sep=""))
+      }else{
+         ed22.rdata = file.path(path.data,paste("census_"   ,place,".RData",sep=""))
+      }#end if
       save(list=c("ed2"),file=ed22.rdata)
       #------------------------------------------------------------------------------------#
 
@@ -3244,273 +3069,185 @@ for (place in myplaces){
       }#end for
       #====================================================================================#
       #====================================================================================#
-   }#end if (census.name %in% ls())
-   #=======================================================================================#
-   #=======================================================================================#
 
 
 
 
-   #=======================================================================================#
-   #=======================================================================================#
-   #     Plot the monthly mean variables as functions of other 2 environment variables.    #
-   #---------------------------------------------------------------------------------------#
-   cat(" + Plotting parameter space...",sep="","\n")
-
-
-   #----- Sizes. --------------------------------------------------------------------------#
-   nzvar = length(xyzvar$zvar)
-   nxvar = length(xyzvar$xvar)
-   nyvar = length(xyzvar$yvar)
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- Create the directories. ---------------------------------------------------------#
-   outxyzp = paste(outpref,"xyzplot",sep="/")
-   if (! file.exists(outxyzp )) dir.create(outxyzp )
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #    Loop over all explanatory variables that go to the Y axis.                         #
-   #---------------------------------------------------------------------------------------#
-   for (y in 1:nyvar){
-      #----- Load Y settings. -------------------------------------------------------------#
-      this.y  = xyzvar$yvar[[y]]
-      yvname  = this.y$vname
-      ydesc   = this.y$desc
-      yunit   = this.y$unit
-      yadd    = this.y$add
-      ymult   = this.y$mult
-      yleg    = this.y$leg
-      ylog    = this.y$log
-      sizetoo = this.y$sizetoo
-      cat("     * Y: ",ydesc,"...","\n")
+      #====================================================================================#
+      #====================================================================================#
+      #     Plot the monthly mean variables as functions of other 2 environment variables. #
       #------------------------------------------------------------------------------------#
+      cat(" + Plotting parameter space...",sep="","\n")
 
+
+      #----- Sizes. -----------------------------------------------------------------------#
+      nzvar = length(xyzvar$zvar)
+      nxvar = length(xyzvar$xvar)
+      nyvar = length(xyzvar$yvar)
+      #------------------------------------------------------------------------------------#
 
 
       #----- Create the directories. ------------------------------------------------------#
-      outyvar = paste(outxyzp ,yvname   ,sep="/")
-      if (! file.exists(outyvar )) dir.create(outyvar )
+      outxyzp = paste(outpref,"xyzplot",sep="/")
+      if (! file.exists(outxyzp )) dir.create(outxyzp )
       #------------------------------------------------------------------------------------#
 
 
 
-      #----- Load the y variable.  Expand the edges of the y axis to fit a legend. --------#
-      if (sizetoo){
-         yplot.name  = paste(yvname,"plot","mean",sep=".")
-         ysize.name  = paste(yvname,"size","mean",sep=".")
-      }else{
-         yplot.name  = paste(yvname,"mean",sep=".")
-         ysize.name  = paste(yvname,"mean",sep=".")
-      }#end if
-      yvar.plot   = ymult * ( pspace[[yplot.name]] + yadd )
-      yvar.size   = ymult * ( pspace[[ysize.name]] + yadd )
-      ley         = desc.unit(desc=ydesc,unit=yunit)
-      ylimit.plot = pretty.xylim(u=yvar.plot,fracexp=scalleg,is.log=ylog)
-      #------------------------------------------------------------------------------------#
-
-
 
       #------------------------------------------------------------------------------------#
-      #    Loop over all explanatory variables that go to the X axis.                      #
+      #    Loop over all explanatory variables that go to the Y axis.                      #
       #------------------------------------------------------------------------------------#
-      for (x in 1:nxvar){
-         #----- Load X settings. ----------------------------------------------------------#
-         this.x = xyzvar$xvar[[x]]
-         xvname = this.x$vname
-         xdesc  = this.x$desc
-         xunit  = this.x$unit
-         xadd   = this.x$add
-         xmult  = this.x$mult
-         xleg   = this.x$leg
-         xlog   = this.x$log
+      for (y in 1:nyvar){
+         #----- Load Y settings. ----------------------------------------------------------#
+         this.y  = xyzvar$yvar[[y]]
+         yvname  = this.y$vname
+         ydesc   = this.y$desc
+         yunit   = this.y$unit
+         yadd    = this.y$add
+         ymult   = this.y$mult
+         yleg    = this.y$leg
+         ylog    = this.y$log
+         sizetoo = this.y$sizetoo
+         cat("     * Y: ",ydesc,"...","\n")
          #---------------------------------------------------------------------------------#
 
 
 
-         #----- Load the x variable. ------------------------------------------------------#
-         xplot.name  = paste(xvname,"plot","mean",sep=".")
-         xsize.name  = paste(xvname,"size","mean",sep=".")
-         xvar.plot   = xmult * ( pspace[[xplot.name]] + xadd )
-         xvar.size   = xmult * ( pspace[[xsize.name]] + xadd )
-         lex         = desc.unit(desc=xdesc,unit=xunit)
-
-         sel         = is.finite(xvar.plot) & ( xvar.plot > 0 | (! xlog))
-         xlimit.plot = range(xvar.plot[sel],na.rm=TRUE)
-         xlimit.size = matrix(nrow=n.dbh,ncol=2)
-         for (d in 1:n.dbh){
-            sel             = is.finite(xvar.size[d,]) & ( xvar.size[d,] > 0 | (! xlog) )
-            xlimit.size[d,] = range(xvar.size[d,sel],na.rm=TRUE)
-         }#end for
+         #----- Create the directories. ---------------------------------------------------#
+         outyvar = paste(outxyzp ,yvname   ,sep="/")
+         if (! file.exists(outyvar )) dir.create(outyvar )
          #---------------------------------------------------------------------------------#
 
 
 
-         #---------------------------------------------------------------------------------#
-         #   Make the log scale, and find the position for the legend.                     #
-         #---------------------------------------------------------------------------------#
-         plog = ""
-         if (xlog) plog=paste(plog,"x",sep="")
-         if (ylog) plog=paste(plog,"y",sep="")
-         leg.pos   = paste(yleg,xleg,sep="")
+         #----- Load the y variable.  Expand the edges of the y axis to fit a legend. -----#
+         if (sizetoo){
+            yplot.name  = paste(yvname,"plot","mean",sep=".")
+            ysize.name  = paste(yvname,"size","mean",sep=".")
+         }else{
+            yplot.name  = paste(yvname,"mean",sep=".")
+            ysize.name  = paste(yvname,"mean",sep=".")
+         }#end if
+         yvar.plot   = ymult * ( pspace[[yplot.name]] + yadd )
+         yvar.size   = ymult * ( pspace[[ysize.name]] + yadd )
+         ley         = desc.unit(desc=ydesc,unit=yunit)
+         ylimit.plot = pretty.xylim(u=yvar.plot,fracexp=scalleg,is.log=ylog)
          #---------------------------------------------------------------------------------#
 
 
 
          #---------------------------------------------------------------------------------#
-         #    Loop over all colour variables.                                              #
+         #    Loop over all explanatory variables that go to the X axis.                   #
          #---------------------------------------------------------------------------------#
-         for (z in 1:nzvar){
-            #----- Load Z settings. -------------------------------------------------------#
-            this.z   = xyzvar$zvar[[z]]
-            zvname   = this.z$vname
-            zdesc    = this.z$desc
-            zkey     = this.z$key
-            zunit    = this.z$unit
-            zadd     = this.z$add
-            zmult    = this.z$mult
-            zcscheme = get(this.z$col.scheme)
-            zlog     = this.z$log
-            cat("      ~ X:",xdesc,"   Z: ",zdesc,"...","\n")
+         for (x in 1:nxvar){
+            #----- Load X settings. -------------------------------------------------------#
+            this.x = xyzvar$xvar[[x]]
+            xvname = this.x$vname
+            xdesc  = this.x$desc
+            xunit  = this.x$unit
+            xadd   = this.x$add
+            xmult  = this.x$mult
+            xleg   = this.x$leg
+            xlog   = this.x$log
             #------------------------------------------------------------------------------#
 
 
 
-            #----- Annotation for the colour map ("Z" axis). ------------------------------#
-            zvar  = zmult * ( pspace[[zvname]] + zadd )
-            lez   = desc.unit(desc=zkey,unit=zunit)
+            #----- Load the x variable. ---------------------------------------------------#
+            xplot.name  = paste(xvname,"plot","mean",sep=".")
+            xsize.name  = paste(xvname,"size","mean",sep=".")
+            xvar.plot   = xmult * ( pspace[[xplot.name]] + xadd )
+            xvar.size   = xmult * ( pspace[[xsize.name]] + xadd )
+            lex         = desc.unit(desc=xdesc,unit=xunit)
+
+            sel         = is.finite(xvar.plot) & ( xvar.plot > 0 | (! xlog))
+            xlimit.plot = range(xvar.plot[sel],na.rm=TRUE)
+            xlimit.size = matrix(nrow=n.dbh,ncol=2)
+            for (d in 1:n.dbh){
+               sel             = is.finite(xvar.size[d,]) & ( xvar.size[d,] > 0 | (! xlog))
+               xlimit.size[d,] = range(xvar.size[d,sel],na.rm=TRUE)
+            }#end for
             #------------------------------------------------------------------------------#
 
 
 
-            #----- Find the range for the scale. ------------------------------------------#
-            zlimit  = pretty.xylim(u=zvar,fracexp=0.0,is.log=zlog)
             #------------------------------------------------------------------------------#
-
-
-            #----- Title. -----------------------------------------------------------------#
-            letitre.plot = paste(lieu,paste(zdesc,"Plot level",sep=" - "),sep="\n")
-            letitre.size = paste(lieu,paste(zdesc,"Size level",sep=" - "),sep="\n")
-            lesub.size   = paste("DBH Class: ",dbh.names,sep="")
+            #   Make the log scale, and find the position for the legend.                  #
             #------------------------------------------------------------------------------#
-
-
-
-            #----- Attribute symbols according to the year. -------------------------------#
-            this.pch  = pspace$pch
+            plog = ""
+            if (xlog) plog=paste(plog,"x",sep="")
+            if (ylog) plog=paste(plog,"y",sep="")
+            leg.pos   = paste(yleg,xleg,sep="")
             #------------------------------------------------------------------------------#
 
 
 
-
             #------------------------------------------------------------------------------#
-            #     Plot the plot-level.                                                     #
+            #    Loop over all colour variables.                                           #
             #------------------------------------------------------------------------------#
-            cat("         > Plot-level...","\n")
-            for (o in 1:nout){
-               #----- Open the file. ------------------------------------------------------#
-               fichier = paste(outyvar,"/plot_x_",xvname,"_y_",yvname
-                                      ,"_z_",zvname,".",outform[o],sep="")
-               if(outform[o] == "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
-                  pdf(file=fichier,onefile=FALSE
-                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
-               }#end if
+            for (z in 1:nzvar){
+               #----- Load Z settings. ----------------------------------------------------#
+               this.z   = xyzvar$zvar[[z]]
+               zvname   = this.z$vname
+               zdesc    = this.z$desc
+               zkey     = this.z$key
+               zunit    = this.z$unit
+               zadd     = this.z$add
+               zmult    = this.z$mult
+               zcscheme = get(this.z$col.scheme)
+               zlog     = this.z$log
+               cat("      ~ X:",xdesc,"   Z: ",zdesc,"...","\n")
                #---------------------------------------------------------------------------#
 
 
 
-               #----- Plot the parameter space. -------------------------------------------#
-               par(par.user)
-               xyz.plot( x              = xvar.plot
-                       , y              = yvar.plot
-                       , z              = zvar
-                       , fixed.xlim     = TRUE
-                       , fixed.ylim     = TRUE
-                       , xlim           = xlimit.plot
-                       , ylim           = ylimit.plot
-                       , zlim           = zlimit
-                       , colour.palette = zcscheme
-                       , cex            = 1.6
-                       , pch            = this.pch
-                       , xy.log         = plog
-                       , xyz.main       = list(text=letitre.plot,cex=cex.main)
-                       , xyz.xlab       = list(text=lex,adj=mtext.xadj,padj=mtext.xoff)
-                       , xyz.ylab       = list(text=ley,adj=mtext.yadj,padj=mtext.yoff)
-                       , key.title      = list(main=lez,cex.main=cex.ptsz*0.8)
-                       , key.log        = zlog
-                       , xyz.more       = list(grid=list(col=grid.colour,lty="solid"))
-                       , xyz.legend     = list( x      = "center"
-                                              , inset  = 0.0
-                                              , legend = pspace$leg.label
-                                              , col    = foreground
-                                              , bg     = background
-                                              , pch    = pspace$leg.pch
-                                              , title  = "Census"
-                                              , ncol   = 3
-                                              , cex    = cex.ptsz
-                                              , xpd    = TRUE
-                                              )#end legend
-                       )#end xyz.plot
+               #----- Annotation for the colour map ("Z" axis). ---------------------------#
+               zvar  = zmult * ( pspace[[zvname]] + zadd )
+               lez   = desc.unit(desc=zkey,unit=zunit)
                #---------------------------------------------------------------------------#
 
 
+
+               #----- Find the range for the scale. ---------------------------------------#
+               zlimit  = pretty.xylim(u=zvar,fracexp=0.0,is.log=zlog)
                #---------------------------------------------------------------------------#
-               #     Close the device.                                                     #
+
+
+               #----- Title. --------------------------------------------------------------#
+               letitre.plot = paste(lieu,paste(zdesc,"Plot level",sep=" - "),sep="\n")
+               letitre.size = paste(lieu,paste(zdesc,"Size level",sep=" - "),sep="\n")
+               lesub.size   = paste("DBH Class: ",dbh.names,sep="")
                #---------------------------------------------------------------------------#
-               if (outform[o] == "x11"){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
+
+
+
+               #----- Attribute symbols according to the year. ----------------------------#
+               this.pch  = pspace$pch
                #---------------------------------------------------------------------------#
-            }#end for outform
-            #------------------------------------------------------------------------------#
 
 
-
-
-            #------------------------------------------------------------------------------#
-            #     Plot the parameter space for the dbh classes if it is supposed to do so. #
-            #------------------------------------------------------------------------------#
-            if (sizetoo){
-               xuse.size = split(x=xvar.size,f=col(xvar.size))
-               yuse.size = split(x=yvar.size,f=col(yvar.size))
-               pch.size  = replicate(n=length(xuse.size),expr=c(this.pch),simplify=FALSE)
 
 
                #---------------------------------------------------------------------------#
-               #     Plot the xyz plot.                                                    #
+               #     Plot the plot-level.                                                  #
                #---------------------------------------------------------------------------#
+               cat("         > Plot-level...","\n")
                for (o in 1:nout){
                   #----- Open the file. ---------------------------------------------------#
-                  fichier = paste(outyvar,"/size_x_",xvname
-                                 ,"_y_",yvname,"_z_",zvname,".",outform[o],sep="")
+                  fichier = paste(outyvar,"/plot_x_",xvname,"_y_",yvname
+                                         ,"_z_",zvname,".",outform[o],sep="")
                   if(outform[o] == "x11"){
                      X11(width=size$width,height=size$height,pointsize=ptsz)
                   }else if(outform[o] == "png"){
-                     png(filename=fichier,width=size$width*depth
-                        ,height=size$height*depth
+                     png(filename=fichier,width=size$width*depth,height=size$height*depth
                         ,pointsize=ptsz,res=depth)
                   }else if(outform[o] == "eps"){
                      postscript(file=fichier,width=size$width,height=size$height
                                ,pointsize=ptsz,paper=size$paper)
                   }else if(outform[o] == "pdf"){
-                     pdf(file=fichier,onefile=FALSE
-                        ,width=size$width,height=size$height,pointsize=ptsz
-                        ,paper=size$paper)
+                     pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                        ,pointsize=ptsz,paper=size$paper)
                   }#end if
                   #------------------------------------------------------------------------#
 
@@ -3518,31 +3255,34 @@ for (place in myplaces){
 
                   #----- Plot the parameter space. ----------------------------------------#
                   par(par.user)
-                  xyz.plot( x              = xuse.size
-                          , y              = yuse.size
+                  xyz.plot( x              = xvar.plot
+                          , y              = yvar.plot
                           , z              = zvar
-                          , fixed.xlim     = FALSE
-                          , fixed.ylim     = FALSE
+                          , fixed.xlim     = TRUE
+                          , fixed.ylim     = TRUE
+                          , xlim           = xlimit.plot
+                          , ylim           = ylimit.plot
                           , zlim           = zlimit
-                          , colour.palette = muitas
+                          , colour.palette = zcscheme
                           , cex            = 1.6
                           , pch            = this.pch
                           , xy.log         = plog
-                          , xyz.main       = list(text=letitre.size,cex.main=cex.main)
+                          , xyz.main       = list(text=letitre.plot,cex=cex.main)
                           , xyz.xlab       = list(text=lex,adj=mtext.xadj,padj=mtext.xoff)
                           , xyz.ylab       = list(text=ley,adj=mtext.yadj,padj=mtext.yoff)
-                          , key.title      = list(main=lez,cex.main=0.8)
+                          , key.title      = list(main=lez,cex.main=cex.ptsz*0.8)
                           , key.log        = zlog
                           , xyz.more       = list(grid=list(col=grid.colour,lty="solid"))
-                          , xyz.legend     = list( x      = "bottom"
-                                                 , inset  = 0.01
+                          , xyz.legend     = list( x      = "center"
+                                                 , inset  = 0.0
                                                  , legend = pspace$leg.label
                                                  , col    = foreground
                                                  , bg     = background
                                                  , pch    = pspace$leg.pch
                                                  , title  = "Census"
                                                  , ncol   = 3
-                                                 , cex    = 1.0
+                                                 , cex    = cex.ptsz
+                                                 , xpd    = TRUE
                                                  )#end legend
                           )#end xyz.plot
                   #------------------------------------------------------------------------#
@@ -3558,15 +3298,112 @@ for (place in myplaces){
                      dev.off()
                   }#end if
                   #------------------------------------------------------------------------#
-               }#end for (o in 1:nout)
+               }#end for outform
                #---------------------------------------------------------------------------#
-            }#end if (sizetoo)
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot parameter space for the dbh classes if it is supposed to do so.  #
+               #---------------------------------------------------------------------------#
+               if (sizetoo){
+                  xuse.size = split(x=xvar.size,f=col(xvar.size))
+                  yuse.size = split(x=yvar.size,f=col(yvar.size))
+                  pch.size  = replicate( n        = length(xuse.size)
+                                       , expr     = c(this.pch)
+                                       , simplify = FALSE
+                                       )#end replicate
+
+
+                  #------------------------------------------------------------------------#
+                  #     Plot the xyz plot.                                                 #
+                  #------------------------------------------------------------------------#
+                  for (o in 1:nout){
+                     #----- Open the file. ------------------------------------------------#
+                     fichier = paste(outyvar,"/size_x_",xvname
+                                    ,"_y_",yvname,"_z_",zvname,".",outform[o],sep="")
+                     if(outform[o] == "x11"){
+                        X11(width=size$width,height=size$height,pointsize=ptsz)
+                     }else if(outform[o] == "png"){
+                        png(filename=fichier,width=size$width*depth
+                           ,height=size$height*depth
+                           ,pointsize=ptsz,res=depth)
+                     }else if(outform[o] == "eps"){
+                        postscript(file=fichier,width=size$width,height=size$height
+                                  ,pointsize=ptsz,paper=size$paper)
+                     }else if(outform[o] == "pdf"){
+                        pdf(file=fichier,onefile=FALSE
+                           ,width=size$width,height=size$height,pointsize=ptsz
+                           ,paper=size$paper)
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Plot the parameter space. -------------------------------------#
+                     par(par.user)
+                     xyz.plot( x              = xuse.size
+                             , y              = yuse.size
+                             , z              = zvar
+                             , fixed.xlim     = FALSE
+                             , fixed.ylim     = FALSE
+                             , zlim           = zlimit
+                             , colour.palette = muitas
+                             , cex            = 1.6
+                             , pch            = this.pch
+                             , xy.log         = plog
+                             , xyz.main       = list(text=letitre.size,cex.main=cex.main)
+                             , xyz.xlab       = list( text = lex
+                                                    , adj  = mtext.xadj
+                                                    , padj = mtext.xoff
+                                                    )#end list
+                             , xyz.ylab       = list( text = ley
+                                                    , adj  = mtext.yadj
+                                                    , padj = mtext.yoff
+                                                    )#end list
+                             , key.title      = list(main=lez,cex.main=0.8)
+                             , key.log        = zlog
+                             , xyz.more       = list(grid = list( col = grid.colour
+                                                                , lty = "solid"
+                                                                )#end list
+                                                    )#end list
+                             , xyz.legend     = list( x      = "bottom"
+                                                    , inset  = 0.01
+                                                    , legend = pspace$leg.label
+                                                    , col    = foreground
+                                                    , bg     = background
+                                                    , pch    = pspace$leg.pch
+                                                    , title  = "Census"
+                                                    , ncol   = 3
+                                                    , cex    = 1.0
+                                                    )#end legend
+                             )#end xyz.plot
+                     #---------------------------------------------------------------------#
+
+
+                     #---------------------------------------------------------------------#
+                     #     Close the device.                                               #
+                     #---------------------------------------------------------------------#
+                     if (outform[o] == "x11"){
+                        locator(n=1)
+                        dev.off()
+                     }else{
+                        dev.off()
+                     }#end if
+                     #---------------------------------------------------------------------#
+                  }#end for (o in 1:nout)
+                  #------------------------------------------------------------------------#
+               }#end if (sizetoo)
+               #---------------------------------------------------------------------------#
+            }#end for (x in 1:nxvar)
             #------------------------------------------------------------------------------#
-         }#end for (x in 1:nxvar)
+         }#end for (y in 1:nyvar)
          #---------------------------------------------------------------------------------#
-      }#end for (y in 1:nyvar)
+      }#end for
       #------------------------------------------------------------------------------------#
-   }#end for
-   #---------------------------------------------------------------------------------------#
+   }#end if (census.name %in% ls())
+   #=======================================================================================#
+   #=======================================================================================#
 }#end for places
 #------------------------------------------------------------------------------------------#

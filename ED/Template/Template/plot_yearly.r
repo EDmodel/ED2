@@ -29,7 +29,7 @@ yearend        = thisyearz    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
-nyears.long    = 15           # Runs longer than this are considered long runs.
+nyears.long    = 50           # Runs longer than this are considered long runs.
 #------------------------------------------------------------------------------------------#
 
 
@@ -48,7 +48,7 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "pdf" - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 18                     # Font size.
+ptsz           = 16                     # Font size.
 lwidth         = 2.5                    # Line width
 plotgrid       = TRUE                   # Should I plot the grid in the background? 
 fcgrid         = TRUE                   # Include a grid on the filled contour plots?
@@ -1760,7 +1760,7 @@ for (place in myplaces){
          }else{
             ylimit   = range(x=thisvnam,na.rm=TRUE)
          }#end if
-         ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=plog)
+         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
          #---------------------------------------------------------------------------------#
 
 
@@ -1813,8 +1813,30 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
 
 
-               #----- Plot all monthly means together. ------------------------------------#
+               #----- Plot legend outside main plot. --------------------------------------#
                par(par.user)
+               layout(mat=rbind(2,1),heights=c(5,1))
+               par(mar=c(0.1,4.1,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , legend = pftname.use
+                     , fill   = pftcol.use
+                     , ncol   = min(3,pretty.box(n.selpft)$ncol)
+                     , title  = expression(bold("Plant functional type"))
+                     , cex    = cex.ptsz
+                     , bg     = "transparent"
+                     , xpd    = TRUE
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+
+
+               #----- Plot the main plot. -------------------------------------------------#
+               par(mar=c(4.1,4.1,4.1,2.1))
                barplot(height=t(thisvnam[y,,]),names.arg=dbhnames[1:ndbh],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
@@ -1824,15 +1846,6 @@ for (place in myplaces){
                   abline(v=xgrid,col=grid.colour,lty="solid")
                }#end if
                box()
-               legend( x      = "topleft"
-                     , inset  = inset
-                     , legend = pftname.use
-                     , fill   = pftcol.use
-                     , ncol   = min(3,pretty.box(n.selpft)$ncol)
-                     , title  = expression(bold("Plant functional type"))
-                     , cex    = 1.0
-                     , bg     = background
-                     )#end legend
                #---------------------------------------------------------------------------#
 
 

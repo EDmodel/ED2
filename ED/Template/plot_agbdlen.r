@@ -75,9 +75,9 @@ stext.key        = paste("stext",sprintf("%2.2i",stext),sep="")
 stext.desc       = c("Loamy Sand","Sandy Clay Loam","Clay Loam","Clayey Sand","Clay")
 
 isite            = 2
-idrain           = 4
+idrain           = 6
 idtemp           = 1
-iiphen           = 1
+iiphen           = 2
 istext           = 4
 
 myplaces         = paste(site.key[isite],drain.key[idrain],dtemp.key[idtemp]

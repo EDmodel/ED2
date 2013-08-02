@@ -513,7 +513,7 @@ do ng = 1, ngrids
    write(unit=*,fmt='(a,1x,i4)')  '  SST Input File Inventory: Grid ',ng
    write(unit=*,fmt='(a)'      )  '-------------------------------------------------------'
    do nf=1,nsstfiles(ng)
-      write(unit=*,fmt='(i6,1x,f12.0,1x,a)') nf,itotdate_sst(nf,ng),trim(fnames_sst(nf,ng))
+      write(unit=*,fmt='(i6,2(1x,a))') nf,itotdate_sst(nf,ng),trim(fnames_sst(nf,ng))
    end do
    write(unit=*,fmt='(a)'      )  '-------------------------------------------------------'
 end do

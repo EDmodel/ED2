@@ -346,6 +346,7 @@ module growth_balive
       use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           ! ! subroutine
+      use ed_misc_coms    , only : ibigleaf               ! ! intent(in)
       use mortality       , only : mortality_rates        ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -371,6 +372,8 @@ module growth_balive
       real                          :: carbon_balance_moistmax
       real                          :: balive_in
       real                          :: nitrogen_supply
+      real                          :: dndt
+      real                          :: dlnndt
       real                          :: old_leaf_hcap
       real                          :: old_wood_hcap
       real                          :: nitrogen_uptake
@@ -416,6 +419,9 @@ module growth_balive
                   !    For the no vegetation dynamics case, we update the carbon balance   !
                   ! but we do NOT update the living tissues.                               !
                   !------------------------------------------------------------------------!
+                  cpatch%cb         (13,ico) = cpatch%cb                  (13,ico)         &
+                                             - cpatch%leaf_maintenance       (ico)         &
+                                             - cpatch%root_maintenance       (ico)
                   cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax         (13,ico)         &
                                              - cpatch%leaf_maintenance       (ico)         &
                                              - cpatch%root_maintenance       (ico)
@@ -445,12 +451,6 @@ module growth_balive
 
                   cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
                                          - cpatch%storage_respiration(ico)
-
-                  !------------------------------------------------------------------------!
-                  !     When storage carbon is lost, allow the associated nitrogen to go   !
-                  ! to litter in order to maintain prescribed C2N ratio.                   !
-                  !------------------------------------------------------------------------!
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa)
 
                   !------------------------------------------------------------------------!
                   !      Calculate actual, potential and maximum carbon balances.          !
@@ -532,6 +532,20 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico,csite%avg_daily_temp(ipa)            &
                                       ,csite%age(ipa))
+                  select case (ibigleaf)
+                  case (0)
+                     dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  case (1)
+                     dlnndt   = - sum(cpatch%mort_rate(1:5,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  end select
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
+                  cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico) + dndt   * tfact
+                  cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico) + dlnndt * tfact
 
                end do
 
@@ -586,7 +600,7 @@ module growth_balive
       !------------------------------------------------------------------------------------!
       !     Only do the transfer if leaves exist.                                          !
       !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(ico) == 2) return
+      if (cpatch%phenology_status(ico) == -2) return
      
       !----- Alias for pft type. ----------------------------------------------------------!
       ipft = cpatch%pft(ico)
@@ -1183,7 +1197,7 @@ module growth_balive
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
-         case (-1,2)
+         case (-1,-2)
             !------------------------------------------------------------------------------!
             !      Plants were already shedding leaves.  We swap the order here and remove !
             ! living tissues first, and only if there is nothing left that we remove       !

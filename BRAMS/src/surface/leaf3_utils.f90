@@ -1287,7 +1287,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_dept
       end if
       rlongup    = rlongup + patch_area * stefan * soil_tempk(mzg) ** 4
 
-      rshort_gnd = alb * rshort
+      rshort_gnd = (1.0 - alb) * rshort
       rlong_gnd  = 0.0
 
    elseif (isfcl == 0) then
@@ -1295,7 +1295,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_dept
       albedt     = albedt  + patch_area * albedo
       rlongup    = rlongup + patch_area * stefan * can_temp ** 4
 
-      rshort_gnd = albedt * rshort
+      rshort_gnd = (1.0 - albedo) * rshort
       rlong_gnd  = 0.0
    else
       !------ Running an actual land surface model... -------------------------------------!

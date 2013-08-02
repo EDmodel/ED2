@@ -110,7 +110,7 @@ boot.growth <<- function(dat,idx){
    n.idx         = length(idx)
    x             = dat$growth[idx]
    w             = dat$count [idx]
-   ans           = weighted.mean(x=x,w=w,na.rm=TRUE)
+   ans           = -log(weighted.mean(x=exp(-x),w=w,na.rm=TRUE))
    return(ans)
 }#end boot.growth
 #----- Accumulated recruitment. -----------------------------------------------------------#

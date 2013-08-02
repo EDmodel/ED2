@@ -5,7 +5,7 @@
 #    Given the x and y coordinates, this function will plot the vegetation values (IGBP)   #
 # with a colour scheme but no interpolation...                                             #
 #------------------------------------------------------------------------------------------#
-igbp.map = function(x    = seq(from=0,to=1,len=length(v))
+igbp.map <<- function(x    = seq(from=0,to=1,len=length(v))
                    ,y    = seq(from=0,to=1,len=length(v))
                    ,z
                    ,xlim = range(x,finite=TRUE)
@@ -14,15 +14,6 @@ igbp.map = function(x    = seq(from=0,to=1,len=length(v))
                    ,na.col="gray94",plot.title,plot.axes
                    ,asp=NA,xaxs="i",yaxs="i",las=1,axes=TRUE,frame.plot=axes,pch=15
                    ,cex=1.0,...){
-
-
-   igbp.col = c("midnightblue","steelblue4","#004E00","slategray3","green3"
-               ,"forestgreen","lightgoldenrod4","goldenrod","chartreuse3","yellowgreen"
-               ,"gold","turquoise4","mediumpurple1","gray29","yellow3","powderblue"
-               ,"firebrick","gray46")
-   igbp.leg = c("H2O","ENF","EBF","DNF","DBF","MXF","CSH","OSH","WSV","SAV","GSL","PWL"
-               ,"CRL","URB","CVM","ICE","DES","MSS")
-   igbp.val = c(0:17)
 
    z[z %in% c(254,255)] = 17
    z[is.na(z)]          = 17

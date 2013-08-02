@@ -27,7 +27,7 @@ tspftdbh[[n]]     = list( vnam     = "bgb"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = TRUE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = TRUE
                         , scsout   = FALSE
                         )#end list
@@ -326,7 +326,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.gsw"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -339,7 +339,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.gbw"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -393,7 +393,7 @@ tspftdbh[[n]]     = list( vnam     = "mort"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = FALSE
                         )#end list
@@ -406,7 +406,7 @@ tspftdbh[[n]]     = list( vnam     = "ncbmort"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -419,7 +419,7 @@ tspftdbh[[n]]     = list( vnam     = "dimort"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -432,7 +432,7 @@ tspftdbh[[n]]     = list( vnam     = "recr"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -445,7 +445,7 @@ tspftdbh[[n]]     = list( vnam     = "growth"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -458,7 +458,7 @@ tspftdbh[[n]]     = list( vnam     = "agb.mort"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = FALSE
                         )#end list
@@ -471,7 +471,7 @@ tspftdbh[[n]]     = list( vnam     = "agb.ncbmort"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -484,7 +484,7 @@ tspftdbh[[n]]     = list( vnam     = "agb.dimort"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -497,7 +497,7 @@ tspftdbh[[n]]     = list( vnam     = "agb.recr"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -510,7 +510,7 @@ tspftdbh[[n]]     = list( vnam     = "agb.growth"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -562,7 +562,7 @@ tspftdbh[[n]]     = list( vnam     = "cbarel"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = TRUE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = FALSE
                         )#end list
@@ -614,7 +614,7 @@ tspftdbh[[n]]     = list( vnam     = "wue"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = TRUE
+                        , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = FALSE
                         )#end list

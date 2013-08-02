@@ -489,7 +489,7 @@ subroutine lake_derivs(initp,dinitp)
    !---------------------------------------------------------------------------------------!
    dinitp%avg_albedt     = min(max(albt_inter + albt_slope*lakemet%tanz,albt_min),albt_max)
    dinitp%avg_rlongup    = emiss_h2o * stefan8 * initp%lake_temp ** 4
-   dinitp%avg_rshort_gnd = dinitp%avg_albedt * lakemet%rshort
+   dinitp%avg_rshort_gnd = (1.d0 - dinitp%avg_albedt) * lakemet%rshort
    !---------------------------------------------------------------------------------------!
 
 

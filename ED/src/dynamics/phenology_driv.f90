@@ -300,7 +300,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
 
 
-            if (elongf_try < 1.0 .and. cpatch%phenology_status(ico) /= 2) then
+            if (elongf_try < 1.0 .and. cpatch%phenology_status(ico) /= -2) then
                !----- It is time to drop leaves.  Drop all leaves. ------------------------!
                cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * cpatch%bleaf(ico)
                !---------------------------------------------------------------------------!
@@ -313,7 +313,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                     + cpatch%bleaf(ico) * retained_carbon_fraction
                cpatch%bleaf   (ico) = 0.0
                cpatch%elongf  (ico) = 0.0
-               cpatch%phenology_status(ico) = 2
+               cpatch%phenology_status(ico) = -2
                !---------------------------------------------------------------------------!
 
 
@@ -358,7 +358,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                             - cpatch%leaf_drop      (ico)
                !---------------------------------------------------------------------------!
 
-            elseif(elongf_try > 1.0 .and. cpatch%phenology_status(ico) == 2) then
+            elseif(elongf_try > 1.0 .and. cpatch%phenology_status(ico) == -2) then
                !---------------------------------------------------------------------------!
                !      It is time to flush.  Change phenology_status will update carbon     !
                ! pools in growth_balive.                                                   !
@@ -378,7 +378,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             ! 2. The plant has no leaves, but the temperature and light conditions are     !
             !    okay again, and leaves can start growing.                                 !
             !------------------------------------------------------------------------------!
-            if (cpatch%phenology_status(ico) < 2 .and. drop_cold) then
+            if (cpatch%phenology_status(ico) /= -2 .and. drop_cold) then
                if (cpoly%green_leaf_factor(ipft,isi) < elongf_min) then
                    bl_max = 0.0
                end if
@@ -433,13 +433,13 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
                !----- Set status flag. ----------------------------------------------------!
                if (bl_max == 0.0) then
-                  cpatch%phenology_status(ico) = 2
+                  cpatch%phenology_status(ico) = -2
                   cpatch%elongf(ico) = 0.
                else
                   cpatch%elongf(ico) = 1.0 ! It should become green_leaf_factor...
                end if
                
-            elseif (cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
+            elseif (cpatch%phenology_status(ico) == -2 .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
                !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!
@@ -493,7 +493,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                if (elongf_try >= elongf_min) then
                   cpatch%phenology_status(ico) = -1
                else
-                  cpatch%phenology_status(ico) = 2
+                  cpatch%phenology_status(ico) = -2
                end if
                cpatch%leaf_drop (ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
                cpatch%elongf    (ico) = elongf_try
@@ -554,7 +554,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   !----- Leaves were already growing, keep growing. -----------------------!
                   cpatch%elongf          (ico) = elongf_try
                   !------------------------------------------------------------------------!
-               case (-1,2)
+               case (-1,-2)
                   !------------------------------------------------------------------------!
                   !     Leaves were dropping or gone, we first check that conditions are   !
                   ! really improving before we turn on leaf production.                    !
@@ -758,7 +758,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
             if (theta(kroot) < 1.0) then
 
                !----- It is time to drop leaves. ------------------------------------------!
-               if (cpatch%phenology_status(ico) < 2) then
+               if (cpatch%phenology_status(ico) /= -2) then
                   !----- Find the leaf drop. ----------------------------------------------!
                   cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction)                 &
                                         * cpatch%lai(ico) / cpatch%sla(ico)                &
@@ -769,7 +769,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                   cpatch%balive              (ico) = cpatch%balive(ico)                    &
                                                    - cpatch%bleaf(ico)
                   cpatch%bleaf               (ico) = 0.0
-                  cpatch%phenology_status    (ico) = 2
+                  cpatch%phenology_status    (ico) = -2
                   cpatch%elongf              (ico) = 0.
                   cpatch%cb               (13,ico) = cpatch%cb           (13,ico)          &
                                                    - cpatch%leaf_drop       (ico)
@@ -780,7 +780,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                   !------------------------------------------------------------------------!
                end if
                
-            elseif(theta(kroot) > 1.0 .and. cpatch%phenology_status(ico) == 2) then
+            elseif(theta(kroot) > 1.0 .and. cpatch%phenology_status(ico) == -2) then
                
                !---------------------------------------------------------------------------! 
                !    It is time to flush.  Change phenology_status here, and make all       !
@@ -802,7 +802,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
             ! 2. The plant has no leaves, but the temperature and light conditions are     !
             !    okay again, and leaves can start growing.                                 !
             !------------------------------------------------------------------------------!
-            if (cpatch%phenology_status(ico) < 2 .and. drop_cold) then
+            if (cpatch%phenology_status(ico) /= -2 .and. drop_cold) then
             
                if (cpoly%green_leaf_factor(ipft,isi) < elongf_min) then
                   bleaf_new = 0.0
@@ -846,7 +846,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
 
                !----- Set status flag. ----------------------------------------------------!
                if (bleaf_new == 0.0) then
-                  cpatch%phenology_status(ico) = 2
+                  cpatch%phenology_status(ico) = -2
                   cpatch%elongf          (ico) = 0.
                else
                   cpatch%elongf          (ico) = 1.
@@ -854,7 +854,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
 
 
-            elseif (cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
+            elseif (cpatch%phenology_status(ico) == -2 .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
                !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!
@@ -904,7 +904,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                if (elongf_try > elongf_min) then
                   cpatch%phenology_status(ico) = -1
                else
-                  cpatch%phenology_status(ico) = 2
+                  cpatch%phenology_status(ico) = -2
                end if
                cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
                cpatch%elongf   (ico) = elongf_try

@@ -1140,7 +1140,7 @@ module fuse_fiss_utils
       !    Bleaf must be zero if phenology status is 2.  This is probably done correctly   !
       ! throughout the code, but being safe here.                                          !
       !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(recc) < 2) then
+      if (cpatch%phenology_status(recc) /= -2) then
          cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
                                + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
       else

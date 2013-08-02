@@ -95,15 +95,15 @@ subroutine structural_growth(cgrid, month)
                salloci = 1.0 / salloc
 
                !----- Remember inputs in order to calculate increments later on. ----------!
-               balive_in   = cpatch%balive(ico)
-               bdead_in    = cpatch%bdead(ico)
-               bleaf_in    = cpatch%bleaf(ico)
-               hite_in     = cpatch%hite(ico)
-               dbh_in      = cpatch%dbh(ico)
-               nplant_in   = cpatch%nplant(ico)
+               balive_in   = cpatch%balive  (ico)
+               bdead_in    = cpatch%bdead   (ico)
+               bleaf_in    = cpatch%bleaf   (ico)
+               hite_in     = cpatch%hite    (ico)
+               dbh_in      = cpatch%dbh     (ico)
+               nplant_in   = cpatch%nplant  (ico)
                bstorage_in = cpatch%bstorage(ico)
-               agb_in      = cpatch%agb(ico)
-               ba_in       = cpatch%basarea(ico)
+               agb_in      = cpatch%agb     (ico)
+               ba_in       = cpatch%basarea (ico)
 
                !---------------------------------------------------------------------------!
                !    Apply mortality, and do not allow nplant < negligible_nplant (such a   !
@@ -127,27 +127,41 @@ subroutine structural_growth(cgrid, month)
                struct_litter        = - cpatch%bdead(ico)    * cpatch%monthly_dndt(ico)
                mort_litter          = balive_mort_litter + bstorage_mort_litter            &
                                     + struct_litter
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Reset monthly_dndt. -------------------------------------------------!
                cpatch%monthly_dndt  (ico) = 0.0
                cpatch%monthly_dlnndt(ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
 
                !----- Determine how to distribute what is in bstorage. --------------------!
                call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)           &
                                                ,cpatch%dbh(ico),cgrid%lat(ipy)             &
                                                ,cpatch%phenology_status(ico)               &
                                                ,f_bseeds,f_bdead)
-               
+               !---------------------------------------------------------------------------!
+
+
+
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
+               !---------------------------------------------------------------------------!
+
 
                if (ibigleaf == 0 ) then
-                  !------ NPP allocation to wood and course roots in KgC /m2 --------------!
+                  !------ NPP allocation to wood and coarse roots in KgC /m2 --------------!
                   cpatch%today_NPPwood(ico) = agf_bs(ipft)*f_bdead*cpatch%bstorage(ico)    &
                                              * cpatch%nplant(ico)
                   cpatch%today_NPPcroot(ico) = (1. - agf_bs(ipft)) * f_bdead               &
                                              * cpatch%bstorage(ico) * cpatch%nplant(ico)
                end if
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
@@ -201,10 +215,21 @@ subroutine structural_growth(cgrid, month)
                       csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake           &
                     + net_stem_N_uptake
 
-               !----- Calculate the derived cohort properties. ----------------------------!
+               !---------------------------------------------------------------------------!
+               !     Calculate some derived cohort properties:                             !
+               ! - DBH                                                                     !
+               ! - Height                                                                  !
+               ! - Recruit and census status                                               !
+               ! - Phenology status                                                        !
+               ! - Area indices                                                            !
+               ! - Basal area                                                              !
+               ! - AGB                                                                     !
+               ! - Rooting depth                                                           !
+               !---------------------------------------------------------------------------!
                call update_derived_cohort_props(cpatch,ico                                 &
                                                   ,cpoly%green_leaf_factor(ipft,isi)       &
                                                   ,cpoly%lsl(isi))
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                ! MLO. We now update the heat capacity and the vegetation internal energy.  !
@@ -334,11 +359,13 @@ subroutine structural_growth(cgrid, month)
                                       ,cpoly%agb_growth(:,:,isi)                           &
                                       ,cpoly%basal_area_mort(:,:,isi)                      &
                                       ,cpoly%agb_mort(:,:,isi))
+               !---------------------------------------------------------------------------!
 
             end do cohortloop
 
             !----- Age the patch if this is not agriculture. ------------------------------!
             if (csite%dist_type(ipa) /= 1) csite%age(ipa) = csite%age(ipa) + 1.0/12.0
+            !------------------------------------------------------------------------------!
 
          end do patchloop
       end do siteloop
@@ -408,6 +435,10 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: cbr_moist
    real                          :: cbr_now
    real                          :: balive_in
+   real                          :: bleaf_in
+   real                          :: broot_in
+   real                          :: bsapwooda_in
+   real                          :: bsapwoodb_in
    real                          :: bdead_in
    real                          :: hite_in
    real                          :: dbh_in
@@ -415,6 +446,11 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: bstorage_in
    real                          :: agb_in
    real                          :: ba_in
+   real                          :: phenstatus_in
+   real                          :: lai_in
+   real                          :: wai_in
+   real                          :: cai_in
+   integer                       :: krdepth_in
    real                          :: f_bseeds
    real                          :: f_bdead
    real                          :: balive_mort_litter
@@ -449,16 +485,27 @@ subroutine structural_growth_eq_0(cgrid, month)
                salloc  = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
                salloci = 1.0 / salloc
 
-               !----- Remember inputs in order to calculate increments later on. ----------!
-               balive_in   = cpatch%balive(ico)
-               bdead_in    = cpatch%bdead(ico)
-               hite_in     = cpatch%hite(ico)
-               dbh_in      = cpatch%dbh(ico)
-               nplant_in   = cpatch%nplant(ico)
-               bstorage_in = cpatch%bstorage(ico)
-               agb_in      = cpatch%agb(ico)
-               ba_in       = cpatch%basarea(ico)
-
+               !---------------------------------------------------------------------------!
+               !      Remember inputs in order to calculate increments and revert back to  !
+               ! these values later on.                                                    !
+               !---------------------------------------------------------------------------!
+               balive_in     = cpatch%balive          (ico)
+               bdead_in      = cpatch%bdead           (ico)
+               bleaf_in      = cpatch%bleaf           (ico)
+               broot_in      = cpatch%broot           (ico)
+               bsapwooda_in  = cpatch%bsapwooda       (ico)
+               bsapwoodb_in  = cpatch%bsapwoodb       (ico)
+               hite_in       = cpatch%hite            (ico)
+               dbh_in        = cpatch%dbh             (ico)
+               nplant_in     = cpatch%nplant          (ico)
+               bstorage_in   = cpatch%bstorage        (ico)
+               agb_in        = cpatch%agb             (ico)
+               ba_in         = cpatch%basarea         (ico)
+               phenstatus_in = cpatch%phenology_status(ico)
+               lai_in        = cpatch%lai             (ico)
+               wai_in        = cpatch%wai             (ico)
+               cai_in        = cpatch%crown_area      (ico)
+               krdepth_in    = cpatch%krdepth         (ico)
                !---------------------------------------------------------------------------!
                !    Apply mortality, and do not allow nplant < negligible_nplant (such a   !
                ! sparse cohort is about to be terminated, anyway).                         !
@@ -466,6 +513,10 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
                cpatch%monthly_dndt  (ico) = 0.0
                cpatch%monthly_dlnndt(ico) = 0.0
+               !---------------------------------------------------------------------------!
+
+
+
 
                !----- Calculate litter owing to mortality. --------------------------------!
                balive_mort_litter   = - cpatch%balive(ico)   * cpatch%monthly_dndt(ico)
@@ -481,10 +532,10 @@ subroutine structural_growth_eq_0(cgrid, month)
                                                ,f_bseeds,f_bdead)
                
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
-               cpatch%bdead(ico) = cpatch%bdead(ico)
+               cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
 
-               !------ NPP allocation to wood and course roots in KgC /m2 -----------------!
+               !------ NPP allocation to wood and coarse roots in KgC /m2 -----------------!
                cpatch%today_NPPwood(ico) = agf_bs(ipft) * f_bdead * cpatch%bstorage(ico)   &
                                           * cpatch%nplant(ico)
                cpatch%today_NPPcroot(ico) = (1. - agf_bs(ipft)) * f_bdead                  &
@@ -523,6 +574,22 @@ subroutine structural_growth_eq_0(cgrid, month)
 
                !----- Decrement the storage pool. -----------------------------------------!
                cpatch%bstorage(ico) = cpatch%bstorage(ico) * (1.0 - f_bdead - f_bseeds)
+               !---------------------------------------------------------------------------!
+
+               !---------------------------------------------------------------------------!
+               !     Calculate some derived cohort properties:                             !
+               ! - DBH                                                                     !
+               ! - Height                                                                  !
+               ! - Recruit and census status                                               !
+               ! - Phenology status                                                        !
+               ! - Area indices                                                            !
+               ! - Basal area                                                              !
+               ! - AGB                                                                     !
+               ! - Rooting depth                                                           !
+               !---------------------------------------------------------------------------!
+               call update_derived_cohort_props(cpatch,ico                                 &
+                                                  ,cpoly%green_leaf_factor(ipft,isi)       &
+                                                  ,cpoly%lsl(isi))
                !---------------------------------------------------------------------------!
 
 
@@ -636,15 +703,40 @@ subroutine structural_growth_eq_0(cgrid, month)
                                       ,cpoly%agb_growth(:,:,isi)                           &
                                       ,cpoly%basal_area_mort(:,:,isi)                      &
                                       ,cpoly%agb_mort(:,:,isi))
+               !---------------------------------------------------------------------------!
 
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Revert back to previous values:                                       !
+               !---------------------------------------------------------------------------!
+               cpatch%balive          (ico) = balive_in
+               cpatch%bdead           (ico) = bdead_in
+               cpatch%bleaf           (ico) = bleaf_in
+               cpatch%broot           (ico) = broot_in
+               cpatch%bsapwooda       (ico) = bsapwooda_in
+               cpatch%bsapwoodb       (ico) = bsapwoodb_in
+               cpatch%hite            (ico) = hite_in
+               cpatch%dbh             (ico) = dbh_in
+               cpatch%nplant          (ico) = nplant_in
+               cpatch%bstorage        (ico) = bstorage_in
+               cpatch%agb             (ico) = agb_in
+               cpatch%basarea         (ico) = ba_in
+               cpatch%phenology_status(ico) = phenstatus_in
+               cpatch%lai             (ico) = lai_in
+               cpatch%wai             (ico) = wai_in
+               cpatch%crown_area      (ico) = cai_in
+               cpatch%krdepth         (ico) = krdepth_in
+               !---------------------------------------------------------------------------!
             end do cohortloop
-
-            !----- Age the patch if this is not agriculture. ------------------------------!
-            if (csite%dist_type(ipa) /= 1) csite%age(ipa) = csite%age(ipa) + 1.0/12.0
-
+            !------------------------------------------------------------------------------!
          end do patchloop
+         !---------------------------------------------------------------------------------!
       end do siteloop
+      !------------------------------------------------------------------------------------!
    end do polyloop
+   !---------------------------------------------------------------------------------------!
 
 
    return

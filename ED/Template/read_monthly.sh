@@ -534,6 +534,7 @@ do
       # we submit once again, but save a file to remember that this polygon is loaded.     #
       #------------------------------------------------------------------------------------#
       status="${here}/${polyname}/${rdata_path}/status_${polyname}.txt"
+      rdata="${here}/${polyname}/${rdata_path}/${polyname}.RData"
       if [ -s ${status} ]
       then
          yearl=`cat ${status} | awk '{print $1}'`

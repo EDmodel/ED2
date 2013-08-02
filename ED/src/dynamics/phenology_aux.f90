@@ -562,7 +562,7 @@ module phenology_aux
       elseif (elongf > elongf_min) then
          phenology_status = 1
       else
-         phenology_status = 2
+         phenology_status = -2
          elongf           = 0.
       end if
       !------------------------------------------------------------------------------------!

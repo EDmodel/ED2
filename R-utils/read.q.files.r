@@ -1651,18 +1651,24 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             sel = sel.pft & sel.dbh & dbhconow >= dbhminconow
             if (any(sel)){
                #----- Growth rates are weighted by population. ----------------------------#
-               szpft$growth     [m,d,p] = 100. * weighted.mean( x     = growthconow    [sel]
-                                                              , w     = w.nplant       [sel]
-                                                              , na.rm = TRUE
-                                                              )#end weighted.mean
-               szpft$agb.growth [m,d,p] = 100. * weighted.mean( x     = agb.growthconow[sel]
-                                                              , w     = w.nplant       [sel]
-                                                              , na.rm = TRUE
-                                                              )#end weighted.mean
-               szpft$bsa.growth [m,d,p] = 100. * weighted.mean( x     = bsa.growthconow[sel]
-                                                              , w     = w.nplant       [sel]
-                                                              , na.rm = TRUE
-                                                              )#end weighted.mean
+               dbh.growth = - 100. * log( weighted.mean( x = exp(-growthconow    [sel])
+                                                       , w = w.nplant            [sel]
+                                                           * dbhconow            [sel]
+                                                       )#end weighted.mean
+                                        )#end log
+               agb.growth = - 100. * log( weighted.mean( x = exp(-agb.growthconow[sel])
+                                                       , w = w.nplant            [sel]
+                                                           * agbconow            [sel]
+                                                       )#end weighted.mean
+                                        )#end log
+               bsa.growth = - 100. * log( weighted.mean( x = exp(-bsa.growthconow[sel])
+                                                       , w = w.nplant            [sel]
+                                                           * baconow             [sel]
+                                                       )#end weighted.mean
+                                        )#end log
+               szpft$growth     [m,d,p] = dbh.growth
+               szpft$agb.growth [m,d,p] = agb.growth
+               szpft$bsa.growth [m,d,p] = bsa.growth
                #---------------------------------------------------------------------------#
 
 
