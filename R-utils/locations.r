@@ -747,6 +747,23 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Biometry"
                                                    )#end names
                                        )#end list
+   flagvar[["struct"]]           = list( descr  = "Structure"
+                                       , numeric = FALSE
+                                       , values = c("ble_iage30_pft02"
+                                                   ,"ble_iage30_pft05"
+                                                   ,"sas_iage01_pft02"
+                                                   ,"sas_iage01_pft05"
+                                                   ,"sas_iage30_pft02"
+                                                   ,"sas_iage30_pft05"
+                                                   )#end values
+                                       , names  = c("2 PFTs"
+                                                   ,"5 PFTs"
+                                                   ,"Size + 2 PFTs"
+                                                   ,"Size + 5 PFTs"
+                                                   ,"Size + Age + 2 PFTs"
+                                                   ,"Size + Age + 5 PFTs"
+                                                   )#end names
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1092,6 +1109,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
          na     = c(            7,           13,           23,            31,          40)
          nz     = c(           10,           16,           24,            33,          41)
+      }else if (lenici == 50){
+         nparms = 5
+         param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","struct")
+         na     = c(            7,           13,           23,            31,      35)
+         nz     = c(           10,           16,           24,            33,      50)
       }#end if
    }else{
       lenici = nchar(ici)
@@ -3680,7 +3702,7 @@ poitmp[[u]] = list( short           = "sao_luis"
 u           = u + 1
 poitmp[[u]] = list( short           = "sao_martinho"          
                   , longname        = "Sao Martinho da Serra, RS"                
-                  , iata            = "ria"
+                  , iata            = "mhs"
                   , lon             = -53.823
                   , lat             = -29.443
                   , alt             = 489

@@ -11,11 +11,12 @@
 #------------------------------------------------------------------------------------------#
 #    CHANGE LOG                                                                            #
 #------------------------------------------------------------------------------------------#
-ramspost='myoutpath/rpost/ramspost_6.2'      # Name of executable file
-tmpfolder='myoutpath/rpost/.temp'            # Name of a timestrrary folder
+here="myoutpath/rpost"                       # Main path
+executable="${here}/ramspost_6.2"            # Name of executable file
+tmpfolder="${here}/.temp"                    # Name of a timestrrary folder
 nice=''                                      # Command to "nice" the job.  Put nothing
                                              #    if you don't want to be nice
-runoutput='myoutpath/rpost/ramspost.out'     # Name of a renewable output file
+runoutput="${here}/ramspost.out"             # Name of a renewable output file
 compression='none'                           # Kind of compression:
                                              #    (Z, bz2, zip, gz, or none)   
 title='EDBRAMS-1.4'                          # Title to appear in the header 
@@ -23,7 +24,11 @@ title='EDBRAMS-1.4'                          # Title to appear in the header
 deleteintctl='y'                             # Delete intermediate ctl [y/N]
                                              #    (a template will be provided)
 outshell='y'                                 # Create an output file for shell
-shellout='myoutpath/rpost/serial_out.out'    # File for 1eachtime-sigma.sh output
+shellout="${here}/serial_out.out"            # File for 1eachtime-sigma.sh output
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
@@ -50,19 +55,35 @@ esac
 #------------------------------------------------------------------------------------------#
 
 
+#----- Lock script to avoid multiple submissions. -----------------------------------------#
+locked="${here}/1eachtime-sigma.locked"
+if [ -s ${locked} ]
+then
+   exit
+else
+   now=`date`
+   echo " Post-processing: ${now}" > ${locked}
+fi
+#------------------------------------------------------------------------------------------#
+
+
+#----- Get current path and change directory. ---------------------------------------------#
+chezmoi=${PWD}
+cd ${here}
+#------------------------------------------------------------------------------------------#
 
 #----- Clean the temporary directory. -----------------------------------------------------#
 if [ ! -s ${tmpfolder} ]
 then
    mkdir ${tmpfolder}
 else
-   rm -f ${tmpfolder}/*
+   /bin/rm -f ${tmpfolder}/*
 fi
 #------------------------------------------------------------------------------------------#
 
 
 #----- Reset the shell output file in case we want one. -----------------------------------#
-rm -f ${shellout}
+/bin/rm -f ${shellout}
 if [ ${outshell} == 'y' -o ${outshell} == 'Y' ]
 then
    touch ${shellout}
@@ -70,29 +91,41 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
+
+#----- Define the working and the backup namelist. ----------------------------------------#
+ramspost="${here}/ramspost.inp"
+backup="${here}/ramspost.inp-backup"
+#------------------------------------------------------------------------------------------#
+
+
 #----- Check whether ramspost.inp exists or not. ------------------------------------------#
-if [ -s ramspost.inp-backup ]
+if [ -s ${backup} ]
 then
-   rm -f ramspost.inp
-   cp ramspost.inp-backup ramspost.inp
-elif [ -s ramspost.inp ]
+   /bin/rm -f ${ramspost}
+   /bin/cp ${backup} ${ramspost}
+elif [ -s ${ramspost} ]
 then
-  cp -f ramspost.inp ramspost.inp-backup
+   /bin/cp -f ${ramspost} ${backup}
 else
-  if [ ${outshell} == 'y' -o ${outshell} == 'Y' ]
-  then
-     echo 'There should be a file called ramspost.inp here. Exitting...' >> ${shellout}
-  else
-     echo 'There should be a file called ramspost.inp here. Exitting...'
-  fi
-  exit
+   if [ ${outshell} == 'y' -o ${outshell} == 'Y' ]
+   then
+      echo 'There should be a file called ramspost.inp here. Exitting...' >> ${shellout}
+   else
+      echo 'There should be a file called ramspost.inp here. Exitting...'
+   fi
+
+   #----- Unlock and go back to where you came from. --------------------------------------#
+   /bin/rm -f ${locked}
+   cd ${chezmoi}
+   exit
+   #---------------------------------------------------------------------------------------#
 fi
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Determine the analysis prefix from the list. ---------------------------------------#
-fprefix=`grep -i FPREFIX ramspost.inp | grep -vi "\-\-"`
+fprefix=`grep -i FPREFIX ${ramspost} | grep -vi "\-\-"`
 fprefix=`echo ${fprefix} | sed s/" "/""/g |sed s/"'"/""/g`
 ext=`echo ${fprefix} |wc -c`
 p=0
@@ -115,7 +148,7 @@ fprefix=`echo ${fprefix} | awk '{print substr($1,9,'${ext}')}'`
 #------------------------------------------------------------------------------------------#
 # Determine the output file prefix from the namelist.                                      #
 #------------------------------------------------------------------------------------------#
-gprefix=`grep -i GPREFIX ramspost.inp | grep -vi "\-\-"`
+gprefix=`grep -i GPREFIX ${ramspost} | grep -vi "\-\-"`
 gprefix=`echo ${gprefix} | sed s/" "/""/g |sed s/"'"/""/g`
 ext=`echo ${gprefix} |wc -c`
 p=0
@@ -144,7 +177,12 @@ donecount=0
 #----- The list mylist is built in a way that doesn't crash when the list is too long. ----#
 directory=`dirname ${fprefix}`
 myprefix=`basename ${fprefix}`
-mylist=`ls -1 ${directory}/ |grep ${myprefix} | grep head.txt${ending}`
+if [ "x${ending}" == "x" ]
+then
+   mylist=`ls -1 ${directory}/ | grep ${myprefix} | grep head.txt | grep -v head.txt.gz | grep -v head.txt.bz2 | grep -v head.txt.Z | grep -v head.txt.zip`
+else
+   mylist=`ls -1 ${directory}/ | grep ${myprefix} | grep head.txt${ending}`
+fi
 #----- Loop for each file. ----------------------------------------------------------------#
 for analysis in ${mylist}
 do
@@ -177,13 +215,13 @@ do
     #     Switch the fprefix by the timestrrary folder, with the added restriction to the  #
     # time.                                                                                #
     #--------------------------------------------------------------------------------------#
-    rm -f ramspost.inp
-    cp ramspost.inp-backup ramspost.inp
+    rm -f ${ramspost}
+    cp ${backup} ${ramspost}
     
-    sed -i s@${fprefix}@${anapref}@g ramspost.inp
-    sed -i s@${gprefix}@${outpref}@g ramspost.inp
+    sed -i s@${fprefix}@${anapref}@g ${ramspost}
+    sed -i s@${gprefix}@${outpref}@g ${ramspost}
 
-    ${nice} ${ramspost} > ${runoutput}
+    ${nice} ${executable} > ${runoutput}
 
     #----- Clean the temporary folder, so I save disk space. ------------------------------#
     rm -f ${tmpfolder}/*
@@ -240,7 +278,12 @@ fi
 #------------------------------------------------------------------------------------------#
 txtpath=`dirname ${fprefix}`
 txtbase=`basename ${fprefix}`
-allheads=`ls -1 ${txtpath} | grep ${txtbase} | grep txt${ending}`
+if [ "x${ending}" == "x" ]
+then
+   allheads=`ls -1 ${txtpath} | grep ${txtbase} | grep txt | grep -v txt.gz | grep -v txt.bz2 | grep -v txt.Z | grep -v txt.zip`
+else
+   allheads=`ls -1 ${txtpath} | grep ${txtbase} | grep txt${ending}`
+fi
 first=${txtpath}/`echo ${allheads}| awk '{print $1}'`
 second=${txtpath}/`echo ${allheads}| awk '{print $2}'`
 if [ ${second} == ${txtpath}/ ]
@@ -440,7 +483,9 @@ fi #if [ ${deleteintclt}='y' -o ${deleteintctl}='Y' ]
 #------------------------------------------------------------------------------------------#
 #      Return ramspost.inp to the original file                                            #
 #------------------------------------------------------------------------------------------#
-rm -f ramspost.inp
-mv -f ramspost.inp-backup ramspost.inp 
+/bin/rm -f ${ramspost}
+/bin/mv -f ${backup} ${ramspost}
+/bin/rm -f ${locked}
+cd ${chezmoi}
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#

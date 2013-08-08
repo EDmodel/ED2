@@ -2,7 +2,8 @@
 #    This function splits the number into number of rows and columns that will make the    #
 # prettiest (prettiest here means the closest to a golden ratio rectangle).                #
 #------------------------------------------------------------------------------------------#
-pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180./pi){
+pretty.box = function(n,horizontal=TRUE,byrow=TRUE
+                     ,angle.crit=atan2((1.+sqrt(5))/2.,1)*180./pi){
 
 
    #---------------------------------------------------------------------------------------#
@@ -56,7 +57,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
          #---------------------------------------------------------------------------------#
          #      Choose the one that is the closest to the square.                          #
          #---------------------------------------------------------------------------------#
-         nuse = which.min(abs(nbrow.pot-nbcol.pot))
+         nuse  = which.min(abs(nbrow.pot-nbcol.pot))
          nbrow = nbrow.pot[nuse]
          nbcol = nbcol.pot[nuse]
          #---------------------------------------------------------------------------------#
@@ -65,7 +66,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
          #---------------------------------------------------------------------------------#
          #      Make a matrix for the layout.                                              #
          #---------------------------------------------------------------------------------#
-         mat          = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=TRUE)
+         mat          = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=byrow)
          mat[mat > n] = 0
          #---------------------------------------------------------------------------------#
 
@@ -77,6 +78,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
          yangle = atan2(nbcol,nbrow) * 180. / pi
          iterate = nbox > 2 && (xangle > angle.crit | yangle > angle.crit)
          if (iterate) nbox = nbox + 1
+         #---------------------------------------------------------------------------------#
       }#end while
       #------------------------------------------------------------------------------------#
 
@@ -87,7 +89,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
       nbcol  = max(n[1],1)
       nbrow  = max(n[2],1)
       nbox   = nbcol*nbrow
-      mat    = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=TRUE)
+      mat    = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=byrow)
       xangle = atan2(nbrow,nbcol) * 180. / pi
       yangle = atan2(nbcol,nbrow) * 180. / pi
       #------------------------------------------------------------------------------------#
@@ -120,7 +122,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
    # bottom and left panels.                                                               #
    #---------------------------------------------------------------------------------------#
    n.seq = sequence(n)
-   if (horizontal){
+   if (byrow){
       left   = ( n.seq %% nbcol ) == 1 | nbcol == 1
       right  = ( n.seq %% nbcol ) == 0
       top    = n.seq <=   nbcol

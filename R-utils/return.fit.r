@@ -180,8 +180,6 @@ change.return.optim <<- function( datum
    if (success){
       x.1st      = opt$par
       ctrl.optim = modifyList(x=ctrl.optim,val=list(parscale=abs(x.1st)))
-   }else{
-      x.scal = NULL
    }#end if
    #---------------------------------------------------------------------------------------#
 

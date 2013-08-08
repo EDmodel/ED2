@@ -201,3 +201,38 @@ boot.binom <<- function(dat,idx,out="expected",conf=0.95){
 }#end boot.binom
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This function computes the fortnightly means using only days with full              #
+# record, and using bootstrap to sample the days.                                          #
+#------------------------------------------------------------------------------------------#
+boot.fortnight.mean <<- function(data.in,index){
+
+   data.use = data.in[index,]
+
+   #----- Aggregate the data by hour and fortnightly period. ------------------------------#
+   ta.fnmean   = tapply(X=data.use$x,INDEX=data.use$fortnight,FUN=mean,na.rm=TRUE)
+   idx.fnmean  = as.numeric(names(ta.fnmean))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Collapse fortnightly periods.  Make sure all periods are defined in the output,   #
+   # if none of them were selected, make them NA.                                          #
+   #---------------------------------------------------------------------------------------#
+   fnmean                      = rep(NA,times=24)
+   fnmean[idx.fnmean]          = ta.fnmean
+   fnmean[! is.finite(fnmean)] = NA
+   #---------------------------------------------------------------------------------------#
+
+   return(fnmean)
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+

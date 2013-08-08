@@ -188,6 +188,12 @@ sed -i s@myoutpath@${there}@g ${here}/tothere/rpost/1eachtime-sigma.sh
 #------------------------------------------------------------------------------------------#
 
 
+#----- Replace some flags in last_histo.sh ------------------------------------------------#
+sed -i s@thispath@${here}@g   ${here}/last_histo.sh
+sed -i s@myoutpath@${there}@g ${here}/last_histo.sh
+#------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #     Check whether the output directory is already "there" (the disk with large storage   #

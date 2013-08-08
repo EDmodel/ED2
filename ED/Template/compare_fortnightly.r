@@ -57,17 +57,20 @@ sim.struct     = list( name     = c("ble_iage30_pft02","ble_iage30_pft05"
                                    ,"sas_iage01_pft02","sas_iage01_pft05"
                                    ,"sas_iage30_pft02","sas_iage30_pft05"
                                    )#end c
-                     , desc     = c("Big leaf, 2 PFTs"    ,"Big leaf, 5 PFTs"
-                                   ,"Size only, 2 PFTs"   ,"Size only, 5 PFTs"
-                                   ,"Size and age, 2 PFTs","Size and age, 5 PFTs"
+                     , desc     = c("Size 01 + Age 01 + PFT 02"
+                                   ,"Size 01 + Age 01 + PFT 05"
+                                   ,"Size 80 + Age 01 + PFT 02"
+                                   ,"Size 80 + Age 01 + PFT 05"
+                                   ,"Size 80 + Age 30 + PFT 02"
+                                   ,"Size 80 + Age 30 + PFT 05"
                                    )#end c
                      , verbose  = c("Big leaf, 2 PFTs"    ,"Big leaf, 5 PFTs"
                                    ,"Size only, 2 PFTs"   ,"Size only, 5 PFTs"
                                    ,"Size and age, 2 PFTs","Size and age, 5 PFTs"
                                    )#end c
-                     , colour   = c("slateblue4" ,"purple1"     
-                                   ,"dodgerblue3","deepskyblue" 
-                                   ,"chartreuse4","chartreuse"  
+                     , colour   = c("slateblue4"         ,"purple3"
+                                   ,"steelblue4"         ,"deepskyblue"
+                                   ,"chartreuse4"        ,"chartreuse2"
                                    )#end c
                      )#end list
 #------------------------------------------------------------------------------------------#
@@ -1420,13 +1423,9 @@ for (g in good.loop){
 
 
 #------------------------------------------------------------------------------------------#
-#         Plot the various statistics as functions of the site "completion".               #
+#         Plot the Skill and Taylor diagrams.                                              #
 #------------------------------------------------------------------------------------------#
-cat (" + Plot cross-model and cross-site diagrams...","\n")
-performance = array( data     = NA
-                   , dim      = c(ncompvar,ngood,nsimul)
-                   , dimnames = list(compvar.key,good.key,simul.key)
-                   )#end array
+cat (" + Plot cross-model and cross-site diagrams (Skill and Taylor)...","\n")
 for (v in sequence(ncompvar)){
    #----- Copy the variable information. --------------------------------------------------#
    this.vnam     = compvar[[v]]$vnam
@@ -1689,7 +1688,7 @@ for (v in sequence(ncompvar)){
                ok.iata = ok.iata && ( ! is.na(ok.iata))
                if (ok.iata){
                   #------------------------------------------------------------------------#
-                  #     We call skill twice for each site in case the site has two PCHs.   #
+                  #     Add site skill to the plot.                                        #
                   #------------------------------------------------------------------------#
                   myskill = skill.plot( obs           = obs.diel[[iata]]
                                       , obs.options   = list( col = foreground
