@@ -729,8 +729,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        )#end list
    flagvar[["met.forcing"]]      = list( descr  = "Meteorological forcing"
                                        , numeric = FALSE
-                                       , values = c("eft","wmo")
+                                       , values = c("eft","shr","wmo")
                                        , names  = c("Eddy flux tower"
+                                                   ,"Sub-hourly"
                                                    ,"WMO-based"
                                                    )#end names
                                        )#end list
@@ -1015,10 +1016,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(        13,    16)
          nz     = c(        14,    18)
       }else if (lenici == 19){
-         nparms = 2
-         param  = c("isoilcol","leaf.absorb.nir")
-         na     = c(        10,               17)
-         nz     = c(        11,               19)
+         nparms = 3
+         param  = c("met.forcing","isas","iage")
+         na     = c(            6,    10,    18)
+         nz     = c(            8,    12,    19)
       }else if (lenici == 21){
          nparms = 3
          param  = c("isas","iage","idiversity")

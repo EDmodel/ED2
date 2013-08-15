@@ -520,7 +520,7 @@ for (place in myplaces){
                cat("Quitting","\n")
                q("no")
             }#end if
-            if (last.cday != cday) cat("     * ",basename(myinst),"...","\n")
+            if (last.cday != cday) cat("     * ",basename(h5file),"...","\n")
             last.cday   = cday
             #------------------------------------------------------------------------------#
             model$atm.tmp  [tt] =   myinst$FMEAN.ATM.TEMP.PY       - t00
