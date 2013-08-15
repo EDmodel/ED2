@@ -561,7 +561,7 @@ do
          ;;
       esac
       ;;
-   eft|wmo)
+   eft|wmo|shr)
       #----- Tower data, keep scenario as is. ---------------------------------------------#
       scentype='wmo+eft'
       ;;
@@ -637,13 +637,13 @@ do
    Manaus_Km34)
       metdriverdb=${fullscen}'/Manaus_Km34/Manaus_Km34_HEADER'
       metcyc1=1999
-      metcycf=2005
+      metcycf=2006
       imetavg=1
       ;;
    Paracou)
       metdriverdb=${fullscen}'/Paracou/Paracou_HEADER'
       metcyc1=2004
-      metcycf=2009
+      metcycf=2012
       imetavg=1
       ;;
    Pe-de-Gigante)
@@ -706,8 +706,8 @@ do
    #---------------------------------------------------------------------------------------#
    #     Correct years so it is not tower-based or Sheffield.                              #
    #---------------------------------------------------------------------------------------#
-   if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft" ] && 
-      [ ${iscenario} != 'sheffield' ]
+   if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
+      [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ]
    then
       metcyc1=1972
       metcycf=2011

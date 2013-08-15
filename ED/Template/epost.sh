@@ -348,7 +348,7 @@ do
    case ${polyiata} in
    gyf)
       eftyeara=2004
-      eftyearz=2009
+      eftyearz=2012
       ;;
    cax)
       eftyeara=1999
@@ -356,7 +356,7 @@ do
       ;;
    m34)
       eftyeara=1999
-      eftyearz=2005
+      eftyearz=2006
       ;;
    s67)
       eftyeara=2001
