@@ -11,7 +11,7 @@ moi=`whoami`
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=`basename ${here}`
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/n/home00/mlongo/protected/data/ed2_data/site_bio_data'
+bioinit='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/site_bio_data'
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
 restart='/x/xxxxxx/xxxxxx/xxxxxxxxx/xxxx/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
@@ -21,12 +21,12 @@ outthere='n'
 #----- Disk name (usually just the path until right before your own directory). -----------#
 diskthere='/n/moorcroftfs2'
 #----- This is the default path with the met driver. --------------------------------------#
-sitemetdef='/n/home00/mlongo/protected/data/ed2_data/site_met_driver'
+sitemetdef='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/site_met_driver'
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with drivers for each scenario. -----------------------------------------------#
-metmaindef='/n/home00/mlongo/protected/data/ed2_data'
-packdatasrc='/n/home00/mlongo/protected/data/2scratch'
+metmaindef='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data'
+packdatasrc='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/2scratch'
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch='y'
 #------------------------------------------------------------------------------------------#

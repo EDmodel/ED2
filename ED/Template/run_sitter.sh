@@ -37,7 +37,7 @@ situtils="${here}/sit_utils"
 
 
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/n/home00/mlongo/protected/data/ed2_data/site_bio_data'
+bioinit='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/site_bio_data'
 #------------------------------------------------------------------------------------------#
 
 
@@ -78,8 +78,8 @@ moi=`whoami`
 #    packdatasrc  -- Source path from where to copy to scratch.                            #
 #------------------------------------------------------------------------------------------#
 copy2scratch='y'
-metmaindef='/n/home00/mlongo/protected/data/ed2_data'
-packdatasrc='/n/home00/mlongo/protected/data/2scratch'
+metmaindef='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data'
+packdatasrc='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/2scratch'
 #------------------------------------------------------------------------------------------#
 
 
@@ -103,7 +103,7 @@ fixqueue=0
 #  potveg  -- Path where to look for initialisation files in case waitpot = 'y'.           #
 #------------------------------------------------------------------------------------------#
 waitpot='n'
-potveg='/n/home00/mlongo/protected/data/ed2_data/restarts_sci_006/potveg'
+potveg='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/restarts_sci_006/potveg'
 #------------------------------------------------------------------------------------------#
 
 
@@ -112,7 +112,7 @@ potveg='/n/home00/mlongo/protected/data/ed2_data/restarts_sci_006/potveg'
 # restart     -- Path to where to copy restart files in case copyrestart = 'y'.            #
 #------------------------------------------------------------------------------------------#
 copyrestart='n'
-restart='/n/home00/mlongo/protected/data/ed2_data/restarts_XXX'
+restart='/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/restarts_XXX'
 #------------------------------------------------------------------------------------------#
 
 

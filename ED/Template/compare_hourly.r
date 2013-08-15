@@ -24,15 +24,31 @@ outroot = file.path(here,paste("hourly_comp_ibg",sprintf("%2.2i",ibackground),se
 #------------------------------------------------------------------------------------------#
 
 
+
+#----- Info on hourly data. ---------------------------------------------------------------#
+reload.hour = TRUE
+rdata.path  = file.path(here,"RData_often")
+rdata.hour  = file.path(rdata.path,"hourly_ed22.RData")
+#------------------------------------------------------------------------------------------#
+
+
 #------------------------------------------------------------------------------------------#
 #     Site settings:                                                                       #
 # eort      -- first letter ("e" or "t")                                                   #
 # sites     -- site codes ("IATA")                                                         #
-# sites.pch -- site symbols                                                                #
+# sites$pch -- site symbols                                                                #
 #------------------------------------------------------------------------------------------#
 eort           = "t"
-sites          = c("gyf","s67","s83","pdg","rja","m34")  # ,"pnz","ban","cax"
-sites.pch      = c(    2,    5,    9,   13,    1,    6)  # ,    4,    8,    0
+sites          = list( list( iata = "gyf", desc = "Paracou"         , pch =  2)
+                     , list( iata = "s67", desc = "Santarem (km 67)", pch =  5)
+                     , list( iata = "s83", desc = "Santarem (km 83)", pch =  9)
+                     , list( iata = "pdg", desc = "Pe-de-Gigante"   , pch = 13)
+                     , list( iata = "rja", desc = "Rebio Jaru"      , pch =  1)
+                     , list( iata = "m34", desc = "Manaus (K34)"    , pch =  6)
+#                    , list( iata = "pnz", desc = "Petrolina"       , pch =  4)
+#                    , list( iata = "ban", desc = "Bananal"         , pch =  8)
+#                    , list( iata = "cax", desc = "Caxiuana"        , pch =  0)
+                     )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -58,13 +74,13 @@ sim.struct     = list( name     = c("ble_iage30_pft02","ble_iage30_pft05"
                                    ,"Size + 2 PFTs"      ,"Size + 5 PFTs"
                                    ,"Size + Age + 2 PFTs","Size + Age + 5 PFTs"
                                    )#end c
-                     , colour   = c("slateblue4"         ,"purple3"
-                                   ,"steelblue4"         ,"deepskyblue"
-                                   ,"chartreuse4"        ,"chartreuse2"
+                     , colour   = c("#6600FF","#CC00FF"
+                                   ,"#FF3300","#FF6633"
+                                   ,"#009900","#00FF66"
                                    )#end c
-                     , bgcol    = c("lightslateblue"     ,"mediumpurple1"
-                                   ,"steelblue1"         ,"lightskyblue1"
-                                   ,"olivedrab3"         ,"olivedrab1"
+                     , fgcol    = c("#330080","#660080"
+                                   ,"#801A00","#80331A"
+                                   ,"#004D00","#008033"
                                    )#end c
                      )#end list
 #------------------------------------------------------------------------------------------#
@@ -110,18 +126,18 @@ n.quant        = 1024                  # # of quantiles to produce the density f
                                        #    We strongly advise to choose a number that is
                                        #    a power of two, especially when using EDF 
                                        #    (otherwise distributions will be interpolated).
-
+nhour.min      = 16                    # Minimum number of hours to use the data.
 
 #------------------------------------------------------------------------------------------#
 #      Switch controls to plot only the needed ones.                                       #
 #------------------------------------------------------------------------------------------#
-plot.light         = TRUE
-plot.ts.ftnight    = TRUE
-plot.bp.diel       = TRUE
-plot.qq.dmean      = TRUE
-plot.density.dmean = TRUE
-plot.spider        = TRUE
-plot.skill.taylor  = TRUE
+plot.light         = c(FALSE,TRUE)[2]
+plot.ts.ftnight    = c(FALSE,TRUE)[1]
+plot.bp.diel       = c(FALSE,TRUE)[1]
+plot.qq.dmean      = c(FALSE,TRUE)[1]
+plot.density.dmean = c(FALSE,TRUE)[1]
+plot.spider        = c(FALSE,TRUE)[1]
+plot.skill.taylor  = c(FALSE,TRUE)[1]
 #------------------------------------------------------------------------------------------#
 
 
@@ -384,6 +400,11 @@ nout    = length(outform)
 #------------------------------------------------------------------------------------------#
 
 
+#----- Create directory with RData. -------------------------------------------------------#
+if (! file.exists(rdata.path)) dir.create(rdata.path)
+#------------------------------------------------------------------------------------------#
+
+
 #------------------------------------------------------------------------------------------#
 #     Combine all structures into a consistent list.                                       #
 #------------------------------------------------------------------------------------------#
@@ -394,7 +415,7 @@ simul.key   = sim.struct$name
 simleg.key  = sim.struct$desc
 #---- Create the colours and line type for legend. ----------------------------------------#
 simcol.key     = sim.struct$colour
-simbgc.key     = sim.struct$bgcol
+simfgc.key     = sim.struct$fgcol
 simlty.key     = rep("solid",times=n.sim)
 simcex.key     = rep(2.0    ,times=n.sim)
 #------------------------------------------------------------------------------------------#
@@ -407,7 +428,7 @@ simcex.key     = rep(2.0    ,times=n.sim)
 simul       = data.frame( name             = simul.key
                         , desc             = simleg.key
                         , colour           = simcol.key
-                        , bgcol            = simbgc.key
+                        , fgcol            = simfgc.key
                         , lty              = simlty.key
                         , cex              = simcex.key
                         , stringsAsFactors = FALSE
@@ -418,15 +439,23 @@ simul       = data.frame( name             = simul.key
 #------------------------------------------------------------------------------------------#
 #      List the keys for all dimensions.                                                   #
 #------------------------------------------------------------------------------------------#
-sites.key   = sites
-sites.desc  = poilist$longname[match(sites.key,poilist$iata)]
+vnum        = which(sapply(X=sites[[1]],FUN=is.numeric))
+vlog        = which(sapply(X=sites[[1]],FUN=is.logical))
+sites       = data.frame( apply(X=sapply(X=sites,FUN=c),MARGIN=1,FUN=unlist)
+                        , stringsAsFactors = FALSE
+                        )#end data.frame
+for (vn in vnum) sites[[vn]] = as.numeric(sites[[vn]])
+for (vl in vlog) sites[[vl]] = as.logical(sites[[vl]])
+
 control.key = apply(X = sapply(X=control,FUN=c),MARGIN=1,FUN=unlist)[,"vnam"]
 compvar.key = apply(X = sapply(X=compvar,FUN=c),MARGIN=1,FUN=unlist)$vnam
 compvar.sym = apply(X = sapply(X=compvar,FUN=c),MARGIN=1,FUN=unlist)$symbol
 good.key    = apply(X = sapply(X=good   ,FUN=c),MARGIN=1,FUN=unlist)[,"vnam"]
 season.key  = season.list
-diel.key    = c("night","rise.set","day","all.hrs")
-diel.desc   = c("Nighttime","Sun Rise/Set","Daytime","All hours")
+diel.key    = c("night","rise.set","day","all.hrs","dmean")
+diel.desc   = c("Nighttime","Sun Rise/Set","Daytime","All hours","Daily mean")
+moment.key  = c("mean","variance","skewness","kurtosis")
+moment.desc = c("Mean","Variance","Skewness","Kurtosis")
 hour.num    = seq(from=0,to=23,by=3)
 hour.key    = c( paste( sprintf("%2.2i",(hour.num - 1) %% 24)
                       , sprintf("%2.2i",(hour.num + 2) %% 24)
@@ -443,7 +472,7 @@ hour.desc   = paste(hour.label,"UTC",sep = " ")
 
 
 #----- Set the various dimensions associated with variables, simulations, and sites. ------#
-nsites   = length(sites.key  )
+nsites   = length(sites$iata )
 nsimul   = length(simul.key  )
 ncompvar = length(compvar.key)
 ncontrol = length(control.key)
@@ -451,6 +480,7 @@ ngood    = length(good.key   )
 nseason  = length(season.key )
 ndiel    = length(diel.key   )
 nhour    = length(hour.key   )
+nmoment  = length(moment.key )
 #------------------------------------------------------------------------------------------#
 
 season.suffix = paste(sprintf("%2.2i",sequence(nseason)),tolower(season.key),sep="-")
@@ -641,48 +671,6 @@ for (o in 1:nout){
    #---------------------------------------------------------------------------------------#
 
 
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Create paths for the mmean diagrams.                                             #
-   #---------------------------------------------------------------------------------------#
-   o.mmean      = list()
-   o.mmean$main = file.path(o.form$main,"mmean")
-   if (is.figure && ! file.exists(o.mmean$main)) dir.create(o.mmean$main)
-   for (d in sequence(ndiel)){
-      this.diel  = diel.key [d]
-      o.diel     = file.path(o.mmean$main,this.diel)
-      if (is.figure){
-         if (! file.exists(o.diel)) dir.create(o.diel)
-      }#end if (is.figure)
-      #------------------------------------------------------------------------------------#
-      o.mmean[[this.diel]] = o.diel
-   }#end for (d in 1:ndiel)
-   o.form$mmean = o.mmean
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Create paths for the qqplot diagrams.                                             #
-   #---------------------------------------------------------------------------------------#
-   o.histo      = list()
-   o.histo$main = file.path(o.form$main,"histo")
-   if (is.figure && ! file.exists(o.histo$main)) dir.create(o.histo$main)
-   for (d in sequence(ndiel)){
-      this.diel  = diel.key [d]
-      o.diel     = file.path(o.histo$main,this.diel)
-      if (is.figure){
-         if (! file.exists(o.diel)) dir.create(o.diel)
-      }#end if (is.figure)
-      #------------------------------------------------------------------------------------#
-      o.histo[[this.diel]] = o.diel
-   }#end for (d in 1:ndiel)
-   o.form$histo = o.histo
-   #---------------------------------------------------------------------------------------#
-
-
    #----- Save the full list to the main path list. ---------------------------------------#
    out[[this.form]] = o.form
    #---------------------------------------------------------------------------------------#
@@ -690,182 +678,421 @@ for (o in 1:nout){
 #------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#   Loop through the sites.                                                                #
-#------------------------------------------------------------------------------------------#
-cat (" + Add season and diel keys to seasons and diel...","\n")
-for (p in 1:nsites){
-   #----- Grab the observation. -----------------------------------------------------------#
-   obser      = get(paste("obs",sites[p],sep="."))
-   #---------------------------------------------------------------------------------------#
 
 
-   #----- Create some variables to describe season and time of the day. -------------------#
-   obser$season    = season(obser$when,add.year=FALSE)
-   obser$diel      = (! obser$nighttime) + obser$highsun
-   obser$fortnight = numfortnight  (obser$when)
-   obser$toftnight = fnyear.2.chron(obser$when)
-   obser$hr.idx    = 3 * floor(obser$hour / 3)
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #----- Save the variables to the observations. -----------------------------------------#
-   dummy = assign(paste("obs",sites[p],sep="."),obser)
-   #---------------------------------------------------------------------------------------#
-}#end for (p in sequence(nsites))
-#------------------------------------------------------------------------------------------#
 
 
 
 #------------------------------------------------------------------------------------------#
 #      Retrieve all data.                                                                  #
 #------------------------------------------------------------------------------------------#
-cat (" + Retrieve model results for all sites...","\n")
-res = list()
-for (p in sequence(nsites)){
-   #----- Get the basic information. ------------------------------------------------------#
-   iata          = sites[p]
-   im            = match(iata,poilist$iata)
-   this          = list()
-   this$short    = poilist$short   [im]
-   this$longname = poilist$longname[im]
-   this$iata     = poilist$iata    [im]
-   this$lon      = poilist$lon     [im]
-   this$lat      = poilist$lat     [im]
-   this$sim      = list()
-   this$ans      = list()
-   cat("   - Site :",this$longname,"...","\n")
-   #---------------------------------------------------------------------------------------#
+if (reload.hour && file.exists(rdata.hour)){
+   cat (" + Reloading hourly data from ",basename(rdata.hour),"...","\n")
+   dummy = load(rdata.hour)
+}else{
+   cat (" + Generating hourly data...","\n")
 
 
    #---------------------------------------------------------------------------------------#
-   #     Get observations, and make sure everything matches.                               #
+   #   Loop through the sites.                                                             #
    #---------------------------------------------------------------------------------------#
-   obser      = get(paste("obs",iata,sep="."))
-   nobser     = length(obser$when)
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Get all the statistics and actual values for every simulation.                    #
-   #---------------------------------------------------------------------------------------#
-   trimmed    = FALSE
-   for (s in sequence(nsimul)){
-      cat("    * Simulation: ",simul$desc[s],"...","\n")
-
-
-      #----- Load pre-calculated statistics. ----------------------------------------------#
-      sim.name = paste(eort,iata,"_",simul$name[s],sep="")
-      sim.path = paste(here,sim.name,sep="/")
-      sim.file = paste(sim.path,"rdata_hour",paste("comp-",sim.name,".RData",sep="")
-                      ,sep="/")
-      load(sim.file)
+   cat (" + Add season and diel keys to seasons and diel...","\n")
+   for (p in 1:nsites){
+      #----- Grab the observation. --------------------------------------------------------#
+      obser      = get(paste("obs",sites$iata[p],sep="."))
       #------------------------------------------------------------------------------------#
-
-
-
-      #----- Load hourly averages. --------------------------------------------------------#
-      ans.name = paste("t",iata,"_",simul$name[s],sep="")
-      ans.path = paste(here,sim.name,sep="/")
-      ans.file = paste(sim.path,"rdata_hour",paste(sim.name,".RData",sep="")
-                      ,sep="/")
-      load(ans.file)
-      nmodel   = length(model$when)
-      #------------------------------------------------------------------------------------#
-
-
-      #====================================================================================#
-      #====================================================================================#
-      #      In case the models and observations don't match perfectly, we trim            #
-      # observations.  This can be done only once, otherwise the models don't have the     #
-      # same length, which is unacceptable.                                                #
-      #------------------------------------------------------------------------------------#
-      if (nobser != nmodel && ! trimmed){
-         trimmed = TRUE
-
-         #----- Get the model time range. -------------------------------------------------#
-         this.whena = min(as.numeric(model$when))
-         this.whenz = max(as.numeric(model$when))
-         sel.obser  = obser$when >= this.whena & obser$when <= this.whenz
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Loop over all observed variables and trim them to the same model period.    #
-         #---------------------------------------------------------------------------------#
-         for ( vname in names(obser)){
-            if       (length(obser[[vname]]) == nobser){
-               obser[[vname]] = obser[[vname]][sel.obser]
-            }else if (length(obser[[vname]]) != 1     ){
-               sel.now = obser[[vname]] >= this.whena & obser[[vname]] <= this.whenz
-               obser[[vname]] = obser[[vname]][sel.now]
-            }#end if
-         }#end for
-         nobser     = length(obser$when)
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Save the variables to the observations. -----------------------------------#
-         dummy = assign(paste("obs",sites[p],sep="."),obser)
-         #---------------------------------------------------------------------------------#
-      }else if (nobser == nmodel){
-         #----- Datasets match, switch trimmed to TRUE. -----------------------------------#
-         trimmed = TRUE
-         #---------------------------------------------------------------------------------#
-      }else{
-         cat(" -> Simulation:"   ,ans.name          ,"\n")
-         cat(" -> Length(obser):",length(obser$when),"\n")
-         cat(" -> Length(model):",length(model$when),"\n")
-         stop(" Model and obser must have the same length")
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #      Check whether the model and observations are synchronised.                    #
-      #------------------------------------------------------------------------------------#
-      if (any(as.numeric(model$when-obser$when) > 1/48,na.rm=TRUE)){
-         stop(" All times in the model and observations must match!!!")
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-
 
 
       #----- Create some variables to describe season and time of the day. ----------------#
-      model$season    = obser$season
-      model$diel      = obser$diel
-      model$fortnight = obser$fortnight
-      model$toftnight = obser$toftnight
-      model$hr.idx    = obser$hr.idx
+      obser$season    = season(obser$when,add.year=FALSE)
+      obser$diel      = 1 + (! obser$nighttime) + obser$highsun
+      obser$fortnight = numfortnight  (obser$when)
+      obser$toftnight = fnyear.2.chron(obser$when)
+      obser$hr.idx    = 3 * floor(obser$hour / 3)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Fix the measured flags for GPP and ecosystem respiration. --------------------#
+      if (all(! obser$measured.cflxst)){
+         measured.eco = obser$measured.cflxca
+      }else{
+         measured.eco = obser$measured.cflxca & obser$measured.cflxst
+      }#end if
+      obser$measured.nep  = measured.eco
+      obser$measured.nee  = measured.eco
+      obser$measured.gpp  = measured.eco
+      obser$measured.reco = measured.eco & obser$nighttime
       #------------------------------------------------------------------------------------#
 
 
 
-
-
-      #----- Save the data and free some memory. ------------------------------------------#
-      this$sim[[simul$name[s]]] = dist.comp
-      this$ans[[simul$name[s]]] = model
-      rm(list=c("dist.comp","model","eddy.complete","eddy.tresume"))
+      #----- Save the variables to the observations. --------------------------------------#
+      dummy = assign(paste("obs",sites$iata[p],sep="."),obser)
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (p in sequence(nsites))
    #---------------------------------------------------------------------------------------#
 
 
 
-   #----- Copy the data to the results. ---------------------------------------------------#
-   res[[iata]] = this
-   rm(this)
+
+
+
+   res = list()
+   for (p in sequence(nsites)){
+      #----- Get the basic information. ---------------------------------------------------#
+      iata          = sites$iata[p]
+      im            = match(iata,poilist$iata)
+      this          = list()
+      this$short    = poilist$short   [im]
+      this$longname = sites$desc      [ p]
+      this$iata     = poilist$iata    [im]
+      this$lon      = poilist$lon     [im]
+      this$lat      = poilist$lat     [im]
+      this$sim      = list()
+      this$ans      = list()
+      cat("   - Site :",this$longname,"...","\n")
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Get observations, and make sure everything matches.                            #
+      #------------------------------------------------------------------------------------#
+      obser      = get(paste("obs",iata,sep="."))
+      nobser     = length(obser$when)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Get all the statistics and actual values for every simulation.                 #
+      #------------------------------------------------------------------------------------#
+      trimmed    = FALSE
+      for (s in sequence(nsimul)){
+         cat("    * Simulation: ",simul$desc[s],"...","\n")
+
+         #----- Load hourly averages. -----------------------------------------------------#
+         ans.name = paste("t",iata,"_",simul$name[s],sep="")
+         ans.path = file.path(here,ans.name)
+         ans.file = file.path(ans.path,"rdata_hour",paste(ans.name,".RData",sep=""))
+         load(ans.file)
+         nmodel   = length(model$when)
+         #---------------------------------------------------------------------------------#
+
+
+         #=================================================================================#
+         #=================================================================================#
+         #      In case the models and observations don't match perfectly, we trim         #
+         # observations.  This can be done only once, otherwise the models don't have the  #
+         # same length, which is unacceptable.                                             #
+         #---------------------------------------------------------------------------------#
+         if (nobser != nmodel && ! trimmed){
+            trimmed = TRUE
+
+            #----- Get the model time range. ----------------------------------------------#
+            this.whena = min(as.numeric(model$when))
+            this.whenz = max(as.numeric(model$when))
+            sel.obser  = obser$when >= this.whena & obser$when <= this.whenz
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over all observed variables and trim them to the same model period. #
+            #------------------------------------------------------------------------------#
+            for ( vname in names(obser)){
+               if       (length(obser[[vname]]) == nobser){
+                  obser[[vname]] = obser[[vname]][sel.obser]
+               }else if (length(obser[[vname]]) != 1     ){
+                  sel.now = obser[[vname]] >= this.whena & obser[[vname]] <= this.whenz
+                  obser[[vname]] = obser[[vname]][sel.now]
+               }#end if
+            }#end for
+            nobser     = length(obser$when)
+
+
+            #----- Save the variables to the observations. --------------------------------#
+            dummy = assign(paste("obs",sites$iata[p],sep="."),obser)
+            #------------------------------------------------------------------------------#
+         }else if (nobser == nmodel){
+            #----- Datasets match, switch trimmed to TRUE. --------------------------------#
+            trimmed = TRUE
+            #------------------------------------------------------------------------------#
+         }else{
+            cat(" -> Simulation:"   ,ans.name          ,"\n")
+            cat(" -> Length(obser):",length(obser$when),"\n")
+            cat(" -> Length(model):",length(model$when),"\n")
+            stop(" Model and obser must have the same length")
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Check whether the model and observations are synchronised.                 #
+         #---------------------------------------------------------------------------------#
+         if (any(as.numeric(model$when-obser$when) > 1/48,na.rm=TRUE)){
+            stop(" All times in the model and observations must match!!!")
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all variables and save daily averages.                           #
+         #---------------------------------------------------------------------------------#
+         if (s == 1){
+            #----- Re-create dates and seasons for daily means. ---------------------------#
+            obser$today = dates(obser$when)
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Find the daily mean and create flags on whether to use it or not.       #
+            #------------------------------------------------------------------------------#
+            for (v in sequence(ncompvar)){
+               this.compvar  = compvar[[v]]
+               this.vnam     = this.compvar$vnam
+               this.dmean    = paste("dmean"   ,this.vnam,sep=".")
+               this.measured = paste("measured",this.vnam,sep=".")
+               this.desc     = this.compvar$desc
+               this.unit     = this.compvar$unit
+               this.sunvar   = this.compvar$sunvar
+               cat("     * ",this.desc,"...","\n")
+
+               #----- Discard all gap-filled entries (except if this is GPP). -------------#
+               if (this.vnam == "reco"){
+                  discard = ! ( is.finite(obser[[this.vnam]]) & obser$measured.nee )
+               }else{
+                  discard = ! ( is.finite(obser[[this.vnam]]) & obser[[this.measured]])
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Replace gap-filled values by NA, and find the daily mean.  We replace #
+               # the original values by these, so we can eliminate model values easily,    #
+               # just adding 0*observations.                                               #
+               #---------------------------------------------------------------------------#
+               obs.now     = ifelse(discard,NA,obser[[this.vnam]])
+               dmean.obser = tapply( X     = obs.now
+                                   , INDEX = obser$today
+                                   , FUN   = mean
+                                   , na.rm = TRUE
+                                   )#end tapply
+               dmean.count = tapply( X     = is.finite(obs.now)
+                                   , INDEX = obser$today
+                                   , FUN   = sum
+                                   , na.rm = TRUE
+                                   )#end tapply
+               dmean.obser = ifelse(dmean.count >= nhour.min,dmean.obser,NA)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Save the data. ------------------------------------------------------#
+               obser[[this.vnam ]] = obs.now
+               obser[[this.dmean]] = dmean.obser
+               #---------------------------------------------------------------------------#
+            }#end for (v in sequence(ncompvar))
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Save the variables to the observations. --------------------------------#
+            dummy = assign(paste("obs",sites$iata[p],sep="."),obser)
+            #------------------------------------------------------------------------------#
+         }#end if (s == 1)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+         #----- Create some variables to describe season and time of the day. -------------#
+         model$today     = obser$today
+         model$season    = obser$season
+         model$diel      = obser$diel
+         model$fortnight = obser$fortnight
+         model$toftnight = obser$toftnight
+         model$hr.idx    = obser$hr.idx
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Create daily averages.                                                     #
+         #---------------------------------------------------------------------------------#
+         dist.comp = list()
+         for (v in sequence(ncompvar)){
+            this.compvar  = compvar[[v]]
+            this.vnam     = this.compvar$vnam
+            this.dmean    = paste("dmean"   ,this.vnam,sep=".")
+            this.measured = paste("measured",this.vnam,sep=".")
+            this.desc     = this.compvar$desc
+            this.unit     = this.compvar$unit
+            this.sunvar   = this.compvar$sunvar
+            cat("     * ",this.desc,"...","\n")
+
+            #----- Discard all gap-filled entries (except if this is GPP). ----------------#
+            mod.now = model[[this.vnam]] + 0. * obser[[this.vnam]]
+            res.now = obs.now - mod.now
+            #------------------------------------------------------------------------------#
+
+
+            #------ Daily mean of observations. -------------------------------------------#
+            dmean.model  = ( tapply(X=mod.now,INDEX=model$today,FUN=mean,na.rm=TRUE)
+                           + 0. * obser[[this.dmean]] )
+            dmean.today  = chron(names(dmean.model))
+            dmean.season = season(dmean.today,add.year=FALSE)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Save the variables for later.                                            #
+            #------------------------------------------------------------------------------#
+            model[[this.vnam ]] = mod.now
+            model[[this.dmean]] = dmean.model
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Initialise the list to keep comparisons between model and observations.  #
+            #------------------------------------------------------------------------------#
+            mat  = matrix( data     = NA
+                         , nrow     = ndiel
+                         , ncol     = nseason
+                         , dimnames = list(diel.key,season.key)
+                         )#end matrix
+            arr  = array ( data     = NA
+                         , dim      = c(ndiel,nseason,nmoment)
+                         , dimnames = list(diel.key,season.key,moment.key)
+                         )#end array
+            comp = list( residuals   = res.now
+                       , n           = mat
+                       , obs.moment  = arr
+                       , mod.moment  = arr
+                       , res.moment  = arr
+                       , bias        = mat
+                       , sigma       = mat
+                       , lsq.lnlike  = mat
+                       , mse         = mat
+                       , rmse        = mat
+                       , r.squared   = mat
+                       , fvue        = mat
+                       , sw.stat     = mat
+                       , sw.p.value  = mat
+                       , ks.stat     = mat
+                       , ks.p.value  = mat
+                       )#end list
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Season block.                                                            #
+            #------------------------------------------------------------------------------#
+            for (ee in sequence(nseason)){
+               #---------------------------------------------------------------------------#
+               #    Diel block.                                                            #
+               #---------------------------------------------------------------------------#
+               e.sel = obser$season == ee | ee == nseason
+               for (dd in sequence(ndiel)){
+                  #------------------------------------------------------------------------#
+                  #      Select data.                                                      #
+                  #------------------------------------------------------------------------#
+                  if (dd == ndiel){
+                     #----- Daily means, no daytime check. --------------------------------#
+                     sel     = dmean.season == ee | ee == nseason
+                     obs.use = obser[[this.dmean]][sel]
+                     mod.use = model[[this.dmean]][sel]
+                     #---------------------------------------------------------------------#
+                  }else{
+                     #----- Skip check for sun variables during the night. ----------------#
+                     d.sel   = obser$diel == dd | dd == (ndiel-1)
+                     s.sel   = obser$highsun | ( ! this.sunvar )
+                     sel     = e.sel & d.sel & s.sel
+                     obs.use = obser[[this.vnam]][sel]
+                     mod.use = model[[this.vnam]][sel]
+                     #---------------------------------------------------------------------#
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+
+                  #------------------------------------------------------------------------#
+                  #      Skip statistics if no data has been selected or if everything is  #
+                  # the same.                                                              #
+                  #------------------------------------------------------------------------#
+                  sd.obser = sd(obs.use,na.rm=TRUE)
+                  #------------------------------------------------------------------------#
+
+                  if (is.finite(sd.obser) && sd.obser > 1.0e-6){
+                     #---------------------------------------------------------------------#
+                     #      Find the summary of how good (or bad...) the model is.         #
+                     #---------------------------------------------------------------------#
+                     goodness = test.goodness(x.mod=mod.use,x.obs=obs.use)
+
+                     comp$n         [dd,ee ] = goodness$n
+                     comp$obs.moment[dd,ee,] = goodness$obs.moment
+                     comp$mod.moment[dd,ee,] = goodness$mod.moment
+                     comp$res.moment[dd,ee,] = goodness$res.moment
+                     comp$bias      [dd,ee ] = goodness$bias
+                     comp$sigma     [dd,ee ] = goodness$sigma
+                     comp$lsq.lnlike[dd,ee ] = goodness$lsq.lnlike
+                     comp$mse       [dd,ee ] = goodness$mse
+                     comp$rmse      [dd,ee ] = goodness$rmse
+                     comp$r.squared [dd,ee ] = goodness$r.squared
+                     comp$fvue      [dd,ee ] = goodness$fvue
+                     comp$sw.stat   [dd,ee ] = goodness$sw.statistic
+                     comp$sw.p.value[dd,ee ] = goodness$sw.p.value
+                     comp$ks.stat   [dd,ee ] = goodness$ks.statistic
+                     comp$ks.p.value[dd,ee ] = goodness$ks.p.value
+                     #---------------------------------------------------------------------#
+                  }#end if (is.finite(sd.obser) && sd.obser > 1.0e-6)
+                  #------------------------------------------------------------------------#
+               }#end for (dd in sequence(ndiel))
+               #---------------------------------------------------------------------------#
+            }#end for (ee in sequence(nseason))
+            #------------------------------------------------------------------------------#
+
+
+            #----- Save the comparison list for this variable. ----------------------------#
+            dist.comp[[this.vnam]] = comp
+            #------------------------------------------------------------------------------#
+         }#end for (v in sequence(ncompvar))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Save the data and free some memory. ---------------------------------------#
+         this$sim[[simul$name[s]]] = dist.comp
+         this$ans[[simul$name[s]]] = model
+         rm(list=c("dist.comp","model","eddy.complete","eddy.tresume"))
+         #---------------------------------------------------------------------------------#
+      }#end for
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Copy the data to the results. ------------------------------------------------#
+      res[[iata]] = this
+      rm(this)
+      #------------------------------------------------------------------------------------#
+   }#end for (p in sequence(nsites))
    #---------------------------------------------------------------------------------------#
-}#end for
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Save hourly data to RData.                                                       #
+   #---------------------------------------------------------------------------------------#
+   cat(" + Saving hourly data to ",basename(rdata.hour),"...","\n")
+   dummy = save(list=c("res",paste("obs",sites$iata,sep=".")), file=rdata.hour)
+   #---------------------------------------------------------------------------------------#
+}#end if (reload.hour && file.exists(rdata.hour))
 #------------------------------------------------------------------------------------------#
-
 
 
 
@@ -888,20 +1115,24 @@ for (p in sequence(nsites)){
 if (plot.light){
    cat(" + Find the light response curve...","\n")
    for (p in sequence(nsites)){
-      iata  = sites.key[p]
+      iata  = sites$iata[p]
       #----- Get the basic information. ---------------------------------------------------#
-      iata          = sites[p]
-      im            = match(iata,poilist$iata)
-      this.longname = poilist$longname[im]
+      iata          = sites$iata[p]
+      this.longname = sites$desc[p]
       cat("   - Site :",this.longname,"...","\n")
       #------------------------------------------------------------------------------------#
 
 
       obser = get(paste("obs",iata,sep="."))
 
-      #----- Find out when this output variable is finite and measured. -------------------#
-      p.sel = ( is.finite(obser$gpp) & is.finite(obser$par) & obser$highsun
-              & obser$measured.gpp & obser$measured.par )
+      #------------------------------------------------------------------------------------#
+      #     Find out when this output variable is finite and measured.  Because PAR and    #
+      # total shortwave are very correlated, we ensure that at least one of them is        #
+      # measured.                                                                          #
+      #------------------------------------------------------------------------------------#
+      r.sel = ( ( is.finite(obser$rshort) & obser$measured.rshort )
+              | ( is.finite(obser$par)    & obser$measured.par    ) )
+      g.sel =   ( is.finite(obser$gpp)    & obser$measured.nee    )
       #------------------------------------------------------------------------------------#
 
 
@@ -910,14 +1141,16 @@ if (plot.light){
       #------------------------------------------------------------------------------------#
       for (ee in sequence(nseason)){
          e.sel = obser$season == ee | ee == nseason
-         sel   = p.sel & e.sel
-         cat("     * ",season.full[ee],"...","\n")
+         sel   = r.sel & g.sel & e.sel
+         n.sel = sum(sel)
+
+         cat("     * ",season.full[ee]," (N = ",n.sel,")...","\n",sep="")
 
 
          #---------------------------------------------------------------------------------#
          #     Fit a curve only if there are enough points.                                #
          #---------------------------------------------------------------------------------#
-         if (sum(sel) > 80){
+         if (n.sel > 80){
             #------ Observations. ---------------------------------------------------------#
             obs.use = data.frame( par = obser$par[sel]
                                 , gpp = obser$gpp[sel] * kgCyr.2.umols
@@ -999,7 +1232,7 @@ if (plot.light){
 
             #------ Set some common features. ---------------------------------------------#
             letitre = paste("Light response curve: ",this.longname,"\n"
-                           ,season.full[ee],sep="")
+                           ,season.full[ee]," ( N = ",n.sel,")",sep="")
             lex     = desc.unit(desc="Incoming PAR",unit=untab$umolom2os)
             ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$umolom2os)
             #------------------------------------------------------------------------------#
@@ -1061,7 +1294,7 @@ if (plot.light){
                         , y    = mod.use[[s]]$gpp
                         , type = "p"
                         , pch  = 16
-                        , col  = simul$bgcol[s]
+                        , col  = simul$colour[s]
                         , cex  = 0.5
                         )#end points
                   #------------------------------------------------------------------------#
@@ -1073,19 +1306,19 @@ if (plot.light){
                   lines(x=obs.pred$par,y=obs.pred$q975,col=grey.fg,lwd=2,lty="dashed")
                   lines(x   = mod.pred[[s]]$par
                        ,y   = mod.pred[[s]]$gpp
-                       ,col = simul$col[s]
+                       ,col = simul$fgcol[s]
                        ,lwd = 2
                        ,lty = "solid"
                        )#end lines
                   lines(x   = mod.pred[[s]]$par
                        ,y   = mod.pred[[s]]$q025
-                       ,col = simul$col[s]
+                       ,col = simul$fgcol[s]
                        ,lwd = 2
                        ,lty = "dashed"
                        )#end lines
                   lines(x   = mod.pred[[s]]$par
                        ,y   = mod.pred[[s]]$q975
-                       ,col = simul$col[s]
+                       ,col = simul$fgcol[s]
                        ,lwd = 2
                        ,lty = "dashed"
                        )#end lines
@@ -1151,11 +1384,10 @@ if (plot.light){
 if (plot.ts.ftnight){
    cat(" + Find the fortnightly means...","\n")
    for (p in sequence(nsites)){
-      iata  = sites.key[p]
+      iata  = sites$iata[p]
       #----- Get the basic information. ---------------------------------------------------#
-      iata          = sites[p]
-      im            = match(iata,poilist$iata)
-      this.longname = poilist$longname[im]
+      iata          = sites$iata[p]
+      this.longname = sites$desc[p]
       cat("   - Site :",this.longname,"...","\n")
       #------------------------------------------------------------------------------------#
 
@@ -1170,285 +1402,251 @@ if (plot.ts.ftnight){
       for (v in sequence(ncompvar)){
          this.compvar  = compvar[[v]]
          this.vnam     = this.compvar$vnam
+         this.dmean    = paste("dmean"   ,this.vnam,sep=".")
          this.measured = paste("measured",this.vnam,sep=".")
          this.desc     = this.compvar$desc
          this.unit     = this.compvar$unit
          cat("     * ",this.desc,"...","\n")
 
-         #----- Discard all gap-filled entries (except if this is ecosystem respiration). -#
-         if (this.vnam %in% c("gpp")){
-            discard = ! ( is.finite(obser[[this.vnam]]) & obser$measured.nee     )
-         }else{
-            discard = ! ( is.finite(obser[[this.vnam]]) & obser[[this.measured]] )
-         }#end if
-         obs.now = ifelse(discard,NA,obser[[this.vnam]])
+         #----- Discard all gap-filled entries (except if this is GPP). -------------------#
+         obs.now       = obser[[this.vnam]]
+         dmean.obser   = obser[[this.dmean]]
+         dmean.ftnight = numfortnight(chron(names(dmean.obser)))
+         keep          = is.finite(dmean.obser)
+         dmean.obser   = dmean.obser  [keep]
+         dmean.ftnight = dmean.ftnight[keep]
          #---------------------------------------------------------------------------------#
 
 
          #------ Plot only if the data are finite. ----------------------------------------#
-         if (any(is.finite(obs.now))){
+         if (length(dmean.obser) > 0){
+            #----- Find mean fortnightly period. ------------------------------------------#
+            data.in      = data.frame(x=dmean.obser,fortnight=dmean.ftnight)
+            boot.out     = boot ( data      = data.in
+                                , statistic = boot.fortnight.mean
+                                , R         = ftnight.n.boot
+                                )#end boot
+            obs.expected = apply( X      = boot.out$t
+                                , MARGIN = 2
+                                , FUN    = mean
+                                , na.rm  = TRUE
+                                )#end apply
+            obs.q025     = apply( X      = boot.out$t
+                                , MARGIN = 2
+                                , FUN    = quantile
+                                , probs  = 0.025
+                                , na.rm  = TRUE
+                                )#end apply
+            obs.q975     = apply( X      = boot.out$t
+                                , MARGIN = 2
+                                , FUN    = quantile
+                                , probs  = 0.975
+                                , na.rm  = TRUE
+                                )#end apply
+            #------------------------------------------------------------------------------#
 
-            #----- Find daily mean (but only for those days with full record). ------------#
-            dmean.obser   = tapply( X     = obs.now
-                                  , INDEX = today
-                                  , FUN   = mean
-                                  , na.rm = TRUE
-                                  )#end tapply
-            dmean.count   = tapply( X     = is.finite(obs.now)
-                                  , INDEX = today
-                                  , FUN   = sum
-                                  , na.rm = TRUE
-                                  )#end tapply
-            dmean.ftnight = numfortnight(chron(names(dmean.obser)))
-            keep          = dmean.count >= 12
-            dmean.obser   = dmean.obser  [keep]
-            dmean.ftnight = dmean.ftnight[keep]
+
+            #----- Save range. ------------------------------------------------------------#
+            ylimit = range(c(obs.expected,obs.q025,obs.q975),na.rm=TRUE)
             #------------------------------------------------------------------------------#
 
 
 
-            if (length(dmean.obser) > 0){
-               #----- Find mean fortnightly period. ------------------------------------------#
-               data.in      = data.frame(x=dmean.obser,fortnight=dmean.ftnight)
-               boot.out     = boot ( data      = data.in
-                                   , statistic = boot.fortnight.mean
-                                   , R         = ftnight.n.boot
-                                   )#end boot
-               obs.expected = apply( X      = boot.out$t
-                                   , MARGIN = 2
-                                   , FUN    = mean
-                                   , na.rm  = TRUE
-                                   )#end apply
-               obs.q025     = apply( X      = boot.out$t
-                                   , MARGIN = 2
-                                   , FUN    = quantile
-                                   , probs  = 0.025
-                                   , na.rm  = TRUE
-                                   )#end apply
-               obs.q975     = apply( X      = boot.out$t
-                                   , MARGIN = 2
-                                   , FUN    = quantile
-                                   , probs  = 0.975
-                                   , na.rm  = TRUE
-                                   )#end apply
-               #---------------------------------------------------------------------------#
+            #------------------------------------------------------------------------------#
+            #      Loop over simulations.                                                  #
+            #------------------------------------------------------------------------------#
+            mod.expected = list()
+            mod.q025     = list()
+            mod.q975     = list()
+            for (s in sequence(nsimul)){
+               model   = res[[iata]]$ans[[s]]
 
-
-               #----- Save range. ---------------------------------------------------------#
-               ylimit = range(c(obs.expected,obs.q025,obs.q975),na.rm=TRUE)
+               #----- Select and sort the data. -------------------------------------------#
+               mod.now     = model[[this.vnam ]]
+               dmean.model = model[[this.dmean]][keep]
                #---------------------------------------------------------------------------#
 
 
 
+               #----- Find mean fortnightly period. ---------------------------------------#
+               data.in           = data.frame(x=dmean.model,fortnight=dmean.ftnight)
+               boot.out          = boot( data      = data.in
+                                       , statistic = boot.fortnight.mean
+                                       , R         = ftnight.n.boot
+                                       )#end boot
+               mod.expected[[s]] = apply( X      = boot.out$t
+                                        , MARGIN = 2
+                                        , FUN    = mean
+                                        , na.rm  = TRUE
+                                        )#end apply
+               mod.q025    [[s]] = apply( X      = boot.out$t
+                                        , MARGIN = 2
+                                        , FUN    = quantile
+                                        , probs  = 0.025
+                                        , na.rm  = TRUE
+                                        )#end apply
+               mod.q975    [[s]] = apply( X      = boot.out$t
+                                        , MARGIN = 2
+                                        , FUN    = quantile
+                                        , probs  = 0.975
+                                        , na.rm  = TRUE
+                                        )#end apply
                #---------------------------------------------------------------------------#
-               #      Loop over simulations.                                               #
+
+
+               #----- Update range. -------------------------------------------------------#
+               ylimit = range(c(ylimit,mod.expected[[s]],mod.q025[[s]],mod.q975[[s]])
+                             ,na.rm=TRUE)
                #---------------------------------------------------------------------------#
-               mod.expected = list()
-               mod.q025     = list()
-               mod.q975     = list()
+            }#end for (s in sequence(nsimul))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Set some common features. ---------------------------------------------#
+            letitre = this.longname
+            ley     = desc.unit(desc=this.desc,unit=this.unit)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Set some common features. ---------------------------------------------#
+            xlimit    = c(1,13)
+            xat       = c(1:13)
+            xlabels   = c(month.abb,month.abb[1])
+            x.ftnight = seq(from=1.25,to=12.75,by=0.50)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot the fortnightly means.                                             #
+            #------------------------------------------------------------------------------#
+            for (o in sequence(nout)){
+               #----- Make the file name. -------------------------------------------------#
+               out.now = out[[outform[o]]]$ts.ftnight[[this.vnam]]
+               fichier = file.path(out.now,paste("fnmean-",this.vnam,"-",iata,"."
+                                                ,outform[o],sep="")
+                                  )#end file.path
+               if (outform[o] == "x11"){
+                  X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=wsize$width,height=wsize$height
+                            ,pointsize=ptsz,paper=wsize$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
+                     ,pointsize=ptsz,paper=wsize$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the device into multiple panels.                                #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par(oma=c(0,1,4,0))
+               layout(mat = lo.simul$mat)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Loop over all simulations. ------------------------------------------#
                for (s in sequence(nsimul)){
-                  model   = res[[iata]]$ans[[s]]
+                  #------ Open sub-plot. --------------------------------------------------#
+                  par(mar=lo.simul$mar[s,])
+                  plot.new()
+                  plot.window(xlim=xlimit,ylim=ylimit)
+                  if (lo.simul$bottom[s]) axis(side=1,at=xat,labels=xlabels)
+                  if (lo.simul$left  [s]) axis(side=2,las=1)
+                  abline(v=xat,h=axTicks(2),col=grid.colour,lty="dotted")
+                  #------------------------------------------------------------------------#
 
-                  #----- Select and sort the data. ----------------------------------------#
-                  mod.now = ifelse(discard,NA,model[[this.vnam]])
+
+                  #------------------------------------------------------------------------#
+                  #      Plot the confidence bands (make sure that NA periods are          #
+                  # properly skipped).                                                     #
+                  #------------------------------------------------------------------------#
+                  #----- Find the limits. -------------------------------------------------#
+                  x025      = x.ftnight
+                  obs.y025  = obs.q025
+                  obs.y975  = rev(obs.q975)
+                  mod.y025  = mod.q025[[s]]
+                  mod.y975  = rev(mod.q975[[s]])
+                  keep      = ! (is.na(obs.y025) | is.na(obs.y975))
+                  iblck     = cumsum(!keep)
+                  #----- Split polygons into finite blocks. -------------------------------#
+                  x025      = split (x=x025     [keep],f=iblck[keep])
+                  x975      = lapply(X=x025           ,FUN=rev)
+                  obs.y025  = split (x=obs.y025 [keep],f=iblck[keep])
+                  obs.y975  = split (x=obs.y975 [keep],f=iblck[keep])
+                  mod.y025  = split (x=mod.y025 [keep],f=iblck[keep])
+                  mod.y975  = split (x=mod.y975 [keep],f=iblck[keep])
+                  #----- Plot polygons. ---------------------------------------------------#
+                  npoly     = length(x025)
+                  for (y in sequence(npoly)){
+                     epolygon( x       = c(    x025[[y]],    x975[[y]])
+                             , y       = c(obs.y025[[y]],obs.y975[[y]])
+                             , col     = grey.bg
+                             , angle   = 45
+                             , density = 40
+                             )#end epolygon
+                     epolygon( x       = c(    x025[[y]],    x975[[y]])
+                             , y       = c(mod.y025[[y]],mod.y975[[y]])
+                             , col     = simul$colour[s]
+                             , angle   = -45
+                             , density =  40
+                             )#end epolygon
+                  }#end poly
                   #------------------------------------------------------------------------#
 
 
 
-
-                  #----- Find daily mean (but only for those days with full record). ------#
-                  dmean.model   = tapply( X     = mod.now
-                                        , INDEX = today
-                                        , FUN   = mean
-                                        , na.rm = TRUE
-                                        )#end tapply
-                  dmean.ftnight = numfortnight(chron(names(dmean.model)))
-                  dmean.model   = dmean.model  [keep]
-                  dmean.ftnight = dmean.ftnight[keep]
+                  #------ Plot the expected values. ---------------------------------------#
+                  points( x    = x.ftnight
+                        , y    = obs.expected
+                        , type = "o"
+                        , pch  = 16
+                        , col  = grey.fg
+                        )#end points
+                  points( x    = x.ftnight
+                        , y    = mod.expected[[s]]
+                        , type = "o"
+                        , pch  = 16
+                        , col  = simul$fgcol[s]
+                        )#end points
                   #------------------------------------------------------------------------#
 
 
-
-                  #----- Find mean fortnightly period. ------------------------------------#
-                  data.in           = data.frame(x=dmean.model,fortnight=dmean.ftnight)
-                  boot.out          = boot( data      = data.in
-                                          , statistic = boot.fortnight.mean
-                                          , R         = ftnight.n.boot
-                                          )#end boot
-                  mod.expected[[s]] = apply( X      = boot.out$t
-                                           , MARGIN = 2
-                                           , FUN    = mean
-                                           , na.rm  = TRUE
-                                           )#end apply
-                  mod.q025    [[s]] = apply( X      = boot.out$t
-                                           , MARGIN = 2
-                                           , FUN    = quantile
-                                           , probs  = 0.025
-                                           , na.rm  = TRUE
-                                           )#end apply
-                  mod.q975    [[s]] = apply( X      = boot.out$t
-                                           , MARGIN = 2
-                                           , FUN    = quantile
-                                           , probs  = 0.975
-                                           , na.rm  = TRUE
-                                           )#end apply
-                  #------------------------------------------------------------------------#
-
-
-                  #----- Update range. ----------------------------------------------------#
-                  ylimit = range(c(ylimit,mod.expected[[s]],mod.q025[[s]],mod.q975[[s]])
-                                ,na.rm=TRUE)
+                  #------ Final stuff. ----------------------------------------------------#
+                  box()
+                  title(main=simul$desc[s])
                   #------------------------------------------------------------------------#
                }#end for (s in sequence(nsimul))
                #---------------------------------------------------------------------------#
 
 
-
-               #------ Set some common features. ------------------------------------------#
-               letitre = this.longname
-               ley     = desc.unit(desc=this.desc,unit=this.unit)
+               #----- Plot title. ---------------------------------------------------------#
+               gtitle(main=letitre,ylab=ley,line.ylab=2.5)
                #---------------------------------------------------------------------------#
 
 
-
-               #------ Set some common features. ------------------------------------------#
-               xlimit    = c(1,13)
-               xat       = c(1:13)
-               xlabels   = c(month.abb,month.abb[1])
-               x.ftnight = seq(from=1.25,to=12.75,by=0.50)
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
                #---------------------------------------------------------------------------#
 
-
-
-               #---------------------------------------------------------------------------#
-               #      Plot the fortnightly means.                                          #
-               #---------------------------------------------------------------------------#
-               for (o in sequence(nout)){
-                  #----- Make the file name. ----------------------------------------------#
-                  out.now = out[[outform[o]]]$ts.ftnight[[this.vnam]]
-                  fichier = file.path(out.now,paste("fnmean-",this.vnam,"-",iata,"."
-                                                   ,outform[o],sep="")
-                                     )#end file.path
-                  if (outform[o] == "x11"){
-                     X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
-                  }else if(outform[o] == "png"){
-                     png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
-                        ,pointsize=ptsz,res=depth)
-                  }else if(outform[o] == "eps"){
-                     postscript(file=fichier,width=wsize$width,height=wsize$height
-                               ,pointsize=ptsz,paper=wsize$paper)
-                  }else if(outform[o] == "pdf"){
-                     pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
-                        ,pointsize=ptsz,paper=wsize$paper)
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-
-                  #------------------------------------------------------------------------#
-                  #     Split the device into multiple panels.                             #
-                  #------------------------------------------------------------------------#
-                  par(par.user)
-                  par(oma=c(0,1,4,0))
-                  layout(mat = lo.simul$mat)
-                  #------------------------------------------------------------------------#
-
-
-
-                  #----- Loop over all simulations. ---------------------------------------#
-                  for (s in sequence(nsimul)){
-                     #------ Open sub-plot. -----------------------------------------------#
-                     par(mar=lo.simul$mar[s,])
-                     plot.new()
-                     plot.window(xlim=xlimit,ylim=ylimit)
-                     if (lo.simul$bottom[s]) axis(side=1,at=xat,labels=xlabels)
-                     if (lo.simul$left  [s]) axis(side=2,las=1)
-                     abline(v=xat,h=axTicks(2),col=grid.colour,lty="dotted")
-                     #---------------------------------------------------------------------#
-
-
-                     #---------------------------------------------------------------------#
-                     #      Plot the confidence bands (make sure that NA periods are       #
-                     # properly skipped).                                                  #
-                     #---------------------------------------------------------------------#
-                     #----- Find the limits. ----------------------------------------------#
-                     x025      = x.ftnight
-                     obs.y025  = obs.q025
-                     obs.y975  = rev(obs.q975)
-                     mod.y025  = mod.q025[[s]]
-                     mod.y975  = rev(mod.q975[[s]])
-                     keep      = ! (is.na(obs.y025) | is.na(obs.y975))
-                     iblck     = cumsum(!keep)
-                     #----- Split polygons into finite blocks. ----------------------------#
-                     x025      = split (x=x025     [keep],f=iblck[keep])
-                     x975      = lapply(X=x025           ,FUN=rev)
-                     obs.y025  = split (x=obs.y025 [keep],f=iblck[keep])
-                     obs.y975  = split (x=obs.y975 [keep],f=iblck[keep])
-                     mod.y025  = split (x=mod.y025 [keep],f=iblck[keep])
-                     mod.y975  = split (x=mod.y975 [keep],f=iblck[keep])
-                     #----- Plot polygons. ------------------------------------------------#
-                     npoly     = length(x025)
-                     for (y in sequence(npoly)){
-                        epolygon( x       = c(    x025[[y]],    x975[[y]])
-                                , y       = c(obs.y025[[y]],obs.y975[[y]])
-                                , col     = grey.bg
-                                , angle   = 45
-                                , density = 40
-                                )#end epolygon
-                        epolygon( x       = c(    x025[[y]],    x975[[y]])
-                                , y       = c(mod.y025[[y]],mod.y975[[y]])
-                                , col     = simul$bgcol[s]
-                                , angle   = -45
-                                , density =  40
-                                )#end epolygon
-                     }#end poly
-                     #---------------------------------------------------------------------#
-
-
-
-                     #------ Plot the expected values. ------------------------------------#
-                     points( x    = x.ftnight
-                           , y    = obs.expected
-                           , type = "o"
-                           , pch  = 16
-                           , col  = grey.fg
-                           )#end points
-                     points( x    = x.ftnight
-                           , y    = mod.expected[[s]]
-                           , type = "o"
-                           , pch  = 16
-                           , col  = simul$col[s]
-                           )#end points
-                     #---------------------------------------------------------------------#
-
-
-                     #------ Final stuff. -------------------------------------------------#
-                     box()
-                     title(main=simul$desc[s])
-                     #---------------------------------------------------------------------#
-                  }#end for (s in sequence(nsimul))
-                  #------------------------------------------------------------------------#
-
-
-                  #----- Plot title. ------------------------------------------------------#
-                  gtitle(main=letitre,ylab=ley,line.ylab=2.5)
-                  #------------------------------------------------------------------------#
-
-
-                  #----- Close the device. ------------------------------------------------#
-                  if (outform[o] == "x11"){
-                     locator(n=1)
-                     dev.off()
-                  }else{
-                     dev.off()
-                  }#end if
-                  dummy = clean.tmp()
-                  #------------------------------------------------------------------------#
-
-               }#end for (o in sequence(nout))
-               #---------------------------------------------------------------------------#
-            }#end if (length(dmean.obser) > 0)
-         }#end if (all(is.finite(ylimit)))
+            }#end for (o in sequence(nout))
+            #------------------------------------------------------------------------------#
+         }#end if (length(dmean.obser) > 0)
          #---------------------------------------------------------------------------------#
       }#end for (v in sequence(ncompvar))
       #------------------------------------------------------------------------------------#
@@ -1482,11 +1680,10 @@ if (plot.ts.ftnight){
 if (plot.bp.diel){
    cat(" + Box plot by hour of the day...","\n")
    for (p in sequence(nsites)){
-      iata  = sites.key[p]
+      iata  = sites$iata[p]
       #----- Get the basic information. ---------------------------------------------------#
-      iata          = sites[p]
-      im            = match(iata,poilist$iata)
-      this.longname = poilist$longname[im]
+      iata          = sites$iata[p]
+      this.longname = sites$desc[p]
       cat("   - Site :",this.longname,"...","\n")
       #------------------------------------------------------------------------------------#
 
@@ -1505,17 +1702,8 @@ if (plot.bp.diel){
          this.unit     = this.compvar$unit
          cat("     * ",this.desc,"...","\n")
 
-         #----- Discard all gap-filled entries (except if this is ecosystem respiration). -#
-         if (this.vnam %in% c("nee","gpp","nep","reco")){
-            if (! any(obser$measured.cflxst,na.rm=TRUE)){
-               discard = ! ( is.finite(obser[[this.vnam]]) & obser$measured.cflxca )
-            }else{
-               discard = ! ( is.finite(obser[[this.vnam]])
-                           & obser$measured.cflxca & obser$measured.cflxst )
-            }#end if
-         }else{
-            discard = ! ( is.finite(obser[[this.vnam]]) & obser[[this.measured]] )
-         }#end if
+         #----- Discard all gap-filled entries (except if this is GPP). -------------------#
+         discard = ! ( is.finite(obser[[this.vnam]]) & obser[[this.measured]] )
          obs.now = ifelse(discard,NA,obser[[this.vnam]])
          #---------------------------------------------------------------------------------#
 
@@ -1717,6 +1905,7 @@ if (plot.qq.dmean){
    for (v in sequence(ncompvar)){
       this.compvar  = compvar[[v]]
       this.vnam     = this.compvar$vnam
+      this.dmean    = paste("dmean"   ,this.vnam,sep=".")
       this.measured = paste("measured",this.vnam,sep=".")
       this.desc     = this.compvar$desc
       this.unit     = this.compvar$unit
@@ -1734,60 +1923,38 @@ if (plot.qq.dmean){
       #      Loop over sites.                                                              #
       #------------------------------------------------------------------------------------#
       for (p in sequence(nsites)){
-         #----- Initialise list for this site. --------------------------------------------#
-         iata          = sites.key[p]
-         qq.list[[iata]] = list()
+         #----- Grab current site code. ---------------------------------------------------#
+         iata            = sites$iata[p]
          #---------------------------------------------------------------------------------#
 
 
          #----- Grab data. ----------------------------------------------------------------#
-         obser = get(paste("obs",iata,sep="."))
-         today = dates(obser$when)
+         obser       = get(paste("obs",iata,sep="."))
+         dmean.obser = obser[[this.dmean]]
+         count.obser = sum(is.finite(dmean.obser))
          #---------------------------------------------------------------------------------#
 
 
-         #----- Discard all gap-filled entries (except if this is ecosystem respiration). -#
-         if (this.vnam %in% c("nee","gpp","nep","reco")){
-            if (! any(obser$measured.cflxst,na.rm=TRUE)){
-               discard = ! ( is.finite(obser[[this.vnam]]) & obser$measured.cflxca )
-            }else{
-               discard = ! ( is.finite(obser[[this.vnam]])
-                           & obser$measured.cflxca & obser$measured.cflxst )
-            }#end if
-         }else{
-            discard = ! ( is.finite(obser[[this.vnam]]) & obser[[this.measured]] )
-         }#end if
-         obs.now = ifelse(discard,NA,obser[[this.vnam]])
+         #----- Initialise list for this site. --------------------------------------------#
+         qq.list[[iata]] = list(n = count.obser)
          #---------------------------------------------------------------------------------#
-
-
-
-         #----- Find the daily mean (only those days with full measurement). --------------#
-         dmean.obser = tapply(X=obs.now,INDEX=today,FUN=mean,na.rm=FALSE)
-         #---------------------------------------------------------------------------------#
-
 
 
          #---------------------------------------------------------------------------------#
          #      Loop over simulations.                                                     #
          #---------------------------------------------------------------------------------#
          for (s in sequence(nsimul)){
-            model   = res[[iata]]$ans[[s]]
 
             #----- Select and sort the data. ----------------------------------------------#
-            mod.now = ifelse(discard,NA,model[[this.vnam]])
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Find daily mean (but only for those days with full record). ------------#
-            dmean.model = tapply(X=mod.now,INDEX=today,FUN=mean,na.rm=FALSE)
+            model       = res[[iata]]$ans[[s]]
+            dmean.model = model[[this.dmean]]
             #------------------------------------------------------------------------------#
 
 
 
             #----- Find the Q-Q plot and copy to the global list. -------------------------#
             qq.now = qqplot(x=dmean.obser,y=dmean.model,plot.it=FALSE)
+            qq.now = modifyList(x=qq.now,val=list(n=count.obser))
             qq.list[[iata]][[simul$name[s]]] = qq.now
             #------------------------------------------------------------------------------#
 
@@ -1868,9 +2035,8 @@ if (plot.qq.dmean){
          #----- Loop over all sites. ------------------------------------------------------#
          for (p in sequence(nsites)){
             #----- Get the basic site information. ----------------------------------------#
-            iata          = sites.key[p]
-            im            = match(iata,poilist$iata)
-            this.longname = poilist$longname[im]
+            iata          = sites$iata[p]
+            this.longname = sites$desc[p]
             #------------------------------------------------------------------------------#
 
 
@@ -1887,7 +2053,7 @@ if (plot.qq.dmean){
 
 
             #----- Get Q-Q plot info for this site. ---------------------------------------#
-            iata    = sites.key[p]
+            iata    = sites$iata[p]
             qq.iata = qq.list[[iata]]
             #------------------------------------------------------------------------------#
 
@@ -1909,7 +2075,7 @@ if (plot.qq.dmean){
 
             #------ Final stuff. ----------------------------------------------------------#
             box()
-            title(main=this.longname)
+            title(main=paste(this.longname,"(N=",qq.iata$n,")",sep=""))
             #------------------------------------------------------------------------------#
          }#end for (p in sequence(nsites))
          #---------------------------------------------------------------------------------#
@@ -1969,6 +2135,7 @@ if (plot.density.dmean){
    for (v in sequence(ncompvar)){
       this.compvar  = compvar[[v]]
       this.vnam     = this.compvar$vnam
+      this.dmean    = paste("dmean"   ,this.vnam,sep=".")
       this.measured = paste("measured",this.vnam,sep=".")
       this.desc     = this.compvar$desc
       this.unit     = this.compvar$unit
@@ -1986,35 +2153,13 @@ if (plot.density.dmean){
       #------------------------------------------------------------------------------------#
       for (p in sequence(nsites)){
          #----- Initialise list for this site. --------------------------------------------#
-         iata               = sites.key[p]
+         iata               = sites$iata[p]
          #---------------------------------------------------------------------------------#
 
 
          #----- Grab data. ----------------------------------------------------------------#
-         obser = get(paste("obs",iata,sep="."))
-         today = dates(obser$when)
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Discard all gap-filled entries (except if this is ecosystem respiration). -#
-         if (this.vnam %in% c("nee","gpp","nep","reco")){
-            if (! any(obser$measured.cflxst,na.rm=TRUE)){
-               discard = ! ( is.finite(obser[[this.vnam]]) & obser$measured.cflxca )
-            }else{
-               discard = ! ( is.finite(obser[[this.vnam]])
-                           & obser$measured.cflxca & obser$measured.cflxst )
-            }#end if
-         }else{
-            discard = ! ( is.finite(obser[[this.vnam]]) & obser[[this.measured]] )
-         }#end if
-         obs.now = ifelse(discard,NA,obser[[this.vnam]])
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Find the daily mean (only those days with full measurement). --------------#
-         dmean.obser = tapply(X=obs.now,INDEX=today,FUN=mean,na.rm=FALSE)
-         qlimit      = range(c(qlimit,dmean.obser),finite=TRUE)
+         obser       = get(paste("obs",iata,sep="."))
+         dmean.obser = obser[[this.dmean]]
          #---------------------------------------------------------------------------------#
 
 
@@ -2024,16 +2169,10 @@ if (plot.density.dmean){
          #---------------------------------------------------------------------------------#
          dmean.model = list()
          for (s in sequence(nsimul)){
-            model   = res[[iata]]$ans[[s]]
 
-            #----- Select and sort the data. ----------------------------------------------#
-            mod.now = ifelse(discard,NA,model[[this.vnam]])
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Find daily mean (but only for those days with full record). ------------#
-            dmean.model[[s]] = tapply(X=mod.now,INDEX=today,FUN=mean,na.rm=FALSE)
+            #----- Select and grab the data. ----------------------------------------------#
+            model            = res[[iata]]$ans[[s]]
+            dmean.model[[s]] = model[[this.dmean]]
             qlimit      = range(c(qlimit,dmean.model[[s]]),finite=TRUE)
             #------------------------------------------------------------------------------#
          }#end for (s in sequence(nsimul))
@@ -2043,6 +2182,7 @@ if (plot.density.dmean){
          #----- List of daily means. ------------------------------------------------------#
          dmean.list[[iata]] = list( obser = dmean.obser
                                   , model = dmean.model
+                                  , n     = sum(is.finite(dmean.obser))
                                   )#end list
          #---------------------------------------------------------------------------------#
       }#end for (p in sequence(nsites))
@@ -2068,7 +2208,7 @@ if (plot.density.dmean){
       dens.list = NULL
       for (p in sequence(nsites)){
          #----- Initialise list for this site. --------------------------------------------#
-         iata  = sites.key[p]
+         iata  = sites$iata[p]
          dmean = dmean.list[[iata]]
          #---------------------------------------------------------------------------------#
 
@@ -2116,6 +2256,7 @@ if (plot.density.dmean){
          #----- List of daily means. ------------------------------------------------------#
          dens.list[[iata]] = list( obser = dens.obser
                                  , model = dens.model
+                                 , n     = dmean$n
                                  )#end list
          #---------------------------------------------------------------------------------#
       }#end for (p in sequence(nsites))
@@ -2192,9 +2333,8 @@ if (plot.density.dmean){
          #----- Loop over all sites. ------------------------------------------------------#
          for (p in sequence(nsites)){
             #----- Get the basic site information. ----------------------------------------#
-            iata          = sites.key[p]
-            im            = match(iata,poilist$iata)
-            this.longname = poilist$longname[im]
+            iata          = sites$iata[p]
+            this.longname = sites$desc[p]
             #------------------------------------------------------------------------------#
 
 
@@ -2210,7 +2350,7 @@ if (plot.density.dmean){
 
 
             #----- Get Q-Q plot info for this site. ---------------------------------------#
-            iata      = sites.key[p]
+            iata      = sites$iata[p]
             dens.iata = dens.list[[iata]]
             #------------------------------------------------------------------------------#
 
@@ -2242,7 +2382,7 @@ if (plot.density.dmean){
 
             #------ Final stuff. ----------------------------------------------------------#
             box()
-            title(main=this.longname)
+            title(main=paste(this.longname," (N=",dens.iata$n,")",sep=""))
             #------------------------------------------------------------------------------#
          }#end for (p in sequence(nsites))
          #---------------------------------------------------------------------------------#
@@ -2316,55 +2456,26 @@ if (plot.spider){
       #------------------------------------------------------------------------------------#
       cat("   - ",desc.good,"...","\n")
       web = array( dim      = c   (nsimul,nsites,ncompvar,ndiel,nseason)
-                 , dimnames = list(simul.key,sites.key,compvar.key,diel.key,season.key)
+                 , dimnames = list(simul.key,sites$iata,compvar.key,diel.key,season.key)
                  )#end array 
       for (v in sequence(ncompvar)){
          this.vnam     = compvar[[v]]$vnam
          this.measured = paste("measured",this.vnam,sep=".")
-
          #---------------------------------------------------------------------------------#
          #     Loop over all sites.                                                        #
          #---------------------------------------------------------------------------------#
          for (p in sequence(nsites)){
-            iata = sites.key[p]
-            sfac = matrix(data=1,nrow=ndiel,ncol=nseason,dimnames=list(diel.key,season.key))
-
-            #------------------------------------------------------------------------------#
-            #     Find the scale factors for variables that have units.                    #
-            #------------------------------------------------------------------------------#
-            if (norm.good){
-               obs  = get(paste("obs",iata,sep="."))
-
-               #----- Find out when this output variable is finite and measured. ----------#
-               p.sel = is.finite(obs[[this.vnam]]) & obs[[this.measured]]
-               #---------------------------------------------------------------------------#
-
-
-
-               #----- Find the components. ------------------------------------------------#
-               for (dd in sequence(ndiel)){
-                  d.sel = obs$diel == dd | dd == ndiel
-                  for (ee in sequence(nseason)){
-                     e.sel = obs$season == ee | ee == nseason
-                     sel   = p.sel & d.sel & e.sel
-                     if (any(sel)) sfac[dd,ee] = sd(obs[[this.vnam]][sel],na.rm=TRUE)
-                  }#end for
-               }#end for
-               #---------------------------------------------------------------------------#
-            }#end if (norm.good)
-            sfac = ifelse(sfac == 0.,NA,1/sfac)
-            #------------------------------------------------------------------------------#
-
-
-
+            iata = sites$iata[p]
             #------------------------------------------------------------------------------#
             #     Grab the data for this simulation.                                       #
             #------------------------------------------------------------------------------#
             for (s in sequence(nsimul)){
-               this         = res[[iata]]$sim[[s]][[this.vnam]][[this.good]]
-               use.season   = paste(sprintf("%2.2i",sequence(nseason)),season.key,sep="-")
-               web[s,p,v,,] = abs(this[diel.key,use.season]) * sfac
-            }#end for (s in 1:nsimul)
+               comp.now     = res[[iata]]$sim[[s]][[this.vnam]]
+               good.now     = comp.now[[this.good]]
+               sfac.now     = 1. + norm.good * ( sqrt(comp.now$obs.moment[,,2]) - 1 )
+               sfac.now     = ifelse(sfac.now == 0.,NA,1/sfac.now)
+               web[s,p,v,,] = abs(good.now) * sfac.now
+            }#end for (s in sequence(nsimul))
             #------------------------------------------------------------------------------#
          }#end for (p in 1:nsites)
          #---------------------------------------------------------------------------------#
@@ -2384,9 +2495,9 @@ if (plot.spider){
          #     Webs by site (all variables).                                               #
          #---------------------------------------------------------------------------------#
          for (p in sequence(nsites)){
-            iata     = sites.key[p]
+            iata     = sites$iata[p]
 
-            letitre = paste(desc.good," - ",sites.desc[p],"\n",diel.desc[d],sep="")
+            letitre = paste(desc.good," - ",sites$desc[p],"\n",diel.desc[d],sep="")
 
             if (any(is.finite(web[,p,,d,nseason]))){
                v.sel = is.finite(colSums(web[,p,,d,nseason]))
@@ -2436,7 +2547,7 @@ if (plot.spider){
                   par(par.user)
                   par.orig = par(no.readonly = TRUE)
                   mar.orig = par.orig$mar
-                  par(oma = c(0.2,3,3.0,0))
+                  par(oma = c(0.2,0,3.0,0))
                   layout(mat = rbind(2,1),height = c(18,4))
                   #------------------------------------------------------------------------#
 
@@ -2444,7 +2555,7 @@ if (plot.spider){
 
 
                   #----- Legend: the simulations. -----------------------------------------#
-                  par(mar=c(0.2,0.1,0.1,0.1))
+                  par(mar=c(0.1,0.1,0.1,0.1))
                   plot.new()
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
@@ -2454,7 +2565,7 @@ if (plot.spider){
                          , border  = simul$col
                          , ncol    = 2
                          , title   = expression(bold("Structure"))
-                         , cex     = cex.ptsz
+                         , cex     = 0.75 * cex.ptsz
                          , xpd     = TRUE
                          )#end legend
                   #------------------------------------------------------------------------#
@@ -2524,7 +2635,7 @@ if (plot.spider){
          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
          #     Webs by variable (all sites).                                               #
          #---------------------------------------------------------------------------------#
-         for (v in 1:ncompvar){
+         for (v in sequence(ncompvar)){
             this.vnam     = compvar[[v]]$vnam
             this.desc     = compvar[[v]]$desc
 
@@ -2571,7 +2682,7 @@ if (plot.spider){
                   par(par.user)
                   par.orig = par(no.readonly = TRUE)
                   mar.orig = par.orig$mar
-                  par(oma = c(0.2,3,3.0,0))
+                  par(oma = c(0.2,0,3.0,0))
                   layout(mat = rbind(2,1),height = c(6.0,1.0))
                   #------------------------------------------------------------------------#
 
@@ -2579,7 +2690,7 @@ if (plot.spider){
 
 
                   #----- Legend: the simulations. -----------------------------------------#
-                  par(mar=c(0.2,0.1,0.1,0.1))
+                  par(mar=c(0.1,0.1,0.1,0.1))
                   plot.new()
                   plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                   legend ( x       = "bottom"
@@ -2590,7 +2701,7 @@ if (plot.spider){
                          , ncol    = 3
                          , title   = expression(bold("Structure"))
                          , pt.cex  = simul$cex
-                         , cex     = cex.ptsz
+                         , cex     = 0.75 * cex.ptsz
                          )#end legend
                   #------------------------------------------------------------------------#
 
@@ -2600,7 +2711,7 @@ if (plot.spider){
                   #     Plot the spider web.                                               #
                   #------------------------------------------------------------------------#
                   radial.flex( lengths          = web[,p.sel,v,d,nseason]
-                             , labels           = toupper(sites.key[p.sel])
+                             , labels           = toupper(sites$iata[p.sel])
                              , radlab           = FALSE
                              , start            = 90
                              , clockwise        = TRUE
@@ -2678,10 +2789,11 @@ if (plot.skill.taylor){
    for (v in sequence(ncompvar)){
       #----- Copy the variable information. -----------------------------------------------#
       this.vnam     = compvar[[v]]$vnam
+      this.dmean    = paste("dmean"   ,this.vnam,sep=".")
+      this.measured = paste("measured",this.vnam,sep=".")
       this.desc     = compvar[[v]]$desc
       this.unit     = compvar[[v]]$unit
       this.sun      = compvar[[v]]$sunvar
-      this.measured = paste("measured",this.vnam,sep=".")
       cat("   - ",this.desc,"...","\n")
       #------------------------------------------------------------------------------------#
 
@@ -2700,21 +2812,33 @@ if (plot.skill.taylor){
          #---------------------------------------------------------------------------------#
          obs.diel    = list()
          mod.diel    = list()
-         cnt.diel    = rep(x=NA,times=nsites); names(cnt.diel) = sites
+         cnt.diel    = rep(x=NA,times=nsites); names(cnt.diel) = sites$iata
          bias.range  = NULL
          sigma.range = NULL
          for (p in sequence(nsites)){
-            iata  = sites[p]
+            iata  = sites$iata[p]
             obs   = get(paste("obs",iata,sep="."))
             nwhen = length(obs$when)
 
-
-            #----- Select this diel (or everything for all day). --------------------------#
-            d.sel = (obs$diel == (d-1) | d == ndiel) & ((! this.sun) | obs$highsun)
-            sel   = d.sel & is.finite(obs[[this.vnam]]) & obs[[this.measured]]
-            sel   = sel   & is.finite(sel)
-            n.sel = sum(sel)
             #------------------------------------------------------------------------------#
+            #      Decide which data set to use.                                           #
+            #------------------------------------------------------------------------------#
+            if (d == ndiel){
+               this.obs = obs[[this.dmean]]
+               sel      = is.finite(this.obs)
+               this.obs = this.obs[sel]
+            }else{
+               #----- Select this diel (or everything for all day). -----------------------#
+               d.sel    = (obs$diel == d | d == (ndiel-1))
+               s.sel    = obs$highsun | (! this.sun)
+               o.sel    = is.finite(obs[[this.vnam]])
+               sel      = d.sel & s.sel & o.sel
+               sel      = ifelse(is.na(sel),FALSE,sel)
+               this.obs = obs[[this.vnam]][sel]
+               #---------------------------------------------------------------------------#
+            }#end if
+            #------------------------------------------------------------------------------#
+
 
 
 
@@ -2722,41 +2846,52 @@ if (plot.skill.taylor){
             #     Find the standard deviation of this observation.  Skip the site if       #
             # everything is zero.                                                          #
             #------------------------------------------------------------------------------#
-            this.obs     = obs[[this.vnam]][sel]
             sdev.obs.now = sd(this.obs,na.rm=TRUE)
             sel          = sel & is.finite(sdev.obs.now) & sdev.obs.now > 0
+            n.sel        = sum(sel)
             #------------------------------------------------------------------------------#
 
 
 
             #----- Copy the observed data. ------------------------------------------------#
             obs.diel[[iata]] = this.obs
+            mod.diel[[iata]] = matrix(ncol=nsimul,nrow=n.sel,dimnames=list(NULL,simul.key))
             #------------------------------------------------------------------------------#
 
 
 
             #----- Copy the modelled data, and update ranges. -----------------------------#
-            mod.diel[[iata]] = matrix(ncol=nsimul,nrow=n.sel,dimnames=list(NULL,simul.key))
             if (any(sel)){
                for (s in sequence(nsimul)){
 
 
-
-                  #----- Copy simulation. -------------------------------------------------#
-                  this.mod             = res[[iata]]$ans[[simul.key[s]]][[this.vnam]][sel]
-                  this.res             = this.mod - this.obs
+                  #------------------------------------------------------------------------#
+                  #      Decide which data set to use.                                     #
+                  #------------------------------------------------------------------------#
+                  mod  = res[[iata]]$ans[[simul.key[s]]]
+                  if (d == ndiel){
+                     this.mod = mod[[this.dmean]][sel]
+                  }else{
+                     #----- Copy simulation. -------------------------------------------------#
+                     this.mod = mod[[this.vnam]][sel]
+                     #------------------------------------------------------------------------#
+                  }#end if
                   mod.diel[[iata]][,s] = this.mod
                   #------------------------------------------------------------------------#
 
+
                   #----- Check number of valid entries. -----------------------------------#
                   if (! is.null(cnt.diel[[iata]])){
-                     cnt.diel[[iata]] = sum(is.finite(this.res))
+                     cnt.diel[[iata]] = sum(is.finite(this.obs))
                   }#end if
                   #------------------------------------------------------------------------#
 
+
+
                   #----- Find the normalised bias and model standard deviation. -----------#
-                  bias.now    = mean(this.res, na.rm=TRUE) / sdev.obs.now
-                  sigma.now   = sd  (this.res, na.rm=TRUE) / sdev.obs.now
+                  comp        = res[[iata]]$sim[[simul.key[s]]][[this.vnam]]
+                  bias.now    = comp$bias [d,nseason] / sqrt(comp$obs.moment[d,nseason,2])
+                  sigma.now   = comp$sigma[d,nseason] / sqrt(comp$obs.moment[d,nseason,2])
                   bias.range  = c(bias.range ,bias.now   )
                   sigma.range = c(sigma.range,sigma.now  )
                   #------------------------------------------------------------------------#
@@ -2766,6 +2901,7 @@ if (plot.skill.taylor){
             #------------------------------------------------------------------------------#
          }#end for (p in 1:nsites)
          #---------------------------------------------------------------------------------#
+
 
 
 
@@ -2816,6 +2952,7 @@ if (plot.skill.taylor){
             #     Plot title.                                                              #
             #------------------------------------------------------------------------------#
             letitre = paste(" Skill diagram - ",this.desc,"\n",diel.desc[d],sep="")
+            cat("       - Skill","\n")
             #------------------------------------------------------------------------------#
 
 
@@ -2865,10 +3002,10 @@ if (plot.skill.taylor){
                plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                legend ( x       = "bottom"
                       , inset   = 0.0
-                      , legend  = toupper(sites.key)
+                      , legend  = toupper(sites$iata)
                       , col     = foreground
                       , pt.bg   = foreground
-                      , pch     = sites.pch
+                      , pch     = sites$pch
                       , ncol    = min(4,pretty.box(nsites)$ncol)
                       , title   = expression(bold("Sites"))
                       , pt.cex  = st.cex.med
@@ -2923,7 +3060,7 @@ if (plot.skill.taylor){
                #---------------------------------------------------------------------------#
                myskill = NULL
                for (p in sequence(nsites)){
-                  iata = sites[p]
+                  iata = sites$iata[p]
 
                   #----- Skip the site if there is no data. -------------------------------#
                   ok.iata = (  length(obs.diel[[iata]]) > 0
@@ -2940,7 +3077,7 @@ if (plot.skill.taylor){
                                          , mod           = mod.diel[[iata]]
                                          , mod.options   = list( col = simul$col
                                                                , bg  = simul$col
-                                                               , pch = sites.pch[p]
+                                                               , pch = sites$pch[p]
                                                                , cex = cex.diel [p]
                                                                , lty = "solid"
                                                                , lwd = lwd.diel [p]
@@ -3003,6 +3140,7 @@ if (plot.skill.taylor){
             #     Plot title.                                                              #
             #------------------------------------------------------------------------------#
             letitre = paste(" Taylor diagram - ",this.desc,"\n",diel.desc[d],sep="")
+            cat("       - Taylor","\n")
             #------------------------------------------------------------------------------#
 
 
@@ -3051,10 +3189,10 @@ if (plot.skill.taylor){
                plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
                legend ( x       = "bottom"
                       , inset   = 0.0
-                      , legend  = toupper(sites.key)
+                      , legend  = toupper(sites$iata)
                       , col     = foreground
                       , pt.bg   = foreground
-                      , pch     = sites.pch
+                      , pch     = sites$pch
                       , ncol    = min(4,pretty.box(nsites)$ncol)
                       , title   = expression(bold("Sites"))
                       , pt.cex  = st.cex.med
@@ -3109,7 +3247,7 @@ if (plot.skill.taylor){
                #---------------------------------------------------------------------------#
                add = FALSE
                for (p in sequence(nsites)){
-                  iata = sites[p]
+                  iata = sites$iata[p]
 
                   #----- Skip the site if there is no data. -------------------------------#
                   ok.iata = (  length(obs.diel[[iata]]) > 0 
@@ -3125,7 +3263,7 @@ if (plot.skill.taylor){
                                            , pos.corr   = NA
                                            , pt.col     = simul$col
                                            , pt.bg      = simul$col
-                                           , pt.pch     = sites.pch[p]
+                                           , pt.pch     = sites$pch[p]
                                            , pt.cex     = cex.diel [p]
                                            , pt.lwd     = lwd.diel [p]
                                            , obs.col    = foreground

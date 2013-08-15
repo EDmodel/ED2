@@ -358,7 +358,84 @@ for (place in myplaces){
          eddy.tresume    = 1
          eddy.complete   = FALSE
       }#end if
+      #------------------------------------------------------------------------------------#
 
+
+
+      #------------------------------------------------------------------------------------#
+      #     In case the met driver has become longer, we may need to expand the model      #
+      # structure and continue reading.                                                    #
+      #------------------------------------------------------------------------------------#
+      if (eddy.tresume > 1){
+         eddy.extend   = length(model$when) < ntimes
+         eddy.complete = eddy.complete && ! eddy.extend
+      }else{
+         eddy.extend   = FALSE
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     In case we must extend the list...                                             #
+      #------------------------------------------------------------------------------------#
+      if (eddy.extend){
+         cat("   - Observed met driver became longer, extend model structure...","\n")
+         partial        = model
+         npartial       = length(partial$when)
+         model          = list()
+         model$when     = obser$when
+         model$hr.idx   = period.day(model$when,dtblock=hourblock.len)
+         model$yr.idx   = season(model$when,add.year=FALSE)
+         na.pad         = rep(NA,times=ntimes-npartial)
+         model$atm.tmp  = c(partial$atm.tmp ,na.pad)
+         model$atm.shv  = c(partial$atm.shv ,na.pad)
+         model$atm.prss = c(partial$atm.prss,na.pad)
+         model$rain     = c(partial$rain    ,na.pad)
+         model$atm.co2  = c(partial$atm.co2 ,na.pad)
+         model$atm.vels = c(partial$atm.vels,na.pad)
+         model$rshort   = c(partial$rshort  ,na.pad)
+         model$rlong    = c(partial$rlong   ,na.pad)
+         model$par      = c(partial$par     ,na.pad)
+         model$hflxca   = c(partial$hflxca  ,na.pad)
+         model$wflxca   = c(partial$wflxca  ,na.pad)
+         model$cflxca   = c(partial$cflxca  ,na.pad)
+         model$cflxst   = c(partial$cflxst  ,na.pad)
+         model$gpp      = c(partial$gpp     ,na.pad)
+         model$reco     = c(partial$reco    ,na.pad)
+         model$nep      = c(partial$nep     ,na.pad)
+         model$nee      = c(partial$nee     ,na.pad)
+         model$ustar    = c(partial$ustar   ,na.pad)
+         model$rnet     = c(partial$rnet    ,na.pad)
+         model$rlongup  = c(partial$rlongup ,na.pad)
+         model$albedo   = c(partial$albedo  ,na.pad)
+         model$parup    = c(partial$parup   ,na.pad)
+         model$rshortup = c(partial$rshortup,na.pad)
+
+         #---------------------------------------------------------------------------------#
+         #     Sanity check.                                                               #
+         #---------------------------------------------------------------------------------#
+         if (length(model$atm.tmp) != length(obser$atm.temp)){
+            cat(" Mismatch in lengths!!!","\n")
+            cat(" Length (obser):   ",length(obser$atm.temp),"\n")
+            cat(" Length (model):   ",length(model$atm.tmp) ,"\n")
+            cat(" Length (partial): ",length(partial$when)  ,"\n")
+            cat(" Length (na.pad):  ",length(na.pad)        ,"\n")
+            cat(" TRESUME:          ",eddy.tresume          ,"\n")
+            cat(" NTIMES:           ",ntimes                ,"\n")
+            stop("Structures should match, check your code...")
+         }else{
+            rm(partial,na.pad)
+         }#end if
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Read data.                                                                    #
+      #------------------------------------------------------------------------------------#
       if (! eddy.complete){
          #----- Initialise the model structure. -------------------------------------------#
          if (eddy.tresume == 1){

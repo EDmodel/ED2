@@ -77,7 +77,7 @@ then
 fi
 if [ ${narhead} -gt 0 ]
 then
-   arhead=`/bin/ls -1 ${there}/histo/${polyname}-R-*head.txt 2> /dev/null`
+   arheads=`/bin/ls -1 ${there}/histo/${polyname}-R-*head.txt 2> /dev/null`
    for arhead in ${arheads}
    do
       echo -n "    - Deleting: `basename ${arhead}`..."
@@ -87,7 +87,7 @@ then
 fi
 if [ ${narvfm} -gt 0 ]
 then
-   arvfm=`/bin/ls -1 ${there}/histo/${polyname}-R-*.vfm 2> /dev/null`
+   arvfms=`/bin/ls -1 ${there}/histo/${polyname}-R-*.vfm 2> /dev/null`
    for arvfm in ${arvfms}
    do
       echo -n "    - Deleting: `basename ${arvfm}`..."
@@ -101,13 +101,25 @@ fi
 
 
 #---- Now we delete all -S- and -H- files except the last one. ----------------------------#
-ness=`/bin/ls       -1 ${there}/ecort/${polyname}-S-*h5        2> /dev/null | wc -l`
+nessh5=`/bin/ls     -1 ${there}/ecort/${polyname}-S-*h5        2> /dev/null | wc -l`
+nesscmp=`/bin/ls    -1 ${there}/ecort/${polyname}-S-*cmp       2> /dev/null | wc -l`
 naitchhead=`/bin/ls -1 ${there}/histo/${polyname}-H-*head.txt  2> /dev/null | wc -l`
 naitchvfm=`/bin/ls  -1 ${there}/histo/${polyname}-H-*.vfm      2> /dev/null | wc -l`
-if [ ${ness} -gt 1 ]
+if [ ${nessh5} -gt 1 ]
 then
-   let head=${ness}-1
+   let head=${nessh5}-1
    esses=`/bin/ls -1 ${there}/ecort/${polyname}-S-*h5 | head -${head}`
+   for ess in ${esses}
+   do
+      echo -n "    - Deleting: `basename ${ess}`..."
+      /bin/nice /bin/rm -f ${ess}
+      echo " Gone!"
+   done
+fi
+if [ ${nesscmp} -gt 1 ]
+then
+   let head=${nesscmp}-1
+   esses=`/bin/ls -1 ${there}/ecort/${polyname}-S-*cmp | head -${head}`
    for ess in ${esses}
    do
       echo -n "    - Deleting: `basename ${ess}`..."
@@ -169,7 +181,10 @@ then
       yyyy=`printf "%2.2i" ${year}`
 
       #----- Update daymax for February depending on whether it is a leap year or not. ----#
-      if [ ${year}%%400 -eq 0 ] || [ ${year}%%100 -ne 0 -a ${year}%%4 -eq 0 ]
+      let leap400=${year}%400
+      let leap100=${year}%100
+      let leap004=${year}%4
+      if [ ${leap400} -eq 0 ] || [ ${leap100} -ne 0 -a ${leap004} -eq 0 ]
       then
          daymax[2]=29
       else

@@ -554,13 +554,20 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
       !    Not really a part of the photosynthesis scheme, but this will do it.  We must   !
       ! integrate the "mean" of the remaining respiration terms, except for the root one.  !
       ! This is done regardless on whether the cohort is doing photosynthesis.             !
+      !                                                                                    !
+      !    The "_respiration(ico) terms are in kgC/plant/day, so we must also multiply     !
+      ! them by the number of years per day so the output is in kgC/plant/yr.  High time   !
+      ! we switched everything to SI...                                                    !
       !------------------------------------------------------------------------------------!
       cpatch%fmean_growth_resp (ico) = cpatch%fmean_growth_resp  (ico)                     &
-                                     + cpatch%growth_respiration (ico) * dtlsm_o_frqsum
+                                     + cpatch%growth_respiration (ico) * dtlsm_o_frqsum    &
+                                     * yr_day
       cpatch%fmean_storage_resp(ico) = cpatch%fmean_storage_resp (ico)                     &
-                                     + cpatch%storage_respiration(ico) * dtlsm_o_frqsum
+                                     + cpatch%storage_respiration(ico) * dtlsm_o_frqsum    &
+                                     * yr_day
       cpatch%fmean_vleaf_resp  (ico) = cpatch%fmean_vleaf_resp   (ico)                     &
-                                     + cpatch%vleaf_respiration  (ico) * dtlsm_o_frqsum
+                                     + cpatch%vleaf_respiration  (ico) * dtlsm_o_frqsum    &
+                                     * yr_day
       !------------------------------------------------------------------------------------!
 
       if (print_photo_debug) then

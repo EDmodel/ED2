@@ -116,11 +116,53 @@ histolist   = dir(histodir)
 bye         =-grep("-Z-",histolist)
 if (length(bye) > 0) histolist   = histolist[bye]
 nhisto      = length(histolist)
-hasoutput   = nhisto > 0
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#      Loop until we find a good history.                                                  #
+#------------------------------------------------------------------------------------------#
+hasoutput = FALSE
+if (nhisto > 0){
+   #----- Order the history files from most oldest to most recent. ------------------------#
+   fl          = nchar(histolist[1])
+   ylist       = as.numeric(substring(histolist,fl-23,fl-20))
+   ohisto      = order(ylist)
+   histolist   = histolist[ohisto]
+   #---------------------------------------------------------------------------------------#
 
+
+   #------ Check whether the latest file is working.  Otherwise, delete it. ---------------#
+   loop.histo  = seq(from=nhisto,to=1,by=-1)
+   ihisto      = nhisto+1
+   while (! hasoutput & ihisto > 0){
+      ihisto   = ihisto - 1
+
+      #----- Use try so it doesn't crash when it reads a corrupt file. --------------------#
+      tryhisto = file.path(histodir,histolist[ihisto])
+      trydata  = try(hdf5load(file=tryhisto,load=FALSE,verbosity=0,tidy=TRUE),silent=TRUE)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     If reading didn't work, delete the file and step back.                         #
+      #------------------------------------------------------------------------------------#
+      if ("try-error" %in% is(trydata)){
+         cat (" File ",basename(tryhisto)," is corrupted! Deleting it...","\n")
+         dummy    = file.remove(tryhisto)
+         if (finished){
+            finished = FALSE
+            running  = ! (metmiss || crashed || stopped || finished)
+         }#end if
+      }else{
+         hasoutput = TRUE
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
+}#end if
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
@@ -128,12 +170,10 @@ hasoutput   = nhisto > 0
 #------------------------------------------------------------------------------------------#
 if (hasoutput){
 
-   fl=nchar(histolist[1])
-   ylist  = as.numeric(substring(histolist,fl-23,fl-20))
-   nhisto = which.max(ylist)
-   latesthisto = histolist[nhisto]
-   pathhisto   = file.path(histodir,histolist[nhisto])
-   print (paste("Polygon",polyg," - Last:",latesthisto,"..."))
+   fl=nchar(histolist[ihisto])
+   latesthisto = histolist[ihisto]
+   pathhisto   = file.path(histodir,histolist[ihisto])
+   cat("Polygon",polyg," - Last:",latesthisto,"...","\n")
 
    #----- Open the last history and check how many cohorts exist. -------------------------#
    mydata = hdf5load(file=pathhisto,load=FALSE,verbosity=0,tidy=TRUE)
@@ -188,7 +228,7 @@ if (hasoutput){
 
          #---- Get the meteorological cycle. ----------------------------------------------#
          metcycle   = metcycz - metcyca
-         years.test = seq(from=yeara,to=yeara+nhisto-1,by=metcycle)
+         years.test = seq(from=yeara,to=yeara+ihisto-1,by=metcycle)
          ntest      = length(years.test)
          npft       = dim(mydata$AGB.PY)[3]
          #---------------------------------------------------------------------------------#
@@ -288,7 +328,7 @@ if (hasoutput){
    extinct   = FALSE
    ststate   = FALSE
    #---------------------------------------------------------------------------------------#
-}#end if (nhisto > 0)
+}#end if (hasoutput)
 #------------------------------------------------------------------------------------------#
 
 
@@ -339,11 +379,4 @@ if (running && hasoutput){
 #------------------------------------------------------------------------------------------#
 statusout    = paste(output,"statusrun.txt",sep="/")
 dum          = write(x=status,file=statusout,append=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#      Quit R.                                                                             #
-#------------------------------------------------------------------------------------------#
-#q("no")
 #------------------------------------------------------------------------------------------#

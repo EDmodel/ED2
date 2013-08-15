@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+. ${HOME}/.bashrc
 #------------------------------------------------------------------------------------------#
 # 1eachtime.sh                                                                             #
 # Developed by Marcos Longo - Lab. MASTER/IAG/USP - May 19, 2004                           #

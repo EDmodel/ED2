@@ -4,7 +4,7 @@
 # This function extracts the variablem, within the asked interval, using the processed ctl #
 # information.                                                                             #
 #------------------------------------------------------------------------------------------#
-readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
+readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
 
    #----- Assign the number of variables. -------------------------------------------------#
    nvars = length(vari)
@@ -91,7 +91,7 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
       # variables with the right size.  We first assign a template variable, and assign it #
       # to each variable.                                                                  #
       #------------------------------------------------------------------------------------#
-      for (v in 1:nvars){
+      for (v in sequence(nvars)){
          data  = array(NA,c(length(ta:tz),length(za:zz[v]),length(xa:xz),length(ya:yz)))
          assign(x=vari[v],value=data)
          rm(data)
@@ -120,7 +120,7 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
             aux   = readBin(mybin,n=npts,what="numeric",size=info$size,
                             endian=info$endian)
 
-            for (v in 1:nvars){
+            for (v in sequence(nvars)){
                zmx = info$zmax[varid[v]]
                zr  = 1:info$zmax[varid[v]]
                pr  = info$posica[varid[v]]:info$posicz[varid[v]]
@@ -181,7 +181,7 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
       #----- Close connection only after all variables have been read. --------------------#
       close(mybin)
 
-      for (v in 1:nvars){
+      for (v in sequence(nvars)){
          print(paste("[+] Reading variable ",vari[v],"...",sep=""))
          zmx   = info$zmax[varid[v]]
          xr    = 1:info$xmax

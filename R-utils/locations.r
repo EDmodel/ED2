@@ -1522,7 +1522,7 @@ poitmp[[u]] = list( short           = "brasilia"
                   , lon             = -47.713
                   , lat             = -15.601
                   , alt             = 1023
-                  , wmo             = NA
+                  , wmo             = 83378
                   , isoilflg        = 2
                   , ntext           = 17
                   , sand            = -1.000
@@ -1598,6 +1598,27 @@ poitmp[[u]] = list( short           = "cacoal_grande"
                   , yeara           = 1964
                   , yearz           = 2009
                   , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "caico"        
+                  , longname        = "Caico, RN"              
+                  , iata            = "cqo"
+                  , lon             = -37.085
+                  , lat             =  -6.467
+                  , alt             = 176
+                  , wmo             = 82690
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Caico"
+                  , yeara           = 1998
+                  , yearz           = 2008
+                  , iphen           = 2
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "cajazeiras"        
@@ -2814,7 +2835,7 @@ poitmp[[u]] = list( short           = "manaus_km34"
                   , scolour         = 14
                   , met.driver      = "Manaus_Km34"
                   , yeara           = 1994
-                  , yearz           = 2006
+                  , yearz           = 2007
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3129,7 +3150,7 @@ poitmp[[u]] = list( short           = "paracou"
                   , scolour         = 14
                   , met.driver      = "Paracou"
                   , yeara           = 1999
-                  , yearz           = 2010
+                  , yearz           = 2013
                   , iphen           = -1
                   )#end list
 u           = u + 1
