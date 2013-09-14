@@ -3802,7 +3802,7 @@ poitmp[[u]] = list( short           = "santarem_km67"
                   , scolour         = 14
                   , met.driver      = "Santarem_Km67"
                   , yeara           = 1996
-                  , yearz           = 2011
+                  , yearz           = 2012
                   , iphen           = -1
                   )#end list
 u           = u + 1

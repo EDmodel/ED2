@@ -5,6 +5,8 @@ there="myoutpath"           # ! Disk where the output files are
 bzip2="/bin/gzip -9"        # ! Program to compress files (with options)
 #------ Calculator. -----------------------------------------------------------------------#
 ccc="${HOME}/util/calc.sh"  # Calculator
+#------ # of history files to keep (in odyssey's world, always keep more than one). -------#
+retain=3
 #------------------------------------------------------------------------------------------#
 
 
@@ -105,9 +107,9 @@ nessh5=`/bin/ls     -1 ${there}/ecort/${polyname}-S-*h5        2> /dev/null | wc
 nesscmp=`/bin/ls    -1 ${there}/ecort/${polyname}-S-*cmp       2> /dev/null | wc -l`
 naitchhead=`/bin/ls -1 ${there}/histo/${polyname}-H-*head.txt  2> /dev/null | wc -l`
 naitchvfm=`/bin/ls  -1 ${there}/histo/${polyname}-H-*.vfm      2> /dev/null | wc -l`
-if [ ${nessh5} -gt 1 ]
+if [ ${nessh5} -gt ${retain} ]
 then
-   let head=${nessh5}-1
+   let head=${nessh5}-${retain}
    esses=`/bin/ls -1 ${there}/ecort/${polyname}-S-*h5 | head -${head}`
    for ess in ${esses}
    do
@@ -116,9 +118,9 @@ then
       echo " Gone!"
    done
 fi
-if [ ${nesscmp} -gt 1 ]
+if [ ${nesscmp} -gt ${retain} ]
 then
-   let head=${nesscmp}-1
+   let head=${nesscmp}-${retain}
    esses=`/bin/ls -1 ${there}/ecort/${polyname}-S-*cmp | head -${head}`
    for ess in ${esses}
    do
@@ -127,9 +129,9 @@ then
       echo " Gone!"
    done
 fi
-if [ ${naitchhead} -gt 1 ]
+if [ ${naitchhead} -gt ${retain} ]
 then
-   let head=${naitchhead}-1
+   let head=${naitchhead}-${retain}
    aitches=`/bin/ls -1 ${there}/histo/${polyname}-H-*head.txt | head -${head}`
    for aitch in ${aitches}
    do
@@ -138,9 +140,9 @@ then
       echo " Gone!"
    done
 fi
-if [ ${naitchvfm} -gt 1 ]
+if [ ${naitchvfm} -gt ${retain} ]
 then
-   let head=${naitchvfm}-1
+   let head=${naitchvfm}-${retain}
    aitches=`/bin/ls -1 ${there}/histo/${polyname}-H-*.vfm | head -${head}`
    for aitch in ${aitches}
    do

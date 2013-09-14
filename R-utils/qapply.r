@@ -62,7 +62,7 @@ qapply <<- function(X,INDEX,DIM,FUN,...){
       #----- Call zapply by the apply function. -------------------------------------------#
       eout  = apply(X=X,MARGIN=margin,FUN=zapply,zindex=INDEX,zfunc=FUN,...)
       if (is.list(INDEX) && length(INDEX) > 1){
-         uniqlist       = sapply(X=lapply(X=INDEX,FUN=sort),FUN=unique)
+         uniqlist       = lapply(X=lapply(X=INDEX,FUN=sort),FUN=unique)
          dimuniq        = sapply(X=uniqlist,FUN=length,simplify=TRUE)
          eout           = array (data=eout,dim=c(dimuniq,dim(X)[margin]))
          dimnames(eout) = uniqlist

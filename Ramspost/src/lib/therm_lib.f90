@@ -1397,7 +1397,7 @@ module therm_lib
       else
          !----- Need to find the guesses with opposite signs. -----------------------------!
          if (abs(fun-funa) < 100.*toler*tempa) then
-            delta = 100.*toler*delta
+            delta = 100.*toler*tempa
          else
             delta = max(abs(funa * (tempz-tempa)/(fun-funa)),100.*toler*tempa)
          end if

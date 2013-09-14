@@ -29,7 +29,7 @@ yearend        = thisyearz    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
-nyears.long    = 50           # Runs longer than this are considered long runs.
+nyears.long    = 15           # Runs longer than this are considered long runs.
 #------------------------------------------------------------------------------------------#
 
 
@@ -73,11 +73,14 @@ ibackground    = mybackground           # Background settings (check load_everyt
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
-slz.min        = -5.0         # The deepest depth that trees access water.
-idbh.type      = myidbhtype   # Type of DBH class
-                              # 1 -- Every 10 cm until 100cm; > 100cm
-                              # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
-klight         = myklight     # Weighting factor for maximum carbon balance
+slz.min             = -5.0         # The deepest depth that trees access water.
+idbh.type           = myidbhtype   # Type of DBH class
+                                   # 1 -- Every 10 cm until 100cm; > 100cm
+                                   # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                                   # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
+klight              = myklight     # Weighting factor for maximum carbon balance
+corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+                                   #   storage respiration
 #------------------------------------------------------------------------------------------#
 
 
@@ -571,7 +574,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      First plot: legend.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x      = "bottom"
@@ -590,11 +593,11 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      Main plot.                                                              #
             #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
             axis(side=1)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
@@ -681,7 +684,7 @@ for (place in myplaces){
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
          xlimit = pretty.xylim(u=datum$toyear     ,fracexp=0.0,is.log=FALSE)
-         ylimit = pretty.xylim(u=thisvar[,,pftuse],fracexp=scalleg,is.log=plog)
+         ylimit = pretty.xylim(u=thisvar[,,pftuse],fracexp=0.0,is.log=plog)
          if (plog){
             xylog    = "y"
             ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
@@ -741,7 +744,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      First plot: legend.                                                  #
                #---------------------------------------------------------------------------#
-               par(mar=c(0.1,4.1,0.1,2.1))
+               par(mar=c(0.1,4.6,0.1,2.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x      = "bottom"
@@ -761,11 +764,11 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      Main plot.                                                           #
                #---------------------------------------------------------------------------#
-               par(mar=c(4.1,4.1,4.1,2.1))
+               par(mar=c(4.1,4.6,4.1,2.1))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
                axis(side=1)
-               axis(side=2)
+               axis(side=2,las=1)
                box()
                title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
                if (drought.mark){
@@ -876,7 +879,7 @@ for (place in myplaces){
             ylimit    = range(thisvar,na.rm=TRUE)
          }#end if
          #----- Expand the upper range in so the legend doesn't hide things. --------------#
-         ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=FALSE)
+         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=FALSE)
          #---------------------------------------------------------------------------------#
 
 
@@ -889,6 +892,13 @@ for (place in myplaces){
             year.now = datum$toyear[y]
             cyear    = sprintf("%4.4i",year.now)
             var.year = thisvar[yfac == year.now]
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Load variable ----------------------------------------------------------#
+            letitre = paste(description," - ",lieu,"\n","Monthly mean - ",cyear,sep="")
+            ley     = desc.unit(desc=description,unit=unit)
             #------------------------------------------------------------------------------#
 
 
@@ -909,13 +919,51 @@ for (place in myplaces){
                }#end if
 
 
-               #----- Load variable -------------------------------------------------------#
-               letitre = paste(description," - ",lieu,"\n","Monthly mean - ",cyear,sep="")
-               ley     = desc.unit(desc=description,unit=unit)
+
+               #----- Split plot into two windows. ----------------------------------------#
                par(par.user)
-               plot(x=montmont,y=var.year,type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=ley,log=plog,xaxt="n",cex.main=cex.main)
-               axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
+               layout(mat=rbind(2,1),heights=c(5,1))
+               #---------------------------------------------------------------------------#
+
+
+
+               #------ First plot: the legend. --------------------------------------------#
+               par(mar=c(0.1,4.6,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               if (plotsd){
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , legend  = c(cyear,paste("Mean: ",yeara,"-",yearz,sep=""))
+                        , fill    = errcolours
+                        , angle   = angle
+                        , density = dens
+                        , lwd     = llwd
+                        , col     = lcolours
+                        , bg      = background
+                        , title   = expression(bold("Shaded areas = 1 SD"))
+                        , cex     = cex.ptsz
+                        , pch     = 16
+                        )#end legend
+               }else{
+                  legend( x      = "bottom"
+                        , inset  = 0.0
+                        , legend = c(cyear,paste("Mean: ",yeara,"-",yearz,sep=""))
+                        , col    = lcolours
+                        , lwd    = llwd
+                        , cex    = cex.ptsz
+                        , pch    = 16
+                        )#end legend
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #------ Second plot: the comparison. ---------------------------------------#
+               par(mar=c(4.1,4.6,4.1,2.1))
+               plot.new()
+               plot.window(xlim=range(montmont),ylim=ylimit,log=plog)
                if (plotgrid){ 
                   abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
@@ -927,30 +975,16 @@ for (place in myplaces){
                      ,pch=16,cex=1.0)
                points(x=montmont,y=thismean,col=lcolours[2],lwd=llwd[2],type=ltype
                      ,pch=16,cex=1.0)
-               if (plotsd){
-                  legend( x       = legpos
-                        , inset   = 0.01
-                        , legend  = c(cyear,paste("Mean: ",yeara,"-",yearz,sep=""))
-                        , fill    = errcolours
-                        , angle   = angle
-                        , density = dens
-                        , lwd     = llwd
-                        , col     = lcolours
-                        , bg      = background
-                        , title   = expression(bold("Shaded areas = 1 SD"))
-                        , cex     = 1.0
-                        , pch     = 16
-                        )#end legend
-               }else{
-                  legend( x      = legpos
-                        , inset  = 0.05
-                        , legend = c(cyear,paste("Mean: ",yeara,"-",yearz,sep=""))
-                        , col    = lcolours
-                        , lwd    = llwd
-                        , cex    = 1.0
-                        , pch    = 16
-                        )#end legend
-               }#end if
+               axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
+               axis(side=2,las=1)
+               title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+               box()
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Close plotting window. ----------------------------------------------#
                if (outform[o] == "x11"){
                   locator(n=1)
                   dev.off()
@@ -959,7 +993,7 @@ for (place in myplaces){
                }#end if
                dummy=clean.tmp()
                #---------------------------------------------------------------------------#
-            } #end for outform
+            }#end for outform
             #------------------------------------------------------------------------------#
          }#end for years
          #---------------------------------------------------------------------------------#
@@ -1058,7 +1092,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      First plot: legend.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x      = "bottom"
@@ -1077,11 +1111,11 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      Main plot.                                                              #
             #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
             axis(side=1)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
@@ -1186,7 +1220,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #      First plot: legend.                                                        #
          #---------------------------------------------------------------------------------#
-         par(mar=c(0.1,4.1,0.1,2.1))
+         par(mar=c(0.1,4.6,0.1,2.1))
          plot.new()
          plot.window(xlim=c(0,1),ylim=c(0,1))
          legend( x      = "bottom"
@@ -1206,11 +1240,11 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #      Main plot.                                                                 #
          #---------------------------------------------------------------------------------#
-         par(mar=c(4.1,4.1,4.1,2.1))
+         par(mar=c(4.1,4.6,4.1,2.1))
          plot.new()
          plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
          axis(side=1)
-         axis(side=2)
+         axis(side=2,las=1)
          box()
          title(main=letitre,xlab="Year",ylab="Disturbance rate [1/yr]"
               ,cex.main=cex.main,log=xylog)
@@ -1275,6 +1309,7 @@ for (place in myplaces){
       unit         = themenow$unit  
       legpos       = themenow$legpos
       plotit       = themenow$ymean
+      ylimit.fix   = themenow$ymean.lim
 
       if (plotit){
 
@@ -1297,12 +1332,16 @@ for (place in myplaces){
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
          xlimit   = pretty.xylim(u=datum$toyear,fracexp=0.0,is.log=FALSE)
-         ylimit    = NULL
-         for (l in 1:nlayers){
-            thisvar = ymean[[vnames[l]]]
-            ylimit  = range(c(ylimit,thisvar),na.rm=TRUE)
-         }#end for
-         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+         if (any(! is.finite(ylimit.fix))){
+            ylimit    = NULL
+            for (l in 1:nlayers){
+               thisvar = ymean[[vnames[l]]]
+               ylimit  = range(c(ylimit,thisvar),na.rm=TRUE)
+            }#end for
+            ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+         }else{
+            ylimit = ylimit.fix
+         }#end if
          if (plog) {
             xylog    = "y"
             ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
@@ -1358,7 +1397,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      First plot: legend.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x      = "bottom"
@@ -1376,11 +1415,11 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      Main plot.                                                              #
             #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
             axis(side=1)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
@@ -1440,6 +1479,7 @@ for (place in myplaces){
       group        = themenow$title
       unit         = themenow$unit
       legpos       = themenow$legpos
+      ylimit.fix   = themenow$qmean.lim
       plotit       = themenow$qmean && plot.ycomp
       if (plog){ 
          xylog = "y"
@@ -1462,12 +1502,13 @@ for (place in myplaces){
          #----- Define the number of layers. ----------------------------------------------#
          nlayers   = length(vnames)
          xlimit    = range(thisday)
-         ylimit    = NULL
-         for (l in 1:nlayers){
-            thisvar = umean[[vnames[l]]]
-            ylimit  = c(ylimit,thisvar)
-         }#end for
-         ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=length(grep("y",plog)) > 0)
+         if (any(! is.finite(ylimit.fix))){
+            ylimit    = NULL
+            for (l in 1:nlayers) ylimit  = c(ylimit,umean[[vnames[l]]])
+            ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+         }else{
+            ylimit = ylimit.fix
+         }#end if
          #---------------------------------------------------------------------------------#
 
 
@@ -1522,7 +1563,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      First plot: legend.                                                  #
                #---------------------------------------------------------------------------#
-               par(mar=c(0.1,4.1,0.1,2.1))
+               par(mar=c(0.1,4.6,0.1,2.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x      = "bottom"
@@ -1540,11 +1581,11 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      Main plot.                                                           #
                #---------------------------------------------------------------------------#
-               par(mar=c(4.1,4.1,4.1,2.1))
+               par(mar=c(4.1,4.6,4.1,2.1))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
-               axis(side=2)
+               axis(side=2,las=1)
                box()
                title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
                if (drought.mark){
@@ -1813,39 +1854,26 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
 
 
-               #----- Plot legend outside main plot. --------------------------------------#
+               #----- Plot all monthly means together. ------------------------------------#
                par(par.user)
-               layout(mat=rbind(2,1),heights=c(5,1))
-               par(mar=c(0.1,4.1,0.1,2.1))
-               plot.new()
-               plot.window(xlim=c(0,1),ylim=c(0,1))
-               legend( x      = "bottom"
-                     , inset  = 0.0
-                     , legend = pftname.use
-                     , fill   = pftcol.use
-                     , ncol   = min(3,pretty.box(n.selpft)$ncol)
-                     , title  = expression(bold("Plant functional type"))
-                     , cex    = cex.ptsz
-                     , bg     = "transparent"
-                     , xpd    = TRUE
-                     )#end legend
-               #---------------------------------------------------------------------------#
-
-
-
-
-
-               #----- Plot the main plot. -------------------------------------------------#
-               par(mar=c(4.1,4.1,4.1,2.1))
                barplot(height=t(thisvnam[y,,]),names.arg=dbhnames[1:ndbh],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border=grid.colour,xpd=FALSE,cex.main=cex.main)
+                      ,border=grid.colour,xpd=FALSE,cex.main=cex.main,las=1)
                if (plotgrid & (! stacked)){
                   xgrid=0.5+(1:ndbh)*(1+npftuse)
                   abline(v=xgrid,col=grid.colour,lty="solid")
                }#end if
                box()
+               legend( x      = "topleft"
+                     , inset  = inset
+                     , legend = pftname.use
+                     , fill   = pftcol.use
+                     , ncol   = min(3,pretty.box(n.selpft)$ncol)
+                     , title  = expression(bold("Plant functional type"))
+                     , cex    = 1.0
+                     , bg     = background
+                     )#end legend
                #---------------------------------------------------------------------------#
 
 

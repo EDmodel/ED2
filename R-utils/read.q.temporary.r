@@ -7,7 +7,7 @@
 #   - ntimes  -- Total number of times (including previously loaded times).                #
 #   - tresume -- The first time to read (in case data have been partially loaded.          #
 #------------------------------------------------------------------------------------------#
-read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
+read.q.temporary <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
    #----- Copy some dimensions to scalars. ------------------------------------------------#
@@ -670,11 +670,6 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
       patch$lai       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
       patch$wai       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$agb       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$ba        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wood.dens [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$can.depth [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$can.area  [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
       patch$leaf.temp [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
       patch$leaf.vpd  [[plab]] = mymont$MMEAN.CAN.VPDEF.PA * 0.01
       patch$wood.temp [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
@@ -729,30 +724,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #---------------------------------------------------------------------------------#
-         #     Load some cohort-level structures that we will use multiple times.          #
-         #---------------------------------------------------------------------------------#
-         dbhconow          = mymont$DBH
-         dbhconow.lastmon  = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT/12))
-         pftconow          = mymont$PFT
-         nplantconow       = mymont$NPLANT
-         heightconow       = mymont$HITE
-         wood.densconow    = pft$rho[pftconow]
-         baconow           = mymont$BA.CO
-         agbconow          = mymont$AGB.CO
-         laiconow          = mymont$MMEAN.LAI.CO
-         waiconow          = mymont$WAI.CO
-         caiconow          = pmin(1.,nplantconow * dbh2ca(dbh=dbhconow,ipft=pftconow))
-         taiconow          = laiconow + waiconow
-         gppconow          = mymont$MMEAN.GPP.CO
-         nppconow          = mymont$MMEAN.NPP.CO
-         plrespconow       = mymont$MMEAN.PLRESP.CO
-
-
-         #---------------------------------------------------------------------------------#
-         #     Find soil respiration.  We must aggregate the components, some of which are #
-         # cohort-level, whilst others are already patch level.                            #
+         #     Find soil respiration.  We must disentangle the soil components.            #
          #---------------------------------------------------------------------------------#
             #----- Find biomass of some tissues. ------------------------------------------#
+            pftconow          = mymont$PFT
             bdeadconow        = mymont$BDEAD
             bleafconow        = mymont$MMEAN.BLEAF.CO
             bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
@@ -806,40 +781,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
              #----- Make root respiration extensive. --------------------------------------#
-             root.resp.pa = tapply(X=root.respconow*nplantconow,INDEX=ipaconow,FUN=sum)
-             #-----------------------------------------------------------------------------#
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #   Canopy height and open canopy fraction.                                       #
-         #---------------------------------------------------------------------------------#
-         opencanconow            = unlist( tapply( X     = 1 - caiconow
-                                                 , INDEX = ipaconow
-                                                 , FUN   = cumprod
-                                                 )#end tapply
-                                         )#end unlist
-         names(opencanconow)     = NULL
-         zeroconow               = is.finite(opencanconow) & opencanconow <= tiny.num
-         opencanconow[zeroconow] = 0.
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #       Find the polygon-average depth and area.                                  #
-         #---------------------------------------------------------------------------------#
-         useconow     = as.numeric(opencanconow > tiny.num)
-         xconow       = heightconow  * nplantconow * baconow * useconow
-         wconow       = nplantconow  * baconow * useconow
-         oconow       = opencanconow * useconow
-         can.depth.pa = (    tapply(X=xconow,INDEX=ipaconow,FUN=sum,na.rm=TRUE)
-                        /    tapply(X=wconow,INDEX=ipaconow,FUN=sum,na.rm=TRUE)
-                        )#end can.depth.pa
-         can.area.pa  = 1. - tapply(X=oconow,INDEX=ipaconow,FUN=min,na.rm=TRUE)
+             root.resp.pa = tapply( X     = root.respconow * mymont$NPLANT
+                                  , INDEX = ipaconow
+                                  , FUN   = sum
+                                  )#end tapply
+            #---------------------------------------------------------------------------------#
          #---------------------------------------------------------------------------------#
 
 
@@ -866,11 +812,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Find the variables that must be rendered extensive. -----------------------#
-         agb.pa        = tapply( X= agbconow    * nplantconow, INDEX = ipaconow, FUN = sum)
-         ba.pa         = tapply( X= baconow     * nplantconow, INDEX = ipaconow, FUN = sum)
-         gpp.pa        = tapply( X= gppconow    * nplantconow, INDEX = ipaconow, FUN = sum)
-         npp.pa        = tapply( X= nppconow    * nplantconow, INDEX = ipaconow, FUN = sum)
-         plant.resp.pa = tapply( X= plrespconow * nplantconow, INDEX = ipaconow, FUN = sum)
+         gpp.pa        = tapply( X     = mymont$MMEAN.GPP.CO * mymont$NPLANT
+                               , INDEX = ipaconow
+                               , FUN   = sum
+                               )#end tapply
+         npp.pa        = tapply( X     = mymont$MMEAN.NPP.CO * mymont$NPLANT
+                               , INDEX = ipaconow
+                               , FUN   = sum
+                               )#end tapply
+         plant.resp.pa = tapply( X     = mymont$MMEAN.PLRESP.CO * mymont$NPLANT
+                               , INDEX = ipaconow
+                               , FUN   = sum
+                               )#end tapply
          #---------------------------------------------------------------------------------#
 
 
@@ -905,27 +858,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #---------------------------------------------------------------------------------#
-         #      Wood density is found using weighted averages (basal areas are the         #
-         # weights).                                                                       #
-         #---------------------------------------------------------------------------------#
-         wood.dens.pa = mapply( FUN      = weighted.mean
-                              , x        = split(wood.densconow,ipaconow)
-                              , w        = split(baconow       ,ipaconow)
-                              , SIMPLIFY = TRUE
-                              )#end mapply
-         #---------------------------------------------------------------------------------#
-
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #      Vapour pressure deficit is found using weighted averages (LAIs are the     #
-         # weights).                                                                       #
+         #      Vapour pressure deficit is found using weighted averages.                  #
          #---------------------------------------------------------------------------------#
          leaf.vpd.pa = mapply( FUN      = weighted.mean
                              , x        = split(mymont$MMEAN.LEAF.VPDEF.CO,ipaconow)
-                             , w        = split(laiconow                  ,ipaconow)
+                             , w        = split(mymont$MMEAN.LAI.CO       ,ipaconow)
                              , SIMPLIFY = TRUE
                              )#end mapply
          leaf.vpd.pa[leaf.empty] = NA
@@ -933,25 +870,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
 
 
-
-
          #---------------------------------------------------------------------------------#
          #     Copy the data back to the patch.                                            #
          #---------------------------------------------------------------------------------#
          patch$lai       [[plab]][idx              ] = lai.pa
          patch$wai       [[plab]][idx              ] = wai.pa
-         patch$agb       [[plab]][idx              ] = agb.pa
-         patch$ba        [[plab]][idx              ] = ba.pa
-         patch$can.depth [[plab]][idx              ] = can.depth.pa
-         patch$can.area  [[plab]][idx              ] = can.area.pa
-         patch$wood.dens [[plab]][idx              ] = wood.dens.pa
          patch$leaf.temp [[plab]][idx[! leaf.empty]] = leaf.temp.pa [! leaf.empty]
          patch$leaf.water[[plab]][idx[! leaf.empty]] = leaf.water.pa[! leaf.empty]
          patch$leaf.vpd  [[plab]][idx[! leaf.empty]] = leaf.vpd.pa  [! leaf.empty]
          patch$wood.temp [[plab]][idx[! wood.empty]] = wood.temp.pa [! wood.empty]
          patch$gpp       [[plab]][idx              ] = gpp.pa
          patch$npp       [[plab]][idx              ] = npp.pa
-         patch$plant.resp[[plab]][idx              ] = plant.resp.pa
+         patch$plant.resp[[plab]][idx              ] = npp.pa
          patch$hflxlc    [[plab]][idx              ] = hflxlc.pa
          patch$hflxwc    [[plab]][idx              ] = hflxwc.pa
          patch$wflxlc    [[plab]][idx              ] = wflxlc.pa
@@ -1314,7 +1244,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                                  )#end tapply
                                          )#end unlist
          names(opencanconow)     = NULL
-         zeroconow               = is.finite(opencanconow) & opencanconow <= tiny.num
+         zeroconow               = is.finite(opencanconow) & opencanconow <= 2^-23
          opencanconow[zeroconow] = 0.
          #---------------------------------------------------------------------------------#
 
@@ -2120,10 +2050,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #       Find the polygon-average depth and area.                                     #
       #------------------------------------------------------------------------------------#
       if (any(ncohorts > 0)){
-         useconow      = as.numeric(opencanconow > tiny.num)
-         xconow        = heightconow  * nplantconow * baconow * useconow
-         wconow        = nplantconow  * baconow * useconow
-         oconow        = opencanconow * useconow
+         useconow      = as.numeric(opencanconow > 0)
+         xconow        = heightconow  * nplantconow * baconow * ( opencanconow > 2^-23 )
+         wconow        = nplantconow  * baconow * ( opencanconow > 2^-23 )
+         oconow        = opencanconow * ( opencanconow > 2^-23 )
          can.depth.idx = (    tapply(X = xconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
                          /    tapply(X = wconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
                          )#end can.depth.pa

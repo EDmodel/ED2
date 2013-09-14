@@ -19,19 +19,6 @@ tspftdbh[[n]]     = list( vnam     = "agb"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
-tspftdbh[[n]]     = list( vnam     = "bgb"
-                        , desc     = "Below ground biomass"
-                        , e.unit   = untab$kgcom2
-                        , i.unit   = untab$kgcopl
-                        , plog     = FALSE
-                        , pft      = TRUE
-                        , pftdbh   = TRUE
-                        , sas      = TRUE
-                        , bar.plot = FALSE
-                        , stack    = TRUE
-                        , scsout   = FALSE
-                        )#end list
-n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "biomass"
                         , desc     = "Total biomass"
                         , e.unit   = untab$kgcom2
@@ -214,6 +201,19 @@ tspftdbh[[n]]     = list( vnam     = "broot"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "bstem"
+                        , desc     = "Stem biomass"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
+                        , plog     = FALSE
+                        , pft      = FALSE
+                        , pftdbh   = FALSE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bsapwood"
                         , desc     = "Sapwood biomass"
                         , e.unit   = untab$kgcom2
@@ -255,6 +255,19 @@ tspftdbh[[n]]     = list( vnam     = "bseeds"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.resp"
                         , desc     = "Leaf respiration"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "stem.resp"
+                        , desc     = "Stem respiration"
                         , e.unit   = untab$kgcom2oyr
                         , i.unit   = untab$kgcoployr
                         , plog     = FALSE
@@ -853,6 +866,19 @@ tspftdbh[[n]]     = list( vnam     = "f.bleaf"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "f.bstem"
+                        , desc     = "Relative stem biomass"
+                        , e.unit   = untab$gcokgcbio
+                        , i.unit   = untab$gcokgcbio
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "f.broot"
                         , desc     = "Relative root biomass"
                         , e.unit   = untab$gcokgcbio
@@ -930,12 +956,6 @@ tslu      = list()
 n         = n + 1
 tslu[[n]] = list( vnam = "agb"
                 , desc = "Above ground biomass"
-                , unit = untab$kgcom2
-                , plog = FALSE
-                , plt  = FALSE)
-n         = n + 1
-tslu[[n]] = list( vnam = "bgb"
-                , desc = "Below ground biomass"
                 , unit = untab$kgcom2
                 , plog = FALSE
                 , plt  = FALSE)
@@ -1407,6 +1427,10 @@ theme[[n]] = list( vnam      = c(        "gpp", "plant.resp",  "het.resp",      
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(   "rshort",      "rlong","rshort.gnd",    "qwflxca"
@@ -1427,6 +1451,10 @@ theme[[n]] = list( vnam      = c(   "rshort",      "rlong","rshort.gnd",    "qwf
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(        "wflxgc",         "wflxca",      "wflxlc"
@@ -1447,6 +1475,10 @@ theme[[n]] = list( vnam      = c(        "wflxgc",         "wflxca",      "wflxl
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(     "atm.temp",  "can.temp",  "leaf.temp"
@@ -1467,6 +1499,10 @@ theme[[n]] = list( vnam      = c(     "atm.temp",  "can.temp",  "leaf.temp"
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(    "atm.shv",   "can.shv",      "gnd.shv")
@@ -1483,6 +1519,10 @@ theme[[n]] = list( vnam      = c(    "atm.shv",   "can.shv",      "gnd.shv")
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(    "atm.co2",    "can.co2")
@@ -1499,6 +1539,10 @@ theme[[n]] = list( vnam      = c(    "atm.co2",    "can.co2")
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(         "rain",      "runoff", "intercepted",   "wshed")
@@ -1515,6 +1559,10 @@ theme[[n]] = list( vnam      = c(         "rain",      "runoff", "intercepted", 
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c("npat.global")
@@ -1531,6 +1579,10 @@ theme[[n]] = list( vnam      = c("npat.global")
                  , mmean     = TRUE
                  , qmean     = FALSE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c( "ncoh.global")
@@ -1547,16 +1599,24 @@ theme[[n]] = list( vnam      = c( "ncoh.global")
                  , mmean     = TRUE
                  , qmean     = FALSE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c( "plant.resp",     "het.resp",   "cwd.resp", "leaf.resp"
-                                ,  "root.resp",  "growth.resp",       "reco")
-                 , desc      = c("Plant resp.",   "Het. resp.",  "CWD resp.","Leaf resp."
-                                , "Root resp.", "Growth resp.","Ecos. resp.")
-                 , colour    = c("chartreuse3",      "purple3","saddlebrown", "darkgreen"
-                                ,"orangered"  ,"darkgoldenrod","dodgerblue3")
-                 , lwd       = c(          2.5,            2.5,          2.5,         2.5
-                                ,          2.5,            2.5,          2.5)
+theme[[n]] = list( vnam      = c(          "reco",     "soil.resp",  "plant.resp"
+                                ,      "het.resp",     "leaf.resp",   "stem.resp"
+                                ,    "croot.resp",    "froot.resp"               )
+                 , desc      = c(     "Ecosystem",          "Soil", "Autotrophic"
+                                , "Heterotrophic",          "Leaf",        "Stem"
+                                ,   "Coarse root",     "Fine root"               )
+                 , colour    = c(    "dodgerblue",        "sienna",   "darkgreen"
+                                ,     "firebrick",   "chartreuse2", "darkorange1"
+                                ,    "slateblue3", "darkgoldenrod"               )
+                 , lwd       = c(             2.5,             2.5,          2.5
+                                ,             2.5,             2.5,          2.5
+                                ,             2.5,             2.5               )
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "respiration"
@@ -1565,8 +1625,12 @@ theme[[n]] = list( vnam      = c( "plant.resp",     "het.resp",   "cwd.resp", "l
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
-                 , qmean     = TRUE
+                 , qmean     = FALSE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(0.,4.2)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(0.,4.2)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(  "atm.vels",            "ustar")
@@ -1583,6 +1647,10 @@ theme[[n]] = list( vnam      = c(  "atm.vels",            "ustar")
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c("fast.soil.c","slow.soil.c","struct.soil.c")
@@ -1599,6 +1667,10 @@ theme[[n]] = list( vnam      = c("fast.soil.c","slow.soil.c","struct.soil.c")
                  , mmean     = TRUE
                  , qmean     = FALSE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(    "atm.vpd",    "can.vpd",   "leaf.vpd")
@@ -1615,6 +1687,10 @@ theme[[n]] = list( vnam      = c(    "atm.vpd",    "can.vpd",   "leaf.vpd")
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(         "paw")
@@ -1631,6 +1707,10 @@ theme[[n]] = list( vnam      = c(         "paw")
                  , mmean     = TRUE
                  , qmean     = FALSE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(         "smpot")
@@ -1647,6 +1727,10 @@ theme[[n]] = list( vnam      = c(         "smpot")
                  , mmean     = TRUE
                  , qmean     = FALSE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c("water.deficit",      "malhi.deficit")
@@ -1663,6 +1747,10 @@ theme[[n]] = list( vnam      = c("water.deficit",      "malhi.deficit")
                  , mmean     = TRUE
                  , qmean     = FALSE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(        "nee",   "cflxca",     "cflxst")
@@ -1679,6 +1767,10 @@ theme[[n]] = list( vnam      = c(        "nee",   "cflxca",     "cflxst")
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(         "rshort",  "rshort.beam","rshort.diff"
@@ -1699,6 +1791,10 @@ theme[[n]] = list( vnam      = c(         "rshort",  "rshort.beam","rshort.diff"
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(          "rlong",  "rlongup",    "rlong.gnd")
@@ -1715,6 +1811,10 @@ theme[[n]] = list( vnam      = c(          "rlong",  "rlongup",    "rlong.gnd")
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(         "albedo", "albedo.par","albedo.nir")
@@ -1731,6 +1831,10 @@ theme[[n]] = list( vnam      = c(         "albedo", "albedo.par","albedo.nir")
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(        "par.tot",     "par.beam", "par.diff"
@@ -1751,6 +1855,10 @@ theme[[n]] = list( vnam      = c(        "par.tot",     "par.beam", "par.diff"
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(       "leaf.gsw",        "leaf.gbw",        "wood.gbw")
@@ -1767,6 +1875,10 @@ theme[[n]] = list( vnam      = c(       "leaf.gsw",        "leaf.gbw",        "w
                  , mmean     = TRUE
                  , qmean     = TRUE
                  , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
                  )#end list
 #------------------------------------------------------------------------------------------#
 

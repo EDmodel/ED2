@@ -52,7 +52,7 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "pdf" - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 14                     # Font size.
+ptsz           = 16                     # Font size.
 lwidth         = 2.5                    # Line width
 plotgrid       = TRUE                   # Should I plot the grid in the background? 
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
@@ -80,11 +80,13 @@ ibackground    = mybackground           # Background settings (check load_everyt
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
-slz.min        = -5.0         # The deepest depth that trees access water.
-idbh.type      = myidbhtype   # Type of DBH class
-                              # 1 -- Every 10 cm until 100cm; > 100cm
-                              # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
-klight         = myklight     # Weighting factor for maximum carbon balance
+slz.min             = -5.0         # The deepest depth that trees access water.
+idbh.type           = myidbhtype   # Type of DBH class
+                                   # 1 -- Every 10 cm until 100cm; > 100cm
+                                   # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+klight              = myklight     # Weighting factor for maximum carbon balance
+corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+                                   #   storage respiration
 #------------------------------------------------------------------------------------------#
 
 
@@ -427,18 +429,18 @@ for (place in myplaces){
             par(oma=c(0,0,0,0))
             layout (mat=rbind(2,1),heights=c(5,1))
             
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
             legend(x="bottom",legend=year.desc[-1]
                   ,lwd=2.5,col=year.col[-1],title="Period",cex=0.9,ncol=4)
 
-            par(mar=c(3.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=range(outplot[[2]]$x),ylim=ylimit)
             title(main=letitre,xlab=lex,ylab=ley,cex.main=0.8)
             axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
             if (plotgrid){ 
                abline(v=whenplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
@@ -519,7 +521,7 @@ for (place in myplaces){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
-            
+
             letitre = paste(lieu," \n Year comparison: ",desc,sep="")
             lex     = "Season"
             ley     = desc.unit(desc=desc,unit=unit)
@@ -527,17 +529,17 @@ for (place in myplaces){
 
             par(par.user)
             layout (mat=rbind(2,1),heights=c(5,1))
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
             legend(x="bottom",inset=0.0,legend=yr3mon.desc,fill=yr3mon.col
                   ,title="Period",cex=0.9,ncol=2)
 
 
-            par(mar=c(3.1,4.1,4.1,2.1))
+            par(mar=c(3.1,4.6,4.1,2.1))
             barplot(season.mat,col=yr3mon.col,main=letitre,xlab=lex,ylab=ley
                    ,cex.main=cex.main,ylim=ylimit,legend.text=FALSE,beside=TRUE
-                   ,border=grey.fg,xpd=FALSE)
+                   ,border=grey.fg,xpd=FALSE,las=1)
             box()
 
 
@@ -629,7 +631,7 @@ for (place in myplaces){
             ptitle[[1]] = list(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
             paxes       = list()
             paxes[[1]]  = list( x.axis = list(side=1)
-                              , y.axis = list(side=2)
+                              , y.axis = list(side=2,las=1)
                               , grid   = list(col=grey.fg,lty="solid")
                               , legend = list( x      = leg.pos
                                              , inset  = 0.01

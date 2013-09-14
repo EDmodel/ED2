@@ -8,8 +8,8 @@ h2dbh = function(h,ipft){
      zpft = ipft
    }#end if
 
-   tropo = pft$tropical[zpft] & (iallom == 0 | iallom == 1)
-   tropn = pft$tropical[zpft] & iallom == 2
+   tropo = pft$tropical[zpft] & iallom %in% c(0,1)
+   tropn = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe = ! pft$tropical[zpft]
 
    dbh = NA * h
@@ -43,8 +43,8 @@ dbh2h = function(ipft,dbh){
    large         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
    dbhuse[large] = pft$dbh.crit[zpft[large]]
 
-   tropo         = pft$tropical[zpft] & (iallom == 0 | iallom == 1)
-   tropn         = pft$tropical[zpft] & iallom == 2
+   tropo         = pft$tropical[zpft] & iallom %in% c(0,1)
+   tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe         = ! pft$tropical[zpft]
 
    h         = NA * dbh
@@ -197,13 +197,13 @@ dbh2vol = function(hgt,dbh,ipft){
 #    Rooting depth.                                                                        #
 #------------------------------------------------------------------------------------------#
 dbh2rd = function(hgt,dbh,ipft){
-   if (iallom == 0){
+   if (iallom %in% c(0)){
       #------------------------------------------------------------------------------------#
       #    Original ED-2.1 (I don't know the source for this equation, though).            #
       #------------------------------------------------------------------------------------#
       vol  = dbh2vol(hgt,dbh,ipft)
       rd   = pft$b1Rd[ipft] * vol ^ pft$b2Rd[ipft]
-   }else if (iallom == 1 || iallom == 2){
+   }else if (iallom %in% c(1,2,3)){
        #-----------------------------------------------------------------------------------#
        #    This is just a test allometry, that imposes root depth to be 0.5 m for         #
        # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.             #

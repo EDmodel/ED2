@@ -65,13 +65,14 @@ boot.ci.upper <<- function(boot.out,...){
 #==========================================================================================#
 #     Auxiliary functions that carry the index, useful for bootstrap.                      #
 #------------------------------------------------------------------------------------------#
-boot.mean   <<- function(x,idx) mean    ( x = x[idx]               , na.rm = TRUE)
-boot.median <<- function(x,idx) median  ( x = x[idx]               , na.rm = TRUE)
-boot.sd     <<- function(x,idx) sd      ( x = x[idx]               , na.rm = TRUE)
-boot.var    <<- function(x,idx) var     ( x = x[idx]               , na.rm = TRUE)
-boot.sum    <<- function(x,idx) sum     ( x = x[idx]               , na.rm = TRUE)
-boot.q025   <<- function(x,idx) quantile( x = x[idx], probs = 0.025, na.rm = TRUE)
-boot.q975   <<- function(x,idx) quantile( x = x[idx], probs = 0.975, na.rm = TRUE)
+boot.mean   <<- function(x,idx) mean        ( x = x[idx]               , na.rm = TRUE)
+boot.median <<- function(x,idx) median      ( x = x[idx]               , na.rm = TRUE)
+boot.sd     <<- function(x,idx) sd          ( x = x[idx]               , na.rm = TRUE)
+boot.var    <<- function(x,idx) var         ( x = x[idx]               , na.rm = TRUE)
+boot.sum    <<- function(x,idx) sum         ( x = x[idx]               , na.rm = TRUE)
+boot.q025   <<- function(x,idx) quantile    ( x = x[idx], probs = 0.025, na.rm = TRUE)
+boot.q975   <<- function(x,idx) quantile    ( x = x[idx], probs = 0.975, na.rm = TRUE)
+boot.moment <<- function(x,idx) four.moments( x = x[idx]               , na.rm = TRUE)
 #==========================================================================================#
 #==========================================================================================#
 
@@ -209,30 +210,347 @@ boot.binom <<- function(dat,idx,out="expected",conf=0.95){
 
 #==========================================================================================#
 #==========================================================================================#
-#      This function computes the fortnightly means using only days with full              #
-# record, and using bootstrap to sample the days.                                          #
+#      This function computes the fortnightly means sampling hours, but not the years and  #
+# the fortnights.                                                                          #
 #------------------------------------------------------------------------------------------#
-boot.fortnight.mean <<- function(data.in,index){
+boot.fortnight.mean <<- function(data.in,R,ci=0.95,...){
+   call.now = match.call()
 
-   data.use = data.in[index,]
 
-   #----- Aggregate the data by hour and fortnightly period. ------------------------------#
-   ta.fnmean   = tapply(X=data.use$x,INDEX=data.use$fortnight,FUN=mean,na.rm=TRUE)
-   idx.fnmean  = as.numeric(names(ta.fnmean))
+   #----- Save the number of hours. -------------------------------------------------------#
+   lab.hour    = sort(unique(data.in$hour     ))
+   lab.ftnight = sort(unique(data.in$fortnight))
+   lab.year    = sort(unique(data.in$year     ))
+   n.hour      = length(lab.hour)
+   n.year      = length(lab.year)
+   n.ftnight   = yr.ftnight
    #---------------------------------------------------------------------------------------#
+
+
+   #------ Append bootstrap mean to the list of arguments to go to bootstrap. -------------#
+   dotdotdot = modifyList( x   = list(...)
+                         , val = list(R=R,stat=mean,realisation.only=TRUE,na.rm=TRUE)
+                         )#end modifyList
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Split the data into lists. ------------------------------------------------------#
+   list.use = split(x = data.in$x, f = list(data.in$hour,data.in$fortnight,data.in$year))
+   n.list   = lapply(X=list.use,FUN=length)
+   if (any(unlist(n.list) == 0)){
+      stop("Empty elements in your list!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Run bootstrap for each class.                                                    #
+   #---------------------------------------------------------------------------------------#
+   boot.samples  = mapply( FUN = boot.sampling, x = list.use, MoreArgs  = dotdotdot)
+   boot.arr4     = array(data=boot.samples,dim=c(R,n.hour,n.ftnight,n.year))
+   boot.arr3     = apply(X=boot.arr4,MARGIN=c(1,3,4),FUN=mean)
+   boot.mat      = apply(X=boot.arr3,MARGIN=c(1,2),FUN=mean,na.rm=TRUE)
+   boot.expected = apply(X=boot.mat,MARGIN=2,FUN=mean,na.rm=TRUE)
+   boot.qlow     = apply(X=boot.mat,MARGIN=2,FUN=quantile,prob=0.5*(1.-ci),na.rm=TRUE)
+   boot.qhigh    = apply(X=boot.mat,MARGIN=2,FUN=quantile,prob=0.5*(1.+ci),na.rm=TRUE)
+   #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
    #     Collapse fortnightly periods.  Make sure all periods are defined in the output,   #
    # if none of them were selected, make them NA.                                          #
    #---------------------------------------------------------------------------------------#
-   fnmean                      = rep(NA,times=24)
-   fnmean[idx.fnmean]          = ta.fnmean
-   fnmean[! is.finite(fnmean)] = NA
+   empty    = rep(x = NA, times = yr.ftnight)
+   expected = empty
+   qlow     = empty
+   qhigh    = empty
+   expected[lab.ftnight] = ifelse(is.finite(boot.expected),boot.expected,NA)
+   qlow    [lab.ftnight] = ifelse(is.finite(boot.qlow    ),boot.qlow    ,NA)
+   qhigh   [lab.ftnight] = ifelse(is.finite(boot.qhigh   ),boot.qhigh   ,NA)
+   ans      = list(call=call.now,expected=expected,qlow=qlow,qhigh=qhigh)
    #---------------------------------------------------------------------------------------#
 
-   return(fnmean)
+
+   #------ Return the statistics. ---------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
 }#end function
 #==========================================================================================#
 #==========================================================================================#
 
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This function computes the fortnightly means using hierarchical bootstrap on years  #
+# and hours.                                                                               #
+#------------------------------------------------------------------------------------------#
+bhier.fortnight.mean <<- function(data.in,R,ci=0.95,...){
+   call.now = match.call()
+
+
+   #----- Save the number of hours. -------------------------------------------------------#
+   lab.hour    = sort(unique(data.in$hour     ))
+   lab.ftnight = sort(unique(data.in$fortnight))
+   lab.year    = sort(unique(data.in$year     ))
+   n.hour      = length(lab.hour)
+   n.year      = length(lab.year)
+   n.ftnight   = yr.ftnight
+   n.data.in   = nrow(data.in)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Append bootstrap mean to the list of arguments to go to bootstrap. -------------#
+   dotdotdot = modifyList( x   = list(...)
+                         , val = list(R=R,stat=mean,realisation.only=TRUE,na.rm=TRUE)
+                         )#end modifyList
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Split the data into lists just to test that there aren't empty elements. --------#
+   list.use = split(x = data.in$x, f = list(data.in$hour,data.in$fortnight,data.in$year))
+   n.list   = lapply(X=list.use,FUN=length)
+   if (any(unlist(n.list) == 0)){
+      stop("Empty elements in your list!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Split data into three levels: fortnights, year, and hour.                        #
+   #---------------------------------------------------------------------------------------#
+   level.1.list  = split(x = data.in     , f = data.in$fortnight)
+   level.2.list  = mapply( FUN      = function(dat) split(x=dat,f=dat$year)
+                         , dat      = level.1.list
+                         , SIMPLIFY = FALSE
+                         )#End mapply
+   level.3.list  = mapply( FUN      = function(dat){
+                                         mapply( FUN = function(dat) split(x=dat,f=dat$hour)
+                                               , dat = dat
+                                               , SIMPLIFY = FALSE
+                                               )#end mapply
+                                      }#end function
+                         , dat      = level.2.list
+                         , SIMPLIFY = FALSE
+                         )#End mapply
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Run bootstrap for each hour.                                                     #
+   #---------------------------------------------------------------------------------------#
+   level.2.sample = mapply( FUN = function(dat,...){
+                                     mapply( FUN      = boot.list
+                                           , dat      = dat
+                                           , MoreArgs = list(...)
+                                           , SIMPLIFY = FALSE
+                                           )#end mapply
+                                  }#end function(dat)
+                          , dat = level.3.list
+                          , MoreArgs = dotdotdot
+                          , SIMPLIFY = FALSE
+                          )#end level.3.sample
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Sample the years.                                                               #
+   #---------------------------------------------------------------------------------------#
+   level.1.sample = mapply( FUN      = high.sampler
+                          , x        = level.2.sample
+                          , MoreArgs = list(R=R)
+                          , SIMPLIFY = FALSE
+                          )#end mapply
+   boot.samples   = mapply( FUN      = boot.collapse
+                          , x        = level.1.sample
+                          , SIMPLIFY = FALSE
+                          )#end mapply
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #------ Find expected value and confidence intervals. ----------------------------------#
+   boot.expected = sapply(X=boot.samples,FUN=mean,na.rm=TRUE)
+   boot.qlow     = sapply(X=boot.samples,FUN=quantile,prob=0.5*(1.-ci),na.rm=TRUE)
+   boot.qhigh    = sapply(X=boot.samples,FUN=quantile,prob=0.5*(1.+ci),na.rm=TRUE)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Collapse fortnightly periods.  Make sure all periods are defined in the output,   #
+   # if none of them were selected, make them NA.                                          #
+   #---------------------------------------------------------------------------------------#
+   empty    = rep(x = NA, times = yr.ftnight)
+   expected = empty
+   qlow     = empty
+   qhigh    = empty
+   expected[lab.ftnight] = ifelse(is.finite(boot.expected),boot.expected,NA)
+   qlow    [lab.ftnight] = ifelse(is.finite(boot.qlow    ),boot.qlow    ,NA)
+   qhigh   [lab.ftnight] = ifelse(is.finite(boot.qhigh   ),boot.qhigh   ,NA)
+   ans      = list(call=call.now,expected=expected,qlow=qlow,qhigh=qhigh)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Return the statistics. ---------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    Boot.sampling is a simple sampler that doesn't require package boot.                  #
+#------------------------------------------------------------------------------------------#
+boot.sampling <<- function( x
+                          , stat
+                          , R                = 1000
+                          , ci.level         = 0.95
+                          , realisation.only = FALSE
+                          , quiet            = TRUE
+                          , not.finite.2.na  = TRUE
+                          ,...
+                          ){
+   rcmax = 500000000
+
+
+   #----- Save call for return (and for error evaluation). --------------------------------#
+   mycall = match.call()
+   #---------------------------------------------------------------------------------------#
+
+
+   #---- Coerce x into a vector, and find its size. ---------------------------------------#
+   x  = unlist(x)
+   nx = length(x)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---- Coerce x into a vector, and find its size. ---------------------------------------#
+   if (nx <= 2){
+      if (! quiet) warning(paste(" Vector x is too short (length=",nx,")",sep=""))
+      realisation = rep(NA,times=R)
+
+
+      #----- Find the statistics. ---------------------------------------------------------#
+      if (! realisation.only){
+         expected    = NA
+         std.err     = NA
+         tci         = c(NA,NA)
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }else{
+      #------------------------------------------------------------------------------------#
+      #     Check size.  If the product of length of x and number of iterations is not too #
+      # long, use apply, otherwise, for loop is actually faster.                           #
+      #------------------------------------------------------------------------------------#
+      use.apply = nx*R < rcmax
+      if (use.apply){
+         idx.real = rep(x=sequence(R),each=nx)
+         x.sample = sample(x=x,size=nx*R,replace=TRUE)
+         realisation = tapply(X=x.sample,INDEX=idx.real,FUN=stat,...)
+      }else{
+         realisation = rep(NA,times=R)
+         for (i in sequence(nx)){
+            idx            = sample(x,size=nx,replace=TRUE)
+            realisation[i] = stat(x[idx],...)
+         }#end for
+      }#end if
+      if (not.finite.2.na) realisation[! is.finite(realisation)] = NA
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Find the statistics. ---------------------------------------------------------#
+      if (! realisation.only){
+         expected = mean(realisation)
+         std.err  = se(realisation)
+         tci      = quantile(realisation,prob=(1+c(-1,1)*ci.level)/2)
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Build the list with the results. ------------------------------------------------#
+   if (realisation.only){
+      ans = realisation
+   }else{
+      ans = list( call        = mycall
+                , realisation = realisation
+                , expected    = expected
+                , std.err     = std.err
+                , ci          = tci
+                , R           = R
+                , m           = m
+                , method      = method
+                )#end list
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Return answer. ------------------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+
+}#end function boot.sampling
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Additional auxiliary functions for hierarchical sampling.  These functions are not  #
+# intended to be directly called, but if you find some use for it, feel free to use them.  #
+#------------------------------------------------------------------------------------------#
+#----- Bootstrap the statistics within the inner level of a list. -------------------------#
+boot.list <<- function(dat,...){
+   ans = mapply( FUN      = function(dat,...) boot.sampling(x=dat$x,...)
+               , dat      = dat
+               , MoreArgs = list(...)
+               , SIMPLIFY = TRUE
+               )#end mapply
+   return(ans)
+}#end function boot.list
+#----- Select realisations for higher hierarchical level for when it has few points. ------#
+high.sampler <<- function(x,R){
+   ans = replicate( n    = R
+                  , expr = replicate( length(x)
+                                    , x[[sample(length(x),size=1)]][sample(R,size=1),]
+                                    )#end replicate
+                  )#end replicate
+   return(ans)
+}#end function high.sampler
+#----- Collapse the realisations by hour and by year. -------------------------------------#
+boot.collapse <<- function(x){
+    tmp                   = apply(X=x  ,MARGIN=c(2,3),FUN=mean,na.rm=FALSE)
+    tmp[! is.finite(tmp)] = NA
+    ans                   = apply(X=tmp,MARGIN=2     ,FUN=mean,na.rm=TRUE )
+    ans[! is.finite(ans)] = NA
+    return(ans)
+}#end function boot.collapse
+#==========================================================================================#
+#==========================================================================================#

@@ -154,11 +154,14 @@ nummonths <<- function(when){
 #==========================================================================================#
 #==========================================================================================#
 #      Function that converts a chron object to numeric fortnight count.                   #
-# Fortnight index goes from 1 to 24, where 1 is the first half of January, 2 is the last   #
-# half of January, 3 is the first half of February and so on.                              #
+# Fortnight index goes from 1 to 26, where 1 includes January 1-14, 2 is January 15-28,    #
+# and so on.  Some periods get 15 days just to make sure that nothing is lost.             #
 #------------------------------------------------------------------------------------------#
 numfortnight <<- function(when){
-   fnout = floor(2. * (nummonths(when) + numdays(when)/(daymax(when)+1))) - 1
+   doy   = floor(dayofyear(when))
+   dmax  = 365 + is.leap(when)
+   fnfac = dmax / 26
+   fnout = ceiling(doy/fnfac)
    return(fnout)
 }#end function
 #==========================================================================================#
@@ -457,37 +460,34 @@ fnyear.2.chron <<- function(fortnight,year,loc="centre"){
    loc    = tolower(substring(loc,1,1))
 
 
-  if (missing(year)){
-     wit = is(fortnight)
-     if ("dates" %in% wit || "chron" %in% wit){
-        when      = fortnight
-        fortnight = numfortnight(when)
-        year      = numyears (when)
-        month     = nummonths(when)
-     }else{
-        stop("  No year given and fortnight is not time")
-     }#end if
-  }else{
-     month  = ceiling(fortnight/2)
-  }#end if
+   #---------------------------------------------------------------------------------------#
+   #     If fortnight is actually a chron object, find the fortnight index.                #
+   #---------------------------------------------------------------------------------------#
+   if (missing(year)){
+      wit = is(fortnight)
+      if ("dates" %in% wit || "chron" %in% wit){
+         when      = fortnight
+         fortnight = numfortnight(when)
+         year      = numyears (when)
+      }else{
+         stop("  No year given and fortnight is not time")
+      }#end if
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   dmax  = ifelse(is.leap(year),366,365)
+   fnfac = dmax / 26
+   zero  = chron(paste(12,31,year-1,sep="/"))
 
 
    if ( loc %in% c("l","b","s")){
-      off = 0
-      add = 1
+      when.out = chron(floor(zero+(fortnight-1)*fnfac + 1))
    }else if ( loc %in% c("c","m")){
-      off = 0.25
-      add = 0
+      when.out = chron(round(zero+(fortnight-0.5)*fnfac))
    }else{
-      off = 0.50
-      add = 0
+      when.out = chron(floor(zero+fortnight*fnfac))
    }#end if
-
-
-   shift    = ( fortnight - 1 ) %% 2
-   day      = add + ceiling( (off + 0.5 * shift) * (daymax(month,year)) )
-
-   when.out = chron(paste(month,day,year,sep="/"))
 
    return(when.out)
 }#end fnyear.2.chron

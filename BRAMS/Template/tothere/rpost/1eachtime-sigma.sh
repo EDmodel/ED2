@@ -1,5 +1,6 @@
 #!/bin/bash
-. ${HOME}/.bashrc
+. ${HOME}/.bashrc i13
+
 #------------------------------------------------------------------------------------------#
 # 1eachtime.sh                                                                             #
 # Developed by Marcos Longo - Lab. MASTER/IAG/USP - May 19, 2004                           #

@@ -49,7 +49,7 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "pdf" - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 14                     # Font size.
+ptsz           = 17                     # Font size.
 lwidth         = 2.5                    # Line width
 plotgrid       = TRUE                   # Should I plot the grid in the background? 
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
@@ -83,11 +83,14 @@ ibackground    = mybackground           # Background settings (check load_everyt
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
-slz.min        = -5.0         # The deepest depth that trees access water.
-idbh.type      = myidbhtype   # Type of DBH class
-                              # 1 -- Every 10 cm until 100cm; > 100cm
-                              # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
-klight         = myklight     # Weighting factor for maximum carbon balance
+slz.min             = -5.0         # The deepest depth that trees access water.
+idbh.type           = myidbhtype   # Type of DBH class
+                                   # 1 -- Every 10 cm until 100cm; > 100cm
+                                   # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                                   # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
+klight              = myklight     # Weighting factor for maximum carbon balance
+corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+                                   #   storage respiration
 #------------------------------------------------------------------------------------------#
 
 
@@ -392,6 +395,11 @@ for (place in myplaces){
    mmean = list()
    msdev = list()
    for (vname in names(emean)){
+      if (vname %in% names(emsqu)){
+         has.emsqu = any(is.finite(emsqu[[vname]]))
+      }else{
+         has.emsqu = FALSE
+      }#end if
 
       #------------------------------------------------------------------------------------#
       #     Soil variables are multi-dimensional.  Use qapply.  Otherwise, check whether   #
@@ -400,7 +408,7 @@ for (place in myplaces){
       if (vname %in% c("soil.temp","soil.water","soil.mstpot")){
          mmean[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=mean, na.rm=TRUE)
          msdev[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=sd  , na.rm=TRUE)
-      }else if (vname %in% names(emsqu)){
+      }else if (has.emsqu){
          mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
          mmsqu          = tapply(X=emsqu[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
          msdev[[vname]] = sqrt  ( mmsqu - mmean[[vname]]^ 2 ) * srnorm1
@@ -418,15 +426,6 @@ for (place in myplaces){
       msdev[[vname]][bad.msdev] = 0.
       #------------------------------------------------------------------------------------#
    }#end for
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Overwrite the standard deviation of NEE, REco, and evaporation.                   #
-   #---------------------------------------------------------------------------------------#
-   msdev$nee  = sqrt(msdev$cflxca^2     + msdev$cflxst^2                        )
-   msdev$reco = sqrt(msdev$plant.resp^2 + msdev$het.resp^2                      )
-   msdev$evap = sqrt(msdev$wflxgc^2     + msdev$wflxlc^2    + msdev$wflxwc^2    )
    #---------------------------------------------------------------------------------------#
 
 
@@ -671,8 +670,8 @@ for (place in myplaces){
             #     Find the limit, make some room for the legend, and in case the field is  #
             # a constant, nudge the limits so the plot command will not complain.          #
             #------------------------------------------------------------------------------#
-            xlimit = pretty.xylim(u = datum$tomonth ,fracexp=0.0,is.log=FALSE)
-            ylimit = pretty.xylim(u=thisvar[,selpft],fracexp=scalleg,is.log=plog)
+            xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+            ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
             if (plog){
                xylog    = "y"
                ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
@@ -705,7 +704,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      First plot: legend.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x      = "bottom"
@@ -724,13 +723,13 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      Main plot.                                                              #
             #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
-            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -810,8 +809,8 @@ for (place in myplaces){
          #     Find the limit, make some room for the legend, and in case the field is a   #
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
-         xlimit = pretty.xylim(u=datum$tomonth    ,fracexp=0.0,is.log=FALSE)
-         ylimit = pretty.xylim(u=thisvar[,,pftuse],fracexp=0.0,is.log=plog )
+         xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+         ylimit = pretty.xylim(u=thisvar[,,pftuse]        ,fracexp=0.0,is.log=plog )
          if (plog){
             xylog    = "y"
             ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
@@ -873,7 +872,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      First plot: legend.                                                  #
                #---------------------------------------------------------------------------#
-               par(mar=c(0.1,4.1,0.1,2.1))
+               par(mar=c(0.1,4.6,0.1,2.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x      = "bottom"
@@ -892,13 +891,13 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      Main plot.                                                           #
                #---------------------------------------------------------------------------#
-               par(mar=c(4.1,4.1,4.1,2.1))
+               par(mar=c(4.1,4.6,4.1,2.1))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
                axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-               axis(side=2)
+               axis(side=2,las=1)
                box()
-               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
+               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1020,7 +1019,8 @@ for (place in myplaces){
 
 
          #----- Find the plot range. ------------------------------------------------------#
-         ylimit = pretty.xylim(u=c(thismean,obsmean),fracexp=scalleg,is.log=FALSE)
+         xlimit = range(thiswhen)
+         ylimit = pretty.xylim(u=c(thismean,obsmean),fracexp=0.0,is.log=FALSE)
          #---------------------------------------------------------------------------------#
 
 
@@ -1033,9 +1033,11 @@ for (place in myplaces){
 
 
 
+         #----- Plot annotation. ----------------------------------------------------------#
+         letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+         ley     = desc.unit(desc=description,unit=unit)
          #---------------------------------------------------------------------------------#
-         #     Check if the directory exists.  If not, create it.                          #
-         #---------------------------------------------------------------------------------#
+
 
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
@@ -1053,13 +1055,26 @@ for (place in myplaces){
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
-            #----- Load variable ----------------------------------------------------------#
-            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
-            ley     = desc.unit(desc=description,unit=unit)
+            #----- Split window into two. -------------------------------------------------#
             par(par.user)
-            plot(x=thiswhen,y=thismean,type="n",main=letitre,xlab="Time"
-                ,ylim=ylimit,ylab=ley,log=plog,xaxt="n",cex.main=cex.main)
-            axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
+            layout(mat=rbind(2,1),heights=c(5,1))
+            #------------------------------------------------------------------------------#
+
+
+            #----- First plot: the legend. ------------------------------------------------#
+            par(mar=c(0.1,4.6,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend(x="bottom",inset=0.0,legend=c("Model","Observation")
+                  ,col=lcolours,lwd=llwd,cex=cex.ptsz,pch=16,xpd=TRUE)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Second panel: the actual plot. -----------------------------------------#
+            par(mar=c(4.1,4.6,4.1,2.1))
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
             if (plotgrid){
                abline(v=whenplote$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
@@ -1067,8 +1082,15 @@ for (place in myplaces){
                   ,pch=16,cex=1.0)
             points(x=obswhen,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
                   ,pch=16,cex=1.0)
-            legend(x=legpos,inset=inset,legend=c("Model","Observation")
-                  ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
+            box()
+            axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
+            axis(side=2,las=1)
+            title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Close plot. ------------------------------------------------------------#
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
@@ -1076,8 +1098,11 @@ for (place in myplaces){
                dev.off()
             }#end if
             dummy = clean.tmp()
-         } #end for outform
+            #------------------------------------------------------------------------------#
+         }#end for outform
+         #---------------------------------------------------------------------------------#
       }#end if plotit
+      #------------------------------------------------------------------------------------#
    }#end for ncompare
    #---------------------------------------------------------------------------------------#
 
@@ -1193,19 +1218,24 @@ for (place in myplaces){
 
 
          #----- Find the plot range. ------------------------------------------------------#
+         xlimit    = range(montmont)
          if (plotsd){
-            ylimit    = c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh)
+            ylimit = c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh)
          }else{
-            ylimit    = c(thismean,obsmean)
+            ylimit = c(thismean,obsmean)
          }#end if
-         ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=FALSE)
+         ylimit    = pretty.xylim(u=ylimit,fracexp=0.0,is.log=FALSE)
          #---------------------------------------------------------------------------------#
 
 
 
+         #------  Plot annotation. --------------------------------------------------------#
+         letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+         ley     = desc.unit(desc=description,unit=unit)
          #---------------------------------------------------------------------------------#
-         #     Check if the directory exists.  If not, create it.                          #
-         #---------------------------------------------------------------------------------#
+
+
+
 
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
@@ -1223,14 +1253,34 @@ for (place in myplaces){
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
-            #----- Load variable ----------------------------------------------------------#
-            letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
-            ley     = desc.unit(desc=description,unit=unit)
+
+            #----- Split window into two. -------------------------------------------------#
             par(par.user)
-            plot(x=montmont,y=thismean,type="n",main=letitre,xlab="Time"
-                ,ylim=ylimit,ylab=ley,log=plog,xaxt="n"
-                ,cex.main=cex.main)
-            axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
+            layout(mat=rbind(2,1),heights=c(5,1))
+            #------------------------------------------------------------------------------#
+
+
+            #----- First plot: the legend. ------------------------------------------------#
+            par(mar=c(0.1,4.6,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            if (plotsd){
+               legend(x="bottom",inset=0.0,legend=c("Model","Observation")
+                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
+                     ,bg=background,title="Shaded areas = 1 SD",cex=cex.ptsz
+                     ,xpd=TRUE,pch=16)
+            }else{
+               legend(x="bottom",inset=0.0,legend=c("Model","Observation")
+                     ,col=lcolours,lwd=llwd,cex=cex.ptsz,xpd=TRUE,pch=16)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Second panel: the actual plot. -----------------------------------------#
+            par(mar=c(4.1,4.6,4.1,2.1))
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
             if (plotgrid){ 
                abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
@@ -1261,14 +1311,12 @@ for (place in myplaces){
                   ,pch=16,cex=1.0)
             points(x=montmont,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
                   ,pch=16,cex=1.0)
-            if (plotsd){
-               legend(x=legpos,inset=inset,legend=c("Model","Observation")
-                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                     ,bg=background,title="Shaded areas = 1 SD",cex=1.0,pch=16)
-            }else{
-               legend(x=legpos,inset=inset,legend=c("Model","Observation")
-                     ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
-            }#end if
+            box()
+            title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+            axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
+            axis(side=2,las=1)
+
+
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
@@ -1385,12 +1433,13 @@ for (place in myplaces){
 
 
          #----- Find the plot range. ------------------------------------------------------#
+         xlimit    = range(thisday)
          if (plotsd){
-            ylimit    = c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh)
+            ylimit = c(mod.ylow,mod.yhigh,obs.ylow,obs.yhigh)
          }else{
-            ylimit    = c(thismean,obsmean)
+            ylimit = c(thismean,obsmean)
          }#end if
-         ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=FALSE)
+         ylimit    = pretty.xylim(u=ylimit,fracexp=0.0,is.log=FALSE)
          #---------------------------------------------------------------------------------#
 
 
@@ -1405,6 +1454,14 @@ for (place in myplaces){
             #     Check if the directory exists.  If not, create it.                       #
             #------------------------------------------------------------------------------#
             cat("        > ",description," time series - ",namemon,"...","\n")
+
+
+            #------ Plot annotation. ------------------------------------------------------#
+            letitre = paste(description," - ",lieu,"\n"
+                           ,"Mean diurnal cycle - ",namemon,sep="")
+            ley     = desc.unit(desc=description,unit=unit)
+            #------------------------------------------------------------------------------#
+
 
             #----- Loop over formats. -----------------------------------------------------#
             for (o in 1:nout){
@@ -1423,15 +1480,35 @@ for (place in myplaces){
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
 
-               #----- Load variable -------------------------------------------------------#
-               letitre = paste(description," - ",lieu,"\n"
-                              ,"Mean diurnal cycle - ",namemon,sep="")
-               ley     = desc.unit(desc=description,unit=unit)
+
+
+               #----- Split window into two. ----------------------------------------------#
                par(par.user)
-               plot(x=thisday,y=thismean[pmon,],type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=ley,log=plog,xaxt="n"
-                   ,cex.main=cex.main)
-               axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
+               layout(mat=rbind(2,1),heights=c(5,1))
+               #---------------------------------------------------------------------------#
+
+
+               #----- First plot: the legend. ---------------------------------------------#
+               par(mar=c(0.1,4.6,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               if (plotsd){
+                  legend(x="bottom",inset=0.0,legend=c("Model","Observation")
+                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
+                        ,bg=background,title="Shaded areas = 1 SD",cex=cex.ptsz,xpd=TRUE
+                        ,pch=16)
+               }else{
+                  legend(x="bottom",inset=0.0,legend=c("Model","Observation")
+                        ,col=lcolours,lwd=llwd,cex=cex.ptsz,xpd=TRUE,pch=16)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Second panel: the actual plot. --------------------------------------#
+               par(mar=c(4.1,4.6,4.1,2.1))
+               plot.new()
+               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                if (plotgrid){ 
                   abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
@@ -1477,14 +1554,14 @@ for (place in myplaces){
                      ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)
                points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
                      ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
-               if (plotsd){
-                  legend(x=legpos,inset=inset,legend=c("Model","Observation")
-                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                        ,bg=background,title="Shaded areas = 1 SD",cex=1.0,pch=16)
-               }else{
-                  legend(x=legpos,inset=inset,legend=c("Model","Observation")
-                        ,col=lcolours,lwd=llwd,cex=1.0,pch=16)
-               }#end if
+               box()
+               title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+               axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
+               axis(side=2,las=1)
+               #---------------------------------------------------------------------------#
+
+
+
                if (outform[o] == "x11"){
                   locator(n=1)
                   dev.off()
@@ -1492,6 +1569,7 @@ for (place in myplaces){
                   dev.off()
                }#end if
                dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
             } #end for outform
          }#end for pmon
       }#end if plotit
@@ -1553,8 +1631,8 @@ for (place in myplaces){
             #     Find the limit, make some room for the legend, and in case the field is  #
             # a constant, nudge the limits so the plot command will not complain.          #
             #------------------------------------------------------------------------------#
-            xlimit = pretty.xylim(u = datum$tomonth,fracexp=0.0,is.log=FALSE)
-            ylimit = pretty.xylim(thisvar[,sellu]  ,fracexp=0.0,is.log=plog)
+            xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+            ylimit = pretty.xylim(u=thisvar[,sellu]          ,fracexp=0.0,is.log=plog )
             if (plog){
                xylog    = "y"
                ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
@@ -1588,7 +1666,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      First plot: legend.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x      = "bottom"
@@ -1607,11 +1685,11 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      Main plot.                                                              #
             #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
@@ -1678,7 +1756,7 @@ for (place in myplaces){
          #     Find the limit, make some room for the legend, and in case the field is a   #
          #  constant, nudge the limits so the plot command will not complain.              #
          #---------------------------------------------------------------------------------#
-         xlimit   = pretty.xylim(u=datum$tomonth,fracexp=0.0,is.log=FALSE)
+         xlimit   = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
          ylimit   = NULL
          mylucols = NULL
          mylulegs = NULL
@@ -1716,7 +1794,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #      First plot: legend.                                                        #
          #---------------------------------------------------------------------------------#
-         par(mar=c(0.1,4.1,0.1,2.1))
+         par(mar=c(0.1,4.6,0.1,2.1))
          plot.new()
          plot.window(xlim=c(0,1),ylim=c(0,1))
          legend( x      = "bottom"
@@ -1736,14 +1814,13 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #      Main plot.                                                                 #
          #---------------------------------------------------------------------------------#
-         par(mar=c(4.1,4.1,4.1,2.1))
+         par(mar=c(4.1,4.6,4.1,2.1))
          plot.new()
          plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
          axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-         axis(side=2)
+         axis(side=2,las=1)
          box()
-         title(main=letitre,xlab="Year",ylab="Disturbance rate [1/yr]",cex.main=cex.main
-              ,log=xylog)
+         title(main=letitre,xlab="Year",ylab="Disturbance rate [1/yr]",cex.main=cex.main)
          if (drought.mark){
             for (n in 1:ndrought){
                rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1809,6 +1886,7 @@ for (place in myplaces){
       unit         = themenow$unit  
       legpos       = themenow$legpos
       plotit       = themenow$emean
+      ylimit.fix   = themenow$emean.lim
    
       if (plotit){
 
@@ -1830,10 +1908,14 @@ for (place in myplaces){
          #     Find the limit, make some room for the legend, and in case the field is a   #
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
-         xlimit   = pretty.xylim(u=datum$tomonth,fracexp=0.0,is.log=FALSE)
-         ylimit    = NULL
-         for (l in 1:nlayers) ylimit  = c(ylimit,emean[[vnames[l]]])
-         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+         xlimit   = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+         if (any(! is.finite(ylimit.fix))){
+            ylimit    = NULL
+            for (l in 1:nlayers) ylimit  = c(ylimit,emean[[vnames[l]]])
+            ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+         }else{
+            ylimit = ylimit.fix
+         }#end if
          if (plog){
             xylog    = "y"
             ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
@@ -1889,7 +1971,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      First plot: legend.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x      = "bottom"
@@ -1907,13 +1989,13 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      Main plot.                                                              #
             #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
-            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1972,6 +2054,7 @@ for (place in myplaces){
       unit         = themenow$unit  
       legpos       = themenow$legpos
       plotit       = themenow$mmean
+      ylimit.fix   = themenow$mmean.lim
    
       if (plotit){
 
@@ -1994,9 +2077,13 @@ for (place in myplaces){
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
          xlimit    = pretty.xylim(u=montmont,fracexp=0.0,is.log=plog)
-         ylimit    = NULL
-         for (l in 1:nlayers) ylimit  = c(ylimit,mmean[[vnames[l]]])
-         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+         if (any (! is.finite(ylimit.fix))){
+            ylimit    = NULL
+            for (l in 1:nlayers) ylimit  = c(ylimit,mmean[[vnames[l]]])
+            ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+         }else{
+            ylimit = ylimit.fix
+         }#end if
          if (plog){
             xylog    = "y"
             ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
@@ -2052,7 +2139,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      First plot: legend.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x      = "bottom"
@@ -2060,7 +2147,9 @@ for (place in myplaces){
                   , legend = description
                   , col    = lcolours
                   , lwd    = llwd
+                  , pch    = 16
                   , ncol   = min(3,pretty.box(nlayers)$ncol)
+                  , cex    = 0.9*cex.ptsz
                   , xpd    = TRUE
                   )#end legend
             #------------------------------------------------------------------------------#
@@ -2070,13 +2159,13 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #      Main plot.                                                              #
             #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
-            axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
-            axis(side=2)
+            axis(side=1,at=mplot$levels,labels=substring(mplot$labels,1,1),padj=mplot$padj)
+            axis(side=2,las=1)
             box()
-            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -2214,7 +2303,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      First plot: legend.                                                  #
                #---------------------------------------------------------------------------#
-               par(mar=c(0.1,4.1,0.1,2.1))
+               par(mar=c(0.1,4.6,0.1,2.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x      = "bottom"
@@ -2232,13 +2321,13 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #      Main plot.                                                           #
                #---------------------------------------------------------------------------#
-               par(mar=c(4.1,4.1,4.1,2.1))
+               par(mar=c(4.1,4.6,4.1,2.1))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
-               axis(side=2)
+               axis(side=2,las=1)
                box()
-               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
+               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -2313,7 +2402,7 @@ for (place in myplaces){
 
          #----- Save the meaningful months and years. -------------------------------------#
          monat   = 1:12
-         monlab  = c("J","F","M","A","M","J","J","A","S","O","N","D")
+         monlab  = substring(month.abb,1,1)
 
          #----- Convert the vector data into an array. ------------------------------------#
          vararr  = mmean[[vnam]]
@@ -2778,7 +2867,7 @@ for (place in myplaces){
             ley     = desc.unit(desc=description,unit=unit)
             par(par.user)
             plot(mmonth,thisvar,main=letitre,ylim=ylimit,cex.main=0.7
-                ,xlab="Time",ylab=ley)
+                ,xlab="Time",ylab=ley,las=1)
 
             if (outform[o] == "x11"){
                locator(n=1)
@@ -2815,6 +2904,17 @@ for (place in myplaces){
       plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
                              && any(is.finite(this$y),na.rm=TRUE) 
                              && any(is.finite(this$z),na.rm=TRUE) )
+
+      #------------------------------------------------------------------------------------#
+      #     Find levels, and expand PDF scale in case it is a constant.                    #
+      #------------------------------------------------------------------------------------#
+      if (plog){
+         vlevs = sort(unique(pretty.log(this$z,n=ncolsfc)))
+      }else{
+         vlevs = sort(unique(pretty(this$z,n=ncolsfc)))
+      }#end if
+      if (length(vlevs) == 1) vlevs = pretty.xylim(u=vlevs,fracexp=0.0,is.log=plog)
+      #------------------------------------------------------------------------------------#
 
       if (plotit){
 
@@ -2854,7 +2954,7 @@ for (place in myplaces){
             sombreado( x              = this$x
                      , y              = this$y
                      , z              = this$z
-                     , nlevels        = ncolsfc
+                     , levels         = vlevs
                      , colour.palette = get(vcscheme)
                      , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
                      , key.title      = title(main="Density",cex.main=0.8)
@@ -3073,7 +3173,7 @@ for (place in myplaces){
          }else{
             ylimit   = range(x=thisvnam,na.rm=TRUE)
          }#end if
-         ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=plog)
+         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
          #---------------------------------------------------------------------------------#
 
 
@@ -3130,26 +3230,41 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
 
 
-               #----- Plot all monthly means together. ------------------------------------#
+               #------ Split window. ------------------------------------------------------#
                par(par.user)
+               layout(mat=rbind(2,1),heights=c(5,1))
+               #---------------------------------------------------------------------------#
+
+
+
+               #------ Legend. ------------------------------------------------------------#
+               par(mar=c(0.1,4.6,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , legend = pftname.use
+                     , fill   = pftcol.use
+                     , ncol   = min(3,pretty.box(n.selpft)$ncol)
+                     , title  = expression(bold("Plant functional type"))
+                     , cex    = cex.ptsz
+                     , bg     = background
+                     , xpd    = TRUE
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot all monthly means together. ------------------------------------#
+               par(mar=c(4.1,4.6,4.1,2.1))
                barplot(height=t(thisvnam[m,,]),names.arg=dbhnames[1:ndbh],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border=grey.fg,xpd=FALSE,cex.main=cex.main)
+                      ,border=grey.fg,xpd=FALSE,cex.main=cex.main,las=1)
                if (plotgrid & (! stacked)){
                   xgrid=0.5+(1:ndbh)*(1+npftuse)
                   abline(v=xgrid,col=grid.colour,lty="solid")
                }#end if
                box()
-               legend( x      = "topleft"
-                     , inset  = inset
-                     , legend = pftname.use
-                     , fill   = pftcol.use
-                     , ncol   = min(3,pretty.box(n.selpft)$ncol)
-                     , title  = expression(bold("Plant functional type"))
-                     , cex    = 1.0
-                     , bg     = background
-                     )#end legend
                #---------------------------------------------------------------------------#
 
 

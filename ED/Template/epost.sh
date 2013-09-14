@@ -47,6 +47,8 @@ iint_photo=1                   # 0 -- 24h
                                # 1 -- daytime only
 #----- Trim the year comparison for tower years only? -------------------------------------#
 efttrim="TRUE"
+#----- Correction factor for respiration. -------------------------------------------------#
+correct_gs=1.0                 # Correction factor for growth and storage respiration
 #----- Use only old-growth patches for census comparison? (plot_census.r only). -----------#
 oldgrowth="FALSE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
@@ -875,6 +877,7 @@ do
       sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
       sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
       sed -i s@mybackground@${background}@g       ${scriptnow}
+      sed -i s@mycorrection@${correct_gs}@g       ${scriptnow}
       sed -i s@myiintphoto@${iint_photo}@g        ${scriptnow}
       sed -i s@myklight@${klight}@g               ${scriptnow}
       sed -i s@myefttrim@${efttrim}@g             ${scriptnow}

@@ -47,9 +47,15 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
       for (end in ends) {
          if (end > start) {
             den = density[i]
-            if (is.na(den) || den < 0){ 
-               .Internal(polygon( xy$x[start:(end - 1)]
-                                , xy$y[start:(end - 1)], col[i], NA, lty[i], ...))
+            if (is.na(den) || den < 0){
+               if (R.Version()$major == "3"){
+                  .External.graphics(C_polygon, xy$x[start:(end - 1)]
+                                              , xy$y[start:(end - 1)]
+                                              , col[i], NA, lty[i], ...,PACKAGE="graphics")
+               }else{
+                  .Internal(polygon( xy$x[start:(end - 1)]
+                                   , xy$y[start:(end - 1)], col[i], NA, lty[i], ...))
+               }#end if
             }else if (den > 0) {
                epolygon.fullhatch( x           = xy$x[start:(end - 1)]
                                  , y           = xy$y[start:(end - 1)]
@@ -67,7 +73,11 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
          }#end if
          start = end + 1
       }#end for
-      .Internal(polygon(xy$x, xy$y, NA, border, lty, ...))
+      if (R.Version()$major == "3"){
+         .External.graphics(C_polygon, xy$x, xy$y, NA, border, lty, ...,PACKAGE="graphics")
+      }else{
+         .Internal(polygon(xy$x, xy$y, NA, border, lty, ...))
+      }#end if
    }else{
       if (is.logical(border)) {
          if (!is.na(border) && border){
@@ -76,7 +86,12 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
             border = NA
          }#end if
       }#end if
-      .Internal(polygon(xy$x, xy$y, col, border, lty, ...))
+      
+      if (R.Version()$major == "3"){
+         .External.graphics(C_polygon, xy$x, xy$y, col, border, lty, ...,PACKAGE="graphics")
+      }else{
+         .Internal(polygon(xy$x, xy$y, col, border, lty, ...))
+      }#end if
    }#end if
 }#end function
 #==========================================================================================#

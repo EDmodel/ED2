@@ -87,10 +87,13 @@ reload.data    = TRUE           # Reload data?
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
-slz.min        = -5.0           # The deepest depth that trees access water.
-idbh.type      = myidbhtype     # Type of DBH class
-                                # 1 -- Every 10 cm until 100cm; > 100cm
-                                # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+slz.min             = -5.0         # The deepest depth that trees access water.
+idbh.type           = myidbhtype   # Type of DBH class
+                                   # 1 -- Every 10 cm until 100cm; > 100cm
+                                   # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                                   # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
+corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+                                   #   storage respiration
 #------------------------------------------------------------------------------------------#
 
 
@@ -286,20 +289,22 @@ if (! file.exists(outroot)) dir.create(outroot)
 for (place in myplaces){
 
    #----- Retrieve default information about this place and set up some variables. --------#
-   thispoi = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
-                      ,monthbeg=monthbeg)
-   inpref  = thispoi$pathin
-   outmain = paste(outroot,place,sep="/")
-   outpref = paste(outmain,"eval_ed",sep="/")
-   lieu    = thispoi$lieu
-   lon     = thispoi$lon
-   lat     = thispoi$lat
-   iata    = thispoi$iata
-   suffix  = thispoi$iata
-   yeara   = thispoi$yeara
-   yearz   = thispoi$yearz
-   meszz   = thispoi$monz
+   thispoi   = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
+                        ,monthbeg=monthbeg)
+   inpref    = thispoi$pathin
+   outmain   = paste(outroot,place,sep="/")
+   outpref   = paste(outmain,"eval_ed",sep="/")
+   lieu      = thispoi$lieu
+   lon       = thispoi$lon
+   lat       = thispoi$lat
+   iata      = thispoi$iata
+   suffix    = thispoi$iata
+   yeara     = thispoi$yeara
+   yearz     = thispoi$yearz
+   meszz     = thispoi$monz
 
+   eft.yeara = poilist$yeara[match(iata,poilist$iata)]+5
+   eft.yearz = poilist$yearz[match(iata,poilist$iata)]-1
 
    #----- Find the observations for this particular site. ---------------------------------#
    if (iata == "mao" | iata == "bdf"){
@@ -331,13 +336,41 @@ for (place in myplaces){
       cat(" + Evaluating model for ",lieu,"...","\n")
 
       #----- Get the observed variables. --------------------------------------------------#
-      obser        = get(obs.name)
-      ntimes       = length(obser$when)
+      obser  = get(obs.name)
+      ntimes = length(obser$when)
+      keep   = obser$year %in% seq(from=eft.yeara,to=eft.yearz)
+      if ("nzg" %in% names(obser)){
+         obs.nzg = obser$nzg
+      }else{
+         obs.nzg = Inf
+      }#end if
+      if ("ust.filter" %in% names(obser)){
+         nustar  = length(obser$ust.filter)
+      }else{
+         nustar  = Inf
+      }#end if
+      for (vname in names(obser)){
+         if (length(obser[[vname]]) == ntimes){
+            obser[[vname]] = obser[[vname]][keep]
+         }else if (length(obser[[vname]]) %in%  (ntimes*c(obs.nzg,nustar))){
+            obser[[vname]] = obser[[vname]][keep,]
+         }else if ( ! ( length(obser[[vname]]) %in% c(0,1,obs.nzg,nustar) ) ){
+            stay = numyears(obser[[vname]]) %in% seq(from=eft.yeara,to=eft.yearz)
+            obser[[vname]] = obser[[vname]][stay]
+         }#end if
+      }#end for
+      ntimes = length(obser$when)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find some additional time info. ----------------------------------------------#
       obser        = alltimes(datin=obser,lon=lon,lat=lat,ed21=TRUE,zeronight=FALSE
                              ,meanval=TRUE,imetavg=1,nmean=12,na.rm=TRUE)
       obser$hr.idx = period.day(obser$when,dtblock=hourblock.len)
       obser$yr.idx = season(obser$when,add.year=FALSE)
       #------------------------------------------------------------------------------------#
+
 
 
       #------------------------------------------------------------------------------------#
@@ -381,36 +414,45 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
       if (eddy.extend){
          cat("   - Observed met driver became longer, extend model structure...","\n")
-         partial        = model
-         npartial       = length(partial$when)
-         model          = list()
-         model$when     = obser$when
-         model$hr.idx   = period.day(model$when,dtblock=hourblock.len)
-         model$yr.idx   = season(model$when,add.year=FALSE)
-         na.pad         = rep(NA,times=ntimes-npartial)
-         model$atm.tmp  = c(partial$atm.tmp ,na.pad)
-         model$atm.shv  = c(partial$atm.shv ,na.pad)
-         model$atm.prss = c(partial$atm.prss,na.pad)
-         model$rain     = c(partial$rain    ,na.pad)
-         model$atm.co2  = c(partial$atm.co2 ,na.pad)
-         model$atm.vels = c(partial$atm.vels,na.pad)
-         model$rshort   = c(partial$rshort  ,na.pad)
-         model$rlong    = c(partial$rlong   ,na.pad)
-         model$par      = c(partial$par     ,na.pad)
-         model$hflxca   = c(partial$hflxca  ,na.pad)
-         model$wflxca   = c(partial$wflxca  ,na.pad)
-         model$cflxca   = c(partial$cflxca  ,na.pad)
-         model$cflxst   = c(partial$cflxst  ,na.pad)
-         model$gpp      = c(partial$gpp     ,na.pad)
-         model$reco     = c(partial$reco    ,na.pad)
-         model$nep      = c(partial$nep     ,na.pad)
-         model$nee      = c(partial$nee     ,na.pad)
-         model$ustar    = c(partial$ustar   ,na.pad)
-         model$rnet     = c(partial$rnet    ,na.pad)
-         model$rlongup  = c(partial$rlongup ,na.pad)
-         model$albedo   = c(partial$albedo  ,na.pad)
-         model$parup    = c(partial$parup   ,na.pad)
-         model$rshortup = c(partial$rshortup,na.pad)
+         partial           = model
+         npartial          = length(partial$when)
+         rm(model)
+         model             = list()
+         model$when        = obser$when
+         model$hr.idx      = period.day(model$when,dtblock=hourblock.len)
+         model$yr.idx      = season(model$when,add.year=FALSE)
+         model$nzg         = partial$nzg
+         model$slz         = partial$slz
+         model$soil        = partial$soil
+         na.pad.vec        = rep(x=NA,times=ntimes-npartial)
+         na.pad.mat        = matrix(data=NA,nrow=ntimes-npartial,ncol=model$nzg)
+         model$atm.tmp     = c    (partial$atm.tmp     ,na.pad.vec)
+         model$atm.shv     = c    (partial$atm.shv     ,na.pad.vec)
+         model$atm.prss    = c    (partial$atm.prss    ,na.pad.vec)
+         model$rain        = c    (partial$rain        ,na.pad.vec)
+         model$atm.co2     = c    (partial$atm.co2     ,na.pad.vec)
+         model$atm.vels    = c    (partial$atm.vels    ,na.pad.vec)
+         model$atm.vpdef   = c    (partial$atm.vpdef   ,na.pad.vec)
+         model$rshort      = c    (partial$rshort      ,na.pad.vec)
+         model$rlong       = c    (partial$rlong       ,na.pad.vec)
+         model$par         = c    (partial$par         ,na.pad.vec)
+         model$hflxca      = c    (partial$hflxca      ,na.pad.vec)
+         model$wflxca      = c    (partial$wflxca      ,na.pad.vec)
+         model$cflxca      = c    (partial$cflxca      ,na.pad.vec)
+         model$cflxst      = c    (partial$cflxst      ,na.pad.vec)
+         model$gpp         = c    (partial$gpp         ,na.pad.vec)
+         model$reco        = c    (partial$reco        ,na.pad.vec)
+         model$nep         = c    (partial$nep         ,na.pad.vec)
+         model$nee         = c    (partial$nee         ,na.pad.vec)
+         model$ustar       = c    (partial$ustar       ,na.pad.vec)
+         model$rnet        = c    (partial$rnet        ,na.pad.vec)
+         model$rlongup     = c    (partial$rlongup     ,na.pad.vec)
+         model$albedo      = c    (partial$albedo      ,na.pad.vec)
+         model$parup       = c    (partial$parup       ,na.pad.vec)
+         model$rshortup    = c    (partial$rshortup    ,na.pad.vec)
+         model$soil.tmp    = rbind(partial$soil.tmp    ,na.pad.mat)
+         model$soil.water  = rbind(partial$soil.water  ,na.pad.mat)
+         model$soil.matpot = rbind(partial$soil.matpot ,na.pad.mat)
 
          #---------------------------------------------------------------------------------#
          #     Sanity check.                                                               #
@@ -418,7 +460,7 @@ for (place in myplaces){
          if (length(model$atm.tmp) != length(obser$atm.temp)){
             cat(" Mismatch in lengths!!!","\n")
             cat(" Length (obser):   ",length(obser$atm.temp),"\n")
-            cat(" Length (model):   ",length(model$atm.tmp) ,"\n")
+            cat(" Length (model):   ",length(model$atm.tmp ),"\n")
             cat(" Length (partial): ",length(partial$when)  ,"\n")
             cat(" Length (na.pad):  ",length(na.pad)        ,"\n")
             cat(" TRESUME:          ",eddy.tresume          ,"\n")
@@ -437,54 +479,22 @@ for (place in myplaces){
       #      Read data.                                                                    #
       #------------------------------------------------------------------------------------#
       if (! eddy.complete){
-         #----- Initialise the model structure. -------------------------------------------#
-         if (eddy.tresume == 1){
-            model          = list()
-            model$when     = obser$when
-            model$hr.idx   = period.day(model$when,dtblock=hourblock.len)
-            model$yr.idx   = season(model$when,add.year=FALSE)
-            empty          = rep(NA,times=ntimes)
-            model$atm.tmp  = empty
-            model$atm.shv  = empty
-            model$atm.prss = empty
-            model$rain     = empty
-            model$atm.co2  = empty
-            model$atm.vels = empty
-            model$rshort   = empty
-            model$rlong    = empty
-            model$par      = empty
-            model$hflxca   = empty
-            model$wflxca   = empty
-            model$cflxca   = empty
-            model$cflxst   = empty
-            model$gpp      = empty
-            model$reco     = empty
-            model$nep      = empty
-            model$nee      = empty
-            model$ustar    = empty
-            model$rnet     = empty
-            model$rlongup  = empty
-            model$albedo   = empty
-            model$parup    = empty
-            model$rshortup = empty
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
 
          #---------------------------------------------------------------------------------#
          #      Load data for all times.                                                   #
          #---------------------------------------------------------------------------------#
          last.cday   = "00"
-         last.cmonth = sprintf("%4.4i",numyears (model$when[eddy.tresume]))
-         last.cyear  = sprintf("%4.4i",numyears (model$when[eddy.tresume]))
+         last.cmonth = sprintf("%4.4i",numyears (obser$when[eddy.tresume]))
+         last.cyear  = sprintf("%4.4i",numyears (obser$when[eddy.tresume]))
          cat("   - Reading in files...","\n")
-         for (tt in eddy.tresume:ntimes){
-            cyear  = sprintf("%4.4i",numyears (model$when[tt]))
-            cmonth = sprintf("%2.2i",nummonths(model$when[tt]))
-            cday   = sprintf("%2.2i",numdays  (model$when[tt]))
-            chour  = sprintf("%2.2i",hours    (model$when[tt]))
-            cminu  = sprintf("%2.2i",minutes  (model$when[tt]))
+
+         loop.times = seq(from=eddy.tresume,to=ntimes,by=1)
+         for (tt in loop.times){
+            cyear  = sprintf("%4.4i",numyears (obser$when[tt]))
+            cmonth = sprintf("%2.2i",nummonths(obser$when[tt]))
+            cday   = sprintf("%2.2i",numdays  (obser$when[tt]))
+            chour  = sprintf("%2.2i",hours    (obser$when[tt]))
+            cminu  = sprintf("%2.2i",minutes  (obser$when[tt]))
             #------------------------------------------------------------------------------#
 
 
@@ -520,34 +530,115 @@ for (place in myplaces){
                cat("Quitting","\n")
                q("no")
             }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Initialise the model structure. ----------------------------------------#
+            if (tt == 1){
+               model        = list()
+               model$when   = obser$when
+               model$hr.idx = period.day(model$when,dtblock=hourblock.len)
+               model$yr.idx = season(model$when,add.year=FALSE)
+               model$nzg    = myinst$NZG
+               model$slz    = myinst$SLZ
+
+
+               #---------------------------------------------------------------------------#
+               #      Save the soil properties into a data.frame.                          #
+               #---------------------------------------------------------------------------#
+               ntext    = myinst$NTEXT.SOIL
+               oargs    = list( isoilflg = myinst$ISOILFLG
+                              , slxsand  = myinst$SLXSAND
+                              , slxclay  = myinst$SLXCLAY
+                              )#end list
+               model$soil = data.frame(lapply(X  =apply(X     =mapply(FUN     =soil.params
+                                                                     ,ntext   =ntext
+                                                                     ,MoreArgs=oargs
+                                                                     )#end mapply
+                                                       ,MARGIN=1
+                                                       ,FUN   =list
+                                                       )#end apply
+                                             ,FUN=unlist
+                                             )#end lapply
+                                      ,stringsAsFactors = FALSE
+                                      )#end data.frame
+               #---------------------------------------------------------------------------#
+
+               empty.vec         = rep(NA,times=ntimes)
+               empty.mat         = matrix(data=NA,nrow=ntimes,ncol=model$nzg)
+               model$atm.tmp     = empty.vec
+               model$atm.shv     = empty.vec
+               model$atm.prss    = empty.vec
+               model$rain        = empty.vec
+               model$atm.co2     = empty.vec
+               model$atm.vels    = empty.vec
+               model$atm.vpdef   = empty.vec
+               model$rshort      = empty.vec
+               model$rlong       = empty.vec
+               model$par         = empty.vec
+               model$hflxca      = empty.vec
+               model$wflxca      = empty.vec
+               model$cflxca      = empty.vec
+               model$cflxst      = empty.vec
+               model$gpp         = empty.vec
+               model$reco        = empty.vec
+               model$nep         = empty.vec
+               model$nee         = empty.vec
+               model$ustar       = empty.vec
+               model$rnet        = empty.vec
+               model$rlongup     = empty.vec
+               model$albedo      = empty.vec
+               model$parup       = empty.vec
+               model$rshortup    = empty.vec
+               model$soil.tmp    = empty.mat
+               model$soil.water  = empty.mat
+               model$soil.matpot = empty.mat
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+
+
+
+
             if (last.cday != cday) cat("     * ",basename(h5file),"...","\n")
             last.cday   = cday
             #------------------------------------------------------------------------------#
-            model$atm.tmp  [tt] =   myinst$FMEAN.ATM.TEMP.PY       - t00
-            model$atm.shv  [tt] =   myinst$FMEAN.ATM.SHV.PY        * 1000.
-            model$atm.prss [tt] =   myinst$FMEAN.ATM.PRSS.PY       * 0.01
-            model$rain     [tt] =   myinst$FMEAN.PCPG.PY           * hr.sec
-            model$atm.co2  [tt] =   myinst$FMEAN.ATM.CO2.PY
-            model$atm.vels [tt] =   myinst$FMEAN.ATM.VELS.PY
-            model$rshort   [tt] =   myinst$FMEAN.ATM.RSHORT.PY
-            model$rlong    [tt] =   myinst$FMEAN.ATM.RLONG.PY
-            model$par      [tt] =   myinst$FMEAN.ATM.PAR.PY        * Watts.2.Ein * 1.e6
-            model$hflxca   [tt] = - myinst$FMEAN.SENSIBLE.AC.PY
-            model$wflxca   [tt] = - myinst$FMEAN.VAPOR.AC.PY       * day.sec
-            model$cflxca   [tt] = - myinst$FMEAN.CARBON.AC.PY 
-            model$cflxst   [tt] = + myinst$FMEAN.CARBON.ST.PY
-            model$gpp      [tt] =   myinst$FMEAN.GPP.PY
-            model$reco     [tt] = ( myinst$FMEAN.PLRESP.PY
-                                  + myinst$FMEAN.RH.PY           )
-            model$nep      [tt] =   myinst$FMEAN.NEP.PY
-            model$nee      [tt] = ( myinst$FMEAN.CARBON.ST.PY 
-                                  - myinst$FMEAN.CARBON.AC.PY )
-            model$ustar    [tt] =   myinst$FMEAN.USTAR.PY
-            model$rlongup  [tt] =   myinst$FMEAN.RLONGUP.PY
-            model$albedo   [tt] =   myinst$FMEAN.ALBEDO.PY
-            model$rnet     [tt] =   myinst$FMEAN.RNET.PY
-            model$parup    [tt] =   myinst$FMEAN.PARUP.PY          * Watts.2.Ein * 1.e6
-            model$rshortup [tt] =   myinst$FMEAN.RSHORTUP.PY
+            model$atm.tmp    [tt ] =   myinst$FMEAN.ATM.TEMP.PY       - t00
+            model$atm.shv    [tt ] =   myinst$FMEAN.ATM.SHV.PY        * 1000.
+            model$atm.prss   [tt ] =   myinst$FMEAN.ATM.PRSS.PY       * 0.01
+            model$rain       [tt ] =   myinst$FMEAN.PCPG.PY           * hr.sec
+            model$atm.co2    [tt ] =   myinst$FMEAN.ATM.CO2.PY
+            model$atm.vels   [tt ] =   myinst$FMEAN.ATM.VELS.PY
+            model$atm.vpdef  [tt ] =   myinst$FMEAN.ATM.VPDEF.PY      * 0.01
+            model$rshort     [tt ] =   myinst$FMEAN.ATM.RSHORT.PY
+            model$rlong      [tt ] =   myinst$FMEAN.ATM.RLONG.PY
+            model$par        [tt ] =   myinst$FMEAN.ATM.PAR.PY        * Watts.2.Ein * 1.e6
+            model$hflxca     [tt ] = - myinst$FMEAN.SENSIBLE.AC.PY
+            model$wflxca     [tt ] = - myinst$FMEAN.VAPOR.AC.PY       * day.sec
+            model$cflxca     [tt ] = - myinst$FMEAN.CARBON.AC.PY 
+            model$cflxst     [tt ] = + myinst$FMEAN.CARBON.ST.PY
+            model$gpp        [tt ] =   myinst$FMEAN.GPP.PY
+            model$reco       [tt ] = ( myinst$FMEAN.LEAF.RESP.PY
+                                     + myinst$FMEAN.ROOT.RESP.PY
+                                     + myinst$FMEAN.GROWTH.RESP.PY    * corr.growth.storage
+                                     + myinst$FMEAN.STORAGE.RESP.PY   * corr.growth.storage
+                                     + myinst$FMEAN.VLEAF.RESP.PY     * corr.growth.storage
+                                     + myinst$FMEAN.RH.PY           )
+            model$nep        [tt ] =  model$gpp[tt] - model$reco[tt]
+            model$nee        [tt ] = ( myinst$FMEAN.CARBON.ST.PY 
+                                     - myinst$FMEAN.CARBON.AC.PY )
+            model$ustar      [tt ] =   myinst$FMEAN.USTAR.PY
+            model$rlongup    [tt ] =   myinst$FMEAN.RLONGUP.PY
+            model$albedo     [tt ] =   myinst$FMEAN.ALBEDO.PY
+            model$rnet       [tt ] =   myinst$FMEAN.RNET.PY
+            model$parup      [tt ] =   myinst$FMEAN.PARUP.PY          * Watts.2.Ein * 1.e6
+            model$rshortup   [tt ] =   myinst$FMEAN.RSHORTUP.PY
+            model$soil.tmp   [tt,] =   myinst$FMEAN.SOIL.TEMP.PY      - t00
+            model$soil.water [tt,] =   myinst$FMEAN.SOIL.WATER.PY
+            model$soil.matpot[tt,] =   myinst$FMEAN.SOIL.MSTPOT.PY
 
             if (tt == ntimes){
                eddy.complete = TRUE
@@ -861,7 +952,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Diel block.                                                              #
             #------------------------------------------------------------------------------#
-            for (d in 1:(ndiel+4)){
+            for (d in sequence(ndiel+4)){
                #---------------------------------------------------------------------------#
                #     Select the period of the day to plot.                                 #
                #---------------------------------------------------------------------------#
@@ -916,24 +1007,24 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
 
 
+               #---------------------------------------------------------------------------#
+               #     Append the data to the box plot lists, except if this is day time     #
+               # or night time plot.                                                       #
+               #---------------------------------------------------------------------------#
+               if (d <= ndiel){
+                  o.bp.name = paste("Obs.",dl.name[d],sep=" ")
+                  m.bp.name = paste("ED22",dl.name[d],sep=" ")
+                  bp.list[[o.bp.name]] = this.obser[sel]
+                  bp.list[[m.bp.name]] = this.model[sel]
+               }#end if
+               #---------------------------------------------------------------------------#
+
 
 
                #---------------------------------------------------------------------------#
                #     Find the statistics of the observed quantities.                       #
                #---------------------------------------------------------------------------#
                if (any(sel)){
-                  #------------------------------------------------------------------------#
-                  #     Append the data to the box plot lists, except if this is day time  #
-                  # or night time plot.                                                    #
-                  #------------------------------------------------------------------------#
-                  if (d <= ndiel){
-                     o.bp.name = paste("Obs.",dl.name[d],sep=" ")
-                     m.bp.name = paste("ED22",dl.name[d],sep=" ")
-                     bp.list[[o.bp.name]] = this.obser[sel]
-                     bp.list[[m.bp.name]] = this.model[sel]
-                  }#end if
-                  #------------------------------------------------------------------------#
-
 
 
                   #----- Find and plot the distribution function for this hour. -----------#

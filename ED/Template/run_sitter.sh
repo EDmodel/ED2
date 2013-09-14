@@ -971,7 +971,7 @@ then
       Brasilia)
          metdriverdb=${fullscen}'/Brasilia/Brasilia_HEADER'
          metcyc1=2006
-         metcycf=2011
+         metcycf=2012
          imetavg=1
          ;;
       Caxiuana)
@@ -998,6 +998,12 @@ then
          metcycf=2006
          imetavg=1
          ;;
+      Natal)
+         metdriverdb=${fullscen}'/Natal/Natal_HEADER'
+         metcyc1=2009
+         metcycf=2012
+         imetavg=1
+         ;;
       Paracou)
          metdriverdb=${fullscen}'/Paracou/Paracou_HEADER'
          metcyc1=2004
@@ -1013,7 +1019,7 @@ then
       Petrolina)
          metdriverdb=${fullscen}'/Petrolina/Petrolina_HEADER'
          metcyc1=2004
-         metcycf=2011
+         metcycf=2012
          imetavg=1
          ;;
       Rebio_Jaru)
@@ -1068,7 +1074,7 @@ then
          [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ]
       then
          metcyc1=1972
-         metcycf=2011
+         metcycf=2012
          imetavg=1
       fi
       #------------------------------------------------------------------------------------#

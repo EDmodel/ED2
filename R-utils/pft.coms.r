@@ -420,17 +420,18 @@ odead.large = c(  0.13625460, 2.42173900,  6.94835320)
 ndead.small = c( -1.26395300, 2.43236100,  1.80180100)
 ndead.large = c( -0.83468050, 2.42557360,  2.68228050)
 nleaf       = c(  0.01925119, 0.97494935,  2.58585087)
+uleaf       = c( -1.09254800, 1.28505100,  3.199019  )
 ncrown.area = c(  0.11842950, 1.05211970)
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Define reference height and coefficients for tropical allometry. -------------------#
-if (iallom == 0 | iallom == 1){
+if (iallom %in% c(0,1)){
    hgt.ref.trop = NA
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
-}else if (iallom == 2){
+}else if (iallom %in% c(2,3)){
    hgt.ref.trop = 61.7
    b1Ht.trop    = 0.0352
    b2Ht.trop    = 0.694 
@@ -1215,10 +1216,10 @@ pft$dbh.min  = rep(NA,times=npft+1)
 pft$dbh.crit = rep(NA,times=npft+1)
 for (ipft in 1:npft){
    if (pft$tropical[ipft]){
-      if (iallom == 0 | iallom == 1){
+      if (iallom %in% c(0,1)){
          pft$dbh.min [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit[ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
-      }else if (iallom == 2){
+      }else if (iallom %in% c(2,3)){
          pft$dbh.min [ipft] = ( log(   pft$hgt.ref[ipft]
                                    / ( pft$hgt.ref[ipft] - pft$hgt.min[ipft]) )
                               / pft$b1Ht[ipft] ) ^ (1.0 / pft$b2Ht[ipft])
@@ -1288,15 +1289,19 @@ for (ipft in 1:npft){
       #------------------------------------------------------------------------------------#
       #      Fill in the leaf biomass parameters.                                          #
       #------------------------------------------------------------------------------------#
-      if (iallom == 0 || iallom == 1){
+      if (iallom %in% c(0,1)){
          #---- ED-2.1 allometry. ----------------------------------------------------------#
          pft$b1Bl      [ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
          aux                  = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
                                 + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
          pft$b2Bl      [ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
-      }else if(iallom == 2){
+      }else if(iallom %in% c(2)){
          pft$b1Bl      [ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
          pft$b2Bl      [ipft] = nleaf[2]
+      }else if(iallom %in% c(3)){
+         #----- Lescure et al. (1983). ----------------------------------------------------#
+         pft$b1Bl      [ipft] = 0.00873 / C2B * 12 / pft$SLA[ipft]
+         pft$b2Bl      [ipft] = 2.1360
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1304,7 +1309,7 @@ for (ipft in 1:npft){
       #------------------------------------------------------------------------------------#
       #      Fill in the structural biomass parameters.                                    #
       #------------------------------------------------------------------------------------#
-      if (iallom == 0){
+      if (iallom %in% c(0)){
          #---- ED-2.1 allometry. ----------------------------------------------------------#
          pft$b1Bs.small[ipft] = exp(a1 + c1d * pft$b1Ht[ipft] + d1d * log(pft$rho[ipft]))
          pft$b1Bs.large[ipft] = exp(a1 + c1d * log(pft$hgt.max[ipft]) 
@@ -1317,13 +1322,13 @@ for (ipft in 1:npft){
                                 + log(pft$rho[ipft]) * (d2d - d1d)) * (1.0/log(dcrit))
          pft$b2Bs.large[ipft] = C2B * b2d + aux
 
-      }else if (iallom == 1){
+      }else if (iallom %in% c(1)){
          #---- Based on modified Chave et al. (2001) allometry. ---------------------------#
          pft$b1Bs.small[ipft] = C2B * exp(odead.small[1]) * pft$rho[ipft] / odead.small[3]
          pft$b2Bs.small[ipft] = odead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(odead.large[1]) * pft$rho[ipft] / odead.large[3]
          pft$b2Bs.large[ipft] = odead.large[2]
-      }else if (iallom == 2){
+      }else if (iallom %in% c(2,3)){
          #---- Based an alternative modification of Chave et al. (2001) allometry. --------#
          pft$b1Bs.small[ipft] = C2B * exp(ndead.small[1]) * pft$rho[ipft] / ndead.small[3]
          pft$b2Bs.small[ipft] = ndead.small[2]
@@ -1338,10 +1343,10 @@ for (ipft in 1:npft){
       #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
       # parameters for crown area.                                                         #
       #------------------------------------------------------------------------------------#
-      if (iallom == 1){
+      if (iallom %in% c(0,1)){
          pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
          pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
-      }else if (iallom == 2){
+      }else if (iallom %in% c(2,3)){
          pft$b1Ca[ipft] = exp(ncrown.area[1])
          pft$b2Ca[ipft] = ncrown.area[2]
       }#end if
@@ -1354,7 +1359,7 @@ for (ipft in 1:npft){
 #    Rooting depth coefficients.                                                                               #
 #------------------------------------------------------------------------------------------#
 pft$b1Rd = rep(NA,times=npft+1)
-if (iallom == 0){
+if (iallom %in% c(0)){
    #----- Original ED-2.1 scheme, based on standing volume. -------------------------------#
    pft$b1Rd[ 1:17] = NA
    pft$b1Rd[    1] = -0.700
@@ -1371,7 +1376,7 @@ if (iallom == 0){
    pft$b2Rd[12:16] = 0.000
    pft$b2Rd[   17] = 0.277
 
-}else if (iallom == 1 || iallom == 2){
+}else if (iallom %in% c(1,2,3)){
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
    pft$b1Rd[1:17]  = -1.1140580
    pft$b2Rd[1:17]  =  0.4223014

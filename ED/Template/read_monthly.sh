@@ -48,6 +48,8 @@ background=0                   # 0 -- White
                                # 2 -- Dark grey
 #----- Trim the year comparison for tower years only? -------------------------------------#
 efttrim="FALSE"
+#----- Correction factor for respiration. -------------------------------------------------#
+correct_gs=1.0                 # Correction factor for growth and storage respiration
 #----- Simple = 1 means that the output is going to be simple. ----------------------------#
 simple=0                       # 0 -- default
                                # 1 -- simplified output
@@ -669,6 +671,7 @@ do
          sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
          sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
          sed -i s@mybackground@${background}@g       ${scriptnow}
+         sed -i s@mycorrection@${correct_gs}@g       ${scriptnow}
          sed -i s@myklight@${klight}@g               ${scriptnow}
          sed -i s@myefttrim@${efttrim}@g             ${scriptnow}
          sed -i s@myeftyeara@${eftyeara}@g           ${scriptnow}

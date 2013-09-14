@@ -9,9 +9,9 @@ sombreado = function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z
                     ,xlim=range(x,finite=TRUE),ylim=range(y,finite=TRUE)
                     ,zlim=range(z,finite=TRUE)
                     ,levels = if (key.log){
-                                 pretty.log(x=z,n=nlevels)
+                                 sort(unique(pretty.log(x=z,n=nlevels)))
                               }else{
-                                 pretty(x=z,n=nlevels)
+                                 sort(unique(pretty(x=z,n=nlevels)))
                               }#end if
                     ,nlevels=100,colour.palette=color.palette,color.palette=cm.colors
                     ,col=colour.palette(length(levels)-1)

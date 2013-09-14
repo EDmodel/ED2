@@ -141,7 +141,7 @@ radial.flex <<- function ( lengths
        title(main = main, xlab = xlab, ylab = ylab)
        #---- Add the grid in case it is sought. -------------------------------------------#
        if (show.grid){
-          for (i in seq(length(grid.pos), 1, by = -1)){
+          for (i in rev(seq_along(grid.pos))){
              xpos = cos(angles) * (grid.pos[i] - radial.lim[1])
              ypos = sin(angles) * (grid.pos[i] - radial.lim[1])
              polygon(xpos, ypos, border = grid.col, col = grid.bg)

@@ -21,6 +21,7 @@ nls.light.response <<- function( par.in
    #----- Set the input dataset. ----------------------------------------------------------#
    use        = is.finite(par.in) & is.finite(gpp)
    data.in    = data.frame(par=par.in[use],gpp=gpp[use])
+   data.pred  = data.frame(par=pred.par)
    n.use      = sum(use)
    n.coeff    = 3
    #---------------------------------------------------------------------------------------#
@@ -55,45 +56,23 @@ nls.light.response <<- function( par.in
       q975.gpp     = NA + pred.par
       #------------------------------------------------------------------------------------#
    }else{
-
-
-
       #------------------------------------------------------------------------------------#
-      #     Use bootstrap to build the confidence interval.                                #
+      #     Save summary and predictions.                                                  #
       #------------------------------------------------------------------------------------#
-      boot.gpp     = boot( data      = data.in
-                         , statistic = boot.nls.light
-                         , R         = n.boot
-                         , x.1st     = x.1st
-                         , pred.par  = pred.par
-                         , ...
-                         )#end boot
+      summ.gpp = summary(fit.gpp)
+      pred.gpp = predict(fit.gpp,newdata=data.pred)
       #------------------------------------------------------------------------------------#
 
 
-
-
       #------------------------------------------------------------------------------------#
-      #      Find some of the statistics.                                                  #
+      #     Copy data.                                                                     #
       #------------------------------------------------------------------------------------#
-      #----- Split bootstrap statistics into coefficients and predictions. ----------------#
-      boot.coeff     = boot.gpp$t[ , sequence(n.coeff)]
-      boot.pred      = boot.gpp$t[ ,-sequence(n.coeff)]
-
-      #----- Find the coefficient estimate, t-value, p-value, and standard error. ---------#
-      coeff.gpp      = boot.gpp$t0[ sequence(n.coeff)]
-      coeff.gpp[2]   = exp(coeff.gpp[2])
-      coeff.gpp[3]   = exp(coeff.gpp[3])
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Run t-test for parameters. ---------------------------------------------------#
-      t.test.gpp           = apply (X=boot.coeff,MARGIN=2,FUN=t.test)
-      t.summ.gpp           = sapply(X=t.test.gpp,FUN=rbind)
-      rownames(t.summ.gpp) = names(t.test.gpp[[1]])
-      tvalue.gpp           = unlist(t.summ.gpp["statistic",])
-      std.err.gpp          = coeff.gpp / tvalue.gpp
-      pvalue.gpp           = unlist(t.summ.gpp["p.value"  ,])
+      coeff.gpp    = c(summ.gpp$coefficients[1,1],exp(summ.gpp$coefficients[2:3,1]))
+      std.err.gpp  = c(summ.gpp$coefficients[1,2],exp(summ.gpp$coefficients[2:3,2]))
+      tvalue.gpp   = summ.gpp$coefficients[,3]
+      pvalue.gpp   = summ.gpp$coefficients[,4]
+      df.gpp       = summ.gpp$df[2]
+      df.tot       = sum(is.finite(gpp)) - 1
       #------------------------------------------------------------------------------------#
 
 
@@ -110,9 +89,9 @@ nls.light.response <<- function( par.in
 
 
       #----- Find predicted values and their confidence band. -----------------------------#
-      expected.gpp   = boot.gpp$t0[-sequence(n.coeff)]
-      q025.gpp       = apply(X=boot.pred,MARGIN=2,quantile,0.025,na.rm=TRUE)
-      q975.gpp       = apply(X=boot.pred,MARGIN=2,quantile,0.975,na.rm=TRUE)
+      expected.gpp   = pred.gpp
+      q025.gpp       = NA + expected.gpp
+      q975.gpp       = NA + expected.gpp
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#

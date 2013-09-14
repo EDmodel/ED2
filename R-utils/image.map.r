@@ -22,9 +22,9 @@ image.map <<- function( x
                       , ylim             = range(unlist(y),finite=TRUE)
                       , zlim             = range(unlist(z),finite=TRUE)
                       , levels           = if (key.log){
-                                              pretty.log(x=zlim,n=nlevels)
+                                              sort(unique(pretty.log(x=zlim,n=nlevels)))
                                            }else{
-                                             pretty(x=zlim,n=nlevels)
+                                              sort(unique(pretty    (x=zlim,n=nlevels)))
                                            }#end if
                       , nlevels          = 20
                       , colour.palette   = cm.colors
@@ -43,19 +43,16 @@ image.map <<- function( x
                       , key.title        = NULL
                       , plot.after       = NULL
                       , matrix.plot      = FALSE
+                      , legend.options   = NULL
                       , edge.axes        = FALSE
-                      , oma              = if (is.list(x) && length(x) > 1){
-                                              c( 2.0 - 2.0 * is.null(main.xlab)
-                                               , 2.0 - 2.0 * is.null(main.ylab)
-                                               , 2.0 - 2.0 * is.null(main.title)
-                                               , 0.0
-                                               )#end c
-                                           }else{
-                                              c(0.,0.,0.,0.)
-                                           }#end if
+                      , oma              = NULL
                       , f.key            = 1/6
+                      , f.leg            = 1/6
+                      , off.xlab         = NULL
+                      , off.right        = NULL
                       , xaxs             = "i"
                       , yaxs             = "i"
+                      , smidgen          = 0
                       , ...
                       ){
 
@@ -89,12 +86,32 @@ image.map <<- function( x
       z              = list(z )
       dx             = list(dx)
       dy             = list(dy)
-      if (! missing(x.axis.options)) x.axis.options = list(x.axis.options)
-      if (! missing(y.axis.options)) y.axis.options = list(y.axis.options)
-      if (! missing(sub.options   )) sub.options    = list(sub.options   )
+      if (! is.null(x.axis.options)) x.axis.options = list(x.axis.options)
+      if (! is.null(y.axis.options)) y.axis.options = list(y.axis.options)
+      if (! is.null(sub.options   )) sub.options    = list(sub.options   )
       npanels = 1
    }else{
       npanels = length(x)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     If legend is to be plotted, key.vertical has to be TRUE.  In case the user said   #
+   # otherwise, return a warning.  Also, define offsets for X and Y according to the       #
+   # legends and keys.                                                                     #
+   #---------------------------------------------------------------------------------------#
+   plot.legend = ! is.null(legend.options)
+   if ( plot.legend && (! key.vertical)){
+      warning(" key.vertical=FALSE ignored due to the legend.")
+      key.vertical = TRUE
+   }#end if
+   if (plot.legend){
+      if (is.null(off.xlab )) off.xlab  = f.leg
+      if (is.null(off.right)) off.right = f.key
+   }else{
+      if (is.null(off.xlab )) off.xlab  = 0.0
+      if (is.null(off.right)) off.right = f.key
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -120,36 +137,52 @@ image.map <<- function( x
    #---------------------------------------------------------------------------------------#
 
 
+
+   #----- Check for outer margins. --------------------------------------------------------#
+   if (is.null(oma)) oma = c(0.2,3,4.5,0)*(npanels > 1)
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Save the margins to avoid losing the data. --------------------------------------#
    par.orig = par(no.readonly=TRUE)
    mar.orig = par.orig$mar
    on.exit(par(par.orig))
    par(par.user)
-   par(oma=oma)
+   par(oma = oma)
    #---------------------------------------------------------------------------------------#
 
 
 
-   #----- Split the screen into 3, the two panels and the scale. --------------------------#
-   f.panel = 1 - f.key
-   if (npanels == 1 && key.vertical){
-      layout(matrix(c(2, 1), nc = 2), widths = c(f.panel,f.key))
-      mar.key = c(4.1,1.0,4.1,4.1)
+   #----- Split the screen into multiple pieces (legend, key, plots...) -------------------#
+   fh.panel = 1. - f.key
+   fv.panel = 1. - f.leg
+   if (npanels == 1 && plot.legend){
+      layout( mat     = rbind(c(3, 2),c(1,0))
+            , heights = c(fv.panel,f.leg)
+            , widths  = c(fh.panel,f.key)
+            )#end layout
+   }else if (matrix.plot && plot.legend){
+      layout( mat     = rbind( cbind(lo.panel$mat.off2,rep(2,times=lo.panel$nrow))
+                             , c(rep(1,times=lo.panel$ncol),0)
+                             )#end rbind
+            , heights = c(rep(fv.panel/lo.panel$nrow,times=lo.panel$nrow),f.leg)
+            , widths  = c(rep(fh.panel/lo.panel$ncol,times=lo.panel$ncol),f.key)
+            )#end layout
+   }else if (npanels == 1 && key.vertical){
+      layout(mat=cbind(2, 1), widths = c(fh.panel,f.key))
    }else if (matrix.plot && key.vertical){
       layout( mat     = cbind(lo.panel$mat.off,rep(1,times=lo.panel$nrow))
-            , widths  = c(rep(f.panel/lo.panel$ncol,times=lo.panel$ncol),f.key)
+            , widths  = c(rep(fh.panel/lo.panel$ncol,times=lo.panel$ncol),f.key)
             )#end layout
-      mar.key = c(4.1,1.0,4.1,4.1)
    }else if (matrix.plot){
       layout( mat     = rbind(lo.panel$mat.off,rep(1,times=lo.panel$ncol))
-            , heights = c(rep(f.panel,times=lo.panel$nrow),f.key)
+            , heights = c(rep(fh.panel,times=lo.panel$nrow),f.key)
             )#end layout
-      mar.key = c(2.6,4.1,2.1,2.1)
    }else{
-      layout( mat     =rbind(seq(from=2,to=npanels+1),rep(1,times=npanels))
-            , heights = c(f.panel,f.key)
+      layout( mat     =rbind(1+sequence(npanels),rep(1,times=npanels))
+            , heights = c(fh.panel,f.key)
             )#end layout
-      mar.key = c(2.6,4.1,2.1,2.1)
    }#end if
    #---------------------------------------------------------------------------------------#
    #=======================================================================================#
@@ -159,9 +192,53 @@ image.map <<- function( x
 
 
 
+
+
    #=======================================================================================#
    #=======================================================================================#
-   #      First plot: the key scale.                                                       #
+   #      Check whether the "plot.after" list is shared by all plots or if it is one list  #
+   # for each sub-plot.                                                                    #
+   #---------------------------------------------------------------------------------------#
+   if (is.null(plot.after)){
+      same.for.all = TRUE
+   }else{
+      pa.names = names(plot.after)
+      named    = ! is.null(pa.names)
+      if (named){
+         same.for.all = all(mapply(FUN=exists,x=pa.names,MoreArgs=list(mode="function")))
+      }else{
+         same.for.all = FALSE
+      }#end if
+   }#end if
+   #=======================================================================================#
+   #=======================================================================================#
+
+
+
+
+
+
+   #=======================================================================================#
+   #=======================================================================================#
+   #      First plot: the legend.                                                          #
+   #---------------------------------------------------------------------------------------#
+   if (plot.legend){
+      par(mar = c(0.1,0.1,0.1,0.1))
+      plot.new()
+      plot.window(xlim=c(0,1),ylim=c(0,1))
+      do.call(what="legend",args=legend.options)
+   }#end if
+   #=======================================================================================#
+   #=======================================================================================#
+
+
+
+
+
+
+   #=======================================================================================#
+   #=======================================================================================#
+   #      Second plot: the key scale.                                                      #
    #---------------------------------------------------------------------------------------#
       par(mar = lo.panel$mar.key)
       plot.new()
@@ -180,7 +257,7 @@ image.map <<- function( x
 
          #----- Draw the colour bar. ------------------------------------------------------#
          rect(xleft=0,ybottom=levels[-length(levels)],xright=1,ytop=levels[-1],col=col
-             ,border="transparent")
+             ,border=col)
          #---------------------------------------------------------------------------------#
 
          #----- Check whether there are specific instructions for plotting the key axis. --#
@@ -203,7 +280,7 @@ image.map <<- function( x
 
          #----- Draw the colour bar. ------------------------------------------------------#
          rect(xleft=levels[-length(levels)],ybottom=0,xright=levels[-1],ytop=1
-             ,col=col,border="transparent")
+             ,col=col,border=col)
          #---------------------------------------------------------------------------------#
 
 
@@ -225,7 +302,7 @@ image.map <<- function( x
 
 
       #----- Plot the title. --------------------------------------------------------------#
-      if (!missing(key.title)) key.title
+      if (!missing(key.title)) do.call(what="title",args=key.title)
       #------------------------------------------------------------------------------------#
    #=======================================================================================#
    #=======================================================================================#
@@ -313,11 +390,18 @@ image.map <<- function( x
       #----- Find the corners for the rectangles. -----------------------------------------#
       nx      = length(x[[p]])
       ny      = length(y[[p]])
-      xleft   = x[[p]] - 0.5 * dx[[p]]
-      xright  = x[[p]] + 0.5 * dx[[p]]
-      ybottom = y[[p]] - 0.5 * dy[[p]]
-      ytop    = y[[p]] + 0.5 * dy[[p]]
-      rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=zcol,border=zcol)
+      xleft   = x[[p]] - 0.5 * (1. + smidgen) * dx[[p]]
+      xright  = x[[p]] + 0.5 * (1. + smidgen) * dx[[p]]
+      ybottom = y[[p]] - 0.5 * (1. + smidgen) * dy[[p]]
+      ytop    = y[[p]] + 0.5 * (1. + smidgen) * dy[[p]]
+      rect( xleft   = xleft
+          , ybottom = ybottom
+          , xright  = xright
+          , ytop    = ytop
+          , col     = zcol
+          , border  = zcol
+          , xpd     = FALSE
+          )#end rect
       #------------------------------------------------------------------------------------#
 
 
@@ -351,7 +435,7 @@ image.map <<- function( x
 
 
       #---- Plot the title. ---------------------------------------------------------------#
-      if (! is.null(sub.options)){
+      if (! is.null(sub.options) && npanels != 1){
          do.call(what="title",args=sub.options[[p]])
       }#end if
       #------------------------------------------------------------------------------------#
@@ -359,12 +443,19 @@ image.map <<- function( x
 
 
       #------------------------------------------------------------------------------------#
-      #     Plot other options.                                                            #
+      #     Plot other options.  Check use a shared list, or one list for each sub-plot.   #
       #------------------------------------------------------------------------------------#
-      n.after = length(plot.after)
-      for (a in sequence(n.after)){
-          do.call(what=names(plot.after)[a],args=plot.after[[a]])
-      }#end for
+      if (same.for.all){
+         n.after = length(plot.after)
+         for (a in sequence(n.after)){
+             do.call(what=names(plot.after)[a],args=plot.after[[a]])
+         }#end for
+      }else{
+         n.after = length(plot.after[[p]])
+         for (a in sequence(n.after)){
+            do.call(what=names(plot.after[[p]])[a],args=plot.after[[p]][[a]])
+         }#end for
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
@@ -383,53 +474,41 @@ image.map <<- function( x
    #=======================================================================================#
    #     Plot the global title.                                                            #
    #---------------------------------------------------------------------------------------#
-   par(las=0)
-   if (! is.null(main.xlab)){
-      #----- Make sure we get the main text. ----------------------------------------------#
-      if (! is.list(main.xlab)){
-         main.xlab=list(text=main.xlab)
-      }else if (! "text" %in% names(main.xlab)){
-         names(main.xlab)[[1]] = "text"
-      }#end if
-      #----- Outer must be set to TRUE, overwrite if needed be. ---------------------------#
-      main.xlab$outer = par("oma")[1] > 0
-      if (! "side" %in% names(main.xlab)) main.xlab$side = 1
-      if (! "padj" %in% names(main.xlab)) main.xlab$padj = -4.75
-      do.call("mtext",main.xlab)
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-
-   if (! is.null(main.ylab)){
-      #----- Make sure we get the main text. ----------------------------------------------#
-      if (! is.list(main.ylab)){
-         main.ylab = list(text = main.ylab)
-      }else if (! "text" %in% names(main.ylab)){
-         names(main.ylab)[[1]] = "text"
-      }#end if
-      #----- Outer must be set to TRUE, overwrite if needed be. ---------------------------#
-      main.ylab$outer = par("oma")[2] > 0
-      if (! "side" %in% names(main.ylab)) main.ylab$side = 2
-      if (! "padj" %in% names(main.ylab)) main.ylab$padj = -0.75
-      do.call("mtext",main.ylab)
-   }#end if
    if (! is.null(main.title)){
       #----- Make sure we get the main text. ----------------------------------------------#
       if (! is.list(main.title)){
-         main.title=list(text=main.title)
-      }else if (! "text" %in% names(main.title)){
-         names(main.title)[[1]] = "text"
+         main.title=list(main=main.title)
+      }else if (! "main" %in% names(main.title)){
+         names(main.title)[[1]] = "main"
       }#end if
-      #----- Outer must be set to TRUE, overwrite if needed be. ---------------------------#
-      main.title$outer = par("oma")[3] > 0
-      if (! "side" %in% names(main.title)) main.xlab$side = 3
-      if (! "padj" %in% names(main.title)) main.xlab$padj = 0
-      if (! "cex"  %in% names(main.title)) main.xlab$cex  = 1.1
-      if (! "font" %in% names(main.title)) main.xlab$font = 2
-      do.call("mtext",main.title)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #       Check whether to use title or gtitle.                                        #
+      #------------------------------------------------------------------------------------#
+      if (npanels == 1){
+         #------ Convert subtitle options into true subtitle options. ---------------------#
+         if (! is.null(sub.options)){
+            names(sub.options[[1]]) = gsub( pattern     = "main"
+                                          , replacement = "sub"
+                                          , x           = names(sub.options[[1]])
+                                          )#end gsub
+         }#end if (! is.null(sub.options))
+         main.title              = modifyList(x=main.title,val=list(sub.options[[1]]))
+         do.call(what="title",args=main.title)
+      }else{
+         main.title = modifyList( x   = main.title
+                                , val = list(off.xlab=off.xlab,off.right=off.right)
+                                )#end modifyList
+         do.call(what="gtitle",args=main.title)
+      }#end if
+      #------------------------------------------------------------------------------------#
    }#end if
-   #---------------------------------------------------------------------------------------#
+   #=======================================================================================#
+   #=======================================================================================#
 
 
 

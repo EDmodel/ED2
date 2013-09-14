@@ -160,7 +160,7 @@ read.ptable <<- function( file
 
       #----- Convert data for each column, then re-organise into a data frame. ------------#
       ans        = split(x=ans,f=col(ans))
-      colClasses = split(x=colClasses,f=seq.len(colClasses))
+      colClasses = split(x=colClasses,f=seq_along(colClasses))
       ans        = data.frame( mapply( FUN      = as.or.guess
                                      , x        = ans
                                      , Class    = colClasses

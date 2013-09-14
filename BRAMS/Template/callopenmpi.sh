@@ -1,13 +1,5 @@
-#!/bin/sh
-#BSUB -u mlongo@fas.harvard.edu
-#BSUB -J edbrams
-#BSUB -o hello_lsf.out
-#BSUB -e hello_lsf.err
-#BSUB -n 1024
-#BSUB -R "span[ptile=8]"
-
-#module add hpc/openmpi-intel
-#module add hpc/hdf5-intel
+#!/bin/bash
+. ${HOME}/.bashrc i11
 
 #------------------------------- CHANGE YOUR SETTINGS HERE. -------------------------------#
 here='thispath'                                        # Folder to start the run

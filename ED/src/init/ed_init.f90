@@ -9,27 +9,37 @@ subroutine set_polygon_coordinates()
    use ed_work_vars  , only : work_v    ! ! structure
    use ed_node_coms  , only : mynum     ! ! intent(in)
    use ed_state_vars , only : edgrid_g  & ! structure
-                            , gdpy      ! ! intent(in)
+                            , gdpy      & ! intent(in)
+                            , edtype    ! ! intent(in)
    implicit none 
    !----- Local variables -----------------------------------------------------------------!
-   integer                :: ifm
-   integer                :: ipy
-   integer                :: npoly
+   integer               :: ifm
+   integer               :: ipy
+   integer               :: npoly
+   type(edtype), pointer :: cgrid
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Ifort-11.0.083 complained about using edgrid_g(ifm) directly, replaced by cgrid.     !
+   !---------------------------------------------------------------------------------------!
    gridloop: do ifm=1,ngrids
+      cgrid => edgrid_g(ifm)
 
       npoly=gdpy(mynum,ifm)
-
+      !----- Go through every polygon. ----------------------------------------------------!
       polyloop: do ipy=1,npoly
-         edgrid_g(ifm)%lon(ipy)              = work_v(ifm)%glon   (ipy)
-         edgrid_g(ifm)%lat(ipy)              = work_v(ifm)%glat   (ipy)
-         edgrid_g(ifm)%xatm(ipy)             = work_v(ifm)%xid    (ipy)
-         edgrid_g(ifm)%yatm(ipy)             = work_v(ifm)%yid    (ipy)
+         cgrid%lon (ipy) = work_v(ifm)%glon   (ipy)
+         cgrid%lat (ipy) = work_v(ifm)%glat   (ipy)
+         cgrid%xatm(ipy) = work_v(ifm)%xid    (ipy)
+         cgrid%yatm(ipy) = work_v(ifm)%yid    (ipy)
       end do polyloop
+      !------------------------------------------------------------------------------------!
    end do gridloop
+   !---------------------------------------------------------------------------------------!
 
-    
+
    return
 end subroutine set_polygon_coordinates
 !==========================================================================================!

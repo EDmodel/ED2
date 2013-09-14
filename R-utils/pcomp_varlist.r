@@ -76,23 +76,6 @@
                       , plt      = TRUE
                       )#end list
    n            = n + 1
-   scen.ts[[n]] = list( vname    = "bgb"
-                      , desc     = "Below ground biomass"
-                      , lname    = "BGB"
-                      , short    = "B*G*B"
-                      , unit     = untab$kgcom2
-                      , f.aggr   = "mean"
-                      , add      = 0
-                      , mult     = 1
-                      , pftvar   = TRUE
-                      , dbhvar   = TRUE
-                      , mort     = FALSE
-                      , recr     = FALSE
-                      , plog     = FALSE
-                      , plog.dbh = FALSE
-                      , plt      = TRUE
-                      )#end list
-   n            = n + 1
    scen.ts[[n]] = list( vname    = "biomass"
                       , desc     = "Total biomass"
                       , lname    = "Total biomass"
@@ -3123,6 +3106,23 @@
                       , desc     = "Relative leaf biomass"
                       , lname    = "Leaf"
                       , short    = "B[L*e*a*f]"
+                      , unit     = untab$kgcokgc
+                      , f.aggr   = "mean"
+                      , add      = 0
+                      , mult     = 1
+                      , pftvar   = TRUE
+                      , dbhvar   = TRUE
+                      , mort     = FALSE
+                      , recr     = FALSE
+                      , plog     = FALSE
+                      , plog.dbh = FALSE
+                      , plt      = TRUE
+                      )#end list
+   n            = n + 1
+   scen.ts[[n]] = list( vname    = "f.bstem"
+                      , desc     = "Relative stem biomass"
+                      , lname    = "Stem"
+                      , short    = "B[S*t*e*m]"
                       , unit     = untab$kgcokgc
                       , f.aggr   = "mean"
                       , add      = 0

@@ -206,6 +206,7 @@ isok[["MCMCpack"  ]] = require(MCMCpack  )
 isok[["ncdf"      ]] = require(ncdf      )
 isok[["numDeriv"  ]] = require(numDeriv  )
 isok[["plotrix"   ]] = require(plotrix   )
+isok[["proto"     ]] = require(proto     )
 isok[["robustbase"]] = require(robustbase)
 isok[["rgdal"     ]] = require(rgdal     )
 isok[["RSEIS"     ]] = require(RSEIS     )
@@ -289,11 +290,29 @@ options(warn=warn.orig)
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#      CBal had unit issues in some versions, check whether to fix it in the post-         #
+# processor.                                                                               #
+#------------------------------------------------------------------------------------------#
 if (! "kludgecbal" %in% ls()){
    kludgecbal <<- FALSE
 }else{
    kludgecbal <<- kludgecbal
 }#end if
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Growth, storage, and vleaf respiration had wrong units in the output in previous    #
+# versions, check whether to correct them.                                                 #
+#------------------------------------------------------------------------------------------#
+if (! "corr.growth.storage" %in% ls()){
+   corr.growth.storage <<- 1.
+}else{
+   corr.growth.storage <<- corr.growth.storage
+}#end if
+#------------------------------------------------------------------------------------------#
 
 
 
