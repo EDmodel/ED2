@@ -323,14 +323,15 @@ alltimes <<- function(datin,lon,lat,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imet
                                 ,zeronight=zeronight,meanval=meanval,imetavg=imetavg
                                 ,nmean=nmean,...)
    datout$cosz       =   zenith$cosz
+   datout$zen        =   zenith$zen
    datout$sunhgt     =   zenith$hgt
    datout$nighttime  =   zenith$night
    datout$daytime    =   zenith$day
    datout$twilight   = (! zenith$night) & (! zenith$day)
+   datout$diel       = as.integer(! datout$nighttime) + as.integer(datout$daytime)
    datout$highsun    = zenith$cosz >= cosz.highsun
    datout$riseset    = zenith$cosz >= cosz.twilight & zenith$cosz < cosz.highsun
    datout$notdaytime = ! zenith$day
-
    datout$season     = sign(-lat) * cos( 2.0 * pi * (dayofyear(datout$when) - 1)
                                        / (365 + is.leap(datout$year)) )
 

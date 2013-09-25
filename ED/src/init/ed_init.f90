@@ -557,10 +557,14 @@ subroutine sfcdata_ed()
 
 
    !----- Find the thickness of the bottom boundary condition layer. ----------------------!
-   dslz   (0) = slz(1) - slz0
-   dslzo2 (0) = .5 * dslz(0)
-   dslzi  (0) = 1. / dslz(0)
-   dslzidt(0) = dslzi(0) * dtlsm
+   dslz    (0) = slz(1) - slz0
+   dslzo2  (0) = .5 * dslz(0)
+   dslzi   (0) = 1. / dslz(0)
+   dslzidt (0) = dslzi(0) * dtlsm
+   dslz8   (0) = dble(dslz   (0))
+   dslzo28 (0) = dble(dslzo2 (0))
+   dslzi8  (0) = dble(dslzi  (0))
+   dslzidt8(0) = dble(dslzidt(0))
    !---------------------------------------------------------------------------------------!
 
 

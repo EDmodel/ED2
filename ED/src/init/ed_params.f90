@@ -410,6 +410,7 @@ subroutine init_lapse_params()
                              , humid_scenario    ! ! intent(out)
 
    lapse%geoht        = 0.0
+   lapse%atm_ustar    = 0.0
    lapse%vels         = 0.0
    lapse%atm_tmp      = 0.0
    lapse%atm_theta    = 0.0
@@ -889,7 +890,6 @@ subroutine init_can_air_params()
                              , hgt_max               ! ! intent(in)
    use canopy_air_coms, only : psim                  & ! function
                              , psih                  & ! function
-                             , isfclyrm              & ! intent(in)
                              , ugbmin                & ! intent(in)
                              , ubmin                 & ! intent(in)
                              , ustmin                & ! intent(in)

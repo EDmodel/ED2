@@ -36,22 +36,100 @@ rdata.suffix = "hourly_ed22.RData"
 #     Site settings:                                                                       #
 # eort      -- first letter ("e" or "t")                                                   #
 # sites     -- site codes ("IATA")                                                         #
-# sites$pch -- site symbols                                                                #
+# pch       -- site symbols                                                                #
+# col       -- background colour                                                           #
+# fg        -- foreground colour                                                           #
+# drya      -- beginning of the dry season (MM/DD) -- NA skips dry season                  #
+# dryz      -- end of the dry season       (MM/DD) -- NA skips dry season                  #
+#              dryz can be less than drya, in which case two rectangles are plotted        #
 #                                                                                          #
 # use.sites is a convenient way to select only a few sites.  If it is logical, then it     #
 # uses all sites, otherwise it will only use the entries listed in use.sites.              #
 #------------------------------------------------------------------------------------------#
 eort  = "t"
-sites = list( list(iata="gyf",desc="Paracou"       ,pch= 2,col="#520485",fg="#39025D")
-            , list(iata="s67",desc="Santarem km 67",pch= 5,col="#46FF32",fg="#31B223")
-            , list(iata="s83",desc="Santarem km 83",pch= 9,col="#FF5700",fg="#B23C00")
-            , list(iata="pdg",desc="Pe-de-Gigante" ,pch=13,col="#A00014",fg="#70000E")
-            , list(iata="rja",desc="Rebio Jaru"    ,pch= 1,col="#006715",fg="#00480E")
-            , list(iata="m34",desc="Manaus K34"    ,pch= 6,col="#0742C3",fg="#042E88")
-            , list(iata="pnz",desc="Petrolina"     ,pch= 4,col="#B49ED2",fg="#7D6E93")
-            , list(iata="ban",desc="Bananal"       ,pch= 8,col="#F5C858",fg="#AB8C3D")
-            , list(iata="cax",desc="Caxiuana"      ,pch= 0,col="#00F3FB",fg="#00AAAF")
-            )#end list
+n     = 0
+sites = list()
+n          = n + 1
+sites[[n]] = list( iata = "gyf"
+                 , desc = "Paracou"
+                 , pch  = 2
+                 , col  = "#520485"
+                 , fg   = "#39025D"
+                 , drya = "08/31"
+                 , dryz = "11/05"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "s67"
+                 , desc = "Santarem km 67"
+                 , pch  =  5
+                 , col  = "#46FF32"
+                 , fg   = "#31B223"
+                 , drya = "07/13"
+                 , dryz = "11/21"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "s83"
+                 , desc = "Santarem km 83"
+                 , pch  =  9
+                 , col  = "#FF5700"
+                 , fg   = "#B23C00"
+                 , drya = "07/13"
+                 , dryz = "11/21"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "pdg"
+                 , desc = "Pe-de-Gigante"
+                 , pch  = 13
+                 , col  = "#A00014"
+                 , fg   = "#70000E"
+                 , drya = "04/17"
+                 , dryz = "09/26"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "rja"
+                 , desc = "Rebio Jaru"
+                 , pch  =  1
+                 , col  = "#006715"
+                 , fg   = "#00480E"
+                 , drya = "05/13"
+                 , dryz = "09/09"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "m34"
+                 , desc = "Manaus K34"
+                 , pch  =  6
+                 , col  = "#0742C3"
+                 , fg   = "#042E88"
+                 , drya = "07/04"
+                 , dryz = "10/01"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "pnz"
+                 , desc = "Petrolina"
+                 , pch  =  4
+                 , col  = "#B49ED2"
+                 , fg   = "#7D6E93"
+                 , drya = "03/18"
+                 , dryz = "01/16"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "ban"
+                 , desc = "Bananal"
+                 , pch  =  8
+                 , col  = "#F5C858"
+                 , fg   = "#AB8C3D"
+                 , drya = "05/10"
+                 , dryz = "09/29"
+                 )#end list
+n          = n + 1
+sites[[n]] = list( iata = "cax"
+                 , desc = "Caxiuana"
+                 , pch  =  0
+                 , col  = "#00F3FB"
+                 , fg   = "#00AAAF"
+                 , drya = "08/19"
+                 , dryz = "11/29"
+                 )#end list
 use.sites = 1:6
 #------------------------------------------------------------------------------------------#
 
@@ -147,19 +225,21 @@ n.fit.fmean.min = 80          # Minimum number of hourly averages to fit a curve
 plot.light         = c(FALSE,TRUE)[2]
 plot.vpdef         = c(FALSE,TRUE)[2]
 plot.wetness       = c(FALSE,TRUE)[2]
-plot.ust.ftnight   = c(FALSE,TRUE)[2]
-plot.ts.ftnight    = c(FALSE,TRUE)[2]
-plot.bp.diel       = c(FALSE,TRUE)[2]
-plot.qq.dmean      = c(FALSE,TRUE)[2]
-plot.density.dmean = c(FALSE,TRUE)[2]
-plot.soil.ftnight  = c(FALSE,TRUE)[2]
-plot.soil.density  = c(FALSE,TRUE)[2]
-plot.spider        = c(FALSE,TRUE)[2]
-plot.skill.taylor  = c(FALSE,TRUE)[2]
+plot.ust.ftnight   = c(FALSE,TRUE)[1]
+plot.ts.ftnight    = c(FALSE,TRUE)[1]
+plot.bp.diel       = c(FALSE,TRUE)[1]
+plot.qq.dmean      = c(FALSE,TRUE)[1]
+plot.density.dmean = c(FALSE,TRUE)[1]
+plot.soil.ftnight  = c(FALSE,TRUE)[1]
+plot.soil.density  = c(FALSE,TRUE)[1]
+plot.spider        = c(FALSE,TRUE)[1]
+plot.skill.taylor  = c(FALSE,TRUE)[1]
 density.legend     = FALSE
 use.dmean.light    = FALSE
 use.dmean.vpdef    = TRUE
 use.dmean.wetness  = TRUE
+show.dryseason     = TRUE
+col.dryseason      = "papayawhip"
 #------------------------------------------------------------------------------------------#
 
 
@@ -706,7 +786,8 @@ lo.site  = pretty.box(n=nsites)
 
 
 #------ Set some common features for fortnightly means. -----------------------------------#
-fnmean.when   = fnyear.2.chron(fortnight = sequence(yr.ftnight),year = 2004)
+fnmean.year   = 2004
+fnmean.when   = fnyear.2.chron(fortnight = sequence(yr.ftnight),year = fnmean.year)
 fnmean.axis   = pretty.ftnight(fnmean.when)
 fnmean.at     = fnmean.axis$levels
 fnmean.limit  = range(fnmean.at)
@@ -2176,7 +2257,7 @@ if (plot.light){
             dm.sel  = is.finite(dmean.gpp) & is.finite(dmean.par)
             n.sel   = sum(dm.sel)
             obs.use = data.frame( par = dmean.par[dm.sel]
-                                , gpp = dmean.gpp[dm.sel] * kgCyr.2.umols
+                                , gpp = dmean.gpp[dm.sel]
                                 )#end data.frame
             n.fit.min = n.fit.dmean.min
             #------------------------------------------------------------------------------#
@@ -2187,7 +2268,7 @@ if (plot.light){
             sel     = e.sel & f.sel & d.sel
             n.sel   = sum(sel)
             obs.use = data.frame( par = c(obser$par)[sel]
-                                , gpp = c(obser$gpp)[sel] * kgCyr.2.umols
+                                , gpp = c(obser$gpp)[sel]
                                 )#end data.frame
             n.fit.min = n.fit.fmean.min
          }#end if
@@ -2207,7 +2288,7 @@ if (plot.light){
             if (tolower(light.method) == "nls"){
                obs.pred = nls.light.response( par.in  = obs.use$par
                                             , gpp     = obs.use$gpp
-                                            , first   = c(a1=1,a2=40,a3=500)
+                                            , first   = c(a1=1,a2=10,a3=500)
                                             , n.boot  = light.n.boot
                                             , control = list( maxiter   = 500
                                                             , minFactor = 2^-26
@@ -2216,7 +2297,7 @@ if (plot.light){
             }else{
                obs.pred = optim.light.response( par.in  = obs.use$par
                                               , gpp     = obs.use$gpp
-                                              , first   = c(a1=1,a2=40,a3=500)
+                                              , first   = c(a1=1,a2=10,a3=500)
                                               , n.boot  = light.n.boot
                                               , skew    = skew.optim
                                               )#end fit.light.response
@@ -2273,11 +2354,11 @@ if (plot.light){
 
 
                   mod.use[[s]] = data.frame( par = dmean.par[dm.sel]
-                                           , gpp = dmean.gpp[dm.sel] * kgCyr.2.umols
+                                           , gpp = dmean.gpp[dm.sel]
                                            )#end data.frame
                }else{
                   mod.use[[s]] = data.frame( par = c(model$par)[sel]
-                                           , gpp = c(model$gpp)[sel] * kgCyr.2.umols
+                                           , gpp = c(model$gpp)[sel]
                                            )#end data.frame
                }#end if
                #---------------------------------------------------------------------------#
@@ -2288,7 +2369,7 @@ if (plot.light){
                if (tolower(light.method) == "nls"){
                   mod.pred[[s]] = nls.light.response( par.in  = mod.use[[s]]$par
                                                     , gpp     = mod.use[[s]]$gpp
-                                                    , first   = c(a1=1,a2=40,a3=500)
+                                                    , first   = c(a1=1,a2=10,a3=500)
                                                     , n.boot  = light.n.boot
                                                     , control = list( maxiter   = 500
                                                                     , minFactor = 2^-26
@@ -2297,7 +2378,7 @@ if (plot.light){
                }else{
                   mod.pred[[s]] = optim.light.response( par.in  = mod.use[[s]]$par
                                                       , gpp     = mod.use[[s]]$gpp
-                                                      , first   = c(a1=1,a2=40,a3=500)
+                                                      , first   = c(a1=1,a2=10,a3=500)
                                                       , skew    = skew.optim
                                                       , n.boot  = light.n.boot
                                                       )#end fit.light.response
@@ -2354,7 +2435,7 @@ if (plot.light){
             letitre = paste("Light response curve: ",this.longname,"\n"
                            ,season.full[ee]," ( N = ",n.sel,")",sep="")
             lex     = desc.unit(desc="Incoming PAR",unit=untab$umolom2os)
-            ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$umolom2os)
+            ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$kgcom2oyr)
             #------------------------------------------------------------------------------#
 
 
@@ -2398,7 +2479,7 @@ if (plot.light){
                   par(mar=lo.simul$mar[s,])
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit)
-                  if (lo.simul$bottom[s]) axis(side=1)
+                  if (lo.simul$bottom[s]) axis.rt(side=1,las=5,off=0.1)
                   if (lo.simul$left  [s]) axis(side=2,las=1)
                   grid(col=grid.colour,lty="dotted")
                   abline(h=0,v=0,lty="solid")
@@ -2489,7 +2570,7 @@ if (plot.light){
       #------ Set some common features. ---------------------------------------------------#
       letitre = paste("Light response curve - ",season.full[ee],sep="")
       lex     = desc.unit(desc="Incoming PAR",unit=untab$umolom2os)
-      ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$umolom2os)
+      ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$kgcom2oyr)
       #------------------------------------------------------------------------------------#
 
 
@@ -2556,7 +2637,7 @@ if (plot.light){
             par(mar=lo.site$mar[p,])
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit)
-            if (lo.site$bottom[p]) axis(side=1)
+            if (lo.site$bottom[p]) axis.rt(side=1,las=5,off=0.1)
             if (lo.site$left  [p]) axis(side=2,las=1)
             grid(col=grid.colour,lty="dotted")
             abline(h=0,v=0,lty="solid")
@@ -2618,7 +2699,7 @@ if (plot.light){
 
 
          #----- Plot title. ---------------------------------------------------------------#
-         gtitle(main=letitre,xlab=lex,ylab=ley,line.ylab=2.5,line.xlab=3.5)
+         gtitle(main=letitre,xlab=lex,ylab=ley,line.ylab=2.5,line.xlab=3.75)
          #---------------------------------------------------------------------------------#
 
 
@@ -2738,7 +2819,7 @@ if (plot.vpdef){
             dm.sel  = is.finite(dmean.gpp) & is.finite(dmean.vpdef)
             n.sel   = sum(dm.sel)
             obs.use = data.frame( vpdef = dmean.vpdef[dm.sel]
-                                , gpp   = dmean.gpp  [dm.sel] * kgCyr.2.umols
+                                , gpp   = dmean.gpp  [dm.sel]
                                 )#end data.frame
             n.fit.min = n.fit.dmean.min
             #------------------------------------------------------------------------------#
@@ -2749,7 +2830,7 @@ if (plot.vpdef){
             sel     = e.sel & f.sel & d.sel
             n.sel   = sum(sel)
             obs.use = data.frame( vpdef = c(obser$atm.vpdef)[sel]
-                                , gpp   = c(obser$gpp      )[sel] * kgCyr.2.umols
+                                , gpp   = c(obser$gpp      )[sel]
                                 )#end data.frame
             n.fit.min = n.fit.fmean.min
          }#end if
@@ -2817,11 +2898,11 @@ if (plot.vpdef){
 
 
                   mod.use[[s]] = data.frame( vpdef = dmean.vpdef[dm.sel]
-                                           , gpp   = dmean.gpp[dm.sel] * kgCyr.2.umols
+                                           , gpp   = dmean.gpp[dm.sel]
                                            )#end data.frame
                }else{
                   mod.use[[s]] = data.frame( vpdef = c(model$atm.vpdef)[sel]
-                                           , gpp   = c(model$gpp      )[sel] * kgCyr.2.umols
+                                           , gpp   = c(model$gpp      )[sel]
                                            )#end data.frame
                }#end if
                #---------------------------------------------------------------------------#
@@ -2874,7 +2955,7 @@ if (plot.vpdef){
             #------ Set some common features. ---------------------------------------------#
             letitre = paste(this.longname,"\n",season.full[ee]," ( N = ",n.sel,")",sep="")
             lex     = desc.unit(desc="Above-canopy VPD",unit=untab$hpa)
-            ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$umolom2os)
+            ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$kgcom2oyr)
             #------------------------------------------------------------------------------#
 
 
@@ -2983,7 +3064,7 @@ if (plot.vpdef){
       #------ Set some common features. ---------------------------------------------------#
       letitre = paste(season.full[ee],sep="")
       lex     = desc.unit(desc="Above-canopy VPD",unit=untab$hpa)
-      ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$umolom2os)
+      ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$kgcom2oyr)
       #------------------------------------------------------------------------------------#
 
 
@@ -3213,7 +3294,7 @@ if (plot.wetness){
                dm.sel  = is.finite(dmean.gpp) & is.finite(dmean.wetness)
                n.sel   = sum(dm.sel)
                obs.use = data.frame( wetness = dmean.wetness[dm.sel]
-                                   , gpp     = dmean.gpp  [dm.sel] * kgCyr.2.umols
+                                   , gpp     = dmean.gpp    [dm.sel]
                                    )#end data.frame
                #---------------------------------------------------------------------------#
             }else{
@@ -3236,7 +3317,7 @@ if (plot.wetness){
             sel     = e.sel & f.sel & d.sel
             n.sel   = sum(sel)
             obs.use = data.frame( wetness = obser$soil.wetness[sel,cc]
-                                , gpp     = c(obser$gpp      )[sel] * kgCyr.2.umols
+                                , gpp     = c(obser$gpp      )[sel]
                                 )#end data.frame
             n.fit.min = n.fit.fmean.min
          }#end if
@@ -3297,11 +3378,11 @@ if (plot.wetness){
 
 
                   mod.use[[s]] = data.frame( wetness = dmean.wetness[dm.sel]
-                                           , gpp     = dmean.gpp[dm.sel] * kgCyr.2.umols
+                                           , gpp     = dmean.gpp    [dm.sel]
                                            )#end data.frame
                }else{
                   mod.use[[s]] = data.frame( wetness = model$soil.wetness[sel,cc]
-                                           , gpp     = model$gpp[sel,1] * kgCyr.2.umols
+                                           , gpp     = model$gpp         [sel,1]
                                            )#end data.frame
                }#end if
                #---------------------------------------------------------------------------#
@@ -3359,7 +3440,7 @@ if (plot.wetness){
             letitre = paste(this.longname,"  -  ",cc.use$slz,"\n",season.full[ee]
                            ," ( N = ",n.sel,")",sep="")
             lex     = desc.unit(desc="Relative soil moisture"    ,unit=untab$empty    )
-            ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$umolom2os)
+            ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$kgcom2oyr)
             #------------------------------------------------------------------------------#
 
 
@@ -3468,7 +3549,7 @@ if (plot.wetness){
       #------ Set some common features. ---------------------------------------------------#
       letitre = paste(season.full[ee],sep="")
       lex     = desc.unit(desc="Soil wetness",unit=untab$empty)
-      ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$umolom2os)
+      ley     = desc.unit(desc="Gross Primary Productivity",unit=untab$kgcom2oyr)
       #------------------------------------------------------------------------------------#
 
 
@@ -4328,9 +4409,6 @@ if (plot.ts.ftnight){
 
 
 
-
-
-
          #---------------------------------------------------------------------------------#
          #     Grab fortnightly means for this site, and find out whether there is any-    #
          # thing to plot.                                                                  #
@@ -4430,9 +4508,23 @@ if (plot.ts.ftnight){
          #----- Get the basic information. ------------------------------------------------#
          iata          = sites$iata[p]
          this.longname = sites$desc[p]
+         drya          = as.numeric(chron(paste(sites$drya[p],fnmean.year,sep="/")))
+         dryz          = as.numeric(chron(paste(sites$dryz[p],fnmean.year,sep="/")))
          nlyr          = tsfn.obser[[iata]]$nlyr
          ylimit        = pretty.xylim(u=sites.ylimit[[iata]],fracexp=0.0,is.log=FALSE)
          #---------------------------------------------------------------------------------#
+
+
+
+
+
+         #------ Make two periods in case Jan 1st is dry season. --------------------------#
+         if (drya > dryz){
+            drya = c(as.numeric(chron(paste(01,01,fnmean.year+00,sep="/")),drya))
+            dryz = c(dryz,as.numeric(chron(paste(01,01,fnmean.year+01,sep="/"))))
+         }#end if
+         #---------------------------------------------------------------------------------#
+
 
 
          #------ Grab data for this layer. ------------------------------------------------#
@@ -4514,8 +4606,35 @@ if (plot.ts.ftnight){
                   if (lo.simul$left  [s]){
                      axis(side=2,las=1)
                   }#end if
+                  #------------------------------------------------------------------------#
+
+
+
+
+                  #------------------------------------------------------------------------#
+                  #      Plot the dry season.                                              #
+                  #------------------------------------------------------------------------#
+                  if (show.dryseason){
+                     xlimit  = as.numeric(fnmean.limit)
+                     xleft   = pretty.xylim(u=xlimit,fracexp=-0.04)[1]
+                     xright  = pretty.xylim(u=xlimit,fracexp=+0.04)[2]
+                     ybottom = pretty.xylim(u=ylimit,fracexp=-0.04)[1]
+                     ytop    = pretty.xylim(u=ylimit,fracexp=+0.04)[2]
+                     xleft   = ifelse(drya <= xlimit[1],xleft ,drya)
+                     xright  = ifelse(dryz >= xlimit[2],xright,dryz)
+                     rect( xleft      = xleft
+                         , ybottom    = ybottom
+                         , xright     = xright
+                         , ytop       = ytop
+                         , col        = col.dryseason
+                         , border     = NA
+                         , density    = -1
+                         )#end rect
+                  }#end if
                   abline(v=fnmean.at,h=axTicks(2),col=grid.colour,lty="dotted")
                   #------------------------------------------------------------------------#
+
+
 
 
                   #------------------------------------------------------------------------#
@@ -4669,12 +4788,11 @@ if (plot.ts.ftnight){
 
          #----- Loop over all sites. ------------------------------------------------------#
          for (p in sequence(nsites)){
-
-
-
             #----- Get the basic information. ---------------------------------------------#
             iata          = sites$iata[p]
             this.longname = sites$desc[p]
+            drya          = as.numeric(chron(paste(sites$drya,fnmean.year,sep="/")))
+            dryz          = as.numeric(chron(paste(sites$dryz,fnmean.year,sep="/")))
             plotit        = iata %in% names(tsfn.obser)
             if (plotit){
                ndat           = tsfn.obser[[iata]]$ndat
@@ -4712,6 +4830,16 @@ if (plot.ts.ftnight){
 
 
 
+            #------ Make two periods in case Jan 1st is dry season. -----------------------#
+            drya          = as.numeric(chron(paste(sites$drya[p],fnmean.year,sep="/")))
+            dryz          = as.numeric(chron(paste(sites$dryz[p],fnmean.year,sep="/")))
+            if (drya > dryz){
+               drya = c(as.numeric(chron(paste(01,01,fnmean.year+00,sep="/")),drya))
+               dryz = c(dryz,as.numeric(chron(paste(01,01,fnmean.year+01,sep="/"))))
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
 
             #------ Open sub-plot. --------------------------------------------------------#
             par(mar=lo.site$mar[p,])
@@ -4723,6 +4851,31 @@ if (plot.ts.ftnight){
             if (lo.site$left  [p]){
                axis(side=2,las=1)
             }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot the dry season.                                                    #
+            #------------------------------------------------------------------------------#
+            if (show.dryseason){
+               xlimit  = as.numeric(fnmean.limit)
+               xleft   = pretty.xylim(u=xlimit,fracexp=-0.04)[1]
+               xright  = pretty.xylim(u=xlimit,fracexp=+0.04)[2]
+               ybottom = pretty.xylim(u=ylimit,fracexp=-0.04)[1]
+               ytop    = pretty.xylim(u=ylimit,fracexp=+0.04)[2]
+               xleft   = ifelse(drya <= xlimit[1],xleft ,drya)
+               xright  = ifelse(dryz >= xlimit[2],xright,dryz)
+               rect( xleft      = xleft
+                   , ybottom    = ybottom
+                   , xright     = xright
+                   , ytop       = ytop
+                   , col        = col.dryseason
+                   , border     = NA
+                   , density    = -1
+                   )#end rect
+            }#end if
             abline(v=fnmean.at,h=axTicks(2),col=grid.colour,lty="dotted")
             #------------------------------------------------------------------------------#
 
@@ -4732,6 +4885,7 @@ if (plot.ts.ftnight){
             # properly skipped).                                                           #
             #------------------------------------------------------------------------------#
             if (plotit){
+
                #----- Find the limits. ----------------------------------------------------#
                x025      = c(rbind(fnmean.when-dfnmean.when,fnmean.when+dfnmean.when))
                obs.y025  = c(rbind(obs.q025,obs.q025))

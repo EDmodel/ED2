@@ -52,6 +52,7 @@ subroutine calc_met_lapse(cgrid,ipy)
          cpoly%met(isi)%nir_diffuse = cgrid%met(ipy)%nir_diffuse*(1.0-hillshade)
          cpoly%met(isi)%nir_beam    = cgrid%met(ipy)%nir_beam
          cpoly%met(isi)%vels        = cgrid%met(ipy)%vels
+         cpoly%met(isi)%atm_ustar   = cgrid%met(ipy)%atm_ustar
       end do
    else
       
@@ -80,7 +81,10 @@ subroutine calc_met_lapse(cgrid,ipy)
          ! Note: at this point VELS is vel^2.  Thus this lapse preserves mean wind ENERGY  !
          !       not wind SPEED.                                                           !
          !---------------------------------------------------------------------------------!
-         cpoly%met(isi)%vels    = cgrid%met(ipy)%vels    + cgrid%lapse(ipy)%vels*delE
+         cpoly%met(isi)%vels      = cgrid%met(ipy)%vels                                    &
+                                  + cgrid%lapse(ipy)%vels*delE
+         cpoly%met(isi)%atm_ustar = cgrid%met(ipy)%atm_ustar                               &
+                                  + cgrid%lapse(ipy)%atm_ustar*delE
 
          !---------------------------------------------------------------------------------!
          ! Note: Precipitation adjustment is based on proportional change rather than a    !
@@ -130,6 +134,7 @@ subroutine setLapseParms(cgrid)
       
       cgrid%lapse(ipy)%geoht       = lapse%geoht
       cgrid%lapse(ipy)%vels        = lapse%vels
+      cgrid%lapse(ipy)%atm_ustar   = lapse%atm_ustar
       cgrid%lapse(ipy)%atm_tmp     = lapse%atm_tmp
       cgrid%lapse(ipy)%atm_shv     = lapse%atm_shv
       cgrid%lapse(ipy)%prss        = lapse%prss

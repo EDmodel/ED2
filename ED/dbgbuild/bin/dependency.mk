@@ -1,5 +1,5 @@
 # DO NOT DELETE THIS LINE - used by make depend
-ed_1st.o: ed_misc_coms.mod ed_para_coms.mod ed_state_vars.mod
+ed_1st.o: ed_mem_alloc.mod ed_misc_coms.mod ed_para_coms.mod ed_state_vars.mod
 ed_driver.o: consts_coms.mod detailed_coms.mod ed_misc_coms.mod ed_node_coms.mod
 ed_driver.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod
 ed_driver.o: phenology_aux.mod soil_coms.mod
@@ -211,12 +211,12 @@ rk4_coms.o: soil_coms.mod therm_lib8.mod
 soil_coms.o: consts_coms.mod ed_max_dims.mod grid_coms.mod 
 ed_mpass_init.o: canopy_air_coms.mod canopy_layer_coms.mod
 ed_mpass_init.o: canopy_radiation_coms.mod decomp_coms.mod detailed_coms.mod
-ed_mpass_init.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
-ed_mpass_init.o: ed_node_coms.mod ed_para_coms.mod ed_state_vars.mod
-ed_mpass_init.o: ed_work_vars.mod grid_coms.mod mem_polygons.mod
-ed_mpass_init.o: met_driver_coms.mod optimiz_coms.mod pft_coms.mod
-ed_mpass_init.o: phenology_coms.mod physiology_coms.mod rk4_coms.mod
-ed_mpass_init.o: soil_coms.mod
+ed_mpass_init.o: disturb_coms.mod ed_max_dims.mod ed_mem_alloc.mod
+ed_mpass_init.o: ed_misc_coms.mod ed_node_coms.mod ed_para_coms.mod
+ed_mpass_init.o: ed_state_vars.mod ed_work_vars.mod grid_coms.mod
+ed_mpass_init.o: mem_polygons.mod met_driver_coms.mod optimiz_coms.mod
+ed_mpass_init.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
+ed_mpass_init.o: rk4_coms.mod soil_coms.mod
 ed_node_coms.o: ed_max_dims.mod
 ed_para_coms.o: ed_max_dims.mod
 ed_para_init.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
@@ -271,6 +271,7 @@ detailed_coms.mod: detailed_coms.o
 disturb_coms.mod: disturb_coms.o
 disturbance_utils.mod: disturbance.o
 ed_max_dims.mod: ed_max_dims.o
+ed_mem_alloc.mod: ed_mem_alloc.o
 ed_mem_grid_dim_defs.mod: ed_mem_grid_dim_defs.o
 ed_misc_coms.mod: ed_misc_coms.o
 ed_node_coms.mod: ed_node_coms.o

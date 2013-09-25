@@ -11,7 +11,9 @@ pretty.log = function(x,base=10,n=10){
 
 
    #---------------------------------------------------------------------------------------#
-   #     In case it is a base 10, make it even prettier.                                   #
+   #     In case it is a base 10, make it even prettier.  Also, in case the log scale is   #
+   # very close to the actual scale, forget about the log scale and use regular pretty, it #
+   # gives a more legible scale.                                                           #
    #---------------------------------------------------------------------------------------#
    if (base == 10 && dlog.neat %wr% c(0.1,0.5)){
       sel  = abs(log.neat - as.integer(log.neat)) < 0.5 * dlog.neat
@@ -31,6 +33,10 @@ pretty.log = function(x,base=10,n=10){
       aa      = min(which(vlevels > min(neat)))-1
       zz      = max(which(vlevels < max(neat)))+1
       vlevels = vlevels[aa:zz]
+      #------------------------------------------------------------------------------------#
+   }else if(dlog.neat < 0.1){
+      #-----  The plot is hardly log, use normal units instead. ---------------------------#
+      vlevels = pretty(x=x,n=n)
       #------------------------------------------------------------------------------------#
    }else{
       vlevels = neat

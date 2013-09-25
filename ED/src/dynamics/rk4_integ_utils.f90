@@ -98,7 +98,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,-9000.d0)
+      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,h,.false.)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal    &
@@ -216,14 +216,15 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm_vpdef     &
-                             ,atm_theta,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg      &
-                             ,dpcpg,prss,rshort,rlong,par_beam,par_diffuse,nir_beam        &
+subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,atm_ustar,vels,atm_theiv     &
+                             ,atm_vpdef,atm_theta,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg  &
+                             ,qpcpg,dpcpg,prss,rshort,rlong,par_beam,par_diffuse,nir_beam  &
                              ,nir_diffuse,geoht,lsl,ntext_soil,green_leaf_factor,lon,lat   &
                              ,cosz)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
-   use canopy_air_coms, only : ubmin8        ! ! intent(in)
+   use canopy_air_coms, only : ubmin8        & ! intent(in)
+                             , ustmin8       ! ! intent(in) 
    use therm_lib8     , only : rehuil8       & ! function
                              , reducedpress8 & ! function
                              , tq2enthalpy8  & ! function
@@ -237,6 +238,7 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm
    real                     , intent(in) :: can_theta
    real                     , intent(in) :: can_shv
    real                     , intent(in) :: can_depth
+   real                     , intent(in) :: atm_ustar
    real                     , intent(in) :: vels
    real                     , intent(in) :: atm_theiv
    real                     , intent(in) :: atm_vpdef
@@ -329,9 +331,10 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,vels,atm_theiv,atm
 
 
    !----- Find the other variables that require a little math. ----------------------------!
-   rk4site%vels     = max(ubmin8,dble(vels))
-   rk4site%atm_rhv  = rehuil8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv,.true.)
-   rk4site%atm_rhos = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv)
+   rk4site%atm_ustar = max(ustmin8,dble(atm_ustar))
+   rk4site%vels      = max(ubmin8,dble(vels))
+   rk4site%atm_rhv   = rehuil8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv,.true.)
+   rk4site%atm_rhos  = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv)
    !---------------------------------------------------------------------------------------!
 
 

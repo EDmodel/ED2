@@ -377,7 +377,7 @@ mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=1000){
 #      This function computes the expected growth rates and the confidence interval, using #
 # bootstrap so we do not need to assume any distribution.                                  #
 #------------------------------------------------------------------------------------------#
-growth.rate = function(growth,count,taxon,R=1000){
+growth.rate <<- function(growth,count,taxon,R=1000){
 
    #------ Split the data according to the class. -----------------------------------------#
    growth.tx = split(x = growth, f = taxon)
@@ -739,6 +739,7 @@ acc.mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=10
    expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
    q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
    q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
+   if (any(expected.tx %>% q975.tx | expected.tx %<% q025.tx,na.rm=TRUE)) browser()
    #---------------------------------------------------------------------------------------#
 
 
@@ -778,6 +779,7 @@ acc.mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=10
    expected.gb = boot.gb$t0
    q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
    q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
+   if (any(expected.gb %>% q975.gb | expected.gb %<% q025.gb,na.rm=TRUE)) browser()
    #---------------------------------------------------------------------------------------#
 
 

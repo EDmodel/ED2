@@ -431,7 +431,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psim = - beta_s * zeta 
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim = abh91 * zeta                                                            &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta))                     &
                  + bcod
@@ -447,7 +447,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             xx   = sqrt(sqrt(1.0 - gamm * zeta))
             psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx)) - 2.0*atan(xx) + halfpi
          case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
@@ -493,7 +493,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psih = - beta_s * zeta 
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + bcod
          case (4) !----- CLM (2004). ------------------------------------------------------!
@@ -508,7 +508,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             yy   = sqrt(1.0 - gamh * zeta)
             psih = log(0.25 * (1.0+yy) * (1.0+yy))
          case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
@@ -552,7 +552,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psim8 = - beta_s8 * zeta 
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim8 = abh918 * zeta                                                          &
                   + bbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta))               &
                   + bcod8
@@ -568,7 +568,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             xx   = sqrt(sqrt(1.d0 - gamm8 * zeta))
             psim8 = log(1.25d-1 * (1.d0+xx) * (1.d0+xx) * (1.d0 + xx*xx))                  &
                   - 2.d0*atan(xx) + halfpi8
@@ -615,7 +615,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psih8 = - beta_s8 * zeta 
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih8 = 1.d0 - (1.d0 + ate8 * zeta)**fbh918                                    &
                   + bbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta)) + bcod8
          case (4) !----- CLM (2004). ------------------------------------------------------!
@@ -630,7 +630,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             yy    = sqrt(1.d0 - gamh8 * zeta)
             psih8 = log(2.5d-1 * (1.d0+yy) * (1.d0+yy))
          case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
@@ -676,7 +676,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsimdzeta = - beta_s 
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
                                * exp(max(-38.,-dbh91 * zeta))
          case (4) !----- CLM (2004). ------------------------------------------------------!
@@ -690,7 +690,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             xx         = sqrt(sqrt(1.0 - gamm * zeta))
             dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx)) 
          case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
@@ -733,7 +733,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsihdzeta = - beta_s
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
                          + bbh91 * (1.0 - dbh91 * zeta + cbh91)                            &
                          * exp(max(-38.,-dbh91 * zeta))
@@ -748,7 +748,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             yy   = sqrt(1.0 - gamh * zeta)
             dpsihdzeta = -gamh / (yy * (1.0 + yy))
          case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
@@ -793,7 +793,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsimdzeta8 = - beta_s8
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta8 = abh918                                                           &
                         + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                         &
                         * exp(max(-3.8d1,-dbh918 * zeta))
@@ -808,7 +808,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             xx          = sqrt(sqrt(1.d0 - gamm8 * zeta))
             dpsimdzeta8 = - gamm8 / (xx * (1.d0+xx) * (1.d0 + xx*xx)) 
          case (4)   !----- Modified CLM (2004). -------------------------------------------!
@@ -851,7 +851,7 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsihdzeta8 = - beta_s8
-         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
+         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta8 = - atetf8 * (1.d0 + ate8 * zeta)**fm18                            &
                           + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                       &
                           * exp(max(-3.8d1,-dbh918 * zeta))
@@ -866,7 +866,7 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
+         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
             yy          = sqrt(1.d0 - gamh8 * zeta)
             dpsihdzeta8 = -gamh8 / (yy * (1.d0 + yy))
          case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
@@ -1648,6 +1648,728 @@ module canopy_air_coms
 
       return
    end function zoobukhov8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the value of zeta for a given Richardson number, reference    !
+   ! height and the roughness scale.  This is solved by using the definition of Obukhov    !
+   ! length scale as stated in Louis (1979) equation (10), modified to define z/L rather   !
+   ! than L.  The solution is found  iteratively since it's not a simple function to       !
+   ! invert.  It tries to use Newton's method, which should take care of most cases.  In   !
+   ! the unlikely case in which Newton's method fails, switch back to modified Regula      !
+   ! Falsi method (Illinois).                                                              !
+   !---------------------------------------------------------------------------------------!
+   real function zoobukhov_ustar(rib,zstar,rough,zoz0h,lnzoz0h,kuoustar,stable)
+      use therm_lib  , only : toler  & ! intent(in)
+                            , maxfpo & ! intent(in)
+                            , maxit  ! ! intent(in)
+      use consts_coms, only : lnexp_min ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4), intent(in) :: rib       ! Bulk Richardson number               [   ---]
+      real(kind=4), intent(in) :: zstar     ! Ref. height - displacement height    [     m]
+      real(kind=4), intent(in) :: rough     ! Roughness length scale               [     m]
+      real(kind=4), intent(in) :: zoz0h     ! zstar/roughness(heat)                [   ---]
+      real(kind=4), intent(in) :: lnzoz0h   ! ln[zstar/roughness(heat)]            [   ---]
+      real(kind=4), intent(in) :: kuoustar  ! k * u / u*                           [   ---]
+      logical     , intent(in) :: stable    ! Flag... This surface layer is stable [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: fh        ! lnzoz0 - psih(zeta) + psih(zeta0)    [   ---]
+      real(kind=4)             :: dfhdzeta  ! d(fh)/d(zeta)                        [   ---]
+      real(kind=4)             :: z0hoz     ! Roughness(heat) / Reference height   [   ---]
+      real(kind=4)             :: zeta0h    ! Roughness(heat) / Obukhov length     [   ---]
+      real(kind=4)             :: zetaa     ! Smallest guess (or previous guess)   [   ---]
+      real(kind=4)             :: zetae     ! Current guess                        [   ---]
+      real(kind=4)             :: zetaz     ! Largest guess (or Newton's guess)    [   ---]
+      real(kind=4)             :: deriv     ! Function Derivative                  [   ---]
+      real(kind=4)             :: fun       ! Function for which we seek a root.   [   ---]
+      real(kind=4)             :: funa      ! Smallest guess function.             [   ---]
+      real(kind=4)             :: funz      ! Largest guess function.              [   ---]
+      real(kind=4)             :: delta0    ! Aux. var --- 2nd guess for bisection [   ---]
+      real(kind=4)             :: delta     ! Aux. var --- 2nd guess for bisection [   ---]
+      real(kind=4)             :: coeff     ! RiB*zstar/(Pr*(zstar-z0))*(k*u/u*)^2 [   ---]
+      real(kind=4)             :: coeffi    ! 1/coeff                              [   ---]
+      real(kind=4)             :: zetamin   ! Minimum zeta for stable case.        [   ---]
+      real(kind=4)             :: zetamax   ! Maximum zeta for unstable case.      [   ---]
+      real(kind=4)             :: zetasmall ! Number sufficiently close to zero    [   ---]
+      integer                  :: itb       ! Iteration counters                   [   ---]
+      integer                  :: itn       ! Iteration counters                   [   ---]
+      integer                  :: itp       ! Iteration counters                   [   ---]
+      logical                  :: converged ! Flag... The method converged!        [   T|F]
+      logical                  :: zside     ! Flag... I'm on the z-side.           [   T|F]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Define some values that won't change during the iterative method. ------------!
+      z0hoz = 1. / zoz0h
+      coeff = rib * zstar / (tprandtl * (zstar - rough)) * kuoustar * kuoustar
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the bulk Richardson number is zero or almost zero, then we rather just      !
+      ! assign z/L to be the one similar to Oncley and Dudhia (1995).  This saves time and !
+      ! also avoids the risk of having zeta with the opposite sign.                        !
+      !------------------------------------------------------------------------------------!
+      zetasmall = coeff / lnzoz0h
+      if (rib <= 0. .and. zetasmall > - toler) then
+         zoobukhov_ustar = zetasmall
+         return
+      elseif (rib > 0. .and. zetasmall < toler) then
+         zoobukhov_ustar = zetasmall / (1.0 - beta_s * rib / tprandtl)
+         return
+      else
+         zetamin    =  toler
+         zetamax    = -toler
+         coeffi     = 1. / coeff
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=89,fmt='(60a1)') ('-',itn=1,60)
+      !write(unit=89,fmt='(5(a,1x,f11.4,1x),a,l1)')                                        &
+      !   'Input values: Rib =',rib,'zstar=',star,'rough=',rough,'zoz0=',zoz0              &
+      !           ,'lnzoz0=',lnzoz0,'stable=',stable
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
+      !------------------------------------------------------------------------------------!
+      !     First guess, use Oncley and Dudhia (1995) approximation for unstable case.     !
+      ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
+      ! Ri is too positive.                                                                !
+      !------------------------------------------------------------------------------------!
+      zetaa = zetasmall
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the function and its derivative. ----------------------------------------!
+      zeta0h   = zetaa * z0hoz
+      fh       = lnzoz0h - psih(zetaa,stable) + psih(zeta0h,stable)
+      dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaa,stable)
+      !------ Force derivative to be zero if the function is ill-behaved. -----------------!
+      if (fh == 0.0) then
+         funa  = lnexp_min
+         deriv = 0.0
+      else
+         funa  = log(coeffi * zetaa * fh)
+         deriv =  ( 1.0 / zetaa + dfhdzeta / fh )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Copy just in case it fails at the first iteration. ---------------------------!
+      zetaz = zetaa
+      fun   = funa
+      !------------------------------------------------------------------------------------!
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,7(1x,a,1x,es12.5))')                       &
+      !   '1STGSS: itn=',0,'bisection=',.false.,'zetaz=',zetaz,'fun=',fun,'fm=',fm          &
+      !  ,'fh=',fh,'dfmdzeta=',dfmdzeta,'dfhdzeta=',dfhdzeta,'deriv=',deriv
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
+      !----- Enter Newton's method loop. --------------------------------------------------!
+      converged = .false.
+      newloop: do itn = 1, maxfpo/6
+         !---------------------------------------------------------------------------------!
+         !     Newton's method converges fast when it's on the right track, but there are  !
+         ! cases in which it becomes ill-behaved.  Two situations are known to cause       !
+         ! trouble:                                                                        !
+         ! 1.  If the derivative is tiny, the next guess can be too far from the actual    !
+         !     answer;                                                                     !
+         ! 2.  For this specific problem, when zeta is too close to zero.  In this case    !
+         !     the derivative will tend to infinity at this point and Newton's method is   !
+         !     not going to perform well and can potentially enter in a weird behaviour or !
+         !     lead to the wrong answer.  In any case, so we rather go with bisection.     !
+         !---------------------------------------------------------------------------------!
+         if (abs(deriv) < toler) then
+            exit newloop
+         elseif(stable .and. (zetaz - fun/deriv < zetamin)) then
+            exit newloop
+         elseif((.not. stable) .and. (zetaz - fun/deriv > zetamax)) then
+            exit newloop
+         end if
+
+         !----- Copy the previous guess ---------------------------------------------------!
+         zetaa = zetaz
+         funa  = fun
+         !----- New guess, its function and derivative evaluation -------------------------!
+         zetaz    = zetaa - fun/deriv
+         zeta0h   = zetaz * z0hoz
+         fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
+         dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaz,stable)
+         !------ Force derivative to be zero if the function is ill-behaved. --------------!
+         if (zetaz == 0.0 .or. fh == 0.0) then
+            fun   = lnexp_min
+            deriv = 0.0
+         else
+            fun      = log(coeffi * zetaz * fh)
+            deriv =  ( 1.0 / zetaz + dfhdzeta / fh )
+         end if
+         !------------------------------------------------------------------------------------!
+
+
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,7(1x,a,1x,es12.5))')                       &
+         !   'NEWTON: itn=',itn,'bisection=',.false.,'zetaz=',zetaz,'fun=',fun,'fm=',fm        &
+         !  ,'fh=',fh,'dfmdzeta=',dfmdzeta,'dfhdzeta=',dfhdzeta,'deriv=',deriv
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         converged = abs(zetaz-zetaa) < toler * abs(zetaz)
+
+         if (converged) then
+            zoobukhov_ustar = 0.5 * (zetaa+zetaz)
+            return
+         elseif (fun == 0.0) then !---- Converged by luck. --------------------------------!
+            zoobukhov_ustar = zetaz
+            return
+         end if
+      end do newloop
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If we reached this point then it's because Newton's method failed or it has    !
+      ! become too dangerous.  We use the Regula Falsi (Illinois) method, which is just a  !
+      ! fancier bisection.  For this we need two guesses, and the guesses must have        !
+      ! opposite signs.                                                                    !
+      !------------------------------------------------------------------------------------!
+      if (funa * fun < 0.0) then
+         funz  = fun
+         zside = .true. 
+      else
+         !----- zetaa becomes the minimum absolute value for searching. -------------------!
+         if (stable) then
+            zetaa  = zetamin
+         else
+            zetaa  = zetamax
+         end if
+         zeta0h = zetaa * z0hoz
+         fh     = lnzoz0h - psih(zetaa,stable) + psih(zeta0h,stable)
+         if (fh == 0.0) then
+            funa = lnexp_min
+         else
+            funa = log ( coeffi * zetaa * fh )
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !------ Use a multiplicative function. -------------------------------------------!
+         delta = 10.
+         zetaz = zetaa
+         zside = .false.
+         zgssloop: do itp=1,maxfpo
+            zetaz = zetaz * delta
+            zeta0h   = zetaz * z0hoz
+            fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
+            if (fh == 0.0) then
+               funz  = lnexp_min 
+            else
+               funz  = log ( coeffi * zetaz * fh )
+            end if
+            zside    = funa * funz < 0.0
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,7(1x,a,1x,es12.5))')                 &
+            !   '2NDGSS: itp=',itp,'zside=',zside,'zetaa=',zetaa,'zetaz=',zetaz             &
+            !  ,'funa=',funa,'funz=',funz,'fm=',fm,'fh=',fh,'delta=',delta
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            if (zside) exit zgssloop
+         end do zgssloop
+         if (.not. zside) then
+            write (unit=*,fmt='(a)') '=================================================='
+            write (unit=*,fmt='(a)') '    No second guess for you...'
+            write (unit=*,fmt='(a)') '=================================================='
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar  =',zstar   ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'kuoust =',kuoustar,'coeff  =',coeff
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0h=',lnzoz0h ,'rib    =',rib
+            write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun     ,'delta  =',delta
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa   ,'funa   =',funa
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaz  =',zetaz   ,'funz   =',funz
+            call fatal_error('Failed finding the second guess for regula falsi'            &
+                            ,'zoobukhov_ustar','canopy_air_coms.f90')
+         end if
+      end if
+
+      !----- Now we are ready to start the regula falsi method. ---------------------------!
+      bisloop: do itb=itn,maxfpo
+         zetae = (funz*zetaa-funa*zetaz)/(funz-funa)
+
+         !---------------------------------------------------------------------------------!
+         !     Now that we updated the guess, check whether they are really close. If so,  !
+         ! it converged, I can use this as my guess.                                       !
+         !---------------------------------------------------------------------------------!
+         converged = abs(zetae-zetaa) < toler * abs(zetae)
+         if (converged) exit bisloop
+
+         !------ Update function evaluation. ----------------------------------------------!
+         zeta0h   = zetae * z0hoz
+         fh       = lnzoz0h - psih(zetae,stable) + psih(zeta0h,stable)
+         if (fh == 0.0) then
+            fun = lnexp_min
+         else
+            fun = log(coeffi * zetae * fh)
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,7(1x,a,1x,es12.5))')                       &
+         !   'REGULA: itn=',itb,'bisection=',.true.,'zetaa=',zetaa,'zetaz=',zetaz,'fun=',fun   &
+         !  ,'funa=',funa,'funz=',funz,'fm=',fm,'fh=',fh
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+         !------ Define new interval based on the intermediate value theorem. -------------!
+         if (fun*funa < 0. ) then
+            zetaz = zetae
+            funz  = fun
+            !----- If we are updating zside again, modify aside (Illinois method) ---------!
+            if (zside) funa = funa * 0.5
+            !----- We just updated zside, set zside to true. ------------------------------!
+            zside = .true.
+         else
+            zetaa = zetae
+            funa  = fun
+            !----- If we are updating aside again, modify aside (Illinois method) ---------!
+            if (.not. zside) funz = funz * 0.5
+            !----- We just updated aside, set aside to true. ------------------------------!
+            zside = .false.
+         end if
+      end do bisloop
+
+      if (.not.converged .or.                                                              &
+          (stable .and. zetae < 0.0) .or. (.not. stable .and. zetae > 0.0)) then
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') ' Zeta finding didn''t converge!!!'
+         write (unit=*,fmt='(a,1x,i5,1x,a)') ' I gave up, after',maxfpo,'iterations...'
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') ' Input values.'
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'kuoustar        [   ---] =',kuoustar
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar           [     m] =',zstar
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0h           [   ---] =',zoz0h
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0h         [   ---] =',lnzoz0h
+         write (unit=*,fmt='(a,1x,l1)'    ) 'stable          [   T|F] =',stable
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') ' Last iteration outcome (downdraft values).'
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zetaa           [   ---] =',zetaa
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zetaz           [   ---] =',zetaz
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [   ---] =',fun
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'fh              [   ---] =',fh
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [   ---] =',funa
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [   ---] =',funz
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'deriv           [   ---] =',deriv
+         write (unit=*,fmt='(a,1x,es12.4)') 'toler           [   ---] =',toler
+         write (unit=*,fmt='(a,1x,es12.4)') 'error           [   ---] ='                   &
+                                                            ,abs(zetaz-zetaa)/abs(zetaz)
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zetae           [   ---] =',zetae
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+
+         call fatal_error('Zeta didn''t converge, giving up!!!'                            &
+                         ,'zoobukhov_ustar','canopy_air_coms.f90')
+      else
+         zoobukhov_ustar = zetae
+      end if
+
+      return
+   end function zoobukhov_ustar
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the value of zeta for a given Richardson number, reference    !
+   ! height and the roughness scale.  This is solved by using the definition of Obukhov    !
+   ! length scale as stated in Louis (1979) equation (10), modified to define z/L rather   !
+   ! than L.  The solution is found  iteratively since it's not a simple function to       !
+   ! invert.  It tries to use Newton's method, which should take care of most cases.  In   !
+   ! the unlikely case in which Newton's method fails, switch back to modified Regula      !
+   ! Falsi method (Illinois).                                                              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function zoobukhov_ustar8(rib,zstar,rough,zoz0h,lnzoz0h,kuoustar,stable)
+      use therm_lib8 , only : toler8     & ! intent(in)
+                            , maxfpo     & ! intent(in)
+                            , maxit      ! ! intent(in)
+      use consts_coms, only : lnexp_min8 ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: rib       ! Bulk Richardson number               [   ---]
+      real(kind=8), intent(in) :: zstar     ! Reference height - displacement hgt. [     m]
+      real(kind=8), intent(in) :: rough     ! Roughness length scale               [     m]
+      real(kind=8), intent(in) :: zoz0h     ! zstar/roughness(heat)                [   ---]
+      real(kind=8), intent(in) :: lnzoz0h   ! ln[zstar/roughness(heat)]            [   ---]
+      real(kind=8), intent(in) :: kuoustar  ! k * u / u*                           [   ---]
+      logical     , intent(in) :: stable    ! Flag... This surface layer is stable [   T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: fh        ! lnzoz0 - psih(zeta) + psih(zeta0)    [   ---]
+      real(kind=8)             :: dfhdzeta  ! d(fh)/d(zeta)                        [   ---]
+      real(kind=8)             :: z0hoz     ! Roughness(heat) / Reference height   [   ---]
+      real(kind=8)             :: zeta0h    ! Roughness(heat) / Obukhov length     [   ---]
+      real(kind=8)             :: zetaa     ! Smallest guess (or previous guess)   [   ---]
+      real(kind=8)             :: zetae     ! Current guess                        [   ---]
+      real(kind=8)             :: zetaz     ! Largest guess (new guess in Newton)  [   ---]
+      real(kind=8)             :: deriv     ! Function Derivative                  [   ---]
+      real(kind=8)             :: fun       ! Function for which we seek a root.   [   ---]
+      real(kind=8)             :: funa      ! Smallest guess function.             [   ---]
+      real(kind=8)             :: funz      ! Largest guess function.              [   ---]
+      real(kind=8)             :: delta0    ! Aux. var --- 2nd guess for bisection [   ---]
+      real(kind=8)             :: delta     ! Aux. var --- 2nd guess for bisection [   ---]
+      real(kind=8)             :: coeff     ! RiB*zstar/(Pr*(zstar-z0))*(k*u/u*)^2 [   ---]
+      real(kind=8)             :: coeffi    ! 1.d0 / coeff                         [   ---]
+      real(kind=8)             :: zetamin   ! Minimum zeta for stable case.        [   ---]
+      real(kind=8)             :: zetamax   ! Maximum zeta for unstable case.      [   ---]
+      real(kind=8)             :: zetasmall ! Zeta dangerously close to zero       [   ---]
+      integer                  :: itn       ! Iteration counters                   [   ---]
+      integer                  :: itb       ! Iteration counters                   [   ---]
+      integer                  :: itp       ! Iteration counters                   [   ---]
+      logical                  :: converged ! Flag... The method converged!        [   T|F]
+      logical                  :: zside     ! Flag... I'm on the z-side.           [   T|F]
+      !----- Local constants. -------------------------------------------------------------!
+      logical, parameter       :: debug=.false. ! Print debugging information?
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Define some values that won't change during the iterative method. ------------!
+      z0hoz = 1.d0 / zoz0h
+      coeff = rib * zstar / (tprandtl8 * (zstar - rough)) * kuoustar * kuoustar
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the bulk Richardson number is zero or almost zero, then we rather just      !
+      ! assign z/L to be the one similar to Oncley and Dudhia (1995).  This saves time and !
+      ! also avoids the risk of having zeta with the opposite sign.                        !
+      !------------------------------------------------------------------------------------!
+      zetasmall = coeff / lnzoz0h
+      if (rib <= 0.d0 .and. zetasmall > - toler8) then
+         zoobukhov_ustar8 = zetasmall
+         return
+      elseif (rib > 0.d0 .and. zetasmall < toler8) then
+         zoobukhov_ustar8 = zetasmall / (1.d0 - beta_s8 * rib / tprandtl8)
+         return
+      else
+         zetamin    =  toler8
+         zetamax    = -toler8
+         coeffi     = 1.d0 / coeff
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      if (debug) then
+         write(unit=89,fmt='(60a1)') ('-',itn=1,60)
+         write(unit=89,fmt='(6(a,1x,f11.4,1x),a,l1)')                                      &
+            'Input values: Rib =',rib,'zstar=',zstar,'rough=',rough,'zoz0h=',zoz0h         &
+                    ,'lnzoz0h=',lnzoz0h,'kuoustar=',kuoustar,'stable=',stable
+      end if
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     First guess, use Oncley and Dudhia (1995) approximation for unstable case.     !
+      ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
+      ! Ri is too positive.                                                                !
+      !------------------------------------------------------------------------------------!
+      zetaa = zetasmall
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the function and its derivative. ----------------------------------------!
+      zeta0h   = zetaa * z0hoz
+      fh       = lnzoz0h - psih8(zetaa,stable) + psih8(zeta0h,stable)
+      dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaa,stable)
+      if (fh == 0.d0) then
+         funa  =  lnexp_min8
+         deriv =  0.d0
+      else
+         funa  = log(coeffi * zetaa * fh)
+         deriv = 1.d0 / zetaa + dfhdzeta / fh
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Copy just in case it fails at the first iteration. ---------------------------!
+      zetaz = zetaa
+      fun   = funa
+      !------------------------------------------------------------------------------------!
+
+
+
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+      if (debug) then
+         write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,5(1x,a,1x,es12.5))')                    &
+            '1STGSS: itn=',0,'bisection=',.false.,'zetaz=',zetaz,'fun=',fun,'fh=',fh       &
+                   ,'dfhdzeta=',dfhdzeta,'deriv=',deriv
+      end if
+      !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+      !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
+      !----- Enter Newton's method loop. --------------------------------------------------!
+      converged = .false.
+      newloop: do itn = 1, maxfpo/6
+         !---------------------------------------------------------------------------------!
+         !     Newton's method converges fast when it's on the right track, but there are  !
+         ! cases in which it becomes ill-behaved.  Two situations are known to cause       !
+         ! trouble:                                                                        !
+         ! 1.  If the derivative is tiny, the next guess can be too far from the actual    !
+         !     answer;                                                                     !
+         ! 2.  For this specific problem, when zeta is too close to zero.  In this case    !
+         !     the derivative will tend to infinity at this point and Newton's method is   !
+         !     not going to perform well and can potentially enter in a weird behaviour or !
+         !     lead to the wrong answer.  In any case, so we rather go with bisection.     !
+         !---------------------------------------------------------------------------------!
+         if (abs(deriv) < toler8) then
+            exit newloop
+         elseif(stable .and. (zetaz - fun/deriv < zetamin)) then
+            exit newloop
+         elseif((.not. stable) .and. (zetaz - fun/deriv > zetamax)) then
+            exit newloop
+         end if
+
+         !----- Copying the previous guess ------------------------------------------------!
+         zetaa = zetaz
+         funa  = fun
+         !----- New guess, its function and derivative evaluation -------------------------!
+         zetaz    = zetaa - fun/deriv
+         zeta0h   = zetaz * z0hoz
+         fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
+         dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaz,stable)
+         if (fh == 0.d0) then
+            fun   =  lnexp_min8
+            deriv =  0.d0
+         else
+            fun   = log(coeffi * zetaz * fh)
+            deriv = 1.d0 / zetaz + dfhdzeta / fh
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         if (debug) then
+            write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,5(1x,a,1x,es12.5))')                 &
+               'NEWTON: itn=',itn,'bisection=',.false.,'zetaz=',zetaz,'fun=',fun,'fh=',fh  &
+              ,'dfhdzeta=',dfhdzeta,'deriv=',deriv
+         end if
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         converged = abs(zetaz-zetaa) < toler8 * abs(zetaz)
+
+         if (converged) then
+            zoobukhov_ustar8 = 5.d-1 * (zetaa+zetaz)
+            return
+         elseif (fun == 0.d0) then !---- Converged by luck. -------------------------------!
+            zoobukhov_ustar8 = zetaz
+            return
+         end if
+      end do newloop
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If we reached this point then it's because Newton's method failed or it has    !
+      ! become too dangerous.  We use the Regula Falsi (Illinois) method, which is just a  !
+      ! fancier bisection.  For this we need two guesses, and the guesses must have        !
+      ! opposite signs.                                                                    !
+      !------------------------------------------------------------------------------------!
+      if (funa * fun < 0.d0) then
+         funz  = fun
+         zside = .true. 
+      else
+         !----- zetaa becomes the minimum absolute value for searching. -------------------!
+         if (stable) then
+            zetaa  = zetamin
+         else
+            zetaa  = zetamax
+         end if
+         zeta0h = zetaa * z0hoz
+         fh     = lnzoz0h - psih8(zetaa,stable) + psih8(zeta0h,stable)
+         if (fh == 0.d0) then
+            funa = lnexp_min8
+         else
+            funa = log ( coeffi * zetaa * fh )
+         end if
+         !---------------------------------------------------------------------------------!
+
+         !------ Use a multiplicative function. -------------------------------------------!
+         delta = 1.d1
+         zetaz = zetaa
+         zside = .false.
+         zgssloop: do itp=1,maxfpo
+            zetaz = zetaz * delta
+            zeta0h   = zetaz * z0hoz
+            fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
+            if (fh == 0.d0) then
+               funz  = lnexp_min8
+            else
+               funz  = log ( coeffi * zetaz * fh )
+            end if
+            zside    = funa * funz < 0.d0
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            if (debug) then
+               write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,6(1x,a,1x,es12.5))')              &
+                  '2NDGSS: itp=',itp,'zside=',zside,'zetaa=',zetaa,'zetaz=',zetaz          &
+                 ,'funa=',funa,'funz=',funz,'fh=',fh,'delta=',delta
+            end if
+            !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+            !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+            if (zside) exit zgssloop
+         end do zgssloop
+         if (.not. zside) then
+            write (unit=*,fmt='(a)') '=================================================='
+            write (unit=*,fmt='(a)') '    No second guess for you...'
+            write (unit=*,fmt='(a)') '=================================================='
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar  =',zstar   ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'kuoust =',kuoustar,'coeff  =',coeff
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0h=',lnzoz0h ,'rib    =',rib
+            write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun     ,'delta  =',delta
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa   ,'funa   =',funa
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaz  =',zetaz   ,'funz   =',funz
+            write (unit=*,fmt='(a)') '=================================================='
+            call fatal_error('Failed finding the second guess for regula falsi'            &
+                            ,'zoobukhov_ustar8','canopy_air_coms.f90')
+         end if
+      end if
+
+      !----- Now we are ready to start the regula falsi method. ---------------------------!
+      bisloop: do itb=itn,maxfpo
+         zetae = (funz*zetaa-funa*zetaz)/(funz-funa)
+
+         !---------------------------------------------------------------------------------!
+         !     Now that we updated the guess, check whether they are really close. If so,  !
+         ! it converged, I can use this as my guess.                                       !
+         !---------------------------------------------------------------------------------!
+         converged = abs(zetae-zetaa) < toler8 * abs(zetae)
+         if (converged) exit bisloop
+
+         !------ Finding the new function -------------------------------------------------!
+         zeta0h   = zetae * z0hoz
+         fh       = lnzoz0h - psih8(zetae,stable) + psih8(zeta0h,stable)
+         if (fh == 0.d0) then
+            fun  =  lnexp_min8
+         else
+            fun  = log(coeffi * zetae * fh)
+         end if
+
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         if (debug) then
+            write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,6(1x,a,1x,es12.5))')                 &
+               'REGULA: itn=',itb,'bisection=',.true.,'zetaa=',zetaa,'zetaz=',zetaz        &
+               ,'fun=',fun,'funa=',funa,'funz=',funz,'fh=',fh
+         end if
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+
+         !------ Defining my new interval based on the intermediate value theorem. --------!
+         if (fun*funa < 0.d0 ) then
+            zetaz = zetae
+            funz  = fun
+            !----- If we are updating zside again, modify aside (Illinois method) ---------!
+            if (zside) funa = funa * 5.d-1
+            !----- We just updated zside, setting zside to true. --------------------------!
+            zside = .true.
+         else
+            zetaa = zetae
+            funa  = fun
+            !----- If we are updating aside again, modify aside (Illinois method) ---------!
+            if (.not. zside) funz = funz * 5.d-1
+            !----- We just updated aside, setting aside to true. --------------------------!
+            zside = .false.
+         end if
+      end do bisloop
+
+      if (.not.converged .or.                                                              &
+          (stable .and. zetae < 0.d0) .or. (.not. stable .and. zetae > 0.d0)) then
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') ' Zeta finding didn''t converge!!!'
+         write (unit=*,fmt='(a,1x,i5,1x,a)') ' I gave up, after',maxfpo,'iterations...'
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') ' Input values.'
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'kuoustar        [   ---] =',kuoustar
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar           [     m] =',zstar
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0h           [   ---] =',zoz0h
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0h         [   ---] =',lnzoz0h
+         write (unit=*,fmt='(a,1x,l1)'    ) 'stable          [   T|F] =',stable
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') ' Last iteration outcome (zoobukhov8 values).'
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zetaa           [   ---] =',zetaa
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zetaz           [   ---] =',zetaz
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [   ---] =',fun
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'fh              [   ---] =',fh
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [   ---] =',funa
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [   ---] =',funz
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'deriv           [   ---] =',deriv
+         write (unit=*,fmt='(a,1x,es12.4)') 'toler           [   ---] =',toler8
+         write (unit=*,fmt='(a,1x,es12.4)') 'error           [   ---] ='                   &
+                                                            ,abs(zetaz-zetaa)/abs(zetaz)
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zetae           [   ---] =',zetae
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+
+         call fatal_error('Zeta didn''t converge, giving up!!!'                            &
+                         ,'zoobukhov_ustar8','canopy_air_coms.f90')
+      else
+
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         if (debug) then
+            write(unit=89,fmt='(a,1x,i5,1x,a,1x,l1,1x,6(1x,a,1x,es12.5))')                 &
+               'ANSWER: itn=',itb,'converged=',.true.,'zetaa=',zetaa,'zetaz=',zetaz        &
+               ,'fun=',fun,'funa=',funa,'funz=',funz,'fh=',fh
+         end if
+         !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+         !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
+         zoobukhov_ustar8 = zetae
+      end if
+
+      return
+   end function zoobukhov_ustar8
    !=======================================================================================!
    !=======================================================================================!
 end module canopy_air_coms

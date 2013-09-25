@@ -45,7 +45,7 @@ gtitle <<- function( main      = NULL
    #---------------------------------------------------------------------------------------#
    if ("par.user" %in% ls()){
       if ("mar" %in% names(par.user)){
-         mar = par.user(mar)
+         mar = par.user$mar
       }else{
          mar = c(5.1,4.1,4.1,2.1)
       }#end if

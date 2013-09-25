@@ -125,7 +125,9 @@ subroutine init_met_drivers
                               , met_interp        & ! intent(out)
                               , ed_met_driver_db  & ! intent(out)
                               , no_ll             & ! intent(out)
-                              , have_co2          ! ! intent(out)
+                              , has_co2           & ! intent(out)
+                              , has_ustar         ! ! intent(out)
+   use canopy_air_coms , only : isfclyrm          ! ! intent(in)
    use ed_state_vars   , only : edgrid_g          & ! structure
                               , edtype            & ! structure
                               , polygontype       ! ! structure
@@ -149,7 +151,8 @@ subroutine init_met_drivers
    end do
 
    !----- Read the information for each format. -------------------------------------------!
-   have_co2=.false.
+   has_co2   = .false.
+   has_ustar = .false.
    formloop: do iformat = 1,nformats
       !----- Finding the met driver boundaries. -------------------------------------------!
       westedge  = met_xmin(iformat) - 0.5 * met_dx(iformat)
@@ -268,10 +271,16 @@ subroutine init_met_drivers
                   cgrid%metinput(ipy)%tmp = huge(1.)
 
                case ('co2')     !----- CO2 mixing ratio. ---------------------- [    ppm] -!
-                  have_co2=.true.
+                  has_co2 = .true.
                   nullify(cgrid%metinput(ipy)%co2)
                   allocate(cgrid%metinput(ipy)%co2(mem_size))
                   cgrid%metinput(ipy)%co2 = huge(1.)
+
+               case ('ustar')   !----- Friction velocity. --------------------- [    m/s] -!
+                  has_ustar = .true.
+                  nullify(cgrid%metinput(ipy)%atm_ustar)
+                  allocate(cgrid%metinput(ipy)%atm_ustar(mem_size))
+                  cgrid%metinput(ipy)%atm_ustar = huge(1.)
 
                case ('lat','lon') !---- Latitude and longitude: skip them. ----------------!
                case default
@@ -283,6 +292,17 @@ subroutine init_met_drivers
          end do polyloop
       end do gridloop
    end do formloop
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Friction velocity is not necessary (and is actually deprecated), but if the user  !
+   ! wants to run the model with prescribed u*, then they must provide it.                 !
+   !---------------------------------------------------------------------------------------!
+   if ( isfclyrm == 0 .and. .not. has_ustar) then
+      call fatal_error('You must provide u* if you want to run with prescribed u*!!!'      &
+                      ,'init_met_drivers','ed_met_driver.f90')
+   end if 
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_met_drivers
@@ -788,7 +808,8 @@ subroutine update_met_drivers(cgrid)
                                    , met_nv            & ! intent(in)
                                    , met_interp        & ! intent(in)
                                    , met_vars          & ! intent(in)
-                                   , have_co2          & ! intent(in)
+                                   , has_co2           & ! intent(in)
+                                   , has_ustar         & ! intent(in)
                                    , initial_co2       & ! intent(in)
                                    , dt_radinterp      & ! intent(in)
                                    , atm_tmp_intercept & ! intent(in)
@@ -802,7 +823,8 @@ subroutine update_met_drivers(cgrid)
    use ed_misc_coms         , only : simtime           & ! intent(in)
                                    , current_time      & ! intent(in)
                                    , dtlsm             ! ! intent(in)
-   use canopy_air_coms      , only : ubmin             ! ! intent(in)
+   use canopy_air_coms      , only : ubmin             & ! intent(in)
+                                   , ustmin            ! ! intent(in)
    use canopy_radiation_coms, only : cosz_min          ! ! intent(in)
    use consts_coms          , only : day_sec           & ! intent(in)
                                    , t00               & ! intent(in)
@@ -1466,6 +1488,16 @@ subroutine update_met_drivers(cgrid)
                                       + cgrid%metinput(ipy)%vgrd(mprev)**2
                end do
 
+            case('ustar')   !----- Prescribed u*. ----------------------------- [    m/s] -!
+               !---------------------------------------------------------------------------!
+               !     This is used only when the user wants u* to be prescribed instead of  !
+               ! calculated.  We add the square of the u* so we integrate/interpolate      !
+               ! momentum flux.                                                            !
+               !---------------------------------------------------------------------------!
+               do ipy = 1,cgrid%npolygons
+                  cgrid%met(ipy)%atm_ustar = cgrid%metinput(ipy)%atm_ustar(mprev)**2
+               end do
+
             case('sh')      !----- Specific humidity. ------------------------- [kg/kg_a] -!
                !---------------------------------------------------------------------------!
                !     Here we will just get the specific humidity. But soon we will check   !
@@ -1653,8 +1685,8 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%vels =  cgrid%met(ipy)%vels                               &
-                                      +  ( cgrid%metinput(ipy)%ugrd(mnext) * wnext         &
-                                         + cgrid%metinput(ipy)%ugrd(mprev) * wprev )**2
+                                      +  cgrid%metinput(ipy)%ugrd(mnext) ** 2 * wnext      &
+                                      +  cgrid%metinput(ipy)%ugrd(mprev) ** 2 * wprev
                end do
 
             case('vgrd')    !----- Meridional wind. --------------------------- [    m/s] -!
@@ -1665,8 +1697,21 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%vels = cgrid%met(ipy)%vels                                &
-                                      + ( cgrid%metinput(ipy)%vgrd(mnext) * wnext          &
-                                        + cgrid%metinput(ipy)%vgrd(mprev) * wprev )**2
+                                      + cgrid%metinput(ipy)%vgrd(mnext) **2 * wnext        &
+                                      + cgrid%metinput(ipy)%vgrd(mprev) **2 * wprev
+               enddo
+
+            case('ustar')   !----- Friction velocity. ------------------------- [    m/s] -!
+               !---------------------------------------------------------------------------!
+               !     Here we add the square of the friction velocity, so in the end        !
+               ! atm_ustar will have (twice) the turbulent kinetic energy.  This way if we !
+               ! interpolate in the vertical for the multi-site case, we interpolate       !
+               ! energy.                                                                   !
+               !---------------------------------------------------------------------------!
+               do ipy = 1,cgrid%npolygons
+                  cgrid%met(ipy)%atm_ustar =                                               &
+                                           cgrid%metinput(ipy)%atm_ustar(mnext)**2 * wnext &
+                                         + cgrid%metinput(ipy)%atm_ustar(mprev)**2 * wprev
                enddo
             case('sh')      !----- Specific humidity. ------------------------- [kg/kg_a] -!
                do ipy = 1,cgrid%npolygons
@@ -2195,7 +2240,7 @@ subroutine update_met_drivers(cgrid)
    !---------------------------------------------------------------------------------------!
    polyloop: do ipy = 1,cgrid%npolygons
       !----- CO2 (only if it hasn't been read). -------------------------------------------!
-      if (.not. have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
+      if (.not. has_co2) cgrid%met(ipy)%atm_co2 = initial_co2
       !------------------------------------------------------------------------------------!
 
       !----- Set the default Exner function from pressure. --------------------------------!
@@ -2296,18 +2341,56 @@ subroutine update_met_drivers(cgrid)
       !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ---------!
       cgrid%met(ipy)%vels = sqrt(max(0.0,cgrid%met(ipy)%vels))
 
+
+      !------------------------------------------------------------------------------------!
+      !     Normally u* shouldn't be part of the met driver, so we check whether this is a !
+      ! test run.                                                                          !
+      !------------------------------------------------------------------------------------!
+      if (has_ustar) then
+         !----- u*.  At this point u* is u*^2, take the square root. ----------------------!
+         cgrid%met(ipy)%atm_ustar = sqrt(max(ustmin*ustmin,cgrid%met(ipy)%atm_ustar))
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No u* from met driver, assign a dummy value. ------------------------------!
+         cgrid%met(ipy)%atm_ustar = ustmin
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites
-         
-         !----- Vels. The site level is also still in kinetic energy form. ----------------!
-         cpoly%met(isi)%vels        = sqrt(max(0.0,cpoly%met(isi)%vels))
-         cpoly%met(isi)%vels_stab   = max(ubmin,cpoly%met(isi)%vels)
-         cpoly%met(isi)%vels_unstab = max(ubmin,cpoly%met(isi)%vels)
-         
-         !----- CO2.  In case we used the namelist, use that value. -----------------------!
-         if (.not.have_co2) cpoly%met(isi)%atm_co2 = initial_co2
 
-         
+         !----- Vels. The site level is also still in kinetic energy form. ----------------!
+         cpoly%met(isi)%vels        = sqrt(max(ubmin*ubmin,cpoly%met(isi)%vels))
+         cpoly%met(isi)%vels_stab   = cpoly%met(isi)%vels
+         cpoly%met(isi)%vels_unstab = cpoly%met(isi)%vels
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- CO2.  In case we used the namelist, use that value. -----------------------!
+         if (.not. has_co2) cpoly%met(isi)%atm_co2 = initial_co2
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Normally u* shouldn't be part of the met driver, so we check whether this   !
+         ! is a test run.                                                                  !
+         !---------------------------------------------------------------------------------!
+         if (has_ustar) then
+            !----- u*.  At this point u* is u*^2, take the square root. -------------------!
+            cpoly%met(isi)%atm_ustar = sqrt(max(ustmin*ustmin,cpoly%met(isi)%atm_ustar))
+            !------------------------------------------------------------------------------!
+         else
+            !----- No u* from met driver, assign a dummy value. ---------------------------!
+            cpoly%met(isi)%atm_ustar = ustmin
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !     We now find some derived properties.  In case several sites exist, the      !
          ! lapse rate was applied to pressure, temperature, and mixing ratio.  Then we     !
@@ -2736,31 +2819,33 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
       !----- Get the time series. ---------------------------------------------------------!
       select case (trim(met_vars(iformat,iv)))
       case('nbdsf')
-         cgrid%metinput(ipy)%nbdsf(ioa:ioz) = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%nbdsf(ioa:ioz)     = metvar(1:np,ilon,ilat)
       case('nddsf')
-         cgrid%metinput(ipy)%nddsf(ioa:ioz) = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%nddsf(ioa:ioz)     = metvar(1:np,ilon,ilat)
       case('vbdsf')
-         cgrid%metinput(ipy)%vbdsf(ioa:ioz) = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%vbdsf(ioa:ioz)     = metvar(1:np,ilon,ilat)
       case('vddsf')
-         cgrid%metinput(ipy)%vddsf(ioa:ioz) = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%vddsf(ioa:ioz)     = metvar(1:np,ilon,ilat)
       case('prate')
-         cgrid%metinput(ipy)%prate(ioa:ioz) = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%prate(ioa:ioz)     = metvar(1:np,ilon,ilat)
       case('dlwrf')
-         cgrid%metinput(ipy)%dlwrf(ioa:ioz) = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%dlwrf(ioa:ioz)     = metvar(1:np,ilon,ilat)
       case('pres')
-         cgrid%metinput(ipy)%pres(ioa:ioz)  = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%pres(ioa:ioz)      = metvar(1:np,ilon,ilat)
       case('hgt')
-         cgrid%metinput(ipy)%hgt(ioa:ioz)   = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%hgt(ioa:ioz)       = metvar(1:np,ilon,ilat)
       case('ugrd')
-         cgrid%metinput(ipy)%ugrd(ioa:ioz)  = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%ugrd(ioa:ioz)      = metvar(1:np,ilon,ilat)
       case('vgrd')
-         cgrid%metinput(ipy)%vgrd(ioa:ioz)  = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%vgrd(ioa:ioz)      = metvar(1:np,ilon,ilat)
+      case('ustar')
+         cgrid%metinput(ipy)%atm_ustar(ioa:ioz) = metvar(1:np,ilon,ilat)
       case('sh')
-         cgrid%metinput(ipy)%sh(ioa:ioz)    = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%sh(ioa:ioz)        = metvar(1:np,ilon,ilat)
       case('tmp')
-         cgrid%metinput(ipy)%tmp(ioa:ioz)   = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%tmp(ioa:ioz)       = metvar(1:np,ilon,ilat)
       case('co2')
-         cgrid%metinput(ipy)%co2(ioa:ioz)   = metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%co2(ioa:ioz)       = metvar(1:np,ilon,ilat)
       end select
       
    end do
@@ -2822,67 +2907,72 @@ subroutine transfer_ol_month(vname, frq, cgrid)
    select case (trim(vname))
    case ('nbdsf')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%nbdsf(ica:icz) = cgrid%metinput(ipy)%nbdsf(ifa:ifz)
+         cgrid%metinput(ipy)%nbdsf(ica:icz)      = cgrid%metinput(ipy)%nbdsf(ifa:ifz)
       end do
 
    case ('nddsf')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%nddsf(ica:icz) = cgrid%metinput(ipy)%nddsf(ifa:ifz)
+         cgrid%metinput(ipy)%nddsf(ica:icz)      = cgrid%metinput(ipy)%nddsf(ifa:ifz)
       end do
 
    case ('vbdsf')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%vbdsf(ica:icz) = cgrid%metinput(ipy)%vbdsf(ifa:ifz)
+         cgrid%metinput(ipy)%vbdsf(ica:icz)      = cgrid%metinput(ipy)%vbdsf(ifa:ifz)
       end do
 
    case ('vddsf')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%vddsf(ica:icz) = cgrid%metinput(ipy)%vddsf(ifa:ifz)
+         cgrid%metinput(ipy)%vddsf(ica:icz)      = cgrid%metinput(ipy)%vddsf(ifa:ifz)
       end do
 
    case ('prate')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%prate(ica:icz) = cgrid%metinput(ipy)%prate(ifa:ifz)
+         cgrid%metinput(ipy)%prate(ica:icz)      = cgrid%metinput(ipy)%prate(ifa:ifz)
       end do
 
    case ('dlwrf')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%dlwrf(ica:icz) = cgrid%metinput(ipy)%dlwrf(ifa:ifz)
+         cgrid%metinput(ipy)%dlwrf(ica:icz)      = cgrid%metinput(ipy)%dlwrf(ifa:ifz)
       end do
 
    case ('pres')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%pres(ica:icz)  = cgrid%metinput(ipy)%pres(ifa:ifz)
+         cgrid%metinput(ipy)%pres(ica:icz)       = cgrid%metinput(ipy)%pres(ifa:ifz)
       end do
 
    case ('hgt')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%hgt(ica:icz)   = cgrid%metinput(ipy)%hgt(ifa:ifz)
+         cgrid%metinput(ipy)%hgt(ica:icz)        = cgrid%metinput(ipy)%hgt(ifa:ifz)
       end do
 
    case ('ugrd')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%ugrd(ica:icz)  = cgrid%metinput(ipy)%ugrd(ifa:ifz)
+         cgrid%metinput(ipy)%ugrd(ica:icz)       = cgrid%metinput(ipy)%ugrd(ifa:ifz)
       end do
 
    case ('vgrd')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%vgrd(ica:icz)  = cgrid%metinput(ipy)%vgrd(ifa:ifz)
+         cgrid%metinput(ipy)%vgrd(ica:icz)       = cgrid%metinput(ipy)%vgrd(ifa:ifz)
+      end do
+
+   case ('ustar')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%atm_ustar(ica:icz)  = cgrid%metinput(ipy)%atm_ustar(ifa:ifz)
       end do
 
    case ('sh')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%sh(ica:icz)    = cgrid%metinput(ipy)%sh(ifa:ifz)
+         cgrid%metinput(ipy)%sh(ica:icz)         = cgrid%metinput(ipy)%sh(ifa:ifz)
       end do
 
    case ('tmp')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%tmp(ica:icz)   = cgrid%metinput(ipy)%tmp(ifa:ifz)
+         cgrid%metinput(ipy)%tmp(ica:icz)        = cgrid%metinput(ipy)%tmp(ifa:ifz)
       end do
 
    case ('co2')
       do ipy=1,cgrid%npolygons
-         cgrid%metinput(ipy)%co2(ica:icz)   = cgrid%metinput(ipy)%co2(ifa:ifz)
+         cgrid%metinput(ipy)%co2(ica:icz)        = cgrid%metinput(ipy)%co2(ifa:ifz)
       end do
 
    end select

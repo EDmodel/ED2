@@ -108,10 +108,12 @@ sombreado = function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z
    plot.window(xlim=xlim,ylim=ylim,log=plog, xaxs = xaxs, yaxs = yaxs, asp = asp)
 
    #----- Call the function that actually plots the data. ---------------------------------#
-   if (interp){
+   if (interp && R.Version()$major == "3"){
+      .filled.contour(x=x,y=y,z=z,levels=levels,col=col)
+   }else if(interp){
       .Internal(filledcontour(as.double(x), as.double(y), z, as.double(levels),col = col))
    }else{
-      image(x=x,y=y,z=z,breaks=levels,col=col)
+      image(x=x,y=y,z=z,breaks=levels,col=col,add=TRUE)
    }#end if
    #----- Check whether there are especial instructions for plotting the axes. ------------#
    if (missing(plot.axes)) {

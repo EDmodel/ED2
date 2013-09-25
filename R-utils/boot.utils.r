@@ -554,3 +554,93 @@ boot.collapse <<- function(x){
 }#end function boot.collapse
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This is a wrapper that computes multiple statistics using bootstrapping.            #
+#------------------------------------------------------------------------------------------#
+boot.six.summary <<- function(x,R,conf=0.95){
+
+   #------ Initialise data with NA in case the function fails. ----------------------------#
+   ans = rep(NA,times=n.six.summary)
+   names(ans) = six.summary.names
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Delete non-finite values. ------------------------------------------------------#
+   if (length(x) != 0) x  = x[is.finite(x)]
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Run bootstrap only if there are data.                                            #
+   #---------------------------------------------------------------------------------------#
+   if (length(x) > 0){
+      #------ Run bootstrap and get the estimate of the four moments. ---------------------#
+      bo       = boot(data=x,statistic=boot.moment,R=R)
+      expected = bo$t0[1]
+      variance = bo$t0[2]
+      skewness = bo$t0[3]
+      kurtosis = bo$t0[4]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find confidence intervals (silent R because boot.ci has annoying messages). --#
+      bci = shhh(fun=boot.ci,boot.out=bo,index=c(1,2),conf=conf,type=c("stud","perc"))
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Check whether confidence interval worked.                                      #
+      #------------------------------------------------------------------------------------#
+      if ("try-error" %in% is(bci)){
+         ci.lower = quantile(x=bo$t[,1],prob=0.5*(1.0-conf),na.rm=TRUE)
+         ci.upper = quantile(x=bo$t[,1],prob=0.5*(1.0+conf),na.rm=TRUE)
+      }else if(length(bci$student) == 5 && all(is.finite(bci$student))){
+         ci.lower = bci$student[4]
+         ci.upper = bci$student[5]
+      }else if(length(bci$percent) == 5 && all(is.finite(bci$percent))){
+         ci.lower = bci$percent[4]
+         ci.upper = bci$percent[5]
+      }else{
+         ci.lower = quantile(x=bo$t[,1],prob=0.5*(1.0-conf),na.rm=TRUE)
+         ci.upper = quantile(x=bo$t[,1],prob=0.5*(1.0+conf),na.rm=TRUE)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Standardise non-finite values to NA. -----------------------------------------#
+      expected = ifelse(is.finite(expected),expected,NA)
+      variance = ifelse(is.finite(variance),variance,NA)
+      skewness = ifelse(is.finite(skewness),skewness,NA)
+      kurtosis = ifelse(is.finite(kurtosis),kurtosis,NA)
+      ci.lower = ifelse(is.finite(ci.lower),ci.lower,NA)
+      ci.upper = ifelse(is.finite(ci.upper),ci.upper,NA)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Make sure statistics go to the right place. ----------------------------------#
+      ans[match("expected",six.summary.names)] = expected
+      ans[match("variance",six.summary.names)] = variance
+      ans[match("skewness",six.summary.names)] = skewness
+      ans[match("kurtosis",six.summary.names)] = kurtosis
+      ans[match("ci.lower",six.summary.names)] = ci.lower
+      ans[match("ci.upper",six.summary.names)] = ci.upper
+      #------------------------------------------------------------------------------------#
+   }#end if (length(x) == 0)
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function boot.six.summary
+#==========================================================================================#
+#==========================================================================================#

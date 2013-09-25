@@ -3679,6 +3679,7 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Pressure                   : ',rk4site%atm_prss
    write (unit=*,fmt='(a,1x,es12.4)') ' Exner function             : ',rk4site%atm_exner
    write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed                 : ',rk4site%vels
+   write (unit=*,fmt='(a,1x,es12.4)') ' Prescribed u*              : ',rk4site%atm_ustar
    write (unit=*,fmt='(a,1x,es12.4)') ' Height                     : ',rk4site%geoht
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux         : ',rk4site%pcpg
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux         : ',rk4site%qpcpg

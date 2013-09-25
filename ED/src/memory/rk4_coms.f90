@@ -358,6 +358,7 @@ module rk4_coms
       real(kind=8), dimension(n_pft)  :: green_leaf_factor
       real(kind=8)                    :: atm_rhos
       real(kind=8)                    :: vels
+      real(kind=8)                    :: atm_ustar
       real(kind=8)                    :: atm_enthalpy
       real(kind=8)                    :: atm_tmp_zcan
       real(kind=8)                    :: atm_tmp

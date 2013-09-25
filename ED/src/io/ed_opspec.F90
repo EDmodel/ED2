@@ -1993,9 +1993,9 @@ end do
       ifaterr = ifaterr +1
    end select
 
-   if (isfclyrm < 1 .or. isfclyrm > 5) then
+   if (isfclyrm < 0 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISFCLYRM, it must be between 1 and 5. Yours is set to',isfclyrm,'...'
+        'Invalid ISFCLYRM, it must be between 0 and 4. Yours is set to',isfclyrm,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

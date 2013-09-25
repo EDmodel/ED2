@@ -765,6 +765,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Size + Age + 5 PFTs"
                                                    )#end names
                                        )#end list
+   flagvar[["iustar"]]           = list( descr  = "Friction Vel."
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("Prescribed","Predicted")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1026,10 +1031,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(     6,    14,          20)
          nz     = c(     8,    15,          21)
       }else if (lenici == 22){
-         nparms = 2
-         param  = c("icanrad","crown.mod")
-         na     = c(       13,         21)
-         nz     = c(       14,         22)
+         nparms = 3
+         param  = c("met.forcing","iustar","icanturb")
+         na     = c(            6,      14,        21)
+         nz     = c(            8,      15,        22)
       }else if (lenici == 23){
          nparms = 3
          param  = c("met.forcing","iphen.scheme","include.fire")

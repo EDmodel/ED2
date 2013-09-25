@@ -315,10 +315,10 @@ module canopy_struct_dynamics
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
-                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
-                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
-                      ,csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
+                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
+                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
+                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -397,10 +397,10 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
-                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
-                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
-                      ,csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
+                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
+                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
+                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -603,10 +603,10 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
-                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
-                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
-                      ,csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
+                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
+                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
+                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -1011,10 +1011,10 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa),cmet%vels     &
-                      ,csite%rough(ipa),csite%ustar(ipa),csite%tstar(ipa),estar            &
-                      ,csite%qstar(ipa),csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
-                      ,csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
+                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
+                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
+                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -1583,9 +1583,9 @@ module canopy_struct_dynamics
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
-                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
-                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
+                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -1652,9 +1652,9 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
-                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
-                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
+                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -1856,9 +1856,9 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
-                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
-                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
+                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -2258,9 +2258,9 @@ module canopy_struct_dynamics
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%vels        &
-                       ,initp%rough,initp%ustar,initp%tstar,initp%estar,initp%qstar        &
-                       ,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
+                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -2627,26 +2627,27 @@ module canopy_struct_dynamics
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,enthalpy_atm,shv_atm,co2_atm,theta_can,enthalpy_can       &
-                      ,shv_can,co2_can,zref,dheight,uref,rough,ustar,tstar,estar,qstar     &
-                      ,cstar,zeta,rib,ggbare)
-      use consts_coms     , only : grav          & ! intent(in)
-                                 , vonk          & ! intent(in)
-                                 , epim1         & ! intent(in)
-                                 , halfpi        ! ! intent(in)
-      use canopy_air_coms , only : isfclyrm      & ! intent(in)
-                                 , ustmin        & ! intent(in)
-                                 , bl79          & ! intent(in)
-                                 , csm           & ! intent(in)
-                                 , csh           & ! intent(in)
-                                 , dl79          & ! intent(in)
-                                 , ribmax        & ! intent(in)
-                                 , tprandtl      & ! intent(in)
-                                 , z0moz0h       & ! intent(in)
-                                 , z0hoz0m       & ! intent(in)
-                                 , psim          & ! function
-                                 , psih          & ! function
-                                 , zoobukhov     ! ! function
-      use rk4_coms        , only : rk4_tolerance ! ! intent(in)
+                      ,shv_can,co2_can,zref,dheight,atm_ustar,uref,rough,ustar,tstar,estar &
+                      ,qstar,cstar,zeta,rib,ggbare)
+      use consts_coms     , only : grav            & ! intent(in)
+                                 , vonk            & ! intent(in)
+                                 , epim1           & ! intent(in)
+                                 , halfpi          ! ! intent(in)
+      use canopy_air_coms , only : isfclyrm        & ! intent(in)
+                                 , ustmin          & ! intent(in)
+                                 , bl79            & ! intent(in)
+                                 , csm             & ! intent(in)
+                                 , csh             & ! intent(in)
+                                 , dl79            & ! intent(in)
+                                 , ribmax          & ! intent(in)
+                                 , tprandtl        & ! intent(in)
+                                 , z0moz0h         & ! intent(in)
+                                 , z0hoz0m         & ! intent(in)
+                                 , psim            & ! function
+                                 , psih            & ! function
+                                 , zoobukhov       & ! function
+                                 , zoobukhov_ustar ! ! function
+      use rk4_coms        , only : rk4_tolerance   ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=4), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
@@ -2659,6 +2660,7 @@ module canopy_struct_dynamics
       real(kind=4), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
       real(kind=4), intent(in)  :: zref         ! Height at reference point     [        m]
       real(kind=4), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
+      real(kind=4), intent(in)  :: atm_ustar    ! prescribed u*                 [      m/s]
       real(kind=4), intent(in)  :: uref         ! Wind speed at reference hgt.  [      m/s]
       real(kind=4), intent(in)  :: rough        ! Roughness                     [        m]
       real(kind=4), intent(out) :: ustar        ! U*, friction velocity         [      m/s]
@@ -2677,6 +2679,7 @@ module canopy_struct_dynamics
       real(kind=4)              :: lnzoz0h      ! ln[zref/rough(heat)]          [    -----]
       real(kind=4)              :: c3           ! aux. coefficient              [    -----]
       real(kind=4)              :: uuse         ! Wind for when (Rib > Ribmax)  [      m/s]
+      real(kind=4)              :: kuoustar     ! k * u / u*
       !----- Local variables, used by L79. ------------------------------------------------!
       real(kind=4)              :: a2           ! Drag coefficient in neutral conditions
       real(kind=4)              :: c1           ! a2 * vels
@@ -2750,6 +2753,28 @@ module canopy_struct_dynamics
       ! chosen surface model.                                                              !
       !------------------------------------------------------------------------------------!
       select case (isfclyrm)
+      case (0)
+         !----- Use prescribed u* instead of calculating it. ------------------------------!
+         ustar    = max(ustmin,atm_ustar)
+         kuoustar = vonk * uref / ustar
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the dimensionless height. --------------------------------------------!
+         zeta   = zoobukhov_ustar(rib,zstar,rough,zoz0h,lnzoz0h,kuoustar,stable)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the dimensionless roughness. -----------------------------------------!
+         zeta0m = rough * zeta / zstar
+         zeta0h = z0hoz0m * zeta0m
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the coefficient to scale the other stars. ----------------------------!
+         c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
+         !---------------------------------------------------------------------------------!
+
       case (1)
 
          !----- Compute the a-square factor and the coefficient to find theta*. -----------!
@@ -2962,26 +2987,27 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,enthalpy_atm,shv_atm,co2_atm                             &
                        ,theta_can,enthalpy_can,shv_can,co2_can                             &
-                       ,zref,dheight,uref,rough,ustar,tstar,estar,qstar,cstar,zeta,rib     &
-                       ,ggbare)
-      use consts_coms     , only : grav8         & ! intent(in)
-                                 , vonk8         & ! intent(in)
-                                 , epim18        & ! intent(in)
-                                 , halfpi8       ! ! intent(in)
-      use canopy_air_coms , only : isfclyrm      & ! intent(in)
-                                 , ustmin8       & ! intent(in)
-                                 , bl798         & ! intent(in)
-                                 , csm8          & ! intent(in)
-                                 , csh8          & ! intent(in)
-                                 , dl798         & ! intent(in)
-                                 , ribmax8       & ! intent(in)
-                                 , tprandtl8     & ! intent(in)
-                                 , z0moz0h8      & ! intent(in)
-                                 , z0hoz0m8      & ! intent(in)
-                                 , psim8         & ! function
-                                 , psih8         & ! function
-                                 , zoobukhov8    ! ! function
-      use rk4_coms        , only : rk4eps        ! ! intent(in)
+                       ,zref,dheight,atm_ustar,uref,rough,ustar,tstar,estar,qstar,cstar    &
+                       ,zeta,rib,ggbare)
+      use consts_coms     , only : grav8            & ! intent(in)
+                                 , vonk8            & ! intent(in)
+                                 , epim18           & ! intent(in)
+                                 , halfpi8          ! ! intent(in)
+      use canopy_air_coms , only : isfclyrm         & ! intent(in)
+                                 , ustmin8          & ! intent(in)
+                                 , bl798            & ! intent(in)
+                                 , csm8             & ! intent(in)
+                                 , csh8             & ! intent(in)
+                                 , dl798            & ! intent(in)
+                                 , ribmax8          & ! intent(in)
+                                 , tprandtl8        & ! intent(in)
+                                 , z0moz0h8         & ! intent(in)
+                                 , z0hoz0m8         & ! intent(in)
+                                 , psim8            & ! function
+                                 , psih8            & ! function
+                                 , zoobukhov8       & ! function
+                                 , zoobukhov_ustar8 ! ! function
+      use rk4_coms        , only : rk4eps           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
@@ -2994,6 +3020,7 @@ module canopy_struct_dynamics
       real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
       real(kind=8), intent(in)  :: zref         ! Height at reference point     [        m]
       real(kind=8), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
+      real(kind=8), intent(in)  :: atm_ustar    ! Prescribed u*                 [      m/s]
       real(kind=8), intent(in)  :: uref         ! Wind speed at reference hgt.  [      m/s]
       real(kind=8), intent(in)  :: rough        ! Roughness                     [        m]
       real(kind=8), intent(out) :: ustar        ! U*, friction velocity         [      m/s]
@@ -3012,6 +3039,7 @@ module canopy_struct_dynamics
       real(kind=8)              :: lnzoz0h      ! ln[zref/rough(heat)]          [    -----]
       real(kind=8)              :: c3           ! aux. coefficient              [    -----]
       real(kind=8)              :: uuse         ! Wind for when (Rib > Ribmax)  [      m/s]
+      real(kind=8)              :: kuoustar     ! k * u / u*
       !----- Local variables, used by L79. ------------------------------------------------!
       real(kind=8)              :: a2           ! Drag coefficient in neutral conditions
       real(kind=8)              :: c1           ! a2 * vels
@@ -3085,6 +3113,29 @@ module canopy_struct_dynamics
       ! chosen surface model.                                                              !
       !------------------------------------------------------------------------------------!
       select case (isfclyrm)
+      case (0)
+         !----- Use prescribed u* instead of calculating it. ------------------------------!
+         ustar    = max(ustmin8,atm_ustar)
+         kuoustar = vonk8 * uref / ustar
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the dimensionless height. --------------------------------------------!
+         zeta   = zoobukhov_ustar8(rib,zstar,rough,zoz0h,lnzoz0h,kuoustar,stable)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the dimensionless roughness. -----------------------------------------!
+         zeta0m = rough * zeta / zstar
+         zeta0h = z0hoz0m8 * zeta0m
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the coefficient to scale the other stars. ----------------------------!
+         c3    = vonk8                                                                     &
+               / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
+         !---------------------------------------------------------------------------------!
+
       case (1)
 
          !----- Compute the a-square factor and the coefficient to find theta*. -----------!

@@ -3,7 +3,7 @@
 #     Below are several colour palettes based on a single colour, useful for when one      #
 # wants to plot net change.  You must say which colours to use for negative and positive.  #
 #------------------------------------------------------------------------------------------#
-two.palettes <<- function(x,n=20,white=1,low="blue",high="orangered"){
+two.palettes <<- function(x,n=20,white=1,low="blue",high="orangered",zero=NULL){
 
    #----- Make sure the name has an appropriate hue. --------------------------------------#
    bye = stopifnot(low  %in% c("orangered","green","brown","grey","blue","purple"))
@@ -11,10 +11,15 @@ two.palettes <<- function(x,n=20,white=1,low="blue",high="orangered"){
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Make default background colour in case none is given. ---------------------------#
+   if (is.null(zero)) zero = background
+   #---------------------------------------------------------------------------------------#
+
+
 
    #----- If x is a list, we use lapply to return the information for each element. -------#
    if (is.list(x) && ! is.data.frame(x)){
-      ans = lapply(X=x,FUN=two.palettes,n=n,white=white,low=low,high=high)
+      ans = lapply(X=x,FUN=two.palettes,n=n,white=white,low=low,high=high,zero=zero)
    }else{
 
       #----- Break the values into bins, making 0 central. --------------------------------#
@@ -63,7 +68,7 @@ two.palettes <<- function(x,n=20,white=1,low="blue",high="orangered"){
       #----- Find the colours. ------------------------------------------------------------#
       col.low  = rev(hue.low(n=n.each))
       col.high = hue.high(n=n.each)
-      col.out  = c(col.low,rep(background,n.white),col.high)
+      col.out  = c(col.low,rep(zero,n.white),col.high)
       #------------------------------------------------------------------------------------#
 
 
@@ -118,7 +123,8 @@ hue.orangered <<- function(n,inv=FALSE){
 }#end hue.orangered
 #----- Green. -----------------------------------------------------------------------------#
 hue.green <<- function(n,inv=FALSE){
-   nodes     = c("darkolivegreen1","olivedrab3","chartreuse2","forestgreen","#004000")
+#   nodes     = c("darkolivegreen1","olivedrab3","chartreuse2","forestgreen","#004000")
+   nodes     = c("#BFF684","#85CF40","#5CB100","#4B9D10","#274E08")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
    rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y

@@ -59,7 +59,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
          this.dead = paste("dead",year4[y],sep=".")
          this.dbh  = paste("dbh" ,year4[y],sep=".")
          if (this.dead %in% names(datum)){
-            sel = datum[[this.dead]] == 1
+            sel = datum[[this.dead]] %==% 1
             datum$year.death[sel] = pmin(datum$year.death[sel],year4[y])
          }#end if
          alive                   = is.finite(datum[[this.dbh]])
@@ -366,7 +366,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
       sel.dbh                        = is.finite(dbh.now)
       sel.bye                        = datum$year.1st < yr & is.na(dbh.now)
       datum$year.goodbye[sel.dbh]    = Inf
-      if (any(is.na(sel.bye))) browser()
+      sel.bye                        = ifelse(is.na(sel.bye),TRUE,sel.bye)
       if (any(sel.bye)){
          datum$year.goodbye[sel.bye] = pmin(datum$year.goodbye[sel.bye],yr)
       }#end if
@@ -461,8 +461,10 @@ growth.proofer <<- function(datum,month2,year4){
       dtime.bef   [,y] = when[y]-when.bef
       lngrowth.bef[,y] = log(dbh.table[,y]/dbh.bef)/dtime.bef[,y]
       growth.bef  [,y] = (dbh.table[,y]-dbh.bef)/dtime.bef[,y]
-      efun             = ecdf(lngrowth.bef[,y])
-      quantile.bef[,y] = efun(lngrowth.bef[,y])
+      if (any(is.finite(lngrowth.bef[,y]))){
+         efun             = try(ecdf(lngrowth.bef[,y]))
+         quantile.bef[,y] = efun(lngrowth.bef[,y])
+      }#end if
       #------------------------------------------------------------------------------------#
    }#end for
    #---------------------------------------------------------------------------------------#
@@ -491,8 +493,10 @@ growth.proofer <<- function(datum,month2,year4){
       dtime.aft   [,y] = when.aft-when[y]
       lngrowth.aft[,y] = log(dbh.aft/dbh.table[,y])/dtime.aft[,y]
       growth.aft  [,y] = (dbh.aft-dbh.table[,y])/dtime.aft[,y]
-      efun             = ecdf(lngrowth.aft[,y])
-      quantile.aft[,y] = efun(lngrowth.aft[,y])
+      if (any(is.finite(lngrowth.aft[,y]))){
+         efun             = ecdf(lngrowth.aft[,y])
+         quantile.aft[,y] = efun(lngrowth.aft[,y])
+      }#end if
       #------------------------------------------------------------------------------------#
    }#end for
    #---------------------------------------------------------------------------------------#
@@ -507,9 +511,12 @@ growth.proofer <<- function(datum,month2,year4){
                    * (dtime.bef + dtime.aft) )
    quantile.leap = NA * lngrowth.leap
    for (y in 2:(n.years-1)){
-      efun              = ecdf(lngrowth.leap[,y])
-      quantile.leap[,y] = efun(lngrowth.leap[,y])
-   }#end for
+      if (any(is.finite(lngrowth.leap[,y]))){
+         efun              = ecdf(lngrowth.leap[,y])
+         quantile.leap[,y] = efun(lngrowth.leap[,y])
+      }#end if (any(lngrowth.leap[,y]))
+      #------------------------------------------------------------------------------------#
+   }#end for (y in 2:(n.years-1))
    #---------------------------------------------------------------------------------------#
 
 
@@ -663,13 +670,20 @@ growth.proofer <<- function(datum,month2,year4){
 #==========================================================================================#
 #      This function finds missing DBH data and fill them.  DBH is filled in 3 cases:      #
 # 1.  Spurious DBH had been discarded (wrong tree, bad point of measurements, tight vines, #
-#     measurement on buttress.                                                             #
+#     measurement on buttress).                                                            #
 # 2.  Tumbleweed effect: tree had bad coordinates and was not found in some surveys, but   #
 #     it was reported before and after                                                     #
-# 3.  Saint Exupery's baobah effect: recruit appeared out of nowhere with a DBH that is    #
-#     too big to be a true recruit.  We extrapolate the data.                              #
+# 3.  Saint Exupery's effect: recruit appeared out of nowhere with a DBH that is too big   #
+#     to be a true recruit.  We extrapolate the data based on growth rates after the tree  #
+#     is established.                                                                      #
 #------------------------------------------------------------------------------------------#
-dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
+dbh.gap.filler <<- function( datum
+                           , month2
+                           , year4
+                           , abs.y.sub     = Inf
+                           , gf.individual = FALSE
+                           , dbh.brks      = c(10,20,35,55,Inf)
+                           ){
 
    #----- Define some auxiliary variables. ------------------------------------------------#
    n.years      = length(year4)
@@ -695,7 +709,7 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
    #---------------------------------------------------------------------------------------#
    y.1st   = rep(NA,times=n.datum)
    dbh.1st = rep(NA,times=n.datum)
-   for (y in 1:n.years){
+   for (y in sequence(n.years)){
       this.dbh         = paste("dbh",year4[y],sep=".")
       dbh.ok           = is.finite(datum[[this.dbh]])
 
@@ -726,8 +740,19 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
       sel              = sel & is.na(y.1st)
       y.1st    [sel  ] = y
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (y in sequence(n.years))
    #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Get the mean DBH for each tree, then find to which size class it belongs.       #
+   #---------------------------------------------------------------------------------------#
+   dbh.mean = rowMeans(dbh.table,na.rm=TRUE)
+   dbh.size = as.integer(cut(x=dbh.mean,breaks=dbh.brks,right=FALSE))
+   dbh.size = ifelse(is.finite(dbh.size),dbh.size,max(dbh.size,na.rm=TRUE)+1)
+   #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -741,7 +766,7 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
    #     Find the growth rates between surveys and previous one with valid data, and       #
    # organise them by quantiles.                                                           #
    #---------------------------------------------------------------------------------------#
-   for (y in 2:n.years){
+   for (y in sequence(n.years)[-1]){
       dbh.bef  = rep(NA,times=n.datum)
       when.bef = rep(NA,times=n.datum)
       for (b in seq(from=1,y-1,+1)){
@@ -765,20 +790,57 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
 
 
    #---------------------------------------------------------------------------------------#
-   #     Find the mean growth rates for each tree.  Instead of trying to find growth rates #
-   # for each individual, we find median rates for each size and species class.            #
+   #     Find the mean growth rates for each tree.  First we find the median rates for     #
+   # each genus.                                                                           #
    #---------------------------------------------------------------------------------------#
-   mean.tree.lngrowth      = apply(X=lngrowth,MARGIN=1,FUN=mean,na.rm=TRUE)
-   mean.genus              = tapply( X     = mean.tree.lngrowth
-                                   , INDEX = datum$genus
-                                   , FUN   = mean
-                                   , na.rm = TRUE
-                                   )#end tapply
-   nok                     = ! is.finite(mean.genus)
-   mean.genus [nok]        = mean(mean.genus,na.rm=TRUE)
-   mean.genus              = pmax(mean.genus,lngrowth.min)
-   idx                     = match(datum$genus,names(mean.genus))
-   typical.tree.lngrowth   = mean.genus[idx]
+   mean.tree.lngrowth    = apply(X=lngrowth,MARGIN=1,FUN=mean,na.rm=TRUE)
+   mean.genus.size       = tapply( X     = mean.tree.lngrowth
+                                 , INDEX = list(datum$genus,dbh.size)
+                                 , FUN   = mean
+                                 , na.rm = TRUE
+                                 )#end tapply
+   mean.genus            = matrix( data     = tapply( X     = mean.tree.lngrowth
+                                                    , INDEX = datum$genus
+                                                    , FUN   = mean
+                                                    , na.rm = TRUE
+                                                    )#end tapply
+                                 , ncol     = ncol(mean.genus.size)
+                                 , nrow     = nrow(mean.genus.size)
+                                 , dimnames = dimnames(mean.genus.size)
+                                 , byrow    = FALSE
+                                 )#end matrix
+   mean.size             = matrix( data     = tapply( X     = mean.tree.lngrowth
+                                                    , INDEX = dbh.size
+                                                    , FUN   = mean
+                                                    , na.rm = TRUE
+                                                    )#end tapply
+                                 , ncol     = ncol(mean.genus.size)
+                                 , nrow     = nrow(mean.genus.size)
+                                 , dimnames = dimnames(mean.genus.size)
+                                 , byrow    = TRUE
+                                 )#end matrix
+   mean.genus.size       = ifelse( is.finite(mean.genus.size)
+                                 , mean.genus.size
+                                 , ifelse(is.finite(mean.size),mean.size,mean.genus)
+                                 )#end ifelse
+   mean.genus.size       = ifelse(mean.genus.size<lngrowth.min,lngrowth.min,mean.genus.size)
+   idx.genus             = match(datum$genus,dimnames(mean.genus.size)[[1]])
+   idx.size              = match(dbh.size   ,dimnames(mean.genus.size)[[2]])
+   typical.tree.lngrowth = mean.genus.size[cbind(idx.genus,idx.size)]
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     If the user prefer to fill using the individual typical growth rate, overwrite    #
+   # the data (unless the tree had only one valid measurement.                             #
+   #---------------------------------------------------------------------------------------#
+   if (gf.individual){
+      typical.tree.growth = ifelse( is.finite(mean.tree.lngrowth)
+                                  , mean.tree.lngrowth
+                                  , typical.tree.lngrowth
+                                  )#end ifelse
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -789,7 +851,7 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
    #---------------------------------------------------------------------------------------#
    datum$year.recruit = rep(Inf, times=n.datum)
    removed            = rep(FALSE,times=n.datum)
-   for (y in 1:n.years){
+   for (y in sequence(n.years)){
       dbh.label    = paste("dbh"   ,year4[y],sep=".")
       gf.dbh.label = paste("gf.dbh",year4[y],sep=".")
       notes.label  = paste("notes" ,year4[y],sep=".")
@@ -798,7 +860,9 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
 
       #----- Find out whether to fill the data. -------------------------------------------#
       measured                     = ( ! is.na(dbh.table[,y]))
-      datum$year.recruit[measured] = pmin(year4[y],datum$year.recruit[measured])
+      if (any(measured)){
+         datum$year.recruit[measured] = pmin(year4[y],datum$year.recruit[measured])
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
@@ -817,10 +881,7 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
       # been taken care of before, but after discarding some bad measurements a few other  #
       # pre-recruitment points may appear.                                                 #
       #------------------------------------------------------------------------------------#
-      bye     = ( is.finite(datum[[dbh.label]])
-                & datum[[dbh.label]] > 0
-                & is.na(dbh.table[,y])
-                )#end sel
+      bye     = datum[[dbh.label]] %>% 0 & is.na(dbh.table[,y])
       message = paste("dbh.",year4[y],"=",abs(datum[[dbh.label]])
                      ," is pre-recruitment thus removed",sep="")
       datum[[notes.label]][bye] = concatenate.message(datum[[notes.label]][bye]
@@ -884,12 +945,11 @@ dbh.gap.filler <<- function(datum,month2,year4,abs.y.sub=5){
       #     Choose the years to update.  It has to be NA and it has to be post-            #
       # recruitment to be accepted.                                                        #
       #------------------------------------------------------------------------------------#
-      good.guess   = is.finite(dbh.guess)
-      is.recruited = ( dbh.guess > ( dbh.min + dbh.min.toler )
-                     | ( is.finite(datum[[dbh.label]]) & datum[[dbh.label]] >= dbh.min )
+      is.recruited = ( dbh.guess %>% ( dbh.min + dbh.min.toler )
+                     | datum[[dbh.label]] %>=% dbh.min
                      | datum$year.recruit <= year4[y] )
       is.alive     = datum$year.goodbye > year4[y]
-      update.year  = dbh.miss & good.guess & is.recruited & is.alive
+      update.year  = dbh.miss & is.recruited & is.alive
       #------------------------------------------------------------------------------------#
 
 
