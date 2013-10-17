@@ -2,8 +2,8 @@
 #==========================================================================================#
 #     This function adds whiskers (error bars to an existing plot).                        #
 #------------------------------------------------------------------------------------------#
-whiskers = function(x,y,xleft=NULL,xright=NULL,ybottom=NULL,ytop=NULL,cap=0.015
-                   ,lty = 1, lwd = 1,col,...){
+whiskers <<- function(x,y,xleft=NULL,xright=NULL,ybottom=NULL,ytop=NULL,cap=0.015
+                     ,lty = 1, lwd = 1,col,...){
 
    #----- Make sure that x and y are present. ---------------------------------------------#
    if (missing(x) || missing(y)){

@@ -451,6 +451,90 @@ potq2pres <<- function(pres,theta,shv,alt){
 
 
 
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function computes the specific enthalpy [J/kg] given the temperature and        #
+# humidity (either mixing ratio or specific humidity).  If we assume that latent heat      #
+# of vaporisation is a linear function of temperature (equivalent to assume that           #
+# specific heats are constants and that the thermal expansion of liquids and solids are    #
+# negligible), then the saturation disappears and the enthalpy becomes a straight-         #
+# forward state function.  In case we are accounting for the water exchange only           #
+# (latent heat), set the specific humidity to 1.0 and multiply the result by water mass    #
+# or water flux.                                                                           #
+#------------------------------------------------------------------------------------------#
+tq2enthalpy <<- function(temp,humi,is.shv){
+   #---------------------------------------------------------------------------------------#
+   #     Copy specific humidity to shv.                                                    #
+   #---------------------------------------------------------------------------------------#
+   if (is.shv){
+      shv = humi
+   }else{
+      shv = humi / (humi + 1.0)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Enthalpy is the combination of dry and moist enthalpies, with the latter being    #
+   # allowed to change phase.                                                              #
+   #---------------------------------------------------------------------------------------#
+   ans = (1.0 - shv) * cpdry * temp + shv * cph2o * (temp - tsupercool.vap)
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function tq2enthalpy
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function computes the temperature [K] given the specific enthalpy and           #
+# humidity.  If we assume that latent heat of vaporisation is a linear function of         #
+# temperature (equivalent to assume that specific heats are constants and that the         #
+# thermal expansion of liquid and water are negligible), then the saturation disappears    #
+# and the enthalpy becomes a straightforward state function.  In case you are looking      #
+# at water exchange only, set the specific humidity to 1.0 and multiply the result by      #
+# the water mass or water flux.                                                            #
+#------------------------------------------------------------------------------------------#
+hq2temp <<- function (enthalpy,humi,is.shv){
+
+   #---------------------------------------------------------------------------------------#
+   #     Copy specific humidity to shv.                                                    #
+   #---------------------------------------------------------------------------------------#
+   if (is.shv){
+      shv = humi
+   }else{
+      shv = humi / (humi + 1.0)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Enthalpy is the combination of dry and moist enthalpies, with the latter being    #
+   # allowed to change phase.                                                              #
+   #---------------------------------------------------------------------------------------#
+   ans = ( enthalpy + shv * cph2o * tsupercool.vap ) / ( (1.0 - shv) * cpdry + shv * cph2o )
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function hq2temp
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
 #==========================================================================================#
 #==========================================================================================#
 #     This function finds the latent heat of vaporisation for a given temperature.  If we  #
@@ -543,6 +627,42 @@ alvli <<- function(temp){
 
 #==========================================================================================#
 #==========================================================================================#
+#     This function finds the virtual temperature based on the temperature and mixing      #
+# ratio. Two notes:                                                                        #
+# 1. It will use the condensation in case the total mixing ratio is provided.              #
+# 2. This can be used for virtual potential temperature, just give potential tempera-      #
+#    ture instead of temperature.                                                          #
+#------------------------------------------------------------------------------------------#
+virtt <<- function(temp,rvap,rtot,humi="mixr"){
+   #---------------------------------------------------------------------------------------#
+   #      Prefer using total mixing ratio, but if it isn't provided, then use vapour as    #
+   # total (no condensation).                                                              #
+   #---------------------------------------------------------------------------------------#
+   if (missing(rtot)) rtot = rvap
+   #---------------------------------------------------------------------------------------#
+
+   if (tolower(substring(humi,1,1)) %in% c("s","q")){
+      rvap = rvap / (1. - rtot)
+      rtot = rtot / (1. - rtot)
+   }#end if
+
+
+   #----- Convert using a generalised function. -------------------------------------------#
+   ans = temp * (1. + epi * rvap) / (1. + rtot)
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function virtt
+#==========================================================================================!
+#==========================================================================================!
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     This function finds the density based on the virtual temperature and the ideal  gas  #
 # law.  The only difference between this function and the one above is that here we        # 
 # provide vapour and total specific mass (specific humidity) instead of mixing ratio.      #
@@ -563,6 +683,77 @@ idealdenssh <<- function(pres,temp,qvpr,qtot=NULL){
    
    return(rhos)
 }#end if
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function computes the pressure at the top of the tower using hydrostatic and    #
+# average temperature and vapour pressure.                                                 #
+#------------------------------------------------------------------------------------------#
+tower.press <<- function(p0,e0,t0,z0,t1,e1,z1,hum="pvap"){
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Missing data points.                                                              #
+   #---------------------------------------------------------------------------------------#
+   if ( ( missing(e0) && missing(e1) ) || ( missing(t0) && missing(t1) ) ){
+      stop("At least one of e0/e1 and t0/t1 pairs must be provided.")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   if (tolower(hum) %in% c("pvap")){
+      #----- Check which data has been given. ---------------------------------------------#
+      if (missing(e0)){
+         eb = e1
+      }else if (missing(e1)){
+         eb = e0
+      }else{
+         eb = 0.5 * (e0 + e1)
+      }#end if
+      if (missing(t0)){
+         tb = t1
+      }else if (missing(t1)){
+         tb = t0
+      }else{
+         tb = 0.5 * (t0 + t1)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Estimate pressure. -----------------------------------------------------------#
+      p1 = (1-ep)*eb + (p0-(1-ep)*eb)*exp(-grav*(z1-z0)/(rdry*tb))
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Find average. ----------------------------------------------------------------#
+      if       (missing(e0) && missing(t0)){
+         tvb = t1 * (1. + epim1*e1)
+      }else if (missing(e0) && missing(t1)){
+         tvb = t0 * (1. + epim1*e1)
+      }else if (missing(e1) && missing(t0)){
+         tvb = t1 * (1. + epim1*e0)
+      }else if (missing(e1) && missing(t1)){
+         tvb = t0 * (1. + epim1*e0)
+      }else{
+         tvb = 0.5 * ( t0 * ( 1. + epim1 * e0 ) + t1 * ( 1. + epim1 * e1 ) )
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Estimate pressure. -----------------------------------------------------------#
+      p1 = p0 *exp(-grav*(z1-z0)/(rdry*tvb))
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(p1)
+}#end function reducedpress
 #==========================================================================================#
 #==========================================================================================#
 

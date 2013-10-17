@@ -124,7 +124,9 @@ hue.orangered <<- function(n,inv=FALSE){
 #----- Green. -----------------------------------------------------------------------------#
 hue.green <<- function(n,inv=FALSE){
 #   nodes     = c("darkolivegreen1","olivedrab3","chartreuse2","forestgreen","#004000")
-   nodes     = c("#BFF684","#85CF40","#5CB100","#4B9D10","#274E08")
+#   nodes     = c("#BFF684","#85CF40","#5CB100","#4B9D10","#274E08")
+#   nodes     = c("#BFF684","#85C040","#408010","#274E08")
+   nodes     = c("#C1E573","#89CC14","#4E7F0D","#152600")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
    rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y
@@ -160,10 +162,10 @@ hue.grey <<- function(n){
 }#end hue.orangered
 #----- Purple. ----------------------------------------------------------------------------#
 hue.purple <<- function(n){
-   nodes     = c("#DEE1FF","#B0BCFF","#7E76FF","#6B4EFF"
-                ,"#6337C9","#581BA2","#440084","#2A0053")
-   nodes     = c("#DEE1FF","#B0BCFF","#7E76FF","#6B4EFF"
-                ,"#581BA2","#2A0053")
+#   nodes     = c("#DEE1FF","#B0BCFF","#7E76FF","#6B4EFF"
+#                ,"#6337C9","#581BA2","#440084","#2A0053")
+#   nodes     = c("#DEE1FF","#7E76FF","#581BA2","#2A0053")
+   nodes     = c("#BEBADF","#7E76FF","#581BA2","#2A0053")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
    rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y

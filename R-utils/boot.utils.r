@@ -384,6 +384,7 @@ bhier.fortnight.mean <<- function(data.in,R,ci=0.95,...){
 
    #------ Find expected value and confidence intervals. ----------------------------------#
    boot.expected = sapply(X=boot.samples,FUN=mean,na.rm=TRUE)
+   boot.se       = sapply(X=boot.samples,FUN=sd  ,na.rm=TRUE)
    boot.qlow     = sapply(X=boot.samples,FUN=quantile,prob=0.5*(1.-ci),na.rm=TRUE)
    boot.qhigh    = sapply(X=boot.samples,FUN=quantile,prob=0.5*(1.+ci),na.rm=TRUE)
    #---------------------------------------------------------------------------------------#
@@ -396,12 +397,14 @@ bhier.fortnight.mean <<- function(data.in,R,ci=0.95,...){
    #---------------------------------------------------------------------------------------#
    empty    = rep(x = NA, times = yr.ftnight)
    expected = empty
+   std.err  = empty
    qlow     = empty
    qhigh    = empty
    expected[lab.ftnight] = ifelse(is.finite(boot.expected),boot.expected,NA)
+   std.err [lab.ftnight] = ifelse(is.finite(boot.se      ),boot.se      ,NA)
    qlow    [lab.ftnight] = ifelse(is.finite(boot.qlow    ),boot.qlow    ,NA)
    qhigh   [lab.ftnight] = ifelse(is.finite(boot.qhigh   ),boot.qhigh   ,NA)
-   ans      = list(call=call.now,expected=expected,qlow=qlow,qhigh=qhigh)
+   ans      = list(call=call.now,expected=expected,se=std.err,qlow=qlow,qhigh=qhigh)
    #---------------------------------------------------------------------------------------#
 
 

@@ -14,7 +14,7 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 here    = getwd()                               #   Current directory
-srcdir  = "/n/home00/mlongo/util/Rsc"          #   Script directory
+srcdir  = "/n/home00/mlongo/util/Rsc"           #   Script directory
 ibackground    = 0                              # Make figures compatible to background
                                                 # 0 -- white
                                                 # 1 -- black
@@ -34,17 +34,27 @@ rdata.suffix = "hourly_ed22.RData"
 
 #------------------------------------------------------------------------------------------#
 #     Site settings:                                                                       #
-# eort      -- first letter ("e" or "t")                                                   #
-# sites     -- site codes ("IATA")                                                         #
-# pch       -- site symbols                                                                #
-# col       -- background colour                                                           #
-# fg        -- foreground colour                                                           #
-# drya      -- beginning of the dry season (MM/DD) -- NA skips dry season                  #
-# dryz      -- end of the dry season       (MM/DD) -- NA skips dry season                  #
-#              dryz can be less than drya, in which case two rectangles are plotted        #
 #                                                                                          #
-# use.sites is a convenient way to select only a few sites.  If it is logical, then it     #
-# uses all sites, otherwise it will only use the entries listed in use.sites.              #
+# eort      -- first letter ("e" or "t")                                                   #
+#                                                                                          #
+# sites     -- a list of the sites that could be processed (see use.sites). Each list      #
+#              element is also a list with the following information:                      #
+#              iata      -- 3-letter code to refer to this site                            #
+#              desc      -- Full name of the site (for titles).                            #
+#              pch       -- site symbols                                                   #
+#              col       -- background colour                                              #
+#              fg        -- foreground colour                                              #
+#              drya      -- beginning of the dry season (MM/DD) -- NA skips dry season     #
+#              dryz      -- end of the dry season       (MM/DD) -- NA skips dry season     #
+#                           dryz can be less than drya, in which case two rectangles are   #
+#                           plotted.                                                       #
+#                                                                                          #
+# use.sites -- controls which sites are actually run.  It does different things depending  #
+#              on the type.                                                                #
+#              Logical   -- If TRUE, it uses all sites; FALSE doesn't make sense...        #
+#              Character -- vector with the 3-letter code ("iata") of selected sites       #
+#              Numeric   -- Site index.                                                    #
+#                                                                                          #
 #------------------------------------------------------------------------------------------#
 eort  = "t"
 n     = 0
@@ -53,8 +63,8 @@ n          = n + 1
 sites[[n]] = list( iata = "gyf"
                  , desc = "Paracou"
                  , pch  = 2
-                 , col  = "#520485"
-                 , fg   = "#39025D"
+                 , col  = "#3B24B3"
+                 , fg   = "#160959"
                  , drya = "08/31"
                  , dryz = "11/05"
                  )#end list
@@ -62,8 +72,8 @@ n          = n + 1
 sites[[n]] = list( iata = "s67"
                  , desc = "Santarem km 67"
                  , pch  =  5
-                 , col  = "#46FF32"
-                 , fg   = "#31B223"
+                 , col  = "#A3CC52"
+                 , fg   = "#4B6614"
                  , drya = "07/13"
                  , dryz = "11/21"
                  )#end list
@@ -71,8 +81,8 @@ n          = n + 1
 sites[[n]] = list( iata = "s83"
                  , desc = "Santarem km 83"
                  , pch  =  9
-                 , col  = "#FF5700"
-                 , fg   = "#B23C00"
+                 , col  = "#E65C17"
+                 , fg   = "#732A06"
                  , drya = "07/13"
                  , dryz = "11/21"
                  )#end list
@@ -80,8 +90,8 @@ n          = n + 1
 sites[[n]] = list( iata = "pdg"
                  , desc = "Pe-de-Gigante"
                  , pch  = 13
-                 , col  = "#A00014"
-                 , fg   = "#70000E"
+                 , col  = "#990F0F"
+                 , fg   = "#4D0404"
                  , drya = "04/17"
                  , dryz = "09/26"
                  )#end list
@@ -89,8 +99,8 @@ n          = n + 1
 sites[[n]] = list( iata = "rja"
                  , desc = "Rebio Jaru"
                  , pch  =  1
-                 , col  = "#006715"
-                 , fg   = "#00480E"
+                 , col  = "#306614"
+                 , fg   = "#143305"
                  , drya = "05/13"
                  , dryz = "09/09"
                  )#end list
@@ -98,8 +108,8 @@ n          = n + 1
 sites[[n]] = list( iata = "m34"
                  , desc = "Manaus K34"
                  , pch  =  6
-                 , col  = "#0742C3"
-                 , fg   = "#042E88"
+                 , col  = "#2996CC"
+                 , fg   = "#0A4766"
                  , drya = "07/04"
                  , dryz = "10/01"
                  )#end list
@@ -130,7 +140,14 @@ sites[[n]] = list( iata = "cax"
                  , drya = "08/19"
                  , dryz = "11/29"
                  )#end list
-use.sites = 1:6
+#use.sites = c("gyf")
+#use.sites = c("s67")
+#use.sites = c("m34")
+#use.sites = c("s83","pdg","rja","ban")
+#use.sites = c("rja","ban")
+#use.sites  = c("ban")
+use.sites = c("gyf","s67","s83","pdg","rja","m34")
+#use.sites = c("gyf","s83","pdg","m34")
 #------------------------------------------------------------------------------------------#
 
 
@@ -143,32 +160,41 @@ use.sites = 1:6
 # verbose -- long description (for titles)                                                 #
 # colour  -- colour to represent this simulation                                           #
 #------------------------------------------------------------------------------------------#
-sim.struct  = list( name     = c("ble_iage30_pft02","ble_iage30_pft05"
-                                ,"sas_iage01_pft02","sas_iage01_pft05"
-                                ,"sas_iage30_pft02","sas_iage30_pft05"
-                                )#end c
-                  , desc     = c("Size 01 + Age 01 + PFT 02"
-                                ,"Size 01 + Age 01 + PFT 05"
-                                ,"Size 80 + Age 01 + PFT 02"
-                                ,"Size 80 + Age 01 + PFT 05"
-                                ,"Size 80 + Age 30 + PFT 02"
-                                ,"Size 80 + Age 30 + PFT 05"
-                                )#end c
-                  , verbose  = c("2 PFTs"             ,"5 PFTs"
-                                ,"Size + 2 PFTs"      ,"Size + 5 PFTs"
-                                ,"Size + Age + 2 PFTs","Size + Age + 5 PFTs"
-                                )#end c
-                  , colour   = c("#6633AA","#4066CC"
-                                ,"#AA2A33","#FF802A"
-                                ,"#209933","#80D440"
-                                )#end c
-                  , fgcol    = c("#3D1E66","#263D7A"
-                                ,"#66191E","#994C19"
-                                ,"#135B1E","#4C7F26"
-                                )#end c
+# sim.struct  = list( name     = c("eft_iust00_ictb00","eft_iust01_ictb00"
+#                                 ,"eft_iust00_ictb01","eft_iust01_ictb01"
+#                                 ,"eft_iust00_ictb02","eft_iust01_ictb02"
+#                                 )#end c
+#                   , desc     = c("EFT u*, Leuning"
+#                                 ,"Pred. u*, Leuning"
+#                                 ,"EFT u*, ED-2.1"
+#                                 ,"Pred. u*, ED-2.1"
+#                                 ,"EFT u*, Massman"
+#                                 ,"Pred. u*, Massman"
+#                                 )#end c
+#                   , verbose  = c("EFT u*, Leuning"
+#                                 ,"Pred. u*, Leuning"
+#                                 ,"EFT u*, ED-2.1"
+#                                 ,"Pred. u*, ED-2.1"
+#                                 ,"EFT u*, Massman"
+#                                 ,"Pred. u*, Massman"
+#                                 )#end c
+#                   , colour   = c("#3B24B3","#2996CC"
+#                                 ,"#990F0F","#E65C17"
+#                                 ,"#306614","#A3CC52"
+#                                 )#end c
+#                   , fgcol    = c("#160959","#0A4766"
+#                                  ,"#4D0404","#732A06"
+#                                  ,"#143305","#4B6614"
+#                                  )#end c
+#                    )#end list
+sim.struct  = list( name     = c("eft_iust00_ictb02","eft_iust01_ictb02")
+                  , desc     = c("Prescribed u*"    ,"Predicted u*"     )
+                  , verbose  = c("Prescribed u*"    ,"Predicted u*"     )
+                  , colour   = c("#3B24B3"          ,"#A3CC52"          )
+                  , fgcol    = c("#160959"          ,"#4B6614"          )
                   )#end list
 #----- List the default simulation. -------------------------------------------------------#
-sim.default = 6
+sim.default = 2
 #------------------------------------------------------------------------------------------#
 
 
@@ -177,69 +203,98 @@ sim.default = 6
 #------------------------------------------------------------------------------------------#
 #       Plot options.                                                                      #
 #------------------------------------------------------------------------------------------#
-outform         = c("pdf")    # Formats for output file.  Supported formats are:
+outform           = c("pdf")  # Formats for output file.  Supported formats are:
                               #   - "X11" - for printing on screen
                               #   - "eps" - for postscript printing
                               #   - "png" - for PNG printing
                               #   - "pdf" - for PDF printing
 
-byeold          = TRUE        # Remove old files of the given format?
+byeold            = TRUE      # Remove old files of the given format?
 
-depth           = 96          # PNG resolution, in pixels per inch
-paper           = "letter"    # Paper size, to define the plot shape
-wpaper          = "legal"     # Wide paper size, to define the plot shape
-ptsz            = 18          # Font size.
+depth             = 96        # PNG resolution, in pixels per inch
+paper             = "letter"  # Paper size, to define the plot shape
+wpaper            = "legal"   # Wide paper size, to define the plot shape
+ptsz              = 18        # Font size.
 
-st.cex.min      = 0.7         # Minimum and maximum sizes for points in the 
-st.cex.max      = 2.0         #     Skill and Taylor diagrams
-st.lwd.min      = 1.3         # Minimum and maximum sizes for points in the 
-st.lwd.max      = 3.0         #     Skill and Taylor diagrams
+st.cex.min        = 1.0       # Minimum and maximum sizes for points in the 
+st.cex.max        = 2.5       #     Skill and Taylor diagrams
+st.lwd.min        = 1.3       # Minimum and maximum sizes for points in the 
+st.lwd.max        = 3.0       #     Skill and Taylor diagrams
 
 
-light.method    = "nls"       # Which method to apply (nls or optim)
-light.skew      = FALSE       # Use skew-normal distribution on residuals?
-light.n.boot    = 1000        # # of bootstrap iterations (light response fit)
-ftnight.n.boot  = 1000        # # of bootstrap iterations (fn mean)
+light.method      = "nls"     # Which method to apply (nls or optim)
+light.skew        = FALSE     # Use skew-normal distribution on residuals?
+light.n.boot      = 1000      # # of bootstrap iterations (light response fit)
+ftnight.n.boot    = 1000      # # of bootstrap iterations (fn mean)
 
-n.quant         = 1024        # # of quantiles to produce the density function.
+n.quant           = 1024      # # of quantiles to produce the density function.
                               #    We strongly advise to choose a number that is
                               #    a power of two, especially when using EDF 
                               #    (otherwise distributions will be interpolated).
-nhour.min       = 16          # Minimum number of hours to use the data.
-ust.key.frac    = 1/9         # Fraction of u* plot width used for key
-ust.leg.frac    = 1/8         # Fraction of u* plot height used for legend
-ncol.ust        = 100         # Number of colours for u*-filter "map"
-slz.reference   = -0.50       # Reference level for comparing soil data.
-use.hier.boot   = TRUE        # Use hierarchical sampling?
-ust.row.skip    = 1           # When plotting the u-* map, we skip every
+nhour.min         = 16        # Minimum number of hours to use the data.
+ust.key.frac      = 1/9       # Fraction of u* plot width used for key
+ust.leg.frac      = 1/8       # Fraction of u* plot height used for legend
+ncol.ust          = 100       # Number of colours for u*-filter "map"
+slz.reference     = -0.50     # Reference level for comparing soil data.
+slz.reco.ref      = -0.25     # Reference level for comparing soil data.
+use.hier.boot     = TRUE      # Use hierarchical sampling?
+ust.row.skip      = 1         # When plotting the u-* map, we skip every
                               # ust.row.skip out of ust.row.skip+1 points (to
                               # reduce bad rendering of vector image)
-ust.cex.max     = 1.8         # Maximum size for bias.
-ust.cex.min     = 0.5         # Maximum size for bias.
-n.fit.dmean.min = 30          # Minimum number of daily averages to fit a curve
-n.fit.fmean.min = 80          # Minimum number of hourly averages to fit a curve
+ust.cex.max       = 1.8       # Maximum size for bias.
+ust.cex.min       = 0.5       # Maximum size for bias.
+bias.max.std      = 3.2       # Maximum bias if the same for all plots
+                              # (NULL will find the best for each plot)
+n.fit.dmean.min   = 30        # Minimum number of daily averages to fit a curve
+n.fit.fmean.min   = 80        # Minimum number of hourly averages to fit a curve
+
+keep.gf.low.ustar = FALSE     # Keep data that has been discarded due to low u*, but
+                              # otherwise with flux/storage measurements?
+                              # TRUE  -- discard only missing data
+                              # FALSE -- discard missing data and gap filled due to low
+                              #          turbulence.
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Colours for model comparison.                                                       #
+#------------------------------------------------------------------------------------------#
+obs.col   = "#6D6D6D"
+obs.fg    = "#131313"
+ed22.col  = "#99FF02"
+ed22.fg   = "#548901"
+alt.col   = "#9D57F8"
+alt.fg    = "#2B0071"
+#------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #      Switch controls to plot only the needed ones.                                       #
 #------------------------------------------------------------------------------------------#
-plot.light         = c(FALSE,TRUE)[2]
-plot.vpdef         = c(FALSE,TRUE)[2]
-plot.wetness       = c(FALSE,TRUE)[2]
-plot.ust.ftnight   = c(FALSE,TRUE)[1]
-plot.ts.ftnight    = c(FALSE,TRUE)[1]
-plot.bp.diel       = c(FALSE,TRUE)[1]
-plot.qq.dmean      = c(FALSE,TRUE)[1]
-plot.density.dmean = c(FALSE,TRUE)[1]
+plot.gpp.light     = c(FALSE,TRUE)[2]
+plot.gpp.vpdef     = c(FALSE,TRUE)[2]
+plot.gpp.wetness   = c(FALSE,TRUE)[2]
+plot.reco.wetness  = c(FALSE,TRUE)[2]
+plot.ust.ftnight   = c(FALSE,TRUE)[2]
+plot.ust.bias      = c(FALSE,TRUE)[2]
+plot.ts.ftnight    = c(FALSE,TRUE)[2]
+plot.bp.diel       = c(FALSE,TRUE)[2]
+plot.qq.dmean      = c(FALSE,TRUE)[2]
+plot.density.dmean = c(FALSE,TRUE)[2]
 plot.soil.ftnight  = c(FALSE,TRUE)[1]
 plot.soil.density  = c(FALSE,TRUE)[1]
-plot.spider        = c(FALSE,TRUE)[1]
-plot.skill.taylor  = c(FALSE,TRUE)[1]
+plot.spider        = c(FALSE,TRUE)[2]
+plot.skill.taylor  = c(FALSE,TRUE)[2]
+make.summ.table    = c(FALSE,TRUE)[2]
 density.legend     = FALSE
 use.dmean.light    = FALSE
 use.dmean.vpdef    = TRUE
 use.dmean.wetness  = TRUE
 show.dryseason     = TRUE
 col.dryseason      = "papayawhip"
+col.ust.altern     = "firebrick4"
+col.ust.default    = "deeppink"
 #------------------------------------------------------------------------------------------#
 
 
@@ -281,13 +336,14 @@ compvar[[ n]] = list( vnam         = "ustar"
                     , hue.high     = "orangered"
                     , col          = "#520485"
                     , fg           = "#39025D"
+                    , pch          = 9
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "cflxca"
-                    , symbol       = "F(C*O[2])"
+                    , symbol       = "dot(C)[a*e]"
                     , desc         = "Carbon dioxide flux"
                     , unit         = untab$umolcom2os
                     , cscheme.mean = "iclife"
@@ -295,13 +351,14 @@ compvar[[ n]] = list( vnam         = "cflxca"
                     , hue.high     = "purple"
                     , col          = "#46FF32"
                     , fg           = "#31B223"
+                    , pch          = 3
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "cflxst"
-                    , symbol       = "S(C*O[2])"
+                    , symbol       = "dot(C)[s*t*o*r]"
                     , desc         = "Carbon dioxide storage"
                     , unit         = untab$umolcom2os
                     , cscheme.mean = "clife"
@@ -309,6 +366,7 @@ compvar[[ n]] = list( vnam         = "cflxst"
                     , hue.high     = "blue"
                     , col          = "#006715"
                     , fg           = "#00480E"
+                    , pch          = 4
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
@@ -323,6 +381,7 @@ compvar[[ n]] = list( vnam         = "nee"
                     , hue.high     = "purple"
                     , col          = "#46FF32"
                     , fg           = "#31B223"
+                    , pch          = 8
                     , ustvar       = TRUE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
@@ -337,20 +396,22 @@ compvar[[ n]] = list( vnam         = "nep"
                     , hue.high     = "green"
                     , col          = "#46FF32"
                     , fg           = "#31B223"
+                    , pch          = 14
                     , ustvar       = TRUE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "reco"
-                    , symbol       = "R[E*c*o]"
+                    , symbol       = "dot(R)[E*c*o]"
                     , desc         = "Ecosystem respiration"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "panoply"
-                    , hue.low      = "blue"
-                    , hue.high     = "orangered"
+                    , cscheme.mean = "iclife"
+                    , hue.low      = "green"
+                    , hue.high     = "purple"
                     , col          = "#FF5700"
                     , fg           = "#B23C00"
+                    , pch          = 0
                     , ustvar       = TRUE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
@@ -365,13 +426,14 @@ compvar[[ n]] = list( vnam         = "gpp"
                     , hue.high     = "green"
                     , col          = "#46FF32"
                     , fg           = "#31B223"
+                    , pch          = 2
                     , ustvar       = TRUE
                     , soilvar      = FALSE
                     , sunvar       = TRUE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "parup"
-                    , symbol       = "P*A*R^symbol(\"\\335\")"
+                    , symbol       = "dot(Q)[P*A*R]^symbol(\"\\335\")"
                     , desc         = "Outgoing PAR"
                     , unit         = untab$umolom2os
                     , cscheme.mean = "panoply"
@@ -379,13 +441,14 @@ compvar[[ n]] = list( vnam         = "parup"
                     , hue.high     = "orangered"
                     , col          = "#0742C3"
                     , fg           = "#042E88"
+                    , pch          = 13
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = TRUE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "rshortup"
-                    , symbol       = "S*W^symbol(\"\\335\")"
+                    , symbol       = "dot(Q)[S*W]^symbol(\"\\335\")"
                     , desc         = "Outgoing shortwave radiation"
                     , unit         = untab$wom2
                     , cscheme.mean = "panoply"
@@ -393,13 +456,14 @@ compvar[[ n]] = list( vnam         = "rshortup"
                     , hue.high     = "orangered"
                     , col          = "#FF5700"
                     , fg           = "#B23C00"
+                    , pch          = 1
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = TRUE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "rlongup"
-                    , symbol       = "L*W^symbol(\"\\335\")"
+                    , symbol       = "dot(Q)[L*W]^symbol(\"\\335\")"
                     , desc         = "Outgoing longwave radiation"
                     , unit         = untab$wom2
                     , cscheme.mean = "panoply"
@@ -407,13 +471,14 @@ compvar[[ n]] = list( vnam         = "rlongup"
                     , hue.high     = "orangered"
                     , col          = "#A00014"
                     , fg           = "#70000E"
+                    , pch          = 19
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "hflxca"
-                    , symbol       = "F(theta)"
+                    , symbol       = "dot(Q)[a*e]"
                     , desc         = "Sensible heat flux"
                     , unit         = untab$wom2
                     , cscheme.mean = "panoply"
@@ -421,13 +486,14 @@ compvar[[ n]] = list( vnam         = "hflxca"
                     , hue.high     = "orangered"
                     , col          = "#A00014"
                     , fg           = "#70000E"
+                    , pch          = 25
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
                     )#end list
 n = n + 1
 compvar[[ n]] = list( vnam         = "wflxca"
-                    , symbol       = "F(H[2]*O)"
+                    , symbol       = "dot(W)[a*e]"
                     , desc         = "Water vapour flux"
                     , unit         = untab$kgwom2oday
                     , cscheme.mean = "ipanoply"
@@ -435,13 +501,59 @@ compvar[[ n]] = list( vnam         = "wflxca"
                     , hue.high     = "blue"
                     , col          = "#0742C3"
                     , fg           = "#042E88"
+                    , pch          = 6
+                    , ustvar       = FALSE
+                    , soilvar      = FALSE
+                    , sunvar       = FALSE
+                    )#end list
+n = n + 1
+compvar[[ n]] = list( vnam         = "can.temp"
+                    , symbol       = "T[a]"
+                    , desc         = "CAS Temperature"
+                    , unit         = untab$degC
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , col          = "#FF5700"
+                    , fg           = "#B23C00"
+                    , pch          = 15
+                    , ustvar       = FALSE
+                    , soilvar      = FALSE
+                    , sunvar       = FALSE
+                    )#end list
+n = n + 1
+compvar[[ n]] = list( vnam         = "can.shv"
+                    , symbol       = "w[a]"
+                    , desc         = "CAS specific humidity"
+                    , unit         = untab$gwokg
+                    , cscheme.mean = "ipanoply"
+                    , hue.low      = "orangered"
+                    , hue.high     = "blue"
+                    , col          = "#0742C3"
+                    , fg           = "#042E88"
+                    , pch          = 12
+                    , ustvar       = FALSE
+                    , soilvar      = FALSE
+                    , sunvar       = FALSE
+                    )#end list
+n = n + 1
+compvar[[ n]] = list( vnam         = "can.co2"
+                    , symbol       = "c[a]"
+                    , desc         = "CAS CO2 mix. ratio"
+                    , unit         = untab$umolcomol
+                    , cscheme.mean = "iclife"
+                    , hue.low      = "green"
+                    , hue.high     = "purple"
+                    , col          = "#FF5700"
+                    , fg           = "#B23C00"
+                    , pch          = 7
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "soil.temp"
-                    , symbol       = "T(s*o*i*l)"
+                    , symbol       = "T[s*o*i*l]"
                     , desc         = "Soil temperature"
                     , unit         = untab$degC
                     , cscheme.mean = "panoply"
@@ -449,13 +561,14 @@ compvar[[ n]] = list( vnam         = "soil.temp"
                     , hue.high     = "orangered"
                     , col          = "#FF5700"
                     , fg           = "#B23C00"
+                    , pch          = 10
                     , ustvar       = FALSE
                     , soilvar      = TRUE
                     , sunvar       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "soil.water"
-                    , symbol       = "vartheta(s*o*i*l)"
+                    , symbol       = "vartheta[s*o*i*l]"
                     , desc         = "Soil moisture"
                     , unit         = untab$m3wom3
                     , cscheme.mean = "ipanoply"
@@ -463,20 +576,22 @@ compvar[[ n]] = list( vnam         = "soil.water"
                     , hue.high     = "blue"
                     , col          = "#0742C3"
                     , fg           = "#042E88"
+                    , pch          = 5
                     , ustvar       = FALSE
                     , soilvar      = TRUE
                     , sunvar       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "soil.wetness"
-                    , symbol       = "hat(w)(s*o*i*l)"
+                    , symbol       = "hat(w)[s*o*i*l]"
                     , desc         = "Soil wetness"
                     , unit         = untab$pc
-                    , col          = "#520485"
-                    , fg           = "#39025D"
                     , cscheme.mean = "ipanoply"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
+                    , col          = "#520485"
+                    , fg           = "#39025D"
+                    , pch          = 18
                     , ustvar       = FALSE
                     , soilvar      = TRUE
                     , sunvar       = FALSE
@@ -501,6 +616,7 @@ control[[n]] = list( vnam         = "rshort"
                    , hue.high     = "blue"
                    , col          = "#FF5700"
                    , fg           = "#B23C00"
+                   , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = TRUE
                    )#end list
@@ -514,6 +630,7 @@ control[[n]] = list( vnam         = "par"
                    , hue.high     = "blue"
                    , col          = "#0742C3"
                    , fg           = "#042E88"
+                   , flgvar       = FALSE
                    , soilvar      = FALSE
                    , sunvar       = TRUE
                    )#end list
@@ -527,6 +644,7 @@ control[[n]] = list( vnam         = "rlong"
                    , hue.high     = "blue"
                    , col          = "#A00014"
                    , fg           = "#70000E"
+                   , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
                    )#end list
@@ -540,6 +658,7 @@ control[[n]] = list( vnam         = "atm.prss"
                    , hue.high     = "blue"
                    , col          = "#520485"
                    , fg           = "#39025D"
+                   , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
                    )#end list
@@ -553,6 +672,7 @@ control[[n]] = list( vnam         = "atm.temp"
                    , hue.high     = "blue"
                    , col          = "#FF5700"
                    , fg           = "#B23C00"
+                   , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
                    )#end list
@@ -566,6 +686,7 @@ control[[n]] = list( vnam         = "atm.shv"
                    , hue.high     = "blue"
                    , col          = "#0742C3"
                    , fg           = "#042E88"
+                   , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
                    )#end list
@@ -579,6 +700,7 @@ control[[n]] = list( vnam         = "atm.vels"
                    , hue.high     = "blue"
                    , col          = "#520485"
                    , fg           = "#39025D"
+                   , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
                    )#end list
@@ -592,6 +714,7 @@ control[[n]] = list( vnam         = "rain"
                    , hue.high    = "blue"
                    , col          = "#0742C3"
                    , fg           = "#042E88"
+                   , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
                    )#end list
@@ -605,6 +728,7 @@ control[[n]] = list( vnam         = "atm.vpdef"
                    , hue.high     = "orangered"
                    , col          = "#FF5700"
                    , fg           = "#B23C00"
+                   , flgvar       = FALSE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
                    )#end list
@@ -697,13 +821,32 @@ simul       = data.frame( name             = simul.key
 #------------------------------------------------------------------------------------------#
 
 
+
+
+#------------------------------------------------------------------------------------------#
+#      Convert sites to data frame, and keep only those to be run.                         #
+#------------------------------------------------------------------------------------------#
+sites        = list.2.data.frame(sites)
+if (is.logical(use.sites)){
+   use.sites = which(rep(use.sites,times=nrow(sites))[sequence(nrow(sites))])
+}else if (is.character(use.sites)){
+   use.sites = match(use.sites,sites$iata)
+   use.sites = use.sites[! is.na(use.sites)]
+}#end if
+if (length(use.sites) == 0){
+   stop ("You must specify at least one valid site")
+}else{
+   sites = sites[use.sites,]
+}#end if
+#------------------------------------------------------------------------------------------#
+
+
 #------------------------------------------------------------------------------------------#
 #      List the keys for all dimensions.                                                   #
 #------------------------------------------------------------------------------------------#
-sites        = list.2.data.frame(sites)
-if (! is.logical(use.sites)) sites = sites[use.sites,]
 control.key  = list.2.data.frame(control)$vnam
 compvar.key  = list.2.data.frame(compvar)$vnam
+compvar.pch  = list.2.data.frame(compvar)$pch
 compvar.sym  = parse(text=list.2.data.frame(compvar)$symbol)
 good.key     = list.2.data.frame(good   )$vnam
 season.key   = season.list
@@ -824,11 +967,13 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the "spider web" plots.                                          #
    #---------------------------------------------------------------------------------------#
-   o.spider           = list()
-   o.spider$main      = file.path(o.form$main  ,"spider"   )
-   o.spider$default   = file.path(o.spider$main,"default"  )
-   if (is.figure && ! file.exists(o.spider$main   )) dir.create(o.spider$main   )
-   if (is.figure && ! file.exists(o.spider$default)) dir.create(o.spider$default)
+   o.spider              = list()
+   o.spider$main         = file.path(o.form$main  ,"spider"           )
+   o.spider$default.var  = file.path(o.spider$main,"default_variables")
+   o.spider$default.site = file.path(o.spider$main,"default_sites"    )
+   if (is.figure && ! file.exists(o.spider$main        )) dir.create(o.spider$main        )
+   if (is.figure && ! file.exists(o.spider$default.var )) dir.create(o.spider$default.var )
+   if (is.figure && ! file.exists(o.spider$default.site)) dir.create(o.spider$default.site)
    for (d in sequence(ndiel)){
       this.diel        = diel.key [d]
       o.diel           = list()
@@ -903,6 +1048,36 @@ for (o in sequence(nout)){
       #------------------------------------------------------------------------------------#
    }#end for (v in sequence(ncompvar))
    o.form$ust.ftnight = o.ust.ftnight
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Create paths for the time series of variables that are function of u* filter.     #
+   #---------------------------------------------------------------------------------------#
+   o.main     = file.path(o.form$main,"ust_bias")
+   o.ust.bias = list( main    = o.main
+                    , default = file.path(o.main,"default")
+                    , sites   = list( main = file.path(o.main,"sites"     )  )
+                    )#end list
+   if (is.figure){
+      if (! file.exists(o.ust.bias$main      )) dir.create(o.ust.bias$main      )
+      if (! file.exists(o.ust.bias$default   )) dir.create(o.ust.bias$default   )
+      if (! file.exists(o.ust.bias$sites$main)) dir.create(o.ust.bias$sites$main)
+   }#end if
+   for (v in sequence(ncompvar)){
+      this.compvar     = compvar[[v]]
+      this.vnam        = this.compvar$vnam
+      this.ust         = this.compvar$vnam %in% c("nee","nep","gpp","reco")
+
+      #----- Sites. -----------------------------------------------------------------------#
+      o.compvar        = file.path(o.ust.bias$sites$main,this.vnam)
+      if (is.figure && this.ust && ! file.exists(o.compvar)) dir.create(o.compvar)
+      o.ust.bias$sites[[this.vnam]] = o.compvar
+      #------------------------------------------------------------------------------------#
+   }#end for (v in sequence(ncompvar))
+   o.form$ust.bias = o.ust.bias
    #---------------------------------------------------------------------------------------#
 
 
@@ -1036,10 +1211,12 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the skill diagrams.                                              #
    #---------------------------------------------------------------------------------------#
-   o.skill          = list( main = file.path(o.form$main,"skill"))
-   o.skill$default  = file.path(o.skill$main ,"default")
-   if (is.figure && ! file.exists(o.skill$main   )) dir.create(o.skill$main   )
-   if (is.figure && ! file.exists(o.skill$default)) dir.create(o.skill$default)
+   o.skill              = list( main = file.path(o.form$main,"skill"))
+   o.skill$default.var  = file.path(o.skill$main ,"default_variables")
+   o.skill$default.site = file.path(o.skill$main ,"default_sites")
+   if (is.figure && ! file.exists(o.skill$main        )) dir.create(o.skill$main        )
+   if (is.figure && ! file.exists(o.skill$default.var )) dir.create(o.skill$default.var )
+   if (is.figure && ! file.exists(o.skill$default.site)) dir.create(o.skill$default.site)
    for (d in sequence(ndiel)){
       this.diel            = diel.key [d]
       o.diel               = file.path(o.skill$main,this.diel)
@@ -1056,10 +1233,12 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the Taylor diagrams.                                             #
    #---------------------------------------------------------------------------------------#
-   o.taylor          = list( main = file.path(o.form$main,"taylor"))
-   o.taylor$default  = file.path(o.taylor$main,"default")
-   if (is.figure && ! file.exists(o.taylor$main   )) dir.create(o.taylor$main   )
-   if (is.figure && ! file.exists(o.taylor$default)) dir.create(o.taylor$default)
+   o.taylor              = list( main = file.path(o.form$main,"taylor"))
+   o.taylor$default.var  = file.path(o.taylor$main ,"default_variables")
+   o.taylor$default.site = file.path(o.taylor$main ,"default_sites")
+   if (is.figure && ! file.exists(o.taylor$main        )) dir.create(o.taylor$main        )
+   if (is.figure && ! file.exists(o.taylor$default.var )) dir.create(o.taylor$default.var )
+   if (is.figure && ! file.exists(o.taylor$default.site)) dir.create(o.taylor$default.site)
    for (d in sequence(ndiel)){
       this.diel        = diel.key [d]
       o.diel           = file.path(o.taylor$main,this.diel)
@@ -1358,22 +1537,52 @@ for (p in loop.sites){
 
 
 
-   #----- Fix the measured flags for GPP and ecosystem respiration. -----------------------#
+   #---------------------------------------------------------------------------------------#
+   #      Fix the measured flags for GPP and ecosystem respiration.                        #
+   #---------------------------------------------------------------------------------------#
    cat("     * Fix flags for ecosystem estimates...","\n")
+   #----- Flags to tell that CO2 flux and storage were measured. --------------------------#
    if (all(! obser$measured.cflxst)){
-      measured.eco         = obser$measured.cflxca
+      measured.co2         = obser$measured.cflxca
    }else{
-      measured.eco         = obser$measured.cflxca & obser$measured.cflxst
+      measured.co2         = obser$measured.cflxca & obser$measured.cflxst
    }#end if
-   ust.measured.eco        = matrix( data     = measured.eco
+   ust.measured.co2        = matrix( data     = measured.co2
                                    , nrow     = obser$nwhen
                                    , ncol     = obser$nustar
                                    , dimnames = dimnames(obser$ust.nee)
                                    )#end matrix
+   #----- Decide what to keep depending on whether to keep low turbulence periods. --------#
+   if (keep.gf.low.ustar){
+      #----- Keep all measured times, even if it was filled due to low turbulence. --------#
+      measured.eco     = measured.co2
+      alt.measured.eco = measured.co2
+      ust.measured.eco = ust.measured.co2
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Keep only measurements with enough turbulence. -------------------------------#
+      measured.eco         = obser$measured.nee
+      alt.measured.eco     = obser$alt.measured.nee
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Create a quick filter for different u*. --------------------------------------#
+      ustar.eco        = ifelse(obser$measured.ustar & measured.co2,obser$ustar,NA)
+      ust.measured.eco = outer(ustar.eco,obser$ust.filter,FUN='%>=%')
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Replace the flags of the ecosystem variables. ----------------------------------#
    obser$measured.nep      = measured.eco
    obser$measured.nee      = measured.eco
    obser$measured.gpp      = measured.eco
    obser$measured.reco     = measured.eco
+   obser$alt.measured.nep  = alt.measured.eco
+   obser$alt.measured.nee  = alt.measured.eco
+   obser$alt.measured.gpp  = alt.measured.eco
+   obser$alt.measured.reco = alt.measured.eco
    obser$ust.measured.nep  = ust.measured.eco
    obser$ust.measured.nee  = ust.measured.eco
    obser$ust.measured.gpp  = ust.measured.eco
@@ -1389,8 +1598,8 @@ for (p in loop.sites){
    #---------------------------------------------------------------------------------------#
    cat("     * Fix flags for radiation variables...","\n")
    #----- Assumed that solar radiation is measured if any component is measured. ----------#
-   measured.sun = obser$measured.par | obser$measured.rshort
-   obser$measured.par = measured.sun
+   measured.sun          = obser$measured.par | obser$measured.rshort
+   obser$measured.par    = measured.sun
    obser$measured.rshort = measured.sun
 
 
@@ -1400,6 +1609,16 @@ for (p in loop.sites){
       ist  = match("soil.tmp",names(obser))
       imst = match("measured.soil.tmp",names(obser))
       names(obser)[c(ist,imst)] = c("soil.temp","measured.soil.temp")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- In case can.temp is soil.tmp, replace the name. ---------------------------------#
+   if ("can.tmp" %in% names(obser)){
+      ist  = match("can.tmp",names(obser))
+      imst = match("measured.can.tmp",names(obser))
+      names(obser)[c(ist,imst)] = c("can.temp","measured.can.temp")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -1457,6 +1676,32 @@ for (p in loop.sites){
 
 
 
+   #---------------------------------------------------------------------------------------#
+   #     Count the number of variables that have been measured, and use a backward filter  #
+   #---------------------------------------------------------------------------------------#
+   tot.measured = rep(0,times=obser$nwhen)
+   nflags                 = 0
+   for (v in sequence(ncontrol)){
+      this.compvar  = control[[v]]
+      this.measured = paste("measured",this.vnam,sep=".")
+      this.vnam     = this.compvar$vnam
+      this.flgvar   = this.compvar$flgvar
+      if (this.flgvar){
+         nflags        = nflags + 1
+         tot.measured  = tot.measured + obser[[this.measured]]
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for
+   obser$driver.score = filter( x        = tot.measured
+                              , filter   = rep(1/day.hr,times=day.hr)
+                              , method   = "convolution"
+                              , sides    = 1L
+                              , circular = TRUE
+                              )#end filter
+   obser$driver.use   = obser$driver.score >= max(0.,nflags - 1.5)
+   #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #      Find the daily mean and create flags on whether to use it or not.                #
@@ -1484,8 +1729,25 @@ for (p in loop.sites){
 
 
 
+
+
+      #------------------------------------------------------------------------------------#
+      #     Check whether this is a soil variable.                                         #
+      #------------------------------------------------------------------------------------#
+      if (this.soilvar){
+         driver.ok = matrix( data = rep(obser$driver.use,times=obser$nzg)
+                           , nrow = obser$nwhen
+                           , ncol = obser$nzg
+                           )#end matrix
+      }else{
+         driver.ok = obser$driver.use
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
       #----- Discard all gap-filled entries. ----------------------------------------------#
-      discard = ! ( is.finite(obser[[this.vnam]]) & obser[[this.measured]])
+      keep = is.finite(obser[[this.vnam]]) & obser[[this.measured]] & driver.ok
       #------------------------------------------------------------------------------------#
 
 
@@ -1495,7 +1757,7 @@ for (p in loop.sites){
       #     Replace gap-filled values by NA, and find the daily mean.  We replace the      #
       # original values by these, so we can eliminate model values easily.                 #
       #------------------------------------------------------------------------------------#
-      obs.now     = ifelse(discard,NA,obser[[this.vnam]])
+      obs.now     = ifelse(keep,obser[[this.vnam]],NA)
       if (! is.matrix(obs.now)){
          obs.now = matrix(obs.now,ncol=1,dimnames=list(names(obs.now),"42.0"))
       }#end if (! is.matrix(obs.now))
@@ -1594,6 +1856,119 @@ for (p in loop.sites){
 
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
       #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #     Check whether to find alternative variables.                                   #
+      #------------------------------------------------------------------------------------#
+      this.alt      = paste("alt"           ,this.vnam,sep=".")
+      this.dmean    = paste("alt","dmean"   ,this.vnam,sep=".")
+      this.fnmean   = paste("alt","fnmean"  ,this.vnam,sep=".")
+      this.fnq025   = paste("alt","fnq025"  ,this.vnam,sep=".")
+      this.fnq975   = paste("alt","fnq975"  ,this.vnam,sep=".")
+      this.measured = paste("alt","measured",this.vnam,sep=".")
+      if (this.alt %in% names(obser)){
+         cat("        > Averages for alternative data set...","\n")
+         #----- Discard all gap-filled entries. -------------------------------------------#
+         keep = is.finite(obser[[this.alt]]) & obser[[this.measured]] & driver.ok
+         #---------------------------------------------------------------------------------#
+
+         obs.now     = ifelse(keep,obser[[this.alt]],NA)
+         if (! is.matrix(obs.now)){
+            obs.now = matrix(obs.now,ncol=1,dimnames=list(names(obs.now),"42.0"))
+         }#end if (! is.matrix(obs.now))
+         dmean.obser = qapply( X     = obs.now
+                             , INDEX = obser$today
+                             , DIM   = 1
+                             , FUN   = mean
+                             , na.rm = TRUE
+                             )#end tapply
+         dmean.count = qapply( X     = is.finite(obs.now)
+                             , INDEX = obser$today
+                             , DIM   = 1
+                             , FUN   = sum
+                             , na.rm = TRUE
+                             )#end tapply
+         dmean.obser = ifelse(dmean.count >= nhour.min,dmean.obser,NA)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Save number of layers. ----------------------------------------------------#
+         nlyrs = ncol(obs.now)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Solve fortnightly means and find confidence intervals for the mean.         #
+         #---------------------------------------------------------------------------------#
+         #----- For loop over columns (sorry, Steve...) -----------------------------------#
+         fnmean.obser = NULL
+         fnq025.obser = NULL
+         fnq975.obser = NULL
+         for (cc in sequence(nlyrs)){
+
+            keep  = is.finite(obs.now[,cc])
+
+            if (any(keep)){
+               #----- Find mean fortnightly period. ---------------------------------------#
+               data.in    = data.frame( x         = obs.now[,cc]
+                                      , fortnight = obser$fortnight
+                                      , year      = obser$year
+                                      , hour      = obser$hr.idx
+                                      )#end data.frame
+               if (use.hier.boot){
+                  fn.boot = bhier.fortnight.mean( data.in = data.in
+                                                , R       = ftnight.n.boot
+                                                , ci      = 0.95
+                                                )#end bhier.fortnight.mean
+               }else{
+                  fn.boot = boot.fortnight.mean ( data.in = data.in
+                                                , R       = ftnight.n.boot
+                                                , ci      = 0.95
+                                                )#end boot.fortnight.mean
+               }#end if
+               fnmean.now = fn.boot$expected
+               fnq025.now = fn.boot$qlow
+               fnq975.now = fn.boot$qhigh
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Empty data. ---------------------------------------------------------#
+               fnmean.now = rep(x=NA,times=obser$nfnmean)
+               fnq025.now = rep(x=NA,times=obser$nfnmean)
+               fnq975.now = rep(x=NA,times=obser$nfnmean)
+               #---------------------------------------------------------------------------#
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #----- Save this column. ------------------------------------------------------#
+            fnmean.obser = cbind(fnmean.obser,fnmean.now)
+            fnq025.obser = cbind(fnq025.obser,fnq025.now)
+            fnq975.obser = cbind(fnq975.obser,fnq975.now)
+            rm(fnmean.now,fnq025.now,fnq975.now)
+            #------------------------------------------------------------------------------#
+         }#end for (cc in sequence(ncol(obs.now)))
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #----- Save the data. ------------------------------------------------------------#
+         obser[[this.alt   ]] = obs.now
+         obser[[this.dmean ]] = dmean.obser
+         obser[[this.fnmean]] = fnmean.obser
+         obser[[this.fnq025]] = fnq025.obser
+         obser[[this.fnq975]] = fnq975.obser
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
       #     Check whether to find u*-filter dependent variables.                           #
       #------------------------------------------------------------------------------------#
       this.ust      = paste("ust"           ,this.vnam,sep=".")
@@ -1604,8 +1979,16 @@ for (p in loop.sites){
          cat("        > Averages for u*-matrix...","\n")
 
 
+         #----- Make matrix for driver check. ---------------------------------------------#
+         driver.ok = matrix( data = rep(obser$driver.use,times=obser$nustar)
+                           , nrow = obser$nwhen
+                           , ncol = obser$nustar
+                           )#end matrix
+         #---------------------------------------------------------------------------------#
+
+
          #----- Discard all gap-filled entries. -------------------------------------------#
-         discard = ! ( is.finite(obser[[this.ust]]) & obser[[this.measured]])
+         keep = is.finite(obser[[this.ust]]) & obser[[this.measured]] & driver.ok
          #---------------------------------------------------------------------------------#
 
 
@@ -1615,7 +1998,7 @@ for (p in loop.sites){
          #     Replace gap-filled values by NA, and find the daily mean.  We replace the   #
          # original values by these, so we can eliminate model values easily.              #
          #---------------------------------------------------------------------------------#
-         obs.now     = ifelse(discard,NA,obser[[this.ust]])
+         obs.now     = ifelse(keep,obser[[this.ust]],NA)
          dmean.obser = qapply( X     = obs.now
                              , INDEX = obser$today
                              , DIM   = 1
@@ -1768,6 +2151,8 @@ for (p in loop.sites){
       model$mon           = obser$mon
       model$day           = obser$day
       model$hour          = obser$hour
+      model$nustar        = obser$nustar
+      model$ust.filter    = obser$ust.filter
       #------------------------------------------------------------------------------------#
 
 
@@ -1789,6 +2174,17 @@ for (p in loop.sites){
       if ("soil.tmp" %in% names(model)){
          ist  = match("soil.tmp",names(model))
          names(model)[ist] = c("soil.temp")
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #----- In case can.temp is can.tmp, replace the name. -------------------------------#
+      if ("can.tmp" %in% names(model)){
+         ist  = match("can.tmp",names(model))
+         names(model)[ist] = c("can.temp")
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1872,6 +2268,13 @@ for (p in loop.sites){
 
 
 
+      #------------------------------------------------------------------------------------#
+      #      Add the correction on sensible heat flux to account for the water specific    #
+      # heat, following the first order correction from Stull (1988).                      #
+      #------------------------------------------------------------------------------------#
+      model$hflxca = ( model$hflxca 
+                     + model$wflxca / day.sec * (model$atm.temp+t00) * (cph2o-cpdry) )
+      #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
@@ -1892,6 +2295,114 @@ for (p in loop.sites){
          this.unit     = this.compvar$unit
          this.sunvar   = this.compvar$sunvar
          cat("         > ",this.desc,"...","\n")
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #     Check whether to find u*-filter dependent variables.                        #
+         #---------------------------------------------------------------------------------#
+         this.ust   = paste("ust"           ,this.vnam,sep=".")
+         ust.dmean  = paste("ust","dmean"   ,this.vnam,sep=".")
+         ust.fnmean = paste("ust","fnmean"  ,this.vnam,sep=".")
+         if (this.ust %in% names(obser)){
+            cat("        > Build u*-matrix for observations...","\n")
+
+
+            #----- Copy the original variable to a matrix and discard unwanted data. ------#
+            model[[this.ust]] = ( matrix( data     = model[[this.vnam]]
+                                        , nrow     = model$nwhen
+                                        , ncol     = model$nustar
+                                        , dimnames = dimnames(obser$ust.nee)
+                                        )#end matrix
+                                + 0. * obser[[this.ust]]
+                                )#end 
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Replace gap-filled values by NA, and find the daily mean.  We replace    #
+            # the original values by these, so we can eliminate model values easily.       #
+            #------------------------------------------------------------------------------#
+            model[[ust.dmean]]  = ( qapply( X     = model[[this.ust]]
+                                          , INDEX = model$today
+                                          , DIM   = 1
+                                          , FUN   = mean
+                                          , na.rm = TRUE
+                                          )#end tapply
+                                  + 0. * obser[[ust.dmean]]
+                                  )#end 
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Solve fortnightly means.                                                 #
+            #------------------------------------------------------------------------------#
+            if (sum(is.finite(c(model[[this.ust]]))) > 0){
+
+               #----- Save number of years. -----------------------------------------------#
+               year.num = sort(unique(model$year))
+               n.year   = length(year.num)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Find mean fortnightly period. ---------------------------------------#
+               fnmean.1st = qapply( X      = model[[this.ust]]
+                                  , INDEX  = list(model$hr.idx,model$fortnight,model$year)
+                                  , DIM    = 1
+                                  , FUN    = mean
+                                  , na.rm  = TRUE
+                                  )#end apply
+               hh = match(as.numeric(dimnames(fnmean.1st)[[1]]),hour.num            )
+               ff = match(as.numeric(dimnames(fnmean.1st)[[2]]),sequence(yr.ftnight))
+               yy = match(as.numeric(dimnames(fnmean.1st)[[3]]),year.num            )
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Collapse fortnightly periods.  Make sure all periods are              #
+               # defined in the structure, if none of them were selected, make them        #
+               #NA.                                                                        #
+               #---------------------------------------------------------------------------#
+               fnmean.model  = array ( data     = NA
+                                     , dim      = c(nhour,yr.ftnight,n.year,obser$nustar)
+                                     , dimnames = list( hour.num
+                                                      , sequence(yr.ftnight)
+                                                      , year.num
+                                                      , model$ust.filter
+                                                      )#end list
+                                     )#end array
+               fnmean.model[hh,ff,yy,] = fnmean.1st
+               fnmean.model = apply(X=fnmean.model,MARGIN=c(2,3,4),FUN=mean)
+               fnmean.model = apply(X=fnmean.model,MARGIN=c(1,3)  ,FUN=mean,na.rm=TRUE)
+               fnmean.model = fnmean.model + 0. * obser[[ust.fnmean]]
+               #---------------------------------------------------------------------------#
+
+            }else{
+               #----- Leave everything empty. ---------------------------------------------#
+               fnmean.model = matrix( data     = NA
+                                    , nrow     = yr.ftnight
+                                    , ncol     = model$nustar
+                                    , dimnames = list( sequence(yr.ftnight)
+                                                     , model$ust.filter)
+                                    )#end fnmean.obser
+               #---------------------------------------------------------------------------#
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #----- Save the data. ---------------------------------------------------------#
+            model[[ust.fnmean]] = fnmean.model
+            #------------------------------------------------------------------------------#
+         }#end if (this.ust %in% names(obser))
          #---------------------------------------------------------------------------------#
 
 
@@ -2052,8 +2563,8 @@ for (p in loop.sites){
                      d.sel   = obser$diel   == dd | dd %in% diel.all.hrs
                      s.sel   = obser$highsun | ( ! this.sunvar )
                      sel     = e.sel & d.sel & s.sel
-                     obs.use = obser[[this.vnam]][sel]
-                     mod.use = model[[this.vnam]][sel]
+                     obs.use = obser[[this.vnam]][sel,cc]
+                     mod.use = model[[this.vnam]][sel,cc]
                      #---------------------------------------------------------------------#
                   }#end if
                   #------------------------------------------------------------------------#
@@ -2186,7 +2697,7 @@ for (p in loop.sites){
 #      Plot the light response curve by site and season.  Each plot has one panel for each #
 # simulation.                                                                              #
 #------------------------------------------------------------------------------------------#
-if (plot.light){
+if (plot.gpp.light){
    cat(" + Find the light response curve...","\n")
 
 
@@ -2445,8 +2956,8 @@ if (plot.light){
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
                out.light = out[[outform[o]]]$light$sites
-               fichier = file.path(out.light,paste("light-",season.suffix[ee],"-",iata,"."
-                                                  ,outform[o],sep="")
+               fichier = file.path(out.light,paste("gpp-light-",season.suffix[ee],"-"
+                                                  ,iata,".",outform[o],sep="")
                                   )#end file.path
                if (outform[o] == "x11"){
                   X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
@@ -2488,38 +2999,38 @@ if (plot.light){
                         , y    = obs.use$gpp
                         , type = "p"
                         , pch  = 16
-                        , col  = grey.bg
+                        , col  = obs.col
                         , cex  = 0.5
                         )#end points
                   points( x    = mod.use[[s]]$par
                         , y    = mod.use[[s]]$gpp
                         , type = "p"
                         , pch  = 16
-                        , col  = simul$colour[s]
+                        , col  = ed22.col
                         , cex  = 0.5
                         )#end points
                   #------------------------------------------------------------------------#
 
 
                   #----- Plot the lines. --------------------------------------------------#
-                  lines(x=obs.pred$par,y=obs.pred$gpp ,col=grey.fg,lwd=2,lty="solid" )
-                  lines(x=obs.pred$par,y=obs.pred$q025,col=grey.fg,lwd=2,lty="dashed")
-                  lines(x=obs.pred$par,y=obs.pred$q975,col=grey.fg,lwd=2,lty="dashed")
+                  lines(x=obs.pred$par,y=obs.pred$gpp ,col=obs.fg,lwd=2,lty="solid" )
+                  lines(x=obs.pred$par,y=obs.pred$q025,col=obs.fg,lwd=2,lty="dashed")
+                  lines(x=obs.pred$par,y=obs.pred$q975,col=obs.fg,lwd=2,lty="dashed")
                   lines(x   = mod.pred[[s]]$par
                        ,y   = mod.pred[[s]]$gpp
-                       ,col = simul$fgcol[s]
+                       ,col = ed22.fg
                        ,lwd = 2
                        ,lty = "solid"
                        )#end lines
                   lines(x   = mod.pred[[s]]$par
                        ,y   = mod.pred[[s]]$q025
-                       ,col = simul$fgcol[s]
+                       ,col = ed22.fg
                        ,lwd = 2
                        ,lty = "dashed"
                        )#end lines
                   lines(x   = mod.pred[[s]]$par
                        ,y   = mod.pred[[s]]$q975
-                       ,col = simul$fgcol[s]
+                       ,col = ed22.fg
                        ,lwd = 2
                        ,lty = "dashed"
                        )#end lines
@@ -2580,7 +3091,7 @@ if (plot.light){
       for (o in sequence(nout)){
          #----- Make the file name. -------------------------------------------------------#
          out.light = out[[outform[o]]]$light$default
-         fichier = file.path(out.light,paste("light-",season.suffix[ee]
+         fichier = file.path(out.light,paste("gpp-light-",season.suffix[ee]
                                             ,"-",simul$name[s],".",outform[o],sep="")
                             )#end file.path
          if (outform[o] == "x11"){
@@ -2649,38 +3160,38 @@ if (plot.light){
                      , y    = obs.use$gpp
                      , type = "p"
                      , pch  = 16
-                     , col  = grey.bg
+                     , col  = obs.col
                      , cex  = 0.5
                      )#end points
                points( x    = mod.use$par
                      , y    = mod.use$gpp
                      , type = "p"
                      , pch  = 16
-                     , col  = "#006715"
+                     , col  = ed22.col
                      , cex  = 0.5
                      )#end points
                #---------------------------------------------------------------------------#
 
 
                #----- Plot the lines. -----------------------------------------------------#
-               lines(x=obs.pred$par,y=obs.pred$gpp ,col=grey.fg,lwd=2,lty="solid" )
-               lines(x=obs.pred$par,y=obs.pred$q025,col=grey.fg,lwd=2,lty="dashed")
-               lines(x=obs.pred$par,y=obs.pred$q975,col=grey.fg,lwd=2,lty="dashed")
+               lines(x=obs.pred$par,y=obs.pred$gpp ,col=obs.fg,lwd=2,lty="solid" )
+               lines(x=obs.pred$par,y=obs.pred$q025,col=obs.fg,lwd=2,lty="dashed")
+               lines(x=obs.pred$par,y=obs.pred$q975,col=obs.fg,lwd=2,lty="dashed")
                lines(x   = mod.pred$par
                     ,y   = mod.pred$gpp
-                    ,col = "#00480E"
+                    ,col = ed22.fg
                     ,lwd = 2
                     ,lty = "solid"
                     )#end lines
                lines(x   = mod.pred$par
                     ,y   = mod.pred$q025
-                    ,col = "#00480E"
+                    ,col = ed22.fg
                     ,lwd = 2
                     ,lty = "dashed"
                     )#end lines
                lines(x   = mod.pred$par
                     ,y   = mod.pred$q975
-                    ,col = "#00480E"
+                    ,col = ed22.fg
                     ,lwd = 2
                     ,lty = "dashed"
                     )#end lines
@@ -2717,7 +3228,7 @@ if (plot.light){
       #------------------------------------------------------------------------------------#
    }#end for (ee in sequence(nseason))
    #---------------------------------------------------------------------------------------#
-}#end if (plot.light)
+}#end if (plot.gpp.light)
 #------------------------------------------------------------------------------------------#
 
 
@@ -2750,7 +3261,7 @@ if (plot.light){
 #      Plot the VPD response curve by site and season.  Each plot has one panel for each   #
 # simulation.                                                                              #
 #------------------------------------------------------------------------------------------#
-if (plot.vpdef){
+if (plot.gpp.vpdef){
    cat(" + Find the VPD response curve...","\n")
 
 
@@ -2965,7 +3476,7 @@ if (plot.vpdef){
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
                out.vpdef = out[[outform[o]]]$vpdef$sites
-               fichier   = file.path(out.vpdef,paste("vpdef-",season.suffix[ee]
+               fichier   = file.path(out.vpdef,paste("gpp-vpdef-",season.suffix[ee]
                                                     ,"-",iata,".",outform[o],sep="")
                                     )#end file.path
                if (outform[o] == "x11"){
@@ -3006,8 +3517,8 @@ if (plot.vpdef){
                   #------ Plot the points. ------------------------------------------------#
                   now.vpdef  = c(obs.use$vpdef,mod.use[[s]]$vpdef)
                   now.gpp    = c(obs.use$gpp  ,mod.use[[s]]$gpp  )
-                  now.colour = c( rep(grey.bg,times=length(obs.use$vpdef))
-                                , rep(simul$colour[s],times=length(mod.use[[s]]$vpdef))
+                  now.colour = c( rep(obs.col ,times=length(obs.use$vpdef))
+                                , rep(ed22.col,times=length(mod.use[[s]]$vpdef))
                                 )#end c
                   shuffle    = sample(length(now.vpdef))
                   points( x    = now.vpdef [shuffle]
@@ -3074,7 +3585,7 @@ if (plot.vpdef){
       for (o in sequence(nout)){
          #----- Make the file name. -------------------------------------------------------#
          out.vpdef = out[[outform[o]]]$vpdef$default
-         fichier   = file.path(out.vpdef,paste("vpdef-",season.suffix[ee]
+         fichier   = file.path(out.vpdef,paste("gpp-vpdef-",season.suffix[ee]
                                               ,"-",simul$name[s],".",outform[o],sep="")
                             )#end file.path
          if (outform[o] == "x11"){
@@ -3142,8 +3653,8 @@ if (plot.vpdef){
             if (n.sel > 0){
                now.vpdef  = c(obs.use$vpdef,mod.use$vpdef)
                now.gpp    = c(obs.use$gpp  ,mod.use$gpp  )
-               now.colour = c( rep(grey.bg,times=length(obs.use$vpdef))
-                             , rep("#FF5700",times=length(mod.use$vpdef))
+               now.colour = c( rep(obs.col ,times=length(obs.use$vpdef))
+                             , rep(ed22.col,times=length(mod.use$vpdef))
                              )#end c
                shuffle    = sample(length(now.vpdef))
                points( x    = now.vpdef [shuffle]
@@ -3186,7 +3697,7 @@ if (plot.vpdef){
       #------------------------------------------------------------------------------------#
    }#end for (ee in sequence(nseason))
    #---------------------------------------------------------------------------------------#
-}#end if (plot.vpdef)
+}#end if (plot.gpp.vpdef)
 #------------------------------------------------------------------------------------------#
 
 
@@ -3219,7 +3730,7 @@ if (plot.vpdef){
 #      Plot the soil moisture response curve by site and season.  Each plot has one panel  #
 # for each simulation.                                                                     #
 #------------------------------------------------------------------------------------------#
-if (plot.wetness){
+if (plot.gpp.wetness){
    cat(" + Find the soil moisture response curve...","\n")
 
 
@@ -3450,7 +3961,7 @@ if (plot.wetness){
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
                out.wetness = out[[outform[o]]]$wetness$sites
-               fichier     = file.path(out.wetness,paste("wetness-",season.suffix[ee]
+               fichier     = file.path(out.wetness,paste("gpp-wetness-",season.suffix[ee]
                                                         ,"-",iata,".",outform[o],sep="")
                                       )#end file.path
                if (outform[o] == "x11"){
@@ -3491,8 +4002,8 @@ if (plot.wetness){
                   #------ Plot the points. ------------------------------------------------#
                   now.wetness  = c(obs.use$wetness,mod.use[[s]]$wetness)
                   now.gpp      = c(obs.use$gpp  ,mod.use[[s]]$gpp  )
-                  now.colour   = c( rep(grey.bg,times=length(obs.use$wetness))
-                                  , rep(simul$colour[s],times=length(mod.use[[s]]$wetness))
+                  now.colour   = c( rep(obs.col ,times=length(obs.use$wetness))
+                                  , rep(ed22.col,times=length(mod.use[[s]]$wetness))
                                   )#end c
                   shuffle      = sample(length(now.wetness))
                   points( x    = now.wetness[shuffle]
@@ -3559,7 +4070,7 @@ if (plot.wetness){
       for (o in sequence(nout)){
          #----- Make the file name. -------------------------------------------------------#
          out.wetness = out[[outform[o]]]$wetness$default
-         fichier   = file.path(out.wetness,paste("wetness-",season.suffix[ee]
+         fichier   = file.path(out.wetness,paste("gpp-wetness-",season.suffix[ee]
                                                 ,"-",simul$name[s],".",outform[o],sep="")
                               )#end file.path
          if (outform[o] == "x11"){
@@ -3628,8 +4139,8 @@ if (plot.wetness){
             if (n.sel > 0){
                now.wetness  = c(obs.use$wetness,mod.use$wetness)
                now.gpp      = c(obs.use$gpp    ,mod.use$gpp    )
-               now.colour   = c( rep(grey.bg,times=length(obs.use$wetness))
-                               , rep("#520485",times=length(mod.use$wetness))
+               now.colour   = c( rep(obs.col ,times=length(obs.use$wetness))
+                               , rep(ed22.col,times=length(mod.use$wetness))
                                )#end c
                shuffle      = sample(length(now.wetness))
                points( x    = now.wetness [shuffle]
@@ -3671,7 +4182,7 @@ if (plot.wetness){
       #------------------------------------------------------------------------------------#
    }#end for (ee in sequence(nseason))
    #---------------------------------------------------------------------------------------#
-}#end if (plot.wetness)
+}#end if (plot.gpp.wetness)
 #------------------------------------------------------------------------------------------#
 
 
@@ -3683,6 +4194,479 @@ if (plot.wetness){
 
 
 
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      Plot the soil moisture response curve by site and season.  Each plot has one panel  #
+# for each simulation.                                                                     #
+#------------------------------------------------------------------------------------------#
+if (plot.reco.wetness){
+   cat(" + Find the Reco soil moisture response curve...","\n")
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Loop over the seasons.                                                            #
+   #---------------------------------------------------------------------------------------#
+   for (ee in sequence(nseason)){
+      cat("   - ",season.full[ee],"...","\n",sep="")
+
+      list.obs.use   = list()
+      list.mod.use   = list()
+      list.cc        = list()
+      wetness.xlimit = mapply(FUN=numeric,0*sequence(nsimul),SIMPLIFY=FALSE)
+      wetness.ylimit = mapply(FUN=numeric,0*sequence(nsimul),SIMPLIFY=FALSE)
+
+      for (p in sequence(nsites)){
+         iata  = sites$iata[p]
+         #----- Get the basic information and site observation. ---------------------------#
+         iata          = sites$iata[p]
+         this.longname = sites$desc[p]
+         obser         = eft[[iata]]
+         ndat          = colSums(is.finite(obser$soil.wetness))
+         nlyr          = length(ndat)
+         slz           = obser$slz
+         slz.use       = ifelse(ndat==0,-slz,slz)
+         cc            = pmin(nlyr,which.min(abs(slz.use-slz.reco.ref)))
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         list.cc[[iata]] = list(cc=cc, slz = paste( "z = ",obser$slz[cc],"m", sep=""))
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Select observed data sets.                                                  #
+         #---------------------------------------------------------------------------------#
+         if (use.dmean.wetness){
+            #------ Keep only data with both GPP and PAR. ---------------------------------#
+            f.sel       = is.finite(c(obser$soil.wetness[,cc])) & is.finite(c(obser$reco))
+            reco.now    = ifelse(f.sel,c(obser$reco             ),NA)
+            wetness.now = ifelse(f.sel,c(obser$soil.wetness[,cc]),NA)
+            #------------------------------------------------------------------------------#
+
+
+            #------ Select only daytime data for this season. -----------------------------#
+            e.sel       = obser$season == ee | ee == nseason
+            sel         = e.sel & f.sel
+            reco.now    = reco.now   [sel]
+            wetness.now = wetness.now[sel]
+            today       = obser$today[sel]
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Compute the daily means. -----------------------------------------------#
+            if (length(reco.now) > 0){
+               dmean.reco    = tapply( X      = reco.now
+                                     , INDEX  = today
+                                     , FUN    = ifenough
+                                     , f      = mean
+                                     , ef.min = ef.min
+                                     , na.rm  = TRUE
+                                     )#end tapply
+               dmean.wetness = tapply( X      = wetness.now
+                                     , INDEX  = today
+                                     , FUN    = ifenough
+                                     , f      = mean
+                                     , ef.min = ef.min
+                                     , na.rm  = TRUE
+                                     )#end tapply
+               dm.sel  = is.finite(dmean.reco) & is.finite(dmean.wetness)
+               n.sel   = sum(dm.sel)
+               obs.use = data.frame( wetness = dmean.wetness[dm.sel]
+                                   , reco    = dmean.reco   [dm.sel]
+                                   )#end data.frame
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Skip this site .-----------------------------------------------------#
+               n.sel = 0
+               #---------------------------------------------------------------------------#
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Keep only the data that is useful. -------------------------------------#
+            n.fit.min = n.fit.dmean.min
+            #------------------------------------------------------------------------------#
+         }else{
+            e.sel   = obser$season == ee | ee == nseason
+            f.sel   = is.finite(c(obser$soil.wetness[,cc])) & is.finite(c(obser$reco))
+            sel     = e.sel & f.sel
+            n.sel   = sum(sel)
+            obs.use = data.frame( wetness = obser$soil.wetness[sel,cc]
+                                , reco    = c(obser$reco     )[sel]
+                                )#end data.frame
+            n.fit.min = n.fit.fmean.min
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Fit a curve only if there are enough points.                                #
+         #---------------------------------------------------------------------------------#
+         if (n.sel >= n.fit.min){
+            cat("     * Site :",this.longname," (N = ",n.sel,")...","\n")
+
+            #------------------------------------------------------------------------------#
+            #     Grab the data for each simulation.                                       #
+            #------------------------------------------------------------------------------#
+            mod.use  = list()
+            mod.pred = list()
+            for (s in sequence(nsimul)){
+               model           = res[[iata]]$ans[[s]]
+
+               #---------------------------------------------------------------------------#
+               #     Find out when this output variable is finite and measured (or at      #
+               # least shortwave radiation had been measured).                             #
+               #---------------------------------------------------------------------------#
+               if (use.dmean.wetness){
+
+                  #------ Keep only data with both GPP and PAR. ---------------------------#
+                  reco.now    = ifelse(f.sel,c(model$reco             ),NA)
+                  wetness.now = ifelse(f.sel,c(model$soil.wetness[,cc]),NA)
+                  #------------------------------------------------------------------------#
+
+
+                  #------ Select only daytime data for this season. -----------------------#
+                  e.sel       = obser$season == ee | ee == nseason
+                  reco.now    = reco.now   [sel]
+                  wetness.now = wetness.now[sel]
+                  today       = model$today[sel]
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Compute the daily means. -----------------------------------------#
+                  dmean.reco    = tapply( X      = reco.now
+                                        , INDEX  = today
+                                        , FUN    = ifenough
+                                        , f      = mean
+                                        , ef.min = ef.min
+                                        , na.rm  = TRUE
+                                        )#end tapply
+                  dmean.wetness = tapply( X      = wetness.now
+                                        , INDEX  = today
+                                        , FUN    = ifenough
+                                        , f      = mean
+                                        , ef.min = ef.min
+                                        , na.rm  = TRUE
+                                        )#end tapply
+                  #------------------------------------------------------------------------#
+
+
+                  mod.use[[s]] = data.frame( wetness = dmean.wetness[dm.sel]
+                                           , reco    = dmean.reco   [dm.sel]
+                                           )#end data.frame
+               }else{
+                  mod.use[[s]] = data.frame( wetness = model$soil.wetness[sel,cc]
+                                           , reco    = model$reco        [sel,1]
+                                           )#end data.frame
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Save range.                                                           #
+               #---------------------------------------------------------------------------#
+               wetness.xlimit[[s]] = range( c( wetness.xlimit[[s]]
+                                             , obs.use$wetness
+                                             , mod.use[[s]]$wetness
+                                             )#end c
+                                          , finite = TRUE
+                                          )#end range
+               wetness.ylimit[[s]] = range( c(wetness.ylimit[[s]]
+                                             ,obs.use$reco
+                                             ,mod.use[[s]]$reco
+                                             )#end c
+                                          , finite = TRUE
+                                          )#end range
+               #---------------------------------------------------------------------------#
+            }#end for (s in sequence(nsimul))
+            list.obs.use [[iata]] = obs.use
+            list.mod.use [[iata]] = mod.use
+            #------------------------------------------------------------------------------#
+         }#end if
+         #---------------------------------------------------------------------------------#
+      }#end for (p in sequence(nsites))
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #    Plot simulations                                                                #
+      #------------------------------------------------------------------------------------#
+      xlimit = pretty.xylim(u=unlist(wetness.xlimit),fracexp=0.0,is.log=FALSE)
+      ylimit = pretty.xylim(u=unlist(wetness.ylimit),fracexp=0.0,is.log=FALSE)
+      for (p in sequence(nsites)){
+         iata  = sites$iata[p]
+         #----- Get the basic information. ------------------------------------------------#
+         iata          = sites$iata[p]
+         this.longname = sites$desc[p]
+         #---------------------------------------------------------------------------------#
+
+         if (iata %in% names(list.obs.use)){
+            obs.use  = list.obs.use [[iata]]
+            mod.use  = list.mod.use [[iata]]
+            cc.use   = list.cc      [[iata]]
+            n.sel    = length(obs.use$wetness)
+
+
+            #------ Set some common features. ---------------------------------------------#
+            letitre = paste(this.longname,"  -  ",cc.use$slz,"\n",season.full[ee]
+                           ," ( N = ",n.sel,")",sep="")
+            lex     = desc.unit(desc="Relative soil moisture",unit=untab$empty    )
+            ley     = desc.unit(desc="Ecosystem respiration" ,unit=untab$kgcom2oyr)
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot the light response curves.                                         #
+            #------------------------------------------------------------------------------#
+            for (o in sequence(nout)){
+               #----- Make the file name. -------------------------------------------------#
+               out.wetness = out[[outform[o]]]$wetness$sites
+               fichier     = file.path(out.wetness,paste("reco-wetness-",season.suffix[ee]
+                                                        ,"-",iata,".",outform[o],sep="")
+                                      )#end file.path
+               if (outform[o] == "x11"){
+                  X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=wsize$width,height=wsize$height
+                            ,pointsize=ptsz,paper=wsize$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
+                     ,pointsize=ptsz,paper=wsize$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the device into multiple panels.                                #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par(oma=c(1,1,4,0))
+               layout(mat = lo.simul$mat)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Loop over all simulations. ------------------------------------------#
+               for (s in sequence(nsimul)){
+                  par(mar=lo.simul$mar[s,])
+                  plot.new()
+                  plot.window(xlim=xlimit,ylim=ylimit)
+                  if (lo.simul$bottom[s]) axis(side=1)
+                  if (lo.simul$left  [s]) axis(side=2,las=1)
+                  grid(col=grid.colour,lty="dotted")
+                  abline(h=0,v=0,lty="solid")
+                  #------ Plot the points. ------------------------------------------------#
+                  now.wetness  = c(obs.use$wetness,mod.use[[s]]$wetness)
+                  now.reco     = c(obs.use$reco   ,mod.use[[s]]$reco   )
+                  now.colour   = c( rep(obs.col ,times=length(obs.use$wetness))
+                                  , rep(ed22.col,times=length(mod.use[[s]]$wetness))
+                                  )#end c
+                  shuffle      = sample(length(now.wetness))
+                  points( x    = now.wetness[shuffle]
+                        , y    = now.reco   [shuffle]
+                        , type = "p"
+                        , pch  = 16
+                        , col  = now.colour [shuffle]
+                        , cex  = 0.5
+                        )#end points
+                  #------------------------------------------------------------------------#
+
+
+                  #------ Final stuff. ----------------------------------------------------#
+                  box()
+                  title(main=simul$desc[s],line=0.5)
+                  #------------------------------------------------------------------------#
+               }#end for (s in sequence(nsimul))
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot title. ---------------------------------------------------------#
+               gtitle(main=letitre,xlab=lex,ylab=ley,line.ylab=2.5,line.xlab=3.5)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+
+            }#end for (o in sequence(nout))
+            #------------------------------------------------------------------------------#
+         }#end if (iata %in% names(list.obs(use)))
+         #---------------------------------------------------------------------------------#
+      }#end for (p in sequence(nsites))
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #    Plot default simulation.                                                        #
+      #------------------------------------------------------------------------------------#
+      s      = sim.default
+      xlimit = pretty.xylim(u=wetness.xlimit[[s]],fracexp=0.0,is.log=FALSE)
+      ylimit = pretty.xylim(u=wetness.ylimit[[s]],fracexp=0.0,is.log=FALSE)
+
+
+      #------ Set some common features. ---------------------------------------------------#
+      letitre = paste(season.full[ee],sep="")
+      lex     = desc.unit(desc="Soil wetness"         ,unit=untab$empty    )
+      ley     = desc.unit(desc="Ecosystem respiration",unit=untab$kgcom2oyr)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Plot the light response curves.                                               #
+      #------------------------------------------------------------------------------------#
+      for (o in sequence(nout)){
+         #----- Make the file name. -------------------------------------------------------#
+         out.wetness = out[[outform[o]]]$wetness$default
+         fichier   = file.path(out.wetness,paste("reco-wetness-",season.suffix[ee]
+                                                ,"-",simul$name[s],".",outform[o],sep="")
+                              )#end file.path
+         if (outform[o] == "x11"){
+            X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
+         }else if(outform[o] == "png"){
+            png(filename=fichier,width=wsize$width*depth,height=wsize$height*depth
+               ,pointsize=ptsz,res=depth)
+         }else if(outform[o] == "eps"){
+            postscript(file=fichier,width=wsize$width,height=wsize$height
+                      ,pointsize=ptsz,paper=wsize$paper)
+         }else if(outform[o] == "pdf"){
+            pdf(file=fichier,onefile=FALSE,width=wsize$width,height=wsize$height
+               ,pointsize=ptsz,paper=wsize$paper)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Split the device into multiple panels.                                      #
+         #---------------------------------------------------------------------------------#
+         par(par.user)
+         par(oma=c(1,1,4,0))
+         layout(mat = lo.site$mat)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Loop over all sites. ------------------------------------------------------#
+         for (p in sequence(nsites)){
+            iata  = sites$iata[p]
+            #----- Get the basic information. ---------------------------------------------#
+            iata          = sites$iata[p]
+            this.longname = sites$desc[p]
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Retrieve data. ---------------------------------------------------------#
+            if (iata %in% names(list.obs.use)){
+               obs.use  = list.obs.use [[iata]]
+               mod.use  = list.mod.use [[iata]][[s]]
+               n.sel    = length(obs.use$wetness)
+            }else{
+               n.sel    = 0
+            }#end if
+            cc.use      = list.cc      [[iata]]
+            #------------------------------------------------------------------------------#
+
+
+
+            #---- Open window. ------------------------------------------------------------#
+            par(mar=lo.site$mar[p,])
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit)
+            if (lo.site$bottom[p]) axis(side=1)
+            if (lo.site$left  [p]) axis(side=2,las=1)
+            grid(col=grid.colour,lty="dotted")
+            abline(h=0,v=0,lty="solid")
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #---- Plot GPP as a function of VPD. ------------------------------------------#
+            if (n.sel > 0){
+               now.wetness  = c(obs.use$wetness,mod.use$wetness)
+               now.reco     = c(obs.use$reco   ,mod.use$reco   )
+               now.colour   = c( rep(obs.col ,times=length(obs.use$wetness))
+                               , rep(ed22.col,times=length(mod.use$wetness))
+                               )#end c
+               shuffle      = sample(length(now.wetness))
+               points( x    = now.wetness[shuffle]
+                     , y    = now.reco   [shuffle]
+                     , type = "p"
+                     , pch  = 16
+                     , col  = now.colour[shuffle]
+                     , cex  = 0.5
+                     )#end points
+               #---------------------------------------------------------------------------#
+            }#end if (n.sel > 0)
+            #------------------------------------------------------------------------------#
+
+
+            #------ Final stuff. ----------------------------------------------------------#
+            box()
+            title(main=paste(sites$desc[p]," (",toupper(sites$iata[p]),")"
+                            ,"\n",cc.use$slz,"  -  N = ",n.sel,sep=""),line=0.25)
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Plot title. ---------------------------------------------------------------#
+         gtitle(main=letitre,xlab=lex,ylab=ley,line.ylab=2.5,line.xlab=3.5)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Close the device. ---------------------------------------------------------#
+         if (outform[o] == "x11"){
+            locator(n=1)
+            dev.off()
+         }else{
+            dev.off()
+         }#end if
+         dummy = clean.tmp()
+         #---------------------------------------------------------------------------------#
+      }#end for (o in sequence(nout))
+      #------------------------------------------------------------------------------------#
+   }#end for (ee in sequence(nseason))
+   #---------------------------------------------------------------------------------------#
+}#end if (plot.wetness)
+#------------------------------------------------------------------------------------------#
 
 
 
@@ -3774,10 +4758,13 @@ if (plot.ust.ftnight){
             #     Grab fortnightly means for this site, and find out whether there is any- #
             # thing to plot.                                                               #
             #------------------------------------------------------------------------------#
-            obs.now       = obser[[this.vnam]]
-            fnmean.obser  = split( x = obser[[this.ust.fnmean]]
+            #----- If this is NEE, fix the u* scale, I forgot to change it to umol/m2/s. --#
+            if (this.vnam %in% "nee"){ mult = kgCyr.2.umols }else{ mult = 1.0 }
+            obs.now       = obser[[this.vnam]] * mult
+            fnmean.obser  = split( x = obser[[this.ust.fnmean]] * mult
                                  , f = row(obser[[this.ust.fnmean]])
                                  )#end split
+            #------------------------------------------------------------------------------#
             cnt           = obser$highsun | (! this.sunvar)
             ndat          = sum(is.finite(obs.now[cnt,]))
             #------------------------------------------------------------------------------#
@@ -3801,11 +4788,12 @@ if (plot.ust.ftnight){
                ustfn.obser  [[iata]] = list( when        = obser$ust.fnmean.when
                                            , ust         = obser$ust.ustmin
                                            , ust.default = obser$ust.filter[obser$ubest]
+                                           , ust.altern  = obser$ust.filter[obser$ualt ]
                                            , expected    = obser[[this.ust.fnmean]]
                                            , ust.title   = ust.title
                                            , col.use     = col.use
                                            )#end if
-               sites.zlimit [[iata]] = range(unlist(fnmean.obser))
+               sites.zlimit [[iata]] = range(unlist(fnmean.obser),finite=TRUE)
                sites.ylimit [[iata]] = range(obser$ust.filter)
                #---------------------------------------------------------------------------#
 
@@ -3822,7 +4810,9 @@ if (plot.ust.ftnight){
 
                   #----- Grab mean fortnightly period. ------------------------------------#
                   model        = res[[iata]]$ans[[s]]
-                  fnmean.model = split(x=model[[this.fnmean]],f=row(model[[this.fnmean]]))
+                  fnmean.model = split( x = model[[this.ust.fnmean]]
+                                      , f = row(model[[this.ust.fnmean]])
+                                      )#end split
                   #------------------------------------------------------------------------#
 
 
@@ -3842,15 +4832,9 @@ if (plot.ust.ftnight){
 
 
                   #----- Update range. ----------------------------------------------------#
-                  simul.ylimit[[   s]] = range( c(simul.ylimit[[s]]   ,obser$ust.filter)
-                                              , finite = TRUE
-                                              )#end range
-                  sites.blimit[[iata]] = range( c(sites.blimit[[iata]],bias.best[[s]]  )
-                                              , finite = TRUE
-                                              )#end range
-                  simul.blimit[[   s]] = range( c(simul.blimit[[s]]   ,bias.best[[s]]  )
-                                              , finite = TRUE
-                                              )#end range
+                  simul.ylimit[[   s]] = c(simul.ylimit[[s]]   ,obser$ust.filter)
+                  sites.blimit[[iata]] = c(sites.blimit[[iata]],bias.best[[s]]  )
+                  simul.blimit[[   s]] = c(simul.blimit[[s]]   ,bias.best[[s]]  )
                   #------------------------------------------------------------------------#
                }#end for (s in sequence(nsimul))
                ustfn.model[[iata]] = list( when      = model$fnmean.when
@@ -3862,6 +4846,7 @@ if (plot.ust.ftnight){
             #------------------------------------------------------------------------------#
          }#end for (p in sequence(nsites))
          #---------------------------------------------------------------------------------#
+
 
 
 
@@ -3877,6 +4862,7 @@ if (plot.ust.ftnight){
             obs.when        = ustfn.obser[[iata]]$when
             obs.ust         = ustfn.obser[[iata]]$ust
             obs.ust.default = ustfn.obser[[iata]]$ust.default
+            obs.ust.altern  = ustfn.obser[[iata]]$ust.altern
             obs.expected    = ustfn.obser[[iata]]$expected
             ust.title       = ustfn.obser[[iata]]$ust.title
             col.use         = ustfn.obser[[iata]]$col.use
@@ -3885,10 +4871,11 @@ if (plot.ust.ftnight){
             bias.best       = ustfn.model[[iata]]$bias.best
             ylimit          = pretty.xylim(u=sites.ylimit[[iata]],fracexp=0.0,is.log=FALSE)
             if (this.vnam %in% c("nee","nep")){
-               zspan = c(-1.04,1.04) * max(sites.zlimit[[iata]],na.rm=TRUE)
+               zspan = c(-1.04,1.04) * quantile(abs(sites.zlimit[[iata]])
+                                               ,prob=0.95,na.rm=TRUE)
             }else{
-               zspan = range(sites.zlimit[[iata]],finite=TRUE)
-               zspan = zspan+c(-1,1)*0.04*diff(zspan)
+               zspan = quantile(sites.zlimit[[iata]],prob=c(0.025,0.975),na.rm=TRUE)
+               zspan = zspan+c(-0.04,0.04)*diff(zspan)
             }#end if
             zlimit   = pretty.xylim(u=zspan,fracexp=0.0,is.log=FALSE)
             #------------------------------------------------------------------------------#
@@ -3907,8 +4894,8 @@ if (plot.ust.ftnight){
             #------ Find which levels to plot the u-* labels. -----------------------------#
             ust.at = pretty(x=ylimit)
             if (this.vnam %in% c("nee","nep")){
-               z.pal     = two.palettes(x=zlimit,n=ncol.ust,white=2
-                                       ,low=hue.low,high=hue.high)
+               z.pal     = two.palettes(x=zlimit,n=ncol.ust,white=1
+                                       ,low=hue.low,high=hue.high,zero="grey85")
                z.at      = z.pal$breaks
                z.colours = z.pal$colours
             }else{
@@ -3920,8 +4907,14 @@ if (plot.ust.ftnight){
 
 
             #------ Find axes limits and size of the dots. --------------------------------#
-            bias.max   = max(abs(sites.blimit[[iata]]))
-            bias.max   = ifelse(is.na(bias.max),1,bias.max)
+            if (is.null(bias.max.std)){
+               bias.max   = max(abs(sites.blimit[[iata]]))
+               bias.max   = ifelse(is.na(bias.max),1,bias.max)
+            }else if (this.vnam %in% "nee"){
+               bias.max   = bias.max.std * kgCyr.2.umols
+            }else{
+               bias.max   = bias.max.std
+            }#end if
             bias.scale = pretty(x=c(0,bias.max))
             bias.max   = rev(bias.scale)[1]
             bias.min   = bias.scale[2]
@@ -3964,6 +4957,8 @@ if (plot.ust.ftnight){
                x.bg          [[s]] = obs.when    [,col.use]
                y.bg          [[s]] = obs.ust     [,col.use]
                z.bg          [[s]] = obs.expected[,col.use]
+               z.bg          [[s]] = pmax(zlimit[1]+tiny.num
+                                         ,pmin(zlimit[2]-tiny.num,z.bg[[s]]))
                dy.bg         [[s]] = median(diff(y.bg[[s]][1,]))
                x.axis.options[[s]] = list( side     = 1
                                          , at       = fnmean.at
@@ -3978,9 +4973,14 @@ if (plot.ust.ftnight){
                                                         , lty  = "dotted"
                                                         )#end list
                                          , abline = list( h    = obs.ust.default
-                                                        , col  = "violetred"
+                                                        , col  = col.ust.default
                                                         , lwd  = 2.0
                                                         , lty  = "dotdash"
+                                                        )#end list
+                                         , abline = list( h    = obs.ust.altern
+                                                        , col  = col.ust.altern
+                                                        , lwd  = 2.0
+                                                        , lty  = "longdash"
                                                         )#end list
                                          , points = list( x    = mod.when
                                                         , y    = ust.best[[s]]
@@ -4033,7 +5033,7 @@ if (plot.ust.ftnight){
                         , xlim           = range(fnmean.at)
                         , col            = z.colours
                         , levels         = z.at
-                        , na.col         = miss.colour
+                        , na.col         = "transparent"
                         , x.axis.options = x.axis.options
                         , y.axis.options = y.axis.options
                         , sub.options    = sub.options
@@ -4093,17 +5093,25 @@ if (plot.ust.ftnight){
          s      = sim.default
          ylimit = pretty.xylim(u=simul.ylimit[[s]]   ,fracexp=0.0,is.log=FALSE)
          if (this.vnam %in% c("nee","nep")){
-            zspan = c(-1.04,1.04) * max(unlist(sites.zlimit),na.rm=TRUE)
+            zspan = c(-1.04,1.04) * quantile(abs(unlist(sites.zlimit))
+                                            ,prob=0.95,na.rm=TRUE)
          }else{
-            zspan = range(unlist(sites.zlimit),finite=TRUE)
-            zspan = zspan+c(-1,1)*0.04*diff(zspan)
+            zspan = quantile(unlist(sites.zlimit),c(0.025,0.975),finite=TRUE)
+            zspan = zspan+c(-0.04,0.04)*diff(zspan)
          }#end if
          zlimit   = pretty.xylim(u=zspan,fracexp=0.0,is.log=FALSE)
          #---------------------------------------------------------------------------------#
 
 
          #------ Find axes limits and size of the dots. -----------------------------------#
-         bias.max   = max(abs(simul.blimit[[s]]))
+         if (is.null(bias.max.std)){
+            bias.max   = max(abs(simul.blimit[[s]]))
+            bias.max   = ifelse(is.na(bias.max),1,bias.max)
+         }else if (this.vnam %in% "nee"){
+            bias.max   = bias.max.std * kgCyr.2.umols
+         }else{
+            bias.max   = bias.max.std
+         }#end if
          bias.max   = ifelse(is.na(bias.max),1,bias.max)
          bias.scale = pretty(x=c(0,bias.max))
          bias.max   = rev(bias.scale)[1]
@@ -4130,8 +5138,8 @@ if (plot.ust.ftnight){
          #------ Find which levels to plot the u-* labels. --------------------------------#
          ust.at = pretty(x=ylimit)
          if (this.vnam %in% c("nee","nep")){
-            z.pal     = two.palettes(x=zlimit,n=ncol.ust,white=2
-                                    ,low=hue.low,high=hue.high)
+            z.pal     = two.palettes(x=zlimit,n=ncol.ust,white=1
+                                    ,low=hue.low,high=hue.high,zero="grey85")
             z.at      = z.pal$breaks
             z.colours = z.pal$colours
          }else{
@@ -4196,6 +5204,7 @@ if (plot.ust.ftnight){
                   obs.when        = ustfn.obser[[iata]]$when
                   obs.ust         = ustfn.obser[[iata]]$ust
                   obs.ust.default = ustfn.obser[[iata]]$ust.default
+                  obs.ust.altern  = ustfn.obser[[iata]]$ust.altern
                   obs.expected    = ustfn.obser[[iata]]$expected
                   ust.title       = ustfn.obser[[iata]]$ust.title
                   col.use         = ustfn.obser[[iata]]$col.use
@@ -4217,6 +5226,9 @@ if (plot.ust.ftnight){
                   y.bg          [[p]] = obs.ust     [,col.use]
                   dy.bg         [[p]] = median(diff(y.bg[[p]][1,]))
                   z.bg          [[p]] = obs.expected[,col.use]
+                  z.bg          [[p]] = pmax(zlimit[1]+tiny.num
+                                         ,pmin(zlimit[2]-tiny.num,z.bg[[p]]))
+
                   x.axis.options[[p]] = list( side     = 1
                                             , at       = fnmean.at
                                             , labels   = fnmean.labels
@@ -4230,9 +5242,14 @@ if (plot.ust.ftnight){
                                                            , lty  = "dotted"
                                                            )#end list
                                             , abline = list( h    = obs.ust.default
-                                                           , col  = "violetred"
+                                                           , col  = col.ust.default
                                                            , lwd  = 2.0
                                                            , lty  = "dotdash"
+                                                           )#end list
+                                            , abline = list( h    = obs.ust.altern
+                                                           , col  = col.ust.altern
+                                                           , lwd  = 2.0
+                                                           , lty  = "longdash"
                                                            )#end list
                                             , points = list( x    = mod.when
                                                            , y    = ust.best
@@ -4280,7 +5297,7 @@ if (plot.ust.ftnight){
                      , xlim           = range(fnmean.at)
                      , col            = z.colours
                      , levels         = z.at
-                     , na.col         = miss.colour
+                     , na.col         = "transparent"
                      , x.axis.options = x.axis.options
                      , y.axis.options = y.axis.options
                      , sub.options    = sub.options
@@ -4352,6 +5369,552 @@ if (plot.ust.ftnight){
 
 
 
+#------------------------------------------------------------------------------------------#
+#      Plot the time series of fortnightly means.                                          #
+#------------------------------------------------------------------------------------------#
+if (plot.ust.bias){
+   cat(" + Mapping u*-filter differences onto the u*-filter map...","\n")
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Loop over variables.                                                              #
+   #---------------------------------------------------------------------------------------#
+   for (v in sequence(ncompvar)){
+      this.compvar    = compvar[[v]]
+      this.vnam       = this.compvar$vnam
+      this.dmean      = paste(      "dmean" ,this.vnam,sep=".")
+      this.fnmean     = paste(      "fnmean",this.vnam,sep=".")
+      this.fnq025     = paste(      "fnq025",this.vnam,sep=".")
+      this.fnq975     = paste(      "fnq975",this.vnam,sep=".")
+      this.ust        = paste("ust"         ,this.vnam,sep=".")
+      this.ust.fnmean = paste("ust","fnmean",this.vnam,sep=".")
+      this.ust.fnq025 = paste("ust","fnq025",this.vnam,sep=".")
+      this.ust.fnq975 = paste("ust","fnq975",this.vnam,sep=".")
+      this.desc       = this.compvar$desc
+      this.unit       = this.compvar$unit
+      is.ust          = this.compvar$ustvar
+      this.soilvar    = this.compvar$soilvar
+      this.sunvar     = this.compvar$sunvar
+      this.col        = this.compvar$col
+      this.fg         = this.compvar$fg
+      cscheme         = get(this.compvar$cscheme.mean)
+      hue.low         = this.compvar$hue.low
+      hue.high        = this.compvar$hue.high
+
+      #------------------------------------------------------------------------------------#
+      #      Check whether this is a u*-dependent variable.                                #
+      #------------------------------------------------------------------------------------#
+      if (is.ust){
+
+         cat("   - ",this.desc,"...","\n")
+         ustfn.obser    = list()
+         ustfn.model    = list()
+         sites.ylimit   = list()
+         simul.ylimit   = mapply(FUN=numeric,length=0*sequence(nsimul),SIMPLIFY=FALSE)
+         sites.zlimit   = list()
+         simul.zlimit   = mapply(FUN=numeric,length=0*sequence(nsimul),SIMPLIFY=FALSE)
+
+         #---------------------------------------------------------------------------------#
+         #     First loop: grab data.                                                      #
+         #---------------------------------------------------------------------------------#
+         for (p in sequence(nsites)){
+            iata  = sites$iata[p]
+            #----- Get the basic information and observed data. ---------------------------#
+            iata          = sites$iata[p]
+            this.longname = sites$desc[p]
+            obser         = eft[[iata]]
+            cat("     * Site :",this.longname,"...","\n")
+            #------------------------------------------------------------------------------#
+
+
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Grab fortnightly means for this site, and find out whether there is any- #
+            # thing to plot.                                                               #
+            #------------------------------------------------------------------------------#
+            #----- If this is NEE, fix the u* scale, I forgot to change it to umol/m2/s. --#
+            if (this.vnam %in% "nee"){ mult = kgCyr.2.umols }else{ mult = 1.0 }
+            obs.now       = obser[[this.vnam]] * mult
+            fnmean.obser  = split( x = obser[[this.ust.fnmean]] * mult
+                                 , f = row(obser[[this.ust.fnmean]])
+                                 )#end split
+            #------------------------------------------------------------------------------#
+            cnt           = obser$highsun | (! this.sunvar)
+            ndat          = sum(is.finite(obs.now[cnt,]))
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Find out what to append. -----------------------------------------------#
+            ust.title = paste(this.longname," (",toupper(iata),") - N = ",ndat,sep="")
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Plot only if the data are finite. -------------------------------------#
+            if (sum(ndat) > 0){
+               #----- Use only the subset of data. ----------------------------------------#
+               col.use               = (sequence(obser$nustar) %% (ust.row.skip+1)) == 1
+               col.use[obser$nustar] = TRUE
+
+
+               #----- Save the data. ------------------------------------------------------#
+               ustfn.obser  [[iata]] = list( when        = obser$ust.fnmean.when
+                                           , ust         = obser$ust.ustmin
+                                           , ust.default = obser$ust.filter[obser$ubest]
+                                           , ust.altern  = obser$ust.filter[obser$ualt ]
+                                           , expected    = obser[[this.ust.fnmean]]
+                                           , ust.title   = ust.title
+                                           , col.use     = col.use
+                                           )#end if
+               sites.ylimit [[iata]] = range(obser$ust.filter)
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Loop over simulations, and grab the expected value and confidence    #
+               # interval.                                                                 #
+               #---------------------------------------------------------------------------#
+               ust.bias  = list()
+               for (s in sequence(nsimul)){
+
+                  #----- Grab mean fortnightly period and find the bias. ------------------#
+                  model         = res[[iata]]$ans[[s]]
+                  ust.bias[[s]] = model[[this.ust.fnmean]] - obser[[this.ust.fnmean]]
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Update range. ----------------------------------------------------#
+                  simul.ylimit[[   s]] = c(simul.ylimit[[s]]   ,obser$ust.filter)
+                  sites.zlimit[[iata]] = c(sites.zlimit[[iata]],ust.bias[[s]]  )
+                  simul.zlimit[[   s]] = c(simul.zlimit[[s]]   ,ust.bias[[s]]  )
+                  #------------------------------------------------------------------------#
+               }#end for (s in sequence(nsimul))
+               ustfn.model[[iata]] = list( when      = model$fnmean.when
+                                         , ust.bias  = ust.bias
+                                         )#end list
+               #---------------------------------------------------------------------------#
+            }#end if (sum(ndat) > 0)
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Second loop: the plots.                                                     #
+         #---------------------------------------------------------------------------------#
+         cat("     * Plotting by scenario...","\n")
+         loop.iata = which(sites$iata %in% names(ustfn.obser))
+         for (p in loop.iata){
+            #----- Get the basic information. ---------------------------------------------#
+            iata            = sites$iata[p]
+            this.longname   = sites$desc[p]
+            obs.when        = ustfn.obser[[iata]]$when
+            obs.ust         = ustfn.obser[[iata]]$ust
+            obs.ust.default = ustfn.obser[[iata]]$ust.default
+            obs.ust.altern  = ustfn.obser[[iata]]$ust.altern
+            obs.expected    = ustfn.obser[[iata]]$expected
+            ust.title       = ustfn.obser[[iata]]$ust.title
+            col.use         = ustfn.obser[[iata]]$col.use
+            mod.when        = ustfn.model[[iata]]$when
+            ust.bias        = ustfn.model[[iata]]$ust.bias
+            ylimit          = pretty.xylim(u=sites.ylimit[[iata]],fracexp=0.0,is.log=FALSE)
+            #------------------------------------------------------------------------------#
+
+
+            #------ Find axes limits and size of the dots. --------------------------------#
+            if (is.null(bias.max.std)){
+               bias.max   = max(abs(sites.zlimit[[iata]]))
+               bias.max   = ifelse(is.na(bias.max),1,bias.max)
+            }else if (this.vnam %in% "nee"){
+               bias.max   = bias.max.std * kgCyr.2.umols
+            }else{
+               bias.max   = bias.max.std
+            }#end if
+            zlimit = pretty.xylim(u=c(-bias.max,bias.max),fracexp=0.0,is.log=FALSE)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Set some common features. ---------------------------------------------#
+            letitre = ust.title
+            ley     = desc.unit(desc="u* filter",unit=untab$mos)
+            lex     = "Month"
+            lacle   = desc.unit(desc=NULL,unit=this.unit)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Find which levels to plot the u-* labels. -----------------------------#
+            ust.at    = pretty(x=ylimit)
+            z.pal     = two.palettes(x=zlimit,n=ncol.ust,white=1
+                                    ,low=hue.low,high=hue.high,zero="grey85")
+            z.at      = z.pal$breaks
+            z.colours = z.pal$colours
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Replicate the observations for each simulation, and set up the          #
+            # additional settings.                                                         #
+            #------------------------------------------------------------------------------#
+            x.bg           = list()
+            y.bg           = list()
+            z.bg           = list()
+            dy.bg          = list()
+            x.axis.options = list()
+            y.axis.options = list()
+            sub.options    = list()
+            plot.after     = list()
+            for (s in sequence(nsimul)){
+
+
+               x.bg          [[s]] = obs.when     [,col.use]
+               y.bg          [[s]] = obs.ust      [,col.use]
+               z.bg          [[s]] = ust.bias[[s]][,col.use]
+               z.bg          [[s]] = pmax(zlimit[1]+tiny.num
+                                         ,pmin(zlimit[2]-tiny.num,z.bg[[s]]))
+               dy.bg         [[s]] = median(diff(y.bg[[s]][1,]))
+               x.axis.options[[s]] = list( side     = 1
+                                         , at       = fnmean.at
+                                         , labels   = fnmean.labels
+                                         , cex.axis = 0.8*cex.ptsz
+                                         )#end list
+               y.axis.options[[s]] = list(side=2,at=ust.at,las=1)
+               sub.options   [[s]] = list(main=simul$desc[s],line=1.0)
+               plot.after    [[s]] = list( abline = list( v    = fnmean.at
+                                                        , h    = ust.at
+                                                        , col  = grid.colour
+                                                        , lty  = "dotted"
+                                                        )#end list
+                                         , abline = list( h    = obs.ust.default
+                                                        , col  = col.ust.default
+                                                        , lwd  = 2.0
+                                                        , lty  = "dotdash"
+                                                        )#end list
+                                         , abline = list( h    = obs.ust.altern
+                                                        , col  = col.ust.altern
+                                                        , lwd  = 2.0
+                                                        , lty  = "longdash"
+                                                        )#end list
+                                         )#end list
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot the fortnightly means.                                             #
+            #------------------------------------------------------------------------------#
+            for (o in sequence(nout)){
+               #----- Make the file name. -------------------------------------------------#
+               out.now = out[[outform[o]]]$ust.bias$sites[[this.vnam]]
+               fichier = file.path(out.now,paste("ustbias-",this.vnam,"-",iata,"."
+                                  ,outform[o],sep="")
+                                  )#end file.path
+               if (outform[o] == "x11"){
+                  X11(width=tsize$width,height=tsize$height,pointsize=col.use)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=tsize$width*depth,height=tsize$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=tsize$width,height=tsize$height
+                            ,pointsize=ptsz,paper=tsize$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=tsize$width,height=tsize$height
+                     ,pointsize=ptsz,paper=tsize$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the device into multiple panels.                                #
+               #---------------------------------------------------------------------------#
+               par(par.user) 
+               image.map( x              = x.bg
+                        , y              = y.bg
+                        , z              = z.bg
+                        , dy             = dy.bg
+                        , xlim           = range(fnmean.at)
+                        , col            = z.colours
+                        , levels         = z.at
+                        , na.col         = "transparent"
+                        , x.axis.options = x.axis.options
+                        , y.axis.options = y.axis.options
+                        , sub.options    = sub.options
+                        , main.title     = list( main      = letitre
+                                               , xlab      = lex
+                                               , ylab      = ley
+                                               , cex.main  = cex.main
+                                               , line.xlab = 4.0
+                                               )#end list
+                        , key.title      = list(main=lacle,cex.main=0.8*cex.main,line=1)
+                        , key.log        = FALSE
+                        , key.vertical   = TRUE
+                        , matrix.plot    = TRUE
+                        , plot.after     = plot.after
+                        , f.key          = ust.key.frac
+                        )#end image.map
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+
+            }#end for (o in sequence(nout))
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Second loop: the plots.                                                     #
+         #---------------------------------------------------------------------------------#
+         cat("     * Plotting default scenario...","\n")
+         s      = sim.default
+         ylimit = pretty.xylim(u=simul.ylimit[[s]]   ,fracexp=0.0,is.log=FALSE)
+         #------ Find axes limits and size of the dots. -----------------------------------#
+         if (is.null(bias.max.std)){
+            bias.max   = max(abs(unlist(sites.zlimit)))
+            bias.max   = ifelse(is.na(bias.max),1,bias.max)
+         }else if (this.vnam %in% "nee"){
+            bias.max   = bias.max.std * kgCyr.2.umols
+         }else{
+            bias.max   = bias.max.std
+         }#end if
+         zlimit = pretty.xylim(u=c(-bias.max,bias.max),fracexp=0.0,is.log=FALSE)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #------ Set some common features. ------------------------------------------------#
+         letitre = this.desc
+         ley     = desc.unit(desc="u* filter",unit=untab$mos)
+         lex     = "Month"
+         lacle   = desc.unit(desc=NULL,unit=this.unit)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #------ Find which levels to plot the u-* labels. --------------------------------#
+         ust.at    = pretty(x=ylimit)
+         z.pal     = two.palettes(x=zlimit,n=ncol.ust,white=1
+                                 ,low=hue.low,high=hue.high,zero="grey85")
+         z.at      = z.pal$breaks
+         z.colours = z.pal$colours
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Plot the fortnightly means.                                                #
+         #---------------------------------------------------------------------------------#
+         for (o in sequence(nout)){
+            #----- Make the file name. ----------------------------------------------------#
+            out.now = out[[outform[o]]]$ust.bias$default
+            fichier = file.path(out.now,paste("ustbias-",this.vnam,"-",simul$name[s],"."
+                                             ,outform[o],sep="")
+                               )#end file.path
+            if (outform[o] == "x11"){
+               X11(width=tsize$width,height=tsize$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=tsize$width*depth,height=tsize$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=tsize$width,height=tsize$height
+                         ,pointsize=ptsz,paper=tsize$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=tsize$width,height=tsize$height
+                  ,pointsize=ptsz,paper=tsize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Initialise list with all dat.                                           #
+            #------------------------------------------------------------------------------#
+            x.bg           = list()
+            y.bg           = list()
+            z.bg           = list()
+            dy.bg          = list()
+            x.axis.options = list()
+            y.axis.options = list()
+            sub.options    = list()
+            plot.after     = list()
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Loop over all sites. ---------------------------------------------------#
+            for (p in sequence(nsites)){
+
+
+
+               #----- Get the basic information. ------------------------------------------#
+               iata          = sites$iata[p]
+               this.longname = sites$desc[p]
+               plotit        = iata %in% names(ustfn.obser)
+               if (plotit){
+                  obs.when        = ustfn.obser[[iata]]$when
+                  obs.ust         = ustfn.obser[[iata]]$ust
+                  obs.ust.default = ustfn.obser[[iata]]$ust.default
+                  obs.ust.altern  = ustfn.obser[[iata]]$ust.altern
+                  obs.expected    = ustfn.obser[[iata]]$expected
+                  ust.title       = ustfn.obser[[iata]]$ust.title
+                  col.use         = ustfn.obser[[iata]]$col.use
+                  mod.when        = ustfn.model[[iata]]$when
+                  ust.bias        = ustfn.model[[iata]]$ust.bias[[s]]
+
+                  x.bg          [[p]] = obs.when    [,col.use]
+                  y.bg          [[p]] = obs.ust     [,col.use]
+                  dy.bg         [[p]] = median(diff(y.bg[[p]][1,]))
+                  z.bg          [[p]] = ust.bias    [,col.use]
+                  z.bg          [[p]] = pmax(zlimit[1]+tiny.num
+                                         ,pmin(zlimit[2]-tiny.num,z.bg[[p]]))
+
+                  x.axis.options[[p]] = list( side     = 1
+                                            , at       = fnmean.at
+                                            , labels   = fnmean.labels
+                                            , cex.axis = 0.8*cex.ptsz
+                                         )#end list
+                  y.axis.options[[p]] = list(side=2,at=ust.at,las=1)
+                  sub.options   [[p]] = list(main=ust.title,line=1.0)
+                  plot.after    [[p]] = list( abline = list( v    = fnmean.at
+                                                           , h    = ust.at
+                                                           , col  = grid.colour
+                                                           , lty  = "dotted"
+                                                           )#end list
+                                            , abline = list( h    = obs.ust.default
+                                                           , col  = col.ust.default
+                                                           , lwd  = 2.0
+                                                           , lty  = "dotdash"
+                                                           )#end list
+                                            , abline = list( h    = obs.ust.altern
+                                                           , col  = col.ust.altern
+                                                           , lwd  = 2.0
+                                                           , lty  = "longdash"
+                                                           )#end list
+                                            )#end list
+               }else{
+                  ust.title = paste(this.longname," (",toupper(iata),") - N = 0",sep="")
+                  col.use = (sequence(eft[[iata]]$nustar) %% (ust.row.skip+1)) == 1
+                  col.use[eft[[iata]]$nustar] = TRUE
+                  x.bg[[p]] = eft[[iata]]$ust.fnmean.when[,col.use]
+                  y.bg[[p]] = eft[[iata]]$ust.ustmin     [,col.use]
+                  z.bg[[p]] = eft[[iata]]$ust.ustmin     [,col.use] * NA
+                  x.axis.options[[p]] = list(side=1,at=fnmean.at,labels=fnmean.labels)
+                  y.axis.options[[p]] = list(side=2,at=ust.at,las=1)
+                  sub.options   [[p]] = list(main=ust.title,line=1.0)
+                  plot.after    [[p]] = list( abline = list( v = fnmean.at
+                                                           , h = ust.at
+                                                           , col = grid.colour
+                                                           , lty = "dotted"
+                                                           )#end list
+                                            )#end list
+               }#end if (plotit)
+               #---------------------------------------------------------------------------#
+            }#end for p in sequence(nplaces)
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Split the device into multiple panels.                                   #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            image.map( x              = x.bg
+                     , y              = y.bg
+                     , z              = z.bg
+                     , dy             = dy.bg
+                     , xlim           = range(fnmean.at)
+                     , col            = z.colours
+                     , levels         = z.at
+                     , na.col         = "transparent"
+                     , x.axis.options = x.axis.options
+                     , y.axis.options = y.axis.options
+                     , sub.options    = sub.options
+                     , main.title     = list( main      = letitre
+                                            , xlab      = lex
+                                            , ylab      = ley
+                                            , cex.main  = cex.main
+                                            , line.xlab = 4.0
+                                            )#end list
+                     , key.title      = list(main=lacle,cex.main=0.8*cex.main,line=1)
+                     , key.log        = FALSE
+                     , key.vertical   = TRUE
+                     , matrix.plot    = TRUE
+                     , plot.after     = plot.after
+                     , f.key          = ust.key.frac
+                     )#end image.map
+            #------------------------------------------------------------------------------#
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in sequence(nout))
+         #---------------------------------------------------------------------------------#
+      }#end if (is.ust)
+      #------------------------------------------------------------------------------------#
+   }#end for (v in sequence(ncompvar))
+   #---------------------------------------------------------------------------------------#
+}#end if (plot.ust.diff)
+#------------------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4374,23 +5937,28 @@ if (plot.ts.ftnight){
    #     Loop over variables.                                                              #
    #---------------------------------------------------------------------------------------#
    for (v in sequence(ncompvar)){
-      this.compvar   = compvar[[v]]
-      this.vnam      = this.compvar$vnam
-      this.dmean     = paste("dmean"   ,this.vnam,sep=".")
-      this.fnmean    = paste("fnmean"  ,this.vnam,sep=".")
-      this.fnq025    = paste("fnq025"  ,this.vnam,sep=".")
-      this.fnq975    = paste("fnq975"  ,this.vnam,sep=".")
-      this.measured  = paste("measured",this.vnam,sep=".")
-      this.desc      = this.compvar$desc
-      this.unit      = this.compvar$unit
-      this.soilvar   = this.compvar$soilvar
-      this.sunvar    = this.compvar$sunvar
-      this.col       = this.compvar$col
-      this.fg        = this.compvar$fg
+      this.compvar    = compvar[[v]]
+      this.vnam       = this.compvar$vnam
+      this.dmean      = paste("dmean"       ,this.vnam,sep=".")
+      this.fnmean     = paste("fnmean"      ,this.vnam,sep=".")
+      this.fnq025     = paste("fnq025"      ,this.vnam,sep=".")
+      this.fnq975     = paste("fnq975"      ,this.vnam,sep=".")
+      this.measured   = paste("measured"    ,this.vnam,sep=".")
+      this.alt        = paste("alt"         ,this.vnam,sep=".")
+      this.alt.fnmean = paste("alt","fnmean",this.vnam,sep=".")
+      this.alt.fnq025 = paste("alt","fnq025",this.vnam,sep=".")
+      this.alt.fnq975 = paste("alt","fnq975",this.vnam,sep=".")
+      this.desc       = this.compvar$desc
+      this.unit       = this.compvar$unit
+      this.soilvar    = this.compvar$soilvar
+      this.sunvar     = this.compvar$sunvar
+      this.col        = this.compvar$col
+      this.fg         = this.compvar$fg
 
 
       cat("   - ",this.desc,"...","\n")
       tsfn.obser     = list()
+      tsfn.alter     = list()
       tsfn.model     = list()
       sites.ylimit   = list()
       simul.ylimit   = mapply(FUN=numeric,length=0*sequence(nsimul),SIMPLIFY=FALSE)
@@ -4451,7 +6019,28 @@ if (plot.ts.ftnight){
                                        , lyr.title = lyr.title
                                        , slz       = obser$slz
                                        )#end if
-            sites.ylimit[[iata]] = range(c(fnmean.obser,fnq025.obser,fnq975.obser))
+            sites.ylimit[[iata]] = range(c(fnmean.obser,fnq025.obser,fnq975.obser)
+                                        ,finite=TRUE)
+
+
+
+            #------------------------------------------------------------------------------#
+            #------------------------------------------------------------------------------#
+            if (this.alt %in% names(obser)){
+               alt.now              = obser[[this.alt       ]]
+               fnmean.alter         = obser[[this.alt.fnmean]]
+               fnq025.alter         = obser[[this.alt.fnq025]]
+               fnq975.alter         = obser[[this.alt.fnq975]]
+               tsfn.alter  [[iata]] = list( when      = obser$fnmean.when
+                                          , expected  = fnmean.alter
+                                          , q025      = fnq025.alter
+                                          , q975      = fnq975.alter
+                                          )#end if
+               sites.ylimit[[iata]] = range(c(sites.ylimit[[iata]]
+                                             ,fnmean.alter,fnq025.alter,fnq975.alter)
+                                           ,finite=TRUE)
+            }#end if
+            #------------------------------------------------------------------------------#
 
 
 
@@ -4532,6 +6121,17 @@ if (plot.ts.ftnight){
          obs.expected  = tsfn.obser[[iata]]$expected
          obs.q025      = tsfn.obser[[iata]]$q025
          obs.q975      = tsfn.obser[[iata]]$q975
+         if (iata %in% names(tsfn.alter)){
+            alt.when      = tsfn.alter[[iata]]$when
+            alt.expected  = tsfn.alter[[iata]]$expected
+            alt.q025      = tsfn.alter[[iata]]$q025
+            alt.q975      = tsfn.alter[[iata]]$q975
+         }else{
+            alt.when      = NA + tsfn.obser[[iata]]$when
+            alt.expected  = NA + tsfn.obser[[iata]]$expected
+            alt.q025      = NA + tsfn.obser[[iata]]$q025
+            alt.q975      = NA + tsfn.obser[[iata]]$q975
+         }#end if
          mod.expected  = tsfn.model[[iata]]$expected
          mod.q025      = tsfn.model[[iata]]$q025
          mod.q975      = tsfn.model[[iata]]$q975
@@ -4622,13 +6222,13 @@ if (plot.ts.ftnight){
                      ytop    = pretty.xylim(u=ylimit,fracexp=+0.04)[2]
                      xleft   = ifelse(drya <= xlimit[1],xleft ,drya)
                      xright  = ifelse(dryz >= xlimit[2],xright,dryz)
-                     rect( xleft      = xleft
-                         , ybottom    = ybottom
-                         , xright     = xright
-                         , ytop       = ytop
-                         , col        = col.dryseason
-                         , border     = NA
-                         , density    = -1
+                     rect( xleft   = xleft
+                         , ybottom = ybottom
+                         , xright  = xright
+                         , ytop    = ytop
+                         , col     = col.dryseason
+                         , border  = NA
+                         , density = -1
                          )#end rect
                   }#end if
                   abline(v=fnmean.at,h=axTicks(2),col=grid.colour,lty="dotted")
@@ -4643,35 +6243,53 @@ if (plot.ts.ftnight){
                   #------------------------------------------------------------------------#
                   #----- Find the limits. -------------------------------------------------#
                   x025      = c(rbind(fnmean.when-dfnmean.when,fnmean.when+dfnmean.when))
+                  alt.x025  = c(rbind(fnmean.when-dfnmean.when,fnmean.when+dfnmean.when))
                   obs.y025  = c(rbind(obs.q025     [,cc],obs.q025     [,cc]))
                   obs.y975  = c(rbind(obs.q975     [,cc],obs.q975     [,cc]))
+                  alt.y025  = c(rbind(alt.q025     [,cc],alt.q025     [,cc]))
+                  alt.y975  = c(rbind(alt.q975     [,cc],alt.q975     [,cc]))
                   mod.y025  = c(rbind(mod.q025[[s]][,cc],mod.q025[[s]][,cc]))
                   mod.y975  = c(rbind(mod.q975[[s]][,cc],mod.q975[[s]][,cc]))
                   keep      = ! (is.na(obs.y025) | is.na(obs.y975))
                   iblck     = cumsum(!keep)
+                  kalt      = ! (is.na(alt.y025) | is.na(alt.y975))
+                  ibalt     = cumsum(!kalt)
                   #----- Split polygons into finite blocks. -------------------------------#
                   x025      = split (x=x025     [keep],f=iblck[keep])
+                  alt.x025  = split (x=alt.x025 [kalt],f=ibalt[kalt])
                   obs.y025  = split (x=obs.y025 [keep],f=iblck[keep])
                   mod.y025  = split (x=mod.y025 [keep],f=iblck[keep])
+                  alt.y025  = split (x=alt.y025 [kalt],f=ibalt[kalt])
                   x975      = lapply(X=x025                                   ,FUN=rev)
+                  alt.x975  = lapply(X=alt.x025                               ,FUN=rev)
                   obs.y975  = lapply(X=split (x=obs.y975 [keep],f=iblck[keep]),FUN=rev)
                   mod.y975  = lapply(X=split (x=mod.y975 [keep],f=iblck[keep]),FUN=rev)
+                  alt.y975  = lapply(X=split (x=alt.y975 [kalt],f=ibalt[kalt]),FUN=rev)
                   #----- Plot polygons. ---------------------------------------------------#
                   npoly     = length(x025)
+                  npalt     = length(alt.x025)
                   for (y in sequence(npoly)){
                      epolygon( x       = c(    x025[[y]],    x975[[y]])
                              , y       = c(obs.y025[[y]],obs.y975[[y]])
-                             , col     = grey.bg
+                             , col     = obs.col
                              , angle   = 45
-                             , density = 40
+                             , density = 20
+                             )#end epolygon
+                  }#end for
+                  for (y in sequence(npalt)){
+                     epolygon( x       = c(alt.x025[[y]],alt.x975[[y]])
+                             , y       = c(alt.y025[[y]],alt.y975[[y]])
+                             , col     = alt.col
+                             , angle   = -45
+                             , density =  20
                              )#end epolygon
                   }#end for
                   for (y in sequence(npoly)){
                      epolygon( x       = c(    x025[[y]],    x975[[y]])
                              , y       = c(mod.y025[[y]],mod.y975[[y]])
-                             , col     = simul$colour[s]
-                             , angle   = -45
-                             , density =  40
+                             , col     = ed22.col
+                             , angle   = +90
+                             , density =  20
                              )#end epolygon
                   }#end poly
                   #------------------------------------------------------------------------#
@@ -4684,14 +6302,21 @@ if (plot.ts.ftnight){
                         , type = "o"
                         , pch  = 16
                         , lwd  = 2
-                        , col  = grey.fg
+                        , col  = obs.fg
+                        )#end points
+                  points( x    = fnmean.when
+                        , y    = alt.expected[,cc]
+                        , type = "o"
+                        , pch  = 16
+                        , lwd  = 2
+                        , col  = alt.fg
                         )#end points
                   points( x    = fnmean.when
                         , y    = mod.expected[[s]][,cc]
                         , type = "o"
                         , pch  = 16
                         , lwd  = 2
-                        , col  = simul$fgcol[s]
+                        , col  = ed22.fg
                         )#end points
                   #------------------------------------------------------------------------#
 
@@ -4805,6 +6430,15 @@ if (plot.ts.ftnight){
                obs.expected   = tsfn.obser[[iata]]$expected     [,cc]
                obs.q025       = tsfn.obser[[iata]]$q025         [,cc]
                obs.q975       = tsfn.obser[[iata]]$q975         [,cc]
+               if (iata %in% names(tsfn.alter)){
+                  alt.expected   = tsfn.alter[[iata]]$expected     [,cc]
+                  alt.q025       = tsfn.alter[[iata]]$q025         [,cc]
+                  alt.q975       = tsfn.alter[[iata]]$q975         [,cc]
+               }else{
+                  alt.expected   = NA + tsfn.obser[[iata]]$expected     [,cc]
+                  alt.q025       = NA + tsfn.obser[[iata]]$q025         [,cc]
+                  alt.q975       = NA + tsfn.obser[[iata]]$q975         [,cc]
+               }#end if
                mod.expected   = tsfn.model[[iata]]$expected[[s]][,cc]
                mod.q025       = tsfn.model[[iata]]$q025    [[s]][,cc]
                mod.q975       = tsfn.model[[iata]]$q975    [[s]][,cc]
@@ -4888,35 +6522,53 @@ if (plot.ts.ftnight){
 
                #----- Find the limits. ----------------------------------------------------#
                x025      = c(rbind(fnmean.when-dfnmean.when,fnmean.when+dfnmean.when))
+               alt.x025  = c(rbind(fnmean.when-dfnmean.when,fnmean.when+dfnmean.when))
                obs.y025  = c(rbind(obs.q025,obs.q025))
                obs.y975  = c(rbind(obs.q975,obs.q975))
+               alt.y025  = c(rbind(alt.q025,alt.q025))
+               alt.y975  = c(rbind(alt.q975,alt.q975))
                mod.y025  = c(rbind(mod.q025,mod.q025))
                mod.y975  = c(rbind(mod.q975,mod.q975))
                keep      = ! (is.na(obs.y025) | is.na(obs.y975))
                iblck     = cumsum(!keep)
+               kalt      = ! (is.na(alt.y025) | is.na(alt.y975))
+               ibalt     = cumsum(!kalt)
                #----- Split polygons into finite blocks. ----------------------------------#
                x025      = split (x=x025     [keep],f=iblck[keep])
+               alt.x025  = split (x=alt.x025 [kalt],f=ibalt[kalt])
                obs.y025  = split (x=obs.y025 [keep],f=iblck[keep])
+               alt.y025  = split (x=alt.y025 [kalt],f=ibalt[kalt])
                mod.y025  = split (x=mod.y025 [keep],f=iblck[keep])
                x975      = lapply(X = x025                                   , FUN = rev)
+               alt.x975  = lapply(X = alt.x025                               , FUN = rev)
                obs.y975  = lapply(X = split (x=obs.y975 [keep],f=iblck[keep]), FUN = rev)
+               alt.y975  = lapply(X = split (x=alt.y975 [kalt],f=ibalt[kalt]), FUN = rev)
                mod.y975  = lapply(X = split (x=mod.y975 [keep],f=iblck[keep]), FUN = rev)
 
                #----- Plot polygons. ------------------------------------------------------#
                npoly     = length(x025)
+               npalt     = length(alt.x025)
                for (y in sequence(npoly)){
                   epolygon( x       = c(    x025[[y]],    x975[[y]])
                           , y       = c(obs.y025[[y]],obs.y975[[y]])
-                          , col     = grey.bg
-                          , angle   = 45
-                          , density = 40
+                          , col     = obs.col
+                          , angle   =  45
+                          , density =  40
+                          )#end epolygon
+               }#end for
+               for (y in sequence(npalt)){
+                  epolygon( x       = c(alt.x025[[y]],alt.x975[[y]])
+                          , y       = c(alt.y025[[y]],alt.y975[[y]])
+                          , col     = alt.col
+                          , angle   = -45
+                          , density =  40
                           )#end epolygon
                }#end for
                for (y in sequence(npoly)){
                   epolygon( x       = c(    x025[[y]],    x975[[y]])
                           , y       = c(mod.y025[[y]],mod.y975[[y]])
-                          , col     = this.col
-                          , angle   = -45
+                          , col     = ed22.col
+                          , angle   = +90
                           , density =  40
                           )#end epolygon
                }#end poly
@@ -4930,14 +6582,21 @@ if (plot.ts.ftnight){
                      , type = "o"
                      , pch  = 16
                      , lwd  = 2
-                     , col  = grey.fg
+                     , col  = obs.fg
+                     )#end points
+               points( x    = fnmean.when
+                     , y    = alt.expected
+                     , type = "o"
+                     , pch  = 16
+                     , lwd  = 2
+                     , col  = alt.fg
                      )#end points
                points( x    = fnmean.when
                      , y    = mod.expected
                      , type = "o"
                      , pch  = 16
                      , lwd  = 2
-                     , col  = this.fg
+                     , col  = ed22.fg
                      )#end points
                #---------------------------------------------------------------------------#
             }#end if (plotit)
@@ -5226,7 +6885,7 @@ if (plot.bp.diel){
                                            , names(mod.list[[cc]][[s]])
                                            )#end rbind
                                     )#end c
-                  bp.colour      = rep(c(grey.bg,this.col),times=nhour)
+                  bp.colour      = rep(c(obs.col,ed22.col),times=nhour)
                   #------------------------------------------------------------------------#
 
 
@@ -5397,7 +7056,7 @@ if (plot.bp.diel){
                #----- Set the lists and colours. ------------------------------------------#
                bp.list        = c(rbind(obs.list,mod.list))
                names(bp.list) = c(rbind(names(obs.list),names(mod.list)))
-               bp.colour      = rep(c(grey.bg,this.col),times=nhour)
+               bp.colour      = rep(c(obs.col,ed22.col),times=nhour)
                #---------------------------------------------------------------------------#
 
 
@@ -6067,6 +7726,7 @@ if (plot.density.dmean){
                                  )#end list
          #---------------------------------------------------------------------------------#
       }#end for (p in sequence(nsites))
+      dlimit = pretty.xylim(u=dlimit,fracexp=0.0,is.log=FALSE)
       #------------------------------------------------------------------------------------#
 
 
@@ -6325,6 +7985,7 @@ if (plot.density.dmean){
                                  )#end list
          #---------------------------------------------------------------------------------#
       }#end for (p in sequence(nsites))
+      dlimit = pretty.xylim(u=dlimit,fracexp=0.0,is.log=FALSE)
       #------------------------------------------------------------------------------------#
 
 
@@ -6415,13 +8076,13 @@ if (plot.density.dmean){
                   , y    = dens.iata$obser[,cc]
                   , type = "l"
                   , lwd  = 2.5
-                  , col  = foreground
+                  , col  = obs.fg
                   )#end points
             lines ( x    = quant
                   , y    = dens.iata$model[,cc]
                   , type = "l"
                   , lwd  = 2.5
-                  , col  = this.col
+                  , col  = ed22.col
                   )#end points
             #------------------------------------------------------------------------------#
 
@@ -6858,7 +8519,7 @@ if (plot.spider){
             #------------------------------------------------------------------------------#
             for (o in 1:nout){
                #----- Make the file name. -------------------------------------------------#
-               out.web = out[[outform[o]]]$spider$default
+               out.web = out[[outform[o]]]$spider$default.var
                fichier   = file.path(out.web,paste("spider-",this.good,"-",this.vnam,"-"
                                                   ,simul$name[s],".",outform[o],sep=""))
                if (outform[o] == "x11"){
@@ -6958,6 +8619,169 @@ if (plot.spider){
          }#end if (any(is.finite(web[,,v,d,nseason])))
          #---------------------------------------------------------------------------------#
       }#end for (v in 1:ncompvar)
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+
+
+
+
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #     Webs by diel (all variables and sites).                                        #
+      #------------------------------------------------------------------------------------#
+      s         = sim.default
+      ee        = nseason
+      v.inc     = c("gpp","nep","reco","rshortup","rlongup","ustar","hflxca","wflxca")
+      v.use     = compvar.key %in% v.inc
+      diel.loop = sequence(ndiel)
+      d.sel     = which(diel.key %in% c("all.hrs","dmean"))
+      for (d in sequence(ndiel)){
+         letitre = paste(desc.good," - ",diel.desc[d],sep="")
+
+
+         #---------------------------------------------------------------------------------#
+         #     Check whether there is anything to plot.                                    #
+         #---------------------------------------------------------------------------------#
+         if (any(is.finite(web[s,,v.use,d,nseason]))){
+
+            v.keep  = which(v.use & is.finite(colSums(web[s,,,d,ee])))
+            v.order = match(v.inc,compvar.key[v.keep])
+            v.order = v.order[! is.na(v.order)]
+            v.sel   = v.keep[v.order]
+
+
+            if (this.good %in% "sw.stat"){
+               web.range = c(0,1)
+            }else{
+               if (d %in% d.sel){
+                  web.range = range(c(0,web[s,,v.sel,d,ee]),finite=TRUE)
+               }else{
+                  web.range = range(c(0,web[s,,v.sel,d,ee]),finite=TRUE)
+               }#end if
+            }#end if
+            if (ptsz <= 11){
+               web.lim   = pretty(web.range,n=5)
+            }else if (ptsz <= 14){
+               web.lim   = pretty(web.range,n=4)
+            }else{
+               web.lim   = pretty(web.range,n=3)
+            }#end if
+
+
+            #------------------------------------------------------------------------------#
+            #     Format loop.  We now plot all sites and variables.                       #
+            #------------------------------------------------------------------------------#
+            for (o in sequence(nout)){
+               #----- Make the file name. -------------------------------------------------#
+               out.web = out[[outform[o]]]$spider$default.site
+               fichier   = file.path(out.web,paste("spider-",this.good,"-",diel.key[d]
+                                                  ,"-",simul.key[s],".",outform[o],sep="")
+                                    )#end file.path
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                     ,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the window into 3, and add site and simulation legends at       #
+               # the bottom.                                                               #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par.orig = par(no.readonly = TRUE)
+               mar.orig = par.orig$mar
+               par(oma = c(0.2,0,3.0,0))
+               layout(mat = rbind(2,1),height = c(18,4))
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Legend: the simulations. --------------------------------------------#
+               par(mar=c(0.1,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.0
+                      , legend  = paste(sites$desc," (",toupper(sites$iata),")",sep="")
+                      , col     = sites$col
+                      , lwd     = 3.0
+                      , ncol    = 3
+                      , title   = expression(bold("Sites"))
+                      , cex     = 0.75 * cex.ptsz
+                      , xpd     = TRUE
+                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the spider webs for all variables.                               #
+               #---------------------------------------------------------------------------#
+               radial.flex( lengths          = web[s,,v.sel,d,ee]
+                          , labels           = as.expression(compvar.sym[v.sel])
+                          , lab.col          = foreground
+                          , lab.bg           = background
+                          , radlab           = FALSE
+                          , start            = 90
+                          , clockwise        = TRUE
+                          , rp.type          = "p"
+                          , label.prop       = 1.15 * max(1,sqrt(ptsz / 14))
+                          , main             = ""
+                          , line.col         = sites$col
+                          , lty              = "solid"
+                          , lwd              = 3.0
+                          , show.grid        = TRUE
+                          , show.grid.labels = 2
+                          , show.radial.grid = TRUE
+                          , grid.col         = grid.colour
+                          , radial.lim       = web.lim
+                          , radial.col       = foreground
+                          , radial.bg        = background
+                          , poly.col         = NA
+                          , mar              = c(2,1,2,1)+0.1
+                          , cex.lab          = 0.5
+                          )#end radial.plot
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the global title.                                                #
+               #---------------------------------------------------------------------------#
+               par(las=0)
+               mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+
+            }#end for (o in 1:nout)
+            #------------------------------------------------------------------------------#
+         }#end if (any(is.finite(web[s,,,d,nseason])))
+         #---------------------------------------------------------------------------------#
+      }#end for (d in sequence(ndiel))
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
    }#end for (g in good.loop)
@@ -7738,7 +9562,7 @@ if (plot.skill.taylor){
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
             #----- Make the file name. ----------------------------------------------------#
-            out.skill = out[[outform[o]]]$skill$default
+            out.skill = out[[outform[o]]]$skill$default.var
             fichier   = file.path(out.skill,paste("skill-",this.vnam,"-",simul$name[s]
                                                  ,".",outform[o],sep="")
                                  )#end file.path
@@ -7814,7 +9638,7 @@ if (plot.skill.taylor){
 
 
 
-            #----- Legend: the simulations. -----------------------------------------------#
+            #----- Legend: the diel. ------------------------------------------------------#
             par(mar=c(0.2,0.1,0.1,0.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
@@ -7923,7 +9747,7 @@ if (plot.skill.taylor){
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
             #----- Make the file name. ----------------------------------------------------#
-            out.taylor = out[[outform[o]]]$taylor$default
+            out.taylor = out[[outform[o]]]$taylor$default.var
             fichier    = file.path(out.taylor,paste("taylor-",this.vnam,"-",simul$name[s]
                                                    ,".",outform[o],sep=""))
             if (outform[o] == "x11"){
@@ -8078,6 +9902,727 @@ if (plot.skill.taylor){
       #------------------------------------------------------------------------------------#
    }#end for (v in sequence(ncompvar))
    #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Default simulation, all variables in the same plot, colours are sites, point    #
+   # formats are variables.                                                                #
+   #---------------------------------------------------------------------------------------#
+   cat ("     * Default simulation by time of the day...","\n")
+   s         = sim.default
+   loop.diel = which(diel.default)
+   v.inc     = c("gpp","nep","reco","rshortup","rlongup","ustar","hflxca","wflxca")
+   v.use     = match(v.inc,compvar.key)
+   nvuse     = length(v.use)
+
+   for (d in sequence(ndiel)){
+      this.diel = diel.key[d]
+
+      #------------------------------------------------------------------------------------#
+      #      Loop over all sites, normalise data and create the paired vectors.            #
+      #------------------------------------------------------------------------------------#
+      list.skill    = list()
+      percent.skill = array( data      = 0
+                           , dim       = c(ncompvar,nsites)
+                           , dimnames  = list(compvar.key,sites$iata)
+                           )#end array
+      bias.range    = NULL
+      sigma.range   = NULL
+      for (v in sequence(ncompvar)){
+         #----- Copy the variable information. --------------------------------------------#
+         this.vnam     = compvar[[v]]$vnam
+         this.dmean    = paste("dmean"   ,this.vnam,sep=".")
+         this.fnmean   = paste("fnmean"  ,this.vnam,sep=".")
+         this.measured = paste("measured",this.vnam,sep=".")
+         this.desc     = compvar[[v]]$desc
+         this.unit     = compvar[[v]]$unit
+         this.sun      = compvar[[v]]$sunvar
+         this.soilvar  = compvar[[v]]$soilvar
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Initialise list for this variable. ----------------------------------------#
+         list.skill[[this.vnam]] = list()
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Site loop.                                                                 #
+         #---------------------------------------------------------------------------------#
+         for (p in sequence(nsites)){
+            #----- Load observation and model. --------------------------------------------#
+            iata  = sites$iata[p]
+            obs   = eft[[iata]]
+            mod   = res[[iata]]$ans[[simul.key[s]]]
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Decide which data set to use.                                           #
+            #------------------------------------------------------------------------------#
+            ndat    = colSums(is.finite(obs[[this.vnam]]))
+            nlyr    = length(ndat)
+            slz.use = ifelse(ndat==0,-obs$slz,obs$slz)
+            cc      = pmin(nlyr,which.min(abs(slz.use-slz.reference)))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Decide which data set to use.  Either way, use only finite data set,    #
+            # and only when the standard deviation is valid and greater than zero          #
+            #------------------------------------------------------------------------------#
+            if (d %in% diel.fnmean){
+               #----- Select fortnightly averages. ----------------------------------------#
+               sel                = ( is.finite(obs[[this.fnmean]][,cc])
+                                    & this.vnam %in% v.inc )
+               sdev.obs.now       = sd(obs[[this.fnmean]][sel,cc],na.rm=TRUE)
+               sel                = sel & sdev.obs.now %>% 0.
+               this.obs           = obs[[this.fnmean]][sel,cc]
+               this.mod           = mod[[this.fnmean]][sel,cc]
+               percent.skill[v,p] = sum(sel)
+            }else if(d %in% diel.dmean){
+               #----- Select daily averages. ----------------------------------------------#
+               sel                = ( is.finite(obs[[this.dmean]][,cc])
+                                    & this.vnam %in% v.inc )
+               sdev.obs.now       = sd(obs[[this.dmean]][sel,cc],na.rm=TRUE)
+               sel                = sel & sdev.obs.now %>% 0.
+               this.obs           = obs[[this.dmean]][sel,cc]
+               this.mod           = mod[[this.dmean]][sel,cc]
+               percent.skill[v,p] = sum(sel)
+            }else{
+               #----- Select this diel (or everything for all day). -----------------------#
+               d.sel              = obs$diel == d | d %in% diel.all.hrs
+               s.sel              = obs$highsun | (! this.sun)
+               o.sel              = is.finite(obs[[this.vnam]][,cc]) & this.vnam %in% v.inc
+               nmax               = sum(d.sel & s.sel)
+               sel                = d.sel & s.sel & o.sel
+               sel                = ifelse(is.na(sel),FALSE,sel)
+               sdev.obs.now       = sd(obs[[this.vnam]][sel,cc],na.rm=TRUE)
+               sel                = sel & sdev.obs.now %>% 0.
+               this.obs           = obs[[this.vnam]][sel,cc]
+               this.mod           = mod[[this.vnam]][sel,cc]
+               if (sum(d.sel & s.sel) > 0){
+                  percent.skill[v,p] = sum(sel)
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Copy the data to the paired list.                                        #
+            #------------------------------------------------------------------------------#
+            list.skill[[this.vnam]][[iata]] = list(obs=this.obs,mod=this.mod)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Find the normalised bias and model standard deviation. -----------------#
+            if (percent.skill[v,p] > 0.){
+               comp         = res[[iata]]$sim[[simul.key[s]]][[this.vnam]]
+               sdev.obs.now = sqrt(comp$obs.moment[cc,d,nseason,2])
+               bias.now     = comp$bias [cc,d,nseason] / sdev.obs.now
+               sigma.now    = comp$sigma[cc,d,nseason] / sdev.obs.now
+               bias.range   = c(bias.range ,bias.now   )
+               sigma.range  = c(sigma.range,sigma.now  )
+            }#end if (percent.skill[v,p] > 0.)
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+      }#end for (v in v.use)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Plot Taylor and skill plots only if there is anything to plot.                 #
+      #------------------------------------------------------------------------------------#
+      ok.taylor.skill = (  any(percent.skill > 0)
+                        && any(is.finite(bias.range))    && any(is.finite(sigma.range)))
+      if (ok.taylor.skill){
+         #----- Normalise percentage of data by diel. -------------------------------------#
+         diel.scale    = apply(X=percent.skill,MARGIN=1,FUN=max,na.rm=TRUE)
+         diel.scale    = array( data     = rep( x     = ifelse( diel.scale == 0
+                                                              , 0.
+                                                              , 100./diel.scale
+                                                              )#end ifelse
+                                              , times = nsites)
+                              , dim      = dim(percent.skill)
+                              , dimnames = dimnames(percent.skill)
+                              )#end array
+         percent.skill = percent.skill * diel.scale
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Find which combination of place and diel to add to the plots. -------------#
+         which.skill = which(x=is.finite(percent.skill) & percent.skill > 0,arr.ind=TRUE)
+         nwhich      = nrow(which.skill)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---- Fix ranges. ----------------------------------------------------------------#
+         xy.range    = 1.04 * max(abs(c(bias.range,sigma.range)),na.rm=TRUE)
+         bias.range  = 1.04 * xy.range  * c(-1,1)
+         sigma.range = 1.04 * xy.range  * c( 1,0)
+         r2.range    = range(1-xy.range^2,1)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Calculate the size for the points in the Skill and Taylor diagrams.         #
+         # Make it proportional to the number of points used to evaluate each place.       #
+         #---------------------------------------------------------------------------------#
+         st.cnt.min = min (percent.skill[percent.skill > 0] , na.rm = TRUE)
+         st.cnt.max = max (percent.skill[percent.skill > 0] , na.rm = TRUE)
+         st.cnt.med = round(mean(c(st.cnt.min,st.cnt.max)))
+         cex.skill  = pmax( st.cex.min, ( st.cex.min + ( st.cex.max    - st.cex.min )
+                                                     * ( percent.skill - st.cnt.min )
+                                                     / ( st.cnt.max    - st.cnt.min )
+                                        )#end cex.skill
+                          )#end pmax
+         lwd.skill  = pmax( st.lwd.min, ( st.lwd.min + ( st.lwd.max    - st.lwd.min )
+                                                     * ( percent.skill - st.cnt.min )
+                                                     / ( st.cnt.max    - st.cnt.min )
+                                        )#end cex.diel
+                         )#end pmax
+         cex.skill  = cex.skill + 0. * percent.skill
+         lwd.skill  = lwd.skill + 0. * percent.skill
+         st.cex.med = mean(c(st.cex.min,st.cex.max))
+         #---------------------------------------------------------------------------------#
+
+
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #     Skill plot.                                                                 #
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     Plot title.                                                                 #
+         #---------------------------------------------------------------------------------#
+         letitre = paste(" Skill diagram - ",diel.desc[d],sep="")
+         cat("       - Skill","\n")
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all formats.                                                     #
+         #---------------------------------------------------------------------------------#
+         for (o in sequence(nout)){
+            #----- Make the file name. ----------------------------------------------------#
+            out.skill = out[[outform[o]]]$skill$default.site
+            fichier   = file.path(out.skill,paste("skill-",diel.key[d],"-",simul$name[s]
+                                                 ,".",outform[o],sep="")
+                                 )#end file.path
+            if (outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                  ,pointsize=ptsz,paper=size$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Split the window into 3, and add site and simulation legends at the      #
+            # bottom.                                                                      #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            par.orig = par(no.readonly = TRUE)
+            mar.orig = par.orig$mar
+            par(oma = c(0.2,3,3.0,0))
+            layout(mat = rbind(c(4,4,4,4,4,4,4),c(1,1,2,3,3,3,3)),height = c(5.0,1.0))
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the variables. -------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = compvar.sym[v.use]
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = compvar.pch[v.use]
+                   , ncol    = min(4,pretty.box(nvuse)$ncol)
+                   , title   = expression(bold("Sites"))
+                   , pt.cex  = st.cex.med
+                   , cex     = 1.1 * cex.ptsz
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the counts. ----------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = sprintf("%.1f",c(st.cnt.min,st.cnt.med,st.cnt.max))
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = 15
+                   , ncol    = 1
+                   , title   = expression(bold("Rel. Count"))
+                   , pt.cex  = c(st.cex.min,st.cex.med,st.cex.max)
+                   , cex     = 1.0 * cex.ptsz
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the sites. -----------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = paste(sites$desc," (",toupper(sites$iata),")",sep="")
+                   , fill    = sites$col
+                   , border  = sites$col
+                   , ncol    = 2
+                   , cex     = 1.0 * cex.ptsz
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over valid pairs.                                                   #
+            #------------------------------------------------------------------------------#
+            myskill     = NULL
+            for (u in sequence(nwhich)){
+               v         = which.skill[u,1]
+               p         = which.skill[u,2]
+               this.vnam = compvar[[v]]$vnam
+               iata      = sites$iata[p]
+               pair.now  = list.skill[[this.vnam]][[iata]]
+
+
+               #---------------------------------------------------------------------------#
+               #     Initialise or update the skill plot.                                  #
+               #---------------------------------------------------------------------------#
+               myskill = skill.plot( obs           = pair.now$obs
+                                   , obs.options   = list( col = foreground
+                                                         , cex = 2.0
+                                                         )#end list
+                                   , mod           = pair.now$mod
+                                   , mod.options   = list( col = sites$col[p]
+                                                         , bg  = sites$col[p]
+                                                         , pch = compvar[[v]]$pch
+                                                         , cex = cex.skill[v,p]
+                                                         , lty = "solid"
+                                                         , lwd = lwd.skill[v,p]
+                                                         )#end list
+                                   , main           = ""
+                                   , bias.lim       = bias.range
+                                   , r2.lim         = r2.range
+                                   , r2.options     = list( col = grid.colour)
+                                   , nobias.options = list( col = khaki.mg   )
+                                   , rmse.options   = list( col = orange.mg
+                                                          , lty = "dotdash"
+                                                          , lwd = 1.2
+                                                          , bg  = background
+                                                          )#end list
+                                   , cex.xyzlab     = 1.4
+                                   , cex.xyzat      = 1.4
+                                   , skill          = myskill
+                                   , normalise      = TRUE
+                                   , mar            = c(5,4,4,3)+0.1
+                                   )#end skill.plot
+               #---------------------------------------------------------------------------#
+            }#end for (u in sequence(nrow(which.skill)))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot the global title.                                                   #
+            #------------------------------------------------------------------------------#
+            par(las=0)
+            mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in 1:nout) 
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #      Taylor plot.                                                               #
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     Plot title.                                                                 #
+         #---------------------------------------------------------------------------------#
+         letitre = paste(" Taylor diagram - ",diel.desc[d],sep="")
+         cat("       - Taylor","\n")
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all formats.                                                     #
+         #---------------------------------------------------------------------------------#
+         for (o in sequence(nout)){
+            #----- Make the file name. ----------------------------------------------------#
+            out.taylor = out[[outform[o]]]$taylor$default.site
+            fichier    = file.path(out.taylor,paste("taylor-",diel.key[d],"-",simul$name[s]
+                                                   ,".",outform[o],sep=""))
+            if (outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                  ,pointsize=ptsz,paper=size$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Split the window into 3, and add site and simulation legends at the      #
+            # bottom.                                                                      #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            par.orig = par(no.readonly = TRUE)
+            mar.orig = par.orig$mar
+            par(oma = c(0.2,3,3.0,0))
+            layout(mat = rbind(c(4,4,4,4,4,4,4),c(1,1,2,3,3,3,3)),height = c(5.0,1.0))
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the variables. -------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = compvar.sym[v.use]
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = compvar.pch[v.use]
+                   , ncol    = min(4,pretty.box(nvuse)$ncol)
+                   , title   = expression(bold("Sites"))
+                   , pt.cex  = st.cex.med
+                   , cex     = 1.1 * cex.ptsz
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the counts. ----------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = sprintf("%.1f",c(st.cnt.min,st.cnt.med,st.cnt.max))
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = 15
+                   , ncol    = 1
+                   , title   = expression(bold("Rel. Count"))
+                   , pt.cex  = c(st.cex.min,st.cex.med,st.cex.max)
+                   , cex     = 1.0 * cex.ptsz
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the sites. -----------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = paste(sites$desc," (",toupper(sites$iata),")",sep="")
+                   , fill    = sites$col
+                   , border  = sites$col
+                   , ncol    = 2
+                   , cex     = 1.0 * cex.ptsz
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over valid pairs.                                                   #
+            #------------------------------------------------------------------------------#
+            add  = FALSE
+            for (u in sequence(nwhich)){
+               v         = which.skill[u,1]
+               p         = which.skill[u,2]
+               this.vnam = compvar[[v]]$vnam
+               iata      = sites$iata[p]
+               pair.now  = list.skill[[this.vnam]][[iata]]
+
+               #---------------------------------------------------------------------------#
+               #     Initialise or update the Taylor plot.                                 #
+               #---------------------------------------------------------------------------#
+               mytaylor = taylor.plot( obs        = pair.now$obs
+                                     , mod        = pair.now$mod
+                                     , add        = add
+                                     , pos.corr   = NA
+                                     , pt.col     = sites$col[p]
+                                     , pt.bg      = sites$col[p]
+                                     , pt.pch     = compvar[[v]]$pch
+                                     , pt.cex     = cex.skill[v,p]
+                                     , pt.lwd     = lwd.skill[v,p]
+                                     , obs.col    = foreground
+                                     , gamma.col  = sky.mg
+                                     , gamma.bg   = background
+                                     , sd.col     = grey.fg
+                                     , sd.obs.col = yellow.mg
+                                     , corr.col   = foreground
+                                     , main       = ""
+                                     , normalise  = TRUE
+                                     )#end taylor.plot
+               add = TRUE
+               #---------------------------------------------------------------------------#
+            }#end for (u in sequence(nwhich))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot the global title.                                                   #
+            #------------------------------------------------------------------------------#
+            par(las=0)
+            mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in sequence(nout))
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      }#end if (ok.taylor.skill)
+      #------------------------------------------------------------------------------------#
+   }#end for (d in loop.diel)
+   #---------------------------------------------------------------------------------------#
 }#end if (plot.skill.taylor)
 #------------------------------------------------------------------------------------------#
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Make a summary table with all variables and results.                                 #
+#------------------------------------------------------------------------------------------#
+summ.table = list()
+if (make.summ.table){
+   cat (" + Make summary table with all observations and sites...","\n")
+
+   #----- Initialise summary table. -------------------------------------------------------#
+   template.table    = data.frame( n                = rep(0.           ,times=ncompvar)
+                                 , df               = rep(0.           ,times=ncompvar)
+                                 , bias             = rep(0.           ,times=ncompvar)
+                                 , sigma            = rep(0.           ,times=ncompvar)
+                                 , ks.stat          = rep(0,           ,times=ncompvar)
+                                 , best.rmse        = rep(Inf          ,times=ncompvar)
+                                 , best.iata        = rep(NA_character_,times=ncompvar)
+                                 , best.n           = rep(NA           ,times=ncompvar)
+                                 , worst.rmse       = rep(-Inf         ,times=ncompvar)
+                                 , worst.iata       = rep(NA_character_,times=ncompvar)
+                                 , worst.n          = rep(NA           ,times=ncompvar)
+                                 , stringsAsFactors = FALSE
+                                 )#end data.frame
+   rownames(template.table) = compvar.key
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Select all hours, and all year.                                                   #
+   #---------------------------------------------------------------------------------------#
+   d = which(diel.key  %in% "all.hrs")
+   e = which(season.key %in% "ALL"   )
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Loop over all variables.                                                         #
+   #---------------------------------------------------------------------------------------#
+   for (s in sequence(nsimul)){
+      s.table = template.table
+
+
+      for (v in sequence(ncompvar)){
+         #----- Copy the variable information. --------------------------------------------#
+         this.vnam     = compvar[[v]]$vnam
+         this.desc     = compvar[[v]]$desc
+         this.unit     = compvar[[v]]$unit
+         this.sun      = compvar[[v]]$sunvar
+         this.soilvar  = compvar[[v]]$soilvar
+         cat("   - ",this.desc,"...","\n")
+
+         #---------------------------------------------------------------------------------#
+         #     Loop over all sites.                                                        #
+         #---------------------------------------------------------------------------------#
+         for (p in sequence(nsites)){
+            iata        = sites$iata[p]
+            longname    = sites$desc[p]
+            obser       = eft[[iata]]
+            obs.now     = obser[[this.vnam]]
+            nlyr        = ncol(obs.now)
+            ndat        = colSums(is.finite(obs.now))
+            slz.use     = ifelse(ndat==0,-obser$slz,obser$slz)
+            cc          = pmin(nlyr,which.min(abs(slz.use-slz.reference)))
+
+
+            #------------------------------------------------------------------------------#
+            #     Grab the data for this simulation.                                       #
+            #------------------------------------------------------------------------------#
+            comp.now     = res[[iata]]$sim[[s]][[this.vnam]]
+            n.now        = comp.now$n      [cc,d,e]
+            df.now       = n.now - 1
+            o.sdev.now   = sqrt(comp.now$obs.moment[cc,d,e,2])
+            bias.now     = comp.now$bias   [cc,d,e] / o.sdev.now
+            sigma.now    = comp.now$sigma  [cc,d,e] / o.sdev.now
+            ks.stat.now  = comp.now$ks.stat[cc,d,e]
+            rmse.now     = comp.now$rmse   [cc,d,e] / o.sdev.now
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Aggregate data to the total. ------------------------------------------#
+            if (df.now %>% 0 & o.sdev.now %>% 0){
+               s.table$n      [v] = s.table$n      [v] + n.now
+               s.table$df     [v] = s.table$df     [v] + df.now
+               s.table$bias   [v] = s.table$bias   [v] + n.now  * bias.now
+               s.table$sigma  [v] = s.table$sigma  [v] + df.now * sigma.now^2
+               s.table$ks.stat[v] = s.table$ks.stat[v] + n.now  * ks.stat.now
+               if (is.finite(rmse.now) & rmse.now < s.table$best.rmse[v]){
+                  s.table$best.rmse[v] = rmse.now
+                  s.table$best.iata[v] = iata
+                  s.table$best.n   [v] = n.now
+               }#end if
+               if (is.finite(rmse.now) & rmse.now > s.table$worst.rmse[v]){
+                  s.table$worst.rmse[v] = rmse.now
+                  s.table$worst.iata[v] = iata
+                  s.table$worst.n   [v] = n.now
+               }#end if
+            }#end if
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+      }#end for
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Normalise table.                                                               #
+      #------------------------------------------------------------------------------------#
+      s.table$bias    = ifelse(s.table$n  > 0,        s.table$bias/s.table$n,NA)
+      s.table$sigma   = ifelse(s.table$df > 0,sqrt(s.table$sigma/s.table$df),NA)
+      s.table$ks.stat = ifelse(s.table$n  > 0,     s.table$ks.stat/s.table$n,NA)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Round most of the numeric columns.                                             #
+      #------------------------------------------------------------------------------------#
+      s.table$bias       = round(s.table$bias      ,2)
+      s.table$sigma      = round(s.table$sigma     ,2)
+      s.table$ks.stat    = round(s.table$ks.stat   ,2)
+      s.table$best.rmse  = round(s.table$best.rmse ,2)
+      s.table$worst.rmse = round(s.table$worst.rmse,2)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Copy data to general table. --------------------------------------------------#
+      summ.table[[simul.key[s]]] = s.table
+      #------------------------------------------------------------------------------------#
+
+   }#end for (s in sequence(nsimul))
+   #---------------------------------------------------------------------------------------#
+}#end if (make.summ.table)
+#------------------------------------------------------------------------------------------#

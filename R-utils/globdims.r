@@ -41,13 +41,27 @@ maxit  <<- 150    # Maximum number of iterations in general
 
 
 #------ Define the colours and labels for IGBP land use maps. -----------------------------#
-igbp.col <<- c("midnightblue","steelblue4","#004E00","slategray3","green3"
-              ,"forestgreen","lightgoldenrod4","goldenrod","chartreuse3","yellowgreen"
-              ,"gold","turquoise4","mediumpurple1","grey29","yellow3","powderblue"
-              ,"firebrick","grey94")
-igbp.leg <<- c("H2O","ENF","EBF","DNF","DBF","MXF","CSH","OSH","WSV","SAV","GSL","PWL"
-              ,"CRL","URB","CVM","ICE","DES","MSS")
-igbp.val <<- seq(from=0,to=17,by=1)
+igbp.col <<- c( H2O = RGB(   0,  20,  82)
+              , ENF = RGB(   0, 100, 164)
+              , EBF = RGB(   0,  63,   0)
+              , DNF = RGB(  85, 192, 255)
+              , DBF = RGB(  97, 255,  96)
+              , MXF = RGB(   0, 156,  76)
+              , CSH = RGB( 255, 105,   0)
+              , OSH = RGB( 207, 151, 114)
+              , WSV = RGB(  72, 144,   0)
+              , SAV = RGB( 150, 255,  40)
+              , GSL = RGB( 233, 198,   9)
+              , PWL = RGB(  69,  35, 232)
+              , CRL = RGB( 166, 131,   0)
+              , URB = RGB(  96,  96,  96)
+              , CNV = RGB( 115, 158,  80)
+              , ICE = RGB(   0, 222, 255)
+              , BRN = RGB( 144,   3,   2)
+              , UND = RGB( 222, 222, 222)
+              )#end igbp.col
+igbp.leg <<- names(igbp.col)
+igbp.val <<- seq_along(igbp.col)-1
 #------------------------------------------------------------------------------------------#
 
 
@@ -79,11 +93,15 @@ fswh <<- 0.99
 
 
 #----- Years for which we have eddy flux tower. -------------------------------------------#
-eft.year <<- c(1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012)
-eft.pch  <<- c(   0,   1,   6,   3,   4,   5,  13,  15,  16,  17,  18,   9,   8,   7,  14)
-eft.col  <<- c("purple4","purple1","mediumpurple1","royalblue4","steelblue","deepskyblue"
-              ,"#004000","chartreuse4","lawngreen","red3","#FF6000","#FFA000"
-              ,"chocolate4","lightgoldenrod3","yellow2")
+eft.year <<- c(     1998,     1999,     2000,     2001,     2002,     2003,     2004
+              ,     2005,     2006,     2007,     2008,     2009,     2010,     2011
+              ,     2012,     2013)
+eft.pch  <<- c(        0,        1,        6,        3,        4,        5,       13
+              ,       15,       16,       17,       18,        9,        8,        7
+              ,       14,        2)
+eft.col  <<- c("#7D6E93","#B49ED2","#39025D","#520485","#042E88","#0742C3","#00480E"
+              ,"#006715","#31B223","#46FF32","#AB8C3D","#F5C858","#B23C00","#FF5700"
+              ,"#70000E","#A00014")
 #------------------------------------------------------------------------------------------#
 
 

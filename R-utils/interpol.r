@@ -153,8 +153,10 @@ interpol <<- function(x,y,xout,along=1,is.log=FALSE,...){
 #------------------------------------------------------------------------------------------#
 interpolfun <<- function(x,y,xout,silent=TRUE,...){
    sel = is.finite(x) & is.finite(y)
-   if (any(sel)){
+   if (sum(sel) > 1){
       yout = splinefun(x=x[sel],y=y[sel],...)(xout)
+   }else if(sum(sel) == 1){
+      yout = y[sel] + 0 * xout
    }else{
       if (! silent) warning("Zero non-NA points")
       yout = xout + NA
