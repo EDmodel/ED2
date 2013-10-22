@@ -442,6 +442,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
       rkp%avg_throughfall    = rkp%avg_throughfall    + fac * inc%avg_throughfall
       rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
+      rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
       rkp%avg_drainage       = rkp%avg_drainage       + fac * inc%avg_drainage
       rkp%avg_qdrainage      = rkp%avg_qdrainage      + fac * inc%avg_qdrainage
       rkp%avg_qthroughfall   = rkp%avg_qthroughfall   + fac * inc%avg_qthroughfall

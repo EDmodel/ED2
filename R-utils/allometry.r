@@ -229,13 +229,10 @@ dbh2rd = function(hgt,dbh,ipft){
 # Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree           #
 #     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.          #
 #------------------------------------------------------------------------------------------#
-h2crownbh = function (height,ipft){
-   crown_length = pft$b1Cl[ipft] * height ^ pft$b2Cl[ipft]
-   h2crownbh    = height - crown_length
-
-   h2crownbh[is.finite(h2crowndbh) & h2crownbh < 0.05] = 0.05
-
-   return(h2crownbh)
+h2crownbh <<- function (height,ipft){
+   crown.length = pft$b1Cl[ipft] * height ^ pft$b2Cl[ipft]
+   ans          = pmax(0.05,height - crown.length)
+   return(ans)
 }#end function h2crownbh
 #==========================================================================================#
 #==========================================================================================#

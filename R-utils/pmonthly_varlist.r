@@ -1457,19 +1457,43 @@ theme[[n]] = list( vnam      = c(   "rshort",      "rlong","rshort.gnd",    "qwf
                  , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c(        "wflxgc",         "wflxca",      "wflxlc"
+theme[[n]] = list( vnam      = c(        "wflxgc",         "wflxca",        "wflxlc"
                                 ,        "wflxwc",         "transp")
-                 , desc      = c("Ground->Canopy",    "Canopy->Atm","Leaf->Canopy"
+                 , desc      = c("Ground->Canopy",    "Canopy->Atm",  "Leaf->Canopy"
                                 ,  "Wood->Canopy",  "Transpiration")
-                 , colour    = c(     "firebrick",     "royalblue4", "chartreuse4"
-                                , "darkgoldenrod","darkolivegreen2")
-                 , lwd       = c(             2.5,              2.5,           2.5
+                 , colour    = c(       "#3B24B3",        "#2996CC",       "#A3CC52"
+                                ,       "#990F0F",        "#306614")
+                 , lwd       = c(             2.5,              2.5,             2.5
                                 ,             2.5,              2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "h2oflux"
                  , title     = "Water fluxes"
                  , unit      = untab$kgwom2oday
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = TRUE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(0,5.0)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(        "hflxgc",         "hflxca",        "hflxlc"
+                                ,        "hflxwc")
+                 , desc      = c("Ground->Canopy",    "Canopy->Atm",  "Leaf->Canopy"
+                                ,  "Wood->Canopy")
+                 , colour    = c(       "#3B24B3",        "#2996CC",       "#A3CC52"
+                                ,       "#990F0F")
+                 , lwd       = c(             2.5,              2.5,             2.5
+                                ,             2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "sensflux"
+                 , title     = "Sensible heat fluxes"
+                 , unit      = untab$wom2
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE
@@ -1605,18 +1629,18 @@ theme[[n]] = list( vnam      = c( "ncoh.global")
                  , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
-theme[[n]] = list( vnam      = c(          "reco",     "soil.resp",  "plant.resp"
-                                ,      "het.resp",     "leaf.resp",   "stem.resp"
-                                ,    "croot.resp",    "froot.resp"               )
-                 , desc      = c(     "Ecosystem",          "Soil", "Autotrophic"
-                                , "Heterotrophic",          "Leaf",        "Stem"
-                                ,   "Coarse root",     "Fine root"               )
-                 , colour    = c(    "dodgerblue",        "sienna",   "darkgreen"
-                                ,     "firebrick",   "chartreuse2", "darkorange1"
-                                ,    "slateblue3", "darkgoldenrod"               )
+theme[[n]] = list( vnam      = c(          "reco",    "plant.resp",      "het.resp"
+                                ,     "leaf.resp",     "stem.resp",     "root.resp"
+                                ,     "soil.resp")
+                 , desc      = c(     "Ecosystem",   "Autotrophic", "Heterotrophic"
+                                ,          "Leaf",          "Stem",          "Root"
+                                ,          "Soil")
+                 , colour    = c(       "#2996CC",       "#143305",       "#3B24B3"
+                                ,       "#A3CC52",       "#AB8C3D",       "#990F0F"
+                                ,       "#E65C17")
                  , lwd       = c(             2.5,             2.5,          2.5
                                 ,             2.5,             2.5,          2.5
-                                ,             2.5,             2.5               )
+                                ,             2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "respiration"
@@ -1628,9 +1652,9 @@ theme[[n]] = list( vnam      = c(          "reco",     "soil.resp",  "plant.resp
                  , qmean     = FALSE
                  , ymean     = TRUE
                  , emean.lim = c(NA,NA)
-                 , mmean.lim = c(0.,4.2)
+                 , mmean.lim = c(0.,4.5)
                  , qmean.lim = c(NA,NA)
-                 , ymean.lim = c(0.,4.2)
+                 , ymean.lim = c(0.,4.5)
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(  "atm.vels",            "ustar")

@@ -865,6 +865,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                                     , cpdry8               & ! intent(in)
                                     , cph2o8               & ! intent(in)
                                     , epi8                 & ! intent(in)
+                                    , tsupercool_vap8      & ! intent(in)
                                     , huge_num8            ! ! intent(in)
    use soil_coms             , only : soil8                & ! intent(in)
                                     , dslzi8               & ! intent(in)
@@ -987,10 +988,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    !    Computing the fluxes from atmosphere to canopy.                                    !
    !---------------------------------------------------------------------------------------!
    rho_ustar = initp%can_rhos * initp%ustar                   ! Aux. variable
-   hflxac    = rho_ustar      * initp%tstar * initp%can_exner ! Sensible Heat flux
    wflxac    = rho_ustar      * initp%qstar                   ! Water flux
    eflxac    = rho_ustar      * initp%estar                   ! Enthalpy flux
    cflxac    = rho_ustar      * initp%cstar * mmdryi8         ! CO2 flux [umol/m2/s]
+   !------ Sensible heat flux. ------------------------------------------------------------!
+   hflxac    = eflxac + wflxac * cph2o8 * tsupercool_vap8
    !---------------------------------------------------------------------------------------!
 
 
@@ -1943,7 +1945,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
       dinitp%avg_vapor_ac     = wflxac                       ! Lat.  heat,  Atmo->Canopy
 
       dinitp%avg_sensible_gc  = hflxsc + hflxgc              ! Sens. heat,  Grnd->Canopy
-      dinitp%avg_vapor_gc     = wflxsc + hflxgc - dewgndflx  ! Lat.  heat,  Canopy->Grnd
+      dinitp%avg_vapor_gc     = wflxsc + wflxgc - dewgndflx  ! Lat.  heat,  Canopy->Grnd
 
       dinitp%avg_throughfall  = throughfall_tot             ! Throughfall,   Atmo->Grnd
       dinitp%avg_qthroughfall = qthroughfall_tot            ! Throughfall,   Atmo->Grnd

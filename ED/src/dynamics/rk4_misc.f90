@@ -2870,10 +2870,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%avg_wshed_lg(ico) = initp%avg_wshed_lg(ico) + leaf_wshed  * hdidi
+               initp%avg_wshed_lg(ico) = initp%avg_wshed_lg(ico) + leaf_wshed  ! * hdidi
             end if
             if (print_detailed) then
-               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + leaf_qwshed * hdidi
+               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + leaf_qwshed ! * hdidi
             end if
             !------------------------------------------------------------------------------!
  
@@ -2911,11 +2911,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
                initp%avg_vapor_lc(ico) = initp%avg_vapor_lc(ico)                           &
-                                       + (leaf_boil  - leaf_dew ) * hdidi
+                                       + (leaf_boil  - leaf_dew ) ! * hdidi
             end if
             if (print_detailed) then
                initp%cfx_qwflxlc (ico) = initp%cfx_qwflxlc(ico)                            &
-                                       + (leaf_qboil - leaf_qdew) * hdidi
+                                       + (leaf_qboil - leaf_qdew) ! * hdidi
             end if
             !------------------------------------------------------------------------------!
          end if
@@ -2984,10 +2984,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%avg_wshed_wg(ico) = initp%avg_wshed_wg(ico) + wood_wshed  * hdidi
+               initp%avg_wshed_wg(ico) = initp%avg_wshed_wg(ico) + wood_wshed  ! * hdidi
             end if
             if (print_detailed) then
-               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + wood_qwshed * hdidi
+               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + wood_qwshed ! * hdidi
             end if
             !------------------------------------------------------------------------------!
 
@@ -3023,11 +3023,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
                initp%avg_vapor_wc(ico) = initp%avg_vapor_wc(ico)                           &
-                                       + (wood_boil  - wood_dew ) * hdidi
+                                       + (wood_boil  - wood_dew ) ! * hdidi
             end if
             if (print_detailed) then
                initp%cfx_qwflxwc (ico) = initp%cfx_qwflxwc (ico)                           &
-                                       + (wood_qboil - wood_qdew) * hdidi
+                                       + (wood_qboil - wood_qdew) ! * hdidi
             end if
             !------------------------------------------------------------------------------!
          end if

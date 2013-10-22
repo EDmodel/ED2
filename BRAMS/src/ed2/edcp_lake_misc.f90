@@ -94,7 +94,7 @@ subroutine copy_lake_init(i,j,ifm,initp)
    !----- Find the characteristic scales (a.k.a. stars). ----------------------------------!
    call ed_stars8(lakemet%atm_theta,lakemet%atm_enthalpy,lakemet%atm_shv,lakemet%atm_co2   &
                  ,initp%can_theta  ,initp%can_enthalpy  ,initp%can_shv  ,initp%can_co2     &
-                 ,lakemet%geoht,0.d0,lakemet%atm_vels,initp%lake_rough                     &
+                 ,lakemet%geoht,0.d0,ustmin8,lakemet%atm_vels,initp%lake_rough             &
                  ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar              &
                  ,initp%zeta,initp%ribulk,initp%gglake)
    !---------------------------------------------------------------------------------------!
@@ -334,9 +334,9 @@ subroutine lake_diagnostics(initp)
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars8(lakemet%atm_theta,lakemet%atm_enthalpy,lakemet%atm_shv             &
                        ,lakemet%atm_co2,initp%can_theta,initp%can_enthalpy,initp%can_shv   &
-                       ,initp%can_co2,lakemet%geoht,0.d0,lakemet%atm_vels,initp%lake_rough &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%gglake)
+                       ,initp%can_co2,lakemet%geoht,0.d0,ustmin8,lakemet%atm_vels          &
+                       ,initp%lake_rough,initp%ustar,initp%tstar,initp%estar,initp%qstar   &
+                       ,initp%cstar,initp%zeta,initp%ribulk,initp%gglake)
          !---------------------------------------------------------------------------------!
 
 
