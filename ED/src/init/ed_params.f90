@@ -3783,6 +3783,7 @@ end subroutine init_disturb_params
 !------------------------------------------------------------------------------------------!
 subroutine init_physiology_params()
    use detailed_coms  , only : idetailed           ! ! intent(in)
+   use ed_misc_coms, only    : ffilout
    use physiology_coms, only : iphysiol            & ! intent(in)
                              , klowco2in           & ! intent(in)
                              , c34smin_lint_co2    & ! intent(out)
@@ -4083,6 +4084,8 @@ subroutine init_physiology_params()
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
+
+   photo_prefix = trim(ffilout)//'_'//trim(photo_prefix)
 
    return
 end subroutine init_physiology_params
@@ -4846,6 +4849,7 @@ subroutine init_rk4_params()
                              , tiny_sfcwater_mass     ! ! intent(in)
    use canopy_air_coms, only : leaf_drywhc            & ! intent(in)
                              , leaf_maxwhc            ! ! intent(in)
+   use ed_misc_coms,only     : ffilout
    use met_driver_coms, only : prss_min               & ! intent(in)
                              , prss_max               ! ! intent(in)
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
@@ -4964,6 +4968,8 @@ subroutine init_rk4_params()
    budget_pref    = 'budget_state_'          ! File with the thermodynamic boundaries.
    !---------------------------------------------------------------------------------------!
 
+   detail_pref = trim(ffilout)//'_'//trim(detail_pref)
+   budget_pref = trim(ffilout)//'_'//trim(budget_pref)
 
    !---------------------------------------------------------------------------------------!
    !     Assigning some default values for the bounds at the sanity check.  Units are      !
@@ -5012,6 +5018,7 @@ subroutine init_rk4_params()
 
    !---------------------------------------------------------------------------------------!
    !     These variables are assigned in ed_params.f90.  Heat area should be 2.0 for all   !
+
    ! PFTs (two sides of the leaves exchange heat), and the evaporation area should be 1.0  !
    ! for all PFTs (only one side of the leaf is usually covered by water).  The transpir-  !
    ! ation area should be 1.0 for hypostomatous leaves, and 2.0 for symmetrical (pines)    !
