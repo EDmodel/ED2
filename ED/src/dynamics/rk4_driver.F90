@@ -425,6 +425,11 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
 
 
+      !----- Alias for the cohorts. -------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !     Most variables require just a simple copy.  More comments will be made next to !
       ! those in which this is not true.  All floating point variables are converted back  !
@@ -495,6 +500,7 @@ module rk4_driver
          csite%avg_drainage        (ipa) = sngloff(initp%avg_drainage       ,tiny_offset)
          csite%avg_drainage_heat   (ipa) = sngloff(initp%avg_drainage_heat  ,tiny_offset)
          csite%avg_rshort_gnd      (ipa) = sngloff(initp%avg_rshort_gnd     ,tiny_offset)
+         csite%avg_par_gnd         (ipa) = sngloff(initp%avg_par_gnd        ,tiny_offset)
          csite%avg_rlong_gnd       (ipa) = sngloff(initp%avg_rlong_gnd      ,tiny_offset)
          csite%avg_sensible_lc     (ipa) = sngloff(initp%avg_sensible_lc    ,tiny_offset)
          csite%avg_sensible_wc     (ipa) = sngloff(initp%avg_sensible_wc    ,tiny_offset)
@@ -514,7 +520,34 @@ module rk4_driver
             csite%avg_smoist_gg  (k,ipa) = sngloff(initp%avg_smoist_gg  (k) ,tiny_offset)
             csite%avg_transloss  (k,ipa) = sngloff(initp%avg_transloss  (k) ,tiny_offset)
          end do
-         
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Cohort-level variables.                                                     !
+         !---------------------------------------------------------------------------------!
+         do ico=1,cpatch%ncohorts
+            cpatch%mean_sensible_lc   (ico) = sngloff(initp%cav_sensible_lc    (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_sensible_wc   (ico) = sngloff(initp%cav_sensible_wc    (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_vapor_lc      (ico) = sngloff(initp%cav_vapor_lc       (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_vapor_wc      (ico) = sngloff(initp%cav_vapor_wc       (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_transp        (ico) = sngloff(initp%cav_transp         (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_intercepted_al(ico) = sngloff(initp%cav_intercepted_al (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_intercepted_aw(ico) = sngloff(initp%cav_intercepted_aw (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_wshed_lg      (ico) = sngloff(initp%cav_wshed_lg       (ico)       &
+                                                     ,tiny_offset)
+            cpatch%mean_wshed_wg      (ico) = sngloff(initp%cav_wshed_wg       (ico)       &
+                                                     ,tiny_offset)
+         end do
+         !---------------------------------------------------------------------------------!
+
          !---------------------------------------------------------------------------------!
          !     These variables are integrated here, since they don't change with time.     !
          !---------------------------------------------------------------------------------!
@@ -614,7 +647,6 @@ module rk4_driver
       !           moisture or soil potential.                                              !
       !------------------------------------------------------------------------------------!
       if (spot_phen) then
-         cpatch => csite%patch(ipa)
          do ico = 1,cpatch%ncohorts
             ipft  = cpatch%pft(ico)
             kroot = cpatch%krdepth(ico)
@@ -637,7 +669,6 @@ module rk4_driver
                                 + sngl(available_water)*sngl(hdid)/tendays_sec
          end do
       else
-         cpatch => csite%patch(ipa)
          do ico = 1,cpatch%ncohorts
             available_water = 0.d0
             kroot           = cpatch%krdepth(ico)

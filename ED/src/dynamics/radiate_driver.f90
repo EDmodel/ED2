@@ -221,7 +221,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    use consts_coms          , only : stefan               ! ! intent(in)
    use ed_max_dims          , only : n_pft                ! ! intent(in)
    use allometry            , only : h2crownbh            ! ! intent(in)
-   use ed_misc_coms         , only : ibigleaf             ! ! intent(in)
+   use ed_misc_coms         , only : ibigleaf             & ! intent(in)
+                                   , radfrq               ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -384,6 +385,33 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       allocate (lw_v_surf_array           (max_cohort_count))
       allocate (lw_v_incid_array          (max_cohort_count))
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise the variables.                                                         !
+   !---------------------------------------------------------------------------------------!
+   pft_array                 (:) = -1
+   leaf_temp_array           (:) = 0.d0
+   wood_temp_array           (:) = 0.d0
+   lai_array                 (:) = 0.d0
+   wai_array                 (:) = 0.d0
+   CA_array                  (:) = 0.d0
+   htop_array                (:) = 0.d0
+   hbot_array                (:) = 0.d0
+   lambda_array              (:) = 0.d0
+   beam_level_array          (:) = 0.d0
+   diff_level_array          (:) = 0.d0
+   light_level_array         (:) = 0.d0
+   light_beam_level_array    (:) = 0.d0
+   light_diff_level_array    (:) = 0.d0
+   par_v_beam_array          (:) = 0.
+   rshort_v_beam_array       (:) = 0.
+   par_v_diffuse_array       (:) = 0.
+   rshort_v_diffuse_array    (:) = 0.
+   lw_v_surf_array           (:) = 0.
+   lw_v_incid_array          (:) = 0.
    !---------------------------------------------------------------------------------------!
 
 
@@ -619,6 +647,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       !------------------------------------------------------------------------------------!
       csite%rshort_s_diffuse(:,ipa) = 0.0
       csite%rshort_s_beam   (:,ipa) = 0.0
+      csite%par_s_diffuse   (:,ipa) = 0.0
+      csite%par_s_beam      (:,ipa) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -1250,6 +1280,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                   + downward_nir_below_beam    * abs_ground_nir
       csite%rshort_g_diffuse(ipa) = downward_par_below_diffuse * abs_ground_par            &
                                   + downward_nir_below_diffuse * abs_ground_nir
+      csite%par_g_beam      (ipa) = downward_par_below_beam    * abs_ground_par
+      csite%par_g_diffuse   (ipa) = downward_par_below_diffuse * abs_ground_par
       csite%parup           (ipa) = upward_par_above_beam                                  &
                                   + upward_par_above_diffuse
       csite%nirup           (ipa) = upward_nir_above_beam                                  &
@@ -1268,6 +1300,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                        + downward_nir_below_beam    * fracabs_nir(k)
          csite%rshort_s_diffuse(k,ipa) = downward_par_below_diffuse * fracabs_par(k)       &
                                        + downward_nir_below_beam    * fracabs_nir(k)
+         csite%par_s_beam      (k,ipa) = downward_par_below_beam    * fracabs_par(k)
+         csite%par_s_diffuse   (k,ipa) = downward_par_below_diffuse * fracabs_par(k)
       end do
 
       !----- Long wave absorption rate at the surface. ------------------------------------!
@@ -1282,6 +1316,29 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          csite%rlong_g_surf (ipa) = 0.0
          csite%rlong_g_incid(ipa) = 0.0
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Integrate the mean radiation flux.                                            !
+      !------------------------------------------------------------------------------------!
+      do ico=1,cpatch%ncohorts
+         cpatch%mean_par_l      (ico) = cpatch%mean_par_l      (ico)                       &
+                                      + cpatch%par_l           (ico) * radfrq
+         cpatch%mean_par_l_beam (ico) = cpatch%mean_par_l_beam (ico)                       &
+                                      + cpatch%par_l_beam      (ico) * radfrq
+         cpatch%mean_par_l_diff (ico) = cpatch%mean_par_l_diff (ico)                       &
+                                      + cpatch%par_l_diffuse   (ico) * radfrq
+         cpatch%mean_rshort_l   (ico) = cpatch%mean_rshort_l   (ico)                       &
+                                      + cpatch%rshort_l        (ico) * radfrq
+         cpatch%mean_rlong_l    (ico) = cpatch%mean_rlong_l    (ico)                       &
+                                      + cpatch%rlong_l         (ico) * radfrq
+         cpatch%mean_rshort_w   (ico) = cpatch%mean_rshort_w   (ico)                       &
+                                      + cpatch%rshort_w        (ico) * radfrq
+         cpatch%mean_rlong_w    (ico) = cpatch%mean_rlong_w    (ico)                       &
+                                      + cpatch%rlong_w         (ico) * radfrq
+      end do
       !------------------------------------------------------------------------------------!
    end do
 
@@ -1558,6 +1615,9 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
          csite%rshort_g_beam   (ipa) = 0.
          csite%rshort_g_diffuse(ipa) = 0.
          csite%rshort_g        (ipa) = 0.
+         csite%par_g_beam      (ipa) = 0.
+         csite%par_g_diffuse   (ipa) = 0.
+         csite%par_g           (ipa) = 0.
          csite%par_b_beam      (ipa) = 0.
          csite%par_b_diffuse   (ipa) = 0.
          csite%par_b           (ipa) = 0.
@@ -1573,6 +1633,9 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
             csite%rshort_s_beam   (k,ipa) = 0.
             csite%rshort_s_diffuse(k,ipa) = 0.
             csite%rshort_s        (k,ipa) = 0.
+            csite%par_s_beam      (k,ipa) = 0.
+            csite%par_s_diffuse   (k,ipa) = 0.
+            csite%par_s           (k,ipa) = 0.
          end do
          csite%rlong_s_incid(ipa) = 0.
          csite%rlong_g_incid(ipa) = 0.
@@ -1627,6 +1690,11 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
       csite%rshort_g          (ipa)      = csite%rshort_g_beam     (ipa)                   &
                                          + csite%rshort_g_diffuse  (ipa)
 
+      csite%par_g_beam        (ipa)      = csite%par_g_beam        (ipa) * rshort
+      csite%par_g_diffuse     (ipa)      = csite%par_g_diffuse     (ipa) * rshort
+      csite%par_g             (ipa)      = csite%par_g_beam        (ipa)                   &
+                                         + csite%par_g_diffuse     (ipa)
+
       csite%par_b_beam        (ipa)      = csite%par_b_beam        (ipa) * rshort
       csite%par_b_diffuse     (ipa)      = csite%par_b_diffuse     (ipa) * rshort
       csite%par_b             (ipa)      = csite%par_b_beam        (ipa)                   &
@@ -1644,10 +1712,14 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
                                          - csite%rlongup           (ipa)
       !----- Absorption rate of short wave by the surface water. --------------------------!
       do k=1,csite%nlev_sfcwater(ipa)
-         csite%rshort_s_beam(k,ipa)    = csite%rshort_s_beam   (k,ipa) * rshort
+         csite%rshort_s_beam   (k,ipa) = csite%rshort_s_beam   (k,ipa) * rshort
          csite%rshort_s_diffuse(k,ipa) = csite%rshort_s_diffuse(k,ipa) * rshort
-         csite%rshort_s(k,ipa)         = csite%rshort_s_beam   (k,ipa)                     &
+         csite%rshort_s        (k,ipa) = csite%rshort_s_beam   (k,ipa)                     &
                                        + csite%rshort_s_diffuse(k,ipa)
+         csite%par_s_beam      (k,ipa) = csite%par_s_beam      (k,ipa) * rshort
+         csite%par_s_diffuse   (k,ipa) = csite%par_s_diffuse   (k,ipa) * rshort
+         csite%par_s           (k,ipa) = csite%par_s_beam      (k,ipa)                     &
+                                       + csite%par_s_diffuse   (k,ipa)
       end do
 
       csite%rlong_s_incid(ipa) = csite%rlong_s_incid(ipa) * rlong

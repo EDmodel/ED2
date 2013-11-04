@@ -708,3 +708,153 @@ subroutine update_model_time_dm(ctime,dtlong)
 end subroutine update_model_time_dm
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!       This subroutine scales all the "extensive" cohort properties when cohort area or   !
+! population changes.                                                                      !
+! IMPORTANT: Only cohort-level variables that have units per area (m2 ground) should be    !
+!            rescaled.  Variables whose units are per plant, m2 leaf, or m2 wood           !
+!            SHOULD NOT be included here.                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine update_cohort_extensive_props(cpatch,aco,zco,scale_fac)
+   use ed_state_vars, only : patchtype    ! ! structure
+   use ed_misc_coms , only : idoutput     & ! intent(in)
+                           , iqoutput     & ! intent(in)
+                           , imoutput     ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(patchtype), target     :: cpatch    ! Current patch
+   integer        , intent(in) :: aco       ! First cohort to be rescaled
+   integer        , intent(in) :: zco       ! Last  cohort to be rescaled
+   real           , intent(in) :: scale_fac ! Scale factor
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                     :: ico       ! Cohort counter
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over all cohorts.                                                            !
+   !---------------------------------------------------------------------------------------!
+   cohortloop: do ico=aco,zco
+      cpatch%lai                (ico) = cpatch%lai                (ico) * scale_fac
+      cpatch%wai                (ico) = cpatch%wai                (ico) * scale_fac
+      cpatch%nplant             (ico) = cpatch%nplant             (ico) * scale_fac
+      cpatch%mean_gpp           (ico) = cpatch%mean_gpp           (ico) * scale_fac
+      cpatch%mean_leaf_resp     (ico) = cpatch%mean_leaf_resp     (ico) * scale_fac
+      cpatch%mean_root_resp     (ico) = cpatch%mean_root_resp     (ico) * scale_fac
+      cpatch%mean_growth_resp   (ico) = cpatch%mean_growth_resp   (ico) * scale_fac
+      cpatch%mean_storage_resp  (ico) = cpatch%mean_storage_resp  (ico) * scale_fac
+      cpatch%mean_vleaf_resp    (ico) = cpatch%mean_vleaf_resp    (ico) * scale_fac
+      cpatch%today_gpp          (ico) = cpatch%today_gpp          (ico) * scale_fac
+      cpatch%today_nppleaf      (ico) = cpatch%today_nppleaf      (ico) * scale_fac
+      cpatch%today_nppfroot     (ico) = cpatch%today_nppfroot     (ico) * scale_fac
+      cpatch%today_nppsapwood   (ico) = cpatch%today_nppsapwood   (ico) * scale_fac
+      cpatch%today_nppcroot     (ico) = cpatch%today_nppcroot     (ico) * scale_fac
+      cpatch%today_nppseeds     (ico) = cpatch%today_nppseeds     (ico) * scale_fac
+      cpatch%today_nppwood      (ico) = cpatch%today_nppwood      (ico) * scale_fac
+      cpatch%today_nppdaily     (ico) = cpatch%today_nppdaily     (ico) * scale_fac
+      cpatch%today_gpp_pot      (ico) = cpatch%today_gpp_pot      (ico) * scale_fac
+      cpatch%today_gpp_lightmax (ico) = cpatch%today_gpp_lightmax (ico) * scale_fac
+      cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico) * scale_fac
+      cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico) * scale_fac
+      cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico) * scale_fac
+      cpatch%gpp                (ico) = cpatch%gpp                (ico) * scale_fac
+      cpatch%leaf_respiration   (ico) = cpatch%leaf_respiration   (ico) * scale_fac
+      cpatch%root_respiration   (ico) = cpatch%root_respiration   (ico) * scale_fac
+      cpatch%monthly_dndt       (ico) = cpatch%monthly_dndt       (ico) * scale_fac
+      cpatch%leaf_water         (ico) = cpatch%leaf_water         (ico) * scale_fac
+      cpatch%leaf_hcap          (ico) = cpatch%leaf_hcap          (ico) * scale_fac
+      cpatch%leaf_energy        (ico) = cpatch%leaf_energy        (ico) * scale_fac
+      cpatch%wood_water         (ico) = cpatch%wood_water         (ico) * scale_fac
+      cpatch%wood_hcap          (ico) = cpatch%wood_hcap          (ico) * scale_fac
+      cpatch%wood_energy        (ico) = cpatch%wood_energy        (ico) * scale_fac
+      !----- Energy and water fluxes. -----------------------------------------------------!
+      cpatch%mean_par_l         (ico) = cpatch%mean_par_l         (ico) * scale_fac
+      cpatch%mean_par_l_beam    (ico) = cpatch%mean_par_l_beam    (ico) * scale_fac
+      cpatch%mean_par_l_diff    (ico) = cpatch%mean_par_l_diff    (ico) * scale_fac
+      cpatch%mean_rshort_l      (ico) = cpatch%mean_rshort_l      (ico) * scale_fac
+      cpatch%mean_rlong_l       (ico) = cpatch%mean_rlong_l       (ico) * scale_fac
+      cpatch%mean_sensible_lc   (ico) = cpatch%mean_sensible_lc   (ico) * scale_fac
+      cpatch%mean_vapor_lc      (ico) = cpatch%mean_vapor_lc      (ico) * scale_fac
+      cpatch%mean_transp        (ico) = cpatch%mean_transp        (ico) * scale_fac
+      cpatch%mean_intercepted_al(ico) = cpatch%mean_intercepted_al(ico) * scale_fac
+      cpatch%mean_wshed_lg      (ico) = cpatch%mean_wshed_lg      (ico) * scale_fac
+      cpatch%mean_rshort_w      (ico) = cpatch%mean_rshort_w      (ico) * scale_fac
+      cpatch%mean_rlong_w       (ico) = cpatch%mean_rlong_w       (ico) * scale_fac
+      cpatch%mean_sensible_wc   (ico) = cpatch%mean_sensible_wc   (ico) * scale_fac
+      cpatch%mean_vapor_wc      (ico) = cpatch%mean_vapor_wc      (ico) * scale_fac
+      cpatch%mean_intercepted_aw(ico) = cpatch%mean_intercepted_aw(ico) * scale_fac
+      cpatch%mean_wshed_wg      (ico) = cpatch%mean_wshed_wg      (ico) * scale_fac
+      !----- Crown area shall not exceed 1. -----------------------------------------------!
+      cpatch%crown_area         (ico) = min(1.,cpatch%crown_area  (ico) * scale_fac)
+      !----- Carbon flux monthly means are extensive, we must convert them. ---------------!
+      if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
+         cpatch%dmean_par_l         (ico) = cpatch%dmean_par_l         (ico) * scale_fac
+         cpatch%dmean_par_l_beam    (ico) = cpatch%dmean_par_l_beam    (ico) * scale_fac
+         cpatch%dmean_par_l_diff    (ico) = cpatch%dmean_par_l_diff    (ico) * scale_fac
+         cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico) * scale_fac
+         cpatch%dmean_rlong_l       (ico) = cpatch%dmean_rlong_l       (ico) * scale_fac
+         cpatch%dmean_sensible_lc   (ico) = cpatch%dmean_sensible_lc   (ico) * scale_fac
+         cpatch%dmean_vapor_lc      (ico) = cpatch%dmean_vapor_lc      (ico) * scale_fac
+         cpatch%dmean_transp        (ico) = cpatch%dmean_transp        (ico) * scale_fac
+         cpatch%dmean_intercepted_al(ico) = cpatch%dmean_intercepted_al(ico) * scale_fac
+         cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico) * scale_fac
+         cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico) * scale_fac
+         cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico) * scale_fac
+         cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico) * scale_fac
+         cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico) * scale_fac
+         cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico) * scale_fac
+         cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico) * scale_fac
+      end if
+      if (imoutput > 0 .or. iqoutput > 0) then
+         cpatch%mmean_par_l         (ico) = cpatch%mmean_par_l         (ico) * scale_fac
+         cpatch%mmean_par_l_beam    (ico) = cpatch%mmean_par_l_beam    (ico) * scale_fac
+         cpatch%mmean_par_l_diff    (ico) = cpatch%mmean_par_l_diff    (ico) * scale_fac
+         cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico) * scale_fac
+         cpatch%dmean_rlong_l       (ico) = cpatch%dmean_rlong_l       (ico) * scale_fac
+         cpatch%dmean_sensible_lc   (ico) = cpatch%dmean_sensible_lc   (ico) * scale_fac
+         cpatch%dmean_vapor_lc      (ico) = cpatch%dmean_vapor_lc      (ico) * scale_fac
+         cpatch%dmean_transp        (ico) = cpatch%dmean_transp        (ico) * scale_fac
+         cpatch%dmean_intercepted_al(ico) = cpatch%dmean_intercepted_al(ico) * scale_fac
+         cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico) * scale_fac
+         cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico) * scale_fac
+         cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico) * scale_fac
+         cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico) * scale_fac
+         cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico) * scale_fac
+         cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico) * scale_fac
+         cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico) * scale_fac
+      end if
+      if (iqoutput > 0) then
+         cpatch%qmean_par_l         (:,ico) = cpatch%qmean_par_l         (:,ico) *scale_fac
+         cpatch%qmean_par_l_beam    (:,ico) = cpatch%qmean_par_l_beam    (:,ico) *scale_fac
+         cpatch%qmean_par_l_diff    (:,ico) = cpatch%qmean_par_l_diff    (:,ico) *scale_fac
+         cpatch%qmean_rshort_l      (:,ico) = cpatch%qmean_rshort_l      (:,ico) *scale_fac
+         cpatch%qmean_rlong_l       (:,ico) = cpatch%qmean_rlong_l       (:,ico) *scale_fac
+         cpatch%qmean_sensible_lc   (:,ico) = cpatch%qmean_sensible_lc   (:,ico) *scale_fac
+         cpatch%qmean_vapor_lc      (:,ico) = cpatch%qmean_vapor_lc      (:,ico) *scale_fac
+         cpatch%qmean_transp        (:,ico) = cpatch%qmean_transp        (:,ico) *scale_fac
+         cpatch%qmean_intercepted_al(:,ico) = cpatch%qmean_intercepted_al(:,ico) *scale_fac
+         cpatch%qmean_wshed_lg      (:,ico) = cpatch%qmean_wshed_lg      (:,ico) *scale_fac
+         cpatch%qmean_rshort_w      (:,ico) = cpatch%qmean_rshort_w      (:,ico) *scale_fac
+         cpatch%qmean_rlong_w       (:,ico) = cpatch%qmean_rlong_w       (:,ico) *scale_fac
+         cpatch%qmean_sensible_wc   (:,ico) = cpatch%qmean_sensible_wc   (:,ico) *scale_fac
+         cpatch%qmean_vapor_wc      (:,ico) = cpatch%qmean_vapor_wc      (:,ico) *scale_fac
+         cpatch%qmean_intercepted_aw(:,ico) = cpatch%qmean_intercepted_aw(:,ico) *scale_fac
+         cpatch%qmean_wshed_wg      (:,ico) = cpatch%qmean_wshed_wg      (:,ico) *scale_fac
+      end if
+      !------------------------------------------------------------------------------------!
+
+   end do cohortloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine update_cohort_extensive_props
+!==========================================================================================!
+!==========================================================================================!

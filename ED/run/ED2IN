@@ -249,8 +249,8 @@ $ED_NL
    !                         Multiple timepoints should not be used in the history files   !
    !                         if you intend to use these for HISTORY runs.                  !
    !---------------------------------------------------------------------------------------!
-   NL%OUTFAST    = 1.
-   NL%OUTSTATE   = 1.
+   NL%OUTFAST    = 0.
+   NL%OUTSTATE   = 0.
    !---------------------------------------------------------------------------------------!
 
 

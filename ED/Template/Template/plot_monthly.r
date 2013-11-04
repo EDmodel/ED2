@@ -655,30 +655,49 @@ for (place in myplaces){
    # at any given time.                                                                    #
    #---------------------------------------------------------------------------------------#
    empty = datum$nplantpftdbh == 0
-   datum$agbpftdbh       [empty] = NA
-   datum$basareapftdbh   [empty] = NA
-   datum$laipftdbh       [empty] = NA
-   datum$waipftdbh       [empty] = NA
-   datum$taipftdbh       [empty] = NA
-   datum$gpppftdbh       [empty] = NA
-   datum$npppftdbh       [empty] = NA
-   datum$mcopftdbh       [empty] = NA
-   datum$cbapftdbh       [empty] = NA
-   datum$cbalightpftdbh  [empty] = NA
-   datum$cbamoistpftdbh  [empty] = NA
-   datum$cbarelpftdbh    [empty] = NA
-   datum$ldroppftdbh     [empty] = NA
-   datum$fsopftdbh       [empty] = NA
-   datum$demandpftdbh    [empty] = NA
-   datum$supplypftdbh    [empty] = NA
-   datum$mortpftdbh      [empty] = NA
-   datum$agemortpftdbh   [empty] = NA
-   datum$ncbmortpftdbh   [empty] = NA
-   datum$tfallmortpftdbh [empty] = NA
-   datum$coldmortpftdbh  [empty] = NA
-   datum$distmortpftdbh  [empty] = NA
-   datum$growthpftdbh    [empty] = NA
-   datum$nplantpftdbh    [empty] = NA
+   datum$agbpftdbh          [empty] = NA
+   datum$basareapftdbh      [empty] = NA
+   datum$laipftdbh          [empty] = NA
+   datum$waipftdbh          [empty] = NA
+   datum$taipftdbh          [empty] = NA
+   datum$gpppftdbh          [empty] = NA
+   datum$npppftdbh          [empty] = NA
+   datum$mcopftdbh          [empty] = NA
+   datum$cbapftdbh          [empty] = NA
+   datum$cbalightpftdbh     [empty] = NA
+   datum$cbamoistpftdbh     [empty] = NA
+   datum$cbal12lightpftdbh  [empty] = NA
+   datum$cbal12moistpftdbh  [empty] = NA
+   datum$cbarelpftdbh       [empty] = NA
+   datum$ldroppftdbh        [empty] = NA
+   datum$fsopftdbh          [empty] = NA
+   datum$demandpftdbh       [empty] = NA
+   datum$supplypftdbh       [empty] = NA
+   datum$mortpftdbh         [empty] = NA
+   datum$agemortpftdbh      [empty] = NA
+   datum$ncbmortpftdbh      [empty] = NA
+   datum$tfallmortpftdbh    [empty] = NA
+   datum$coldmortpftdbh     [empty] = NA
+   datum$distmortpftdbh     [empty] = NA
+   datum$growthpftdbh       [empty] = NA
+   datum$plresppftdbh       [empty] = NA
+   datum$bstorepftdbh       [empty] = NA
+   datum$hflxlcpftdbh       [empty] = NA
+   datum$wflxlcpftdbh       [empty] = NA
+   datum$transppftdbh       [empty] = NA
+   datum$i.gpppftdbh        [empty] = NA
+   datum$i.npppftdbh        [empty] = NA
+   datum$i.plresppftdbh     [empty] = NA
+   datum$i.mcopftdbh        [empty] = NA
+   datum$i.cbapftdbh        [empty] = NA
+   datum$i.cbalightpftdbh   [empty] = NA
+   datum$i.cbamoistpftdbh   [empty] = NA
+   datum$i.cbal12lightpftdbh[empty] = NA
+   datum$i.cbam12lightpftdbh[empty] = NA
+   datum$i.transppftdbh     [empty] = NA
+   datum$i.wflxlcpftdbh     [empty] = NA
+   datum$i.hflxlcpftdbh     [empty] = NA
+   datum$nplantpftdbh       [empty] = NA
    #---------------------------------------------------------------------------------------#
 
 

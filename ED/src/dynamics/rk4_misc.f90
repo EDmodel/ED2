@@ -58,6 +58,14 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    integer                            :: ksn
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---- Alias for the current patch. -----------------------------------------------------!
+   cpatch => sourcesite%patch(ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Between time steps the pressure may change because of change in atmospheric       !
    ! pressure, which means that temperature is not conserved.  Potential temperature and   !
@@ -240,8 +248,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! integrator, so it preserves the proportional heat capacity and prevents the pool to   !
    ! be too small.                                                                         !
    !---------------------------------------------------------------------------------------!
-   cpatch => sourcesite%patch(ipa)
-   
    any_resolvable = .false.
    do ico=1, cpatch%ncohorts
       !----- Copying the flag that determines whether this cohort is numerically stable. --!
@@ -401,6 +407,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_drainage       = dble(sourcesite%avg_drainage      (ipa))
       targetp%avg_drainage_heat  = dble(sourcesite%avg_drainage_heat (ipa))
       targetp%avg_rshort_gnd     = dble(sourcesite%avg_rshort_gnd    (ipa))
+      targetp%avg_par_gnd        = dble(sourcesite%avg_par_gnd       (ipa))
       targetp%avg_rlong_gnd      = dble(sourcesite%avg_rlong_gnd     (ipa))
       targetp%avg_sensible_lc    = dble(sourcesite%avg_sensible_lc   (ipa))
       targetp%avg_sensible_wc    = dble(sourcesite%avg_sensible_wc   (ipa))
@@ -415,6 +422,19 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
          targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
          targetp%avg_transloss(k)   = dble(sourcesite%avg_transloss(k,ipa)  )
       end do
+
+      do ico=1,cpatch%ncohorts
+         targetp%cav_sensible_lc    (ico) = dble(cpatch%mean_sensible_lc   (ico))
+         targetp%cav_sensible_wc    (ico) = dble(cpatch%mean_sensible_wc   (ico))
+         targetp%cav_vapor_lc       (ico) = dble(cpatch%mean_vapor_lc      (ico))
+         targetp%cav_vapor_wc       (ico) = dble(cpatch%mean_vapor_wc      (ico))
+         targetp%cav_transp         (ico) = dble(cpatch%mean_transp        (ico))
+         targetp%cav_intercepted_al (ico) = dble(cpatch%mean_intercepted_al(ico))
+         targetp%cav_intercepted_aw (ico) = dble(cpatch%mean_intercepted_aw(ico))
+         targetp%cav_wshed_lg       (ico) = dble(cpatch%mean_wshed_lg      (ico))
+         targetp%cav_wshed_wg       (ico) = dble(cpatch%mean_wshed_wg      (ico))
+      end do
+
    end if
    if (checkbudget) then
       targetp%co2budget_storage     = dble(sourcesite%co2budget_initialstorage(ipa))
@@ -2819,8 +2839,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             initp%veg_energy (ico) = initp%veg_energy (ico) - leaf_qwshed
 
             !----- Update fluxes if needed be. --------------------------------------------!
+            if (fast_diagnostics) then
+               initp%cav_wshed_lg(ico) = initp%cav_wshed_lg(ico) + leaf_wshed  * hdidi
+            end if
             if (print_detailed) then
-               initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + leaf_qwshed * hdidi
+               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + leaf_qwshed * hdidi
             end if
             !------------------------------------------------------------------------------!
  
@@ -2856,9 +2879,13 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
 
             !----- Update fluxes if needed be. --------------------------------------------!
+            if (fast_diagnostics) then
+               initp%cav_vapor_lc(ico) = initp%cav_vapor_lc(ico)                           &
+                                       + (leaf_boil  - leaf_dew ) * hdidi
+            end if
             if (print_detailed) then
-               initp%cfx_qwflxlc(ico) = initp%cfx_qwflxlc(ico)                             &
-                                      + (leaf_qboil - leaf_qdew) * hdidi
+               initp%cfx_qwflxlc (ico) = initp%cfx_qwflxlc(ico)                            &
+                                       + (leaf_qboil - leaf_qdew) * hdidi
             end if
             !------------------------------------------------------------------------------!
          end if
@@ -2915,17 +2942,25 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !------------------------------------------------------------------------------!
 
 
+
             !----- Update water mass and energy. ------------------------------------------!
             initp%wood_water (ico) = initp%wood_water (ico) - wood_wshed
             initp%veg_water  (ico) = initp%veg_water  (ico) - wood_wshed
             initp%wood_energy(ico) = initp%wood_energy(ico) - wood_qwshed
             initp%veg_energy (ico) = initp%veg_energy (ico) - wood_qwshed
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Update fluxes if needed be. --------------------------------------------!
-            if (print_detailed) then
-               initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + wood_qwshed * hdidi
+            if (fast_diagnostics) then
+               initp%cav_wshed_wg(ico) = initp%cav_wshed_wg(ico) + wood_wshed  * hdidi
             end if
- 
+            if (print_detailed) then
+               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + wood_qwshed * hdidi
+            end if
+            !------------------------------------------------------------------------------!
+
 
          elseif (initp%wood_water(ico) < min_wood_water) then
             !------------------------------------------------------------------------------!
@@ -2956,9 +2991,13 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !------------------------------------------------------------------------------!
 
             !----- Update fluxes if needed be. --------------------------------------------!
+            if (fast_diagnostics) then
+               initp%cav_vapor_wc(ico) = initp%cav_vapor_wc(ico)                           &
+                                       + (wood_boil  - wood_dew ) * hdidi
+            end if
             if (print_detailed) then
-               initp%cfx_qwflxwc(ico) = initp%cfx_qwflxwc(ico)                             &
-                                      + (wood_qboil - wood_qdew) * hdidi
+               initp%cfx_qwflxwc (ico) = initp%cfx_qwflxwc (ico)                           &
+                                       + (wood_qboil - wood_qdew) * hdidi
             end if
             !------------------------------------------------------------------------------!
          end if
@@ -3484,13 +3523,14 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(9(a12,1x))')  '       USTAR','       QSTAR','       CSTAR'          &
-                                    ,'       TSTAR','        ZETA','     RI_BULK'          &
-                                    ,'     RLONG_G','    RSHORT_G','     RLONG_S'
-   write (unit=*,fmt='(9(es12.4,1x))') csite%ustar(ipa),csite%qstar(ipa),csite%cstar(ipa)  &
-                                      ,csite%tstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)  &
-                                      ,csite%rlong_g(ipa),csite%rshort_g(ipa)              &
-                                      ,csite%rlong_s(ipa)
+   write (unit=*,fmt='(10(a12,1x))')  '       USTAR','       QSTAR','       CSTAR'         &
+                                     ,'       TSTAR','        ZETA','     RI_BULK'         &
+                                     ,'     RLONG_G','    RSHORT_G','       PAR_G'         &
+                                     ,'     RLONG_S'
+   write (unit=*,fmt='(10(es12.4,1x))') csite%ustar(ipa),csite%qstar(ipa),csite%cstar(ipa) &
+                                       ,csite%tstar(ipa),csite%zeta(ipa),csite%ribulk(ipa) &
+                                       ,csite%rlong_g(ipa),csite%rshort_g(ipa)             &
+                                       ,csite%par_g(ipa),csite%rlong_s(ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -3511,14 +3551,14 @@ subroutine print_csiteipa(csite, ipa)
    
    if (csite%nlev_sfcwater(ipa) >= 1) then
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(a5,1x,6(a12,1x))')   '  KZS',' SFCW_ENERGY','  SFCW_TEMPK'       &
-                                      &,'   SFCW_MASS','SFCW_FRACLIQ','  SFCW_DEPTH'       &
-                                      &,'    RSHORT_S'
+      write (unit=*,fmt='(a5,1x,7(a12,1x))')   '  KZS',' SFCW_ENERGY','  SFCW_TEMPK'       &
+                                       ,'   SFCW_MASS','SFCW_FRACLIQ','  SFCW_DEPTH'       &
+                                       ,'    RSHORT_S','       PAR_S'
       do k=1,csite%nlev_sfcwater(ipa)
-         write (unit=*,fmt='(i5,1x,6(es12.4,1x))') k,csite%sfcwater_energy(k,ipa)          &
+         write (unit=*,fmt='(i5,1x,7(es12.4,1x))') k,csite%sfcwater_energy(k,ipa)          &
                ,csite%sfcwater_tempk(k,ipa),csite%sfcwater_mass(k,ipa)                     &
                ,csite%sfcwater_fracliq(k,ipa),csite%sfcwater_depth(k,ipa)                  &
-               ,csite%rshort_s(k,ipa)
+               ,csite%rshort_s(k,ipa),csite%par_s(k,ipa)
       end do
    end if
 
@@ -3895,8 +3935,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)                       :: can_theiv
    real(kind=8)                       :: can_vpdef
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: phfmt='(85(a,1x))'
-   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),75(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(86(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),76(es13.6,1x))'
    character(len=10), parameter :: chfmt='(57(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
@@ -4085,15 +4125,16 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , '       SOILFC' , '       SLMSTS', '        USTAR'        &
                                , '        TSTAR' , '        QSTAR', '        CSTAR'        &
                                , '         ZETA' , '      RI.BULK', '   GND.RSHORT'        &
-                               , '    GND.RLONG' , '       WFLXLC', '       WFLXWC'        &
-                               , '       WFLXGC' , '       WFLXAC', '       TRANSP'        &
-                               , '        WSHED' , '    INTERCEPT', '  THROUGHFALL'        &
-                               , '       HFLXGC' , '       HFLXLC', '       HFLXWC'        &
-                               , '       HFLXAC' , '       CFLXAC', '       CFLXST'        &
-                               , '        CWDRH' , '       SOILRH', '          GPP'        &
-                               , '       PLRESP' , ' PAR.BEAM.TOP', ' PAR.DIFF.TOP'        &
-                               , ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP', ' PAR.BEAM.BOT'        &
-                               , ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
+                               , '      GND.PAR' , '    GND.RLONG', '       WFLXLC'        &
+                               , '       WFLXWC' , '       WFLXGC', '       WFLXAC'        &
+                               , '       TRANSP' , '        WSHED', '    INTERCEPT'        &
+                               , '  THROUGHFALL' , '       HFLXGC', '       HFLXLC'        &
+                               , '       HFLXWC' , '       HFLXAC', '       CFLXAC'        &
+                               , '       CFLXST' , '        CWDRH', '       SOILRH'        &
+                               , '          GPP' , '       PLRESP', ' PAR.BEAM.TOP'        &
+                               , ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'        &
+                               , ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'        &
+                               , ' NIR.DIFF.BOT'
                                
                                
                                
@@ -4130,16 +4171,17 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   , initp%ustar           &
                    , initp%tstar           , initp%qstar           , initp%cstar           &
                    , initp%zeta            , initp%ribulk          , fluxp%flx_rshort_gnd  &
-                   , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    , fluxp%flx_vapor_wc    &
-                   , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    , fluxp%flx_transp      &
-                   , fluxp%flx_wshed_vg    , fluxp%flx_intercepted , fluxp%flx_throughfall &
-                   , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc &
-                   , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   , fluxp%flx_carbon_st   &
-                   , initp%cwd_rh          , soil_rh               , sum_gpp               &
-                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
-                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
-                   , par_b_diff            , nir_b_beam            , nir_b_diff            
-                   
+                   , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    &
+                   , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
+                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
+                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
+                   , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
+                   , fluxp%flx_carbon_st   , initp%cwd_rh          , soil_rh               &
+                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
+                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
+                   , par_b_beam            , par_b_diff            , nir_b_beam            &
+                   , nir_b_diff            
+
 
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!

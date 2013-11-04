@@ -1607,68 +1607,13 @@ module disturbance_utils
 
             !------------------------------------------------------------------------------!
             !    Scale the total area based on the new population density and new area.    !
-            ! We must also rescale all extensive properties from cohorts, since they are   !
-            ! per unit area and we are effectively changing the area.                      !
-            ! IMPORTANT: Only cohort-level variables that have units per area (m2) should  !
-            !            be rescaled.  Variables whose units are per plant should _NOT_ be !
-            !            included here.                                                    !
             !------------------------------------------------------------------------------!
-            tpatch%lai                (nco) = tpatch%lai               (nco) * survival_fac
-            tpatch%wai                (nco) = tpatch%wai               (nco) * survival_fac
-            tpatch%nplant             (nco) = tpatch%nplant            (nco) * survival_fac
-            tpatch%mean_gpp           (nco) = tpatch%mean_gpp          (nco) * survival_fac
-            tpatch%mean_leaf_resp     (nco) = tpatch%mean_leaf_resp    (nco) * survival_fac
-            tpatch%mean_root_resp     (nco) = tpatch%mean_root_resp    (nco) * survival_fac
-            tpatch%mean_growth_resp   (nco) = tpatch%mean_growth_resp  (nco) * survival_fac
-            tpatch%mean_storage_resp  (nco) = tpatch%mean_storage_resp (nco) * survival_fac
-            tpatch%mean_vleaf_resp    (nco) = tpatch%mean_vleaf_resp   (nco) * survival_fac
-            tpatch%today_gpp          (nco) = tpatch%today_gpp         (nco) * survival_fac
-            tpatch%today_nppleaf      (nco) = tpatch%today_nppleaf     (nco) * survival_fac
-            tpatch%today_nppfroot     (nco) = tpatch%today_nppfroot    (nco) * survival_fac
-            tpatch%today_nppsapwood   (nco) = tpatch%today_nppsapwood  (nco) * survival_fac
-            tpatch%today_nppcroot     (nco) = tpatch%today_nppcroot    (nco) * survival_fac
-            tpatch%today_nppseeds     (nco) = tpatch%today_nppseeds    (nco) * survival_fac
-            tpatch%today_nppwood      (nco) = tpatch%today_nppwood     (nco) * survival_fac
-            tpatch%today_nppdaily     (nco) = tpatch%today_nppdaily    (nco) * survival_fac
-            tpatch%today_gpp_pot      (nco) = tpatch%today_gpp_pot     (nco) * survival_fac
-            tpatch%today_gpp_lightmax (nco) = tpatch%today_gpp_lightmax(nco) * survival_fac
-            tpatch%today_gpp_moistmax (nco) = tpatch%today_gpp_moistmax(nco) * survival_fac
-            tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp   (nco) * survival_fac
-            tpatch%today_root_resp    (nco) = tpatch%today_root_resp   (nco) * survival_fac
-            tpatch%gpp                (nco) = tpatch%gpp               (nco) * survival_fac
-            tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration  (nco) * survival_fac
-            tpatch%root_respiration   (nco) = tpatch%root_respiration  (nco) * survival_fac
-            tpatch%monthly_dndt       (nco) = tpatch%monthly_dndt      (nco) * survival_fac
-            tpatch%leaf_water         (nco) = tpatch%leaf_water        (nco) * survival_fac
-            tpatch%leaf_hcap          (nco) = tpatch%leaf_hcap         (nco) * survival_fac
-            tpatch%leaf_energy        (nco) = tpatch%leaf_energy       (nco) * survival_fac
-            tpatch%wood_water         (nco) = tpatch%wood_water        (nco) * survival_fac
-            tpatch%wood_hcap          (nco) = tpatch%wood_hcap         (nco) * survival_fac
-            tpatch%wood_energy        (nco) = tpatch%wood_energy       (nco) * survival_fac
-            !----- Crown area shall not exceed 1. -----------------------------------------!
-            tpatch%crown_area         (nco) = min(1.,tpatch%crown_area(nco) * survival_fac)
-            !----- Carbon flux monthly means are extensive, we must convert them. ---------!
-            if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-               tpatch%dmean_par_l     (nco) = tpatch%dmean_par_l      (nco) * survival_fac
-               tpatch%dmean_par_l_beam(nco) = tpatch%dmean_par_l_beam (nco) * survival_fac
-               tpatch%dmean_par_l_diff(nco) = tpatch%dmean_par_l_diff (nco) * survival_fac
-            end if
-            if (imoutput > 0 .or. iqoutput > 0) then
-               tpatch%mmean_par_l     (nco) = tpatch%mmean_par_l      (nco) * survival_fac
-               tpatch%mmean_par_l_beam(nco) = tpatch%mmean_par_l_beam (nco) * survival_fac
-               tpatch%mmean_par_l_diff(nco) = tpatch%mmean_par_l_diff (nco) * survival_fac
-            end if
-            if (iqoutput > 0) then
-               tpatch%qmean_par_l     (:,nco) = tpatch%qmean_par_l      (:,nco)            &
-                                              * survival_fac
-               tpatch%qmean_par_l_beam(:,nco) = tpatch%qmean_par_l_beam (:,nco)            &
-                                              * survival_fac
-               tpatch%qmean_par_l_diff(:,nco) = tpatch%qmean_par_l_diff (:,nco)            &
-                                              * survival_fac
-            end if
-            
+            call update_cohort_extensive_props(tpatch,nco,nco,survival_fac)
+            !------------------------------------------------------------------------------!
+
             !----- Make mortality rate due to disturbance zero to avoid double counting. --!
             tpatch%mort_rate(5,nco) = 0.0
+            !------------------------------------------------------------------------------!
          end if
       end do cohortloop
 
