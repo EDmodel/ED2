@@ -10,6 +10,9 @@ plotsize = function( proje                  #  Map projection? [T|F]
                    , stdheight  = NULL      #  Standard height
                    , stdwidth   = NULL      #  Standard 
                    , extendfc   = FALSE     #  Extend width for filled.contour [T|F]
+                                            #  TRUE/FALSE  -- True means yes for longitude
+                                            #  "lon","lat" -- will extend the specific
+                                            #   dimension
                    , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
                    , landscape  = TRUE      #  Landscape? (if not swap width and height)
                    ){
@@ -69,9 +72,9 @@ plotsize = function( proje                  #  Map projection? [T|F]
       stdheight =  0.8 *  8.5
       stdratio  = 14.0 /  8.5
    }else if (paper == "long"){
-      stdwidth  =  0.8 * 17.0
-      stdheight =  0.8 *  8.5
-      stdratio  = 17.0 /  8.5
+      stdwidth  =  0.8 * 16.0
+      stdheight =  0.8 *  9.5
+      stdratio  = 16.0 /  9.5
    }else if (paper == "executive"){
       stdwidth  =  0.8  * 10.25
       stdheight =  0.8  *  7.25
@@ -91,10 +94,18 @@ plotsize = function( proje                  #  Map projection? [T|F]
    #---------------------------------------------------------------------------------------#
    if (proje){
       #----- Extend the width in case this will be used for filled.contour. ---------------#
-      if (extendfc){
-         width.fac = 1.0 + 1/6
+      if (is.logical(extendfc)){
+         width.fac  = 1.0 + 1/6 * as.numeric(extendfc)
+         height.fac = 1.0
+      }else if (tolower(substring(extendfc,1,2)) == "lo"){
+         width.fac  = 1.0 + 1/6
+         height.fac = 1.0
+      }else if (tolower(substring(extendfc,1,2)) == "la"){
+         width.fac  = 1.0
+         height.fac = 1.0 + 1/6
       }else{
-         width.fac = 1.0
+         width.fac  = 1.0
+         height.fac = 1.0
       }#end if extendfc
       #------------------------------------------------------------------------------------#
 
@@ -115,10 +126,10 @@ plotsize = function( proje                  #  Map projection? [T|F]
       #     Fix the width or height to account for the sought ratio.                       #
       #------------------------------------------------------------------------------------#
       if (ratio >= stdratio){ 
-         height = stdwidth / ratio
+         height = stdwidth * height.fac / ratio
          width  = width.fac * stdwidth
       }else{
-         height = stdheight
+         height = stdheight * height.fac
          width  = height * ratio * width.fac
       }#end if(actualratio >= stdratio)
       #------------------------------------------------------------------------------------#

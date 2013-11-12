@@ -768,7 +768,31 @@ weighted.mean2 <<- function(x,w,...) sqrt(x = weighted.mean(x=x^2,w=(w/sum(w))^2
 #==========================================================================================#
 #     Function to return the mid points between two consecutive points.                    #
 #------------------------------------------------------------------------------------------#
-mid.points <<- function(x) rowMeans(cbind(x[-1],x[-length(x)]))
+mid.points <<- function(x,islog=FALSE,finite=FALSE){
+   cx   = if (islog){log(c(x))}else{c(x)}
+   cx   = ifelse(is.finite(cx),cx,NA)
+   ix   = seq_along(cx)
+   last = length(cx)
+   if (finite){
+      cx    = na.approx(cx,na.rm=FALSE)
+      fa    = min(which(is.finite(cx)))
+      fz    = max(which(is.finite(cx)))
+      delta = max(c(0,mean(diff(cx),na.rm=TRUE)),na.rm=TRUE)
+      #----- Append data to the left. -----------------------------------------------------#
+      if (fa > 1){
+         fill     = seq(from=1,to=fa-1,by=1)
+         cx[fill] = cx[fa] + delta * (ix[fill]-ix[fa])
+      }#end if
+      if (fz < last){
+         fill     = seq(from=fz+1,to=last,by=1)
+         cx[fill] = cx[fz] + delta * (ix[fill]-ix[fz])
+      }#end if
+   }#end if
+
+   xmid = rowMeans(cbind(cx[-1],cx[-last]))
+   if(islog) xmid = exp(xmid)
+   return(xmid)
+}#end mid.points
 #==========================================================================================#
 #==========================================================================================#
 
@@ -948,5 +972,25 @@ six.summary <<- function(x,conf=0.95,finite=TRUE,...){
 
    return(ans)
 }#end function six.summary
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Function to calculate the eddy covariance.                                           # 
+#------------------------------------------------------------------------------------------#
+eddy.cov <<- function(x,y,...){
+   xbar   = mean(x,...)
+   ybar   = mean(y,...)
+   xprime = x - xbar
+   yprime = y - ybar
+   eddy   = mean(xprime*yprime,...)
+   return(eddy)
+}#end function eddy.cov
 #==========================================================================================#
 #==========================================================================================#

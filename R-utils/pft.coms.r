@@ -1240,8 +1240,8 @@ for (ipft in 1:npft){
 #    Specific leaf area for those PFTs whose specific leaf area depends on the leaf turn-  #
 # over rate.                                                                               #
 #------------------------------------------------------------------------------------------#
-pft$SLA = rep(NA,times=npft+1)
-for (ipft in 1:npft){
+#pft$SLA = rep(NA,times=npft+1)
+for (ipft in sequence(npft)){
    if (is.na(pft$SLA[ipft])){
       pft$SLA[ipft] = ( 10^( (2.4 - 0.46 * log10(12./pft$leaf.turnover.rate[ipft]))) 
                       * C2B * 0.1 )
@@ -1250,12 +1250,6 @@ for (ipft in 1:npft){
 #------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#    Minimum bleaf and leaf area index that is resolvable.                                 #
-#------------------------------------------------------------------------------------------#
-pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
-pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
-#------------------------------------------------------------------------------------------#
 
 #----- Constants shared by both bdead and bleaf -------------------------------------------#
 a1    =  -1.981
@@ -1276,15 +1270,15 @@ b2l   =   0.605
 c2l   =   0.848
 d2l   =   0.438
 #------------------------------------------------------------------------------------------#
-pft$b1Bl       = rep(NA,times=npft+1)
-pft$b2Bl       = rep(NA,times=npft+1)
-pft$b1Bs.small = rep(NA,times=npft+1)
-pft$b2Bs.small = rep(NA,times=npft+1)
-pft$b1Bs.large = rep(NA,times=npft+1)
-pft$b2Bs.large = rep(NA,times=npft+1)
-pft$b1Ca       = rep(NA,times=npft+1)
-pft$b2Ca       = rep(NA,times=npft+1)
-for (ipft in 1:npft){
+#pft$b1Bl       = rep(NA,times=npft+1)
+#pft$b2Bl       = rep(NA,times=npft+1)
+#pft$b1Bs.small = rep(NA,times=npft+1)
+#pft$b2Bs.small = rep(NA,times=npft+1)
+#pft$b1Bs.large = rep(NA,times=npft+1)
+#pft$b2Bs.large = rep(NA,times=npft+1)
+#pft$b1Ca       = rep(NA,times=npft+1)
+#pft$b2Ca       = rep(NA,times=npft+1)
+for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
       #------------------------------------------------------------------------------------#
       #      Fill in the leaf biomass parameters.                                          #
@@ -1300,7 +1294,7 @@ for (ipft in 1:npft){
          pft$b2Bl      [ipft] = nleaf[2]
       }else if(iallom %in% c(3)){
          #----- Lescure et al. (1983). ----------------------------------------------------#
-         pft$b1Bl      [ipft] = 0.00873 / C2B * 12 / pft$SLA[ipft]
+         pft$b1Bl      [ipft] = 0.00873 / C2B * 11.91 / pft$SLA[ipft]
          pft$b2Bl      [ipft] = 2.1360
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1350,8 +1344,24 @@ for (ipft in 1:npft){
          pft$b1Ca[ipft] = exp(ncrown.area[1])
          pft$b2Ca[ipft] = ncrown.area[2]
       }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Replace the coefficients for WAI in case iallom is 3.                          #
+      #  These numbers come from fitting Chambers et al. (2001) and Chambers et al. (2004) #
+      #  allometries for stem area index.                                                  #
+      #------------------------------------------------------------------------------------#
+      if (iallom %in% c(3)){
+         pft$b1WAI[ipft] = 0.11 * pft$SLA[ipft] * pft$b1Bl[ipft]
+         pft$b2WAI[ipft] = pft$b2Bl[ipft]
+      }#end if
+      #------------------------------------------------------------------------------------#
    }#end if
+   #---------------------------------------------------------------------------------------#
 }#end do
+#------------------------------------------------------------------------------------------#
 
 
 
@@ -1383,6 +1393,29 @@ if (iallom %in% c(0)){
 
 }#end if
 #------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Minimum bleaf and leaf area index that is resolvable.                                 #
+#------------------------------------------------------------------------------------------#
+pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
+pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Update colours.                                                                      #
+#------------------------------------------------------------------------------------------#
+pft$red    = c( 254,   1,  68,   0, 203,  13,   0,  37, 255
+              , 195, 143, 213, 170, 180, 120, 145, 119,  75 )
+pft$green  = c( 204, 229, 178,  83, 149, 245, 164, 101,  21
+              ,  19,  34, 109,  46,  36,   0, 125,  69,  75 )
+pft$blue   = c(  47,   0,  71,   3,   0, 250, 168, 102,  63
+              ,  50,  53, 198, 152, 255, 190,  82, 255,  75 )
+pft$colour = rgb(red=pft$red,green=pft$green,blue=pft$blue,maxColorValue=255)
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Make it global. --------------------------------------------------------------------#
 pft <<- pft

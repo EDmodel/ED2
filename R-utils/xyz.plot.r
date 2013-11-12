@@ -34,7 +34,7 @@ xyz.plot = function( x
                    , pch            = 15
                    , cex            = 1.0
                    , levels         = if (key.log){
-                                         pretty.log(x=zlim,n=nlevels)
+                                         pretty.log(x=zlim,n=nlevels,forcelog=TRUE)
                                       }else{
                                          pretty(x=zlim,n=nlevels)
                                       }#end if

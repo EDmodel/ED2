@@ -141,15 +141,17 @@ sites[[n]] = list( iata = "cax"
                  , dryz = "11/29"
                  )#end list
 #use.sites = c("gyf")
+
 #use.sites = c("s67")
 #use.sites = c("m34")
 #use.sites = c("s83")
+#use.sites = c("rja")
 #use.sites = c("pdg")
-#use.sites = c("s83","pdg","rja","ban")
+#use.sites = c("ban")
 #use.sites = c("rja","ban")
-#use.sites  = c("ban")
-use.sites = c("gyf","s67","s83","pdg","rja","m34")
+#use.sites = c("s83","pdg","rja","ban")
 #use.sites = c("gyf","s83","pdg","m34")
+use.sites = c("gyf","s67","s83","pdg","rja","m34")
 #------------------------------------------------------------------------------------------#
 
 
@@ -274,20 +276,20 @@ alt.fg    = "#2B0071"
 #------------------------------------------------------------------------------------------#
 #      Switch controls to plot only the needed ones.                                       #
 #------------------------------------------------------------------------------------------#
-plot.gpp.light     = c(FALSE,TRUE)[1]
-plot.gpp.vpdef     = c(FALSE,TRUE)[1]
-plot.gpp.wetness   = c(FALSE,TRUE)[1]
-plot.reco.wetness  = c(FALSE,TRUE)[1]
-plot.ust.ftnight   = c(FALSE,TRUE)[1]
-plot.ust.bias      = c(FALSE,TRUE)[1]
-plot.ts.ftnight    = c(FALSE,TRUE)[1]
+plot.gpp.light     = c(FALSE,TRUE)[2]
+plot.gpp.vpdef     = c(FALSE,TRUE)[2]
+plot.gpp.wetness   = c(FALSE,TRUE)[2]
+plot.reco.wetness  = c(FALSE,TRUE)[2]
+plot.ust.ftnight   = c(FALSE,TRUE)[2]
+plot.ust.bias      = c(FALSE,TRUE)[2]
+plot.ts.ftnight    = c(FALSE,TRUE)[2]
 plot.bp.diel       = c(FALSE,TRUE)[2]
-plot.qq.dmean      = c(FALSE,TRUE)[1]
-plot.density.dmean = c(FALSE,TRUE)[1]
-plot.spider        = c(FALSE,TRUE)[1]
-plot.skill.taylor  = c(FALSE,TRUE)[1]
-plot.soil.skill    = c(FALSE,TRUE)[1]
-make.summ.table    = c(FALSE,TRUE)[1]
+plot.qq.dmean      = c(FALSE,TRUE)[2]
+plot.density.dmean = c(FALSE,TRUE)[2]
+plot.spider        = c(FALSE,TRUE)[2]
+plot.skill.taylor  = c(FALSE,TRUE)[2]
+plot.soil.skill    = c(FALSE,TRUE)[2]
+make.summ.table    = c(FALSE,TRUE)[2]
 density.legend     = FALSE
 use.dmean.light    = FALSE
 use.dmean.vpdef    = TRUE
@@ -336,9 +338,8 @@ compvar[[ n]] = list( vnam         = "ustar"
                     , cscheme.mean = "panoply"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
-                    , col          = "#520485"
-                    , fg           = "#39025D"
-                    , pch          = 9
+                    , col          = "#3B24B3"
+                    , pch          = 8
                     , ustvar       = FALSE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
@@ -351,8 +352,7 @@ compvar[[ n]] = list( vnam         = "cflxca"
                     , cscheme.mean = "iclife"
                     , hue.low      = "green"
                     , hue.high     = "purple"
-                    , col          = "#46FF32"
-                    , fg           = "#31B223"
+                    , col          = "#AB8C3D"
                     , pch          = 3
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -366,8 +366,7 @@ compvar[[ n]] = list( vnam         = "cflxst"
                     , cscheme.mean = "clife"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
-                    , col          = "#006715"
-                    , fg           = "#00480E"
+                    , col          = "#7D6E93"
                     , pch          = 4
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -381,9 +380,8 @@ compvar[[ n]] = list( vnam         = "nee"
                     , cscheme.mean = "iclife"
                     , hue.low      = "green"
                     , hue.high     = "purple"
-                    , col          = "#46FF32"
-                    , fg           = "#31B223"
-                    , pch          = 8
+                    , col          = "#A3CC52"
+                    , pch          = 9
                     , ustvar       = TRUE
                     , soilvar      = FALSE
                     , sunvar       = FALSE
@@ -396,8 +394,7 @@ compvar[[ n]] = list( vnam         = "nep"
                     , cscheme.mean = "clife"
                     , hue.low      = "purple"
                     , hue.high     = "green"
-                    , col          = "#46FF32"
-                    , fg           = "#31B223"
+                    , col          = "#A3CC52"
                     , pch          = 14
                     , ustvar       = TRUE
                     , soilvar      = FALSE
@@ -411,8 +408,7 @@ compvar[[ n]] = list( vnam         = "reco"
                     , cscheme.mean = "iclife"
                     , hue.low      = "green"
                     , hue.high     = "purple"
-                    , col          = "#FF5700"
-                    , fg           = "#B23C00"
+                    , col          = "#AB8C3D"
                     , pch          = 0
                     , ustvar       = TRUE
                     , soilvar      = FALSE
@@ -426,8 +422,7 @@ compvar[[ n]] = list( vnam         = "gpp"
                     , cscheme.mean = "clife"
                     , hue.low      = "purple"
                     , hue.high     = "green"
-                    , col          = "#46FF32"
-                    , fg           = "#31B223"
+                    , col          = "#306614"
                     , pch          = 2
                     , ustvar       = TRUE
                     , soilvar      = FALSE
@@ -441,8 +436,7 @@ compvar[[ n]] = list( vnam         = "parup"
                     , cscheme.mean = "panoply"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
-                    , col          = "#0742C3"
-                    , fg           = "#042E88"
+                    , col          = "#143305"
                     , pch          = 13
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -456,8 +450,7 @@ compvar[[ n]] = list( vnam         = "rshortup"
                     , cscheme.mean = "panoply"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
-                    , col          = "#FF5700"
-                    , fg           = "#B23C00"
+                    , col          = "#2996CC"
                     , pch          = 1
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -471,8 +464,7 @@ compvar[[ n]] = list( vnam         = "rlongup"
                     , cscheme.mean = "panoply"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
-                    , col          = "#A00014"
-                    , fg           = "#70000E"
+                    , col          = "#E65C17"
                     , pch          = 19
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -486,8 +478,7 @@ compvar[[ n]] = list( vnam         = "hflxca"
                     , cscheme.mean = "panoply"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
-                    , col          = "#A00014"
-                    , fg           = "#70000E"
+                    , col          = "#990F0F"
                     , pch          = 25
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -501,8 +492,7 @@ compvar[[ n]] = list( vnam         = "wflxca"
                     , cscheme.mean = "ipanoply"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
-                    , col          = "#0742C3"
-                    , fg           = "#042E88"
+                    , col          = "#0A4766"
                     , pch          = 6
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -516,8 +506,7 @@ compvar[[ n]] = list( vnam         = "can.temp"
                     , cscheme.mean = "panoply"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
-                    , col          = "#FF5700"
-                    , fg           = "#B23C00"
+                    , col          = "#4D0404"
                     , pch          = 15
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -531,8 +520,7 @@ compvar[[ n]] = list( vnam         = "can.shv"
                     , cscheme.mean = "ipanoply"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
-                    , col          = "#0742C3"
-                    , fg           = "#042E88"
+                    , col          = "#160959"
                     , pch          = 12
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -546,8 +534,7 @@ compvar[[ n]] = list( vnam         = "can.co2"
                     , cscheme.mean = "iclife"
                     , hue.low      = "green"
                     , hue.high     = "purple"
-                    , col          = "#FF5700"
-                    , fg           = "#B23C00"
+                    , col          = "#4B6614"
                     , pch          = 7
                     , ustvar       = FALSE
                     , soilvar      = FALSE
@@ -561,8 +548,7 @@ compvar[[ n]] = list( vnam         = "soil.temp"
                     , cscheme.mean = "panoply"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
-                    , col          = "#FF5700"
-                    , fg           = "#B23C00"
+                    , col          = "#7D6E93"
                     , pch          = 10
                     , ustvar       = FALSE
                     , soilvar      = TRUE
@@ -576,8 +562,7 @@ compvar[[ n]] = list( vnam         = "soil.water"
                     , cscheme.mean = "ipanoply"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
-                    , col          = "#0742C3"
-                    , fg           = "#042E88"
+                    , col          = "#00AAAF"
                     , pch          = 5
                     , ustvar       = FALSE
                     , soilvar      = TRUE
@@ -591,8 +576,7 @@ compvar[[ n]] = list( vnam         = "soil.wetness"
                     , cscheme.mean = "ipanoply"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
-                    , col          = "#520485"
-                    , fg           = "#39025D"
+                    , col          = "#00F3FB"
                     , pch          = 18
                     , ustvar       = FALSE
                     , soilvar      = TRUE
@@ -617,7 +601,6 @@ control[[n]] = list( vnam         = "rshort"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#FF5700"
-                   , fg           = "#B23C00"
                    , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = TRUE
@@ -631,7 +614,6 @@ control[[n]] = list( vnam         = "par"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#0742C3"
-                   , fg           = "#042E88"
                    , flgvar       = FALSE
                    , soilvar      = FALSE
                    , sunvar       = TRUE
@@ -645,7 +627,6 @@ control[[n]] = list( vnam         = "rlong"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#A00014"
-                   , fg           = "#70000E"
                    , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
@@ -659,7 +640,6 @@ control[[n]] = list( vnam         = "atm.prss"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#520485"
-                   , fg           = "#39025D"
                    , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
@@ -673,7 +653,6 @@ control[[n]] = list( vnam         = "atm.temp"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#FF5700"
-                   , fg           = "#B23C00"
                    , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
@@ -687,7 +666,6 @@ control[[n]] = list( vnam         = "atm.shv"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#0742C3"
-                   , fg           = "#042E88"
                    , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
@@ -701,7 +679,6 @@ control[[n]] = list( vnam         = "atm.vels"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#520485"
-                   , fg           = "#39025D"
                    , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
@@ -715,7 +692,6 @@ control[[n]] = list( vnam         = "rain"
                    , hue.low      = "orangered"
                    , hue.high    = "blue"
                    , col          = "#0742C3"
-                   , fg           = "#042E88"
                    , flgvar       = TRUE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
@@ -729,7 +705,6 @@ control[[n]] = list( vnam         = "atm.vpdef"
                    , hue.low      = "blue"
                    , hue.high     = "orangered"
                    , col          = "#FF5700"
-                   , fg           = "#B23C00"
                    , flgvar       = FALSE
                    , soilvar      = FALSE
                    , sunvar       = FALSE
@@ -849,6 +824,7 @@ if (length(use.sites) == 0){
 control.key  = list.2.data.frame(control)$vnam
 compvar.key  = list.2.data.frame(compvar)$vnam
 compvar.pch  = list.2.data.frame(compvar)$pch
+compvar.col  = list.2.data.frame(compvar)$col
 compvar.sym  = parse(text=list.2.data.frame(compvar)$symbol)
 good.key     = list.2.data.frame(good   )$vnam
 season.key   = season.list
@@ -1164,9 +1140,13 @@ for (o in sequence(nout)){
    o.skill              = list( main = file.path(o.form$main,"skill"))
    o.skill$default.var  = file.path(o.skill$main ,"default_variables")
    o.skill$default.site = file.path(o.skill$main ,"default_sites")
+   o.skill$default.diel = file.path(o.skill$main ,"default_diel")
+   o.skill$default.summ = file.path(o.skill$main ,"default_summ")
    if (is.figure && ! file.exists(o.skill$main        )) dir.create(o.skill$main        )
    if (is.figure && ! file.exists(o.skill$default.var )) dir.create(o.skill$default.var )
+   if (is.figure && ! file.exists(o.skill$default.diel)) dir.create(o.skill$default.diel)
    if (is.figure && ! file.exists(o.skill$default.site)) dir.create(o.skill$default.site)
+   if (is.figure && ! file.exists(o.skill$default.summ)) dir.create(o.skill$default.summ)
    for (d in sequence(ndiel)){
       this.diel            = diel.key [d]
       o.diel               = file.path(o.skill$main,this.diel)
@@ -1186,9 +1166,13 @@ for (o in sequence(nout)){
    o.taylor              = list( main = file.path(o.form$main,"taylor"))
    o.taylor$default.var  = file.path(o.taylor$main ,"default_variables")
    o.taylor$default.site = file.path(o.taylor$main ,"default_sites")
+   o.taylor$default.diel = file.path(o.taylor$main ,"default_diel" )
+   o.taylor$default.summ = file.path(o.taylor$main ,"default_summ" )
    if (is.figure && ! file.exists(o.taylor$main        )) dir.create(o.taylor$main        )
    if (is.figure && ! file.exists(o.taylor$default.var )) dir.create(o.taylor$default.var )
    if (is.figure && ! file.exists(o.taylor$default.site)) dir.create(o.taylor$default.site)
+   if (is.figure && ! file.exists(o.taylor$default.diel)) dir.create(o.taylor$default.diel)
+   if (is.figure && ! file.exists(o.taylor$default.summ)) dir.create(o.taylor$default.summ)
    for (d in sequence(ndiel)){
       this.diel        = diel.key [d]
       o.diel           = file.path(o.taylor$main,this.diel)
@@ -8810,6 +8794,7 @@ if (plot.skill.taylor){
          cnt.diel    = rep(x=NA,times=nsites); names(cnt.diel) = sites$iata
          bias.range  = NULL
          sigma.range = NULL
+         sdev.max    = 1.04
          for (p in sequence(nsites)){
             #----- Grab data. -------------------------------------------------------------#
             iata  = sites$iata[p]
@@ -8898,10 +8883,12 @@ if (plot.skill.taylor){
                   #----- Find the normalised bias and model standard deviation. -----------#
                   comp         = res[[iata]]$sim[[simul.key[s]]][[this.vnam]]
                   sdev.obs.now = sqrt(comp$obs.moment[cc,d,nseason,2])
+                  sdev.mod.now = sqrt(comp$mod.moment[cc,d,nseason,2])
                   bias.now     = comp$bias [cc,d,nseason] / sdev.obs.now
                   sigma.now    = comp$sigma[cc,d,nseason] / sdev.obs.now
                   bias.range   = c(bias.range ,bias.now   )
                   sigma.range  = c(sigma.range,sigma.now  )
+                  sdev.max     = max(c(sdev.max,1.04*sdev.mod.now/sdev.obs.now),na.rm=TRUE)
                   #------------------------------------------------------------------------#
                }#end for (s in sequence(nsimul))
                #---------------------------------------------------------------------------#
@@ -8960,7 +8947,7 @@ if (plot.skill.taylor){
             #     Plot title.                                                              #
             #------------------------------------------------------------------------------#
             letitre = paste(" Skill diagram - ",this.desc,"\n",diel.desc[d],sep="")
-            cat("       - Skill","\n")
+            #cat("       - Skill","\n")
             #------------------------------------------------------------------------------#
 
 
@@ -9093,15 +9080,15 @@ if (plot.skill.taylor){
                                          , main           = ""
                                          , bias.lim       = bias.range
                                          , r2.lim         = r2.range
-                                         , r2.options     = list( col = grid.colour)
-                                         , nobias.options = list( col = khaki.mg   )
-                                         , rmse.options   = list( col = orange.mg
+                                         , r2.options     = list( col = grey.fg    )
+                                         , nobias.options = list( col = grey.fg    )
+                                         , rmse.options   = list( col = grey.mg
                                                                 , lty = "dotdash"
                                                                 , lwd = 1.2
                                                                 , bg  = background
                                                                 )#end list
-                                         , cex.xyzlab     = 1.4
-                                         , cex.xyzat      = 1.4
+                                         , cex.xyzlab     = 1.3
+                                         , cex.xyzat      = 1.3
                                          , skill          = myskill
                                          , normalise      = TRUE
                                          , mar            = c(5,4,4,3)+0.1
@@ -9148,7 +9135,7 @@ if (plot.skill.taylor){
             #     Plot title.                                                              #
             #------------------------------------------------------------------------------#
             letitre = paste(" Taylor diagram - ",this.desc,"\n",diel.desc[d],sep="")
-            cat("       - Taylor","\n")
+            # cat("       - Taylor","\n")
             #------------------------------------------------------------------------------#
 
 
@@ -9267,6 +9254,7 @@ if (plot.skill.taylor){
                      #---------------------------------------------------------------------#
                      mytaylor = taylor.plot( obs        = obs.diel[[iata]]
                                            , mod        = mod.diel[[iata]]
+                                           , maxsd      = sdev.max
                                            , add        = add
                                            , pos.corr   = NA
                                            , pt.col     = simul$col
@@ -9275,10 +9263,10 @@ if (plot.skill.taylor){
                                            , pt.cex     = cex.diel [p]
                                            , pt.lwd     = lwd.diel [p]
                                            , obs.col    = foreground
-                                           , gamma.col  = sky.mg
+                                           , gamma.col  = grey.mg
                                            , gamma.bg   = background
                                            , sd.col     = grey.fg
-                                           , sd.obs.col = yellow.mg
+                                           , sd.obs.col = foreground
                                            , corr.col   = foreground
                                            , main       = ""
                                            , normalise  = TRUE
@@ -9351,6 +9339,7 @@ if (plot.skill.taylor){
       percent.skill = array(data=0,dim=c(nsites,ndiel),dimnames=list(sites$iata,diel.key))
       bias.range    = NULL
       sigma.range   = NULL
+      sdev.max      = 1.04
       for (p in sequence(nsites)){
          #----- Load observation and model. -----------------------------------------------#
          iata  = sites$iata[p]
@@ -9434,10 +9423,12 @@ if (plot.skill.taylor){
             if (percent.skill[p,d] > 0.){
                comp         = res[[iata]]$sim[[simul.key[s]]][[this.vnam]]
                sdev.obs.now = sqrt(comp$obs.moment[cc,d,nseason,2])
+               sdev.mod.now = sqrt(comp$mod.moment[cc,d,nseason,2])
                bias.now     = comp$bias [cc,d,nseason] / sdev.obs.now
                sigma.now    = comp$sigma[cc,d,nseason] / sdev.obs.now
                bias.range   = c(bias.range ,bias.now   )
                sigma.range  = c(sigma.range,sigma.now  )
+               sdev.max     = max(c(sdev.max,1.04*sdev.mod.now/sdev.obs.now),na.rm=TRUE)
             }#end if (percent.skill[p,d] > 0.)
             #------------------------------------------------------------------------------#
          }#end for (d in loop.diel)
@@ -9519,8 +9510,7 @@ if (plot.skill.taylor){
          #---------------------------------------------------------------------------------#
          #     Plot title.                                                                 #
          #---------------------------------------------------------------------------------#
-         letitre = paste(" Skill diagram - ",this.desc,sep="")
-         cat("       - Skill","\n")
+         # cat("       - Skill","\n")
          #---------------------------------------------------------------------------------#
 
 
@@ -9529,6 +9519,183 @@ if (plot.skill.taylor){
          #      Loop over all formats.                                                     #
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
+            #..............................................................................#
+            #..............................................................................#
+            #     Make the plot for all diel.                                              #
+            #..............................................................................#
+            #..............................................................................#
+            for (d in loop.diel){
+               letitre = paste(" Skill diagram - ",this.desc,"\n",diel.desc[d],sep="")
+               if (diel.key[d] == "all.hrs"){
+                  bias.range.use = c(-4.,4.)
+                  r2.range.use   = c(-6.5,1)
+               }else{
+                  bias.range.use = bias.range
+                  r2.range.use   = r2.range
+               }#end if
+         
+               #----- Make the file name. -------------------------------------------------#
+               out.skill = out[[outform[o]]]$skill$default.diel
+               fichier   = file.path(out.skill,paste("skill-",this.vnam,"-",simul$name[s]
+                                                    ,"-",diel.key[d],".",outform[o],sep="")
+                                    )#end file.path
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                     ,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the window into 3, and add site and simulation legends at the   #
+               # bottom.                                                                   #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par.orig = par(no.readonly = TRUE)
+               mar.orig = par.orig$mar
+               par(oma = c(0.2,3,3.0,0))
+               layout(mat = rbind(c(3,3,3,3),c(1,2,2,2)),height = c(5.0,1.0))
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Legend: the counts. -------------------------------------------------#
+               par(mar=c(0.2,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.0
+                      , legend  = sprintf("%.1f",c(st.cnt.min,st.cnt.med,st.cnt.max))
+                      , col     = foreground
+                      , pt.bg   = foreground
+                      , pch     = 15
+                      , ncol    = 1
+                      , title   = expression(bold("Rel. Count"))
+                      , pt.cex  = c(st.cex.min,st.cex.med,st.cex.max)
+                      , cex     = 1.0 * cex.ptsz
+                      , xpd     = TRUE
+                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Legend: the sites. --------------------------------------------------#
+               par(mar=c(0.2,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.0
+                      , legend  = paste(sites$desc," (",toupper(sites$iata),")",sep="")
+                      , col     = sites$col
+                      , pt.bg   = sites$col
+                      , pch     = sites$pch
+                      , pt.lwd  = 2
+                      , ncol    = min(4,pretty.box(nsites)$ncol)
+                      , title   = expression(bold("Sites"))
+                      , pt.cex  = st.cex.med
+                      , cex     = 1.0 * cex.ptsz
+                      , xpd     = TRUE
+                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Loop over valid pairs.                                                #
+               #---------------------------------------------------------------------------#
+               myskill     = NULL
+               for (p in sequence(nsites)){
+                  iata      = sites$iata[p]
+                  this.diel = diel.key[d]
+                  if (percent.skill[p,d] %>% 0){
+                     pair.now  = list.skill[[iata]][[this.diel]]
+                  }else{
+                     pair.now  = list(obs=c(NA,NA,NA),mod=c(NA,NA,NA))
+                  }#end if
+
+
+                  #------------------------------------------------------------------------#
+                  #     Initialise or update the skill plot.                               #
+                  #------------------------------------------------------------------------#
+                  myskill = skill.plot( obs           = pair.now$obs
+                                      , obs.options   = list( col = foreground
+                                                            , cex = 2.0
+                                                            )#end list
+                                      , mod           = pair.now$mod
+                                      , mod.options   = list( col = sites$col[p]
+                                                            , bg  = sites$col[p]
+                                                            , pch = sites$pch[p]
+                                                            , cex = cex.skill[p,d]
+                                                            , lty = "solid"
+                                                            , lwd = lwd.skill[p,d]
+                                                            )#end list
+                                      , main           = ""
+                                      , bias.lim       = bias.range.use
+                                      , r2.lim         = r2.range.use
+                                      , r2.options     = list( col = grey.fg    )
+                                      , nobias.options = list( col = grey.fg    )
+                                      , rmse.options   = list( col = grey.mg
+                                                             , lty = "dotdash"
+                                                             , lwd = 1.2
+                                                             , bg  = background
+                                                             )#end list
+                                      , cex.xyzlab     = 1.3
+                                      , cex.xyzat      = 1.3
+                                      , skill          = myskill
+                                      , normalise      = TRUE
+                                      , mar            = c(5,4,4,3)+0.1
+                                      )#end skill.plot
+                  #------------------------------------------------------------------------#
+               }#end for (p in sequence(nsites))
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the global title.                                                #
+               #---------------------------------------------------------------------------#
+               par(las=0)
+               mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+            }#end for (d in loop.diel)
+            #..............................................................................#
+            #..............................................................................#
+
+
+
+
+
+
+            #..............................................................................#
+            #..............................................................................#
+            #     Make the plot for all diel.                                              #
+            #..............................................................................#
+            #..............................................................................#
+            letitre = paste(" Skill diagram - ",this.desc,sep="")
             #----- Make the file name. ----------------------------------------------------#
             out.skill = out[[outform[o]]]$skill$default.var
             fichier   = file.path(out.skill,paste("skill-",this.vnam,"-",simul$name[s]
@@ -9652,15 +9819,15 @@ if (plot.skill.taylor){
                                    , main           = ""
                                    , bias.lim       = bias.range
                                    , r2.lim         = r2.range
-                                   , r2.options     = list( col = grid.colour)
-                                   , nobias.options = list( col = khaki.mg   )
-                                   , rmse.options   = list( col = orange.mg
+                                   , r2.options     = list( col = grey.fg    )
+                                   , nobias.options = list( col = grey.fg    )
+                                   , rmse.options   = list( col = grey.mg
                                                           , lty = "dotdash"
                                                           , lwd = 1.2
                                                           , bg  = background
                                                           )#end list
-                                   , cex.xyzlab     = 1.4
-                                   , cex.xyzat      = 1.4
+                                   , cex.xyzlab     = 1.3
+                                   , cex.xyzat      = 1.3
                                    , skill          = myskill
                                    , normalise      = TRUE
                                    , mar            = c(5,4,4,3)+0.1
@@ -9705,7 +9872,7 @@ if (plot.skill.taylor){
          #     Plot title.                                                                 #
          #---------------------------------------------------------------------------------#
          letitre = paste(" Taylor diagram - ",this.desc,sep="")
-         cat("       - Taylor","\n")
+         # cat("       - Taylor","\n")
          #---------------------------------------------------------------------------------#
 
 
@@ -9822,6 +9989,7 @@ if (plot.skill.taylor){
                #---------------------------------------------------------------------------#
                mytaylor = taylor.plot( obs        = pair.now$obs
                                      , mod        = pair.now$mod
+                                     , maxsd      = sdev.max
                                      , add        = add
                                      , pos.corr   = NA
                                      , pt.col     = diel.col [d]
@@ -9830,10 +9998,10 @@ if (plot.skill.taylor){
                                      , pt.cex     = cex.skill[p,d]
                                      , pt.lwd     = lwd.skill[p,d]
                                      , obs.col    = foreground
-                                     , gamma.col  = sky.mg
+                                     , gamma.col  = grey.mg
                                      , gamma.bg   = background
                                      , sd.col     = grey.fg
-                                     , sd.obs.col = yellow.mg
+                                     , sd.obs.col = foreground
                                      , corr.col   = foreground
                                      , main       = ""
                                      , normalise  = TRUE
@@ -9900,6 +10068,7 @@ if (plot.skill.taylor){
                            )#end array
       bias.range    = NULL
       sigma.range   = NULL
+      sdev.max      = 1.04
       for (v in sequence(ncompvar)){
          #----- Copy the variable information. --------------------------------------------#
          this.vnam     = compvar[[v]]$vnam
@@ -9997,10 +10166,12 @@ if (plot.skill.taylor){
             if (percent.skill[v,p] > 0.){
                comp         = res[[iata]]$sim[[simul.key[s]]][[this.vnam]]
                sdev.obs.now = sqrt(comp$obs.moment[cc,d,nseason,2])
+               sdev.mod.now = sqrt(comp$mod.moment[cc,d,nseason,2])
                bias.now     = comp$bias [cc,d,nseason] / sdev.obs.now
                sigma.now    = comp$sigma[cc,d,nseason] / sdev.obs.now
                bias.range   = c(bias.range ,bias.now   )
                sigma.range  = c(sigma.range,sigma.now  )
+               sdev.max     = max(c(sdev.max,1.04*sdev.mod.now/sdev.obs.now),na.rm=TRUE)
             }#end if (percent.skill[v,p] > 0.)
             #------------------------------------------------------------------------------#
          }#end for (p in sequence(nsites))
@@ -10082,8 +10253,7 @@ if (plot.skill.taylor){
          #---------------------------------------------------------------------------------#
          #     Plot title.                                                                 #
          #---------------------------------------------------------------------------------#
-         letitre = paste(" Skill diagram - ",diel.desc[d],sep="")
-         cat("       - Skill","\n")
+         # cat("       - Skill","\n")
          #---------------------------------------------------------------------------------#
 
 
@@ -10092,8 +10262,181 @@ if (plot.skill.taylor){
          #      Loop over all formats.                                                     #
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
+            #..............................................................................#
+            #..............................................................................#
+            #      All variables together, one plot per site.                              #
+            #..............................................................................#
+            #..............................................................................#
+            loop.sites.now = which(colSums(percent.skill) > 0)
+
+            for (p in loop.sites.now){
+               iata = sites$iata[p]
+               letitre = paste(" Skill diagram - ",diel.desc[d],"\n",sites$desc[p],sep="")
+
+               #---------------------------------------------------------------------------#
+               #     Plot only if there is anything to plot.                               #
+               #---------------------------------------------------------------------------#
+               #----- Make the file name. -------------------------------------------------#
+               out.skill = out[[outform[o]]]$skill$default.site
+               fichier   = file.path(out.skill,paste("skill-",diel.key[d],"-",simul$name[s]
+                                                    ,"-",sites$iata[p]
+                                                    ,".",outform[o],sep="")
+                                    )#end file.path
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                     ,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the window into 3, and add site and simulation legends at the   #
+               # bottom.                                                                   #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par.orig = par(no.readonly = TRUE)
+               mar.orig = par.orig$mar
+               par(oma = c(0.2,3,3.0,0))
+               layout(mat = rbind(c(3,3,3,3,3,3),c(1,1,2,2,2,2)),height = c(5.0,1.0))
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Legend: the counts. -------------------------------------------------#
+               par(mar=c(0.2,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.0
+                      , legend  = sprintf("%.1f",c(st.cnt.min,st.cnt.med,st.cnt.max))
+                      , col     = foreground
+                      , pt.bg   = foreground
+                      , pch     = 15
+                      , ncol    = 1
+                      , title   = expression(bold("Rel. Count"))
+                      , pt.cex  = c(st.cex.min,st.cex.med,st.cex.max)
+                      , cex     = 1.0 * cex.ptsz
+                      , xpd     = TRUE
+                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Legend: the variables. ----------------------------------------------#
+               par(mar=c(0.2,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.0
+                      , legend  = compvar.sym[v.use]
+                      , col     = compvar.col[v.use]
+                      , pt.bg   = compvar.col[v.use]
+                      , pch     = compvar.pch[v.use]
+                      , pt.lwd  = 2.0
+                      , ncol    = min(4,pretty.box(nvuse)$ncol)
+                      , title   = expression(bold("Variables"))
+                      , pt.cex  = st.cex.med
+                      , cex     = 1.0 * cex.ptsz
+                      , xpd     = TRUE
+                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Loop over valid pairs.                                                #
+               #---------------------------------------------------------------------------#
+               myskill      = NULL
+               loop.var.now = which(percent.skill[,p] > 0)
+               for (v in loop.var.now){
+                  this.vnam = compvar[[v]]$vnam
+                  pair.now  = list.skill[[this.vnam]][[iata]]
+
+
+                  #------------------------------------------------------------------------#
+                  #     Initialise or update the skill plot.                               #
+                  #------------------------------------------------------------------------#
+                  myskill = skill.plot( obs           = pair.now$obs
+                                      , obs.options   = list( col = foreground
+                                                            , cex = 2.0
+                                                            )#end list
+                                      , mod           = pair.now$mod
+                                      , mod.options   = list( col = compvar[[v]]$col
+                                                            , bg  = compvar[[v]]$col
+                                                            , pch = compvar[[v]]$pch
+                                                            , cex = cex.skill[v,p]
+                                                            , lty = "solid"
+                                                            , lwd = lwd.skill[v,p]
+                                                            )#end list
+                                      , main           = ""
+                                      , bias.lim       = bias.range
+                                      , r2.lim         = r2.range
+                                      , r2.options     = list( col = grey.fg    )
+                                      , nobias.options = list( col = grey.fg    )
+                                      , rmse.options   = list( col = grey.mg
+                                                             , lty = "dotdash"
+                                                             , lwd = 1.2
+                                                             , bg  = background
+                                                             )#end list
+                                      , cex.xyzlab     = 1.4
+                                      , cex.xyzat      = 1.4
+                                      , skill          = myskill
+                                      , normalise      = TRUE
+                                      , mar            = c(5,4,4,3)+0.1
+                                      )#end skill.plot
+                  #------------------------------------------------------------------------#
+               }#end for (u in sequence(nrow(which.skill)))
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the global title.                                                #
+               #---------------------------------------------------------------------------#
+               par(las=0)
+               mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+            }#end for (p in loop.sites)
+            #..............................................................................#
+            #..............................................................................#
+
+
+
+
+
+
+
+            #..............................................................................#
+            #..............................................................................#
+            #      All sites together                                                      #
+            #..............................................................................#
+            #..............................................................................#
+
             #----- Make the file name. ----------------------------------------------------#
-            out.skill = out[[outform[o]]]$skill$default.site
+            letitre   = paste(" Skill diagram - ",diel.desc[d],sep="")
+            out.skill = out[[outform[o]]]$skill$default.summ
             fichier   = file.path(out.skill,paste("skill-",diel.key[d],"-",simul$name[s]
                                                  ,".",outform[o],sep="")
                                  )#end file.path
@@ -10189,7 +10532,7 @@ if (plot.skill.taylor){
             #     Loop over valid pairs.                                                   #
             #------------------------------------------------------------------------------#
             myskill     = NULL
-            for (u in sequence(nwhich)){
+            for (u in rev(sequence(nwhich))){
                v         = which.skill[u,1]
                p         = which.skill[u,2]
                this.vnam = compvar[[v]]$vnam
@@ -10210,14 +10553,14 @@ if (plot.skill.taylor){
                                                          , pch = compvar[[v]]$pch
                                                          , cex = cex.skill[v,p]
                                                          , lty = "solid"
-                                                         , lwd = lwd.skill[v,p]
+                                                         , lwd = 1.75 # lwd.skill[v,p]
                                                          )#end list
                                    , main           = ""
                                    , bias.lim       = bias.range
                                    , r2.lim         = r2.range
-                                   , r2.options     = list( col = grid.colour)
-                                   , nobias.options = list( col = khaki.mg   )
-                                   , rmse.options   = list( col = orange.mg
+                                   , r2.options     = list( col = grey.fg    )
+                                   , nobias.options = list( col = grey.fg    )
+                                   , rmse.options   = list( col = grey.mg
                                                           , lty = "dotdash"
                                                           , lwd = 1.2
                                                           , bg  = background
@@ -10268,7 +10611,7 @@ if (plot.skill.taylor){
          #     Plot title.                                                                 #
          #---------------------------------------------------------------------------------#
          letitre = paste(" Taylor diagram - ",diel.desc[d],sep="")
-         cat("       - Taylor","\n")
+         # cat("       - Taylor","\n")
          #---------------------------------------------------------------------------------#
 
 
@@ -10278,7 +10621,7 @@ if (plot.skill.taylor){
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
             #----- Make the file name. ----------------------------------------------------#
-            out.taylor = out[[outform[o]]]$taylor$default.site
+            out.taylor = out[[outform[o]]]$taylor$default.summ
             fichier    = file.path(out.taylor,paste("taylor-",diel.key[d],"-",simul$name[s]
                                                    ,".",outform[o],sep=""))
             if (outform[o] == "x11"){
@@ -10373,7 +10716,7 @@ if (plot.skill.taylor){
             #     Loop over valid pairs.                                                   #
             #------------------------------------------------------------------------------#
             add  = FALSE
-            for (u in sequence(nwhich)){
+            for (u in rev(sequence(nwhich))){
                v         = which.skill[u,1]
                p         = which.skill[u,2]
                this.vnam = compvar[[v]]$vnam
@@ -10385,19 +10728,22 @@ if (plot.skill.taylor){
                #---------------------------------------------------------------------------#
                mytaylor = taylor.plot( obs        = pair.now$obs
                                      , mod        = pair.now$mod
+                                     , maxsd      = sdev.max
                                      , add        = add
                                      , pos.corr   = NA
                                      , pt.col     = sites$col[p]
                                      , pt.bg      = sites$col[p]
                                      , pt.pch     = compvar[[v]]$pch
                                      , pt.cex     = cex.skill[v,p]
-                                     , pt.lwd     = lwd.skill[v,p]
+                                     , pt.lwd     = 1.75 # lwd.skill[v,p]
                                      , obs.col    = foreground
-                                     , gamma.col  = sky.mg
+                                     , gamma.col  = grey.mg
                                      , gamma.bg   = background
-                                     , sd.col     = grey.fg
-                                     , sd.obs.col = yellow.mg
+                                     , sd.col     = foreground
+                                     , sd.obs.col = "violetred"
                                      , corr.col   = foreground
+                                     , cex.axis   = 1.2
+                                     , srt.ylab   = 0
                                      , main       = ""
                                      , normalise  = TRUE
                                      )#end taylor.plot

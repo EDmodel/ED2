@@ -1033,7 +1033,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "plant.resp"
                    , desc       = "Plant respiration"
                    , unit       = untab$kgcom2oyr
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1042,7 +1042,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "het.resp"
                    , desc       = "Heterotrophic respiration"
                    , unit       = untab$kgcom2oyr
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1051,7 +1051,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "nep"
                    , desc       = "Net ecosystem production"
                    , unit       = untab$kgcom2oyr
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1060,7 +1060,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "reco"
                    , desc       = "Ecosystem respiration"
                    , unit       = untab$kgcom2oyr
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1069,7 +1069,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "hflxca"
                    , desc       = "Sensible heat flux"
                    , unit       = untab$wom2
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1078,7 +1078,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxca"
                    , desc       = "Water flux"
                    , unit       = untab$kgwom2oday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1087,7 +1087,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxgc"
                    , desc       = "Ground evaporation"
                    , unit       = untab$kgwom2oday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1096,7 +1096,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxlc"
                    , desc       = "Leaf evaporation"
                    , unit       = untab$kgwom2oday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1105,7 +1105,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "wflxwc"
                    , desc       = "Wood evaporation"
                    , unit       = untab$kgwom2oday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1114,7 +1114,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "evap"
                    , desc       = "Evaporation"
                    , unit       = untab$kgwom2oday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1123,7 +1123,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "transp"
                    , desc       = "Transpiration"
                    , unit       = untab$kgwom2oday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1132,7 +1132,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "nee"
                    , desc       = "Net ecosystem exchange"
                    , unit       = untab$umolcom2os
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1141,7 +1141,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "cflxca"
                    , desc       = "CO2 flux"
                    , unit       = untab$umolcom2os
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1150,7 +1150,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "cflxst"
                    , desc       = "CO2 flux"
                    , unit       = untab$umolcom2os
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1159,7 +1159,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "can.temp"
                    , desc       = "Canopy air temperature"
                    , unit       = untab$degC
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1168,7 +1168,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "atm.temp"
                    , desc       = "Atmospheric temperature"
                    , unit       = untab$degC
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1177,7 +1177,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "leaf.temp"
                    , desc       = "Leaf temperature"
                    , unit       = untab$degC
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1186,7 +1186,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "wood.temp"
                    , desc       = "Wood temperature"
                    , unit       = untab$degC
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1195,7 +1195,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "gnd.temp"
                    , desc       = "Ground temperature"
                    , unit       = untab$degC
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1204,7 +1204,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "atm.shv"
                    , desc       = "Atmospheric specific humidity" 
                    , unit       = untab$gwokg
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1213,7 +1213,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "can.shv"
                    , desc       = "Canopy air specific humidity"
                    , unit       = untab$gwokg
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1222,7 +1222,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "gnd.shv"
                    , desc       = "Ground specific humidity"
                    , unit       = untab$gwokg
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1231,7 +1231,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "atm.co2"
                    , desc       = "Atmospheric CO2 mixing ratio"
                    , unit       = untab$molcomol
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1240,7 +1240,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "can.co2"
                    , desc       = "Canopy air CO2 mixing ratio"
                    , unit       = untab$molcomol
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1249,7 +1249,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "rain"
                    , desc       = "Total monthly precipitation"
                    , unit       = untab$mm
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1258,7 +1258,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "runoff"
                    , desc       = "Total monthly runoff"
                    , unit       = untab$mm
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1267,7 +1267,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "intercepted"
                    , desc       = "Total monthly interception"
                    , unit       = untab$mm
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1276,7 +1276,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "wshed"
                    , desc       = "Total monthly dripping"
                    , unit       = untab$mm
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1285,7 +1285,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "sm.stress"
                    , desc       = "Fraction of open stomata"
                    , unit       = untab$empty
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1294,7 +1294,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "leaf.gbw"
                    , desc       = "Leaf boundary layer conductance"
                    , unit       = untab$kgwom2loday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1303,7 +1303,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "leaf.gsw"
                    , desc       = "Stomatal conductance"
                    , unit       = untab$kgwom2loday
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1366,7 +1366,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "albedo"
                    , desc       = "Shortwave albedo"
                    , unit       = untab$empty
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1375,7 +1375,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "ustar"
                    , desc       = "Friction velocity"
                    , unit       = untab$mos
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1384,7 +1384,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "paw"
                    , desc       = "Potential available water"
                    , unit       = untab$pcsat
-                   , col.scheme = "imuitas"
+                   , col.scheme = "ipanoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1393,7 +1393,7 @@ n            = n + 1
 squeeze[[n]] = list( vnam       = "smpot"
                    , desc       = "Integrated matric potential"
                    , unit       = untab$mpa
-                   , col.scheme = "muitas"
+                   , col.scheme = "panoply"
                    , fco.mmean  = FALSE
                    , fco.qmean  = FALSE
                    , box.plot   = FALSE
@@ -1630,17 +1630,13 @@ theme[[n]] = list( vnam      = c( "ncoh.global")
                  )#end list
 n          = n + 1
 theme[[n]] = list( vnam      = c(          "reco",    "plant.resp",      "het.resp"
-                                ,     "leaf.resp",     "stem.resp",     "root.resp"
-                                ,     "soil.resp")
+                                ,     "leaf.resp",     "stem.resp",     "root.resp")
                  , desc      = c(     "Ecosystem",   "Autotrophic", "Heterotrophic"
-                                ,          "Leaf",          "Stem",          "Root"
-                                ,          "Soil")
+                                ,          "Leaf",          "Stem",          "Root")
                  , colour    = c(       "#2996CC",       "#143305",       "#3B24B3"
-                                ,       "#A3CC52",       "#AB8C3D",       "#990F0F"
-                                ,       "#E65C17")
-                 , lwd       = c(             2.5,             2.5,          2.5
-                                ,             2.5,             2.5,          2.5
-                                ,             2.5)
+                                ,       "#A3CC52",       "#E65C17",       "#990F0F")
+                 , lwd       = c(             2.5,             2.5,             2.5
+                                ,             2.5,             2.5,             2.5)
                  , type      = "o"
                  , plog      = FALSE
                  , prefix    = "respiration"
@@ -2360,7 +2356,7 @@ n             = n + 1
 soilplot[[n]] = list( vnam   = "soil.water"
                     , desc   = "Soil moisture"
                     , unit   = untab$m3wom3
-                    , csch   = "imuitas"
+                    , csch   = "ipanoply"
                     , pnlog  = FALSE
                     , mmean  = TRUE
                     , emean  = TRUE
@@ -2371,7 +2367,7 @@ n             = n + 1
 soilplot[[n]] = list( vnam   = "soil.temp"
                     , desc   = "Soil temperature"
                     , unit   = untab$degC
-                    , csch   = "muitas"
+                    , csch   = "panoply"
                     , pnlog  = FALSE
                     , mmean  = TRUE
                     , emean  = TRUE
@@ -2382,8 +2378,19 @@ n             = n + 1
 soilplot[[n]] = list( vnam   = "soil.mstpot"
                     , desc   = "(Negative) Soil moisture potential"
                     , unit   = untab$mpa
-                    , csch   = "muitas"
+                    , csch   = "panoply"
                     , pnlog  = TRUE
+                    , mmean  = TRUE
+                    , emean  = TRUE
+                    , ymean  = TRUE
+                    , scsout = TRUE
+                    )#end list
+n             = n + 1
+soilplot[[n]] = list( vnam   = "soil.extracted"
+                    , desc   = "Water extraction by plants"
+                    , unit   = untab$kgwom3oday
+                    , csch   = "ipanoply"
+                    , pnlog  = FALSE
                     , mmean  = TRUE
                     , emean  = TRUE
                     , ymean  = TRUE
@@ -2402,7 +2409,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "nep"
                      , desc       = "Net ecosystem production"
                      , unit       = untab$kgcom2oyr
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2412,7 +2419,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "het.resp"
                      , desc       = "Heterotrophic respiration"
                      , unit       = untab$kgcom2oyr
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2422,7 +2429,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.temp"
                      , desc       = "CAS temperature"
                      , unit       = untab$degC
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2432,7 +2439,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "gnd.temp"
                      , desc       = "Ground temperature"
                      , unit       = untab$degC
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2442,7 +2449,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.shv"
                      , desc       = "CAS specific humidity"
                      , unit       = untab$gwokg
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2452,7 +2459,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "gnd.shv"
                      , desc       = "Ground specific humidity"
                      , unit       = untab$gwokg
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2462,7 +2469,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.vpd"
                      , desc       = "CAS vapour pressure deficit"
                      , unit       = untab$hpa
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2472,7 +2479,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.co2"
                      , desc       = "CAS CO2 mixing ratio"
                      , unit       = untab$umolcomol
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2482,7 +2489,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "can.prss"
                      , desc       = "CAS pressure"
                      , unit       = untab$hpa
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2492,7 +2499,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "cflxca"
                      , desc       = "CO2 flux (CAS->Atm)"
                      , unit       = untab$umolcom2os
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2502,7 +2509,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "cflxst"
                      , desc       = "CO2 storage at CAS"
                      , unit       = untab$umolcom2os
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2512,7 +2519,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "nee"
                      , desc       = "Net ecosystem exchange"
                      , unit       = untab$umolcom2os
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2522,7 +2529,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "qwflxca"
                      , desc       = "'Latent' heat flux (CAS->Atm)"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2532,7 +2539,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxca"
                      , desc       = "Sensible heat flux (CAS->Atm)"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2542,7 +2549,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxgc"
                      , desc       = "Sensible heat flux (Grnd->CAS)"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2552,7 +2559,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxlc"
                      , desc       = "Sensible heat flux (Leaf->CAS)"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2562,7 +2569,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "hflxwc"
                      , desc       = "Sensible heat flux (Wood->CAS)"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2572,7 +2579,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxca"
                      , desc       = "Water flux (CAS->Atm)"
                      , unit       = untab$kgwom2oday
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2582,7 +2589,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxgc"
                      , desc       = "Water flux (Grnd->CAS)"
                      , unit       = untab$kgwom2oday
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2592,7 +2599,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxlc"
                      , desc       = "Water flux (Leaf->CAS)"
                      , unit       = untab$kgwom2oday
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2602,7 +2609,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "wflxwc"
                      , desc       = "Water flux (Wood->CAS)"
                      , unit       = untab$kgwom2oday
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2612,7 +2619,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "transp"
                      , desc       = "Leaf transpiration"
                      , unit       = untab$kgwom2oday
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2622,7 +2629,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "ustar"
                      , desc       = "Friction velocity"
                      , unit       = untab$mos
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2632,7 +2639,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "rshortup"
                      , desc       = "Outgoing SW radiation"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2642,7 +2649,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "rlongup"
                      , desc       = "Outgoing LW radiation"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2652,7 +2659,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "parup"
                      , desc       = "Outgoing PAR"
                      , unit       = untab$umolom2os
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2662,7 +2669,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "rnet"
                      , desc       = "Net radiation at ToC"
                      , unit       = untab$wom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2672,7 +2679,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "lai"
                      , desc       = "Leaf area index"
                      , unit       = untab$m2lom2
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2682,7 +2689,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "leaf.temp"
                      , desc       = "Leaf temperature"
                      , unit       = untab$degC
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2692,7 +2699,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "leaf.vpd"
                      , desc       = "Leaf vapour pressure deficit"
                      , unit       = untab$hpa
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2702,7 +2709,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "wood.temp"
                      , desc       = "Wood temperature"
                      , unit       = untab$degC
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2712,7 +2719,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "gpp"
                      , desc       = "Gross primary productivity"
                      , unit       = untab$kgcom2oyr
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2722,7 +2729,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "npp"
                      , desc       = "Net primary productivity"
                      , unit       = untab$kgcom2oyr
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2732,7 +2739,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "plant.resp"
                      , desc       = "Plant respiration"
                      , unit       = untab$kgcom2oyr
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE
@@ -2742,7 +2749,7 @@ n              = n + 1
 plotpatch[[n]] = list( vnam       = "reco"
                      , desc       = "Ecosystem respiration"
                      , unit       = untab$kgcom2oyr
-                     , col.scheme = "muitas"
+                     , col.scheme = "panoply"
                      , plog       = TRUE
                      , emean      = TRUE
                      , mmean      = TRUE

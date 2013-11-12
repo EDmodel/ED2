@@ -12,7 +12,7 @@ colourmap  = function( x
                      , ylim             = range(y,finite=TRUE)
                      , zlim             = range(z,finite=TRUE)
                      , levels           = if (key.log){
-                                             pretty.log(x=zlim,n=nlevels)
+                                             pretty.log(x=zlim,n=nlevels,forcelog=TRUE)
                                           }else{
                                             pretty(x=zlim,n=nlevels)
                                           }#end if

@@ -7,13 +7,27 @@ image.map <<- function( x
                       , y
                       , z
                       , dx               = if (is.list(x) & length(x) > 1){
-                                              lapply(lapply(x,diff),median,na.rm=TRUE)
+                                              if (xlog){
+                                                 lapply(lapply(lapply(lapply(lapply(x,sort),unique),log),diff),median,na.rm=TRUE)
+                                              }else{
+                                                 lapply(lapply(lapply(lapply(x,sort),unique),diff),median,na.rm=TRUE)
+                                              }#end if
+                                           }else if(xlog){
+                                              median( diff(log(sort(unique(unlist(x)))))
+                                                    , na.rm=TRUE )
                                            }else{
                                               median( diff(sort(unique(unlist(x))))
                                                     , na.rm=TRUE )
                                            }#end if
                       , dy               = if (is.list(y) & length(y) > 1){
-                                              lapply(lapply(y,diff),median,na.rm=TRUE)
+                                              if (ylog){
+                                                 lapply(lapply(lapply(lapply(lapply(y,sort),unique),log),diff),median,na.rm=TRUE)
+                                              }else{
+                                                 lapply(lapply(lapply(lapply(y,sort),unique),diff),median,na.rm=TRUE)
+                                              }#end if
+                                           }else if (ylog){
+                                              median( diff(log(sort(unique(unlist(y)))))
+                                                    , na.rm=TRUE )
                                            }else{
                                               median( diff(sort(unique(unlist(y))))
                                                     , na.rm=TRUE )
@@ -21,8 +35,11 @@ image.map <<- function( x
                       , xlim             = range(unlist(x),finite=TRUE)
                       , ylim             = range(unlist(y),finite=TRUE)
                       , zlim             = range(unlist(z),finite=TRUE)
+                      , xlog             = FALSE
+                      , ylog             = FALSE
                       , levels           = if (key.log){
-                                              sort(unique(pretty.log(x=zlim,n=nlevels)))
+                                              sort(unique(pretty.log(x=zlim,n=nlevels
+                                                                    ,forcelog=TRUE)))
                                            }else{
                                               sort(unique(pretty    (x=zlim,n=nlevels)))
                                            }#end if
@@ -53,6 +70,8 @@ image.map <<- function( x
                       , xaxs             = "i"
                       , yaxs             = "i"
                       , smidgen          = 0
+                      , interp.xyz       = FALSE
+                      , useRaster        = TRUE
                       , ...
                       ){
 
@@ -106,13 +125,6 @@ image.map <<- function( x
       warning(" key.vertical=FALSE ignored due to the legend.")
       key.vertical = TRUE
    }#end if
-   if (plot.legend){
-      if (is.null(off.xlab )) off.xlab  = f.leg
-      if (is.null(off.right)) off.right = f.key
-   }else{
-      if (is.null(off.xlab )) off.xlab  = 0.0
-      if (is.null(off.right)) off.right = f.key
-   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -138,18 +150,51 @@ image.map <<- function( x
 
 
 
-   #----- Check for outer margins. --------------------------------------------------------#
-   if (is.null(oma)) oma = c(0.2,3,4.5,0)*(npanels > 1)
-   #---------------------------------------------------------------------------------------#
-
-
-
    #----- Save the margins to avoid losing the data. --------------------------------------#
-   par.orig = par(no.readonly=TRUE)
+   par.orig = par(no.readonly=TRUE )
    mar.orig = par.orig$mar
    on.exit(par(par.orig))
    par(par.user)
-   par(oma = oma)
+
+
+
+
+
+   #----- Check for outer margins. --------------------------------------------------------#
+   if (is.null(oma)){
+      omd = c(0.02,1.00,0.01,0.93)*(npanels > 1)
+      par(omd=omd)
+   }else{
+      par(oma=oma)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Find offset for x axis label and right, based on legends and keys and outer      #
+   # margin .                                                                              #
+   #---------------------------------------------------------------------------------------#
+   par.tout = par(no.readonly=FALSE)
+   #----- Bottom margin. ------------------------------------------------------------------#
+   if (is.null(off.xlab)){
+      if (plot.legend && key.vertical){
+         off.xlab = with(par.tout,( omi[1] + f.leg * (din[2]-omi[1]-omi[3]) ) / din[2])
+      }else if (key.vertical){
+         off.xlab = with(par.tout,omi[1] / din[2])
+      }else{
+         off.xlab = with(par.tout,( omi[1] + f.key * (din[2]-omi[1]-omi[3]) ) / din[2])
+      }#end if
+   }#end if
+   #----- Right margin. -------------------------------------------------------------------#
+   if (is.null(off.right)){
+      if (key.vertical){
+         off.right = with(par.tout,( omi[4] + f.key * (din[1]-omi[2]-omi[4]) ) / din[1])
+      }else if (plot.legend){
+         off.right = with(par.tout,( omi[4] + f.leg * (din[1]-omi[2]-omi[4]) ) / din[1])
+      }else{
+         off.right = with(par.tout,omi[4] / din[1])
+      }#end if
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -240,7 +285,11 @@ image.map <<- function( x
    #=======================================================================================#
    #      Second plot: the key scale.                                                      #
    #---------------------------------------------------------------------------------------#
-      par(mar = lo.panel$mar.key)
+      if (key.vertical){
+         par(mar = lo.panel$mar.key)
+      }else{
+         par(mar = c(2.1,4.6,1.6,2.1))
+      }#end if
       plot.new()
       #------------------------------------------------------------------------------------#
       #     Plot in the horizontal or vertical depending on where the scale is going to    #
@@ -271,7 +320,7 @@ image.map <<- function( x
       }else{
          #----- Decide whether the scale is logarithmic or not. ---------------------------#
          if (key.log){
-            plot.window(xlim=range(levels),ylim=c(0,1),xaxs="i",yaxs="i",las=1,log="y")
+            plot.window(xlim=range(levels),ylim=c(0,1),xaxs="i",yaxs="i",las=1,log="x")
          }else{
             plot.window(xlim=range(levels),ylim=c(0,1),xaxs="i",yaxs="i",las=1)
          }#end if
@@ -367,41 +416,102 @@ image.map <<- function( x
          bottom  = TRUE
          top     = TRUE
          mar.now = mar.orig
-         if (! key.vertical) mar[1] = 4.1
+         if (! key.vertical) mar.now[1] = 4.1
          #---------------------------------------------------------------------------------#
       }#end if
+      plog = ""
+      if (xlog) plog = paste(plog,"x",sep="")
+      if (ylog) plog = paste(plog,"y",sep="")
       par(mar = mar.now)
       plot.new()
-      plot.window(xlim=xlim,ylim=ylim,xaxs=xaxs,yaxs=yaxs,...)
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #    Split zleft into the breaks defined by the colour palette.                      #
-      #------------------------------------------------------------------------------------#
-      zcut              = cut(z[[p]],breaks=levels)
-      zlev              = levels(zcut)
-      zcol              = col[match(zcut,zlev)]
-      zcol[is.na(zcol)] = na.col
+      plot.window(xlim=xlim,ylim=ylim,log=plog,xaxs=xaxs,yaxs=yaxs,...)
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Find the corners for the rectangles. -----------------------------------------#
-      nx      = length(x[[p]])
-      ny      = length(y[[p]])
-      xleft   = x[[p]] - 0.5 * (1. + smidgen) * dx[[p]]
-      xright  = x[[p]] + 0.5 * (1. + smidgen) * dx[[p]]
-      ybottom = y[[p]] - 0.5 * (1. + smidgen) * dy[[p]]
-      ytop    = y[[p]] + 0.5 * (1. + smidgen) * dy[[p]]
-      rect( xleft   = xleft
-          , ybottom = ybottom
-          , xright  = xright
-          , ytop    = ytop
-          , col     = zcol
-          , border  = zcol
-          , xpd     = FALSE
-          )#end rect
+      if (interp.xyz){
+
+         #----------------------------------------------------------------------------------#
+         #      We use image to plot, so it looks nice in PDF.                              #
+         #----------------------------------------------------------------------------------#
+         useRaster.now = useRaster && (! xlog) && (! ylog) 
+         #----- Make x and y dimensionless. ------------------------------------------------#
+         if (xlog){
+            xx    = log(as.numeric(x[[p]]))
+         }else{
+            xx    = as.numeric(x[[p]])
+         }#end if
+         if (ylog){
+            yy    = log(as.numeric(y[[p]]))
+         }else{
+            yy    = as.numeric(y[[p]])
+         }#end if
+         zz    = z[[p]]
+         nx    = length(xx)
+         ny    = length(yy)
+         xlow  = min(xx)
+         xhigh = max(xx)
+         ylow  = min(yy)
+         yhigh = max(yy)
+         #----- Scale x and y. -------------------------------------------------------------#
+         xxx    = ( xx - xlow ) / ( xhigh - xlow )
+         yyy    = ( yy - ylow ) / ( yhigh - ylow )
+         sss    = is.finite(zz)
+         xo     = seq(from=0,to=1,length.out=10*length(unique(xx)))
+         yo     = seq(from=0,to=1,length.out=10*length(unique(yy)))
+
+         if (any(is.finite(zz[sss]))){
+            zint   = interp(x=xxx[sss],y=yyy[sss],z=zz[sss],xo=xo,yo=yo)
+            sint   = try(interp(x=xxx     ,y=yyy     ,z=sss    ,xo=xo,yo=yo))
+         }else{
+            zint   = list(x=xo,y=yo,z=matrix(nrow=length(xo),ncol=length(yo)))
+            sint   = list(x=xo,y=yo,z=matrix(nrow=length(xo),ncol=length(yo)))
+         }#end if
+         sint$z = sint$z %>% twothirds
+         zint$z = ifelse(sint$z,zint$z,NA)
+         zint$x = xlow + zint$x * (xhigh - xlow)
+         zint$y = ylow + zint$y * (yhigh - ylow)
+
+         if (xlog) zint$x = exp(zint$x)
+         if (ylog) zint$y = exp(zint$y)
+
+         image(zint,breaks=levels,col=col,add=TRUE,useRaster=useRaster.now)
+      }else{
+         #---------------------------------------------------------------------------------#
+         #    Split zleft into the breaks defined by the colour palette.                   #
+         #---------------------------------------------------------------------------------#
+         zcut              = cut(as.numeric(z[[p]]),breaks=levels)
+         zlev              = levels(zcut)
+         zcol              = col[match(zcut,zlev)]
+         zcol[is.na(zcol)] = na.col
+         #---------------------------------------------------------------------------------#
+
+         nx      = length(x[[p]])
+         ny      = length(y[[p]])
+         if (xlog){
+            xleft   = exp(log(x[[p]]) - 0.5 * (1. + smidgen) * dx[[p]])
+            xright  = exp(log(x[[p]]) + 0.5 * (1. + smidgen) * dx[[p]])
+         }else{
+            xleft   = x[[p]] - 0.5 * (1. + smidgen) * dx[[p]]
+            xright  = x[[p]] + 0.5 * (1. + smidgen) * dx[[p]]
+         }#end if
+         if (ylog){
+            ybottom = exp(log(y[[p]]) - 0.5 * (1. + smidgen) * dy[[p]])
+            ytop    = exp(log(y[[p]]) + 0.5 * (1. + smidgen) * dy[[p]])
+         }else{
+            ybottom = y[[p]] - 0.5 * (1. + smidgen) * dy[[p]]
+            ytop    = y[[p]] + 0.5 * (1. + smidgen) * dy[[p]]
+         }#end if
+         rect( xleft   = xleft
+             , ybottom = ybottom
+             , xright  = xright
+             , ytop    = ytop
+             , col     = zcol
+             , border  = zcol
+             , xpd     = FALSE
+             )#end rect
+      }#end if
       #------------------------------------------------------------------------------------#
 
 

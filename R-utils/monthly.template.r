@@ -376,6 +376,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$soil.water              = matrix(data=0,nrow=ntimes,ncol=nzg)
    emean$soil.temp               = matrix(data=0,nrow=ntimes,ncol=nzg)
    emean$soil.mstpot             = matrix(data=0,nrow=ntimes,ncol=nzg)
+   emean$soil.extracted          = matrix(data=0,nrow=ntimes,ncol=nzg)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1115,6 +1116,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$soil.water        [idx,] = old.datum$emean$soil.water
    new.datum$emean$soil.temp         [idx,] = old.datum$emean$soil.temp
    new.datum$emean$soil.mstpot       [idx,] = old.datum$emean$soil.mstpot
+   new.datum$emean$soil.extracted    [idx,] = old.datum$emean$soil.extracted
    new.datum$emean$last.1yr.growth   [idx ] = old.datum$emean$last.1yr.growth
    new.datum$emean$last.2yr.growth   [idx ] = old.datum$emean$last.2yr.growth
    new.datum$emean$last.3yr.growth   [idx ] = old.datum$emean$last.3yr.growth

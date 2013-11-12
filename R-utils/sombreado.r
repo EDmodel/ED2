@@ -9,7 +9,7 @@ sombreado = function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z
                     ,xlim=range(x,finite=TRUE),ylim=range(y,finite=TRUE)
                     ,zlim=range(z,finite=TRUE)
                     ,levels = if (key.log){
-                                 sort(unique(pretty.log(x=z,n=nlevels)))
+                                 sort(unique(pretty.log(x=z,n=nlevels,forcelog=TRUE)))
                               }else{
                                  sort(unique(pretty(x=z,n=nlevels)))
                               }#end if
@@ -17,7 +17,7 @@ sombreado = function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z
                     ,col=colour.palette(length(levels)-1)
                     ,plot.title,plot.axes,xlog=FALSE,ylog=FALSE,key.title,key.axes
                     ,key.log=FALSE,asp=NA,interp=TRUE
-                    ,xaxs="i",yaxs="i",las=1,axes=TRUE,frame.plot=axes,...){
+                    ,xaxs="i",yaxs="i",las=1,axes=TRUE,frame.plot=axes,useRaster=TRUE,...){
 
    #----- Check which kind of input was given. --------------------------------------------#
    if (missing(z)) {
@@ -96,35 +96,79 @@ sombreado = function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z
    if (!missing(key.title)) key.title
 
    #----- Make the log variable for the main window. --------------------------------------#
-   plog=""
-   if (xlog) plog=paste(plog,"x",sep="")
-   if (ylog) plog=paste(plog,"y",sep="")
+   if (xlog) xlim = log(xlim)
+   if (ylog) ylim = log(ylim)
 
    #----- Now we plot the filled contour. -------------------------------------------------#
    mar    = mar.orig
    mar[4] = 1
    par(mar = mar)
    plot.new()
-   plot.window(xlim=xlim,ylim=ylim,log=plog, xaxs = xaxs, yaxs = yaxs, asp = asp)
+   plot.window(xlim=xlim,ylim=ylim, xaxs = xaxs, yaxs = yaxs, asp = asp)
 
-   #----- Call the function that actually plots the data. ---------------------------------#
-   if (interp && R.Version()$major == "3"){
-      .filled.contour(x=x,y=y,z=z,levels=levels,col=col)
-   }else if(interp){
-      .Internal(filledcontour(as.double(x), as.double(y), z, as.double(levels),col = col))
+
+
+   #---------------------------------------------------------------------------------------#
+   #      We use image to plot, so it looks nice in PDF.                                   #
+   #---------------------------------------------------------------------------------------#
+   #----- Make x and y dimensionless. -----------------------------------------------------#
+   if (xlog){
+      xx    = log(as.numeric(x))
    }else{
-      image(x=x,y=y,z=z,breaks=levels,col=col,add=TRUE)
+      xx    = as.numeric(x)
    }#end if
+   if (ylog){
+      yy    = log(as.numeric(y))
+   }else{
+      yy    = as.numeric(y)
+   }#end if
+   nx    = length(xx)
+   ny    = length(yy)
+   xlow  = min(xx)
+   xhigh = max(xx)
+   ylow  = min(yy)
+   yhigh = max(yy)
+   #----- Scale x and y. ------------------------------------------------------------------#
+   xxx    = rep((xx-xlow)/(xhigh-xlow),times=length(yy))
+   yyy    = rep((yy-ylow)/(yhigh-ylow),each =length(xx))
+   sss    = is.finite(z)
+   xo     = seq(from=0,to=1,length.out=10*length(xx))
+   yo     = seq(from=0,to=1,length.out=10*length(yy))
+   zint   = interp(x=xxx[sss],y=yyy[sss],z=z[sss],xo=xo,yo=yo)
+   sint   = interp(x=xxx     ,y=yyy     ,z=sss   ,xo=xo,yo=yo)
+   sint$z = sint$z > twothirds
+   zint$z = ifelse(sint$z,zint$z,NA)
+   zint$x = xlow + zint$x * (xhigh - xlow)
+   zint$y = ylow + zint$y * (yhigh - ylow)
+   image(zint,breaks=levels,col=col,add=TRUE,useRaster=useRaster)
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Check whether there are especial instructions for plotting the axes. ------------#
    if (missing(plot.axes)) {
        if (axes) {
-           axis(1)
-           axis(2)
-       }
+           if (xlog){
+              xlab = pretty.log(x)
+              xat  = log(xlab)
+              axis(side=1,at=xat,labels=xlab)
+           }else{
+              axis(side=1)
+           }#end if
+           if (ylog){
+              ylab = pretty.log(y)
+              yat  = log(ylab)
+              axis(side=2,las=1,at=yat,labels=ylab)
+           }else{
+              axis(side=2,las=1)
+           }#end if
+       }#end if
    }else{
       plot.axes
    }#end if
-   
+   #---------------------------------------------------------------------------------------#
+
+
    if (frame.plot) box()
    #----- Check whether there are especial instructions for plotting the title. -----------#
    if (missing(plot.title)){

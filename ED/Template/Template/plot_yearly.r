@@ -327,7 +327,7 @@ for (place in myplaces){
    ymean = list()
    ysdev = list()
    for (vname in names(emean)){
-      if (vname %in% c("soil.temp","soil.water","soil.mstpot")){
+      if (vname %in% c("soil.temp","soil.water","soil.mstpot","soil.extracted")){
          mmean[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=mean, na.rm=TRUE)
          msdev[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=sd  , na.rm=TRUE)
          ymean[[vname]] = qapply(X=emean[[vname]], INDEX=yfac, DIM=1, FUN=mean, na.rm=TRUE)
@@ -1689,7 +1689,7 @@ for (place in myplaces){
 
          if (pnlog){
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty.log(x=vrange,n=ncolshov)
+            vlevels = pretty.log(x=vrange,n=ncolshov,forcelog=TRUE)
             vnlev   = length(vlevels)
          }else{
             vrange  = range(varbuff,na.rm=TRUE)
@@ -1722,6 +1722,7 @@ for (place in myplaces){
                      ,plot.title=title(main=letitre,xlab="Month",ylab=ley,cex.main=0.7)
                      ,key.title=title(main=lacle,cex.main=0.8)
                      ,key.log=pnlog
+                     ,useRaster=TRUE
                      ,plot.axes={axis(side=1)
                                  axis(side=2,at=zat,labels=znice)
                                  if (hovgrid){

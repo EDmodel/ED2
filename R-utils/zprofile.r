@@ -10,7 +10,7 @@ zprofile = function(lon=seq(from=0,to=1,len=nrow(vari)),lev=seq(from=0,to=1,len=
                    ,limlon=range(lon,finite=TRUE),limlev=range(lev,finite=TRUE)
                    ,limvari=range(vari,finite=TRUE)
                    ,levels = if (key.log){
-                                pretty.log(x=limvari,n=nlevels)
+                                pretty.log(x=limvari,n=nlevels,forcelog=TRUE)
                              }else{
                                 pretty(x=limvari,n=nlevels)
                              }#end if

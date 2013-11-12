@@ -2,7 +2,7 @@
 #==========================================================================================#
 #     Function that creates a pretty scale in log co-ordinates.                            #
 #------------------------------------------------------------------------------------------#
-pretty.log = function(x,base=10,n=5){
+pretty.log = function(x,base=10,n=5,forcelog=FALSE){
    log.neat  = pretty(x=log(x,base=base),n=n)
    dlog.neat = median(diff(log.neat))
    neat      = base^log.neat
@@ -13,7 +13,7 @@ pretty.log = function(x,base=10,n=5){
    # very close to the actual scale, forget about the log scale and use regular pretty, it #
    # gives a more legible scale.                                                           #
    #---------------------------------------------------------------------------------------#
-   if (base == 10 && dlog.neat %wr% c(0.1,0.5)){
+   if (base == 10 && dlog.neat %wr% c(0.1,0.5) && (! forcelog)){
       sel  = abs(log.neat - as.integer(log.neat)) < 0.5 * dlog.neat
       tens = sort(c(neat[sel],base^(c(floor(min(log.neat)),ceiling(max(log.neat))))))
 
@@ -33,7 +33,7 @@ pretty.log = function(x,base=10,n=5){
       vlevels   = vlevels[aa:zz]
       still.log = TRUE
       #------------------------------------------------------------------------------------#
-   }else if(dlog.neat < 0.1){
+   }else if(dlog.neat < 0.1 && (! forcelog)){
       #-----  The plot is hardly log, use normal units instead. ---------------------------#
       vlevels = pretty(x=x,n=n)
       still.log = FALSE

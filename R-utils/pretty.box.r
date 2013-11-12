@@ -121,7 +121,7 @@ pretty.box = function(n,horizontal=TRUE,byrow=TRUE
    #     Create the margins for each box assuming that axes should be plotted only on the  #
    # bottom and left panels.                                                               #
    #---------------------------------------------------------------------------------------#
-   n.seq = sequence(n)
+   n.seq = sequence(nbox)
    if (byrow){
       left   = ( n.seq %% nbcol ) == 1 | nbcol == 1
       right  = ( n.seq %% nbcol ) == 0

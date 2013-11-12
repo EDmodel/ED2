@@ -681,6 +681,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    real                                  :: old_wood_hcap
    real                                  :: salloci
    real                                  :: elongf_try
+   real                                  :: elongf_grow
    !---------------------------------------------------------------------------------------!
 
 
@@ -925,25 +926,53 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                cpatch%cb_moistmax (13,ico) = cpatch%cb_moistmax (13,ico)                   &
                                            - cpatch%leaf_drop      (ico)
                !---------------------------------------------------------------------------!
-            else
+            elseif (cpatch%phenology_status(ico) /= 0) then
+               select case(cpatch%phenology_status(ico))
+               case (1)
+                  !----- Leaves were already growing, keep growing. -----------------------!
+                  cpatch%elongf          (ico) = elongf_try
+                  !----- Check whether leaves are fully flushed. --------------------------!
+                  if (elongf_try == 1.0) then
+                     cpatch%phenology_status(ico) = 0
+                  else
+                     cpatch%phenology_status(ico) = 1
+                  end if
+                  !------------------------------------------------------------------------!
+               case (-1,-2)
+                  !------------------------------------------------------------------------!
+                  !     Leaves were dropping or gone, we first check that conditions are   !
+                  ! really improving before we turn on leaf production.                    !
+                  !------------------------------------------------------------------------!
+                  elongf_grow = min(1.0,max(elongf_flush,cpatch%elongf(ico)+0.02))
+                  if (elongf_try >= elongf_grow) then
+                     cpatch%elongf          (ico) = elongf_try
+                     !----- Check whether leaves are fully flushed. -----------------------!
+                     if (elongf_try == 1.0) then
+                        cpatch%phenology_status(ico) = 0
+                     else
+                        cpatch%phenology_status(ico) = 1
+                     end if
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+               end select
+               !---------------------------------------------------------------------------!
+
+
                !---------------------------------------------------------------------------!
                !     Conditions are slightly more humid.  Let them grow.                   !
                !---------------------------------------------------------------------------!
-               cpatch%elongf          (ico) = elongf_try
-               cpatch%phenology_status(ico) = 1
                cpatch%bleaf           (ico) = bleaf_new
                cpatch%balive          (ico) = cpatch%balive(ico) - delta_bleaf
-               !----- Decide the status based on whether bleaf is at maximum or not. ------!
-               if (cpatch%elongf(ico) == 1.0) then
-                  cpatch%phenology_status(ico) = 0
-               else
-                  cpatch%phenology_status(ico) = 1
-               end if
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
+
+
+
+
          !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &

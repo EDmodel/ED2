@@ -405,7 +405,7 @@ for (place in myplaces){
       #     Soil variables are multi-dimensional.  Use qapply.  Otherwise, check whether   #
       # the mean sum of squares is available or not.                                       #
       #------------------------------------------------------------------------------------#
-      if (vname %in% c("soil.temp","soil.water","soil.mstpot")){
+      if (vname %in% c("soil.temp","soil.water","soil.mstpot","soil.extracted")){
          mmean[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=mean, na.rm=TRUE)
          msdev[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=sd  , na.rm=TRUE)
       }else if (has.emsqu){
@@ -2427,7 +2427,7 @@ for (place in myplaces){
 
          if (pnlog){
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty.log(x=vrange,n=ncolsfc)
+            vlevels = pretty.log(x=vrange,n=ncolsfc,forcelog=TRUE)
             vnlev   = length(vlevels)
          }else{
             vrange  = range(varbuff,na.rm=TRUE)
@@ -2460,6 +2460,7 @@ for (place in myplaces){
                      ,plot.title=title(main=letitre,xlab="Month",ylab=ley,cex.main=0.7)
                      ,key.title=title(main=lacle,cex.main=0.8)
                      ,key.log=pnlog
+                     ,useRaster=TRUE
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=zat,labels=znice)
                                  if (fcgrid){
@@ -2541,7 +2542,7 @@ for (place in myplaces){
 
          if (pnlog){
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty.log(x=vrange,n=ncolsfc)
+            vlevels = pretty.log(x=vrange,n=ncolsfc,forcelog=TRUE)
             vnlev   = length(vlevels)
          }else{
             vrange  = range(varbuff,na.rm=TRUE)
@@ -2574,6 +2575,7 @@ for (place in myplaces){
                      ,plot.title=title(main=letitre,xlab="Month",ylab=ley,cex.main=0.7)
                      ,key.title=title(main=lacle,cex.main=0.8)
                      ,key.log=pnlog
+                     ,useRaster=TRUE
                      ,plot.axes={axis(side=1,at=whenplot6$levels
                                      ,labels=whenplot6$labels,padj=whenplot6$padj)
                                  axis(side=2,at=zat,labels=znice)
@@ -2699,6 +2701,7 @@ for (place in myplaces){
                      ,colour.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Year",cex.main=0.7)
                      ,key.title=title(main=lacle,cex.main=0.8)
+                     ,useRaster=TRUE
                      ,plot.axes={axis(side=1,at=monat,labels=monlab)
                                  axis(side=2,at=yrat)
                                  if (fcgrid){
@@ -2799,6 +2802,7 @@ for (place in myplaces){
                      ,colour.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,ylab=ley,xlab="Time",cex.main=0.7)
                      ,key.title=title(main=lacle,cex.main=0.8)
+                     ,useRaster=TRUE
                      ,plot.axes={axis(side=1,at=huplot$level,labels=huplot$labels)
                                  axis(side=2,at=uplot$levels,labels=uplot$labels)
                                  if (fcgrid){
@@ -2909,7 +2913,7 @@ for (place in myplaces){
       #     Find levels, and expand PDF scale in case it is a constant.                    #
       #------------------------------------------------------------------------------------#
       if (plog){
-         vlevs = sort(unique(pretty.log(this$z,n=ncolsfc)))
+         vlevs = sort(unique(pretty.log(this$z,n=ncolsfc,forcelog=TRUE)))
       }else{
          vlevs = sort(unique(pretty(this$z,n=ncolsfc)))
       }#end if
@@ -2959,6 +2963,7 @@ for (place in myplaces){
                      , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
                      , key.title      = title(main="Density",cex.main=0.8)
                      , key.log        = plog 
+                     , useRaster      = TRUE
                      , plot.axes      = {  axis( side   = 1
                                                , at     = whenplot8$levels
                                                , labels = whenplot8$labels
@@ -3072,6 +3077,7 @@ for (place in myplaces){
                      , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
                      , key.title      = title(main="Density",cex.main=0.8)
                      , key.log        = plog 
+                     , useRaster      = TRUE
                      , plot.axes      = {  axis( side   = 1
                                                , at     = monat
                                                , labels = monlab

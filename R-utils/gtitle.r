@@ -21,7 +21,8 @@ gtitle <<- function( main      = NULL
                    , line.xlab = NA      # Line, same as title
                    , line.ylab = NA      # Line, same as title
                    , outer     = FALSE   # Added for compability, but it is ignored
-                   ,...){
+                   ,...
+                   ){
    #----- Save the original par settings. -------------------------------------------------#
    par.dims = par(no.readonly=FALSE)
    par.orig = par(no.readonly=TRUE )

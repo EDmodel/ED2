@@ -231,12 +231,14 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             ipaconow    = rep(sequence(mymont$NPATCHES.GLOBAL),times=mymont$PACO.N)
             idx         = match(unique(ipaconow),sequence(mymont$NPATCHES.GLOBAL))
             mymont$MMEAN.NEP.PA[idx]  = ( tapply( X     = mymont$MMEAN.NPP.CO
+                                                        * mymont$NPLANT
                                                 , INDEX = ipaconow
                                                 , FUN   = sum
                                                 )#end tapply
                                         - mymont$MMEAN.RH.PA[idx]
                                         )#end
             mymont$QMEAN.NEP.PA[idx,] = ( qapply( X     = mymont$QMEAN.NPP.CO
+                                                        * mymont$NPLANT
                                                 , INDEX = ipaconow
                                                 , DIM   = 1
                                                 , FUN   = sum
@@ -397,9 +399,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
       #------ Read in soil properties. ----------------------------------------------------#
-      emean$soil.temp  [m,] =   mymont$MMEAN.SOIL.TEMP.PY - t00
-      emean$soil.water [m,] =   mymont$MMEAN.SOIL.WATER.PY
-      emean$soil.mstpot[m,] = - mymont$MMEAN.SOIL.MSTPOT.PY
+      emean$soil.temp     [m,] =   mymont$MMEAN.SOIL.TEMP.PY - t00
+      emean$soil.water    [m,] =   mymont$MMEAN.SOIL.WATER.PY
+      emean$soil.mstpot   [m,] = - mymont$MMEAN.SOIL.MSTPOT.PY * grav * wdnsi
+      emean$soil.extracted[m,] = - mymont$MMEAN.TRANSLOSS.PY * day.sec / dslz
       #------------------------------------------------------------------------------------#
 
 
@@ -653,8 +656,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$hflxca       [[plab]] = - mymont$MMEAN.SENSIBLE.AC.PA
       patch$hflxgc       [[plab]] =   mymont$MMEAN.SENSIBLE.GC.PA
       patch$qwflxca      [[plab]] = - mymont$MMEAN.VAPOR.AC.PA    * mmean.can.alvli.pa
-      patch$wflxca       [[plab]] = - mymont$MMEAN.VAPOR.AC.PA
-      patch$wflxgc       [[plab]] =   mymont$MMEAN.VAPOR.GC.PA
+      patch$wflxca       [[plab]] = - mymont$MMEAN.VAPOR.AC.PA    * day.sec
+      patch$wflxgc       [[plab]] =   mymont$MMEAN.VAPOR.GC.PA    * day.sec
       patch$ustar        [[plab]] =   mymont$MMEAN.USTAR.PA
       patch$albedo       [[plab]] =   mymont$MMEAN.ALBEDO.PA
       patch$rshortup     [[plab]] =   mymont$MMEAN.RSHORTUP.PA
