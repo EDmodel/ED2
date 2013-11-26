@@ -83,6 +83,12 @@ subroutine radiate_driver(cgrid)
             !------------------------------------------------------------------------------!
 
 
+            !------------------------------------------------------------------------------!
+            !      Update the daylight length and nighttime flag.                          !
+            !------------------------------------------------------------------------------!
+            cpoly%nighttime(isi)              = .not. twilight
+            if (twilight) cpoly%daylight(isi) = cpoly%daylight(isi) + radfrq
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -161,7 +167,7 @@ subroutine radiate_driver(cgrid)
 
             !----- Normalize the absorbed radiations. -------------------------------------!
             call scale_ed_radiation(tuco,rshort_tot,cpoly%met(isi)%rshort_diffuse          &
-                                   ,cpoly%met(isi)%rlong,csite)
+                                   ,cpoly%met(isi)%rlong,cpoly%nighttime(isi),csite)
             !------------------------------------------------------------------------------!
 
          end do siteloop
@@ -172,13 +178,6 @@ subroutine radiate_driver(cgrid)
       !------------------------------------------------------------------------------------!
 
    end if
-
-   !---------------------------------------------------------------------------------------!
-   !     At this point, all meteorologic driver data for the land surface model has been   !
-   ! updated for the current timestep.  Perform the time space average for the output      !
-   ! diagnostic.                                                                           !
-   !---------------------------------------------------------------------------------------!
-   call int_met_avg(cgrid)
 
    return
 end subroutine radiate_driver
@@ -1317,30 +1316,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          csite%rlong_g_incid(ipa) = 0.0
       end if
       !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      Integrate the mean radiation flux.                                            !
-      !------------------------------------------------------------------------------------!
-      do ico=1,cpatch%ncohorts
-         cpatch%mean_par_l      (ico) = cpatch%mean_par_l      (ico)                       &
-                                      + cpatch%par_l           (ico) * radfrq
-         cpatch%mean_par_l_beam (ico) = cpatch%mean_par_l_beam (ico)                       &
-                                      + cpatch%par_l_beam      (ico) * radfrq
-         cpatch%mean_par_l_diff (ico) = cpatch%mean_par_l_diff (ico)                       &
-                                      + cpatch%par_l_diffuse   (ico) * radfrq
-         cpatch%mean_rshort_l   (ico) = cpatch%mean_rshort_l   (ico)                       &
-                                      + cpatch%rshort_l        (ico) * radfrq
-         cpatch%mean_rlong_l    (ico) = cpatch%mean_rlong_l    (ico)                       &
-                                      + cpatch%rlong_l         (ico) * radfrq
-         cpatch%mean_rshort_w   (ico) = cpatch%mean_rshort_w   (ico)                       &
-                                      + cpatch%rshort_w        (ico) * radfrq
-         cpatch%mean_rlong_w    (ico) = cpatch%mean_rlong_w    (ico)                       &
-                                      + cpatch%rlong_w         (ico) * radfrq
-      end do
-      !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -1565,10 +1542,13 @@ end function mean_daysecz
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
+subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,nighttime,csite)
 
    use ed_state_vars        , only : sitetype             & ! intent(in)
                                    , patchtype            ! ! intent(in)
+   use ed_misc_coms         , only : writing_long         & ! intent(in)
+                                   , radfrq               & ! intent(in)
+                                   , frqsum               ! ! intent(in)
    use canopy_radiation_coms, only : cosz_min             ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1577,6 +1557,7 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
    real            , intent(in) :: rshort
    real            , intent(in) :: rshort_diffuse
    real            , intent(in) :: rlong
+   logical         , intent(in) :: nighttime
    !----- Local variables. ----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
    integer                      :: ipa,ico, k
@@ -1584,12 +1565,29 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
    logical         , parameter  :: skip_rad = .false.
    !----- External functions. -------------------------------------------------------------!
    real            , external   :: sngloff
+   !----- Locally saved variables. --------------------------------------------------------!
+   real              , save    :: radfrq_o_frqsum
+   logical           , save    :: first_time = .true.
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Assign the constant scaling factor. ---------------------------------------------!
+   if (first_time) then
+      first_time      = .false.
+      radfrq_o_frqsum = radfrq / frqsum
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     This block skips radiation.  Obviously this only makes sense for very theoretical !
+   ! tests, because plants kind of like light...                                           !
+   !---------------------------------------------------------------------------------------!
    if (skip_rad) then
-      do ipa = 1, csite%npatches
+      skip_patchloop: do ipa = 1, csite%npatches
          cpatch => csite%patch(ipa)
-         do ico = 1, cpatch%ncohorts
+         skip_cohortloop: do ico = 1, cpatch%ncohorts
             if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
                cpatch%par_l_beam       (ico) = 0.0
                cpatch%par_l_diffuse    (ico) = 0.0
@@ -1610,7 +1608,7 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
                cpatch%light_level_diff (ico) = 0.0
                cpatch%light_level_beam (ico) = 0.0
             end if
-         end do
+         end do skip_cohortloop
          
          csite%rshort_g_beam   (ipa) = 0.
          csite%rshort_g_diffuse(ipa) = 0.
@@ -1644,16 +1642,19 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
       
          csite%rlong_s(ipa)       = 0.
          csite%rlong_g(ipa)       = 0.
-      end do
+      end do skip_patchloop
       return
    end if
 
 
 
-   do ipa = 1,csite%npatches
-
+   !---------------------------------------------------------------------------------------!
+   !     For normal runs, we add the scale to radiation, and also integrate averages.      !
+   !---------------------------------------------------------------------------------------!
+   patchloop: do ipa = 1,csite%npatches
       cpatch => csite%patch(ipa)
-      do ico = 1,cpatch%ncohorts
+      !----- Cohort-level variables. ------------------------------------------------------!
+      cohortloop: do ico = 1,cpatch%ncohorts
          
          if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
 
@@ -1679,7 +1680,13 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
             cpatch%rlong_w(ico)          = cpatch%rlong_w_incid(ico)                       &
                                          + cpatch%rlong_w_surf(ico)
          end if
-      end do
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Patch-level variables.                                                         !
+      !------------------------------------------------------------------------------------!
       csite%par_l_beam_max    (ipa)      = csite%par_l_beam_max    (ipa) * rshort
       csite%par_l_diffuse_max (ipa)      = csite%par_l_diffuse_max (ipa) * rshort
       csite%par_l_max         (ipa)      = csite%par_l_beam_max    (ipa)                   &
@@ -1710,7 +1717,15 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
       csite%rnet              (ipa)      = rshort + rlong                                  &
                                          - csite%rshortup          (ipa)                   &
                                          - csite%rlongup           (ipa)
-      !----- Absorption rate of short wave by the surface water. --------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Patch-level variables, but the absorption rate by each temporary pounding/snow !
+      ! layer.                                                                             !
+      !------------------------------------------------------------------------------------!
       do k=1,csite%nlev_sfcwater(ipa)
          csite%rshort_s_beam   (k,ipa) = csite%rshort_s_beam   (k,ipa) * rshort
          csite%rshort_s_diffuse(k,ipa) = csite%rshort_s_diffuse(k,ipa) * rshort
@@ -1721,15 +1736,118 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,csite)
          csite%par_s           (k,ipa) = csite%par_s_beam      (k,ipa)                     &
                                        + csite%par_s_diffuse   (k,ipa)
       end do
-
+      !----- The integrated budget. -------------------------------------------------------!
       csite%rlong_s_incid(ipa) = csite%rlong_s_incid(ipa) * rlong
       csite%rlong_g_incid(ipa) = csite%rlong_g_incid(ipa) * rlong
-      
       csite%rlong_s(ipa)       = csite%rlong_s_surf(ipa) + csite%rlong_s_incid(ipa)
       csite%rlong_g(ipa)       = csite%rlong_g_surf(ipa) + csite%rlong_g_incid(ipa)
+      !------------------------------------------------------------------------------------!
 
 
-   end do
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Integrate the mean radiation fluxes.  The average fluxes are normalised in    !
+      ! average_utils.f90, at sub-routine normalize_averaged_vars.                         !
+      !------------------------------------------------------------------------------------!
+      !----- Cohort-level variables. ------------------------------------------------------!
+      mean_cohortloop: do ico=1,cpatch%ncohorts
+         cpatch%fmean_par_l           (ico) = cpatch%fmean_par_l           (ico)           &
+                                            + cpatch%par_l                 (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_par_l_beam      (ico) = cpatch%fmean_par_l_beam      (ico)           &
+                                            + cpatch%par_l_beam            (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_par_l_diff      (ico) = cpatch%fmean_par_l_diff      (ico)           &
+                                            + cpatch%par_l_diffuse         (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_rshort_l        (ico) = cpatch%fmean_rshort_l        (ico)           &
+                                            + cpatch%rshort_l              (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_rlong_l         (ico) = cpatch%fmean_rlong_l         (ico)           &
+                                            + cpatch%rlong_l               (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_rshort_w        (ico) = cpatch%fmean_rshort_w        (ico)           &
+                                            + cpatch%rshort_w              (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_rlong_w         (ico) = cpatch%fmean_rlong_w         (ico)           &
+                                            + cpatch%rlong_w               (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_light_level     (ico) = cpatch%fmean_light_level     (ico)           &
+                                            + cpatch%light_level           (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_light_level_beam(ico) = cpatch%fmean_light_level_beam(ico)           &
+                                            + cpatch%light_level_beam      (ico)           &
+                                            * radfrq_o_frqsum
+         cpatch%fmean_light_level_diff(ico) = cpatch%fmean_light_level_diff(ico)           &
+                                            + cpatch%light_level_diff      (ico)           &
+                                            * radfrq_o_frqsum
+         !----- Light level is integrated only when there is some radiation. --------------!
+         if (.not. nighttime .and. writing_long) then
+            cpatch%dmean_light_level     (ico) = cpatch%dmean_light_level     (ico)        &
+                                               + cpatch%light_level           (ico)        &
+                                               * radfrq
+            cpatch%dmean_light_level_beam(ico) = cpatch%dmean_light_level_beam(ico)        &
+                                               + cpatch%light_level_beam      (ico)        &
+                                               * radfrq
+            cpatch%dmean_light_level_diff(ico) = cpatch%dmean_light_level_diff(ico)        &
+                                               + cpatch%light_level_diff      (ico)        &
+                                               * radfrq
+         end if
+      end do mean_cohortloop
+      !----- Patch-level variables. -------------------------------------------------------!
+      csite%fmean_rshort_gnd      (ipa) = csite%fmean_rshort_gnd   (ipa)                   &
+                                        + csite%rshort_g           (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_par_gnd         (ipa) = csite%fmean_par_gnd      (ipa)                   &
+                                        + csite%par_g              (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_rlong_gnd       (ipa) = csite%fmean_rlong_gnd    (ipa)                   &
+                                        + csite%rlong_g            (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_parup           (ipa) = csite%fmean_parup        (ipa)                   &
+                                        + csite%parup              (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_nirup           (ipa) = csite%fmean_parup        (ipa)                   &
+                                        + csite%nirup              (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_rshortup        (ipa) = csite%fmean_rshortup     (ipa)                   &
+                                        + csite%rshortup           (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_rlongup         (ipa) = csite%fmean_rlongup      (ipa)                   &
+                                        + csite%rlongup            (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_rnet            (ipa) = csite%fmean_rnet         (ipa)                   &
+                                        + csite%rnet               (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_albedo          (ipa) = csite%fmean_albedo       (ipa)                   &
+                                        + csite%albedo             (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_albedo_beam     (ipa) = csite%fmean_albedo_beam  (ipa)                   &
+                                        + csite%albedo_beam        (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_albedo_diff     (ipa) = csite%fmean_albedo_diff  (ipa)                   &
+                                        + csite%albedo_diffuse     (ipa)                   &
+                                        * radfrq_o_frqsum
+      csite%fmean_rlong_albedo    (ipa) = csite%fmean_rlong_albedo (ipa)                   &
+                                        + csite%rlong_albedo       (ipa)                   &
+                                        * radfrq_o_frqsum
+      !----- Daily mean of albedo is integrated only when there is some radiation. --------!
+      if (.not. nighttime .and. writing_long) then
+         csite%dmean_albedo        (ipa)  = csite%dmean_albedo        (ipa)                &
+                                          + csite%albedo              (ipa)                &
+                                          * radfrq
+         csite%dmean_albedo_beam   (ipa)  = csite%dmean_albedo_beam   (ipa)                &
+                                          + csite%albedo_beam         (ipa)                &
+                                          * radfrq
+         csite%dmean_albedo_diff   (ipa)  = csite%dmean_albedo_diff   (ipa)                &
+                                          + csite%albedo_diffuse      (ipa)                &
+                                          * radfrq
+      end if
+      !------------------------------------------------------------------------------------!
+   end do patchloop
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine scale_ed_radiation

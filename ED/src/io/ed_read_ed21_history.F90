@@ -330,7 +330,6 @@ subroutine read_ed21_history_file
          !---- The ipy:ipy notation is needed for ifort when checking interfaces. ---------!
          call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '                &
                            ,dsetrank,iparallel,.true.,foundvar)
-         call hdf_getslab_i(cgrid%ncol_soil(ipy:ipy),'NCOL_SOIL ',dsetrank,iparallel,.true.,foundvar)
          call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.,foundvar)
          
          !----- Load the workload (2D). ---------------------------------------------------!
@@ -353,30 +352,6 @@ subroutine read_ed21_history_file
 
 
 
-         !----- Load 2D dataset. ----------------------------------------------------------!
-         dsetrank     = 2_8
-         globdims(1)  = int(dset_nzg,8)     ! How many layers in the dataset?
-         chnkdims(1)  = int(1,8)            ! We are only extracting one layer
-         memdims(1)   = int(1,8)            ! We only need memory for one layer
-         memsize(1)   = int(1,8)            ! On both sides
-         chnkoffs(1)  = int(dset_nzg - 1,8) ! Take the top layer, not the bottom
-         memoffs(1)   = 0_8
-         globdims(2)  = int(dset_npolygons_global,8)
-         chnkdims(2)  = 1_8
-         memdims(2)   = 1_8
-         memsize(2)   = 1_8
-         chnkoffs(2)  = int(py_index - 1,8)
-         memoffs(2)   = 0_8
-         call hdf_getslab_i(cgrid%ntext_soil(nzg:nzg,ipy),'NTEXT_SOIL ',dsetrank           &
-                           ,iparallel,.true.,foundvar)
-         !----- Now fill the soil column based on the top layer data. ---------------------!
-         do k=1,nzg-1
-            cgrid%ntext_soil(k,ipy) = cgrid%ntext_soil(nzg,ipy)
-         end do
-         !---------------------------------------------------------------------------------!
-
-
-
          !----- Load the lakesite data-----------------------------------------------------!
          allocate(islakesite(pysi_n(py_index)))
          islakesite  = 0
@@ -395,6 +370,7 @@ subroutine read_ed21_history_file
 
          !----- Allocate the vector of sites in the polygon. ------------------------------!
          call allocate_polygontype(cpoly,ndry_sites)
+         call soil_default_fill(cgrid,igr,ipy)
          !---------------------------------------------------------------------------------!
 
          is = 0
@@ -442,8 +418,6 @@ subroutine read_ed21_history_file
                                  , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
                                  , dsetrank, iparallel, .true.,foundvar)
-               call hdf_getslab_i( cpoly%ncol_soil  (is:is), 'NCOL_SOIL_SI '               &
-                                 , dsetrank, iparallel, .true.,foundvar)
 
                !----- Load 2D dataset. ----------------------------------------------------!
                dsetrank     = 2_8
@@ -460,17 +434,8 @@ subroutine read_ed21_history_file
                memdims(2)   = int(1,8)
                memsize(2)   = int(1,8)
                memoffs(2)   = 0_8
-               call hdf_getslab_i(cpoly%ntext_soil(nzg:nzg,is:is),'NTEXT_SOIL_SI '         &
+               call hdf_getslab_i(cpoly%ntext_soil(nzg:nzg,is:is),'NTEXT_SOIL '            &
                                  ,dsetrank,iparallel,.true.,foundvar)
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !     The soil layer in this case is use defined, so take this from the     !
-               ! grid level variable, and not from the dataset.                            !
-               !---------------------------------------------------------------------------!
-               cpoly%lsl(is)  = cgrid%lsl(ipy)  ! Initialize lowest soil layer
 
                !----- Now fill the soil column based on the top layer data. ---------------!
                do k=1,nzg-1
@@ -552,8 +517,6 @@ subroutine read_ed21_history_file
                      !---------------------------------------------------------------------!
                      !    Initialise patch-level variables that depend on the cohort ones. !
                      !---------------------------------------------------------------------!
-                     csite%lai(ipa)               = 0.0
-                     csite%wai(ipa)               = 0.0
                      csite%plant_ag_biomass(ipa)  = 0.0
 
                      pa_index = sipa_id(si_index) + ipa - 1
@@ -775,8 +738,6 @@ subroutine read_ed21_history_file
 
 
                            !----- Update the derived patch-level variables. ---------------!
-                           csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-                           csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
@@ -1521,7 +1482,7 @@ subroutine read_ed21_history_unstruct
                                     , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_i( tpoly_lsl        (is:is)     ,'LSL_SI '              &
+                  call hdf_getslab_i( tpoly_lsl        (is:is)     ,'LSL '                 &
                                     , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
 
@@ -1540,7 +1501,7 @@ subroutine read_ed21_history_unstruct
                   memdims(2)   = int(1,8)
                   memsize(2)   = int(1,8)
                   memoffs(2)   = 0_8
-                  call hdf_getslab_i( this_ntext     (:,is)     , 'NTEXT_SOIL_SI '         &
+                  call hdf_getslab_i( this_ntext     (:,is)     , 'NTEXT_SOIL '            &
                                     , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
 
@@ -1738,8 +1699,6 @@ subroutine read_ed21_history_unstruct
                      !     Initialise patch-level variables that depend on the cohort      !
                      ! ones.                                                               !
                      !---------------------------------------------------------------------!
-                     csite%lai(ipa)               = 0.0
-                     csite%wai(ipa)               = 0.0
                      csite%plant_ag_biomass(ipa)  = 0.0
 
                      pa_index = sipa_id(si_index) + ipa - 1
@@ -1955,8 +1914,6 @@ subroutine read_ed21_history_unstruct
 
 
                            !----- Update the derived patch-level variables. ---------------!
-                           csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-                           csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 
@@ -2041,6 +1998,13 @@ subroutine read_ed21_history_unstruct
 
    return
 end subroutine read_ed21_history_unstruct
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
 
 !==========================================================================================!
 !==========================================================================================!
@@ -2051,7 +2015,6 @@ end subroutine read_ed21_history_unstruct
 ! Aside from doing a history restart, this is the closest method to getting exact clones   !
 ! of the donor polygons.                                                                   !
 !==========================================================================================!
-
 subroutine read_ed21_polyclone
 
 #if USE_HDF5
@@ -2626,11 +2589,12 @@ subroutine read_ed21_polyclone
             ndry_sites = int(pysi_n(py_index))-sum(islakesite)
             !------------------------------------------------------------------------------!
 
+
             !------------------------------------------------------------------------------!
             ! Allocate the destination polygon with site level vector data                 !
             !------------------------------------------------------------------------------!
-
             call allocate_polygontype(cpoly,ndry_sites)
+            call soil_default_fill(cgrid,igr,ipy)
 
 
             !------------------------------------------------------------------------------!
@@ -2665,20 +2629,18 @@ subroutine read_ed21_polyclone
 
                   call hdf_getslab_i(cpoly%patch_count(is:is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)  
                   call hdf_getslab_i(cpoly%sitenum(is:is),'SITENUM ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_i(cpoly%lsl(is:is),'LSL_SI ',dsetrank,iparallel,.true.,foundvar)   
-                  
-                  call hdf_getslab_i(cpoly%ncol_soil(is:is),'NCOL_SOIL_SI ',dsetrank,iparallel,.false.,foundvar)
+                  call hdf_getslab_i(cpoly%lsl(is:is),'LSL ',dsetrank,iparallel,.true.,foundvar)   
+                  call hdf_getslab_i(cpoly%ncol_soil(is:is),'NCOL_SOIL ',dsetrank,iparallel,.false.,foundvar)
 
                   ! If this data is not available in the dataset, we should really just use
                   ! a default value.  It is probably not a good idea to use values derived from
                   ! a soils dataset earlier in the code, if we are no longer using the associated
                   ! textures.
 
-                  if (cpoly%ncol_soil(is).eq.0) then
+                  if (cpoly%ncol_soil(is) == 0) then
                      write (unit=*,fmt='(a,i3)')                       &
                           'Soil color info not in ED2.1 state file, using ISOILCOL=',isoilcol
                      cpoly%ncol_soil(is)  = isoilcol
-                     cgrid%ncol_soil(ipy) = isoilcol
                   end if
                   
 
@@ -2714,7 +2676,7 @@ subroutine read_ed21_polyclone
                   memoffs(2)   = 0_8
 
                   call hdf_getslab_i( this_ntext(:), &
-                       'NTEXT_SOIL_SI ',dsetrank, iparallel, .true.,foundvar)
+                       'NTEXT_SOIL ',dsetrank, iparallel, .true.,foundvar)
 
                   
 
@@ -2902,8 +2864,6 @@ subroutine read_ed21_polyclone
                      !     Initialise patch-level variables that depend on the cohort      !
                      ! ones.                                                               !
                      !---------------------------------------------------------------------!
-                     csite%lai(ipa)               = 0.0
-                     csite%wai(ipa)               = 0.0
                      csite%plant_ag_biomass(ipa)  = 0.0
 
                      pa_index = sipa_id(si_index) + ipa - 1
@@ -3119,8 +3079,6 @@ subroutine read_ed21_polyclone
 
 
                            !----- Update the derived patch-level variables. ---------------!
-                           csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-                           csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
 

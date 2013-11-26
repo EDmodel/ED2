@@ -29,8 +29,8 @@ subroutine vegetation_dynamics(new_month,new_year)
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)     , pointer      :: cgrid
    type(polygontype), pointer      :: cpoly
-   real                            :: tfact1
-   real                            :: tfact2
+   real                            :: dtlsm_o_day
+   real                            :: one_o_year
    integer                         :: doy
    integer                         :: ipy
    integer                         :: isi
@@ -43,9 +43,9 @@ subroutine vegetation_dynamics(new_month,new_year)
    doy = julday(current_time%month, current_time%date, current_time%year)
   
    !----- Time factor for normalizing daily variables updated on the DTLSM step. ----------!
-   tfact1 = dtlsm / day_sec
+   dtlsm_o_day = dtlsm / day_sec
    !----- Time factor for averaging dailies. ----------------------------------------------!
-   tfact2 = 1.0 / yr_day
+   one_o_year  = 1.0 / yr_day
 
    !----- Apply events. -------------------------------------------------------------------!
    call prescribed_event(current_time%year,doy)
@@ -62,10 +62,10 @@ subroutine vegetation_dynamics(new_month,new_year)
       !     The following block corresponds to the daily time-step.                        !
       !------------------------------------------------------------------------------------!
       !----- Standardise the fast-scale uptake and respiration, for growth rates. ---------!
-      call normalize_ed_daily_vars(cgrid, tfact1)
+      call normalize_ed_today_vars(cgrid)
       !----- Update phenology and growth of live tissues. ---------------------------------!
-      call phenology_driver(cgrid,doy,current_time%month, tfact1)
-      call dbalive_dt(cgrid,tfact2)
+      call phenology_driver(cgrid,doy,current_time%month, dtlsm_o_day)
+      call dbalive_dt(cgrid,one_o_year)
       !------------------------------------------------------------------------------------!
 
 
@@ -98,14 +98,14 @@ subroutine vegetation_dynamics(new_month,new_year)
       !------------------------------------------------------------------------------------!
 
       !------  update dmean and mmean values for NPP allocation terms ---------------------!
-      call normalize_ed_dailyNPP_vars(cgrid)
+      call normalize_ed_todayNPP_vars(cgrid)
       
       !------------------------------------------------------------------------------------!
       !     This should be done every day, but after the longer-scale steps.  We update    !
       ! the carbon and nitrogen pools, and re-set the daily variables.                     !
       !------------------------------------------------------------------------------------!
       call update_C_and_N_pools(cgrid)
-      call zero_ed_daily_vars(cgrid)
+      call zero_ed_today_vars(cgrid)
       !------------------------------------------------------------------------------------!
 
 
@@ -150,8 +150,15 @@ subroutine vegetation_dynamics(new_month,new_year)
 
 
 
-      !----- Recalculate the AGB and basal area at the polygon level. ---------------------!
-      call update_polygon_derived_props(cgrid)
+      !------------------------------------------------------------------------------------!
+      !     Update polygon-level properties that are derived from patches and cohorts.     !
+      !------------------------------------------------------------------------------------!
+      call update_polygon_derived_props(edgrid_g(ifm))
+      !---------------------------------------------------------------------------------------!
+
+
+
+      !----- Print the carbon and nitrogen budget. ----------------------------------------!
       call print_C_and_N_budgets(cgrid)
       !------------------------------------------------------------------------------------!
    end do
@@ -194,8 +201,8 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
    logical     , intent(in)   :: new_year
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype), pointer      :: cgrid
-   real                       :: tfact1
-   real                       :: tfact2
+   real                       :: dtlsm_o_day
+   real                       :: one_o_year
    integer                    :: doy
    integer                    :: ifm
    !----- External functions. -------------------------------------------------------------!
@@ -206,9 +213,9 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
    doy = julday(current_time%month, current_time%date, current_time%year)
   
    !----- Time factor for normalizing daily variables updated on the DTLSM step. ----------!
-   tfact1 = dtlsm / day_sec
+   dtlsm_o_day = dtlsm / day_sec
    !----- Time factor for averaging dailies. ----------------------------------------------!
-   tfact2 = 1.0 / yr_day
+   one_o_year  = 1.0 / yr_day
 
 
    !---------------------------------------------------------------------------------------!
@@ -222,10 +229,10 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
       !     The following block corresponds to the daily time-step.                        !
       !------------------------------------------------------------------------------------!
       !----- Standardise the fast-scale uptake and respiration, for growth rates. ---------!
-      call normalize_ed_daily_vars(cgrid, tfact1)
+      call normalize_ed_today_vars(cgrid)
       !----- Update phenology and growth of live tissues. ---------------------------------!
-      call phenology_driver_eq_0(cgrid,doy,current_time%month, tfact1)
-      call dbalive_dt_eq_0(cgrid,tfact2)
+      call phenology_driver_eq_0(cgrid,doy,current_time%month, dtlsm_o_day)
+      call dbalive_dt_eq_0(cgrid,one_o_year)
       !------------------------------------------------------------------------------------!
 
 
@@ -255,19 +262,26 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
       !------------------------------------------------------------------------------------!
 
       !------  update dmean and mmean values for NPP allocation terms ---------------------!
-      call normalize_ed_dailyNPP_vars(cgrid)
+      call normalize_ed_todayNPP_vars(cgrid)
       
       !------------------------------------------------------------------------------------!
       !     This should be done every day, but after the longer-scale steps.  We re-set    !
-      ! the daily variables.                                                               !
+      ! the daily variables that are not for output.                                       !
       !------------------------------------------------------------------------------------!
-      call zero_ed_daily_vars(cgrid)
+      call zero_ed_today_vars(cgrid)
       !------------------------------------------------------------------------------------!
 
 
 
-      !----- Recalculate the AGB and basal area at the polygon level. ---------------------!
+      !------------------------------------------------------------------------------------!
+      !     Update polygon-level properties that are derived from patches and cohorts.     !
+      !------------------------------------------------------------------------------------!
       call update_polygon_derived_props(cgrid)
+      !---------------------------------------------------------------------------------------!
+
+
+
+      !----- Print the carbon and nitrogen budget. ----------------------------------------!
       call print_C_and_N_budgets(cgrid)
       !------------------------------------------------------------------------------------!
    end do

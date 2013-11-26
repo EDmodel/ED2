@@ -106,6 +106,9 @@ subroutine read_ednl(iunit,filename)
                                    , iyoutput                              & ! intent(out)
                                    , itoutput                              & ! intent(out)
                                    , isoutput                              & ! intent(out)
+                                   , iadd_site_means                       & ! intent(out)
+                                   , iadd_patch_means                      & ! intent(out)
+                                   , iadd_cohort_meansß                    & ! intent(out)
                                    , frqfast                               & ! intent(out)
                                    , frqstate                              & ! intent(out)
                                    , outfast                               & ! intent(out)
@@ -136,7 +139,17 @@ subroutine read_ednl(iunit,filename)
                                    , attach_metadata                       & ! intent(out)
                                    , iallom                                & ! intent(out)
                                    , igrass                                & ! intent(out)
-                                   , min_site_area                         ! ! intent(out)
+                                   , min_site_area                         & ! intent(out)
+                                   , fast_diagnostics                      & ! intent(out)
+                                   , writing_dail                          & ! intent(out)
+                                   , writing_mont                          & ! intent(out)
+                                   , writing_dcyc                          & ! intent(out)
+                                   , writing_year                          & ! intent(out)
+                                   , writing_long                          & ! intent(out)
+                                   , writing_eorq                          & ! intent(out)
+                                   , history_fast                          & ! intent(out)
+                                   , history_dail                          & ! intent(out)
+                                   , history_eorq                          ! ! intent(out)
    use canopy_air_coms      , only : icanturb                              & ! intent(out)
                                    , isfclyrm                              & ! intent(out)
                                    , ied_grndvap                           ! ! intent(out)
@@ -233,7 +246,8 @@ subroutine read_ednl(iunit,filename)
    logical                      :: op
    !----- Namelist. -----------------------------------------------------------------------!
    namelist /ED2_INFO/  dtlsm,co2_offset,ifoutput,idoutput,imoutput,iqoutput,iyoutput      &
-                       ,itoutput,isoutput,attach_metadata,outfast,outstate,ffilout,sfilout &
+                       ,itoutput,isoutput,iadd_site_means,iadd_patch_means                 &
+                       ,iadd_cohort_means,attach_metadata,outfast,outstate,ffilout,sfilout &
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf  &
@@ -286,6 +300,9 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' iyoutput                  =',iyoutput
       write (unit=*,fmt=*) ' itoutput                  =',itoutput
       write (unit=*,fmt=*) ' isoutput                  =',isoutput
+      write (unit=*,fmt=*) ' iadd_site_means           =',iadd_site_means
+      write (unit=*,fmt=*) ' iadd_patch_means          =',iadd_patch_means
+      write (unit=*,fmt=*) ' iadd_cohort_means         =',iadd_cohort_means
       write (unit=*,fmt=*) ' attach_metadata           =',attach_metadata
       write (unit=*,fmt=*) ' outfast                   =',outfast
       write (unit=*,fmt=*) ' outstate                  =',outstate
@@ -548,6 +565,25 @@ subroutine read_ednl(iunit,filename)
 
    call copy_path_from_grid_1(ngrids,'sfilin'         ,sfilin         )
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Define some useful variables that control the output. ---------------------------!
+   writing_dail     = idoutput > 0
+   writing_mont     = imoutput > 0
+   writing_dcyc     = iqoutput > 0
+   writing_year     = iyoutput > 0
+   writing_long     = writing_dail .or. writing_mont .or. writing_dcyc
+   writing_eorq     = writing_mont .or. writing_dcyc
+   history_fast     = ifoutput == 0  .and.                                                 &
+                      ( ( unitstate == 0 .and. frqstate <= day_sec ) .or.                  &
+                        ( unitstate == 1 .and. frqstate == 1.      )      )
+   history_dail     = unitstate == 0 .and. frqstate < day_sec
+   history_eorq     = unitstate <= 1
+   fast_diagnostics = ioutput  /= 0 .or. ifoutput /= 0 .or. idoutput /= 0 .or.             &
+                      imoutput /= 0 .or. iqoutput /= 0 .or. itoutput /= 0
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine read_ednl

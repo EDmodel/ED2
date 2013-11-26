@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
 here           = "thispath"      # Current directory.
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"     
+srcdir         = "thisrscpath"     
 outroot        = "thisoutroot"
 daybeg         = thisdatea
 monthbeg       = thismontha
@@ -34,17 +34,16 @@ hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots
 
 legwhere       = "topleft"      # Where should I place the legend?
 inset          = 0.05           # inset distance between legend and edge of plot region.
-legbg          = "white"        # Legend background colour.
 
 theta           = 315.
 phi             = 30.
 ltheta          = -210.
 shade           = 0.125
 expz            = 0.5
-gcol            = c("lightblue","white")
 cexmin          = 0.5
 cexmax          = 3.0
 fullonly        = FALSE
+ibackground     = mybackground    # Background settings (check load_everything.r)
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
@@ -89,7 +88,7 @@ hovdi02 = list(vnam   = c("sens","evap","transp")
               ,plt    = TRUE)
 hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","soil.temp")
               ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Soil (Top)")
-              ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+              ,colour = c("deepskyblue","grey45","chartreuse","goldenrod","sienna")
               ,prefix = "temperature"
               ,theme  = "Temperature"
               ,unit   = "degC"
@@ -97,7 +96,7 @@ hovdi03 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","soil.te
               ,plt    = TRUE)
 hovdi04 = list(vnam   = c("atm.shv","can.shv")
               ,desc   = c("Atmosphere","Canopy air")
-              ,colour = c("deepskyblue","gray21")
+              ,colour = c("deepskyblue","grey45")
               ,prefix = "h2ovapour"
               ,theme  = "Water vapour mixing ratio"
               ,unit   = "g/kg"
@@ -105,40 +104,32 @@ hovdi04 = list(vnam   = c("atm.shv","can.shv")
               ,plt    = TRUE)
 
 
-#----- Loading some packages. -------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-library(fields)
 
-#----- Close all graphics devices. --------------------------------------------------------#
-graphics.off()
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
+
 
 #----- Setting how many formats we must output. -------------------------------------------#
 outform = tolower(outform)
 nout    = length(outform)
 nplaces = length(myplaces)
-
-#----- Avoiding unecessary and extremely annoying beeps. ----------------------------------#
-options(locatorBell=FALSE)
-
-#----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r"      ,sep="/"))
-source(paste(srcdir,"globdims.r"   ,sep="/"))
-source(paste(srcdir,"locations.r"  ,sep="/"))
-source(paste(srcdir,"muitas.r"     ,sep="/"))
-source(paste(srcdir,"plotsize.r"   ,sep="/"))
-source(paste(srcdir,"pretty.log.r" ,sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"rconstants.r" ,sep="/"))
-source(paste(srcdir,"sombreado.r"  ,sep="/"))
-source(paste(srcdir,"southammap.r" ,sep="/"))
-source(paste(srcdir,"thermlib.r"   ,sep="/"))
-source(paste(srcdir,"timeutils.r"  ,sep="/"))
 
 #----- Define some default legend colours and names. --------------------------------------#
 pftnames = c("C4 Grass","Early Tropical","Mid Tropical","Late Tropical","Temp. C3 Grass"
@@ -147,11 +138,11 @@ pftnames = c("C4 Grass","Early Tropical","Mid Tropical","Late Tropical","Temp. C
              ,"C3 Grass","Araucaria","Total")
 pftcols  = c("gold","chartreuse","limegreen","darkgreen","purple3"
             ,"deepskyblue","aquamarine","midnightblue","darkorange3","sienna"
-            ,"firebrick","orchid","coral","gray45","olivedrab"
-            ,"goldenrod","steelblue","gray22")
+            ,"firebrick","orchid","coral","grey45","olivedrab"
+            ,"goldenrod","steelblue","grey22")
 
 lunames = c("Agricultural","Secondary","Primary","Total")
-lucols  = c("goldenrod","chartreuse","darkgreen","gray22")
+lucols  = c("goldenrod","chartreuse","darkgreen","grey22")
 
 distnames = c("Agr->Agr" ,"2nd->Agr" ,"Prim->Agr"
               ,"Agr->2nd" ,"2nd->2nd" ,"Prim->2nd"
@@ -646,6 +637,7 @@ for (l in 1:nplaces){
             letitre = paste(description,p$lieu,sep=" - ")
             cols    = pftcols[selpft]
             legs    = pftnames[selpft]
+            par(par.user)
             plot(thisday,thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Time",xaxt="n",ylab=unit)
             axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
@@ -792,6 +784,7 @@ for (l in 1:nplaces){
                lezlab  = paste(description," [",unit,"]",sep="")
 
                #----- First plot: the box. ------------------------------------------------#
+               par(par.user)
                pout = persp(x=ageaxis,y=dbhaxis,z=flooraxis,xlim=xlimit,ylim=ylimit
                            ,zlim=zlimit,theta=theta,phi=phi,col=gcol,expand=expz
                            ,ticktype="detailed",border=NA,xlab="Gap age[yr]"
@@ -799,11 +792,11 @@ for (l in 1:nplaces){
                            ,main=letitre)
                #----- Second plot, the actual data (aka my lollipop trees). ---------------#
                lines (trans3d(x=agem2y4,y=dbhm2y4,z=varm2y4,pmat=pout),type="l"
-                     ,col="gray29",lwd=2)
+                     ,col=grey.fg,lwd=2)
                points(trans3d(x=agem2y4,y=dbhm2y4,z=varm2y4,pmat=pout),type="p"
                      ,pch=pchm2y4,col=colm2y4,cex=cexm2y4)
                legend(x="bottomright",inset=0.01,legend=pftleg,fill=colleg
-                     ,ncol=1,bg="white",cex=0.9)
+                     ,ncol=1,bg=background,cex=0.9)
                if (outform[o] == "x11"){
                   locator(n=1)
                   dev.off()
@@ -870,6 +863,7 @@ for (l in 1:nplaces){
             letitre = paste(theme," - ",p$lieu,
                             " \n"," Time series of daily averages: ",theme,sep="")
 
+            par(par.user)
             plot(x=thisday,y=p[[vnames[1]]],type="n",main=letitre,xlab="Day",
                  ylim=ylimit,ylab=paste("[",unit,"]",sep=""))
             if (hovgrid) grid(col="lightgray",lty="dotted")

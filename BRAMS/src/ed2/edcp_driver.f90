@@ -21,6 +21,9 @@ subroutine ed_coup_driver()
                             , iqoutput            & ! intent(in)
                             , isoutput            & ! intent(in)
                             , iyoutput            & ! intent(in)
+                            , writing_long        & ! intent(in)
+                            , writing_eorq        & ! intent(in)
+                            , writing_dcyc        & ! intent(in)
                             , runtype             ! ! intent(in)
    use ed_work_vars  , only : ed_dealloc_work     & ! subroutine
                             , work_e              ! ! intent(inout)
@@ -63,16 +66,6 @@ subroutine ed_coup_driver()
    wtime_start = walltime(0.)
    wtime1      = walltime(wtime_start)
 
-   !---------------------------------------------------------------------------------------!
-   !     Check whether the user has indicated a need for any of the fast flux diagnostic   !
-   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions. !
-   ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
-   !---------------------------------------------------------------------------------------!
-   fast_diagnostics = checkbudget   .or. ifoutput /= 0 .or. idoutput /= 0 .or.             &
-                      iqoutput /= 0 .or. imoutput /= 0 .or. ioutput  /= 0 .or.             &
-                      iyoutput /= 0
-   !---------------------------------------------------------------------------------------!
-
 
 
 
@@ -81,6 +74,14 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
    call load_ed_ecosystem_params()
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If we are running EDBRAMS then we must make sure that fast diagnostic averages    !
+   ! are found when ioutput is requested.                                                  !
+   !---------------------------------------------------------------------------------------!
+   fast_diagnostics = fast_diagnostics .or. ioutput  /= 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -230,18 +231,12 @@ subroutine ed_coup_driver()
    ! case the variables may be partially integrated.                                       !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
-      if (imoutput > 0 .or. iqoutput > 0) then
-         if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset monthly means...'
-         do ifm=1,ngrids
-            call zero_ed_monthly_output_vars(edgrid_g(ifm))
-            call zero_ed_daily_output_vars(edgrid_g(ifm))
-         end do
-      elseif (idoutput > 0) then
-         if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset daily means...'
-         do ifm=1,ngrids
-            call zero_ed_daily_output_vars(edgrid_g(ifm))
-         end do
-      end if
+      if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset long-term means...'
+      do ifm=1,ngrids
+         if (writing_long) call zero_ed_dmean_vars(edgrid_g(ifm))
+         if (writing_eorq) call zero_ed_mmean_vars(edgrid_g(ifm))
+         if (writing_dcyc) call zero_ed_qmean_vars(edgrid_g(ifm))
+      end do
 
       !----- Output Initial State. --------------------------------------------------------!
       if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Update annual means...'
@@ -258,7 +253,7 @@ subroutine ed_coup_driver()
 
    if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset averaged variables...'
    do ifm=1,ngrids
-      call reset_averaged_vars(edgrid_g(ifm))
+      call zero_ed_fmean_vars(edgrid_g(ifm))
    end do
 
 
@@ -420,10 +415,8 @@ end subroutine find_frqsum
 
 !==========================================================================================!
 !==========================================================================================!
-!     This sub-routine will assign the longitude, latitude, and soil class for all         !
-! non-empty grid points.  The difference between this and the original ED-2 stand alone    !
-! sub-routine is that here we will also assign the match between the polygon and the       !
-! corresponding grid point in BRAMS.                                                       !
+!     This sub-routine will assign the longitude, latitude, and the match between the      !
+! polygon and the corresponding grid point in BRAMS.                                       !
 !------------------------------------------------------------------------------------------!
 subroutine set_polygon_coordinates_edcp()
    use grid_coms    , only : ngrids   & ! intent(in)
@@ -453,18 +446,6 @@ subroutine set_polygon_coordinates_edcp()
          !----- The polygon co-ordinates. -------------------------------------------------!
          cgrid%lon(ipy)              = work_v(ifm)%glon(ipy)
          cgrid%lat(ipy)              = work_v(ifm)%glat(ipy)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !----- Soil texture class. -------------------------------------------------------!
-         cgrid%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(1,ipy)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !----- Soil colour class. --------------------------------------------------------!
-         cgrid%ncol_soil(ipy)  = work_v(ifm)%nscol(ipy)
          !---------------------------------------------------------------------------------!
 
 

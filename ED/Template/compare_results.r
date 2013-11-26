@@ -16,26 +16,32 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 here    = getwd()                                #   Current directory
 srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"    #   Script directory
-outroot = paste(here,"twostream_comp",sep="/")   #   Output directory
+outroot = paste(here,"structure_comp",sep="/")   #   Output directory
 
-sites      = c("gyf","cax","m34","s67","s77","s83","ban","pnz","rja","fns","pdg")
-simul      = list()
-simul[[1]] = list( name   = "pft00_canrad00_sas"
-                 , desc   = "Medvigy + SAS"
-                 , colour = "chartreuse"
-                 )#end list
-simul[[2]] = list( name   = "pft00_canrad01_sas"
-                 , desc   = "Zhao-Qualls + SAS"
-                 , colour = "chartreuse4"
-                 )#end list
-simul[[3]] = list( name   = "pft00_canrad00_ble"
-                 , desc   = "Medvigy + Big Leaf"
-                 , colour = "darkorange"
-                 )#end list
-simul[[4]] = list( name   = "pft00_canrad01_ble"
-                 , desc   = "Zhao-Qualls + Big Leaf"
-                 , colour = "firebrick"
-                 )#end list
+sites          = c("gyf","s67","s83","pdg","pnz","ban","rja","m34","cax")
+sites.pch      = c(    2,    5,    9,   13,    4,    8,    1,    6,    0)
+
+size.struct = list( name    = c(               "sas",               "ble")
+                  , desc    = c(           "Size St",            "1 Size")
+                  , verbose = c(    "Size structure",       "Single size")
+                  , hue     = list( green  = c("#55AC00"     ,"chartreuse"    )
+                                  , olive  = c("olivedrab3"  ,"#DCFFA0"       )
+                                  , purple = c("purple3"     ,"mediumpurple1" )
+                                  , indigo = c("slateblue2"  ,"#CDC5FF"       )
+                                  )#end list
+                  )#end list
+pft.struct  = list( name    = c(             "pft05",             "pft02")
+                  , desc    = c(             "3T+2G",             "1T+1G")
+                  , verbose = c( "Succesion struct.",  "Single succesion")
+                  , sat     = c(                   1,                   2)
+                  )#end list
+age.struct  = list( name    = c(            "iage25",            "iage01")
+                  , desc    = c(            "Age St",             "1 Age")
+                  , verbose = c(     "Age structure",        "Single age")
+                  , cex     = c(                 2.0,                 1.3)
+                  , lwd     = c(                 2.5,                 2.0)
+                  , lty     = c(             "solid",            "dashed")
+                  )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -54,15 +60,18 @@ byeold         = TRUE                  # Remove old files of the given format?
 
 depth          = 96                    # PNG resolution, in pixels per inch
 paper          = "letter"              # Paper size, to define the plot shape
-ptsz           = 14                    # Font size.
+ptsz           = 18                    # Font size.
 lwidth         = 2.5                   # Line width
 plotgrid       = TRUE                  # Should I plot the grid in the background? 
 
 legwhere       = "topleft"             # Where should I place the legend?
 inset          = 0.01                  # Inset between legend and edge of plot region.
-legbg          = "white"               # Legend background colour.
 fracexp        = 0.40                  # Expansion factor for y axis (to fit legend)
 cex.main       = 0.8                   # Scale coefficient for the title
+ibackground    = 2                     # Make figures compatible to which background?
+                                       # 0 -- white
+                                       # 1 -- black
+                                       # 2 -- dark grey
 #------------------------------------------------------------------------------------------#
 
 
@@ -83,121 +92,132 @@ cex.main       = 0.8                   # Scale coefficient for the title
 
 
 
+#----- Load some packages. ----------------------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
+
+
+
 #------------------------------------------------------------------------------------------#
 #     Eddy flux comparisons.                                                               #
 #------------------------------------------------------------------------------------------#
 compvar       = list()
-compvar[[ 1]] = list( vnam       = "hflxca"
-                    , desc       = "Sensible heat flux"
-                    , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("orange1","chocolate4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 2]] = list( vnam       = "wflxca"
-                    , desc       = "Water vapour flux"
-                    , unit       = "[kg/m2/day]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("deepskyblue","royalblue4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 3]] = list( vnam       = "cflxca"
-                    , desc       = "Carbon dioxide flux"
-                    , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("chartreuse2","darkgreen")
-                    , leg.corner = "bottomright"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 4]] = list( vnam       = "cflxst"
-                    , desc       = "Carbon dioxide storage"
-                    , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("lightgoldenrod3","darkorange1")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 5]] = list( vnam       = "gpp"
-                    , desc       = "Gross primary productivity"
-                    , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("green3","darkgreen")
-                    , leg.corner = "topleft"
-                    , sunvar     = TRUE
-                    )#end list
-compvar[[ 6]] = list( vnam       = "reco"
-                    , desc       = "Ecosystem respiration"
-                    , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("yellow3","peru")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 7]] = list( vnam       = "nep"
-                    , desc       = "Net ecosystem productivity"
-                    , unit       = "[kgC/m2/yr]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("olivedrab2","darkolivegreen4")
-                    , leg.corner = "topleft"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 8]] = list( vnam       = "nee"
-                    , desc       = "Net ecosystem exchange"
-                    , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("chartreuse","chartreuse4")
-                    , leg.corner = "bottomright"
-                    , sunvar     = FALSE
-                    )#end list
-compvar[[ 9]] = list( vnam       = "ustar"
+compvar[[ 1]] = list( vnam       = "ustar"
+                    , symbol     = expression(u^symbol("\052"))
                     , desc       = "Friction velocity"
                     , unit       = "[m/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("mediumpurple1","purple4")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(purple.bg,purple.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
-compvar[[10]] = list( vnam       = "rlongup"
-                    , desc       = "Outgoing longwave radiation"
-                    , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("gold","orangered")
+compvar[[ 2]] = list( vnam       = "cflxca"
+                    , symbol     = expression(F(CO[2]))
+                    , desc       = "Carbon dioxide flux"
+                    , unit       = "[umol/m2/s]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(green.bg,green.fg)
+                    , leg.corner = "bottomright"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[ 3]] = list( vnam       = "cflxst"
+                    , symbol     = expression(S(CO[2]))
+                    , desc       = "Carbon dioxide storage"
+                    , unit       = "[umol/m2/s]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(orange.bg,orange.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
-compvar[[11]] = list( vnam       = "rnet"
-                    , desc       = "Net radiation"
-                    , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("gold","orangered")
+compvar[[ 4]] = list( vnam       = "nee"
+                    , symbol     = expression(NEE)
+                    , desc       = "Net ecosystem exchange"
+                    , unit       = "[umol/m2/s]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(green.bg,green.fg)
+                    , leg.corner = "bottomright"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[ 5]] = list( vnam       = "nep"
+                    , symbol     = expression(NEP)
+                    , desc       = "Net ecosystem productivity"
+                    , unit       = "[kgC/m2/yr]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(olive.bg,olive.fg)
                     , leg.corner = "topleft"
                     , sunvar     = FALSE
                     )#end list
-compvar[[12]] = list( vnam       = "albedo"
-                    , desc       = "Albedo"
-                    , unit       = "[--]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("orange1","chocolate4")
+compvar[[ 6]] = list( vnam       = "reco"
+                    , symbol     = expression(R[Eco])
+                    , desc       = "Ecosystem respiration"
+                    , unit       = "[kgC/m2/yr]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(yellow.bg,yellow.fg)
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[ 7]] = list( vnam       = "gpp"
+                    , symbol     = expression(GPP)
+                    , desc       = "Gross primary productivity"
+                    , unit       = "[kgC/m2/yr]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(green.bg,green.fg)
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
                     )#end list
-compvar[[13]] = list( vnam       = "parup"
+compvar[[ 8]] = list( vnam       = "parup"
+                    , symbol     = expression(PAR^symbol("\335"))
                     , desc       = "Outgoing PAR"
                     , unit       = "[umol/m2/s]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("chartreuse4","darkolivegreen1")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(olive.bg,olive.fg)
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
                     )#end list
-compvar[[14]] = list( vnam       = "rshortup"
+compvar[[ 9]] = list( vnam       = "rshortup"
+                    , symbol     = expression(SW^symbol("\335"))
                     , desc       = "Outgoing shortwave radiation"
                     , unit       = "[W/m2]"
-                    , col.obser  = c("grey42","grey21")
-                    , col.model  = c("royalblue4","deepskyblue")
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(indigo.bg,indigo.fg)
                     , leg.corner = "topleft"
                     , sunvar     = TRUE
+                    )#end list
+compvar[[10]] = list( vnam       = "rnet"
+                    , symbol     = expression(R[Net])
+                    , desc       = "Net radiation"
+                    , unit       = "[W/m2]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(sky.bg,sky.fg)
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[11]] = list( vnam       = "rlongup"
+                    , symbol     = expression(LW^symbol("\335"))
+                    , desc       = "Outgoing longwave radiation"
+                    , unit       = "[W/m2]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(red.bg,red.fg)
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[12]] = list( vnam       = "hflxca"
+                    , symbol     = expression(F(theta))
+                    , desc       = "Sensible heat flux"
+                    , unit       = "[W/m2]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(orange.bg,orange.fg)
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
+                    )#end list
+compvar[[13]] = list( vnam       = "wflxca"
+                    , symbol     = expression(F(H[2]*O))
+                    , desc       = "Water vapour flux"
+                    , unit       = "[kg/m2/day]"
+                    , col.obser  = c(grey.bg,grey.fg)
+                    , col.model  = c(blue.bg,blue.fg)
+                    , leg.corner = "topleft"
+                    , sunvar     = FALSE
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -256,44 +276,51 @@ control[[10]] = list( vnam       = "global"
 #     Statistics.                                                                          #
 #------------------------------------------------------------------------------------------#
 good = list()
-good[[ 1]] = list( vnam = "bias"
-                 , desc = "Mean bias"
+good[[ 1]] = list( vnam      = "bias"
+                 , desc      = "Mean bias"
+                 , spider    = TRUE
+                 , normalise = TRUE
                  )#end list
-good[[ 2]] = list( vnam = "rmse"
-                 , desc = "Root mean square error"
+good[[ 2]] = list( vnam      = "rmse"
+                 , desc      = "Root mean square error"
+                 , spider    = TRUE
+                 , normalise = TRUE
                  )#end list
-good[[ 3]] = list( vnam = "r.squared"
-                 , desc = "Coefficient of determination"
+good[[ 3]] = list( vnam      = "r.squared"
+                 , desc      = "Coefficient of determination"
+                 , spider    = FALSE
+                 , normalise = FALSE
                  )#end list
-good[[ 4]] = list( vnam = "fvue"
-                 , desc = "Fraction of variability unexplained"
+good[[ 4]] = list( vnam      = "fvue"
+                 , desc      = "Fraction of variability unexplained"
+                 , spider    = TRUE
+                 , normalise = FALSE
                  )#end list
-good[[ 5]] = list( vnam = "sw.stat"
-                 , desc = "Shapiro-Wilk statistic"
+good[[ 5]] = list( vnam      = "sw.stat"
+                 , desc      = "Shapiro-Wilk statistic"
+                 , spider    = TRUE
+                 , normalise = FALSE
                  )#end list
-good[[ 6]] = list( vnam = "ks.stat"
-                 , desc = "Kolmogorov-Smirnov statistic"
+good[[ 6]] = list( vnam      = "ks.stat"
+                 , desc      = "Kolmogorov-Smirnov statistic"
+                 , spider    = TRUE
+                 , normalise = FALSE
                  )#end list
-good[[ 7]] = list( vnam = "lsq.lnlike"
-                 , desc = "Scaled support based on least squares"
+good[[ 7]] = list( vnam      = "lsq.lnlike"
+                 , desc      = "Scaled support based on least squares"
+                 , spider    = FALSE
+                 , normalise = FALSE
                  )#end list
-good[[ 8]] = list( vnam = "sn.lnlike"
-                 , desc = "Scaled support based on skew normal distribution"
+good[[ 8]] = list( vnam      = "sn.lnlike"
+                 , desc      = "Scaled support based on skew normal distribution"
+                 , spider    = FALSE
+                 , normalise = FALSE
                  )#end list
-good[[ 9]] = list( vnam = "norm.lnlike"
-                 , desc = "Scaled support based on normal distribution"
+good[[ 9]] = list( vnam      = "norm.lnlike"
+                 , desc      = "Scaled support based on normal distribution"
+                 , spider    = FALSE
+                 , normalise = FALSE
                  )#end list
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Load some packages. ----------------------------------------------------------------#
-source(file.path(srcdir,"load.everything.r"))
-#------------------------------------------------------------------------------------------#
-
-
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
 #------------------------------------------------------------------------------------------#
 
 
@@ -303,16 +330,107 @@ nout    = length(outform)
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#     Combine all structures into a consistent list.                                       #
+#------------------------------------------------------------------------------------------#
+#----- Simulation keys.  The separation is rather cumbersome, mix them. -------------------#
+egrid.key   = expand.grid( size             = size.struct$name
+                         , pft              = pft.struct$name
+                         , age              = age.struct$name
+                         , stringsAsFactors = FALSE
+                         )#end expand.grid
+simul.key   = apply( X = egrid.key[,c(1,3,2)],MARGIN=1,FUN=paste,collapse="_")
+#----- Description. -----------------------------------------------------------------------#
+simleg.key  = apply( X        = expand.grid( size.struct$desc
+                                           , pft.struct$desc
+                                           , age.struct$desc
+                                           )#end expand.grid
+                   , MARGIN   = 1
+                   , FUN      = paste
+                   , collapse = " + "
+                   )#end apply
+#---- Create the colours and line type for legend. ----------------------------------------#
+n.size        = length(size.struct$name)
+n.pft         = length(pft.struct$name )
+n.age         = length(age.struct$name )
+my.rainbow    = array(data=NA,dim=c(n.size,n.pft,n.age))
+for (n in 1:n.size){
+   my.rainbow[n,,1] = size.struct$hue[[2*n-1]]
+   my.rainbow[n,,2] = size.struct$hue[[2*n  ]]
+}#end for
+simcol.key     = c(unlist(my.rainbow))
+simfg.key      = rep(my.rainbow[,,1],times=n.age)
+simlty.key     = c(aperm(a=array(age.struct$lty,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
+simcex.key     = c(aperm(a=array(age.struct$cex,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
+simlwd.key     = c(aperm(a=array(age.struct$lwd,dim=c(n.age,n.size,n.pft)),perm=c(2,3,1)))
+#----- Force big leaf to be without size structure. ---------------------------------------#
+ble = egrid.key$size == "ble"
+simlty.key[ble] = age.struct$lty[2]
+simcex.key[ble] = age.struct$cex[2]
+simlwd.key[ble] = age.struct$lwd[2]
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Some big leaf simulations are unecessary: big leaf cannot have age structure.        #
+# Remove these simulations from the list.                                                  #
+#------------------------------------------------------------------------------------------#
+bye           = intersect(which(egrid.key$size == "ble"),which(egrid.key$age == "iage01"))
+egrid.key     = egrid.key [-bye,]
+simul.key     = simul.key [-bye ]
+simleg.key    = simleg.key[-bye ]
+simcol.key    = simcol.key[-bye ]
+simfg.key     = simfg.key [-bye ]
+simlty.key    = simlty.key[-bye ]
+simcex.key    = simcex.key[-bye ]
+simlwd.key    = simlwd.key[-bye ]
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Dump the information to a list.                                                      #
+#------------------------------------------------------------------------------------------#
+simul       = data.frame( name             = simul.key
+                        , desc             = simleg.key
+                        , colour           = simcol.key
+                        , fgcol            = simfg.key
+                        , lty              = simlty.key
+                        , cex              = simcex.key
+                        , lwd              = simlwd.key
+                        , stringsAsFactors = FALSE
+                        )#end data.frame
+#------------------------------------------------------------------------------------------#
+
+
+
+#------ Create the legend summary. --------------------------------------------------------#
+col.in.rgb = apply( X = my.rainbow[,,1], MARGIN = c(1,2), FUN = col2rgb)
+col.size   =          apply( X = col.in.rgb     , MARGIN = c(1,2), FUN = mean   )
+col.pft    = colMeans(apply( X = col.in.rgb     , MARGIN = c(1,3), FUN = mean   ))
+col.age    = mean    (apply( X = col.in.rgb     , MARGIN = c(1)  , FUN = mean   ))
+col.size   = rgb(red=col.size[1,],green=col.size[2,],blue=col.size[3,],maxColorValue=255)
+col.pft    = rgb(red=col.pft     ,green=col.pft     ,blue=col.pft     ,maxColorValue=255)
+col.age    = rgb(red=col.age     ,green=col.age     ,blue=col.age     ,maxColorValue=255)
+summ = list( desc = c(size.struct$verbose,pft.struct$verbose,age.struct$verbose)
+           , col  = c(col.size,col.pft,rep(col.age,times=n.age))
+           , pch  = rep(22,times=n.size+n.age+n.pft)
+           , lty  = c(rep("solid",times=n.size+n.pft),age.struct$lty)
+           , cex  = c(rep(mean(age.struct$cex),times=n.size+n.pft),age.struct$cex)
+           , lwd  = c(rep(mean(age.struct$lwd),times=n.size+n.pft),age.struct$lwd)
+           )#end summ
+#------------------------------------------------------------------------------------------#
+
 
 #------------------------------------------------------------------------------------------#
 #      List the keys for all dimensions.                                                   #
 #------------------------------------------------------------------------------------------#
-simul.key    = apply(X = sapply(X=simul,FUN=c),MARGIN=1,FUN=unlist)[,  "name"]
-simleg.key   = apply(X = sapply(X=simul,FUN=c),MARGIN=1,FUN=unlist)[,  "desc"]
-simcol.key   = apply(X = sapply(X=simul,FUN=c),MARGIN=1,FUN=unlist)[,"colour"]
 sites.key    = sites
+sites.desc   = poilist$longname[match(sites.key,poilist$iata)]
 control.key  = apply(X = sapply(X=control,FUN=c),MARGIN=1,FUN=unlist)[,"vnam"]
 compvar.key  = apply(X = sapply(X=compvar,FUN=c),MARGIN=1,FUN=unlist)$vnam
+compvar.sym  = apply(X = sapply(X=compvar,FUN=c),MARGIN=1,FUN=unlist)$symbol
 good.key     = apply(X = sapply(X=good   ,FUN=c),MARGIN=1,FUN=unlist)[,"vnam"]
 season.key   = season.list
 diel.key     = c("night","rise.set","day","all.hrs")
@@ -352,12 +470,6 @@ size = plotsize(proje=FALSE,paper=paper)
 
 
 
-#----- Create the output directory in case there isn't one. -------------------------------#
-if (! file.exists(outroot)) dir.create(outroot)
-#------------------------------------------------------------------------------------------#
-
-
-
 #----- Find the best set up for plotting all seasons in the same plot. --------------------#
 lo.box = pretty.box(n=nseason-1)
 #------------------------------------------------------------------------------------------#
@@ -365,15 +477,151 @@ lo.box = pretty.box(n=nseason-1)
 
 
 #------------------------------------------------------------------------------------------#
+#      Create all output directories, separated by format.                                 #
+#------------------------------------------------------------------------------------------#
+if (! file.exists(outroot)) dir.create(outroot)
+out = list()
+for (o in 1:nout){
+   is.figure   = ! outform[o] %in% c("quartz","x11")
+   this.form   = outform[o]
+
+
+   #---- Main path for this output format. ------------------------------------------------#
+   o.form = list()
+   o.form$main = file.path(outroot,this.form)
+   if (is.figure && ! file.exists(o.form$main)) dir.create(o.form$main)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Create paths for all variables.                                                   #
+   #---------------------------------------------------------------------------------------#
+   for (v in 1:ncompvar){
+      this.vnam      = compvar[[v]]$vnam
+      o.vnam         = list()
+      o.vnam$main    = file.path(o.form$main,this.vnam)
+      if (is.figure && ! file.exists(o.vnam$main)) dir.create(o.vnam$main)
+
+
+      #------------------------------------------------------------------------------------#
+      #     Create paths for all variables.                                                #
+      #------------------------------------------------------------------------------------#
+      for (d in 1:ndiel){
+         this.diel      = diel.key [d]
+
+         o.diel         = list()
+         o.diel$main    = file.path(o.vnam$main,this.diel)
+         o.diel$barplot = file.path(o.diel$main,"barplot")
+         o.diel$skill   = file.path(o.diel$main,"skill"  )
+         o.diel$taylor  = file.path(o.diel$main,"taylor" )
+         if (is.figure){
+            if (! file.exists(o.diel$main   )) dir.create(o.diel$main   )
+            if (! file.exists(o.diel$barplot)) dir.create(o.diel$barplot)
+            if (! file.exists(o.diel$skill  )) dir.create(o.diel$skill  )
+            if (! file.exists(o.diel$taylor )) dir.create(o.diel$taylor )
+         }#end if (is.figure)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #    Quality plot, we must create directories by controlling variable.            #
+         #---------------------------------------------------------------------------------#
+         o.qual      = list()
+         o.qual$main = file.path(o.diel$main,"quality")
+         if (is.figure && ! file.exists(o.qual$main)) dir.create(o.qual$main)
+         for (u in 1:ncontrol){
+            this.qual = control[[u]]$vnam
+            o.qual[[this.qual]] = file.path(o.qual$main,this.qual)
+            if (is.figure && ! file.exists(o.qual[[this.qual]])){
+               dir.create(o.qual[[this.qual]])
+            }#end if (is.figure && ! file.exists(o.qual[[this.qual]]))
+            #------------------------------------------------------------------------------#
+         }#end for (u in 1:ncontrol)
+         o.diel$quality = o.qual
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Copy the diel list to the parent list. ------------------------------------#
+         o.vnam[[this.diel]] = o.diel
+         #---------------------------------------------------------------------------------#
+      }#end for (d in 1:ndiel)
+      #------------------------------------------------------------------------------------#
+
+
+
+      o.form[[this.vnam]]              = o.vnam
+      #------------------------------------------------------------------------------------#
+   }#end for for (v in 1:ncompvar)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Create paths for the "spider web" plots.                                          #
+   #---------------------------------------------------------------------------------------#
+   o.spider                = list()
+   o.spider$main           = file.path(o.form$main,"spider")
+   if (is.figure && ! file.exists(o.spider$main)) dir.create(o.spider$main)
+   for (d in 1:ndiel){
+      this.diel        = diel.key [d]
+      o.diel           = list()
+      o.diel$main      = file.path(o.spider$main,this.diel  )
+      o.diel$sites     = file.path(o.diel$main  ,"sites"    )
+      o.diel$variables = file.path(o.diel$main  ,"variables")
+      if (is.figure){
+         if (! file.exists(o.diel$main     )) dir.create(o.diel$main     )
+         if (! file.exists(o.diel$sites    )) dir.create(o.diel$sites    )
+         if (! file.exists(o.diel$variables)) dir.create(o.diel$variables)
+      }#end if (is.figure)
+      #------------------------------------------------------------------------------------#
+      o.spider[[this.diel]] = o.diel
+   }#end for (d in 1:ndiel)
+   o.form$spider = o.spider
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Save the full list to the main path list. ---------------------------------------#
+   out[[this.form]] = o.form
+   #---------------------------------------------------------------------------------------#
+}#end for (o in 1:nout)
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#   Loop through the sites.                                                                #
+#------------------------------------------------------------------------------------------#
+cat (" + Add season and diel keys to seasons and diel...","\n")
+for (p in 1:nsites){
+   #----- Grab the observation. -----------------------------------------------------------#
+   obs        = get(paste("obs",sites[p],sep="."))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Create some variables to describe season and time of the day. -------------------#
+   if (! "season" %in% names(obs)) obs$season = season(obs$when,add.year=FALSE)
+   if (! "diel" %in% names(obs))   obs$diel   = (! obs$nighttime) + obs$highsun
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Save the variables to the observations. -----------------------------------------#
+   dummy = assign(paste("obs",sites[p],sep="."),obs)
+   #---------------------------------------------------------------------------------------#
+}#end for (p in 1:nsites)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
 #      Retrieve all data.                                                                  #
 #------------------------------------------------------------------------------------------#
-cat (" + Retrieve data for all sites...","\n")
+cat (" + Retrieve model results for all sites...","\n")
 res = list()
 for (p in 1:nsites){
    #----- Get the basic information. ------------------------------------------------------#
-   iata = sites[p]
-   im   = match(iata,poilist$iata)
-
+   iata          = sites[p]
+   im            = match(iata,poilist$iata)
    this          = list()
    this$short    = poilist$short   [im]
    this$longname = poilist$longname[im]
@@ -381,24 +629,412 @@ for (p in 1:nsites){
    this$lon      = poilist$lon     [im]
    this$lat      = poilist$lat     [im]
    this$sim      = list()
-
+   this$ans      = list()
    cat("   - Site :",this$longname,"...","\n")
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Get all the statistics and actual values for every simulation.                    #
+   #---------------------------------------------------------------------------------------#
    for (s in 1:nsimul){
-      cat("    * Simulation: ",simul[[s]]$desc,"...","\n")
-      sim.name = paste("t",iata,"_",simul[[s]]$name,sep="")
+      cat("    * Simulation: ",simul$desc[s],"...","\n")
+      sim.name = paste("e",iata,"_",simul$name[s],sep="")
       sim.path = paste(here,sim.name,sep="/")
       sim.file = paste(sim.path,"rdata_hour",paste("comp-",sim.name,".RData",sep="")
                       ,sep="/")
       load(sim.file)
-      
-      this$sim[[simul[[s]]$name]] = dist.comp
-      rm(dist.comp)
-   }#end for
 
+      ans.name = paste("t",iata,"_",simul$name[s],sep="")
+      ans.path = paste(here,sim.name,sep="/")
+      ans.file = paste(sim.path,"rdata_hour",paste(sim.name,".RData",sep="")
+                      ,sep="/")
+      load(ans.file)
+      this$sim[[simul$name[s]]] = dist.comp
+      this$ans[[simul$name[s]]] = model
+      rm(list=c("dist.comp","model","eddy.complete","eddy.tresume"))
+   }#end for
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Copy the data to the results. ---------------------------------------------------#
    res[[iata]] = this
    rm(this)
+   #---------------------------------------------------------------------------------------#
 }#end for
 #------------------------------------------------------------------------------------------#
+
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Plot the spider web for all sites and all variables, for statistics that may can be #
+# plotted in a spider web (i.e., positive defined).                                        #
+#------------------------------------------------------------------------------------------#
+cat(" + Plot the spider web diagrams for all sites and all variables...","\n")
+good.loop = which(unlist(sapply(X=good,FUN=c)["spider",]))
+for (g in good.loop){
+   #---- Copy structured variables to convenient scratch scalars. -------------------------#
+   this.good = good[[g]]$vnam
+   desc.good = good[[g]]$desc
+   norm.good = good[[g]]$normalise
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Load all data to an array.                                                       #
+   #---------------------------------------------------------------------------------------#
+   cat("   - ",desc.good,"...","\n")
+   web = array( dim      = c   (nsimul,nsites,ncompvar,ndiel,nseason)
+              , dimnames = list(simul.key,sites.key,compvar.key,diel.key,season.key)
+              )#end array 
+   for (v in 1:ncompvar){
+      this.vnam     = compvar[[v]]$vnam
+      this.measured = paste("measured",this.vnam,sep=".")
+
+      #------------------------------------------------------------------------------------#
+      #     Loop over all sites.                                                           #
+      #------------------------------------------------------------------------------------#
+      for (p in 1:nsites){
+         iata = sites.key[p]
+         sfac = matrix(data=1,nrow=ndiel,ncol=nseason,dimnames=list(diel.key,season.key))
+
+         #---------------------------------------------------------------------------------#
+         #     Find the scale factors for variables that have units.                       #
+         #---------------------------------------------------------------------------------#
+         if (norm.good){
+            obs  = get(paste("obs",iata,sep="."))
+
+            #----- Find out when this output variable is finite and measured. -------------#
+            p.sel = is.finite(obs[[this.vnam]]) & obs[[this.measured]]
+            #------------------------------------------------------------------------------#
+
+            dd = sequence(ndiel-1)
+            ee = sequence(nseason-1)
+
+            #----- Find the components. ---------------------------------------------------#
+            for (dd in sequence(ndiel)){
+               d.sel = obs$diel == dd | dd == ndiel
+               for (ee in sequence(nseason)){
+                  e.sel = obs$season == ee | ee == nseason
+                  sel   = p.sel & d.sel & e.sel
+                  if (any(sel)) sfac[dd,ee] = sd(obs[[this.vnam]][sel],na.rm=TRUE)
+               }#end for
+            }#end for
+            #------------------------------------------------------------------------------#
+         }#end if (norm.good)
+         sfac = ifelse(sfac == 0.,NA,1/sfac)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Grab the data for this simulation.                                          #
+         #---------------------------------------------------------------------------------#
+         for (s in 1:nsimul){
+            this         = res[[iata]]$sim[[s]][[this.vnam]][[this.good]]
+            use.season   = paste(sprintf("%2.2i",sequence(nseason)),season.key,sep="-")
+            web[s,p,v,,] = abs(this[diel.key,use.season]) * sfac
+         }#end for (s in 1:nsimul)
+         #---------------------------------------------------------------------------------#
+      }#end for (p in 1:nsites)
+      #------------------------------------------------------------------------------------#
+   }#end for (v in 1:ncompvar)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Plot the spider webs by diel and variable.                                        #
+   #---------------------------------------------------------------------------------------#
+   for (d in 1:ndiel){
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #     Webs by site (all variables).                                                  #
+      #------------------------------------------------------------------------------------#
+      for (p in 1:nsites){
+         iata     = sites.key[p]
+
+         letitre = paste(desc.good," - ",sites.desc[p],"\n",diel.desc[d],sep="")
+
+         if (any(is.finite(web[,p,,d,nseason]))){
+            v.sel = is.finite(colSums(web[,p,,d,nseason]))
+
+            if (this.good %in% "sw.stat"){
+               web.range = c(0,1)
+            }else{
+               web.range = range(c(0,web[,p,v.sel,d,nseason]),na.rm=TRUE)
+            }#end if
+            if (ptsz <= 11){
+               web.lim   = pretty(web.range,n=5)
+            }else if (ptsz <= 14){
+               web.lim   = pretty(web.range,n=4)
+            }else{
+               web.lim   = pretty(web.range,n=3)
+            }#end if
+
+            #------------------------------------------------------------------------------#
+            #     Webs by variable (all sites).                                            #
+            #------------------------------------------------------------------------------#
+            for (o in 1:nout){
+               #----- Make the file name. -------------------------------------------------#
+               out.web = out[[outform[o]]]$spider[[diel.key[d]]]$sites
+               fichier   = paste(out.web,"/spider-allyear-",iata,"-",this.good
+                                        ,"-",diel.key[d],".",outform[o],sep="")
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                     ,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the window into 3, and add site and simulation legends at the   #
+               # bottom.                                                                   #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par.orig = par(no.readonly = TRUE)
+               mar.orig = par.orig$mar
+               par(oma = c(0.2,3,3.0,0))
+               layout(mat = rbind(2,1),height = c(18,4))
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Legend: the simulations. --------------------------------------------#
+               par(mar=c(0.2,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.0
+                      , legend  = summ$desc
+                      , col     = summ$col
+                      , lwd     = max(summ$lwd)
+                      , lty     = summ$lty
+                      , ncol    = 3
+                      , title   = expression(bold("Structure"))
+                      , cex     = if (ptsz <= 14){1.0}else{0.8}
+                      , xpd     = TRUE
+                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the spider web.                                                  #
+               #---------------------------------------------------------------------------#
+               radial.flex( lengths          = web[,p,v.sel,d,nseason]
+                          , labels           = as.expression(compvar.sym[v.sel])
+                          , lab.col          = foreground
+                          , lab.bg           = background
+                          , radlab           = FALSE
+                          , start            = 90
+                          , clockwise        = TRUE
+                          , rp.type          = "p"
+                          , label.prop       = 1.15 * max(1,sqrt(ptsz / 14))
+                          , main             = ""
+                          , line.col         = simul$fgcol
+                          , lty              = simul$lty
+                          , lwd              = 3.0
+                          , show.grid        = TRUE
+                          , show.grid.labels = 4
+                          , show.radial.grid = TRUE
+                          , grid.col         = grid.colour
+                          , radial.lim       = web.lim
+                          , radial.col       = foreground
+                          , radial.bg        = background
+                          , poly.col         = NA
+                          , mar              = c(2,1,2,1)+0.1
+                          , cex.lab          = 0.5
+                          )#end radial.plot
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the global title.                                                #
+               #---------------------------------------------------------------------------#
+               par(las=0)
+               mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+
+            }#end for (o in 1:nout)
+            #------------------------------------------------------------------------------#
+         }#end if (any(is.finite(web[,,v,d,nseason])))
+         #---------------------------------------------------------------------------------#
+      }#end for (v in 1:ncompvar)
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #     Webs by variable (all sites).                                                  #
+      #------------------------------------------------------------------------------------#
+      for (v in 1:ncompvar){
+         this.vnam     = compvar[[v]]$vnam
+         this.desc     = compvar[[v]]$desc
+
+         letitre = paste(desc.good," - ",this.desc,"\n",diel.desc[d],sep="")
+
+         if (any(is.finite(web[,,v,d,nseason]))){
+            p.sel = is.finite(colSums(web[,,v,d,nseason]))
+
+            if (this.good %in% "sw.stat"){
+               web.range = c(0,1)
+            }else{
+               web.range = range(c(0,web[,p.sel,v,d,nseason]),na.rm=TRUE)
+            }#end if
+            web.lim   = pretty(web.range,n=4)
+
+            #------------------------------------------------------------------------------#
+            #     Webs by variable (all sites).                                            #
+            #------------------------------------------------------------------------------#
+            for (o in 1:nout){
+               #----- Make the file name. -------------------------------------------------#
+               out.web = out[[outform[o]]]$spider[[diel.key[d]]]$variables
+               fichier   = paste(out.web,"/spider-allyear-",this.vnam,"-",this.good
+                                        ,"-",diel.key[d],".",outform[o],sep="")
+               if (outform[o] == "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                     ,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the window into 3, and add site and simulation legends at the   #
+               # bottom.                                                                   #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               par.orig = par(no.readonly = TRUE)
+               mar.orig = par.orig$mar
+               par(oma = c(0.2,3,3.0,0))
+               layout(mat = rbind(2,1),height = c(5.0,1.0))
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #----- Legend: the simulations. --------------------------------------------#
+               par(mar=c(0.2,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+               legend ( x       = "bottom"
+                      , inset   = 0.0
+                      , legend  = summ$desc
+                      , col     = summ$col
+                      , lwd     = max(summ$lwd)
+                      , lty     = summ$lty
+                      , ncol    = 3
+                      , title   = expression(bold("Structure"))
+                      , pt.cex  = summ$cex
+                      , cex     = 1.0
+                      )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the spider web.                                                  #
+               #---------------------------------------------------------------------------#
+               radial.flex( lengths          = web[,p.sel,v,d,nseason]
+                          , labels           = toupper(sites.key[p.sel])
+                          , radlab           = FALSE
+                          , start            = 90
+                          , clockwise        = TRUE
+                          , rp.type          = "p"
+                          , main             = ""
+                          , line.col         = simul$fgcol
+                          , lty              = simul$lty
+                          , lwd              = 3.0
+                          , show.grid        = TRUE
+                          , show.grid.labels = 4
+                          , show.radial.grid = TRUE
+                          , grid.col         = grid.colour
+                          , radial.lim       = web.lim
+                          , poly.col         = NA
+                          , mar              = c(2,1,2,1)+0.1
+                          , cex.lab          = 0.5
+                          )#end radial.plot
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Plot the global title.                                                #
+               #---------------------------------------------------------------------------#
+               par(las=0)
+               mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+
+            }#end for (o in 1:nout)
+            #------------------------------------------------------------------------------#
+         }#end if (any(is.finite(web[,,v,d,nseason])))
+         #---------------------------------------------------------------------------------#
+      }#end for (v in 1:ncompvar)
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+   }#end for (d in 1:ndiel)
+   #---------------------------------------------------------------------------------------#
+
+
+
+}#end for (g in good.loop)
+#------------------------------------------------------------------------------------------#
+
+
+
 
 
 
@@ -436,17 +1072,16 @@ for (v in 1:ncompvar){
                       , dim      = c(ndiel,nseason,nsites)
                       , dimnames = list(diel.key,season.key,sites.key)
                       )#end score
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Loop through the sites.                                                             #
+   #---------------------------------------------------------------------------------------#
    for (p in 1:nsites){
       #----- Grab the observation. --------------------------------------------------------#
       obs        = get(paste("obs",sites[p],sep="."))
       #------------------------------------------------------------------------------------#
-
-
-      #----- Create some variables to describe season and time of the day. ----------------#
-      if (! "season" %in% names(obs)) obs$season = season(obs$when,add.year=FALSE)
-      if (! "diel" %in% names(obs))   obs$diel   = (! obs$nighttime) + obs$highsun
-      #------------------------------------------------------------------------------------#
-
 
 
       #----- Find out when this output variable is finite and measured. -------------------#
@@ -478,6 +1113,8 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             sel   = e.sel & d.sel & p.sel
             #------------------------------------------------------------------------------#
+
+
 
 
             #------------------------------------------------------------------------------#
@@ -525,13 +1162,417 @@ for (v in 1:ncompvar){
 
 
    #---------------------------------------------------------------------------------------#
-   #      Create the output path in case it doesn't exist.                                 #
+   #      Loop over all parts of the day.                                                  #
    #---------------------------------------------------------------------------------------#
-   outcomp = paste(outroot,this.vnam,sep="/")
-   if (! file.exists(outcomp)) dir.create(outcomp)
-   outdiel = paste(outcomp,diel.key ,sep="/")
-   for (d in 1:ndiel) if (! file.exists(outdiel[d])) dir.create(outdiel[d])
+   cat("     * Skill and Taylor plots...","\n")
+   for (d in 1:ndiel){
+      cat("       > ",diel.desc[d],"...","\n")
+
+
+      #------------------------------------------------------------------------------------#
+      #      Loop over all sites, normalise the data and create the vector for the model.  #
+      #------------------------------------------------------------------------------------#
+      obs.diel    = list()
+      mod.diel    = list()
+      bias.range  = NULL
+      sigma.range = NULL
+      for (p in 1:nsites){
+         iata  = sites[p]
+         obs   = get(paste("obs",iata,sep="."))
+         nwhen = length(obs$when)
+
+
+         #----- Select this diel (or everything for all day). -----------------------------#
+         d.sel = (obs$diel == (d-1) | d == ndiel) & ((! this.sun) | obs$highsun)
+         sel   = d.sel & is.finite(obs[[this.vnam]]) & obs[[this.measured]]
+         sel   = sel   & is.finite(sel)
+         n.sel = sum(sel)
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     Find the standard deviation of this observation.  Skip the site if every-   #
+         # thing is zero.                                                                  #
+         #---------------------------------------------------------------------------------#
+         this.obs     = obs[[this.vnam]][sel]
+         sdev.obs.now = sd(this.obs,na.rm=TRUE)
+         sel          = sel & is.finite(sdev.obs.now) & sdev.obs.now > 0
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Copy the observed data. ---------------------------------------------------#
+         obs.diel[[iata]] = this.obs
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Copy the modelled data, and update ranges. --------------------------------#
+         mod.diel[[iata]] = matrix(ncol=nsimul,nrow=n.sel,dimnames=list(NULL,simul.key))
+         if (any(sel)){
+            for (s in 1:nsimul){
+               this.mod             = res[[iata]]$ans[[simul.key[s]]][[this.vnam]][sel]
+               this.res             = this.mod - this.obs
+               mod.diel[[iata]][,s] = this.mod
+
+               #----- Find the normalised bias and model standard deviation. --------------#
+               bias.now    = mean(this.res, na.rm=TRUE) / sdev.obs.now
+               sigma.now   = sd  (this.res, na.rm=TRUE) / sdev.obs.now
+               bias.range  = c(bias.range ,bias.now   )
+               sigma.range = c(sigma.range,sigma.now  )
+               if (! is.finite(bias.now) || ! is.finite(sigma.now)){
+                  stop("Something weird with this run...")
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end for (s in 1:nsimul)
+            #------------------------------------------------------------------------------#
+         }#end if (any(sel))
+         #---------------------------------------------------------------------------------#
+      }#end for (p in 1:nsites)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Plot Taylor and skill plots only if there is anything to plot.                 #
+      #------------------------------------------------------------------------------------#
+      if (length(unlist(obs.diel)) > 0){
+         #---- Fix ranges. ----------------------------------------------------------------#
+         xy.range    = 1.04 * max(c(abs(bias.range),abs(sigma.range)))
+         bias.range  = 1.04 * xy.range  * c(-1,1)
+         sigma.range = 1.04 * xy.range  * c( 1,0)
+         r2.range    = range(1-xy.range^2,1)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #     Skill plot.                                                                 #
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     Plot title.                                                                 #
+         #---------------------------------------------------------------------------------#
+         letitre = paste(" Skill diagram - ",this.desc,"\n",diel.desc[d],sep="")
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all formats.                                                     #
+         #---------------------------------------------------------------------------------#
+         for (o in 1:nout){
+            #----- Make the file name. ----------------------------------------------------#
+            out.skill = out[[outform[o]]][[this.vnam]][[diel.key[d]]]$skill
+            fichier   = paste(out.skill,"/skill-allyear-",this.vnam,"-",diel.key[d]
+                             ,".",outform[o],sep="")
+            if (outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height,pointsize=ptsz
+                         ,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                  ,pointsize=ptsz,paper=size$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Split the window into 3, and add site and simulation legends at the      #
+            # bottom.                                                                      #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            par.orig = par(no.readonly = TRUE)
+            mar.orig = par.orig$mar
+            par(oma = c(0.2,3,3.0,0))
+            layout(mat = rbind(c(3,3,3),c(1,2,2)),height = c(5.0,1.0))
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the sites. -----------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = toupper(sites.key)
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = sites.pch
+                   , ncol    = min(4,pretty.box(nsites)$ncol)
+                   , title   = expression(bold("Sites"))
+                   , pt.cex  = mean(unique(summ$cex))
+                   , cex     = 1.0
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the simulations. -----------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = summ$desc
+                   , col     = summ$col
+                   , pt.bg   = summ$col
+                   , pt.cex  = summ$cex
+                   , pt.lwd  = summ$lwd
+                   , pch     = summ$pch
+                   , border  = foreground
+                   , ncol    = 3
+                   , title   = expression(bold("Structure"))
+                   , cex     = 1.0
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over sites.                                                         #
+            #------------------------------------------------------------------------------#
+            myskill = NULL
+            for (p in 1:nsites){
+               iata = sites[p]
+
+
+               #----- Skip the site if there is no data. ----------------------------------#
+               if (length(obs.diel[[iata]]) > 0){
+                  #------------------------------------------------------------------------#
+                  #     We call skill twice for each site in case the site has two PCHs.   #
+                  #------------------------------------------------------------------------#
+                  myskill = skill.plot( obs           = obs.diel[[iata]]
+                                      , obs.options   = list( col = foreground
+                                                            , cex = 2.0
+                                                            )#end list
+                                      , mod           = mod.diel[[iata]]
+                                      , mod.options   = list( col = simul$fgcol
+                                                            , bg  = simul$fgcol
+                                                            , pch = sites.pch[p]
+                                                            , cex = simul$cex
+                                                            , lty = "solid"
+                                                            , lwd = simul$lwd
+                                                            )#end list
+                                      , main           = ""
+                                      , bias.lim       = bias.range
+                                      , r2.lim         = r2.range
+                                      , r2.options     = list( col = grid.colour)
+                                      , nobias.options = list( col = khaki.mg   )
+                                      , rmse.options   = list( col = orange.mg
+                                                             , lty = "dotdash"
+                                                             , lwd = 1.2
+                                                             , bg  = background
+                                                             )#end list
+                                      , cex.xyzlab     = 1.4
+                                      , cex.xyzat      = 1.4
+                                      , skill          = myskill
+                                      , normalise      = TRUE
+                                      , mar            = c(5,4,4,3)+0.1
+                                      )#end skill.plot
+                  #------------------------------------------------------------------------#
+               }#end if (length(obs.diel[[iata]] > 0)
+               #---------------------------------------------------------------------------#
+            }#end for (p in 1:nsites)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot the global title.                                                   #
+            #------------------------------------------------------------------------------#
+            par(las=0)
+            mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in 1:nout) 
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #      Taylor plot.                                                               #
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     Plot title.                                                                 #
+         #---------------------------------------------------------------------------------#
+         letitre = paste(" Taylor diagram - ",this.desc,"\n",diel.desc[d],sep="")
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over all formats.                                                     #
+         #---------------------------------------------------------------------------------#
+         for (o in 1:nout){
+            #----- Make the file name. ----------------------------------------------------#
+            out.taylor = out[[outform[o]]][[this.vnam]][[diel.key[d]]]$taylor
+            fichier    = paste(out.taylor,"/taylor-allyear-",this.vnam,"-",diel.key[d]
+                              ,".",outform[o],sep="")
+            if (outform[o] == "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=size$width,height=size$height,pointsize=ptsz
+                         ,paper=size$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+                  ,pointsize=ptsz,paper=size$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Split the window into 3, and add site and simulation legends at the      #
+            # bottom.                                                                      #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            par.orig = par(no.readonly = TRUE)
+            mar.orig = par.orig$mar
+            par(oma = c(0.2,3,3.0,0))
+            layout(mat = rbind(c(3,3,3),c(1,2,2)),height = c(5.0,1.0))
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the sites. -----------------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = toupper(sites.key)
+                   , col     = foreground
+                   , pt.bg   = foreground
+                   , pch     = sites.pch
+                   , ncol    = min(4,pretty.box(nsites)$ncol)
+                   , title   = expression(bold("Sites"))
+                   , pt.cex  = 2.0
+                   , cex     = 1.0
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Legend: the simulations. -----------------------------------------------#
+            par(mar=c(0.2,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+            legend ( x       = "bottom"
+                   , inset   = 0.0
+                   , legend  = summ$desc
+                   , col     = summ$col
+                   , pt.bg   = summ$col
+                   , pt.cex  = summ$cex
+                   , pt.lwd  = summ$lwd
+                   , pch     = summ$pch
+                   , border  = foreground
+                   , ncol    = 3
+                   , title   = expression(bold("Structure"))
+                   , cex     = 1.0
+                   , xpd     = TRUE
+                   )#end legend
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over sites.                                                         #
+            #------------------------------------------------------------------------------#
+            add = FALSE
+            for (p in 1:nsites){
+               iata = sites[p]
+
+               #----- Skip the site if there is no data. ----------------------------------#
+               if (length(obs.diel[[iata]]) > 0.){
+                  #------------------------------------------------------------------------#
+                  #     We call skill twice for each site in case the site has two PCHs.   #
+                  #------------------------------------------------------------------------#
+                  mytaylor = taylor.plot( obs        = obs.diel[[iata]]
+                                        , mod        = mod.diel[[iata]]
+                                        , add        = add
+                                        , pos.corr   = NA
+                                        , pt.col     = simul$fgcol
+                                        , pt.bg      = simul$fgcol
+                                        , pt.pch     = sites.pch[p]
+                                        , pt.cex     = simul$cex
+                                        , pt.lwd     = simul$lwd
+                                        , obs.col    = foreground
+                                        , gamma.col  = sky.mg
+                                        , gamma.bg   = background
+                                        , sd.col     = grey.fg
+                                        , sd.obs.col = yellow.mg
+                                        , corr.col   = foreground
+                                        , main       = ""
+                                        , normalise  = TRUE
+                                        )#end taylor.plot
+                  add = TRUE
+               }#end if (length(obs.diel[[iata]]) > 0.)
+               #---------------------------------------------------------------------------#
+            }#end for (p in 1:nsites)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Plot the global title.                                                   #
+            #------------------------------------------------------------------------------#
+            par(las=0)
+            mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in 1:nout) 
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+      }#end if (length(ref) > 2)
+      #------------------------------------------------------------------------------------#
+   }#end for (d in 1:ndiel)
    #---------------------------------------------------------------------------------------#
+
+
+
+
 
 
 
@@ -564,7 +1605,7 @@ for (v in 1:ncompvar){
          iata         = sites[p]
          obs          = get(paste("obs",sites[p],sep="."))
          for (s in 1:nsimul){
-            colstat[s,p]   = simul[[s]]$colour
+            colstat[s,p]   = simul$colour[s]
             this           = res[[iata]]$sim[[s]][[this.vnam]][[this.good]]
 
             use.season  = paste(sprintf("%2.2i",sequence(nseason)),season.key,sep="-")
@@ -635,12 +1676,11 @@ for (v in 1:ncompvar){
          #---------------------------------------------------------------------------------#
          #     Loop over all output formats.                                               #
          #---------------------------------------------------------------------------------#
-         out.barplot = paste(outdiel[d],"barplot",sep="/")
-         if (! file.exists(out.barplot)) dir.create(out.barplot)
          for (o in 1:nout){
             #----- Make the file name. ----------------------------------------------------#
-            fichier = paste(out.barplot,"/bplot-byseason-",this.vnam,"-",this.good,"-"
-                                       ,diel.key[d],".",outform[o],sep="")
+            out.barplot = out[[outform[o]]][[this.vnam]][[diel.key[d]]]$barplot
+            fichier     = paste(out.barplot,"/bplot-byseason-",this.vnam,"-",this.good,"-"
+                                           ,diel.key[d],".",outform[o],sep="")
             if (outform[o] == "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
             }else if(outform[o] == "png"){
@@ -661,6 +1701,7 @@ for (v in 1:ncompvar){
             #     Split the window into several smaller windows.  Add a bottom row to fit  #
             # the legend.                                                                  #
             #------------------------------------------------------------------------------#
+            par(par.user)
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
             par(oma = c(0.2,3,4,0))
@@ -679,11 +1720,11 @@ for (v in 1:ncompvar){
                    , inset   = 0.0
                    , legend  = simleg.key
                    , fill    = simcol.key
-                   , border  = "black"
-                   , bg      = "white"
+                   , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
                    , cex     = 1.0
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -723,7 +1764,7 @@ for (v in 1:ncompvar){
                if (left  ) axis(side=2)
                box()
                title(main=lesub)
-               if (plotgrid) abline(h=axTicks(2),v=xlines,col="grey83",lty="solid")
+               if (plotgrid) abline(h=axTicks(2),v=xlines,col=grid.colour,lty="solid")
                #---------------------------------------------------------------------------#
 
 
@@ -731,13 +1772,13 @@ for (v in 1:ncompvar){
                #---------------------------------------------------------------------------#
                #     Add the bar plot.                                                     #
                #---------------------------------------------------------------------------#
-               xbp = barplot(height=stat[d,e,,op],col=colstat,beside=TRUE,border="grey22"
+               xbp = barplot(height=stat[d,e,,op],col=colstat,beside=TRUE,border=grey.fg
                             ,add=TRUE,axes=FALSE,axisnames=FALSE,xpd=FALSE)
                text   (x=xat,y=y.nobs,labels=nobs.good[d,e,op],cex=0.7)
                if (this.good %in% c("r.squared")){
                   ybp = y.r2 - 100 * ( orig.stat[d,e,,op] >= -1.0)
                   text(x=xbp,y=ybp,labels=rep("*",times=length(ybp))
-                      ,font=2,col="saddlebrown")
+                      ,font=2,col="sandybrown")
                }#end if
                #---------------------------------------------------------------------------#
             }#end for
@@ -775,6 +1816,7 @@ for (v in 1:ncompvar){
             }else{
                dev.off()
             }#end if
+            dummy = clean.tmp()
             #------------------------------------------------------------------------------#
 
          }#end for
@@ -800,8 +1842,9 @@ for (v in 1:ncompvar){
          #----- Loop over all formats. ----------------------------------------------------#
          for (o in 1:nout){
             #----- Make the file name. ----------------------------------------------------#
-            fichier = paste(out.barplot,"/bplot-allyear-",this.vnam,"-",this.good,"-"
-                           ,diel.key[d],".",outform[o],sep="")
+            out.barplot = out[[outform[o]]][[this.vnam]][[diel.key[d]]]$barplot
+            fichier     = paste(out.barplot,"/bplot-allyear-",this.vnam,"-",this.good,"-"
+                                           ,diel.key[d],".",outform[o],sep="")
             if (outform[o] == "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
             }else if(outform[o] == "png"){
@@ -822,6 +1865,7 @@ for (v in 1:ncompvar){
             #     Split the window into several smaller windows.  Add a bottom row to fit  #
             # the legend.                                                                  #
             #------------------------------------------------------------------------------#
+            par(par.user)
             par.orig = par(no.readonly = TRUE)
             mar.orig = par.orig$mar
             layout(mat = rbind(2,1), height = c(5,1))
@@ -837,11 +1881,11 @@ for (v in 1:ncompvar){
                    , inset   = 0.0
                    , legend  = simleg.key
                    , fill    = simcol.key
-                   , border  = "black"
-                   , bg      = "white"
+                   , border  = foreground
                    , ncol    = min(3,pretty.box(nsimul)$ncol)
                    , title   = expression(bold("Simulation"))
                    , cex     = 0.7
+                   , xpd     = TRUE
                    )#end legend
             #------------------------------------------------------------------------------#
 
@@ -860,7 +1904,7 @@ for (v in 1:ncompvar){
             axis(side=1,at=xat,labels=toupper(sites.key[op]))
             axis(side=2)
             box()
-            if (plotgrid) abline(h=axTicks(2),v=xlines,col="grey83",lty="solid")
+            if (plotgrid) abline(h=axTicks(2),v=xlines,col=grid.colour,lty="solid")
             #------------------------------------------------------------------------------#
 
 
@@ -868,12 +1912,12 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             #     Add the bar plot.                                                        #
             #------------------------------------------------------------------------------#
-            barplot(height=stat[d,nseason,,op],col=colstat,beside=TRUE,border="grey22"
+            barplot(height=stat[d,nseason,,op],col=colstat,beside=TRUE,border=grey.fg
                    ,add=TRUE,axes=FALSE,axisnames=FALSE,xpd=FALSE)
-            text(x=xat,y=y.nobs,labels=nobs.good[d,nseason,op],cex=0.9,col="grey22")
+            text(x=xat,y=y.nobs,labels=nobs.good[d,nseason,op],cex=0.9,col=grey.fg)
             if (this.good %in% c("r.squared")){
                ybp = y.r2 - 100 * ( orig.stat[d,nseason,,op] >= -1.0)
-               text(x=xbp,y=ybp,labels=rep("*",times=length(ybp)),font=2,col="saddlebrown")
+               text(x=xbp,y=ybp,labels=rep("*",times=length(ybp)),font=2,col="sandybrown")
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -886,6 +1930,7 @@ for (v in 1:ncompvar){
             }else{
                dev.off()
             }#end if
+            dummy = clean.tmp()
             #------------------------------------------------------------------------------#
 
          }#end for
@@ -896,21 +1941,11 @@ for (v in 1:ncompvar){
          #---------------------------------------------------------------------------------#
          #      Plot the statistics as a function of the quality of the data.              #
          #---------------------------------------------------------------------------------#
-         out.quality = paste(outdiel[d],"quality",sep="/")
-         if (! file.exists(out.quality)) dir.create(out.quality)
          for (u in 1:ncontrol){
             this.qual = control[[u]]
             qual.vnam = this.qual$vnam
             qual.desc = this.qual$desc
             qual.unit = this.qual$unit
-
-
-            #------------------------------------------------------------------------------#
-            #     Create the path for the quality due to this particular variable.         #
-            #------------------------------------------------------------------------------#
-            out.qualnow = paste(out.quality,qual.vnam,sep="/")
-            if (! file.exists(out.qualnow)) dir.create(out.qualnow)
-            #------------------------------------------------------------------------------#
 
 
 
@@ -946,8 +1981,10 @@ for (v in 1:ncompvar){
             #------------------------------------------------------------------------------#
             for (o in 1:nout){
                #----- Make the file name. -------------------------------------------------#
-               fichier = paste(out.qualnow,"/qual-byseason-",this.vnam,"-",qual.vnam,"-"
-                              ,this.good,"-",diel.key[d],".",outform[o],sep="")
+               out.diel    = out[[outform[o]]][[this.vnam]][[diel.key[d]]]
+               out.qualnow = out.diel$quality[[qual.vnam]]
+               fichier     = paste(out.qualnow,"/qual-byseason-",this.vnam,"-",qual.vnam
+                                  ,"-",this.good,"-",diel.key[d],".",outform[o],sep="")
                if (outform[o] == "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
                }else if(outform[o] == "png"){
@@ -968,6 +2005,7 @@ for (v in 1:ncompvar){
                #     Split the window into several smaller windows.  Add a bottom row to   #
                # fit the legend.                                                           #
                #---------------------------------------------------------------------------#
+               par(par.user)
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
                par(oma = c(0.2,3,4,0))
@@ -986,11 +2024,11 @@ for (v in 1:ncompvar){
                       , inset   = 0.0
                       , legend  = simleg.key
                       , fill    = simcol.key
-                      , border  = "black"
-                      , bg      = "white"
+                      , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
                       , cex     = 1.0
+                      , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -1023,7 +2061,7 @@ for (v in 1:ncompvar){
                   if (left  ) axis(side=2)
                   box()
                   title(main=lesub)
-                  if (plotgrid) grid(col="grey83",lty="solid")
+                  if (plotgrid) grid(col=grid.colour,lty="solid")
                   #------------------------------------------------------------------------#
 
 
@@ -1033,7 +2071,7 @@ for (v in 1:ncompvar){
                   #------------------------------------------------------------------------#
                   for (s in 1:nsimul){
                      points(x=input.score[d,e,u,],y=stat[d,e,s,],pch=15
-                           ,col=simul[[s]]$colour,cex=1.0)
+                           ,col=simul$colour[s],cex=1.0)
                   }#end for
                   #------------------------------------------------------------------------#
                }#end for
@@ -1073,6 +2111,7 @@ for (v in 1:ncompvar){
                }else{
                   dev.off()
                }#end if
+               dummy = clean.tmp()
                #---------------------------------------------------------------------------#
             }#end for (o in 1:nout)
             #------------------------------------------------------------------------------#
@@ -1097,8 +2136,10 @@ for (v in 1:ncompvar){
             #----- Loop over all output formats. ------------------------------------------#
             for (o in 1:nout){
                #----- Make the file name. -------------------------------------------------#
-               fichier = paste(out.qualnow,"/qual-allyear-",this.vnam,"-",qual.vnam,"-"
-                              ,this.good,"-",diel.key[d],".",outform[o],sep="")
+               out.diel    = out[[outform[o]]][[this.vnam]][[diel.key[d]]]
+               out.qualnow = out.diel$quality[[qual.vnam]]
+               fichier     = paste(out.qualnow,"/qual-allyear-",this.vnam,"-",qual.vnam
+                                  ,"-",this.good,"-",diel.key[d],".",outform[o],sep="")
                if (outform[o] == "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
                }else if(outform[o] == "png"){
@@ -1119,6 +2160,7 @@ for (v in 1:ncompvar){
                #     Split the window into several smaller windows.  Add a bottom row to   #
                # fit the legend.                                                           #
                #---------------------------------------------------------------------------#
+               par(par.user)
                par.orig = par(no.readonly = TRUE)
                mar.orig = par.orig$mar
                layout(mat=rbind(2,1),height=c(5,1))
@@ -1134,11 +2176,11 @@ for (v in 1:ncompvar){
                       , inset   = 0.0
                       , legend  = simleg.key
                       , fill    = simcol.key
-                      , border  = "black"
-                      , bg      = "white"
+                      , border  = foreground
                       , ncol    = min(3,pretty.box(nsimul)$ncol)
                       , title   = expression(bold("Simulation"))
                       , cex     = 1.0
+                      , xpd     = TRUE
                       )#end legend
                #---------------------------------------------------------------------------#
 
@@ -1155,7 +2197,7 @@ for (v in 1:ncompvar){
                axis(side=1)
                axis(side=2)
                box()
-               if (plotgrid) grid(col="grey83",lty="solid")
+               if (plotgrid) grid(col=grid.colour,lty="solid")
                #---------------------------------------------------------------------------#
 
 
@@ -1163,7 +2205,7 @@ for (v in 1:ncompvar){
                #---- Add the bar plot. ----------------------------------------------------#
                for (s in 1:nsimul){
                   points(x=input.score[d,nseason,u,],y=stat[d,nseason,s,],pch=15
-                        ,col=simul[[s]]$colour,cex=1.0)
+                        ,col=simul$colour[s],cex=1.0)
                }#end for
                #---------------------------------------------------------------------------#
 
@@ -1176,6 +2218,7 @@ for (v in 1:ncompvar){
                }else{
                   dev.off()
                }#end if
+               dummy = clean.tmp()
                #---------------------------------------------------------------------------#
             }#end for (o in 1:nout)
             #------------------------------------------------------------------------------#

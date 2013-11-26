@@ -92,8 +92,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
    !----- Reset properties. ---------------------------------------------------------------!
    csite%veg_height(ipa)       = 0.0
-   csite%lai(ipa)              = 0.0
-   csite%wai(ipa)              = 0.0
    weight_sum                  = 0.0
    csite%opencan_frac(ipa)     = 1.0
    csite%plant_ag_biomass(ipa) = 0.0
@@ -106,12 +104,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    do ico = 1,cpatch%ncohorts
 
       ipft = cpatch%pft(ico)
-
-      !----- Update the patch-level area indices. -----------------------------------------!
-      csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-      csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
-      !------------------------------------------------------------------------------------!
-
 
 
       !----- Compute the patch-level above-ground biomass
@@ -198,20 +190,20 @@ end subroutine update_patch_derived_props
 
 !==========================================================================================!
 !==========================================================================================!
-!      This subroutine will take care of some diagnostic thermodynamic properties, namely  !
-! the canopy air density and temperature.                                                  !
+!      This subroutine will take care of some diagnostic thermodynamic properties.         !
 !------------------------------------------------------------------------------------------!
 subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
   
-   use ed_state_vars, only : sitetype      ! ! structure
-   use therm_lib    , only : idealdenssh   & ! function
-                           , uextcm2tl     & ! function
-                           , uint2tl       ! ! function
-   use consts_coms  , only : p00i          & ! intent(in)
-                           , rocp          & ! intent(in)
-                           , t00           & ! intent(in)
-                           , wdns          ! ! intent(in)
-   use soil_coms    , only : soil          ! ! intent(in)
+   use ed_state_vars, only : sitetype         ! ! structure
+   use therm_lib    , only : idealdenssh      & ! function
+                           , press2exner      & ! function
+                           , extheta2temp     & ! function
+                           , uextcm2tl        & ! function
+                           , uint2tl          ! ! function
+   use consts_coms  , only : t00              & ! intent(in)
+                           , wdns             ! ! intent(in)
+   use soil_coms    , only : soil             & ! intent(in)
+                           , matric_potential ! ! function
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -227,14 +219,20 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
    integer                                    :: ksn
    integer                                    :: k
    real                                       :: soilhcap
+   real                                       :: can_exner
    !---------------------------------------------------------------------------------------!
 
 
    do ipa=ipaa,ipaz
 
-      csite%can_temp(ipa)     = csite%can_theta(ipa) * (p00i * csite%can_prss(ipa)) ** rocp
-      csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)        &
-                                           ,csite%can_shv(ipa))
+      !----- Canopy air temperature and density. ------------------------------------------!
+      can_exner           = press2exner (csite%can_prss(ipa))
+      csite%can_temp(ipa) = extheta2temp(can_exner,csite%can_theta(ipa))
+      csite%can_rhos(ipa) = idealdenssh ( csite%can_prss  (ipa)                            &
+                                        , csite%can_temp  (ipa)                            &
+                                        , csite%can_shv   (ipa)                            )
+      !------------------------------------------------------------------------------------!
+
 
       !----- Update soil temperature and liquid water fraction. ---------------------------!
       do k = 1, mzg
@@ -242,7 +240,11 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
          soilhcap = soil(nsoil)%slcpd
          call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap     &
                        ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
+         csite%soil_mstpot(k,ipa) = matric_potential(nsoil,csite%soil_water(k,ipa))
       end do
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Update temporary surface water temperature and liquid water fraction. --------!
       ksn = csite%nlev_sfcwater(ipa)
@@ -262,10 +264,106 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
             csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
          end if
       end do
+      !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine update_patch_thermo_props
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine will update the fast mean properties, similarly to the routine      !
+! above.                                                                                   !
+!------------------------------------------------------------------------------------------!
+subroutine update_patch_thermo_fmean(csite,ipaa,ipaz,mzg,ntext_soil)
+  
+   use ed_state_vars, only : sitetype           ! ! structure
+   use therm_lib    , only : idealdenssh        & ! function
+                           , press2exner        & ! function
+                           , extheta2temp       & ! function
+                           , uextcm2tl          & ! function
+                           , uint2tl            ! ! function
+   use consts_coms  , only : t00                & ! intent(in)
+                           , wdns               ! ! intent(in)
+   use soil_coms    , only : soil               & ! intent(in)
+                           , tiny_sfcwater_mass & ! intent(in)
+                           , matric_potential   ! ! function
+   implicit none
+
+   !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype)                , target     :: csite
+   integer                       , intent(in) :: ipaa
+   integer                       , intent(in) :: ipaz
+   integer                       , intent(in) :: mzg
+   integer       , dimension(mzg), intent(in) :: ntext_soil
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                    :: ipa
+   integer                                    :: nsoil
+   integer                                    :: ksn
+   integer                                    :: k
+   real                                       :: soilhcap
+   real                                       :: can_exner
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   do ipa=ipaa,ipaz
+
+      !----- Canopy air temperature and density. ------------------------------------------!
+      can_exner                 = press2exner (csite%fmean_can_prss(ipa))
+      csite%fmean_can_temp(ipa) = extheta2temp(can_exner,csite%fmean_can_theta(ipa))
+      csite%fmean_can_rhos(ipa) = idealdenssh ( csite%fmean_can_prss  (ipa)                &
+                                              , csite%fmean_can_temp  (ipa)                &
+                                              , csite%fmean_can_shv   (ipa)                )
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Update soil temperature and liquid water fraction. ---------------------------!
+      do k = 1, mzg
+         nsoil    = ntext_soil(k)
+         soilhcap = soil(nsoil)%slcpd
+         call uextcm2tl( csite%fmean_soil_energy(k,ipa)                                    &
+                       , csite%fmean_soil_water (k,ipa) * wdns                             &
+                       , soilhcap                                                          &
+                       , csite%fmean_soil_temp  (k,ipa)                                    &
+                       , csite%fmean_soil_fliq  (k,ipa) )
+         csite%fmean_soil_mstpot(k,ipa) = matric_potential( nsoil                          &
+                                                          , csite%fmean_soil_water(k,ipa))
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   If the patch had some temporary snow/pounding layer, convert the mean energy to  !
+      ! J/kg, then find the mean temperature and liquid fraction.  Otherwise, set them to  !
+      ! either zero or default values.                                                     !
+      !------------------------------------------------------------------------------------!
+      if (csite%fmean_sfcw_mass(ipa) > tiny_sfcwater_mass) then
+         csite%fmean_sfcw_energy(ipa) = csite%fmean_sfcw_energy(ipa)                       &
+                                      / csite%fmean_sfcw_mass(ipa)
+         call uint2tl(csite%fmean_sfcw_energy(ipa),csite%fmean_sfcw_temp(ipa)              &
+                     ,csite%fmean_sfcw_fliq(ipa))
+      else
+         csite%fmean_sfcw_mass  (ipa)  = 0.
+         csite%fmean_sfcw_depth (ipa)  = 0.
+         csite%fmean_sfcw_energy(ipa)  = 0.
+         csite%fmean_sfcw_temp  (ipa)  = csite%fmean_soil_temp(mzg,ipa)
+         csite%fmean_sfcw_fliq  (ipa)  = csite%fmean_soil_fliq(mzg,ipa)
+      end if
+      !-----------------------------------------------------------------------------------!
+   end do
+   return
+end subroutine update_patch_thermo_fmean
 !==========================================================================================!
 !==========================================================================================!
 
@@ -297,13 +395,12 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
    integer                        :: ico
    integer                        :: ipft
    integer                        :: ilu
-   real                           :: ba
    !---------------------------------------------------------------------------------------!
    
    !----- Initialise the variables before looping. ----------------------------------------!
    cpoly%basal_area(:,:,isi) = 0.0
-   cpoly%agb(:,:,isi)        = 0.0
-   
+   cpoly%agb       (:,:,isi) = 0.0
+
    csite => cpoly%site(isi)
 
    !----- Loop over patches. --------------------------------------------------------------!
@@ -341,36 +438,394 @@ end subroutine update_site_derived_props
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine will update the derived properties at the polygon level.             !
+!     The following subroutine finds the polygon averages from site-, patch-, and cohort-  !
+! -level properties whose time step is longer than DTLSM (days, months, years).  Fluxes,   !
+! meteorological input, thermodynamic properties, and radiation are aggregated in  sub-    !
+! -routine aggregate_polygon_fmean.                                                        !
 !------------------------------------------------------------------------------------------!
 subroutine update_polygon_derived_props(cgrid)
+   use ed_state_vars         , only : edtype             & ! structure
+                                    , polygontype        & ! structure
+                                    , sitetype           & ! structure
+                                    , patchtype          ! ! structure
+   use soil_coms             , only : soil               & ! intent(in)
+                                    , dslz               ! ! intent(in)
+   use grid_coms             , only : nzg                & ! intent(in)
+                                    , nzs                ! ! intent(in)
+   use ed_max_dims           , only : n_dbh              ! ! intent(in)
+   use ed_misc_coms          , only : ddbhi              ! ! intent(in)
+   use pft_coms              , only : c2n_leaf           & ! intent(in)
+                                    , c2n_stem           & ! intent(in)
+                                    , c2n_storage        & ! intent(in)
+                                    , c2n_recruit        & ! intent(in)
+                                    , c2n_slow           & ! intent(in)
+                                    , c2n_structural     ! ! intent(in)
+   use decomp_coms           , only : cwd_frac           ! ! intent(in)
 
-   use ed_state_vars , only : edtype      & ! structure
-                            , polygontype ! ! structure
    implicit none
-
-   !----- Arguments -----------------------------------------------------------------------!
-   type(edtype)      , target  :: cgrid
-   !----- Local variables -----------------------------------------------------------------!
-   type(polygontype) , pointer :: cpoly
-   integer                     :: ipy
-   integer                     :: isi
+   !----- Arguments.      -----------------------------------------------------------------!
+   type(edtype)         , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   type(polygontype)    , pointer :: cpoly
+   type(sitetype)       , pointer :: csite
+   type(patchtype)      , pointer :: cpatch
+   integer                        :: ipy
+   integer                        :: isi
+   integer                        :: ipa
+   integer                        :: ico
+   integer                        :: p
+   integer                        :: d
+   integer                        :: k
+   real                           :: poly_area_i
+   real                           :: site_area_i
+   real                           :: site_wgt
+   real                           :: patch_wgt
+   real                           :: rdepth
    !---------------------------------------------------------------------------------------!
 
-   do ipy=1,cgrid%npolygons
 
-      cgrid%agb(:,:,ipy)        = 0.0
-      cgrid%basal_area(:,:,ipy) = 0.0
-      
+
+
+   !---------------------------------------------------------------------------------------!
+   !    WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   !
+   !---------------------------------------------------------------------------------------!
+   !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.  This  !
+   ! works in off-line runs, but it causes memory leaks (and crashes) in the coupled runs  !
+   ! over the ocean, where cgrid%npolygons can be 0 if one of the sub-domains falls        !
+   ! entirely over the ocean.  Thanks!                                                     !
+   !---------------------------------------------------------------------------------------!
+   ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+   !                 !      safe way of initialising the variable.
+   !---------------------------------------------------------------------------------------!
+   polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
-      do isi = 1,cpoly%nsites
-         cgrid%agb(:,:,ipy)        = cgrid%agb(:,:,ipy)                                    &
-                                   + cpoly%area(isi) * cpoly%agb(:,:,isi)
-         cgrid%basal_area(:,:,ipy) = cgrid%basal_area(:,:,ipy)                             &
-                                   + cpoly%area(isi) * cpoly%basal_area(:,:,isi)
-      end do
-   end do
 
+      !------------------------------------------------------------------------------------!
+      !                                                                                    !
+      !     Initialise properties.                                                         !
+      !                                                                                    !
+      !     This is the right and safe place to initialise polygon-level (cgrid) vari-     !
+      ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,     !
+      ! this never happens in off-line runs, but it is quite common in coupled runs...     !
+      ! Whenever one of the nodes receives a sub-domain where all the points are over the  !
+      ! ocean, ED will not assign any polygon in that sub-domain, which means that that    !
+      ! node will have 0 polygons, and the variables cannot be allocated.  If you try to   !
+      ! access the polygon level variable outside the loop, then the model crashes due to  !
+      ! segmentation violation (a bad thing), whereas by putting the variables here both   !
+      ! the off-line model and the coupled runs will work, because this loop will be       !
+      ! skipped when there is no polygon.                                                  !
+      !------------------------------------------------------------------------------------!
+      ! cgrid%blah(ipy) = 0.0 ! <<- This way works for all cases. 
+      !------------------------------------------------------------------------------------!
+      cgrid%nplant              (:,:,ipy) = 0.0
+      cgrid%agb                 (:,:,ipy) = 0.0
+      cgrid%lai                 (:,:,ipy) = 0.0
+      cgrid%wai                 (:,:,ipy) = 0.0
+      cgrid%basal_area          (:,:,ipy) = 0.0
+      cgrid%bdead               (:,:,ipy) = 0.0
+      cgrid%balive              (:,:,ipy) = 0.0
+      cgrid%bleaf               (:,:,ipy) = 0.0
+      cgrid%broot               (:,:,ipy) = 0.0
+      cgrid%bsapwooda           (:,:,ipy) = 0.0
+      cgrid%bsapwoodb           (:,:,ipy) = 0.0
+      cgrid%bseeds              (:,:,ipy) = 0.0
+      cgrid%bstorage            (:,:,ipy) = 0.0
+      cgrid%bdead_n             (:,:,ipy) = 0.0
+      cgrid%balive_n            (:,:,ipy) = 0.0
+      cgrid%bleaf_n             (:,:,ipy) = 0.0
+      cgrid%broot_n             (:,:,ipy) = 0.0
+      cgrid%bsapwooda_n         (:,:,ipy) = 0.0
+      cgrid%bsapwoodb_n         (:,:,ipy) = 0.0
+      cgrid%bseeds_n            (:,:,ipy) = 0.0
+      cgrid%bstorage_n          (:,:,ipy) = 0.0
+      cgrid%leaf_maintenance    (:,:,ipy) = 0.0
+      cgrid%root_maintenance    (:,:,ipy) = 0.0
+      cgrid%leaf_drop           (:,:,ipy) = 0.0
+      cgrid%fast_soil_c             (ipy) = 0.0
+      cgrid%slow_soil_c             (ipy) = 0.0
+      cgrid%struct_soil_c           (ipy) = 0.0
+      cgrid%struct_soil_l           (ipy) = 0.0
+      cgrid%cwd_c                   (ipy) = 0.0
+      cgrid%fast_soil_n             (ipy) = 0.0
+      cgrid%mineral_soil_n          (ipy) = 0.0
+      cgrid%cwd_n                   (ipy) = 0.0
+      !------------------------------------------------------------------------------------!
+      !     Some of these variables are redundant with variables above.  Perhaps we should !
+      ! find a single way to report them.                                                  !
+      !------------------------------------------------------------------------------------!
+      cgrid%Nbiomass_uptake         (ipy) = 0.0
+      cgrid%Cleaf_litter_flux       (ipy) = 0.0
+      cgrid%Croot_litter_flux       (ipy) = 0.0
+      cgrid%Nleaf_litter_flux       (ipy) = 0.0
+      cgrid%Nroot_litter_flux       (ipy) = 0.0
+      cgrid%Ngross_min              (ipy) = 0.0
+      cgrid%Nnet_min                (ipy) = 0.0
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !----- Inverse of this polygon area (it should be always 1.) ------------------------!
+      poly_area_i = 1./sum(cpoly%area)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Loop over sites.                                                               !
+      !------------------------------------------------------------------------------------!
+      siteloop: do isi=1,cpoly%nsites
+         csite => cpoly%site(isi)
+
+         !----- Inverse of this site area (it should be always 1.) ------------------------!
+         site_area_i=1./sum(csite%area)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Site weight. --------------------------------------------------------------!
+         site_wgt = cpoly%area(isi) * poly_area_i
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Loop over patches.                                                          !
+         !---------------------------------------------------------------------------------!
+         patchloop: do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+
+
+            !----- Site weight. -----------------------------------------------------------!
+            patch_wgt = csite%area(ipa) * site_area_i * site_wgt
+            !------------------------------------------------------------------------------!
+
+
+            !----- Integrate soil properties. ---------------------------------------------!
+            cgrid%fast_soil_c   (ipy) = cgrid%fast_soil_c        (ipy)                     &
+                                      + csite%fast_soil_c        (ipa)                     &
+                                      * patch_wgt
+            cgrid%slow_soil_c   (ipy) = cgrid%slow_soil_c        (ipy)                     &
+                                      + csite%slow_soil_c        (ipa)                     &
+                                      * patch_wgt
+            cgrid%struct_soil_c (ipy) = cgrid%struct_soil_c      (ipy)                     &
+                                      + csite%structural_soil_c  (ipa)                     &
+                                      * patch_wgt
+            cgrid%struct_soil_l (ipy) = cgrid%struct_soil_l      (ipy)                     &
+                                      + csite%structural_soil_l  (ipa)                     &
+                                      * patch_wgt
+            cgrid%fast_soil_n   (ipy) = cgrid%fast_soil_n        (ipy)                     &
+                                      + csite%fast_soil_n        (ipa)                     &
+                                      * patch_wgt
+            cgrid%mineral_soil_n(ipy) = cgrid%mineral_soil_n     (ipy)                     &
+                                      + csite%mineralized_soil_n (ipa)                     &
+                                      * patch_wgt
+            !------------------------------------------------------------------------------!
+            !     I am definitely not sure about the way I did CWD.  I just used the same  !
+            ! fraction used to compute cwd_rh in soil_rh (soil_respiration.f90) to         !
+            ! determine the fraction of the pools that are CWD.                            !
+            !------------------------------------------------------------------------------!
+            cgrid%cwd_c         (ipy) = cgrid%cwd_c              (ipy)                     &
+                                      + ( csite%slow_soil_c      (ipa)                     &
+                                        + csite%structural_soil_c(ipa) )                   &
+                                      * cwd_frac * patch_wgt
+            cgrid%cwd_n         (ipy) = cgrid%cwd_n              (ipy)                     &
+                                      + ( csite%slow_soil_c      (ipa) / c2n_slow          &
+                                        + csite%structural_soil_c(ipa) / c2n_structural )  &
+                                      * cwd_frac * patch_wgt
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Zero the root fraction (patch-level diagnostic). -----------------------!
+            csite%rootdense(:,ipa) = 0.
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Loop over cohorts.                                                       !
+            !------------------------------------------------------------------------------!
+            cohortloop: do ico=1,cpatch%ncohorts
+               !----- Find the PFT and DBH class to which this cohort belongs. ------------!
+               p = cpatch%pft(ico)
+               d = max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !    Rooting fraction: step 1, find root biomass per cubic meter            !
+               !    broot*nplant/rooting_depth   [kg/plant]*[plant/m2]/[m]                 !
+               !---------------------------------------------------------------------------!
+               rdepth = sum(dslz(cpatch%krdepth(ico):nzg))
+               do k=cpatch%krdepth(ico),nzg
+                  csite%rootdense(k,ipa) = csite%rootdense(k,ipa)                          &
+                                         + cpatch%broot(ico)*cpatch%nplant(ico) / rdepth
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !    Integrate cohort-based properties.  Make sure that the polygon-        !
+               ! -level gets the right units (i.e., no /plant, but /m2).                   !
+               !---------------------------------------------------------------------------!
+               cgrid%nplant          (p,d,ipy) = cgrid%nplant          (p,d,ipy)           &
+                                               + cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%agb             (p,d,ipy) = cgrid%agb             (p,d,ipy)           &
+                                               + cpatch%agb                (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%lai             (p,d,ipy) = cgrid%lai             (p,d,ipy)           &
+                                               + cpatch%lai                (ico)           &
+!                                               * cpatch%nplant             (ico)
+                                               *patch_wgt   ! RGK: MLOr340
+               cgrid%wai             (p,d,ipy) = cgrid%wai             (p,d,ipy)           &
+                                               + cpatch%wai                (ico)           &
+!                                               * cpatch%nplant             (ico)
+                                               *patch_wgt    ! RGK: MLOr340
+               cgrid%basal_area      (p,d,ipy) = cgrid%basal_area      (p,d,ipy)           &
+                                               + cpatch%basarea            (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bdead           (p,d,ipy) = cgrid%bdead           (p,d,ipy)           &
+                                               + cpatch%bdead              (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%balive          (p,d,ipy) = cgrid%balive          (p,d,ipy)           &
+                                               + cpatch%balive             (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bleaf           (p,d,ipy) = cgrid%bleaf           (p,d,ipy)           &
+                                               + cpatch%bleaf              (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%broot           (p,d,ipy) = cgrid%broot           (p,d,ipy)           &
+                                               + cpatch%broot              (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bsapwooda       (p,d,ipy) = cgrid%bsapwooda       (p,d,ipy)           &
+                                               + cpatch%bsapwooda          (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bsapwoodb       (p,d,ipy) = cgrid%bsapwoodb       (p,d,ipy)           &
+                                               + cpatch%bsapwoodb          (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bseeds          (p,d,ipy) = cgrid%bseeds          (p,d,ipy)           &
+                                               + cpatch%bseeds             (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bstorage        (p,d,ipy) = cgrid%bstorage        (p,d,ipy)           &
+                                               + cpatch%bstorage           (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bdead_n         (p,d,ipy) = cgrid%bdead_n         (p,d,ipy)           &
+                                               + cpatch%bdead              (ico)           &
+                                               / c2n_stem                    (p)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%balive_n        (p,d,ipy) = cgrid%balive_n        (p,d,ipy)           &
+                                               + ( ( cpatch%bleaf          (ico)           &
+                                                   + cpatch%broot          (ico) )         &
+                                                   / c2n_leaf                (p)           &
+                                                 + ( cpatch%bsapwooda      (ico)           &
+                                                   + cpatch%bsapwoodb      (ico) )         &
+                                                   / c2n_stem                (p)   )       &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bleaf_n         (p,d,ipy) = cgrid%bleaf_n         (p,d,ipy)           &
+                                               + cpatch%bleaf              (ico)           &
+                                               / c2n_leaf                    (p)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%broot_n         (p,d,ipy) = cgrid%broot_n         (p,d,ipy)           &
+                                               + cpatch%broot              (ico)           &
+                                               / c2n_leaf                    (p)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bsapwooda_n     (p,d,ipy) = cgrid%bsapwooda_n     (p,d,ipy)           &
+                                               + cpatch%bsapwooda          (ico)           &
+                                               / c2n_stem                    (p)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bsapwoodb_n     (p,d,ipy) = cgrid%bsapwoodb_n     (p,d,ipy)           &
+                                               + cpatch%bsapwoodb          (ico)           &
+                                               / c2n_stem                    (p)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bseeds_n        (p,d,ipy) = cgrid%bseeds_n        (p,d,ipy)           &
+                                               + cpatch%bseeds             (ico)           &
+                                               / c2n_recruit                 (p)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%bstorage_n      (p,d,ipy) = cgrid%bstorage_n      (p,d,ipy)           &
+                                               + cpatch%bstorage           (ico)           &
+                                               / c2n_storage                               &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%leaf_maintenance(p,d,ipy) = cgrid%leaf_maintenance(p,d,ipy)           &
+                                               + cpatch%leaf_maintenance   (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%root_maintenance(p,d,ipy) = cgrid%root_maintenance(p,d,ipy)           &
+                                               + cpatch%root_maintenance   (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%leaf_drop       (p,d,ipy) = cgrid%leaf_drop       (p,d,ipy)           &
+                                               + cpatch%leaf_drop          (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !   CHECK! CHECK! CHECK! CHECK! CHECK! CHECK! CHECK! CHECK! CHECK! CHECK!   !
+               !---------------------------------------------------------------------------!
+               !   These variables were originally in integrate_ed_daily_output_flux, I    !
+               ! moved them to here just to be consistent (they are not "dmean"            !
+               ! variables).  However, they are slightly different than the original,      !
+               ! which were missing nplant (so the results were in not in units of         !
+               ! kg/m2/yr, but kg/plant/yr).                                               !
+               !---------------------------------------------------------------------------!
+               cgrid%Cleaf_litter_flux(ipy) = cgrid%Cleaf_litter_flux(ipy)                 &
+                                            + cpatch%leaf_maintenance(ico)                 &
+                                            * cpatch%nplant          (ico)                 &
+                                            * patch_wgt
+               cgrid%Croot_litter_flux(ipy) = cgrid%Croot_litter_flux(ipy)                 &
+                                            + cpatch%root_maintenance(ico)                 &
+                                            * cpatch%nplant          (ico)                 &
+                                            * patch_wgt
+               cgrid%Nleaf_litter_flux(ipy) = cgrid%Cleaf_litter_flux(ipy)                 &
+                                            + cpatch%leaf_maintenance(ico) / c2n_leaf(p)   &
+                                            * cpatch%nplant          (ico)                 &
+                                            * patch_wgt
+               cgrid%Nroot_litter_flux(ipy) = cgrid%Croot_litter_flux(ipy)                 &
+                                            + cpatch%root_maintenance(ico) / c2n_leaf(p)   &
+                                            * cpatch%nplant          (ico)                 &
+                                            * patch_wgt
+               !---------------------------------------------------------------------------!
+            end do cohortloop
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Update the patch-related N budget variables.                              !
+            !------------------------------------------------------------------------------!
+            cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                             &
+                                       + csite%mineralized_N_input   (ipa)   * patch_wgt
+            cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                             &
+                                       + ( csite%mineralized_N_input (ipa)                 &
+                                         - csite%mineralized_N_loss  (ipa) ) * patch_wgt
+            cgrid%Nbiomass_uptake(ipy) = cgrid%Ngross_min(ipy)                             &
+                                       + csite%total_plant_nitrogen_uptake(ipa)* patch_wgt
+            !------------------------------------------------------------------------------!
+
+         end do patchloop
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+   end do polyloop
+   !---------------------------------------------------------------------------------------!
    return
 end subroutine update_polygon_derived_props
 !==========================================================================================!
@@ -722,132 +1177,178 @@ end subroutine update_model_time_dm
 !            rescaled.  Variables whose units are per plant, m2 leaf, or m2 wood           !
 !            SHOULD NOT be included here.                                                  !
 !------------------------------------------------------------------------------------------!
-subroutine update_cohort_extensive_props(cpatch,aco,zco,scale_fac)
+subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
    use ed_state_vars, only : patchtype    ! ! structure
-   use ed_misc_coms , only : idoutput     & ! intent(in)
-                           , iqoutput     & ! intent(in)
-                           , imoutput     ! ! intent(in)
+   use ed_misc_coms , only : writing_long & ! intent(in)
+                           , writing_eorq & ! intent(in)
+                           , writing_dcyc ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch    ! Current patch
    integer        , intent(in) :: aco       ! First cohort to be rescaled
    integer        , intent(in) :: zco       ! Last  cohort to be rescaled
-   real           , intent(in) :: scale_fac ! Scale factor
+   real           , intent(in) :: mult      ! Scale factor
    !----- Local variables. ----------------------------------------------------------------!
    integer                     :: ico       ! Cohort counter
+   real                        :: mult_2    ! Square of the scale factor
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Set up the scale factor for monthly mean sum of squares. ------------------------!
+   mult_2 = mult * mult
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !     Loop over all cohorts.                                                            !
    !---------------------------------------------------------------------------------------!
    cohortloop: do ico=aco,zco
-      cpatch%lai                (ico) = cpatch%lai                (ico) * scale_fac
-      cpatch%wai                (ico) = cpatch%wai                (ico) * scale_fac
-      cpatch%nplant             (ico) = cpatch%nplant             (ico) * scale_fac
-      cpatch%mean_gpp           (ico) = cpatch%mean_gpp           (ico) * scale_fac
-      cpatch%mean_leaf_resp     (ico) = cpatch%mean_leaf_resp     (ico) * scale_fac
-      cpatch%mean_root_resp     (ico) = cpatch%mean_root_resp     (ico) * scale_fac
-      cpatch%mean_growth_resp   (ico) = cpatch%mean_growth_resp   (ico) * scale_fac
-      cpatch%mean_storage_resp  (ico) = cpatch%mean_storage_resp  (ico) * scale_fac
-      cpatch%mean_vleaf_resp    (ico) = cpatch%mean_vleaf_resp    (ico) * scale_fac
-      cpatch%today_gpp          (ico) = cpatch%today_gpp          (ico) * scale_fac
-      cpatch%today_nppleaf      (ico) = cpatch%today_nppleaf      (ico) * scale_fac
-      cpatch%today_nppfroot     (ico) = cpatch%today_nppfroot     (ico) * scale_fac
-      cpatch%today_nppsapwood   (ico) = cpatch%today_nppsapwood   (ico) * scale_fac
-      cpatch%today_nppcroot     (ico) = cpatch%today_nppcroot     (ico) * scale_fac
-      cpatch%today_nppseeds     (ico) = cpatch%today_nppseeds     (ico) * scale_fac
-      cpatch%today_nppwood      (ico) = cpatch%today_nppwood      (ico) * scale_fac
-      cpatch%today_nppdaily     (ico) = cpatch%today_nppdaily     (ico) * scale_fac
-      cpatch%today_gpp_pot      (ico) = cpatch%today_gpp_pot      (ico) * scale_fac
-      cpatch%today_gpp_lightmax (ico) = cpatch%today_gpp_lightmax (ico) * scale_fac
-      cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico) * scale_fac
-      cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico) * scale_fac
-      cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico) * scale_fac
-      cpatch%gpp                (ico) = cpatch%gpp                (ico) * scale_fac
-      cpatch%leaf_respiration   (ico) = cpatch%leaf_respiration   (ico) * scale_fac
-      cpatch%root_respiration   (ico) = cpatch%root_respiration   (ico) * scale_fac
-      cpatch%monthly_dndt       (ico) = cpatch%monthly_dndt       (ico) * scale_fac
-      cpatch%leaf_water         (ico) = cpatch%leaf_water         (ico) * scale_fac
-      cpatch%leaf_hcap          (ico) = cpatch%leaf_hcap          (ico) * scale_fac
-      cpatch%leaf_energy        (ico) = cpatch%leaf_energy        (ico) * scale_fac
-      cpatch%wood_water         (ico) = cpatch%wood_water         (ico) * scale_fac
-      cpatch%wood_hcap          (ico) = cpatch%wood_hcap          (ico) * scale_fac
-      cpatch%wood_energy        (ico) = cpatch%wood_energy        (ico) * scale_fac
-      !----- Energy and water fluxes. -----------------------------------------------------!
-      cpatch%mean_par_l         (ico) = cpatch%mean_par_l         (ico) * scale_fac
-      cpatch%mean_par_l_beam    (ico) = cpatch%mean_par_l_beam    (ico) * scale_fac
-      cpatch%mean_par_l_diff    (ico) = cpatch%mean_par_l_diff    (ico) * scale_fac
-      cpatch%mean_rshort_l      (ico) = cpatch%mean_rshort_l      (ico) * scale_fac
-      cpatch%mean_rlong_l       (ico) = cpatch%mean_rlong_l       (ico) * scale_fac
-      cpatch%mean_sensible_lc   (ico) = cpatch%mean_sensible_lc   (ico) * scale_fac
-      cpatch%mean_vapor_lc      (ico) = cpatch%mean_vapor_lc      (ico) * scale_fac
-      cpatch%mean_transp        (ico) = cpatch%mean_transp        (ico) * scale_fac
-      cpatch%mean_intercepted_al(ico) = cpatch%mean_intercepted_al(ico) * scale_fac
-      cpatch%mean_wshed_lg      (ico) = cpatch%mean_wshed_lg      (ico) * scale_fac
-      cpatch%mean_rshort_w      (ico) = cpatch%mean_rshort_w      (ico) * scale_fac
-      cpatch%mean_rlong_w       (ico) = cpatch%mean_rlong_w       (ico) * scale_fac
-      cpatch%mean_sensible_wc   (ico) = cpatch%mean_sensible_wc   (ico) * scale_fac
-      cpatch%mean_vapor_wc      (ico) = cpatch%mean_vapor_wc      (ico) * scale_fac
-      cpatch%mean_intercepted_aw(ico) = cpatch%mean_intercepted_aw(ico) * scale_fac
-      cpatch%mean_wshed_wg      (ico) = cpatch%mean_wshed_wg      (ico) * scale_fac
+      cpatch%lai                (ico) = cpatch%lai                (ico) * mult
+      cpatch%wai                (ico) = cpatch%wai                (ico) * mult
+      cpatch%nplant             (ico) = cpatch%nplant             (ico) * mult
+      cpatch%today_gpp          (ico) = cpatch%today_gpp          (ico) * mult
+      cpatch%today_nppleaf      (ico) = cpatch%today_nppleaf      (ico) * mult
+      cpatch%today_nppfroot     (ico) = cpatch%today_nppfroot     (ico) * mult
+      cpatch%today_nppsapwood   (ico) = cpatch%today_nppsapwood   (ico) * mult
+      cpatch%today_nppcroot     (ico) = cpatch%today_nppcroot     (ico) * mult
+      cpatch%today_nppseeds     (ico) = cpatch%today_nppseeds     (ico) * mult
+      cpatch%today_nppwood      (ico) = cpatch%today_nppwood      (ico) * mult
+      cpatch%today_nppdaily     (ico) = cpatch%today_nppdaily     (ico) * mult
+      cpatch%today_gpp_pot      (ico) = cpatch%today_gpp_pot      (ico) * mult
+      cpatch%today_gpp_lightmax (ico) = cpatch%today_gpp_lightmax (ico) * mult
+      cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico) * mult
+      cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico) * mult
+      cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico) * mult
+      cpatch%gpp                (ico) = cpatch%gpp                (ico) * mult
+      cpatch%leaf_respiration   (ico) = cpatch%leaf_respiration   (ico) * mult
+      cpatch%root_respiration   (ico) = cpatch%root_respiration   (ico) * mult
+      cpatch%monthly_dndt       (ico) = cpatch%monthly_dndt       (ico) * mult
+      cpatch%leaf_water         (ico) = cpatch%leaf_water         (ico) * mult
+      cpatch%leaf_hcap          (ico) = cpatch%leaf_hcap          (ico) * mult
+      cpatch%leaf_energy        (ico) = cpatch%leaf_energy        (ico) * mult
+      cpatch%wood_water         (ico) = cpatch%wood_water         (ico) * mult
+      cpatch%wood_hcap          (ico) = cpatch%wood_hcap          (ico) * mult
+      cpatch%wood_energy        (ico) = cpatch%wood_energy        (ico) * mult
       !----- Crown area shall not exceed 1. -----------------------------------------------!
-      cpatch%crown_area         (ico) = min(1.,cpatch%crown_area  (ico) * scale_fac)
-      !----- Carbon flux monthly means are extensive, we must convert them. ---------------!
-      if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
-         cpatch%dmean_par_l         (ico) = cpatch%dmean_par_l         (ico) * scale_fac
-         cpatch%dmean_par_l_beam    (ico) = cpatch%dmean_par_l_beam    (ico) * scale_fac
-         cpatch%dmean_par_l_diff    (ico) = cpatch%dmean_par_l_diff    (ico) * scale_fac
-         cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico) * scale_fac
-         cpatch%dmean_rlong_l       (ico) = cpatch%dmean_rlong_l       (ico) * scale_fac
-         cpatch%dmean_sensible_lc   (ico) = cpatch%dmean_sensible_lc   (ico) * scale_fac
-         cpatch%dmean_vapor_lc      (ico) = cpatch%dmean_vapor_lc      (ico) * scale_fac
-         cpatch%dmean_transp        (ico) = cpatch%dmean_transp        (ico) * scale_fac
-         cpatch%dmean_intercepted_al(ico) = cpatch%dmean_intercepted_al(ico) * scale_fac
-         cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico) * scale_fac
-         cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico) * scale_fac
-         cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico) * scale_fac
-         cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico) * scale_fac
-         cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico) * scale_fac
-         cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico) * scale_fac
-         cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico) * scale_fac
+      cpatch%crown_area         (ico) = min(1.,cpatch%crown_area  (ico) * mult)
+      !----- Fast-scale means. ------------------------------------------------------------!
+      cpatch%fmean_leaf_energy   (ico) = cpatch%fmean_leaf_energy   (ico) * mult
+      cpatch%fmean_leaf_water    (ico) = cpatch%fmean_leaf_water    (ico) * mult
+      cpatch%fmean_leaf_hcap     (ico) = cpatch%fmean_leaf_hcap     (ico) * mult
+      cpatch%fmean_wood_energy   (ico) = cpatch%fmean_wood_energy   (ico) * mult
+      cpatch%fmean_wood_water    (ico) = cpatch%fmean_wood_water    (ico) * mult
+      cpatch%fmean_wood_hcap     (ico) = cpatch%fmean_wood_hcap     (ico) * mult
+      cpatch%fmean_water_supply  (ico) = cpatch%fmean_water_supply  (ico) * mult
+      cpatch%fmean_par_l         (ico) = cpatch%fmean_par_l         (ico) * mult
+      cpatch%fmean_par_l_beam    (ico) = cpatch%fmean_par_l_beam    (ico) * mult
+      cpatch%fmean_par_l_diff    (ico) = cpatch%fmean_par_l_diff    (ico) * mult
+      cpatch%fmean_rshort_l      (ico) = cpatch%fmean_rshort_l      (ico) * mult
+      cpatch%fmean_rlong_l       (ico) = cpatch%fmean_rlong_l       (ico) * mult
+      cpatch%fmean_sensible_lc   (ico) = cpatch%fmean_sensible_lc   (ico) * mult
+      cpatch%fmean_vapor_lc      (ico) = cpatch%fmean_vapor_lc      (ico) * mult
+      cpatch%fmean_transp        (ico) = cpatch%fmean_transp        (ico) * mult
+      cpatch%fmean_intercepted_al(ico) = cpatch%fmean_intercepted_al(ico) * mult
+      cpatch%fmean_wshed_lg      (ico) = cpatch%fmean_wshed_lg      (ico) * mult
+      cpatch%fmean_rshort_w      (ico) = cpatch%fmean_rshort_w      (ico) * mult
+      cpatch%fmean_rlong_w       (ico) = cpatch%fmean_rlong_w       (ico) * mult
+      cpatch%fmean_sensible_wc   (ico) = cpatch%fmean_sensible_wc   (ico) * mult
+      cpatch%fmean_vapor_wc      (ico) = cpatch%fmean_vapor_wc      (ico) * mult
+      cpatch%fmean_intercepted_aw(ico) = cpatch%fmean_intercepted_aw(ico) * mult
+      cpatch%fmean_wshed_wg      (ico) = cpatch%fmean_wshed_wg      (ico) * mult
+      !----- Daily means. -----------------------------------------------------------------!
+      if (writing_long) then
+         cpatch%dmean_leaf_energy   (ico) = cpatch%dmean_leaf_energy   (ico) * mult
+         cpatch%dmean_leaf_water    (ico) = cpatch%dmean_leaf_water    (ico) * mult
+         cpatch%dmean_leaf_hcap     (ico) = cpatch%dmean_leaf_hcap     (ico) * mult
+         cpatch%dmean_wood_energy   (ico) = cpatch%dmean_wood_energy   (ico) * mult
+         cpatch%dmean_wood_water    (ico) = cpatch%dmean_wood_water    (ico) * mult
+         cpatch%dmean_wood_hcap     (ico) = cpatch%dmean_wood_hcap     (ico) * mult
+         cpatch%dmean_water_supply  (ico) = cpatch%dmean_water_supply  (ico) * mult
+         cpatch%dmean_par_l         (ico) = cpatch%dmean_par_l         (ico) * mult
+         cpatch%dmean_par_l_beam    (ico) = cpatch%dmean_par_l_beam    (ico) * mult
+         cpatch%dmean_par_l_diff    (ico) = cpatch%dmean_par_l_diff    (ico) * mult
+         cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico) * mult
+         cpatch%dmean_rlong_l       (ico) = cpatch%dmean_rlong_l       (ico) * mult
+         cpatch%dmean_sensible_lc   (ico) = cpatch%dmean_sensible_lc   (ico) * mult
+         cpatch%dmean_vapor_lc      (ico) = cpatch%dmean_vapor_lc      (ico) * mult
+         cpatch%dmean_transp        (ico) = cpatch%dmean_transp        (ico) * mult
+         cpatch%dmean_intercepted_al(ico) = cpatch%dmean_intercepted_al(ico) * mult
+         cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico) * mult
+         cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico) * mult
+         cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico) * mult
+         cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico) * mult
+         cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico) * mult
+         cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico) * mult
+         cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico) * mult
       end if
-      if (imoutput > 0 .or. iqoutput > 0) then
-         cpatch%mmean_par_l         (ico) = cpatch%mmean_par_l         (ico) * scale_fac
-         cpatch%mmean_par_l_beam    (ico) = cpatch%mmean_par_l_beam    (ico) * scale_fac
-         cpatch%mmean_par_l_diff    (ico) = cpatch%mmean_par_l_diff    (ico) * scale_fac
-         cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico) * scale_fac
-         cpatch%dmean_rlong_l       (ico) = cpatch%dmean_rlong_l       (ico) * scale_fac
-         cpatch%dmean_sensible_lc   (ico) = cpatch%dmean_sensible_lc   (ico) * scale_fac
-         cpatch%dmean_vapor_lc      (ico) = cpatch%dmean_vapor_lc      (ico) * scale_fac
-         cpatch%dmean_transp        (ico) = cpatch%dmean_transp        (ico) * scale_fac
-         cpatch%dmean_intercepted_al(ico) = cpatch%dmean_intercepted_al(ico) * scale_fac
-         cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico) * scale_fac
-         cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico) * scale_fac
-         cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico) * scale_fac
-         cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico) * scale_fac
-         cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico) * scale_fac
-         cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico) * scale_fac
-         cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico) * scale_fac
+      !----- Monthly means. ---------------------------------------------------------------!
+      if (writing_eorq) then
+         cpatch%mmean_lai           (ico) = cpatch%mmean_lai           (ico) * mult
+         cpatch%mmean_leaf_energy   (ico) = cpatch%mmean_leaf_energy   (ico) * mult
+         cpatch%mmean_leaf_water    (ico) = cpatch%mmean_leaf_water    (ico) * mult
+         cpatch%mmean_leaf_hcap     (ico) = cpatch%mmean_leaf_hcap     (ico) * mult
+         cpatch%mmean_wood_energy   (ico) = cpatch%mmean_wood_energy   (ico) * mult
+         cpatch%mmean_wood_water    (ico) = cpatch%mmean_wood_water    (ico) * mult
+         cpatch%mmean_wood_hcap     (ico) = cpatch%mmean_wood_hcap     (ico) * mult
+         cpatch%mmean_water_supply  (ico) = cpatch%mmean_water_supply  (ico) * mult
+         cpatch%mmean_par_l         (ico) = cpatch%mmean_par_l         (ico) * mult
+         cpatch%mmean_par_l_beam    (ico) = cpatch%mmean_par_l_beam    (ico) * mult
+         cpatch%mmean_par_l_diff    (ico) = cpatch%mmean_par_l_diff    (ico) * mult
+         cpatch%mmean_rshort_l      (ico) = cpatch%mmean_rshort_l      (ico) * mult
+         cpatch%mmean_rlong_l       (ico) = cpatch%mmean_rlong_l       (ico) * mult
+         cpatch%mmean_sensible_lc   (ico) = cpatch%mmean_sensible_lc   (ico) * mult
+         cpatch%mmean_vapor_lc      (ico) = cpatch%mmean_vapor_lc      (ico) * mult
+         cpatch%mmean_transp        (ico) = cpatch%mmean_transp        (ico) * mult
+         cpatch%mmean_intercepted_al(ico) = cpatch%mmean_intercepted_al(ico) * mult
+         cpatch%mmean_wshed_lg      (ico) = cpatch%mmean_wshed_lg      (ico) * mult
+         cpatch%mmean_rshort_w      (ico) = cpatch%mmean_rshort_w      (ico) * mult
+         cpatch%mmean_rlong_w       (ico) = cpatch%mmean_rlong_w       (ico) * mult
+         cpatch%mmean_sensible_wc   (ico) = cpatch%mmean_sensible_wc   (ico) * mult
+         cpatch%mmean_vapor_wc      (ico) = cpatch%mmean_vapor_wc      (ico) * mult
+         cpatch%mmean_intercepted_aw(ico) = cpatch%mmean_intercepted_aw(ico) * mult
+         cpatch%mmean_wshed_wg      (ico) = cpatch%mmean_wshed_wg      (ico) * mult
+         cpatch%mmsqu_gpp           (ico) = cpatch%mmsqu_gpp           (ico) * mult_2
+         cpatch%mmsqu_npp           (ico) = cpatch%mmsqu_npp           (ico) * mult_2
+         cpatch%mmsqu_plresp        (ico) = cpatch%mmsqu_plresp        (ico) * mult_2
+         cpatch%mmsqu_sensible_lc   (ico) = cpatch%mmsqu_sensible_lc   (ico) * mult_2
+         cpatch%mmsqu_vapor_lc      (ico) = cpatch%mmsqu_vapor_lc      (ico) * mult_2
+         cpatch%mmsqu_transp        (ico) = cpatch%mmsqu_transp        (ico) * mult_2
+         cpatch%mmsqu_sensible_wc   (ico) = cpatch%mmsqu_sensible_wc   (ico) * mult_2
+         cpatch%mmsqu_vapor_wc      (ico) = cpatch%mmsqu_vapor_wc      (ico) * mult_2
       end if
-      if (iqoutput > 0) then
-         cpatch%qmean_par_l         (:,ico) = cpatch%qmean_par_l         (:,ico) *scale_fac
-         cpatch%qmean_par_l_beam    (:,ico) = cpatch%qmean_par_l_beam    (:,ico) *scale_fac
-         cpatch%qmean_par_l_diff    (:,ico) = cpatch%qmean_par_l_diff    (:,ico) *scale_fac
-         cpatch%qmean_rshort_l      (:,ico) = cpatch%qmean_rshort_l      (:,ico) *scale_fac
-         cpatch%qmean_rlong_l       (:,ico) = cpatch%qmean_rlong_l       (:,ico) *scale_fac
-         cpatch%qmean_sensible_lc   (:,ico) = cpatch%qmean_sensible_lc   (:,ico) *scale_fac
-         cpatch%qmean_vapor_lc      (:,ico) = cpatch%qmean_vapor_lc      (:,ico) *scale_fac
-         cpatch%qmean_transp        (:,ico) = cpatch%qmean_transp        (:,ico) *scale_fac
-         cpatch%qmean_intercepted_al(:,ico) = cpatch%qmean_intercepted_al(:,ico) *scale_fac
-         cpatch%qmean_wshed_lg      (:,ico) = cpatch%qmean_wshed_lg      (:,ico) *scale_fac
-         cpatch%qmean_rshort_w      (:,ico) = cpatch%qmean_rshort_w      (:,ico) *scale_fac
-         cpatch%qmean_rlong_w       (:,ico) = cpatch%qmean_rlong_w       (:,ico) *scale_fac
-         cpatch%qmean_sensible_wc   (:,ico) = cpatch%qmean_sensible_wc   (:,ico) *scale_fac
-         cpatch%qmean_vapor_wc      (:,ico) = cpatch%qmean_vapor_wc      (:,ico) *scale_fac
-         cpatch%qmean_intercepted_aw(:,ico) = cpatch%qmean_intercepted_aw(:,ico) *scale_fac
-         cpatch%qmean_wshed_wg      (:,ico) = cpatch%qmean_wshed_wg      (:,ico) *scale_fac
+      !----- Mean diel. -------------------------------------------------------------------!
+      if (writing_dcyc) then
+         cpatch%qmean_leaf_energy   (:,ico) = cpatch%qmean_leaf_energy   (:,ico) * mult
+         cpatch%qmean_leaf_water    (:,ico) = cpatch%qmean_leaf_water    (:,ico) * mult
+         cpatch%qmean_leaf_hcap     (:,ico) = cpatch%qmean_leaf_hcap     (:,ico) * mult
+         cpatch%qmean_wood_energy   (:,ico) = cpatch%qmean_wood_energy   (:,ico) * mult
+         cpatch%qmean_wood_water    (:,ico) = cpatch%qmean_wood_water    (:,ico) * mult
+         cpatch%qmean_wood_hcap     (:,ico) = cpatch%qmean_wood_hcap     (:,ico) * mult
+         cpatch%qmean_water_supply  (:,ico) = cpatch%qmean_water_supply  (:,ico) * mult
+         cpatch%qmean_par_l         (:,ico) = cpatch%qmean_par_l         (:,ico) * mult
+         cpatch%qmean_par_l_beam    (:,ico) = cpatch%qmean_par_l_beam    (:,ico) * mult
+         cpatch%qmean_par_l_diff    (:,ico) = cpatch%qmean_par_l_diff    (:,ico) * mult
+         cpatch%qmean_rshort_l      (:,ico) = cpatch%qmean_rshort_l      (:,ico) * mult
+         cpatch%qmean_rlong_l       (:,ico) = cpatch%qmean_rlong_l       (:,ico) * mult
+         cpatch%qmean_sensible_lc   (:,ico) = cpatch%qmean_sensible_lc   (:,ico) * mult
+         cpatch%qmean_vapor_lc      (:,ico) = cpatch%qmean_vapor_lc      (:,ico) * mult
+         cpatch%qmean_transp        (:,ico) = cpatch%qmean_transp        (:,ico) * mult
+         cpatch%qmean_intercepted_al(:,ico) = cpatch%qmean_intercepted_al(:,ico) * mult
+         cpatch%qmean_wshed_lg      (:,ico) = cpatch%qmean_wshed_lg      (:,ico) * mult
+         cpatch%qmean_rshort_w      (:,ico) = cpatch%qmean_rshort_w      (:,ico) * mult
+         cpatch%qmean_rlong_w       (:,ico) = cpatch%qmean_rlong_w       (:,ico) * mult
+         cpatch%qmean_sensible_wc   (:,ico) = cpatch%qmean_sensible_wc   (:,ico) * mult
+         cpatch%qmean_vapor_wc      (:,ico) = cpatch%qmean_vapor_wc      (:,ico) * mult
+         cpatch%qmean_intercepted_aw(:,ico) = cpatch%qmean_intercepted_aw(:,ico) * mult
+         cpatch%qmean_wshed_wg      (:,ico) = cpatch%qmean_wshed_wg      (:,ico) * mult
+         cpatch%qmsqu_gpp           (:,ico) = cpatch%qmsqu_gpp           (:,ico) * mult_2
+         cpatch%qmsqu_npp           (:,ico) = cpatch%qmsqu_npp           (:,ico) * mult_2
+         cpatch%qmsqu_plresp        (:,ico) = cpatch%qmsqu_plresp        (:,ico) * mult_2
+         cpatch%qmsqu_sensible_lc   (:,ico) = cpatch%qmsqu_sensible_lc   (:,ico) * mult_2
+         cpatch%qmsqu_vapor_lc      (:,ico) = cpatch%qmsqu_vapor_lc      (:,ico) * mult_2
+         cpatch%qmsqu_transp        (:,ico) = cpatch%qmsqu_transp        (:,ico) * mult_2
+         cpatch%qmsqu_sensible_wc   (:,ico) = cpatch%qmsqu_sensible_wc   (:,ico) * mult_2
+         cpatch%qmsqu_vapor_wc      (:,ico) = cpatch%qmsqu_vapor_wc      (:,ico) * mult_2
       end if
       !------------------------------------------------------------------------------------!
 

@@ -17,26 +17,17 @@ subroutine set_polygon_coordinates()
    integer                :: npoly
    !---------------------------------------------------------------------------------------!
 
-   gloop: do ifm=1,ngrids
+   gridloop: do ifm=1,ngrids
 
       npoly=gdpy(mynum,ifm)
 
-      ploop: do ipy=1,npoly
+      polyloop: do ipy=1,npoly
          edgrid_g(ifm)%lon(ipy)              = work_v(ifm)%glon   (ipy)
          edgrid_g(ifm)%lat(ipy)              = work_v(ifm)%glat   (ipy)
          edgrid_g(ifm)%xatm(ipy)             = work_v(ifm)%xid    (ipy)
          edgrid_g(ifm)%yatm(ipy)             = work_v(ifm)%yid    (ipy)
-
-         !----- Assign the commonest soil type to the polygon. ----------------------------!
-         edgrid_g(ifm)%ntext_soil(1:nzg,ipy) = work_v(ifm)%ntext(1,ipy)
-         !---------------------------------------------------------------------------------!
-         
-         edgrid_g(ifm)%ncol_soil(ipy)        = work_v(ifm)%nscol(ipy)
-      end do ploop
-
-      
-
-   end do gloop
+      end do polyloop
+   end do gridloop
 
     
    return
@@ -127,6 +118,7 @@ subroutine set_site_defprops()
 
          !------ Allocate the number of sites that have enough area. ----------------------!
          call allocate_polygontype(cpoly,nsite)
+         call soil_default_fill(cgrid,ifm,ipy)
 
          !---------------------------------------------------------------------------------!
          !     Populate the sites.                                                         !
@@ -145,24 +137,12 @@ subroutine set_site_defprops()
                !---------------------------------------------------------------------------!
 
 
-               !------ Initialise the lowest soil layer. ----------------------------------!
-               cpoly%lsl(isi) = cgrid%lsl(ipy)
-               !---------------------------------------------------------------------------!
-
-
                !---------------------------------------------------------------------------!
                !     Use the soil type and populate the site-level soil texture.           !
                !---------------------------------------------------------------------------!
                do k=1,nzg
                   cpoly%ntext_soil(k,isi) = work_v(ifm)%ntext(itext,ipy)
                end do
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Use the polygon-level soil colour to populate the site-level.         !
-               !---------------------------------------------------------------------------!
-               cpoly%ncol_soil(isi) = work_v(ifm)%nscol(ipy)
                !---------------------------------------------------------------------------!
 
 
@@ -242,37 +222,63 @@ end subroutine set_site_defprops
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine fills the lsl variables based on the soil_depth file.  In case       !
-! isoildepthflg was zero, then the layer_index matrix was filled with zeroes, so we do not !
-! need to worry about this here.                                                           !
+!     This subroutine fills the lsl, soil colour, and soil texture based on the defaults.  !
+! In case isoildepthflg was zero, then the layer_index matrix was filled with ones, so we  !
+! do not need to worry about this here.                                                    !
 !------------------------------------------------------------------------------------------!
-subroutine soil_depth_fill(cgrid,igr)
+subroutine soil_default_fill(cgrid,ifm,ipy)
    
    use soil_coms     , only : layer_index ! ! intent(in)
-   use ed_state_vars , only : edtype      ! ! structure
+   use ed_state_vars , only : edtype      & ! structure
+                            , polygontype ! ! structure
+   use ed_work_vars  , only : work_v      ! ! structure
+   use grid_coms     , only : nzg         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(edtype) , target     :: cgrid
-   integer      , intent(in) :: igr
+   type(edtype) , target       :: cgrid
+   integer      , intent(in)   :: ifm
+   integer      , intent(in)   :: ipy
    !----- Local variables -----------------------------------------------------------------!
-   integer                   :: ilat_bin
-   integer                   :: ilon_bin
-   integer                   :: ipy
+   type(polygontype) , pointer :: cpoly
+   integer                     :: ilat_bin
+   integer                     :: ilon_bin
+   integer                     :: isi
+   integer                     :: k
    !---------------------------------------------------------------------------------------!
 
-   do ipy = 1,cgrid%npolygons
-      ilat_bin = min(180,int(90.0 - cgrid%lat(ipy)) + 1)
-      ilon_bin = int(180.0 + cgrid%lon(ipy)) + 1
 
+   ilat_bin = min(180,int(90.0 - cgrid%lat(ipy)) + 1)
+   ilon_bin = int(180.0 + cgrid%lon(ipy)) + 1
+
+   cpoly => cgrid%polygon(ipy)
+   do isi=1,cpoly%nsites
       !------------------------------------------------------------------------------------!
       !    Require at least 2 layers.  This requirement was taken in consideration when    !
       ! layer_index was filled at the first initialization, so it is safe to just copy.    !
       !------------------------------------------------------------------------------------!
-      cgrid%lsl(ipy) =layer_index(ilat_bin,ilon_bin) 
+      cpoly%lsl(isi) =layer_index(ilat_bin,ilon_bin) 
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the commonest soil type and populate the site-level soil texture.          !
+      !------------------------------------------------------------------------------------!
+      do k=1,nzg
+         cpoly%ntext_soil(k,isi) = work_v(ifm)%ntext(1,ipy)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use the polygon-level soil colour to populate the site-level.                  !
+      !------------------------------------------------------------------------------------!
+      cpoly%ncol_soil(isi) = work_v(ifm)%nscol(ipy)
+      !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
 
    return
-end subroutine soil_depth_fill
+end subroutine soil_default_fill
 !==========================================================================================!
 !==========================================================================================!
 
@@ -317,17 +323,9 @@ subroutine load_ecosystem_state()
 
    if (mynum == 1) write(unit=*,fmt='(a)') ' + Doing sequential initialization over nodes.'
 
-   !---------------------------------------------------------------------------------------!
-   ! STEP 1: Find lowest soil layer for each site (derived from soil depth).               !
-   !---------------------------------------------------------------------------------------!
-   do igr=1,ngrids
-      call ed_newgrid(igr)
-      call soil_depth_fill(edgrid_g(igr),igr)
-   end do
-
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 2: Read in Site files and initialize hydrologic adjacencies.                     !
+   ! STEP 1: Read in Site files and initialize hydrologic adjacencies.                     !
    !---------------------------------------------------------------------------------------!
    if (mynum /= 1) &
       call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)

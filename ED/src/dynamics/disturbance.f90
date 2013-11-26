@@ -358,6 +358,8 @@ module disturbance_utils
                      !---------------------------------------------------------------------!
                      call update_patch_thermo_props(csite,new_lu+onsp,new_lu+onsp,nzg,nzs  &
                                                    ,cpoly%ntext_soil(:,isi))
+                     call update_patch_thermo_fmean(csite,new_lu+onsp,new_lu+onsp,nzg      &
+                                                   ,cpoly%ntext_soil(:,isi))
 
                      !----- If the new patch is agriculture, plant it with grasses. -------!
                      if (new_lu == 1) then 
@@ -1228,7 +1230,7 @@ module disturbance_utils
          if (atm_tmp >= t3ple) then
             csite%sfcwater_fracliq(k,np) = 1.0
          else
-            csite%sfcwater_fracliq(k,np) = 1.0
+            csite%sfcwater_fracliq(k,np) = 0.0
          end if
       end do
 
@@ -1268,7 +1270,7 @@ module disturbance_utils
       csite%total_plant_nitrogen_uptake(np) = 0.0
       !------------------------------------------------------------------------------------!
 
-      !----- Initialise all fast variables. -----------------------------------------------!
+      !----- Initialise all fast and long-term variables. ---------------------------------!
       call init_ed_patch_vars(csite,np,np,lsl)
 
       return
@@ -1318,8 +1320,6 @@ module disturbance_utils
       csite%ggbare            (ipa) = csite%ggbare            (ipa) * area_fac
       csite%ggveg             (ipa) = csite%ggveg             (ipa) * area_fac
       csite%rough             (ipa) = csite%rough             (ipa) * area_fac
-      csite%mean_rh           (ipa) = csite%mean_rh           (ipa) * area_fac
-      csite%mean_cwd_rh       (ipa) = csite%mean_cwd_rh       (ipa) * area_fac
       csite%today_A_decomp    (ipa) = csite%today_A_decomp    (ipa) * area_fac
       csite%today_Af_decomp   (ipa) = csite%today_Af_decomp   (ipa) * area_fac
       csite%fsc_in            (ipa) = csite%fsc_in            (ipa) * area_fac
@@ -1343,11 +1343,69 @@ module disturbance_utils
          csite%soil_energy           (k,ipa) = csite%soil_energy    (k,ipa) * area_fac
          csite%soil_water(k,ipa)             = csite%soil_water     (k,ipa) * area_fac
       end do
-      
-      csite%fast_soil_C(ipa)                 = csite%fast_soil_C(ipa)       * area_fac
-      csite%structural_soil_C(ipa)           = csite%structural_soil_C(ipa) * area_fac
-      csite%structural_soil_L(ipa)           = csite%structural_soil_L(ipa) * area_fac
-      csite%fast_soil_N(ipa)                 = csite%fast_soil_N(ipa)       * area_fac
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Fast means must be aggregated as well.                                         !
+      !------------------------------------------------------------------------------------!
+      csite%fmean_rh             (ipa) = csite%fmean_rh             (ipa) * area_fac
+      csite%fmean_cwd_rh         (ipa) = csite%fmean_cwd_rh         (ipa) * area_fac
+      csite%fmean_nep            (ipa) = csite%fmean_nep            (ipa) * area_fac
+      csite%fmean_rk4step        (ipa) = csite%fmean_rk4step        (ipa) * area_fac
+      csite%fmean_available_water(ipa) = csite%fmean_available_water(ipa) * area_fac
+      csite%fmean_can_theiv      (ipa) = csite%fmean_can_theiv      (ipa) * area_fac
+      csite%fmean_can_theta      (ipa) = csite%fmean_can_theta      (ipa) * area_fac
+      csite%fmean_can_vpdef      (ipa) = csite%fmean_can_vpdef      (ipa) * area_fac
+      csite%fmean_can_shv        (ipa) = csite%fmean_can_shv        (ipa) * area_fac
+      csite%fmean_can_co2        (ipa) = csite%fmean_can_co2        (ipa) * area_fac
+      csite%fmean_can_prss       (ipa) = csite%fmean_can_prss       (ipa) * area_fac
+      csite%fmean_gnd_temp       (ipa) = csite%fmean_gnd_temp       (ipa) * area_fac
+      csite%fmean_gnd_shv        (ipa) = csite%fmean_gnd_shv        (ipa) * area_fac
+      csite%fmean_can_ggnd       (ipa) = csite%fmean_can_ggnd       (ipa) * area_fac
+      csite%fmean_sfcw_depth     (ipa) = csite%fmean_sfcw_depth     (ipa) * area_fac
+      csite%fmean_sfcw_energy    (ipa) = csite%fmean_sfcw_energy    (ipa) * area_fac
+      csite%fmean_sfcw_mass      (ipa) = csite%fmean_sfcw_mass      (ipa) * area_fac
+      csite%fmean_rshort_gnd     (ipa) = csite%fmean_rshort_gnd     (ipa) * area_fac
+      csite%fmean_par_gnd        (ipa) = csite%fmean_par_gnd        (ipa) * area_fac
+      csite%fmean_rlong_gnd      (ipa) = csite%fmean_rlong_gnd      (ipa) * area_fac
+      csite%fmean_rlongup        (ipa) = csite%fmean_rlongup        (ipa) * area_fac
+      csite%fmean_parup          (ipa) = csite%fmean_parup          (ipa) * area_fac
+      csite%fmean_nirup          (ipa) = csite%fmean_nirup          (ipa) * area_fac
+      csite%fmean_rshortup       (ipa) = csite%fmean_rshortup       (ipa) * area_fac
+      csite%fmean_rnet           (ipa) = csite%fmean_rnet           (ipa) * area_fac
+      csite%fmean_albedo         (ipa) = csite%fmean_albedo         (ipa) * area_fac
+      csite%fmean_albedo_beam    (ipa) = csite%fmean_albedo_beam    (ipa) * area_fac
+      csite%fmean_albedo_diff    (ipa) = csite%fmean_albedo_diff    (ipa) * area_fac
+      csite%fmean_rlong_albedo   (ipa) = csite%fmean_rlong_albedo   (ipa) * area_fac
+      csite%fmean_ustar          (ipa) = csite%fmean_ustar          (ipa) * area_fac
+      csite%fmean_tstar          (ipa) = csite%fmean_tstar          (ipa) * area_fac
+      csite%fmean_qstar          (ipa) = csite%fmean_qstar          (ipa) * area_fac
+      csite%fmean_cstar          (ipa) = csite%fmean_cstar          (ipa) * area_fac
+      csite%fmean_carbon_ac      (ipa) = csite%fmean_carbon_ac      (ipa) * area_fac
+      csite%fmean_carbon_st      (ipa) = csite%fmean_carbon_st      (ipa) * area_fac
+      csite%fmean_vapor_gc       (ipa) = csite%fmean_vapor_gc       (ipa) * area_fac
+      csite%fmean_vapor_ac       (ipa) = csite%fmean_vapor_ac       (ipa) * area_fac
+      csite%fmean_throughfall    (ipa) = csite%fmean_throughfall    (ipa) * area_fac
+      csite%fmean_runoff         (ipa) = csite%fmean_runoff         (ipa) * area_fac
+      csite%fmean_drainage       (ipa) = csite%fmean_drainage       (ipa) * area_fac
+      csite%fmean_sensible_gc    (ipa) = csite%fmean_sensible_gc    (ipa) * area_fac
+      csite%fmean_sensible_ac    (ipa) = csite%fmean_sensible_ac    (ipa) * area_fac
+      csite%fmean_qthroughfall   (ipa) = csite%fmean_qthroughfall   (ipa) * area_fac
+      csite%fmean_qrunoff        (ipa) = csite%fmean_qrunoff        (ipa) * area_fac
+      csite%fmean_qdrainage      (ipa) = csite%fmean_qdrainage      (ipa) * area_fac
+
+      do k=1, nzg
+         csite%fmean_soil_energy(k,ipa) = csite%fmean_soil_energy(k,ipa) * area_fac
+         csite%fmean_soil_water (k,ipa) = csite%fmean_soil_water (k,ipa) * area_fac
+         csite%fmean_smoist_gg  (k,ipa) = csite%fmean_smoist_gg  (k,ipa) * area_fac
+         csite%fmean_transloss  (k,ipa) = csite%fmean_transloss  (k,ipa) * area_fac
+         csite%fmean_sensible_gg(k,ipa) = csite%fmean_sensible_gg(k,ipa) * area_fac
+      end do
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine normal_patch_vars
    !=======================================================================================!
@@ -1364,11 +1422,13 @@ module disturbance_utils
    ! the new, disturbed patch (np).                                                        !
    !---------------------------------------------------------------------------------------!
    subroutine increment_patch_vars(csite,np, cp, area_fac)
-      use ed_state_vars, only : sitetype  & ! structure
-                              , patchtype ! ! structure
-      use ed_max_dims  , only : n_pft     ! ! intent(in)
-      use grid_coms    , only : nzg       ! ! intent(in)
-
+      use ed_state_vars, only : sitetype     & ! structure
+                              , patchtype    ! ! structure
+      use ed_max_dims  , only : n_pft        ! ! intent(in)
+      use grid_coms    , only : nzg          ! ! intent(in)
+      use ed_misc_coms , only : writing_long & ! intent(in)
+                              , writing_eorq & ! intent(in)
+                              , writing_dcyc ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype), target      :: csite
@@ -1377,6 +1437,7 @@ module disturbance_utils
       real          , intent(in)  :: area_fac
       !----- Local variables. -------------------------------------------------------------!
       integer                     :: k
+      integer                     :: t
       !------------------------------------------------------------------------------------!
 
       csite%fast_soil_C                (np) = csite%fast_soil_C                (np)        &
@@ -1445,12 +1506,6 @@ module disturbance_utils
       csite%rough                      (np) = csite%rough                      (np)        &
                                             + csite%rough                      (cp)        &
                                             * area_fac
-      csite%mean_rh                    (np) = csite%mean_rh                    (np)        &
-                                            + csite%mean_rh                    (cp)        &
-                                            * area_fac
-      csite%mean_cwd_rh                (np) = csite%mean_cwd_rh                (np)        &
-                                            + csite%mean_cwd_rh                (cp)        &
-                                            * area_fac
       csite%today_A_decomp             (np) = csite%today_A_decomp             (np)        &
                                             + csite%today_A_decomp             (cp)        &
                                             * area_fac
@@ -1495,10 +1550,878 @@ module disturbance_utils
          csite%soil_energy           (k,np) = csite%soil_energy              (k,np)        &
                                             + csite%soil_energy              (k,cp)        &
                                             * area_fac
-         csite%soil_water(k,np)             = csite%soil_water               (k,np)        &
+         csite%soil_water            (k,np) = csite%soil_water               (k,np)        &
                                             + csite%soil_water               (k,cp)        &
                                             * area_fac
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Fast means must be aggregated as well.                                         !
+      !------------------------------------------------------------------------------------!
+      csite%fmean_rh             (np) = csite%fmean_rh             (np)                    &
+                                      + csite%fmean_rh             (cp)                    &
+                                      * area_fac 
+      csite%fmean_cwd_rh         (np) = csite%fmean_cwd_rh         (np)                    &
+                                      + csite%fmean_cwd_rh         (cp)                    &
+                                      * area_fac 
+      csite%fmean_nep            (np) = csite%fmean_nep            (np)                    &
+                                      + csite%fmean_nep            (cp)                    &
+                                      * area_fac 
+      csite%fmean_rk4step        (np) = csite%fmean_rk4step        (np)                    &
+                                      + csite%fmean_rk4step        (cp)                    &
+                                      * area_fac 
+      csite%fmean_available_water(np) = csite%fmean_available_water(np)                    &
+                                      + csite%fmean_available_water(cp)                    &
+                                      * area_fac 
+      csite%fmean_can_theiv      (np) = csite%fmean_can_theiv      (np)                    &
+                                      + csite%fmean_can_theiv      (cp)                    &
+                                      * area_fac 
+      csite%fmean_can_theta      (np) = csite%fmean_can_theta      (np)                    &
+                                      + csite%fmean_can_theta      (cp)                    &
+                                      * area_fac 
+      csite%fmean_can_vpdef      (np) = csite%fmean_can_vpdef      (np)                    &
+                                      + csite%fmean_can_vpdef      (cp)                    &
+                                      * area_fac 
+      csite%fmean_can_shv        (np) = csite%fmean_can_shv        (np)                    &
+                                      + csite%fmean_can_shv        (cp)                    &
+                                      * area_fac 
+      csite%fmean_can_co2        (np) = csite%fmean_can_co2        (np)                    &
+                                      + csite%fmean_can_co2        (cp)                    &
+                                      * area_fac 
+      csite%fmean_can_prss       (np) = csite%fmean_can_prss       (np)                    &
+                                      + csite%fmean_can_prss       (cp)                    &
+                                      * area_fac 
+      csite%fmean_gnd_temp       (np) = csite%fmean_gnd_temp       (np)                    &
+                                      + csite%fmean_gnd_temp       (cp)                    &
+                                      * area_fac 
+      csite%fmean_gnd_shv        (np) = csite%fmean_gnd_shv        (np)                    &
+                                      + csite%fmean_gnd_shv        (cp)                    &
+                                      * area_fac 
+      csite%fmean_can_ggnd       (np) = csite%fmean_can_ggnd       (np)                    &
+                                      + csite%fmean_can_ggnd       (cp)                    &
+                                      * area_fac 
+      csite%fmean_sfcw_depth     (np) = csite%fmean_sfcw_depth     (np)                    &
+                                      + csite%fmean_sfcw_depth     (cp)                    &
+                                      * area_fac 
+      !----- Integrate pounding energy in J/m2. -------------------------------------------!
+      csite%fmean_sfcw_energy    (np) = csite%fmean_sfcw_energy    (np)                    &
+                                      + csite%fmean_sfcw_energy    (cp)                    &
+                                      * csite%fmean_sfcw_mass      (cp)                    &
+                                      * area_fac 
+      csite%fmean_sfcw_mass      (np) = csite%fmean_sfcw_mass      (np)                    &
+                                      + csite%fmean_sfcw_mass      (cp)                    &
+                                      * area_fac 
+      csite%fmean_rshort_gnd     (np) = csite%fmean_rshort_gnd     (np)                    &
+                                      + csite%fmean_rshort_gnd     (cp)                    &
+                                      * area_fac 
+      csite%fmean_par_gnd        (np) = csite%fmean_par_gnd        (np)                    &
+                                      + csite%fmean_par_gnd        (cp)                    &
+                                      * area_fac 
+      csite%fmean_rlong_gnd      (np) = csite%fmean_rlong_gnd      (np)                    &
+                                      + csite%fmean_rlong_gnd      (cp)                    &
+                                      * area_fac 
+      csite%fmean_rlongup        (np) = csite%fmean_rlongup        (np)                    &
+                                      + csite%fmean_rlongup        (cp)                    &
+                                      * area_fac 
+      csite%fmean_parup          (np) = csite%fmean_parup          (np)                    &
+                                      + csite%fmean_parup          (cp)                    &
+                                      * area_fac 
+      csite%fmean_nirup          (np) = csite%fmean_nirup          (np)                    &
+                                      + csite%fmean_nirup          (cp)                    &
+                                      * area_fac 
+      csite%fmean_rshortup       (np) = csite%fmean_rshortup       (np)                    &
+                                      + csite%fmean_rshortup       (cp)                    &
+                                      * area_fac 
+      csite%fmean_rnet           (np) = csite%fmean_rnet           (np)                    &
+                                      + csite%fmean_rnet           (cp)                    &
+                                      * area_fac 
+      csite%fmean_albedo         (np) = csite%fmean_albedo         (np)                    &
+                                      + csite%fmean_albedo         (cp)                    &
+                                      * area_fac 
+      csite%fmean_albedo_beam    (np) = csite%fmean_albedo_beam    (np)                    &
+                                      + csite%fmean_albedo_beam    (cp)                    &
+                                      * area_fac 
+      csite%fmean_albedo_diff    (np) = csite%fmean_albedo_diff    (np)                    &
+                                      + csite%fmean_albedo_diff    (cp)                    &
+                                      * area_fac 
+      csite%fmean_rlong_albedo   (np) = csite%fmean_rlong_albedo   (np)                    &
+                                      + csite%fmean_rlong_albedo   (cp)                    &
+                                      * area_fac 
+      csite%fmean_ustar          (np) = csite%fmean_ustar          (np)                    &
+                                      + csite%fmean_ustar          (cp)                    &
+                                      * area_fac 
+      csite%fmean_tstar          (np) = csite%fmean_tstar          (np)                    &
+                                      + csite%fmean_tstar          (cp)                    &
+                                      * area_fac 
+      csite%fmean_qstar          (np) = csite%fmean_qstar          (np)                    &
+                                      + csite%fmean_qstar          (cp)                    &
+                                      * area_fac 
+      csite%fmean_cstar          (np) = csite%fmean_cstar          (np)                    &
+                                      + csite%fmean_cstar          (cp)                    &
+                                      * area_fac 
+      csite%fmean_carbon_ac      (np) = csite%fmean_carbon_ac      (np)                    &
+                                      + csite%fmean_carbon_ac      (cp)                    &
+                                      * area_fac 
+      csite%fmean_carbon_st      (np) = csite%fmean_carbon_st      (np)                    &
+                                      + csite%fmean_carbon_st      (cp)                    &
+                                      * area_fac 
+      csite%fmean_vapor_gc       (np) = csite%fmean_vapor_gc       (np)                    &
+                                      + csite%fmean_vapor_gc       (cp)                    &
+                                      * area_fac 
+      csite%fmean_vapor_ac       (np) = csite%fmean_vapor_ac       (np)                    &
+                                      + csite%fmean_vapor_ac       (cp)                    &
+                                      * area_fac 
+      csite%fmean_throughfall    (np) = csite%fmean_throughfall    (np)                    &
+                                      + csite%fmean_throughfall    (cp)                    &
+                                      * area_fac 
+      csite%fmean_runoff         (np) = csite%fmean_runoff         (np)                    &
+                                      + csite%fmean_runoff         (cp)                    &
+                                      * area_fac 
+      csite%fmean_drainage       (np) = csite%fmean_drainage       (np)                    &
+                                      + csite%fmean_drainage       (cp)                    &
+                                      * area_fac 
+      csite%fmean_sensible_gc    (np) = csite%fmean_sensible_gc    (np)                    &
+                                      + csite%fmean_sensible_gc    (cp)                    &
+                                      * area_fac 
+      csite%fmean_sensible_ac    (np) = csite%fmean_sensible_ac    (np)                    &
+                                      + csite%fmean_sensible_ac    (cp)                    &
+                                      * area_fac 
+      csite%fmean_qthroughfall   (np) = csite%fmean_qthroughfall   (np)                    &
+                                      + csite%fmean_qthroughfall   (cp)                    &
+                                      * area_fac 
+      csite%fmean_qrunoff        (np) = csite%fmean_qrunoff        (np)                    &
+                                      + csite%fmean_qrunoff        (cp)                    &
+                                      * area_fac 
+      csite%fmean_qdrainage      (np) = csite%fmean_qdrainage      (np)                    &
+                                      + csite%fmean_qdrainage      (cp)                    &
+                                      * area_fac 
+
+      do k=1, nzg
+         csite%fmean_soil_energy(k,np) = csite%fmean_soil_energy(k,np)                     &
+                                       + csite%fmean_soil_energy(k,cp)                     &
+                                       * area_fac
+         csite%fmean_soil_water (k,np) = csite%fmean_soil_water (k,np)                     &
+                                       + csite%fmean_soil_water (k,cp)                     &
+                                       * area_fac
+         csite%fmean_smoist_gg  (k,np) = csite%fmean_smoist_gg  (k,np)                     &
+                                       + csite%fmean_smoist_gg  (k,cp)                     &
+                                       * area_fac
+         csite%fmean_transloss  (k,np) = csite%fmean_transloss  (k,np)                     &
+                                       + csite%fmean_transloss  (k,cp)                     &
+                                       * area_fac
+         csite%fmean_sensible_gg(k,np) = csite%fmean_sensible_gg(k,np)                     &
+                                       + csite%fmean_sensible_gg(k,cp)                     &
+                                       * area_fac
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Daily means...                                                                 !
+      !------------------------------------------------------------------------------------!
+      if (writing_long) then
+         csite%dmean_A_decomp       (    np) = csite%dmean_A_decomp       (    np)         &
+                                             + csite%dmean_A_decomp       (    cp)         &
+                                             * area_fac
+         csite%dmean_Af_decomp      (    np) = csite%dmean_Af_decomp      (    np)         &
+                                             + csite%dmean_Af_decomp      (    cp)         &
+                                             * area_fac
+         csite%dmean_co2_residual   (    np) = csite%dmean_co2_residual   (    np)         &
+                                             + csite%dmean_co2_residual   (    cp)         &
+                                             * area_fac
+         csite%dmean_energy_residual(    np) = csite%dmean_energy_residual(    np)         &
+                                             + csite%dmean_energy_residual(    cp)         &
+                                             * area_fac
+         csite%dmean_water_residual (    np) = csite%dmean_water_residual (    np)         &
+                                             + csite%dmean_water_residual (    cp)         &
+                                             * area_fac
+         csite%dmean_rh             (    np) = csite%dmean_rh             (    np)         &
+                                             + csite%dmean_rh             (    cp)         &
+                                             * area_fac
+         csite%dmean_cwd_rh         (    np) = csite%dmean_cwd_rh         (    np)         &
+                                             + csite%dmean_cwd_rh         (    cp)         &
+                                             * area_fac
+         csite%dmean_nep            (    np) = csite%dmean_nep            (    np)         &
+                                             + csite%dmean_nep            (    cp)         &
+                                             * area_fac
+         csite%dmean_rk4step        (    np) = csite%dmean_rk4step        (    np)         &
+                                             + csite%dmean_rk4step        (    cp)         &
+                                             * area_fac
+         csite%dmean_available_water(    np) = csite%dmean_available_water(    np)         &
+                                             + csite%dmean_available_water(    cp)         &
+                                             * area_fac
+         csite%dmean_can_theiv      (    np) = csite%dmean_can_theiv      (    np)         &
+                                             + csite%dmean_can_theiv      (    cp)         &
+                                             * area_fac
+         csite%dmean_can_theta      (    np) = csite%dmean_can_theta      (    np)         &
+                                             + csite%dmean_can_theta      (    cp)         &
+                                             * area_fac
+         csite%dmean_can_vpdef      (    np) = csite%dmean_can_vpdef      (    np)         &
+                                             + csite%dmean_can_vpdef      (    cp)         &
+                                             * area_fac
+         csite%dmean_can_temp       (    np) = csite%dmean_can_temp       (    np)         &
+                                             + csite%dmean_can_temp       (    cp)         &
+                                             * area_fac
+         csite%dmean_can_shv        (    np) = csite%dmean_can_shv        (    np)         &
+                                             + csite%dmean_can_shv        (    cp)         &
+                                             * area_fac
+         csite%dmean_can_co2        (    np) = csite%dmean_can_co2        (    np)         &
+                                             + csite%dmean_can_co2        (    cp)         &
+                                             * area_fac
+         csite%dmean_can_rhos       (    np) = csite%dmean_can_rhos       (    np)         &
+                                             + csite%dmean_can_rhos       (    cp)         &
+                                             * area_fac
+         csite%dmean_can_prss       (    np) = csite%dmean_can_prss       (    np)         &
+                                             + csite%dmean_can_prss       (    cp)         &
+                                             * area_fac
+         csite%dmean_gnd_temp       (    np) = csite%dmean_gnd_temp       (    np)         &
+                                             + csite%dmean_gnd_temp       (    cp)         &
+                                             * area_fac
+         csite%dmean_gnd_shv        (    np) = csite%dmean_gnd_shv        (    np)         &
+                                             + csite%dmean_gnd_shv        (    cp)         &
+                                             * area_fac
+         csite%dmean_can_ggnd       (    np) = csite%dmean_can_ggnd       (    np)         &
+                                             + csite%dmean_can_ggnd       (    cp)         &
+                                             * area_fac
+         csite%dmean_sfcw_depth     (    np) = csite%dmean_sfcw_depth     (    np)         &
+                                             + csite%dmean_sfcw_depth     (    cp)         &
+                                             * area_fac
+         csite%dmean_sfcw_energy    (    np) = csite%dmean_sfcw_energy    (    np)         &
+                                             + csite%dmean_sfcw_energy    (    cp)         &
+                                             * area_fac
+         csite%dmean_sfcw_mass      (    np) = csite%dmean_sfcw_mass      (    np)         &
+                                             + csite%dmean_sfcw_mass      (    cp)         &
+                                             * area_fac
+         csite%dmean_sfcw_temp      (    np) = csite%dmean_sfcw_temp      (    np)         &
+                                             + csite%dmean_sfcw_temp      (    cp)         &
+                                             * area_fac
+         csite%dmean_sfcw_fliq      (    np) = csite%dmean_sfcw_fliq      (    np)         &
+                                             + csite%dmean_sfcw_fliq      (    cp)         &
+                                             * area_fac
+         csite%dmean_rshort_gnd     (    np) = csite%dmean_rshort_gnd     (    np)         &
+                                             + csite%dmean_rshort_gnd     (    cp)         &
+                                             * area_fac
+         csite%dmean_par_gnd        (    np) = csite%dmean_par_gnd        (    np)         &
+                                             + csite%dmean_par_gnd        (    cp)         &
+                                             * area_fac
+         csite%dmean_rlong_gnd      (    np) = csite%dmean_rlong_gnd      (    np)         &
+                                             + csite%dmean_rlong_gnd      (    cp)         &
+                                             * area_fac
+         csite%dmean_rlongup        (    np) = csite%dmean_rlongup        (    np)         &
+                                             + csite%dmean_rlongup        (    cp)         &
+                                             * area_fac
+         csite%dmean_parup          (    np) = csite%dmean_parup          (    np)         &
+                                             + csite%dmean_parup          (    cp)         &
+                                             * area_fac
+         csite%dmean_nirup          (    np) = csite%dmean_nirup          (    np)         &
+                                             + csite%dmean_nirup          (    cp)         &
+                                             * area_fac
+         csite%dmean_rshortup       (    np) = csite%dmean_rshortup       (    np)         &
+                                             + csite%dmean_rshortup       (    cp)         &
+                                             * area_fac
+         csite%dmean_rnet           (    np) = csite%dmean_rnet           (    np)         &
+                                             + csite%dmean_rnet           (    cp)         &
+                                             * area_fac
+         csite%dmean_albedo         (    np) = csite%dmean_albedo         (    np)         &
+                                             + csite%dmean_albedo         (    cp)         &
+                                             * area_fac
+         csite%dmean_albedo_beam    (    np) = csite%dmean_albedo_beam    (    np)         &
+                                             + csite%dmean_albedo_beam    (    cp)         &
+                                             * area_fac
+         csite%dmean_albedo_diff    (    np) = csite%dmean_albedo_diff    (    np)         &
+                                             + csite%dmean_albedo_diff    (    cp)         &
+                                             * area_fac
+         csite%dmean_rlong_albedo   (    np) = csite%dmean_rlong_albedo   (    np)         &
+                                             + csite%dmean_rlong_albedo   (    cp)         &
+                                             * area_fac
+         csite%dmean_ustar          (    np) = csite%dmean_ustar          (    np)         &
+                                             + csite%dmean_ustar          (    cp)         &
+                                             * area_fac
+         csite%dmean_tstar          (    np) = csite%dmean_tstar          (    np)         &
+                                             + csite%dmean_tstar          (    cp)         &
+                                             * area_fac
+         csite%dmean_qstar          (    np) = csite%dmean_qstar          (    np)         &
+                                             + csite%dmean_qstar          (    cp)         &
+                                             * area_fac
+         csite%dmean_cstar          (    np) = csite%dmean_cstar          (    np)         &
+                                             + csite%dmean_cstar          (    cp)         &
+                                             * area_fac
+         csite%dmean_carbon_ac      (    np) = csite%dmean_carbon_ac      (    np)         &
+                                             + csite%dmean_carbon_ac      (    cp)         &
+                                             * area_fac
+         csite%dmean_carbon_st      (    np) = csite%dmean_carbon_st      (    np)         &
+                                             + csite%dmean_carbon_st      (    cp)         &
+                                             * area_fac
+         csite%dmean_vapor_gc       (    np) = csite%dmean_vapor_gc       (    np)         &
+                                             + csite%dmean_vapor_gc       (    cp)         &
+                                             * area_fac
+         csite%dmean_vapor_ac       (    np) = csite%dmean_vapor_ac       (    np)         &
+                                             + csite%dmean_vapor_ac       (    cp)         &
+                                             * area_fac
+         csite%dmean_throughfall    (    np) = csite%dmean_throughfall    (    np)         &
+                                             + csite%dmean_throughfall    (    cp)         &
+                                             * area_fac
+         csite%dmean_runoff         (    np) = csite%dmean_runoff         (    np)         &
+                                             + csite%dmean_runoff         (    cp)         &
+                                             * area_fac
+         csite%dmean_drainage       (    np) = csite%dmean_drainage       (    np)         &
+                                             + csite%dmean_drainage       (    cp)         &
+                                             * area_fac
+         csite%dmean_sensible_gc    (    np) = csite%dmean_sensible_gc    (    np)         &
+                                             + csite%dmean_sensible_gc    (    cp)         &
+                                             * area_fac
+         csite%dmean_sensible_ac    (    np) = csite%dmean_sensible_ac    (    np)         &
+                                             + csite%dmean_sensible_ac    (    cp)         &
+                                             * area_fac
+         csite%dmean_qthroughfall   (    np) = csite%dmean_qthroughfall   (    np)         &
+                                             + csite%dmean_qthroughfall   (    cp)         &
+                                             * area_fac
+         csite%dmean_qrunoff        (    np) = csite%dmean_qrunoff        (    np)         &
+                                             + csite%dmean_qrunoff        (    cp)         &
+                                             * area_fac
+         csite%dmean_qdrainage      (    np) = csite%dmean_qdrainage      (    np)         &
+                                             + csite%dmean_qdrainage      (    cp)         &
+                                             * area_fac
+         csite%dmean_soil_energy    (  :,np) = csite%dmean_soil_energy    (  :,np)         &
+                                             + csite%dmean_soil_energy    (  :,cp)         &
+                                             * area_fac
+         csite%dmean_soil_mstpot    (  :,np) = csite%dmean_soil_mstpot    (  :,np)         &
+                                             + csite%dmean_soil_mstpot    (  :,cp)         &
+                                             * area_fac
+         csite%dmean_soil_water     (  :,np) = csite%dmean_soil_water     (  :,np)         &
+                                             + csite%dmean_soil_water     (  :,cp)         &
+                                             * area_fac
+         csite%dmean_soil_temp      (  :,np) = csite%dmean_soil_temp      (  :,np)         &
+                                             + csite%dmean_soil_temp      (  :,cp)         &
+                                             * area_fac
+         csite%dmean_soil_fliq      (  :,np) = csite%dmean_soil_fliq      (  :,np)         &
+                                             + csite%dmean_soil_fliq      (  :,cp)         &
+                                             * area_fac
+         csite%dmean_smoist_gg      (  :,np) = csite%dmean_smoist_gg      (  :,np)         &
+                                             + csite%dmean_smoist_gg      (  :,cp)         &
+                                             * area_fac
+         csite%dmean_transloss      (  :,np) = csite%dmean_transloss      (  :,np)         &
+                                             + csite%dmean_transloss      (  :,cp)         &
+                                             * area_fac
+         csite%dmean_sensible_gg    (  :,np) = csite%dmean_sensible_gg    (  :,np)         &
+                                             + csite%dmean_sensible_gg    (  :,cp)         &
+                                             * area_fac
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Monthly means...                                                               !
+      !------------------------------------------------------------------------------------!
+      if (writing_eorq) then
+         csite%mmean_fast_soil_c    (    np) = csite%mmean_fast_soil_c    (    np)         &
+                                             + csite%mmean_fast_soil_c    (    cp)         &
+                                             * area_fac
+         csite%mmean_slow_soil_c    (    np) = csite%mmean_slow_soil_c    (    np)         &
+                                             + csite%mmean_slow_soil_c    (    cp)         &
+                                             * area_fac
+         csite%mmean_struct_soil_c  (    np) = csite%mmean_struct_soil_c  (    np)         &
+                                             + csite%mmean_struct_soil_c  (    cp)         &
+                                             * area_fac
+         csite%mmean_struct_soil_l  (    np) = csite%mmean_struct_soil_l  (    np)         &
+                                             + csite%mmean_struct_soil_l  (    cp)         &
+                                             * area_fac
+         csite%mmean_fast_soil_n    (    np) = csite%mmean_fast_soil_n    (    np)         &
+                                             + csite%mmean_fast_soil_n    (    cp)         &
+                                             * area_fac
+         csite%mmean_mineral_soil_n (    np) = csite%mmean_mineral_soil_n (    np)         &
+                                             + csite%mmean_mineral_soil_n (    cp)         &
+                                             * area_fac
+         csite%mmean_co2_residual   (    np) = csite%mmean_co2_residual   (    np)         &
+                                             + csite%mmean_co2_residual   (    cp)         &
+                                             * area_fac
+         csite%mmean_energy_residual(    np) = csite%mmean_energy_residual(    np)         &
+                                             + csite%mmean_energy_residual(    cp)         &
+                                             * area_fac
+         csite%mmean_water_residual (    np) = csite%mmean_water_residual (    np)         &
+                                             + csite%mmean_water_residual (    cp)         &
+                                             * area_fac
+         csite%mmean_rh             (    np) = csite%mmean_rh             (    np)         &
+                                             + csite%mmean_rh             (    cp)         &
+                                             * area_fac
+         csite%mmean_cwd_rh         (    np) = csite%mmean_cwd_rh         (    np)         &
+                                             + csite%mmean_cwd_rh         (    cp)         &
+                                             * area_fac
+         csite%mmean_nep            (    np) = csite%mmean_nep            (    np)         &
+                                             + csite%mmean_nep            (    cp)         &
+                                             * area_fac
+         csite%mmean_A_decomp       (    np) = csite%mmean_A_decomp       (    np)         &
+                                             + csite%mmean_A_decomp       (    cp)         &
+                                             * area_fac
+         csite%mmean_Af_decomp      (    np) = csite%mmean_Af_decomp      (    np)         &
+                                             + csite%mmean_Af_decomp      (    cp)         &
+                                             * area_fac
+         csite%mmean_rk4step        (    np) = csite%mmean_rk4step        (    np)         &
+                                             + csite%mmean_rk4step        (    cp)         &
+                                             * area_fac
+         csite%mmean_available_water(    np) = csite%mmean_available_water(    np)         &
+                                             + csite%mmean_available_water(    cp)         &
+                                             * area_fac
+         csite%mmean_can_theiv      (    np) = csite%mmean_can_theiv      (    np)         &
+                                             + csite%mmean_can_theiv      (    cp)         &
+                                             * area_fac
+         csite%mmean_can_theta      (    np) = csite%mmean_can_theta      (    np)         &
+                                             + csite%mmean_can_theta      (    cp)         &
+                                             * area_fac
+         csite%mmean_can_vpdef      (    np) = csite%mmean_can_vpdef      (    np)         &
+                                             + csite%mmean_can_vpdef      (    cp)         &
+                                             * area_fac
+         csite%mmean_can_temp       (    np) = csite%mmean_can_temp       (    np)         &
+                                             + csite%mmean_can_temp       (    cp)         &
+                                             * area_fac
+         csite%mmean_can_shv        (    np) = csite%mmean_can_shv        (    np)         &
+                                             + csite%mmean_can_shv        (    cp)         &
+                                             * area_fac
+         csite%mmean_can_co2        (    np) = csite%mmean_can_co2        (    np)         &
+                                             + csite%mmean_can_co2        (    cp)         &
+                                             * area_fac
+         csite%mmean_can_rhos       (    np) = csite%mmean_can_rhos       (    np)         &
+                                             + csite%mmean_can_rhos       (    cp)         &
+                                             * area_fac
+         csite%mmean_can_prss       (    np) = csite%mmean_can_prss       (    np)         &
+                                             + csite%mmean_can_prss       (    cp)         &
+                                             * area_fac
+         csite%mmean_gnd_temp       (    np) = csite%mmean_gnd_temp       (    np)         &
+                                             + csite%mmean_gnd_temp       (    cp)         &
+                                             * area_fac
+         csite%mmean_gnd_shv        (    np) = csite%mmean_gnd_shv        (    np)         &
+                                             + csite%mmean_gnd_shv        (    cp)         &
+                                             * area_fac
+         csite%mmean_can_ggnd       (    np) = csite%mmean_can_ggnd       (    np)         &
+                                             + csite%mmean_can_ggnd       (    cp)         &
+                                             * area_fac
+         csite%mmean_sfcw_depth     (    np) = csite%mmean_sfcw_depth     (    np)         &
+                                             + csite%mmean_sfcw_depth     (    cp)         &
+                                             * area_fac
+         csite%mmean_sfcw_energy    (    np) = csite%mmean_sfcw_energy    (    np)         &
+                                             + csite%mmean_sfcw_energy    (    cp)         &
+                                             * area_fac
+         csite%mmean_sfcw_mass      (    np) = csite%mmean_sfcw_mass      (    np)         &
+                                             + csite%mmean_sfcw_mass      (    cp)         &
+                                             * area_fac
+         csite%mmean_sfcw_temp      (    np) = csite%mmean_sfcw_temp      (    np)         &
+                                             + csite%mmean_sfcw_temp      (    cp)         &
+                                             * area_fac
+         csite%mmean_sfcw_fliq      (    np) = csite%mmean_sfcw_fliq      (    np)         &
+                                             + csite%mmean_sfcw_fliq      (    cp)         &
+                                             * area_fac
+         csite%mmean_rshort_gnd     (    np) = csite%mmean_rshort_gnd     (    np)         &
+                                             + csite%mmean_rshort_gnd     (    cp)         &
+                                             * area_fac
+         csite%mmean_par_gnd        (    np) = csite%mmean_par_gnd        (    np)         &
+                                             + csite%mmean_par_gnd        (    cp)         &
+                                             * area_fac
+         csite%mmean_rlong_gnd      (    np) = csite%mmean_rlong_gnd      (    np)         &
+                                             + csite%mmean_rlong_gnd      (    cp)         &
+                                             * area_fac
+         csite%mmean_rlongup        (    np) = csite%mmean_rlongup        (    np)         &
+                                             + csite%mmean_rlongup        (    cp)         &
+                                             * area_fac
+         csite%mmean_parup          (    np) = csite%mmean_parup          (    np)         &
+                                             + csite%mmean_parup          (    cp)         &
+                                             * area_fac
+         csite%mmean_nirup          (    np) = csite%mmean_nirup          (    np)         &
+                                             + csite%mmean_nirup          (    cp)         &
+                                             * area_fac
+         csite%mmean_rshortup       (    np) = csite%mmean_rshortup       (    np)         &
+                                             + csite%mmean_rshortup       (    cp)         &
+                                             * area_fac
+         csite%mmean_rnet           (    np) = csite%mmean_rnet           (    np)         &
+                                             + csite%mmean_rnet           (    cp)         &
+                                             * area_fac
+         csite%mmean_albedo         (    np) = csite%mmean_albedo         (    np)         &
+                                             + csite%mmean_albedo         (    cp)         &
+                                             * area_fac
+         csite%mmean_albedo_beam    (    np) = csite%mmean_albedo_beam    (    np)         &
+                                             + csite%mmean_albedo_beam    (    cp)         &
+                                             * area_fac
+         csite%mmean_albedo_diff    (    np) = csite%mmean_albedo_diff    (    np)         &
+                                             + csite%mmean_albedo_diff    (    cp)         &
+                                             * area_fac
+         csite%mmean_rlong_albedo   (    np) = csite%mmean_rlong_albedo   (    np)         &
+                                             + csite%mmean_rlong_albedo   (    cp)         &
+                                             * area_fac
+         csite%mmean_ustar          (    np) = csite%mmean_ustar          (    np)         &
+                                             + csite%mmean_ustar          (    cp)         &
+                                             * area_fac
+         csite%mmean_tstar          (    np) = csite%mmean_tstar          (    np)         &
+                                             + csite%mmean_tstar          (    cp)         &
+                                             * area_fac
+         csite%mmean_qstar          (    np) = csite%mmean_qstar          (    np)         &
+                                             + csite%mmean_qstar          (    cp)         &
+                                             * area_fac
+         csite%mmean_cstar          (    np) = csite%mmean_cstar          (    np)         &
+                                             + csite%mmean_cstar          (    cp)         &
+                                             * area_fac
+         csite%mmean_carbon_ac      (    np) = csite%mmean_carbon_ac      (    np)         &
+                                             + csite%mmean_carbon_ac      (    cp)         &
+                                             * area_fac
+         csite%mmean_carbon_st      (    np) = csite%mmean_carbon_st      (    np)         &
+                                             + csite%mmean_carbon_st      (    cp)         &
+                                             * area_fac
+         csite%mmean_vapor_gc       (    np) = csite%mmean_vapor_gc       (    np)         &
+                                             + csite%mmean_vapor_gc       (    cp)         &
+                                             * area_fac
+         csite%mmean_vapor_ac       (    np) = csite%mmean_vapor_ac       (    np)         &
+                                             + csite%mmean_vapor_ac       (    cp)         &
+                                             * area_fac
+         csite%mmean_throughfall    (    np) = csite%mmean_throughfall    (    np)         &
+                                             + csite%mmean_throughfall    (    cp)         &
+                                             * area_fac
+         csite%mmean_runoff         (    np) = csite%mmean_runoff         (    np)         &
+                                             + csite%mmean_runoff         (    cp)         &
+                                             * area_fac
+         csite%mmean_drainage       (    np) = csite%mmean_drainage       (    np)         &
+                                             + csite%mmean_drainage       (    cp)         &
+                                             * area_fac
+         csite%mmean_sensible_gc    (    np) = csite%mmean_sensible_gc    (    np)         &
+                                             + csite%mmean_sensible_gc    (    cp)         &
+                                             * area_fac
+         csite%mmean_sensible_ac    (    np) = csite%mmean_sensible_ac    (    np)         &
+                                             + csite%mmean_sensible_ac    (    cp)         &
+                                             * area_fac
+         csite%mmean_qthroughfall   (    np) = csite%mmean_qthroughfall   (    np)         &
+                                             + csite%mmean_qthroughfall   (    cp)         &
+                                             * area_fac
+         csite%mmean_qrunoff        (    np) = csite%mmean_qrunoff        (    np)         &
+                                             + csite%mmean_qrunoff        (    cp)         &
+                                             * area_fac
+         csite%mmean_qdrainage      (    np) = csite%mmean_qdrainage      (    np)         &
+                                             + csite%mmean_qdrainage      (    cp)         &
+                                             * area_fac
+         csite%mmean_A_decomp       (    np) = csite%mmean_A_decomp       (    np)         &
+                                             + csite%mmean_A_decomp       (    cp)         &
+                                             * area_fac
+         csite%mmean_Af_decomp      (    np) = csite%mmean_Af_decomp      (    np)         &
+                                             + csite%mmean_Af_decomp      (    cp)         &
+                                             * area_fac
+         csite%mmean_co2_residual   (    np) = csite%mmean_co2_residual   (    np)         &
+                                             + csite%mmean_co2_residual   (    cp)         &
+                                             * area_fac
+         csite%mmean_energy_residual(    np) = csite%mmean_energy_residual(    np)         &
+                                             + csite%mmean_energy_residual(    cp)         &
+                                             * area_fac
+         csite%mmean_water_residual (    np) = csite%mmean_water_residual (    np)         &
+                                             + csite%mmean_water_residual (    cp)         &
+                                             * area_fac
+         csite%mmsqu_rh             (    np) = csite%mmsqu_rh             (    np)         &
+                                             + csite%mmsqu_rh             (    cp)         &
+                                             * area_fac
+         csite%mmsqu_cwd_rh         (    np) = csite%mmsqu_cwd_rh         (    np)         &
+                                             + csite%mmsqu_cwd_rh         (    cp)         &
+                                             * area_fac
+         csite%mmsqu_nep            (    np) = csite%mmsqu_nep            (    np)         &
+                                             + csite%mmsqu_nep            (    cp)         &
+                                             * area_fac
+         csite%mmsqu_rlongup        (    np) = csite%mmsqu_rlongup        (    np)         &
+                                             + csite%mmsqu_rlongup        (    cp)         &
+                                             * area_fac
+         csite%mmsqu_parup          (    np) = csite%mmsqu_parup          (    np)         &
+                                             + csite%mmsqu_parup          (    cp)         &
+                                             * area_fac
+         csite%mmsqu_nirup          (    np) = csite%mmsqu_nirup          (    np)         &
+                                             + csite%mmsqu_nirup          (    cp)         &
+                                             * area_fac
+         csite%mmsqu_rshortup       (    np) = csite%mmsqu_rshortup       (    np)         &
+                                             + csite%mmsqu_rshortup       (    cp)         &
+                                             * area_fac
+         csite%mmsqu_rnet           (    np) = csite%mmsqu_rnet           (    np)         &
+                                             + csite%mmsqu_rnet           (    cp)         &
+                                             * area_fac
+         csite%mmsqu_albedo         (    np) = csite%mmsqu_albedo         (    np)         &
+                                             + csite%mmsqu_albedo         (    cp)         &
+                                             * area_fac
+         csite%mmsqu_ustar          (    np) = csite%mmsqu_ustar          (    np)         &
+                                             + csite%mmsqu_ustar          (    cp)         &
+                                             * area_fac
+         csite%mmsqu_carbon_ac      (    np) = csite%mmsqu_carbon_ac      (    np)         &
+                                             + csite%mmsqu_carbon_ac      (    cp)         &
+                                             * area_fac
+         csite%mmsqu_carbon_st      (    np) = csite%mmsqu_carbon_st      (    np)         &
+                                             + csite%mmsqu_carbon_st      (    cp)         &
+                                             * area_fac
+         csite%mmsqu_vapor_gc       (    np) = csite%mmsqu_vapor_gc       (    np)         &
+                                             + csite%mmsqu_vapor_gc       (    cp)         &
+                                             * area_fac
+         csite%mmsqu_vapor_ac       (    np) = csite%mmsqu_vapor_ac       (    np)         &
+                                             + csite%mmsqu_vapor_ac       (    cp)         &
+                                             * area_fac
+         csite%mmsqu_sensible_gc    (    np) = csite%mmsqu_sensible_gc    (    np)         &
+                                             + csite%mmsqu_sensible_gc    (    cp)         &
+                                             * area_fac
+         csite%mmsqu_sensible_ac    (    np) = csite%mmsqu_sensible_ac    (    np)         &
+                                             + csite%mmsqu_sensible_ac    (    cp)         &
+                                             * area_fac
+         csite%mmean_soil_energy    (  :,np) = csite%mmean_soil_energy    (  :,np)         &
+                                             + csite%mmean_soil_energy    (  :,cp)         &
+                                             * area_fac
+         csite%mmean_soil_mstpot    (  :,np) = csite%mmean_soil_mstpot    (  :,np)         &
+                                             + csite%mmean_soil_mstpot    (  :,cp)         &
+                                             * area_fac
+         csite%mmean_soil_water     (  :,np) = csite%mmean_soil_water     (  :,np)         &
+                                             + csite%mmean_soil_water     (  :,cp)         &
+                                             * area_fac
+         csite%mmean_soil_temp      (  :,np) = csite%mmean_soil_temp      (  :,np)         &
+                                             + csite%mmean_soil_temp      (  :,cp)         &
+                                             * area_fac
+         csite%mmean_soil_fliq      (  :,np) = csite%mmean_soil_fliq      (  :,np)         &
+                                             + csite%mmean_soil_fliq      (  :,cp)         &
+                                             * area_fac
+         csite%mmean_smoist_gg      (  :,np) = csite%mmean_smoist_gg      (  :,np)         &
+                                             + csite%mmean_smoist_gg      (  :,cp)         &
+                                             * area_fac
+         csite%mmean_transloss      (  :,np) = csite%mmean_transloss      (  :,np)         &
+                                             + csite%mmean_transloss      (  :,cp)         &
+                                             * area_fac
+         csite%mmean_sensible_gg    (  :,np) = csite%mmean_sensible_gg    (  :,np)         &
+                                             + csite%mmean_sensible_gg    (  :,cp)         &
+                                             * area_fac
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Mean diel...                                                                   !
+      !------------------------------------------------------------------------------------!
+      if (writing_dcyc) then
+         csite%qmean_rh             (  :,np) = csite%qmean_rh             (  :,np)         &
+                                             + csite%qmean_rh             (  :,cp)         &
+                                             * area_fac
+         csite%qmean_cwd_rh         (  :,np) = csite%qmean_cwd_rh         (  :,np)         &
+                                             + csite%qmean_cwd_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmean_nep            (  :,np) = csite%qmean_nep            (  :,np)         &
+                                             + csite%qmean_nep            (  :,cp)         &
+                                             * area_fac
+         csite%qmean_rk4step        (  :,np) = csite%qmean_rk4step        (  :,np)         &
+                                             + csite%qmean_rk4step        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_available_water(  :,np) = csite%qmean_available_water(  :,np)         &
+                                             + csite%qmean_available_water(  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_theiv      (  :,np) = csite%qmean_can_theiv      (  :,np)         &
+                                             + csite%qmean_can_theiv      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_theta      (  :,np) = csite%qmean_can_theta      (  :,np)         &
+                                             + csite%qmean_can_theta      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_vpdef      (  :,np) = csite%qmean_can_vpdef      (  :,np)         &
+                                             + csite%qmean_can_vpdef      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_temp       (  :,np) = csite%qmean_can_temp       (  :,np)         &
+                                             + csite%qmean_can_temp       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_shv        (  :,np) = csite%qmean_can_shv        (  :,np)         &
+                                             + csite%qmean_can_shv        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_co2        (  :,np) = csite%qmean_can_co2        (  :,np)         &
+                                             + csite%qmean_can_co2        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_rhos       (  :,np) = csite%qmean_can_rhos       (  :,np)         &
+                                             + csite%qmean_can_rhos       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_prss       (  :,np) = csite%qmean_can_prss       (  :,np)         &
+                                             + csite%qmean_can_prss       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_gnd_temp       (  :,np) = csite%qmean_gnd_temp       (  :,np)         &
+                                             + csite%qmean_gnd_temp       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_gnd_shv        (  :,np) = csite%qmean_gnd_shv        (  :,np)         &
+                                             + csite%qmean_gnd_shv        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_can_ggnd       (  :,np) = csite%qmean_can_ggnd       (  :,np)         &
+                                             + csite%qmean_can_ggnd       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sfcw_depth     (  :,np) = csite%qmean_sfcw_depth     (  :,np)         &
+                                             + csite%qmean_sfcw_depth     (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sfcw_energy    (  :,np) = csite%qmean_sfcw_energy    (  :,np)         &
+                                             + csite%qmean_sfcw_energy    (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sfcw_mass      (  :,np) = csite%qmean_sfcw_mass      (  :,np)         &
+                                             + csite%qmean_sfcw_mass      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sfcw_temp      (  :,np) = csite%qmean_sfcw_temp      (  :,np)         &
+                                             + csite%qmean_sfcw_temp      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sfcw_fliq      (  :,np) = csite%qmean_sfcw_fliq      (  :,np)         &
+                                             + csite%qmean_sfcw_fliq      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_soil_energy    (:,:,np) = csite%qmean_soil_energy    (:,:,np)         &
+                                             + csite%qmean_soil_energy    (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_soil_mstpot    (:,:,np) = csite%qmean_soil_mstpot    (:,:,np)         &
+                                             + csite%qmean_soil_mstpot    (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_soil_water     (:,:,np) = csite%qmean_soil_water     (:,:,np)         &
+                                             + csite%qmean_soil_water     (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_soil_temp      (:,:,np) = csite%qmean_soil_temp      (:,:,np)         &
+                                             + csite%qmean_soil_temp      (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_soil_fliq      (:,:,np) = csite%qmean_soil_fliq      (:,:,np)         &
+                                             + csite%qmean_soil_fliq      (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_rshort_gnd     (  :,np) = csite%qmean_rshort_gnd     (  :,np)         &
+                                             + csite%qmean_rshort_gnd     (  :,cp)         &
+                                             * area_fac
+         csite%qmean_par_gnd        (  :,np) = csite%qmean_par_gnd        (  :,np)         &
+                                             + csite%qmean_par_gnd        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_rlong_gnd      (  :,np) = csite%qmean_rlong_gnd      (  :,np)         &
+                                             + csite%qmean_rlong_gnd      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_rlongup        (  :,np) = csite%qmean_rlongup        (  :,np)         &
+                                             + csite%qmean_rlongup        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_parup          (  :,np) = csite%qmean_parup          (  :,np)         &
+                                             + csite%qmean_parup          (  :,cp)         &
+                                             * area_fac
+         csite%qmean_nirup          (  :,np) = csite%qmean_nirup          (  :,np)         &
+                                             + csite%qmean_nirup          (  :,cp)         &
+                                             * area_fac
+         csite%qmean_rshortup       (  :,np) = csite%qmean_rshortup       (  :,np)         &
+                                             + csite%qmean_rshortup       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_rnet           (  :,np) = csite%qmean_rnet           (  :,np)         &
+                                             + csite%qmean_rnet           (  :,cp)         &
+                                             * area_fac
+         csite%qmean_albedo         (  :,np) = csite%qmean_albedo         (  :,np)         &
+                                             + csite%qmean_albedo         (  :,cp)         &
+                                             * area_fac
+         csite%qmean_albedo_beam    (  :,np) = csite%qmean_albedo_beam    (  :,np)         &
+                                             + csite%qmean_albedo_beam    (  :,cp)         &
+                                             * area_fac
+         csite%qmean_albedo_diff    (  :,np) = csite%qmean_albedo_diff    (  :,np)         &
+                                             + csite%qmean_albedo_diff    (  :,cp)         &
+                                             * area_fac
+         csite%qmean_rlong_albedo   (  :,np) = csite%qmean_rlong_albedo   (  :,np)         &
+                                             + csite%qmean_rlong_albedo   (  :,cp)         &
+                                             * area_fac
+         csite%qmean_ustar          (  :,np) = csite%qmean_ustar          (  :,np)         &
+                                             + csite%qmean_ustar          (  :,cp)         &
+                                             * area_fac
+         csite%qmean_tstar          (  :,np) = csite%qmean_tstar          (  :,np)         &
+                                             + csite%qmean_tstar          (  :,cp)         &
+                                             * area_fac
+         csite%qmean_qstar          (  :,np) = csite%qmean_qstar          (  :,np)         &
+                                             + csite%qmean_qstar          (  :,cp)         &
+                                             * area_fac
+         csite%qmean_cstar          (  :,np) = csite%qmean_cstar          (  :,np)         &
+                                             + csite%qmean_cstar          (  :,cp)         &
+                                             * area_fac
+         csite%qmean_carbon_ac      (  :,np) = csite%qmean_carbon_ac      (  :,np)         &
+                                             + csite%qmean_carbon_ac      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_carbon_st      (  :,np) = csite%qmean_carbon_st      (  :,np)         &
+                                             + csite%qmean_carbon_st      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_vapor_gc       (  :,np) = csite%qmean_vapor_gc       (  :,np)         &
+                                             + csite%qmean_vapor_gc       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_vapor_ac       (  :,np) = csite%qmean_vapor_ac       (  :,np)         &
+                                             + csite%qmean_vapor_ac       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_smoist_gg      (:,:,np) = csite%qmean_smoist_gg      (:,:,np)         &
+                                             + csite%qmean_smoist_gg      (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_throughfall    (  :,np) = csite%qmean_throughfall    (  :,np)         &
+                                             + csite%qmean_throughfall    (  :,cp)         &
+                                             * area_fac
+         csite%qmean_transloss      (:,:,np) = csite%qmean_transloss      (:,:,np)         &
+                                             + csite%qmean_transloss      (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_runoff         (  :,np) = csite%qmean_runoff         (  :,np)         &
+                                             + csite%qmean_runoff         (  :,cp)         &
+                                             * area_fac
+         csite%qmean_drainage       (  :,np) = csite%qmean_drainage       (  :,np)         &
+                                             + csite%qmean_drainage       (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sensible_gc    (  :,np) = csite%qmean_sensible_gc    (  :,np)         &
+                                             + csite%qmean_sensible_gc    (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sensible_ac    (  :,np) = csite%qmean_sensible_ac    (  :,np)         &
+                                             + csite%qmean_sensible_ac    (  :,cp)         &
+                                             * area_fac
+         csite%qmean_sensible_gg    (:,:,np) = csite%qmean_sensible_gg    (:,:,np)         &
+                                             + csite%qmean_sensible_gg    (:,:,cp)         &
+                                             * area_fac
+         csite%qmean_qthroughfall   (  :,np) = csite%qmean_qthroughfall   (  :,np)         &
+                                             + csite%qmean_qthroughfall   (  :,cp)         &
+                                             * area_fac
+         csite%qmean_qrunoff        (  :,np) = csite%qmean_qrunoff        (  :,np)         &
+                                             + csite%qmean_qrunoff        (  :,cp)         &
+                                             * area_fac
+         csite%qmean_qdrainage      (  :,np) = csite%qmean_qdrainage      (  :,np)         &
+                                             + csite%qmean_qdrainage      (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_rh             (  :,np) = csite%qmsqu_rh             (  :,np)         &
+                                             + csite%qmsqu_rh             (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_cwd_rh         (  :,np) = csite%qmsqu_cwd_rh         (  :,np)         &
+                                             + csite%qmsqu_cwd_rh         (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_nep            (  :,np) = csite%qmsqu_nep            (  :,np)         &
+                                             + csite%qmsqu_nep            (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_rlongup        (  :,np) = csite%qmsqu_rlongup        (  :,np)         &
+                                             + csite%qmsqu_rlongup        (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_parup          (  :,np) = csite%qmsqu_parup          (  :,np)         &
+                                             + csite%qmsqu_parup          (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_nirup          (  :,np) = csite%qmsqu_nirup          (  :,np)         &
+                                             + csite%qmsqu_nirup          (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_rshortup       (  :,np) = csite%qmsqu_rshortup       (  :,np)         &
+                                             + csite%qmsqu_rshortup       (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_rnet           (  :,np) = csite%qmsqu_rnet           (  :,np)         &
+                                             + csite%qmsqu_rnet           (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_albedo         (  :,np) = csite%qmsqu_albedo         (  :,np)         &
+                                             + csite%qmsqu_albedo         (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_ustar          (  :,np) = csite%qmsqu_ustar          (  :,np)         &
+                                             + csite%qmsqu_ustar          (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_carbon_ac      (  :,np) = csite%qmsqu_carbon_ac      (  :,np)         &
+                                             + csite%qmsqu_carbon_ac      (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_carbon_st      (  :,np) = csite%qmsqu_carbon_st      (  :,np)         &
+                                             + csite%qmsqu_carbon_st      (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_vapor_gc       (  :,np) = csite%qmsqu_vapor_gc       (  :,np)         &
+                                             + csite%qmsqu_vapor_gc       (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_vapor_ac       (  :,np) = csite%qmsqu_vapor_ac       (  :,np)         &
+                                             + csite%qmsqu_vapor_ac       (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_sensible_gc    (  :,np) = csite%qmsqu_sensible_gc    (  :,np)         &
+                                             + csite%qmsqu_sensible_gc    (  :,cp)         &
+                                             * area_fac
+         csite%qmsqu_sensible_ac    (  :,np) = csite%qmsqu_sensible_ac    (  :,np)         &
+                                             + csite%qmsqu_sensible_ac    (  :,cp)         &
+                                             * area_fac
+      end if
+      !------------------------------------------------------------------------------------!
+
+
       return
    end subroutine increment_patch_vars
    !=======================================================================================!

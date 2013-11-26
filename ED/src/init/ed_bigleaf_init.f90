@@ -67,6 +67,8 @@ subroutine ed_bigleaf_init(cgrid)
    real                                             :: new_area
    real                                             :: area_sum
    real                                             :: area_tot
+   real                                             :: patch_lai
+   real                                             :: patch_wai
    real                                             :: patch_agb
    real                                             :: patch_bsa
    real                                             :: patch_pop
@@ -348,13 +350,13 @@ subroutine ed_bigleaf_init(cgrid)
          !----- Find the patch-level LAI, WAI, and CAI. -----------------------------------!
          do ipa=1,csite%npatches
             area_sum        = area_sum + csite%area(ipa)
-            csite%lai(ipa)  = 0.0
-            csite%wai(ipa)  = 0.0
+            patch_lai       = 0.0
+            patch_wai       = 0.0
             cpatch => csite%patch(ipa)
             do ico = 1,cpatch%ncohorts
-               csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
-               csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
-               ncohorts        = ncohorts + 1
+               patch_lai = patch_lai + cpatch%lai(ico)
+               patch_wai = patch_wai + cpatch%wai(ico)
+               ncohorts  = ncohorts + 1
             end do
          end do
 
@@ -405,8 +407,8 @@ subroutine ed_bigleaf_init(cgrid)
          site_ssc  = 0.0
          site_stsc = 0.0
          do ipa = 1,csite%npatches
-            csite%lai(ipa)  = 0.0
-            csite%wai(ipa)  = 0.0
+            patch_lai  = 0.0
+            patch_wai  = 0.0
             npatchco        = 0
 
             cpatch => csite%patch(ipa)
@@ -414,16 +416,16 @@ subroutine ed_bigleaf_init(cgrid)
             patch_agb       = 0.0
             patch_bsa       = 0.0
             do ico = 1,cpatch%ncohorts
-               ncohorts        = ncohorts+1
-               npatchco        = npatchco+1
-               csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-               csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
-               patch_pop       = patch_pop      + cpatch%nplant(ico)
-               patch_agb       = patch_agb      + cpatch%nplant(ico) * cpatch%agb    (ico)
-               patch_bsa       = patch_bsa      + cpatch%nplant(ico) * cpatch%basarea(ico)
+               ncohorts   = ncohorts+1
+               npatchco   = npatchco+1
+               patch_lai  = patch_lai  + cpatch%lai(ico)
+               patch_wai  = patch_wai  + cpatch%wai(ico)
+               patch_pop  = patch_pop  + cpatch%nplant(ico)
+               patch_agb  = patch_agb  + cpatch%nplant(ico) * cpatch%agb    (ico)
+               patch_bsa  = patch_bsa  + cpatch%nplant(ico) * cpatch%basarea(ico)
             end do
             site_pop  = site_pop  + patch_pop                    * csite%area(ipa)
-            site_lai  = site_lai  + csite%lai              (ipa) * csite%area(ipa)
+            site_lai  = site_lai  + patch_lai                    * csite%area(ipa)
             site_agb  = site_agb  + patch_agb                    * csite%area(ipa)
             site_bsa  = site_bsa  + patch_bsa                    * csite%area(ipa)
             site_fsc  = site_fsc  + csite%fast_soil_C      (ipa) * csite%area(ipa)

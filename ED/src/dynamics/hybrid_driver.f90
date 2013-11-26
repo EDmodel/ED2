@@ -242,10 +242,10 @@ subroutine hybrid_timestep(cgrid)
             !--------------------------------------------------------------------------!
             ! Move the state variables from the integrated patch to the model patch.   !
             !--------------------------------------------------------------------------!
-            
-            call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_netrad  &
-                 ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
-                 ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+            call initp2modelp(tend-tbeg,initp,csite,ipa,cpoly%nighttime(isi)           &
+                             ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm               &
+                             ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
+                             ,wcurr_loss2runoff,ecurr_loss2runoff)
 
             
             !----- Add the number of steps into the step counter. -------------!
@@ -639,12 +639,12 @@ subroutine hybrid_timestep(cgrid)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
-                  csite%runoff(ipa) = csite%runoff(ipa)                                    &
-                                    + sngloff(wfreeb * dtrk4i,tiny_offset)
-                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa)                            &
-                                        + sngloff(wfreeb * dtrk4i,tiny_offset)
-                  csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
-                                             + sngloff(qwfree * dtrk4i,tiny_offset)
+                  csite%runoff       (ipa) = csite%runoff(ipa)                             &
+                                           + sngloff(wfreeb * dtrk4i,tiny_offset)
+                  csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                       &
+                                           + sngloff(wfreeb * dtrk4i,tiny_offset)
+                  csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                      &
+                                           + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
                   initp%wbudget_loss2runoff = initp%wbudget_loss2runoff + wfreeb
@@ -665,7 +665,7 @@ subroutine hybrid_timestep(cgrid)
          !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed    !
          ! because we will divide this by the time between t0 and t0+frqsum.               !
          !---------------------------------------------------------------------------------!
-         csite%avg_rk4step(ipa) = csite%avg_rk4step(ipa)                                   &
+         csite%fmean_rk4step(ipa) = csite%fmean_rk4step(ipa)                               &
               + sngl((tend-tbeg)*(tend-tbeg))/real(i)
          nsteps = i
          return
@@ -772,6 +772,7 @@ subroutine hybrid_timestep(cgrid)
 
    do k=rk4site%lsl,nzg      
       targetp%soil_water            (k) = sourcep%soil_water            (k)
+      targetp%soil_mstpot           (k) = sourcep%soil_mstpot           (k)
       targetp%soil_energy           (k) = sourcep%soil_energy           (k)
       targetp%soil_tempk            (k) = sourcep%soil_tempk            (k)
       targetp%soil_fracliq          (k) = sourcep%soil_fracliq          (k)
@@ -870,27 +871,14 @@ subroutine hybrid_timestep(cgrid)
       targetp%avg_cstar              = sourcep%avg_cstar
       targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
       targetp%avg_carbon_st          = sourcep%avg_carbon_st
-      targetp%avg_vapor_lc           = sourcep%avg_vapor_lc
-      targetp%avg_vapor_wc           = sourcep%avg_vapor_wc
       targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
-      targetp%avg_wshed_vg           = sourcep%avg_wshed_vg
-      targetp%avg_intercepted        = sourcep%avg_intercepted
       targetp%avg_throughfall        = sourcep%avg_throughfall
       targetp%avg_vapor_ac           = sourcep%avg_vapor_ac
-      targetp%avg_transp             = sourcep%avg_transp
-      targetp%avg_evap               = sourcep%avg_evap
-      targetp%avg_rshort_gnd         = sourcep%avg_rshort_gnd
-      targetp%avg_par_gnd            = sourcep%avg_par_gnd
-      targetp%avg_rlong_gnd          = sourcep%avg_rlong_gnd
-      targetp%avg_sensible_lc        = sourcep%avg_sensible_lc
-      targetp%avg_sensible_wc        = sourcep%avg_sensible_wc
-      targetp%avg_qwshed_vg          = sourcep%avg_qwshed_vg
-      targetp%avg_qintercepted       = sourcep%avg_qintercepted
       targetp%avg_qthroughfall       = sourcep%avg_qthroughfall
       targetp%avg_sensible_gc        = sourcep%avg_sensible_gc
       targetp%avg_sensible_ac        = sourcep%avg_sensible_ac
       targetp%avg_drainage           = sourcep%avg_drainage
-      targetp%avg_drainage_heat      = sourcep%avg_drainage_heat
+      targetp%avg_qdrainage          = sourcep%avg_qdrainage
 
 
       do k=rk4site%lsl,nzg
@@ -901,15 +889,15 @@ subroutine hybrid_timestep(cgrid)
 
 
       do k=1,cpatch%ncohorts
-         targetp%cav_sensible_lc    (k) = sourcep%cav_sensible_lc   (k)
-         targetp%cav_sensible_wc    (k) = sourcep%cav_sensible_wc   (k)
-         targetp%cav_vapor_lc       (k) = sourcep%cav_vapor_lc      (k)
-         targetp%cav_vapor_wc       (k) = sourcep%cav_vapor_wc      (k)
-         targetp%cav_transp         (k) = sourcep%cav_transp        (k)
-         targetp%cav_intercepted_al (k) = sourcep%cav_intercepted_al(k)
-         targetp%cav_intercepted_aw (k) = sourcep%cav_intercepted_aw(k)
-         targetp%cav_wshed_lg       (k) = sourcep%cav_wshed_lg      (k)
-         targetp%cav_wshed_wg       (k) = sourcep%cav_wshed_wg      (k)
+         targetp%avg_sensible_lc    (k) = sourcep%avg_sensible_lc   (k)
+         targetp%avg_sensible_wc    (k) = sourcep%avg_sensible_wc   (k)
+         targetp%avg_vapor_lc       (k) = sourcep%avg_vapor_lc      (k)
+         targetp%avg_vapor_wc       (k) = sourcep%avg_vapor_wc      (k)
+         targetp%avg_transp         (k) = sourcep%avg_transp        (k)
+         targetp%avg_intercepted_al (k) = sourcep%avg_intercepted_al(k)
+         targetp%avg_intercepted_aw (k) = sourcep%avg_intercepted_aw(k)
+         targetp%avg_wshed_lg       (k) = sourcep%avg_wshed_lg      (k)
+         targetp%avg_wshed_wg       (k) = sourcep%avg_wshed_wg      (k)
       end do
    end if
 
@@ -924,7 +912,6 @@ subroutine hybrid_timestep(cgrid)
       targetp%flx_throughfall        = sourcep%flx_throughfall
       targetp%flx_vapor_ac           = sourcep%flx_vapor_ac
       targetp%flx_transp             = sourcep%flx_transp
-      targetp%flx_evap               = sourcep%flx_evap
       targetp%flx_rshort_gnd         = sourcep%flx_rshort_gnd
       targetp%flx_par_gnd            = sourcep%flx_par_gnd
       targetp%flx_rlong_gnd          = sourcep%flx_rlong_gnd
@@ -936,7 +923,7 @@ subroutine hybrid_timestep(cgrid)
       targetp%flx_sensible_gc        = sourcep%flx_sensible_gc
       targetp%flx_sensible_ac        = sourcep%flx_sensible_ac
       targetp%flx_drainage           = sourcep%flx_drainage
-      targetp%flx_drainage_heat      = sourcep%flx_drainage_heat
+      targetp%flx_qdrainage          = sourcep%flx_qdrainage
 
       do k=rk4site%lsl,nzg
          targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
@@ -1128,24 +1115,11 @@ subroutine hybrid_timestep(cgrid)
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
       rkp%avg_carbon_st      = rkp%avg_carbon_st      + fac * inc%avg_carbon_st
 
-      rkp%avg_vapor_lc       = rkp%avg_vapor_lc       + fac * inc%avg_vapor_lc
-      rkp%avg_vapor_wc       = rkp%avg_vapor_wc       + fac * inc%avg_vapor_wc
       rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
-      rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
-      rkp%avg_intercepted    = rkp%avg_intercepted    + fac * inc%avg_intercepted
       rkp%avg_throughfall    = rkp%avg_throughfall    + fac * inc%avg_throughfall
       rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
-      rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp
-      rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap
       rkp%avg_drainage       = rkp%avg_drainage       + fac * inc%avg_drainage
-      rkp%avg_drainage_heat  = rkp%avg_drainage_heat  + fac * inc%avg_drainage_heat
-      rkp%avg_rshort_gnd     = rkp%avg_rshort_gnd     + fac * inc%avg_rshort_gnd
-      rkp%avg_par_gnd        = rkp%avg_par_gnd        + fac * inc%avg_par_gnd
-      rkp%avg_rlong_gnd      = rkp%avg_rlong_gnd      + fac * inc%avg_rlong_gnd
-      rkp%avg_sensible_lc    = rkp%avg_sensible_lc    + fac * inc%avg_sensible_lc
-      rkp%avg_sensible_wc    = rkp%avg_sensible_wc    + fac * inc%avg_sensible_wc
-      rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg
-      rkp%avg_qintercepted   = rkp%avg_qintercepted   + fac * inc%avg_qintercepted
+      rkp%avg_qdrainage      = rkp%avg_qdrainage      + fac * inc%avg_qdrainage
       rkp%avg_qthroughfall   = rkp%avg_qthroughfall   + fac * inc%avg_qthroughfall
       rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac
@@ -1159,24 +1133,24 @@ subroutine hybrid_timestep(cgrid)
 
 
       do k=1,cpatch%ncohorts
-         rkp%cav_sensible_lc   (k) =       rkp%cav_sensible_lc   (k)                       &
-                                   + fac * inc%cav_sensible_lc   (k)
-         rkp%cav_sensible_wc   (k) =       rkp%cav_sensible_wc   (k)                       &
-                                   + fac * inc%cav_sensible_wc   (k)
-         rkp%cav_vapor_lc      (k) =       rkp%cav_vapor_lc      (k)                       &
-                                   + fac * inc%cav_vapor_lc      (k)
-         rkp%cav_vapor_wc      (k) =       rkp%cav_vapor_wc      (k)                       &
-                                   + fac * inc%cav_vapor_wc      (k)
-         rkp%cav_transp        (k) =       rkp%cav_transp        (k)                       &
-                                   + fac * inc%cav_transp        (k)
-         rkp%cav_intercepted_al(k) =       rkp%cav_intercepted_al(k)                       &
-                                   + fac * inc%cav_intercepted_al(k)
-         rkp%cav_intercepted_aw(k) =       rkp%cav_intercepted_aw(k)                       &
-                                   + fac * inc%cav_intercepted_aw(k)
-         rkp%cav_wshed_lg      (k) =       rkp%cav_wshed_lg      (k)                       &
-                                   + fac * inc%cav_wshed_lg      (k)
-         rkp%cav_wshed_wg      (k) =       rkp%cav_wshed_wg      (k)                       &
-                                   + fac * inc%cav_wshed_wg      (k)
+         rkp%avg_sensible_lc   (k) =       rkp%avg_sensible_lc   (k)                       &
+                                   + fac * inc%avg_sensible_lc   (k)
+         rkp%avg_sensible_wc   (k) =       rkp%avg_sensible_wc   (k)                       &
+                                   + fac * inc%avg_sensible_wc   (k)
+         rkp%avg_vapor_lc      (k) =       rkp%avg_vapor_lc      (k)                       &
+                                   + fac * inc%avg_vapor_lc      (k)
+         rkp%avg_vapor_wc      (k) =       rkp%avg_vapor_wc      (k)                       &
+                                   + fac * inc%avg_vapor_wc      (k)
+         rkp%avg_transp        (k) =       rkp%avg_transp        (k)                       &
+                                   + fac * inc%avg_transp        (k)
+         rkp%avg_intercepted_al(k) =       rkp%avg_intercepted_al(k)                       &
+                                   + fac * inc%avg_intercepted_al(k)
+         rkp%avg_intercepted_aw(k) =       rkp%avg_intercepted_aw(k)                       &
+                                   + fac * inc%avg_intercepted_aw(k)
+         rkp%avg_wshed_lg      (k) =       rkp%avg_wshed_lg      (k)                       &
+                                   + fac * inc%avg_wshed_lg      (k)
+         rkp%avg_wshed_wg      (k) =       rkp%avg_wshed_wg      (k)                       &
+                                   + fac * inc%avg_wshed_wg      (k)
       end do
 
    end if
@@ -1190,24 +1164,11 @@ subroutine hybrid_timestep(cgrid)
       rkp%flx_carbon_ac      = rkp%flx_carbon_ac      + fac * inc%avg_carbon_ac
       rkp%flx_carbon_st      = rkp%flx_carbon_st      + fac * inc%avg_carbon_st
 
-      rkp%flx_vapor_lc       = rkp%flx_vapor_lc       + fac * inc%avg_vapor_lc
-      rkp%flx_vapor_wc       = rkp%flx_vapor_wc       + fac * inc%avg_vapor_wc
       rkp%flx_vapor_gc       = rkp%flx_vapor_gc       + fac * inc%avg_vapor_gc
-      rkp%flx_wshed_vg       = rkp%flx_wshed_vg       + fac * inc%avg_wshed_vg
-      rkp%flx_intercepted    = rkp%flx_intercepted    + fac * inc%avg_intercepted
       rkp%flx_throughfall    = rkp%flx_throughfall    + fac * inc%avg_throughfall
       rkp%flx_vapor_ac       = rkp%flx_vapor_ac       + fac * inc%avg_vapor_ac
-      rkp%flx_transp         = rkp%flx_transp         + fac * inc%avg_transp
-      rkp%flx_evap           = rkp%flx_evap           + fac * inc%avg_evap
       rkp%flx_drainage       = rkp%flx_drainage       + fac * inc%avg_drainage
-      rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
-      rkp%flx_rshort_gnd     = rkp%flx_rshort_gnd     + fac * inc%avg_rshort_gnd
-      rkp%flx_par_gnd        = rkp%flx_par_gnd        + fac * inc%avg_par_gnd
-      rkp%flx_rlong_gnd      = rkp%flx_rlong_gnd      + fac * inc%avg_rlong_gnd
-      rkp%flx_sensible_lc    = rkp%flx_sensible_lc    + fac * inc%avg_sensible_lc
-      rkp%flx_sensible_wc    = rkp%flx_sensible_wc    + fac * inc%avg_sensible_wc
-      rkp%flx_qwshed_vg      = rkp%flx_qwshed_vg      + fac * inc%avg_qwshed_vg
-      rkp%flx_qintercepted   = rkp%flx_qintercepted   + fac * inc%avg_qintercepted
+      rkp%flx_qdrainage      = rkp%flx_qdrainage      + fac * inc%avg_qdrainage
       rkp%flx_qthroughfall   = rkp%flx_qthroughfall   + fac * inc%avg_qthroughfall
       rkp%flx_sensible_gc    = rkp%flx_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%flx_sensible_ac    = rkp%flx_sensible_ac    + fac * inc%avg_sensible_ac
@@ -1219,22 +1180,39 @@ subroutine hybrid_timestep(cgrid)
       end do
 
       do ico = 1,cpatch%ncohorts
-         rkp%cfx_hflxlc      (ico)  =       rkp%cfx_hflxlc      (ico)                      &
-                                    + fac * inc%cfx_hflxlc      (ico)
-         rkp%cfx_hflxwc      (ico)  =       rkp%cfx_hflxwc      (ico)                      &
-                                    + fac * inc%cfx_hflxwc      (ico)
-         rkp%cfx_qwflxlc     (ico)  =       rkp%cfx_qwflxlc     (ico)                      &
-                                    + fac * inc%cfx_qwflxlc     (ico)
-         rkp%cfx_qwflxwc     (ico)  =       rkp%cfx_qwflxwc     (ico)                      &
-                                    + fac * inc%cfx_qwflxwc     (ico)
-         rkp%cfx_qwshed      (ico)  =       rkp%cfx_qwshed      (ico)                      &
-                                    + fac * inc%cfx_qwshed      (ico)
-         rkp%cfx_qtransp     (ico)  =       rkp%cfx_qtransp     (ico)                      &
-                                    + fac * inc%cfx_qtransp     (ico)
-         rkp%cfx_qintercepted(ico)  =       rkp%cfx_qintercepted(ico)                      &
-                                    + fac * inc%cfx_qintercepted(ico)
+         rkp%flx_vapor_lc           =         rkp%flx_vapor_lc                             &
+                                    + fac *   inc%avg_vapor_lc       (ico)
+         rkp%flx_vapor_wc           =         rkp%flx_vapor_wc                             &
+                                    + fac *   inc%avg_vapor_wc       (ico)
+         rkp%flx_wshed_vg           =         rkp%flx_wshed_vg                             &
+                                    + fac * ( inc%avg_wshed_lg       (ico)                 &
+                                            + inc%avg_wshed_wg       (ico) )
+         rkp%flx_intercepted        =       rkp%flx_intercepted                            &
+                                    + fac * ( inc%avg_intercepted_al (ico)                 &
+                                            + inc%avg_intercepted_aw (ico) )
+         rkp%flx_sensible_lc        =         rkp%flx_sensible_lc                          &
+                                    + fac *   inc%avg_sensible_lc    (ico)
+         rkp%flx_sensible_wc        =         rkp%flx_sensible_wc                          &
+                                    + fac *   inc%avg_sensible_wc    (ico)
+         rkp%flx_qwshed_vg          =         rkp%flx_qwshed_vg                            &
+                                    + fac *   inc%cfx_qwshed         (ico)
+         rkp%flx_qintercepted       =         rkp%flx_qintercepted                         &
+                                    + fac *   inc%cfx_qintercepted   (ico)
+         rkp%cfx_hflxlc      (ico)  =         rkp%cfx_hflxlc         (ico)                 &
+                                    + fac *   inc%cfx_hflxlc         (ico)
+         rkp%cfx_hflxwc      (ico)  =         rkp%cfx_hflxwc         (ico)                 &
+                                    + fac *   inc%cfx_hflxwc         (ico)
+         rkp%cfx_qwflxlc     (ico)  =         rkp%cfx_qwflxlc        (ico)                 &
+                                    + fac *   inc%cfx_qwflxlc        (ico)
+         rkp%cfx_qwflxwc     (ico)  =         rkp%cfx_qwflxwc        (ico)                 &
+                                    + fac *   inc%cfx_qwflxwc        (ico)
+         rkp%cfx_qwshed      (ico)  =         rkp%cfx_qwshed         (ico)                 &
+                                    + fac *   inc%cfx_qwshed         (ico)
+         rkp%cfx_qtransp     (ico)  =         rkp%cfx_qtransp        (ico)                 &
+                                    + fac *   inc%cfx_qtransp        (ico)
+         rkp%cfx_qintercepted(ico)  =         rkp%cfx_qintercepted   (ico)                 &
+                                    + fac *   inc%cfx_qintercepted   (ico)
       end do
-
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -1812,6 +1790,7 @@ subroutine hybrid_timestep(cgrid)
             write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+            write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_MSTPOT: ',y%soil_mstpot(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
             if (k == nzg .and. y%nlev_sfcwater > 0) then
@@ -1843,6 +1822,7 @@ subroutine hybrid_timestep(cgrid)
             write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+            write(unit=*,fmt='(a,1x,f12.4)') ' SOIL_MSTPOT: ',y%soil_mstpot(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
             write(unit=*,fmt='(a,1x,f12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
             if (k == nzg .and. y%nlev_sfcwater > 0) then

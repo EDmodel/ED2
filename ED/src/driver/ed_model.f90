@@ -30,7 +30,13 @@ subroutine ed_model()
                             , ffilout             & ! intent(in)
                             , runtype             ! ! intent(in)
    use ed_misc_coms  , only : outputMonth         & ! intent(in)
-                            , fast_diagnostics    ! ! intent(in)
+                            , fast_diagnostics    & ! intent(in)
+                            , writing_dail        & ! intent(in)
+                            , writing_mont        & ! intent(in)
+                            , writing_dcyc        & ! intent(in)
+                            , writing_eorq        & ! intent(in)
+                            , writing_long        & ! intent(in)
+                            , writing_year        ! ! intent(in)
    use grid_coms     , only : ngrids              & ! intent(in)
                             , istp                & ! intent(in)
                             , time                & ! intent(in)
@@ -79,10 +85,6 @@ subroutine ed_model()
    logical            :: new_month
    logical            :: new_year
    logical            :: the_end
-   logical            :: writing_dail
-   logical            :: writing_mont
-   logical            :: writing_dcyc
-   logical            :: writing_year
    logical            :: history_time
    logical            :: dcycle_time
    logical            :: annual_time
@@ -146,54 +148,42 @@ subroutine ed_model()
       close (unit=78,status='keep')
    end if
 
-   writing_dail      = idoutput > 0
-   writing_mont      = imoutput > 0
-   writing_dcyc      = iqoutput > 0
-   writing_year      = iyoutput > 0
    out_time_fast     = current_time
    out_time_fast%month = -1
-
-   !---------------------------------------------------------------------------------------!
-   !     Checking if the user has indicated a need for any of the fast flux diagnostic     !
-   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions. !
-   ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
-   !---------------------------------------------------------------------------------------!
-   fast_diagnostics = checkbudget   .or. ifoutput /= 0 .or. idoutput /= 0 .or.             &
-                      imoutput /= 0 .or. iqoutput /= 0 .or. itoutput /= 0
 
    !---------------------------------------------------------------------------------------!
    !      If this is not a history restart, then zero out the long term diagnostics.       !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
       
-      if (writing_mont .or. writing_dcyc) then
-         do ifm=1,ngrids
-            call zero_ed_monthly_output_vars(edgrid_g(ifm))
-            call zero_ed_daily_output_vars(edgrid_g(ifm))
-         end do
-      elseif (writing_dail) then
-         do ifm=1,ngrids
-            call zero_ed_daily_output_vars(edgrid_g(ifm))
-         end do
-      end if
+      do ifm=1,ngrids
+         if (writing_long) call zero_ed_dmean_vars(edgrid_g(ifm))
+         if (writing_eorq) call zero_ed_mmean_vars(edgrid_g(ifm))
+         if (writing_dcyc) call zero_ed_qmean_vars(edgrid_g(ifm))
+      end do
 
       !----- Output initial state. --------------------------------------------------------!
       do ifm=1,ngrids
          call update_ed_yearly_vars(edgrid_g(ifm))
       end do
-      
+   end if
+   !---------------------------------------------------------------------------------------!
 
-   endif
-   
+
+   !---------------------------------------------------------------------------------------!
+   !      The fast analysis is always reset, including history runs.                       !
+   !---------------------------------------------------------------------------------------!
+   do ifm=1,ngrids
+      call zero_ed_fmean_vars(edgrid_g(ifm))
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !    Allocate memory to the integration patch, Euler now utilises the RK4 buffers too.  !
    !---------------------------------------------------------------------------------------!
    call initialize_rk4patches(.true.)
    !---------------------------------------------------------------------------------------!
-
-   do ifm=1,ngrids
-      call reset_averaged_vars(edgrid_g(ifm))
-   end do
    
    
    if (ifoutput /= 0) call h5_output('INST')
@@ -246,6 +236,18 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !     At this point, all meteorologic driver data for the land surface model has     !
+      ! been updated for the current timestep.  Perform the time average for the output    !
+      ! diagnostic.                                                                        !
+      !------------------------------------------------------------------------------------!
+      do ifm=1,ngrids
+         call integrate_ed_fmean_met_vars(edgrid_g(ifm))
+      end do
+      !------------------------------------------------------------------------------------!
+
+
       !----- Solve the photosynthesis and biophysics. -------------------------------------!
       select case (integration_scheme)
       case (0)
@@ -265,18 +267,6 @@ subroutine ed_model()
             call hybrid_timestep(edgrid_g(ifm))
          end do
       end select
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Update the daily averages if daily or monthly analysis are needed.             !
-      !------------------------------------------------------------------------------------!
-      if (writing_dail .or. writing_mont .or. writing_dcyc) then
-         do ifm=1,ngrids
-            call integrate_ed_daily_output_state(edgrid_g(ifm))
-         end do
-      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -429,8 +419,7 @@ subroutine ed_model()
       !     Call the model output driver.                                                  !
       !------------------------------------------------------------------------------------!
       call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,writing_dail,writing_mont,writing_dcyc,history_time       &
-                    ,dcycle_time,the_end)
+                    ,annual_time,history_time,dcycle_time,the_end)
       !------------------------------------------------------------------------------------!
 
 
@@ -442,7 +431,7 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       if (reset_time) then
          do ifm=1,ngrids
-            call reset_averaged_vars(edgrid_g(ifm))
+            call zero_ed_fmean_vars(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!

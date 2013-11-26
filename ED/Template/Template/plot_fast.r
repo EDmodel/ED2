@@ -1,6 +1,6 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath" # Current directory.
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"     
+here           = "thispath"    # Current directory.
+srcdir         = "thisrscpath"     
 outroot        = "thisoutroot"
 frqsum         = 3600.
 
@@ -47,7 +47,6 @@ plotgrid        = TRUE          # Should I include a grid on the plots?
 
 legwhere       = "topleft"      # Where should I place the legend?
 inset          = 0.05           # inset distance between legend and edge of plot region.
-legbg          = "white"        # Legend background colour.
 scalleg        = 0.32           # Increase in y scale to fit the legend.
 
 theta           = 315.
@@ -55,10 +54,10 @@ phi             = 30.
 ltheta          = -210.
 shade           = 0.125
 expz            = 0.5
-gcol            = c("lightblue","white")
 cexmin          = 0.5
 cexmax          = 3.0
 fullonly        = FALSE
+ibackground     = mybackground    # Background settings (check load_everything.r)
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
@@ -78,7 +77,7 @@ hovdi01 = list(vnam   = c("gpp","plresp","hetresp")
               ,plt    = TRUE)
 hovdi02 = list(vnam   = c("rsnet","rlong","rlongup","qwflxca","hflxca")
               ,desc   = c("Net SW","LW down","LW up","Latent","Sensible")
-              ,colour = c("deepskyblue","gray33","goldenrod","midnightblue","firebrick")
+              ,colour = c("deepskyblue","grey45","goldenrod","midnightblue","firebrick")
               ,lwd    = c(1.5,1.5,1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "eneflux"
@@ -110,7 +109,7 @@ hovdi04 = list(vnam   = c("hflxgc","hflxac","hflxlc","hflxwc")
               ,plt    = TRUE)
 hovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","soil.temp")
               ,desc   = c("Atmosphere","Canopy air","Leaf","Wood","Soil (Top)")
-              ,colour = c("deepskyblue","gray21","chartreuse","goldenrod","sienna")
+              ,colour = c("deepskyblue","grey45","chartreuse","goldenrod","sienna")
               ,lwd    = c(1.5,1.5,1.5,1.5)
               ,type   = ptype
               ,prefix = "temperature"
@@ -120,7 +119,7 @@ hovdi05 = list(vnam   = c("atm.temp","can.temp","leaf.temp","wood.temp","soil.te
               ,plt    = TRUE)
 hovdi06 = list(vnam   = c("atm.shv","can.shv")
               ,desc   = c("Atmosphere","Canopy air")
-              ,colour = c("deepskyblue","gray21")
+              ,colour = c("deepskyblue","grey45")
               ,lwd    = c(1.5,1.5)
               ,type   = ptype
               ,prefix = "h2ovapour"
@@ -161,40 +160,31 @@ hovdi09 = list(vnam   = c("prec","intercept","throughfall","wshed")
               ,plt    = TRUE)
 
 
-#----- Loading some packages. -------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-library(fields)
 
-#----- In case there is more than one point to be plotted. --------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
 
 #----- Setting how many formats we must output. -------------------------------------------#
 outform = tolower(outform)
 nout    = length(outform)
 nplaces = length(myplaces)
-
-#----- Avoiding unecessary and extremely annoying beeps. ----------------------------------#
-options(locatorBell=FALSE)
-
-#----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r"      ,sep="/"))
-source(paste(srcdir,"globdims.r"   ,sep="/"))
-source(paste(srcdir,"locations.r"  ,sep="/"))
-source(paste(srcdir,"muitas.r"     ,sep="/"))
-source(paste(srcdir,"plotsize.r"   ,sep="/"))
-source(paste(srcdir,"pretty.log.r" ,sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"rconstants.r" ,sep="/"))
-source(paste(srcdir,"soil_coms.r"  ,sep="/"))
-source(paste(srcdir,"sombreado.r"  ,sep="/"))
-source(paste(srcdir,"southammap.r" ,sep="/"))
-source(paste(srcdir,"thermlib.r"   ,sep="/"))
-source(paste(srcdir,"timeutils.r"  ,sep="/"))
 
 
 #----- Convert frqsum to days, which is the standard unit for time in chron. --------------#
@@ -208,11 +198,11 @@ pftnames = c("C4 Grass","Early Tropical","Mid Tropical","Late Tropical","Temp. C
              ,"C3 Grass","Araucaria","Total")
 pftcols  = c("gold","chartreuse","limegreen","darkgreen","purple3"
             ,"deepskyblue","aquamarine","midnightblue","darkorange3","sienna"
-            ,"firebrick","orchid","coral","gray45","olivedrab"
-            ,"goldenrod","steelblue","gray22")
+            ,"firebrick","orchid","coral","grey45","olivedrab"
+            ,"goldenrod","steelblue","grey22")
 
 lunames = c("Agricultural","Secondary","Primary","Total")
-lucols  = c("goldenrod","chartreuse","darkgreen","gray22")
+lucols  = c("goldenrod","chartreuse","darkgreen","grey22")
 
 distnames = c("Agr->Agr" ,"2nd->Agr" ,"Prim->Agr"
               ,"Agr->2nd" ,"2nd->2nd" ,"Prim->2nd"
@@ -553,6 +543,7 @@ for (l in 1:nplaces){
             letitre = paste(theme," - ",p$lieu,
                             " \n"," Time series of hourly averages: ",theme,sep="")
 
+            par(par.user)
             plot(x=thistime,y=p[[vnames[1]]],type="n",main=letitre,xlab="Day",
                  ylim=ylimit,ylab=paste("[",unit,"]",sep=""),xaxt="n")
             axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
@@ -563,7 +554,8 @@ for (l in 1:nplaces){
                points(x=thistime,y=p[[vnames[l]]],pch=16,col=lcolours[l],cex=1.2
                      ,type=ptype,lwd=llwd[l])
             }#end for
-            legend(x=legpos,inset=0.05,legend=description,col=lcolours,pch=16,lwd=2)
+            legend(x=legpos,bg=background,inset=0.05,legend=description,col=lcolours
+                  ,pch=16,lwd=2)
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()

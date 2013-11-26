@@ -971,20 +971,39 @@ module growth_balive
             delta_bsapwoodb = max (0.0, bsapwoodb_aim - cpatch%bsapwoodb(ico))
             !------------------------------------------------------------------------------!
 
+            if(cpatch%elongf(ico)<1e-15) then
+               
+               write(*,'(a)')' ============================================'
+               write(*,'(a)')' LINE 990 growth_balive.f90'
+               write(*,'(a)')' subroutine alloc_plant_c_balance'
+               write(*,'(a)')' '
+               write(*,'(a)')' An elongation factor of effectively zero'
+               write(*,'(a)')' has been detected during the transfer'
+               write(*,'(a)')' of storage carbon back to active leaf pool.'
+               write(*,'(a)')' This routine is expecting a non-zero '
+               write(*,'(a)')' elongation as status leaves exist.'
+               write(*,'(a)')' This is a minor bug that appears to trigger'
+               write(*,'(a)')' in rare cases when veg dynamics are off and'
+               write(*,'(a)')' drought stress is high.'
+               write(*,'(a)')' '
+               write(*,'(a)')' Continuing with 0 storage transfer.'
+               write(*,'(a)')' ============================================'
 
+               f_total=0.0
+            else
 
-            !------------------------------------------------------------------------------!
-            !     If the available carbon is less than what we need to get back to         !
-            ! allometry.  Grow pools in proportion to demand.  If we have enough carbon,   !
-            ! we'll put the extra into bstorage.                                           !
-            !------------------------------------------------------------------------------!
-            f_bleaf     = delta_bleaf     / bleaf_aim
-            f_broot     = delta_broot     / broot_aim
-            f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-            f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
-            f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb
-            !------------------------------------------------------------------------------!
-
+               !------------------------------------------------------------------------------!
+               !     If the available carbon is less than what we need to get back to         !
+               ! allometry.  Grow pools in proportion to demand.  If we have enough carbon,   !
+               ! we'll put the extra into bstorage.                                           !
+               !------------------------------------------------------------------------------!
+               f_bleaf     = delta_bleaf     / bleaf_aim
+               f_broot     = delta_broot     / broot_aim
+               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
+               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+               f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb
+               !------------------------------------------------------------------------------!
+            end if
 
             !------------------------------------------------------------------------------!
             !     We only allow transfer from storage to living tissues if there is need   !
@@ -1635,21 +1654,40 @@ module growth_balive
             delta_bsapwoodb = max (0.0, bsapwoodb_aim - cpatch%bsapwoodb(ico))
             !------------------------------------------------------------------------------!
 
+            if(cpatch%elongf(ico)<1e-15) then
 
+               write(*,'(a)')' ============================================'
+               write(*,'(a)')' LINE 1660 growth_balive.f90'
+               write(*,'(a)')' subroutine alloc_plant_c_balance_eq_0'
+               write(*,'(a)')' '
+               write(*,'(a)')' An elongation factor of effectively zero'
+               write(*,'(a)')' has been detected during the transfer'
+               write(*,'(a)')' of storage carbon back to active leaf pool.'
+               write(*,'(a)')' This routine is expecting a non-zero '
+               write(*,'(a)')' elongation as status is flushing.'
+               write(*,'(a)')' This is a minor bug that appears to trigger'
+               write(*,'(a)')' in rare cases when veg dynamics are off and'
+               write(*,'(a)')' drought stress is high.'
+               write(*,'(a)')' '
+               write(*,'(a)')' Continuing with 0 storage transfer.'
+               write(*,'(a)')' ============================================'
 
-            !------------------------------------------------------------------------------!
-            !     If the available carbon is less than what we need to get back to         !
-            ! allometry.  Grow pools in proportion to demand.  If we have enough carbon,   !
-            ! we'll put the extra into bstorage.                                           !
-            !------------------------------------------------------------------------------!
-            f_bleaf     = delta_bleaf     / bleaf_aim
-            f_broot     = delta_broot     / broot_aim
-            f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-            f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
-            f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb
-            !------------------------------------------------------------------------------!
-
-
+               f_total=0.0
+            else
+               
+               !------------------------------------------------------------------------------!
+               !     If the available carbon is less than what we need to get back to         !
+               ! allometry.  Grow pools in proportion to demand.  If we have enough carbon,   !
+               ! we'll put the extra into bstorage.                                           !
+               !------------------------------------------------------------------------------!
+               f_bleaf     = delta_bleaf     / bleaf_aim
+               f_broot     = delta_broot     / broot_aim
+               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
+               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+               f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb
+               !------------------------------------------------------------------------------!
+               
+            end if
 
             !------------------------------------------------------------------------------!
             !     We only allow transfer from storage to living tissues if there is need   !

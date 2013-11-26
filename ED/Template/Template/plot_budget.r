@@ -1,7 +1,7 @@
 #----- Here is the user-defined variable section. -----------------------------------------#
-here           = "thispath"                                  # Current directory.
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc"      # Source  directory.
-outroot        = "thisoutroot" # Source  directory.
+here           = "thispath"     # Current directory.
+srcdir         = "thisrscpath"  # Source  directory.
+outroot        = "thisoutroot"  # Output  directory.
 myplaces       = c("thispoly")
 #------------------------------------------------------------------------------------------#
 #     Initial and final times, they must be character vectors of size 2, the first one     #
@@ -31,11 +31,11 @@ plotgrid       = TRUE           # Should I plot the grid in the background?
 
 legwhere       = "topleft"      # Where should I place the legend?
 inset          = 0.05           # inset distance between legend and edge of plot region.
-legbg          = "white"        # Legend background colour.
 
 scalleg        = 0.32           # Increase in y scale to fit the legend.
 ncolshov       = 200            # Target number of colours for Hovmoller diagrams.
 hovgrid        = TRUE           # Should I include a grid on the Hovmoller plots?
+ibackground    = mybackground   # Background settings (check load_everything.r)
 
 
 #------------------------------------------------------------------------------------------#
@@ -49,7 +49,7 @@ budget[[ 1]] = list( vnam   = c("co2.dstorage","co2.nep","co2.dens.eff"
                    , desc   = c("Delta (Storage)","NEP","Density Effect"
                                ,"Eddy flux loss","Residual")
                    , colour = c("forestgreen","chartreuse","purple4"
-                               ,"deepskyblue","black")
+                               ,"deepskyblue","grey30")
                    , lwd    = c(2.0,2.0,2.0,2.0,2.0)
                    , range  = c(FALSE,TRUE,TRUE,TRUE,TRUE)
                    , type   = ptype
@@ -67,7 +67,7 @@ budget[[ 2]] = list( vnam   = c("ene.dstorage","ene.precip","ene.netrad"
                                ,"Drainage","Runoff","Residual")
                    , colour = c("red3","royalblue","darkorange"
                                ,"purple4","chartreuse","deepskyblue","sienna"
-                               ,"forestgreen","black")
+                               ,"forestgreen","grey30")
                    , lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0)
                    , range  = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,TRUE)
                    , type   = ptype
@@ -82,7 +82,7 @@ budget[[ 3]] = list( vnam   = c("h2o.dstorage","h2o.precip","h2o.dens.eff"
                    , desc   = c("Delta (Storage)","Rainfall","Density effect"
                                ,"Eddy flux loss","Drainage","Runoff","Residual")
                    , colour = c("red3","royalblue","purple4"
-                               ,"deepskyblue","sienna","forestgreen","black")
+                               ,"deepskyblue","sienna","forestgreen","grey30")
                    , lwd    = c(2.0,2.0,2.0,2.0,2.0,2.0,2.0)
                    , range  = c(FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,TRUE)
                    , type   = ptype
@@ -168,20 +168,24 @@ budget[[ 9]] = list( vnam   = c("h2o.relres")
 
 
 
-#----- Loading some packages. -------------------------------------------------------------#
-library(hdf5)
-library(chron)
-library(scatterplot3d)
-library(lattice)
-library(maps)
-library(mapdata)
-library(akima)
-#------------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
 
 
 
-#----- In case there is some graphic still opened. ----------------------------------------#
-graphics.off()
+#----- Loading some packages and scripts. -------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -189,30 +193,6 @@ graphics.off()
 #----- Setting how many formats we must output. -------------------------------------------#
 outform = tolower(outform)
 nout = length(outform)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Avoiding unecessary and extremely annoying beeps. ----------------------------------#
-options(locatorBell=FALSE)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Loading some files with functions. -------------------------------------------------#
-source(paste(srcdir,"atlas.r"      ,sep="/"))
-source(paste(srcdir,"globdims.r"   ,sep="/"))
-source(paste(srcdir,"locations.r"  ,sep="/"))
-source(paste(srcdir,"muitas.r"     ,sep="/"))
-source(paste(srcdir,"pretty.log.r" ,sep="/"))
-source(paste(srcdir,"pretty.time.r",sep="/"))
-source(paste(srcdir,"plotsize.r"   ,sep="/"))
-source(paste(srcdir,"qapply.r"     ,sep="/"))
-source(paste(srcdir,"rconstants.r" ,sep="/"))
-source(paste(srcdir,"sombreado.r"  ,sep="/"))
-source(paste(srcdir,"southammap.r" ,sep="/"))
-source(paste(srcdir,"thermlib.r"   ,sep="/"))
-source(paste(srcdir,"timeutils.r"  ,sep="/"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -399,12 +379,13 @@ for (place in myplaces){
                letitre = paste(theme," - ",thispoi$lieu,"(Patch ",ipa,")",
                                " \n"," Time series: ",theme,sep="")
 
+               par(par.user)
                plot(x=when,y=cpatch[[vnames[1]]],type="n",main=letitre,xlab="Time"
                    ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
                    ,cex.main=cex.main)
                axis(side=1,at=whenout$levels,labels=whenout$labels,padj=whenout$padj)
                if (hovgrid){
-                   abline(h=axTicks(side=2),v=whenout$levels,col="gray66",lty="dotted")
+                   abline(h=axTicks(side=2),v=whenout$levels,col=grid.colour,lty="dotted")
                }#end if
                for (l in 1:nlayers){
                   points(x=when,y=cpatch[[vnames[l]]],col=lcolours[l]

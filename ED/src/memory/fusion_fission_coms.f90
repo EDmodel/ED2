@@ -55,6 +55,14 @@ module fusion_fission_coms
    real    :: light_toler_mult
 
    !---------------------------------------------------------------------------------------!
+   !      Correlation coefficient that is assumed between two patches and two cohorts when !
+   ! they are fused.  This only affects the mean sum of squares.                           !
+   !---------------------------------------------------------------------------------------!
+   real    :: corr_patch
+   real    :: corr_cohort
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
    !     Flag to decide whether we should print the full details of the patch fusion       !
    ! process.                                                                              !
    !---------------------------------------------------------------------------------------!

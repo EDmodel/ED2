@@ -428,6 +428,7 @@ end subroutine ed_opspec_par
 subroutine ed_opspec_times
    use ed_misc_coms , only : frqfast          & ! intent(in)
                            , frqstate         & ! intent(in)
+                           , frqsum           & ! intent(in)
                            , imontha          & ! intent(in)
                            , idatea           & ! intent(in)
                            , iyeara           & ! intent(in)
@@ -964,7 +965,7 @@ subroutine ed_opspec_times
    ! time, so that the integrated variables reported in the history file are integrated    !
    ! over the history period.                                                              !
    !---------------------------------------------------------------------------------------!
-   if (isoutput /= 0 .and. ifoutput /= 0) then
+   if (isoutput /= 0 .and. (ifoutput /= 0 .or. iqoutput /= 0)) then
       if (unitfast == unitstate .and. mod(frqstate,frqfast) /= 0.0 ) then
          write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                       &
               'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',         &
@@ -981,12 +982,14 @@ subroutine ed_opspec_times
                write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                 &
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'sec and FRQSTATE=',frqstate,'days!'
+               ifaterr=ifaterr+1
             end if
          case (2,3) !---- State in months or years, frqfast must be divisor of 1 day ------!
             if (mod(frqstate*day_sec,frqfast) /= 0.0) then
                write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2)')                         &
                     'FRQFAST must be a divisor of one day when frqfast is in seconds and', &
                     'FRQSTATE is in months or years. Your FRQFAST=',frqfast,'sec.'
+               ifaterr=ifaterr+1
             end if
          end select
 
@@ -997,6 +1000,7 @@ subroutine ed_opspec_times
                write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2,1x,a)')                    &
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'days and FRQSTATE=',frqstate,'sec!'
+               ifaterr=ifaterr+1
             end if
 
          case (2,3) !---- State in months or years, frqfast must be divisor of 1 day ------!
@@ -1004,6 +1008,7 @@ subroutine ed_opspec_times
                write(reason,fmt='(a,1x,a,1x,f10.2,1x,a,1x,f10.2,1x,a)')                    &
                     'FRQFAST must be a divisor of one day or 1 day when UNITFAST is in',   &
                     'days and FRQSTATE is in months or years. Your FRQFAST=',frqfast,'days.'
+               ifaterr=ifaterr+1
             end if
 
          end select
@@ -1014,6 +1019,7 @@ subroutine ed_opspec_times
             write(reason,fmt='(a,1x,a,1x,i5)')                                             &
                'If UNITFAST is in months, UNITSTATE must be either months or year, and',   &
                'currently UNITSTATE=',unitstate
+            ifaterr=ifaterr+1
       
          case (3) !---- State years, frqfast must be divisor ------------------------------!
             if (mod(frqstate*12.,frqfast) /= 0.) then
@@ -1021,6 +1027,7 @@ subroutine ed_opspec_times
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'mon and FRQSTATE=',frqstate,'yrs!'
             end if
+            ifaterr=ifaterr+1
 
          end select
 
@@ -1030,16 +1037,20 @@ subroutine ed_opspec_times
             write(reason,fmt='(a,1x,a,1x,i5)')                                             &
                'If UNITFAST is in months, UNITSTATE must be either months or year, and',   &
                'currently UNITSTATE=',unitstate
+            ifaterr=ifaterr+1
       
          case (2) !---- State months, frqfast must be divisor -----------------------------!
             if (mod(frqstate,frqfast*12.) /= 0.) then
                write(reason,fmt='(a,1x,2(a,1x,f10.2,1x),a)')                               &
                     'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',   &
                     'Yours is set to FRQFAST=',frqfast,'yrs and FRQSTATE=',frqstate,'mon!'
+               ifaterr=ifaterr+1
             end if
          end select
       end select
    end if
+
+   !----- 
 
 
    !Check if this simulation has a positive timmax.
@@ -1052,21 +1063,36 @@ subroutine ed_opspec_times
       ifaterr=ifaterr+1
    end if
 
-   !if (mod(hr_sec,dtlsm) /= 0.0) then
-   !   write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-   !       'DTLSM must be a divisor of ',hr_sec,' sec. Yours is set to ',dtlsm
-   !   call opspec_fatal(reason,'opspec_times')  
-   !   ifaterr=ifaterr+1
-   !end if
+   !---------------------------------------------------------------------------------------!
+   !    If we made up to this point, find frqsum so we make sure that the main time step   !
+   ! and the radiation are both divisors of the frequency of output.                       !
+   !---------------------------------------------------------------------------------------!
+   if (ifaterr == 0) then
+      call find_frqsum()
 
-   !if (mod(hr_sec,radfrq) /= 0.0) then
-   !   write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-   !       'RADFRQ must be a divisor of ',hr_sec,' sec. Yours is set to ',radfrq
-   !   call opspec_fatal(reason,'opspec_times')  
-   !   ifaterr=ifaterr+1
-   !end if
+      !----- Check whether the time steps make sense. -------------------------------------!
+      if (mod(frqsum,dtlsm) /= 0.0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+             'DTLSM must be a divisor of ',frqsum,' sec. Yours is set to ',dtlsm
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr=ifaterr+1
+      end if
 
-   ! Not sure if this is really necessary. If not, please remove it...
+      if (mod(frqsum,radfrq) /= 0.0) then
+         write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+             'RADFRQ must be a divisor of ',frqsum,' sec. Yours is set to ',radfrq
+         call opspec_fatal(reason,'opspec_times')  
+         ifaterr=ifaterr+1
+      end if
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !----- DTLSM must be an integer divisor of RADFRQ so integrals make sense. -------------!
    if (mod(radfrq,dtlsm) /= 0.0) then
       write(reason,fmt='(a,1x,f8.2,1x,a,1x,f8.2,a)')  &
           'DTLSM must be a divisor of RADFRQ. Your DTLSM is set to',dtlsm, &
@@ -1074,15 +1100,24 @@ subroutine ed_opspec_times
       call opspec_fatal(reason,'opspec_times')  
       ifaterr=ifaterr+1
    end if
+   !---------------------------------------------------------------------------------------!
 
-   ! Stop the run if there are any fatal errors.
+
+
+
+   !------ Stop the run if there are any fatal errors. ------------------------------------!
    if (ifaterr > 0) then
-      write (unit=*,fmt='(a)')       ' -----------ED_OPSPEC_TIMES -------------------------'
+      write (unit=*,fmt='(a)')       ' -----------ED_OPSPEC_TIMES ------------------------'
       write (unit=*,fmt='(a,1x,i5)') ' Fatal errors:',ifaterr
-      write (unit=*,fmt='(a)')       ' ----------------------------------------------------'
+      write (unit=*,fmt='(a)')       ' ---------------------------------------------------'
       call fatal_error('Fatal errors at namelist - Time settings '&
                      & ,'ed_opspec_times','ed_opspec.f90')
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    return
 end subroutine ed_opspec_times
 !==========================================================================================!
@@ -1108,6 +1143,9 @@ subroutine ed_opspec_misc
                                     , iyoutput                     & ! intent(in)
                                     , itoutput                     & ! intent(in)
                                     , isoutput                     & ! intent(in)
+                                    , iadd_site_means              & ! intent(in)
+                                    , iadd_patch_means             & ! intent(in)
+                                    , iadd_cohort_means            & ! intent(in)
                                     , iclobber                     & ! intent(in)
                                     , runtype                      & ! intent(in)
                                     , ied_init_mode                & ! intent(in)
@@ -1294,6 +1332,27 @@ subroutine ed_opspec_misc
    if (isoutput /= 0 .and. isoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid ISOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',isoutput,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   if (iadd_site_means < 0 .or. iadd_site_means > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IADD_SITE_MEANS, it must be 0 (no) or 1 (yes).  Yours is set to'          &
+       ,iadd_site_means,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   if (iadd_patch_means < 0 .or. iadd_patch_means > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IADD_PATCH_MEANS, it must be 0 (no) or 1 (yes).  Yours is set to'         &
+       ,iadd_patch_means,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   if (iadd_cohort_means < 0 .or. iadd_cohort_means > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IADD_COHORT_MEANS, it must be 0 (no) or 1 (yes).  Yours is set to'        &
+       ,iadd_cohort_means,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

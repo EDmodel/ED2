@@ -183,6 +183,9 @@ subroutine copy_nl(copy_type)
                                    , frqstate                  & ! intent(out)
                                    , sfilout                   & ! intent(out)
                                    , isoutput                  & ! intent(out)
+                                   , iadd_site_means           & ! intent(out)
+                                   , iadd_patch_means          & ! intent(out)
+                                   , iadd_cohort_means         & ! intent(out)
                                    , iprintpolys               & ! intent(out)
                                    , printvars                 & ! intent(out)
                                    , npvars                    & ! intent(out)
@@ -197,7 +200,17 @@ subroutine copy_nl(copy_type)
                                    , event_file                & ! intent(out)
                                    , iallom                    & ! intent(out)
                                    , igrass                    & ! intent(out)
-                                   , min_site_area             ! ! intent(out)
+                                   , min_site_area             & ! intent(out)
+                                   , fast_diagnostics          & ! intent(out)
+                                   , writing_dail              & ! intent(out)
+                                   , writing_mont              & ! intent(out)
+                                   , writing_dcyc              & ! intent(out)
+                                   , writing_year              & ! intent(out)
+                                   , writing_long              & ! intent(out) 
+                                   , writing_eorq              & ! intent(out)
+                                   , history_fast              & ! intent(out) 
+                                   , history_dail              & ! intent(out) 
+                                   , history_eorq              ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
                                    , centlat                   & ! intent(out)
@@ -287,6 +300,10 @@ subroutine copy_nl(copy_type)
       iyoutput                  = nl%iyoutput
       itoutput                  = nl%itoutput
       isoutput                  = nl%isoutput
+
+      iadd_site_means           = nl%iadd_site_means
+      iadd_patch_means          = nl%iadd_patch_means
+      iadd_cohort_means         = nl%iadd_cohort_means
 
       attach_metadata           = nl%attach_metadata
 
@@ -629,6 +646,22 @@ subroutine copy_nl(copy_type)
    !---------------------------------------------------------------------------------------!
 
 
+
+   !----- Define some useful variables that control the output. ---------------------------!
+   writing_dail     = idoutput > 0
+   writing_mont     = imoutput > 0
+   writing_dcyc     = iqoutput > 0
+   writing_year     = iyoutput > 0
+   writing_long     = writing_dail .or. writing_mont .or. writing_dcyc
+   writing_eorq     = writing_mont .or. writing_dcyc
+   history_fast     = ifoutput == 0  .and.                                                 &
+                      ( ( unitstate == 0 .and. frqstate <= day_sec ) .or.                  &
+                        ( unitstate == 1 .and. frqstate == 1.      )      )
+   history_dail     = unitstate == 0 .and. frqstate < day_sec
+   history_eorq     = unitstate <= 1
+   fast_diagnostics = ifoutput /= 0 .or. idoutput /= 0 .or.                                &
+                      imoutput /= 0 .or. iqoutput /= 0 .or. itoutput /= 0
+   !---------------------------------------------------------------------------------------!
 
 
    return

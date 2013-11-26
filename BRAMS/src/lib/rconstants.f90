@@ -325,6 +325,23 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
+   !     Carbon-related unit conversions.                                                  !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: mol_2_umol     = 1.e6                 ! mol         => µmol
+   real, parameter :: umol_2_mol     = 1.e-6                ! µmol        => mol
+   real, parameter :: umol_2_kgC     = 1.20107e-8           ! µmol(CO2)   => kg(C)
+   real, parameter :: Watts_2_Ein    = 4.6e-6               ! W/m2        => mol/m²/s
+   real, parameter :: Ein_2_Watts    = 1./Watts_2_Ein       ! mol/m²/s    => W/m2
+   real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => µmol(CO2)
+   real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m²    => ton(C)/ha
+   real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m²
+   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec  ! µmol(CO2)/s => kg(C)/yr
+   real, parameter :: kgCday_2_umols = kgC_2_umol / day_sec ! kg(C)/day   => µmol(CO2)/s
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    Double precision version of all constants used in Runge-Kutta.                     !
    !---------------------------------------------------------------------------------------!
    real(kind=8), parameter :: pi18            = dble(pi1           )

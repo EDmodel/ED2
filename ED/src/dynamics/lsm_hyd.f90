@@ -1136,7 +1136,7 @@ subroutine writeHydro()
                if(useRUNOFF == 0) cgrid%runoff(ipy) = cgrid%runoff(ipy) + cpoly%area(isi)*cpoly%runoff(isi)
                area_land = area_land + cpoly%area(isi)
                if(isi == cpoly%nsites .and. useRUNOFF == 0) cgrid%runoff(ipy) = cgrid%runoff(ipy)/area_land
-               if(cpoly%runoff(isi) > 0.0) call uint2tl(cpoly%avg_runoff_heat(isi)/cpoly%runoff(isi),runoff_t,runoff_fl)
+               if(cpoly%runoff(isi) > 0.0) call uint2tl(cpoly%qrunoff(isi)/cpoly%runoff(isi),runoff_t,runoff_fl)
 
                do ipa=1,csite%npatches
 
@@ -1167,7 +1167,7 @@ subroutine writeHydro()
                    cgrid%swliq(ipy),cgrid%sheat(ipy),tempk,cgrid%zbar(ipy),cpoly%moist_zi(isi), &
                    cpoly%moist_tau(isi),WTbar,DZbar, &
                    WPbar,WPTbar,SSE,SSW,SSH,ksat, & !! subsurface variables WPHbar
-                   cpoly%runoff(isi),cpoly%avg_runoff_heat(isi),runoff_t, &
+                   cpoly%runoff(isi),cpoly%qrunoff(isi),runoff_t, &
                    qw4out(igr,ipy,isi),qh4out(igr,ipy,isi), & !! surface variables
                    cpoly%baseflow(isi),cgrid%baseflow(ipy),cgrid%runoff(ipy), & !!discharge variables
                    tsw
@@ -1302,8 +1302,8 @@ subroutine calcHydroSurface()
                     patch_heat_out  = flow_vel*surf_water_heat  !energy/m2/s
 
                     !!update vars
-                    csite%runoff(ipa) = patch_water_out
-                    csite%avg_runoff_heat(ipa) = patch_heat_out
+                    csite%runoff (ipa) = patch_water_out
+                    csite%qrunoff(ipa) = patch_heat_out
                     qwout(isi) = qwout(isi) + patch_water_out*csite%area(ipa)
                     qhout(isi) = qhout(isi) + patch_heat_out*csite%area(ipa)
                  endif
@@ -1332,23 +1332,23 @@ subroutine calcHydroSurface()
            end do
 
            !!calc NET site-level run-off rate (just for output)
-           cpoly%runoff(isi)          = 0.0
-           cpoly%avg_runoff_heat(isi) = 0.0
+           cpoly%runoff (isi) = 0.0
+           cpoly%qrunoff(isi) = 0.0
            do ines=1,isi-1
-                 cpoly%runoff(isi)          = cpoly%runoff(isi) + qwout(isi)*cgrid%site_adjacency(isi,ines,ipy)
-                 cpoly%avg_runoff_heat(isi) = cpoly%avg_runoff_heat(isi) + qhout(isi)*cgrid%site_adjacency(isi,ines,ipy)
+                 cpoly%runoff (isi) = cpoly%runoff (isi) + qwout(isi)*cgrid%site_adjacency(isi,ines,ipy)
+                 cpoly%qrunoff(isi) = cpoly%qrunoff(isi) + qhout(isi)*cgrid%site_adjacency(isi,ines,ipy)
            end do
            do ines=isi+1,cpoly%nsites+1
-                 cpoly%runoff(isi)          = cpoly%runoff(isi) + qwout(isi)*cgrid%site_adjacency(isi,ines,ipy)
-                 cpoly%avg_runoff_heat(isi) = cpoly%avg_runoff_heat(isi) + qhout(isi)*cgrid%site_adjacency(isi,ines,ipy)
+                 cpoly%runoff (isi) = cpoly%runoff (isi) + qwout(isi)*cgrid%site_adjacency(isi,ines,ipy)
+                 cpoly%qrunoff(isi) = cpoly%qrunoff(isi) + qhout(isi)*cgrid%site_adjacency(isi,ines,ipy)
            end do
 
            !! calc patch layer run in
            do ipa=1,csite%npatches
               !! adjust runoff rates for run-on
               !! negative values indicate a net gain of water from overland flow
-              csite%runoff(ipa)          = (1.-cgrid%site_adjacency(isi,isi,ipy))*csite%runoff(ipa)          - site_water_in 
-              csite%avg_runoff_heat(ipa) = (1.-cgrid%site_adjacency(isi,isi,ipy))*csite%avg_runoff_heat(ipa) - site_heat_in
+              csite%runoff (ipa) = (1.-cgrid%site_adjacency(isi,isi,ipy))*csite%runoff (ipa) - site_water_in 
+              csite%qrunoff(ipa) = (1.-cgrid%site_adjacency(isi,isi,ipy))*csite%qrunoff(ipa) - site_heat_in
               ! changed runoff code to assume recycled runoff occurrs at a patch level, not a intra-site level
               ! less realistic, but testing whether can avoid putting intersite runoff in the integrator
 
@@ -1369,7 +1369,7 @@ subroutine calcHydroSurface()
                  ! Subtract and convert back to J/kg
                  if(csite%sfcwater_mass(i,ipa) > 1.0e-10)then
                     csite%sfcwater_energy(i,ipa) = (csite%sfcwater_energy(i,ipa) -   &
-                         csite%avg_runoff_heat(ipa)*dtlsm*hts(i)/surf_water_depth) /  &
+                         csite%qrunoff(ipa)*dtlsm*hts(i)/surf_water_depth) /  &
                          csite%sfcwater_mass(i,ipa)
                  else
                     csite%sfcwater_energy(i,ipa) = 0.0
@@ -1420,14 +1420,37 @@ subroutine calcHydroSurface()
               end do
            end do !patch
         end do !site
-        deallocate(qwout)
-        deallocate(qhout)
+
+        !----------------------------------------------------------------------------------!
+        ! Commented by MLO (8-Nov-2012).  See comment below...                             !
+        !----------------------------------------------------------------------------------!
+        ! deallocate(qwout)
+        ! deallocate(qhout)
 
         !!Finally, calculate polygon-level runoff rate (runoff leaving terrestrial sites)
-        cgrid%runoff(ipy) = 0.0
+        cgrid%runoff (ipy) = 0.0
+        cgrid%qrunoff(ipy) = 0.0
         do i=1,cpoly%nsites
-              cgrid%runoff(ipy) = cgrid%runoff(ipy) + qwout(i)*cgrid%site_adjacency(i,(cpoly%nsites+1),ipy)
+              cgrid%runoff (ipy) = cgrid%runoff (ipy) + qwout(i)*cgrid%site_adjacency(i,(cpoly%nsites+1),ipy)
+              cgrid%qrunoff(ipy) = cgrid%qrunoff(ipy) + qhout(i)*cgrid%site_adjacency(i,(cpoly%nsites+1),ipy)
         end do
+
+        !----------------------------------------------------------------------------------!
+        !    These "deallocate" statements used to be before the loop above, although they !
+        ! use qwout.  I moved them here because it looks like they would cause             !
+        ! segmentation violation.  I also switched the old avg_runoff_heat variables by    !
+        ! qrunoff,  exclusive to lsm_hyd.  The old variable was used by RK4 too so it      !
+        ! could cause some problems (avg_runoff_heat has been replaced by fmean_qrunoff    !
+        ! just to make the average names standardised.  The runoff internal energy losss   !
+        ! wasn't in the  loop above, I added because it seems to fit there, but I don't    !
+        ! know if this is right.  Let me know if any of these changes causes problems.     !
+        !                                                              MLO (8-Nov-2012)    !
+        !----------------------------------------------------------------------------------!
+        deallocate(qwout)
+        deallocate(qhout)
+        !----------------------------------------------------------------------------------!
+
+
      end do !polygon
 
   end do !! grid
@@ -1651,8 +1674,8 @@ end subroutine calcHydroSurface
 !!!!!!               patch_water_out = flow_vel*surf_water_depth*1000
 !!!!!!               patch_heat_out = flow_vel*surf_water_heat  !energy/m2/s
 !!!!!!               !!update vars
-!!!!!!               cpatch%runoff = patch_water_out
-!!!!!!               cpatch%avg_runoff_heat = patch_heat_out
+!!!!!!               cpatch%runoff  = patch_water_out
+!!!!!!               cpatch%qrunoff = patch_heat_out
 !!!!!!               qwout(curr_site) = qwout(curr_site) + patch_water_out*cpatch%area
 !!!!!!               qhout(curr_site) = qhout(curr_site) + patch_heat_out*cpatch%area
 !!!!!!            endif
@@ -1697,11 +1720,11 @@ end subroutine calcHydroSurface
 
 !!!!!!      !!calc site-level run-off
 !!!!!!      cs%runoff = 0.0
-!!!!!!      cs%avg_runoff_heat = 0.0
+!!!!!!      cs%qrunoff = 0.0
 !!!!!!      do i=1,(nsites+1)
 !!!!!!         if(i .ne. curr_site) then
 !!!!!!            cs%runoff = cs%runoff + qwout(curr_site)*cpoly%site_adjacency(curr_site,i)
-!!!!!!            cs%avg_runoff_heat = cs%avg_runoff_heat + qhout(curr_site)*cpoly%site_adjacency(curr_site,i)
+!!!!!!            cs%qrunoff = cs%qrunoff + qhout(curr_site)*cpoly%site_adjacency(curr_site,i)
 !!!!!!         endif
 !!!!!!      enddo
 !!!!!!  
@@ -1711,7 +1734,7 @@ end subroutine calcHydroSurface
 !!!!!!      
 !!!!!!         !!calc runoff rates
 !!!!!!         cpatch%runoff = (1-cpoly%site_adjacency(curr_site,curr_site))*cpatch%runoff - site_water_in 
-!!!!!!         cpatch%avg_runoff_heat = (1-cpoly%site_adjacency(curr_site,curr_site))*cpatch%avg_runoff_heat - site_heat_in
+!!!!!!         cpatch%qrunoff = (1-cpoly%site_adjacency(curr_site,curr_site))*cpatch%qrunoff - site_heat_in
 
 !!!!!!         surf_water_depth = 0.0
 !!!!!!         top_surf_water = cpatch%nlev_sfcwater
@@ -1731,7 +1754,7 @@ end subroutine calcHydroSurface
 !!!!!!            ! Subtract and convert back to J/kg.
 !!!!!!            if(cpatch%sfcwater_mass(i) > 1.0e-10)then
 !!!!!!               cpatch%sfcwater_energy(i) = (cpatch%sfcwater_energy(i) -  &
-!!!!!!                    cpatch%avg_runoff_heat*dtlsm*hts(i)/surf_water_depth) /   &
+!!!!!!                    cpatch%qrunoff*dtlsm*hts(i)/surf_water_depth) /   &
 !!!!!!                    cpatch%sfcwater_mass(i)
 !!!!!!            else
 !!!!!!               cpatch%sfcwater_energy(i) = 0.0

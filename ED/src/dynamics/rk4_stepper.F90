@@ -963,6 +963,7 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_MSTPOT: ',y%soil_mstpot(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
                if (k == nzg .and. y%nlev_sfcwater > 0) then
@@ -994,6 +995,7 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_MSTPOT: ',y%soil_mstpot(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
                if (k == nzg .and. y%nlev_sfcwater > 0) then
@@ -1163,22 +1165,22 @@ module rk4_stepper
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  SOIL_TEMPK','SOIL_FRACLIQ'             &
-                                               &,'  SOIL_WATER'
+      write(unit=*,fmt='(a5,4(1x,a12))') 'LEVEL','  SOIL_TEMPK','SOIL_FRACLIQ'             &
+                                                ,'  SOIL_WATER','SOIL_MSTPOT'
       do k=rk4site%lsl,nzg
-         write(unit=*,fmt='(i5,3(1x,es12.4))') &
-              k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k)
+         write(unit=*,fmt='(i5,4(1x,es12.4))') &
+              k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k),y%soil_mstpot(k)
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write(unit=*,fmt='(a5,3(1x,a12))') 'LEVEL','  OLD_SOIL_T','OLD_SOIL_FLQ'             &
-                                               &,'OLD_SOIL_H2O'
+      write(unit=*,fmt='(a5,4(1x,a12))') 'LEVEL','  OLD_SOIL_T','OLD_SOIL_FLQ'             &
+                                               &,'OLD_SOIL_H2O','OLD_SOIL_POT'
       do k=rk4site%lsl,nzg
-         write(unit=*,fmt='(i5,3(1x,es12.4))')                                             &
+         write(unit=*,fmt='(i5,4(1x,es12.4))')                                             &
               k, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa)                        &
-               , csite%soil_water(k,ipa)
+               , csite%soil_water(k,ipa), csite%soil_mstpot (k,ipa)
       end do
       write(unit=*,fmt='(78a)') ('-',k=1,78)
 

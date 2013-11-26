@@ -45,7 +45,7 @@ subroutine load_ed_ecosystem_params()
    !    2 | Early tropical                             |      no |      yes |           no !
    !    3 | Mid tropical                               |      no |      yes |           no !
    !    4 | Late tropical                              |      no |      yes |           no !
-   !    5 | C3 grass                                   |     yes |       no |          yes !
+   !    5 | Temperate C3 grass                         |     yes |       no |          yes !
    !    6 | Northern pines                             |      no |       no |           no !
    !    7 | Southern pines                             |      no |       no |           no !
    !    8 | Late conifers                              |      no |       no |           no !
@@ -56,8 +56,8 @@ subroutine load_ed_ecosystem_params()
    !   13 | C3 crop (e.g.,wheat, rice, soybean)        |     yes |       no |          yes !
    !   14 | C4 pasture                                 |     yes |      yes |          yes !
    !   15 | C4 crop (e.g.,corn/maize)                  |     yes |      yes |          yes !
-   !   16 | Subtropical C3 grass                       |     yes |      yes |          yes !
-   !   17 | Araucaria                                  |      no |      yes |           no !
+   !   16 | Tropical C3 grass                          |     yes |      yes |          yes !
+   !   17 | Araucaria (similar to 7, tropical allom.)  |      no |      yes |           no !
    !------+--------------------------------------------+---------+----------+--------------!
 
    !----- Name the PFTs (no spaces, please). ----------------------------------------------!
@@ -150,8 +150,8 @@ subroutine load_ed_ecosystem_params()
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     This should be always the last one, since it depends on variables assigned in     !
-   ! the previous init_????_params.                                                        !
+   !     This should be always the last one, since it depends on variables assigned in the !
+   ! previous init_????_params.                                                            !
    !---------------------------------------------------------------------------------------!
    call init_rk4_params()
    !---------------------------------------------------------------------------------------!
@@ -172,26 +172,26 @@ end subroutine load_ed_ecosystem_params
 ! wouldn't fit in any of the other categories.                                             !
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_misc_coms
-   use ed_max_dims  , only : n_pft               & ! intent(in)
-                           , n_dbh               & ! intent(in)
-                           , n_age               ! ! intent(in)
-   use consts_coms  , only : erad                & ! intent(in)
-                           , pio180              ! ! intent(in)
-   use ed_misc_coms , only : burnin              & ! intent(out)
-                           , outputMonth         & ! intent(out)
-                           , restart_target_year & ! intent(out)
-                           , use_target_year     & ! intent(out)
-                           , maxage              & ! intent(out)
-                           , dagei               & ! intent(out)
-                           , maxdbh              & ! intent(out)
-                           , ddbhi               & ! intent(out)
-                           , vary_elev           & ! intent(out)
-                           , vary_hyd            & ! intent(out)
-                           , vary_rad            & ! intent(out)
-                           , max_thsums_dist     & ! intent(out)
-                           , max_poihist_dist    & ! intent(out)
-                           , max_poi99_dist      & ! intent(out)
-                           , suppress_h5_warnings
+   use ed_max_dims  , only : n_pft                & ! intent(in)
+                           , n_dbh                & ! intent(in)
+                           , n_age                ! ! intent(in)
+   use consts_coms  , only : erad                 & ! intent(in)
+                           , pio180               ! ! intent(in)
+   use ed_misc_coms , only : burnin               & ! intent(out)
+                           , outputMonth          & ! intent(out)
+                           , restart_target_year  & ! intent(out)
+                           , use_target_year      & ! intent(out)
+                           , maxage               & ! intent(out)
+                           , dagei                & ! intent(out)
+                           , maxdbh               & ! intent(out)
+                           , ddbhi                & ! intent(out)
+                           , vary_elev            & ! intent(out)
+                           , vary_hyd             & ! intent(out)
+                           , vary_rad             & ! intent(out)
+                           , max_thsums_dist      & ! intent(out)
+                           , max_poihist_dist     & ! intent(out)
+                           , max_poi99_dist       & ! intent(out)
+                           , suppress_h5_warnings ! ! intent(out)
    implicit none
 
 
@@ -870,8 +870,8 @@ subroutine init_can_air_params()
                              , ribmax                & ! intent(out)
                              , leaf_drywhc           & ! intent(out)
                              , leaf_maxwhc           & ! intent(out)
-                             , rb_inter              & ! intent(out)
-                             , rb_slope              & ! intent(out)
+                             , gbhmos_min            & ! intent(out)
+                             , gbhmos_min8           & ! intent(out)
                              , veg_height_min        & ! intent(out)
                              , minimum_canopy_depth  & ! intent(out)
                              , minimum_canopy_depth8 & ! intent(out)
@@ -1037,11 +1037,13 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !      Variables to define the vegetation aerodynamic resistance.  They are currently   !
+   !      Variables to define the vegetation aerodynamic conductance.  They are currently  !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   rb_slope =   0.0
-   rb_inter =   1.e9
+   gbhmos_min  = 1.e-9
+   gbhmos_min8 = dble(gbhmos_min)
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
@@ -3216,6 +3218,7 @@ end subroutine init_pft_nitro_params
 !   This subroutine sets up some PFT and leaf dependent properties.                        !
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_leaf_params()
+   use phenology_coms , only : iphen_scheme         ! ! intent(in)
    use ed_misc_coms   , only : igrass               ! ! intent(in)
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
@@ -3226,10 +3229,14 @@ subroutine init_pft_leaf_params()
                              , wat_dry_ratio_grn    & ! intent(out)
                              , wat_dry_ratio_ngrn   & ! intent(out)
                              , delta_c              ! ! intent(out)
-   use consts_coms    , only : t3ple                ! ! intent(out)
-   use phenology_coms , only :iphen_scheme
+   use consts_coms    , only : t00                  ! ! intent(out)
 
    implicit none
+
+   !----- Reference temperature for heat capacity. ----------------------------------------!
+   real, parameter :: tref = t00 + 15.
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Tree phenology is the same for both cases, but in the new grass allometry they    !
@@ -3316,19 +3323,43 @@ subroutine init_pft_leaf_params()
    !---------------------------------------------------------------------------------------!
    !      The following parameters are second sources found in Gu et al. (2007)            !
    !---------------------------------------------------------------------------------------!
-   c_grn_leaf_dry(1:17)      = 3218.0    ! Jones 1992  J/(kg K)
-   c_ngrn_biom_dry(1:17)     = 1256.0    ! Forest Products Laboratory 
-   wat_dry_ratio_grn(1:17)   = 2.5       ! 
-   !wat_dry_ratio_grn(1:17)   = 1.5       ! Ceccato et al. 2001
-   wat_dry_ratio_ngrn(1:17)  = 0.7       ! Forest Products Laboratory
+   c_grn_leaf_dry     (1:17) = 3218.0    ! Jones 1992  J/(kg K)
+   wat_dry_ratio_ngrn (1:17) = 0.7       ! Forest Products Laboratory (2010)
    !---------------------------------------------------------------------------------------!
-   !     Delta-c is found using the second term of the RHS of equation 5, assuming         !
-   ! T=T3ple.  This is a simplification, but the specific heat usually varies by 3J/kg/K   !
-   ! between 173K and 341K, so removing the dependence on temperature is not that bad      !
-   ! assumption.                                                                           !
+
+
    !---------------------------------------------------------------------------------------!
-   delta_c(1:17) = 100. * wat_dry_ratio_ngrn(1:17)                                         &
-                 * (-0.06191 + 2.36e-4 * t3ple - 1.33e-2 * wat_dry_ratio_ngrn(1:17))
+   !      Water dry ratio for leaves.  Source depends on whether the plants are tropical   !
+   ! or temperate.                                                                         !
+   ! Tropical  -- average well-watered values of wd from:                                  !
+   !              Kursar et al., 2009: Functional Ecology, 23, 93-102.                     !
+   ! Temperate -- check with MCD.  Original value was 1.5, from Gu et. al (2007) but it    !
+   !              has been replaced by 2.5.  Perhaps to account for the C:B ratio, but if  !
+   !              this is the case, it is accounting for it twice.                         !
+   !---------------------------------------------------------------------------------------!
+   wat_dry_ratio_grn(  1:4) = 1.85
+   wat_dry_ratio_grn( 5:13) = 2.50
+   wat_dry_ratio_grn(14:17) = 1.85
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    The oven-dry wood heat capacity and the specific heat correction for water-wood    !
+   ! bonding come both from:                                                               !
+   ! Forest Products Laboratory (2010), previous version cited by Gu et al. (2007).        !
+   !                                                                                       !
+   !    Instead of using the temperature-dependence, we use the values at 15C, and assume  !
+   ! that the values are constant.                                                         !
+   !---------------------------------------------------------------------------------------!
+   c_ngrn_biom_dry(1:17) = 103.1 + 3.867 * tref
+   delta_c        (1:17) = 1.e5 * wat_dry_ratio_ngrn(1:17)                                 &
+                         * ( - 0.06191 + 2.36e-4 * tref                                    &
+                                       - 1.33e-2 * wat_dry_ratio_ngrn(1:17) )
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     These are used to compute the crown length, which will then be used to find the   !
@@ -4191,13 +4222,17 @@ subroutine init_soil_coms
    real   , parameter :: sand_hcapv =  2.128e6 ! Sand vol. heat capacity           [J/m3/K]
    real   , parameter :: clay_hcapv =  2.385e6 ! Clay vol. heat capacity           [J/m3/K]
    real   , parameter :: silt_hcapv =  2.286e6 ! Silt vol. heat capacity (*)       [J/m3/K]
-   real   , parameter :: air_hcapv  =  1.212e6 ! Air vol. heat capacity            [J/m3/K]
+   real   , parameter :: air_hcapv  =  1.212e3 ! Air vol. heat capacity            [J/m3/K]
    !---------------------------------------------------------------------------------------!
    ! (*) If anyone has the heat capacity for silt, please feel free to add it in here, I   !
    !     didn't find any.  Apparently no one knows, and I've seen in other models that     !
    !     people just assume either the same as sand or the average.  Here I'm just using   !
    !     halfway.  I think the most important thing is to take into account the soil and   !
    !     the air, which are the most different.                                            !
+   !                                                                                       !
+   ! Sand (quartz), clay, and air heat capacities are derived from:                        !
+   ! Monteith and Unsworth, 2008: Environmental Physics.                                   !
+   !     Academic Press, Third Edition. Table 15.1, p. 292                                 !
    !---------------------------------------------------------------------------------------!
 
 
@@ -4233,67 +4268,67 @@ subroutine init_soil_coms
    !---------------------------------------------------------------------------------------!
    soil = (/                                                                               &
       !----- 1. Sand. ---------------------------------------------------------------------!
-       soil_class( -0.049831046,     0.373250,     3.295000, 1584640.,  0.026183447        &
+       soil_class( -0.049831046,     0.373250,     3.295000, 1342809.,  0.026183447        &
                  ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
                  ,      -2.7000,  0.132130936,        0.229,    0.352,        0.920        &
                  ,        0.030,        0.050,        1200.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
-      ,soil_class( -0.067406224,     0.385630,     3.794500, 1584809.,  0.041560499        &
+      ,soil_class( -0.067406224,     0.385630,     3.794500, 1326165.,  0.041560499        &
                  ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
                  ,      -2.6000,  0.155181959,        0.212,    0.335,        0.825        &
                  ,        0.060,        0.115,        1250.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
-      ,soil_class( -0.114261521,     0.407210,     4.629000, 1587042.,  0.073495043        &
+      ,soil_class( -0.114261521,     0.407210,     4.629000, 1295982.,  0.073495043        &
                  ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
                  ,      -2.3100,  0.194037750,        0.183,    0.307,        0.660        &
                  ,        0.110,        0.230,        1300.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 4. Silt loam. ----------------------------------------------------------------!
-      ,soil_class( -0.566500112,     0.470680,     5.552000, 1568225.,  0.150665475        &
+      ,soil_class( -0.566500112,     0.470680,     5.552000, 1191975.,  0.150665475        &
                  ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.273082063,        0.107,    0.250,        0.200        &
                  ,        0.160,        0.640,        1400.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 5. Loam. ---------------------------------------------------------------------!
-      ,soil_class( -0.260075834,     0.440490,     5.646000, 1588082.,  0.125192234        &
+      ,soil_class( -0.260075834,     0.440490,     5.646000, 1245546.,  0.125192234        &
                  ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
                  ,      -1.8500,  0.246915025,        0.140,    0.268,        0.410        &
                  ,        0.170,        0.420,        1350.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.116869181,     0.411230,     7.162000, 1636224.,  0.136417267        &
+      ,soil_class( -0.116869181,     0.411230,     7.162000, 1304598.,  0.136417267        &
                  ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
                  ,      -1.9600,  0.249629687,        0.163,    0.260,        0.590        &
                  ,        0.270,        0.140,        1350.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.627769194,     0.478220,     8.408000, 1621562.,  0.228171947        &
+      ,soil_class( -0.627769194,     0.478220,     8.408000, 1193778.,  0.228171947        &
                  ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
                  ,      -1.2000,  0.333825332,        0.081,    0.195,        0.100        &
                  ,        0.340,        0.560,        1500.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 8. Clayey loam. --------------------------------------------------------------!
-      ,soil_class( -0.281968114,     0.446980,     8.342000, 1636911.,  0.192624431        &
+      ,soil_class( -0.281968114,     0.446980,     8.342000, 1249582.,  0.192624431        &
                  ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
                  ,      -1.5600,  0.301335491,        0.116,    0.216,        0.320        &
                  ,        0.340,        0.340,        1450.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
-      ,soil_class( -0.121283019,     0.415620,     9.538000, 1673422.,  0.182198910        &
+      ,soil_class( -0.121283019,     0.415620,     9.538000, 1311396.,  0.182198910        &
                  ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
                  ,      -1.6300,  0.286363001,        0.144,    0.216,        0.520        &
                  ,        0.420,        0.060,        1450.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 10. Silty clay. --------------------------------------------------------------!
-      ,soil_class( -0.601312179,     0.479090,    10.461000, 1652723.,  0.263228486        &
+      ,soil_class( -0.601312179,     0.479090,    10.461000, 1203168.,  0.263228486        &
                  ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
                  ,      -1.0900,  0.360319788,        0.068,    0.159,        0.060        &
                  ,        0.470,        0.470,        1650.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 11. Clay. --------------------------------------------------------------------!
-      ,soil_class( -0.299226464,     0.454400,    12.460000, 1692037.,  0.259868987        &
+      ,soil_class( -0.299226464,     0.454400,    12.460000, 1259466.,  0.259868987        &
                  ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.353255209,        0.083,    0.140,        0.200        &
                  ,        0.600,        0.200,        1700.,    1600.,        0.000        &
@@ -4311,25 +4346,25 @@ subroutine init_soil_coms
                  ,       0.0000,       0.0000,           0.,       0.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 14. Silt. --------------------------------------------------------------------!
-      ,soil_class( -1.047128548,     0.492500,     3.862500, 1510052.,  0.112299080        &
+      ,soil_class( -1.047128548,     0.492500,     3.862500, 1143842.,  0.112299080        &
                  ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
                  ,      -1.7400,  0.245247642,        0.092,    0.265,        0.075        &
                  ,        0.050,        0.875,        1400.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 15. Heavy clay. --------------------------------------------------------------!
-      ,soil_class( -0.322106879,     0.461200,    15.630000, 1723619.,  0.296806035        &
+      ,soil_class( -0.322106879,     0.461200,    15.630000, 1264547.,  0.296806035        &
                  ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.382110712,        0.056,    0.080,        0.100        &
                  ,        0.800,        0.100,        1700.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 16. Clayey sand. -------------------------------------------------------------!
-      ,soil_class( -0.176502150,     0.432325,    11.230000, 1688353.,  0.221886929        &
+      ,soil_class( -0.176502150,     0.432325,    11.230000, 1292163.,  0.221886929        &
                  ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.320146708,        0.115,    0.175,        0.375        &
                  ,        0.525,        0.100,        1700.,    1600.,        0.000        &
                  ,        0.000,        0.000,        0.000,    0.000,        0.000)       &
       !----- 17. Clayey silt. -------------------------------------------------------------!
-      ,soil_class( -0.438278332,     0.467825,    11.305000, 1670103.,  0.261376708        &
+      ,soil_class( -0.438278332,     0.467825,    11.305000, 1228490.,  0.261376708        &
                  ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
                  ,      -0.9600,  0.357014719,        0.075,    0.151,        0.125        &
                  ,        0.525,        0.350,        1700.,    1600.,        0.000        &
@@ -4390,7 +4425,7 @@ subroutine init_soil_coms
                               * ( soil(nslcon)%xsand * sand_hcapv                          &
                                 + soil(nslcon)%xsilt * silt_hcapv                          &
                                 + soil(nslcon)%xclay * clay_hcapv )                        &
-                              + 0.5 * (soil(nslcon)%soilcp + soil(nslcon)%slmsts)          &
+                              + 0.5 * (soil(nslcon)%slmsts - soil(nslcon)%soilcp)          &
                               * air_hcapv
          !---------------------------------------------------------------------------------!
 
@@ -4780,6 +4815,8 @@ subroutine init_ff_coms
                                  , light_toler_max    & ! intent(out)
                                  , light_toler_mult   & ! intent(out)
                                  , fuse_relax         & ! intent(out)
+                                 , corr_patch         & ! intent(out)
+                                 , corr_cohort        & ! intent(out)
                                  , print_fuse_details & ! intent(out)
                                  , fuse_prefix        ! ! intent(out)
    use consts_coms        , only : onethird           & ! intent(out)
@@ -4821,6 +4858,15 @@ subroutine init_ff_coms
    light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus
 
    fuse_relax        = .false.
+
+   !---------------------------------------------------------------------------------------!
+   !      Coefficient of correlation assumed between two patches and cohorts that are      !
+   ! about to be fused.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   corr_patch  = 1.0
+   corr_cohort = 1.0
+   !---------------------------------------------------------------------------------------!
+
 
    !----- The following flag switches detailed debugging on. ------------------------------!
    print_fuse_details = .false.
@@ -4905,6 +4951,7 @@ subroutine init_rk4_params()
                              , thbnds_fout            & ! intent(out)
                              , detail_pref            & ! intent(out)
                              , budget_pref            ! ! intent(out)
+   use ed_misc_coms   , only : fast_diagnostics       ! ! intent(inout)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -5058,6 +5105,13 @@ subroutine init_rk4_params()
    ! tests, this variable should be always true.                                           !
    !---------------------------------------------------------------------------------------!
    leaf_intercept = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Update fast_diagnostics in case checkbudget is set to true.                      !
+   !---------------------------------------------------------------------------------------!
+   fast_diagnostics = fast_diagnostics .or. checkbudget
    !---------------------------------------------------------------------------------------!
 
    return

@@ -208,6 +208,37 @@ $ED_NL
 
 
 
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control whether site-, patch-, and cohort-level time      !
+   ! means and mean sum of squares should be included in the output files or not.          !
+   !                                                                                       !
+   ! Reasons to add them:                                                                  !
+   ! a. Sub-polygon variables are more comprehensive.                                      !
+   ! b. Explore heterogeneity within a polygon and make interesting analysis.              !
+   ! c. More chances to create cool 3-D plots.                                             !
+   !                                                                                       !
+   ! Reasons to NOT add them:                                                              !
+   ! a. Output files will become much larger!                                              !
+   ! b. In regional/coupled runs, the output files will be ridiculously large.             !
+   ! c. You may fill up the disk.                                                          !
+   ! d. Other people's job may crash due to insufficient disk space.                       !
+   ! e. You will gain a bad reputation amongst your colleagues.                            !
+   ! f. And it will be entirely your fault.                                                !
+   !                                                                                       !
+   !     Either way, polygon-level averages are always included, and so are the instan-    !
+   ! taneous site-, patch-, and cohort-level variables needed for resuming the run.        ! 
+   !                                                                                       !
+   ! IADD_SITE_MEANS   --  Add site-level averages to the output   (0 = no; 1 = yes)       !
+   ! IADD_PATCH_MEANS  --  Add patch-level averages to the output  (0 = no; 1 = yes)       !
+   ! IADD_COHORT_MEANS --  Add cohort-level averages to the output (0 = no; 1 = yes)       !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   NL%IADD_SITE_MEANS   = 1
+   NL%IADD_PATCH_MEANS  = 1
+   NL%IADD_COHORT_MEANS = 1
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    ! ATTACH_METADATA -- Flag for attaching metadata to HDF datasets.  Attaching metadata   !
@@ -1231,6 +1262,11 @@ $ED_NL
    !                   the initialization, and fusion will never happen again.  Notice     !
    !                   that if the patches are too different, then the actual number of    !
    !                   patches in a site may exceed MAXPATCH.                              !
+   !                                                                                       !
+   !                   IMPORTANT: If MAXPATCH = -1 or 1, then the model will force fusion  !
+   !                              until the total number of patches is 1 for each land     !
+   !                              use type.                                                !
+   !                                                                                       !
    ! MAXCOHORT      -- If number of cohorts in a given patch exceeds MAXCOHORT, force      !
    !                   cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.   !
    !                   If MAXCOHORT is negative, then the absolute value is used only      !

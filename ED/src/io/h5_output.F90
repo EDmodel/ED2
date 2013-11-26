@@ -1093,6 +1093,18 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
 
+   case(-21) !(ndcycle,nsites)
+      ! Mean diel
+      dsetrank    = 2
+      globdims(1) = int(ndcycle,8)
+      chnkdims(1) = int(ndcycle,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+
    case(22,220) !(nzg,nsites)
                
       ! Soil column type
@@ -1222,7 +1234,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
    case (-31) ! (ndcycle,npatches)
       
       ! Soil column type
-      dsetrank = 2
+      dsetrank    = 2
       globdims(1) = int(ndcycle,8)
       chnkdims(1) = int(ndcycle,8)
       chnkoffs(1) = 0_8
@@ -1235,7 +1247,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
    case (32,320) ! (nzg,npatches)
       
       ! Soil column type
-      dsetrank = 2
+      dsetrank    = 2
       globdims(1) = int(nzg,8)
       chnkdims(1) = int(nzg,8)
       chnkoffs(1) = 0_8
@@ -1244,7 +1256,23 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
-     
+          
+   case (-32) ! (nzg,ndcycle,npatches)
+      
+      ! Mean diel of soil column type
+      dsetrank    = 3
+      globdims(1) = int(nzg,8)
+      chnkdims(1) = int(nzg,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(ndcycle,8)
+      chnkdims(2) = int(ndcycle,8)
+      chnkoffs(2) = 0_8
+      globdims(3) = int(var_len_global,8)
+      chnkdims(3) = int(varlen,8)
+      chnkoffs(3) = int(globid,8)
+      cnt(1:3)    = 1_8
+      stride(1:3) = 1_8
+  
    case (33) !(nzs,npatches)
       
       ! Surface water column type

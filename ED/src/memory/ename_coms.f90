@@ -53,6 +53,9 @@ module ename_coms
       integer                                           :: iyoutput
       integer                                           :: itoutput
       integer                                           :: isoutput
+      integer                                           :: iadd_site_means
+      integer                                           :: iadd_patch_means
+      integer                                           :: iadd_cohort_means
       integer                                           :: attach_metadata
       integer                                           :: iclobber
       integer                                           :: unitfast
@@ -316,6 +319,10 @@ module ename_coms
       enl%iyoutput                  = undef_integer
       enl%itoutput                  = undef_integer
       enl%isoutput                  = undef_integer
+
+      enl%iadd_site_means           = undef_integer
+      enl%iadd_patch_means          = undef_integer
+      enl%iadd_cohort_means         = undef_integer
 
       enl%attach_metadata           = undef_integer
 

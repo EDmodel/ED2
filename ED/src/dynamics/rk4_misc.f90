@@ -149,11 +149,12 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! to double precision.  Therefore at this time only we must ensure that we bound it, !
       ! otherwise the model will crash due to the round-off error.                         !            
       !------------------------------------------------------------------------------------!
-      targetp%soil_water(k)   = min( rk4max_soil_water(k)                                  &
+      targetp%soil_water  (k) = min( rk4max_soil_water(k)                                  &
                                    , max( rk4min_soil_water(k)                             &
                                         , dble(sourcesite%soil_water(k,ipa)) ) )
-      targetp%soil_energy(k)  = dble(sourcesite%soil_energy(k,ipa))
-      targetp%soil_tempk(k)   = dble(sourcesite%soil_tempk(k,ipa))
+      targetp%soil_energy (k) = dble(sourcesite%soil_energy (k,ipa))
+      targetp%soil_mstpot (k) = dble(sourcesite%soil_mstpot (k,ipa))
+      targetp%soil_tempk  (k) = dble(sourcesite%soil_tempk  (k,ipa))
       targetp%soil_fracliq(k) = dble(sourcesite%soil_fracliq(k,ipa))
    end do
    !---------------------------------------------------------------------------------------!
@@ -231,11 +232,11 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%virtual_energy = 0.0d0
    targetp%virtual_depth  = 0.0d0
    if (ksn == 0) then
-      targetp%virtual_tempk   = targetp%soil_tempk(nzg)
+      targetp%virtual_tempk   = targetp%soil_tempk  (nzg)
       targetp%virtual_fracliq = targetp%soil_fracliq(nzg)
    else
-      targetp%virtual_tempk   = targetp%sfcwater_tempk(ksn)
-      targetp%virtual_fracliq = targetp%sfcwater_tempk(ksn)
+      targetp%virtual_tempk   = targetp%sfcwater_tempk  (ksn)
+      targetp%virtual_fracliq = targetp%sfcwater_fracliq(ksn)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -389,50 +390,37 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! RK4.  Inside RK4 we only want the contribution of those variables during the span  !
       ! of one time step.                                                                  !
       !------------------------------------------------------------------------------------!
-      targetp%avg_ustar          = dble(sourcesite%avg_ustar         (ipa))
-      targetp%avg_tstar          = dble(sourcesite%avg_tstar         (ipa))
-      targetp%avg_qstar          = dble(sourcesite%avg_qstar         (ipa))
-      targetp%avg_cstar          = dble(sourcesite%avg_cstar         (ipa))
-      targetp%avg_carbon_ac      = dble(sourcesite%avg_carbon_ac     (ipa))
-      targetp%avg_carbon_st      = dble(sourcesite%avg_carbon_st     (ipa))
-      targetp%avg_vapor_lc       = dble(sourcesite%avg_vapor_lc      (ipa))
-      targetp%avg_vapor_wc       = dble(sourcesite%avg_vapor_wc      (ipa))
-      targetp%avg_vapor_gc       = dble(sourcesite%avg_vapor_gc      (ipa))
-      targetp%avg_wshed_vg       = dble(sourcesite%avg_wshed_vg      (ipa))
-      targetp%avg_intercepted    = dble(sourcesite%avg_intercepted   (ipa))
-      targetp%avg_throughfall    = dble(sourcesite%avg_throughfall   (ipa))
-      targetp%avg_vapor_ac       = dble(sourcesite%avg_vapor_ac      (ipa))
-      targetp%avg_transp         = dble(sourcesite%avg_transp        (ipa))
-      targetp%avg_evap           = dble(sourcesite%avg_evap          (ipa))
-      targetp%avg_drainage       = dble(sourcesite%avg_drainage      (ipa))
-      targetp%avg_drainage_heat  = dble(sourcesite%avg_drainage_heat (ipa))
-      targetp%avg_rshort_gnd     = dble(sourcesite%avg_rshort_gnd    (ipa))
-      targetp%avg_par_gnd        = dble(sourcesite%avg_par_gnd       (ipa))
-      targetp%avg_rlong_gnd      = dble(sourcesite%avg_rlong_gnd     (ipa))
-      targetp%avg_sensible_lc    = dble(sourcesite%avg_sensible_lc   (ipa))
-      targetp%avg_sensible_wc    = dble(sourcesite%avg_sensible_wc   (ipa))
-      targetp%avg_qwshed_vg      = dble(sourcesite%avg_qwshed_vg     (ipa))
-      targetp%avg_qintercepted   = dble(sourcesite%avg_qintercepted  (ipa))
-      targetp%avg_qthroughfall   = dble(sourcesite%avg_qthroughfall  (ipa))
-      targetp%avg_sensible_gc    = dble(sourcesite%avg_sensible_gc   (ipa))
-      targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac   (ipa))
+      targetp%avg_ustar          = dble(sourcesite%fmean_ustar         (ipa))
+      targetp%avg_tstar          = dble(sourcesite%fmean_tstar         (ipa))
+      targetp%avg_qstar          = dble(sourcesite%fmean_qstar         (ipa))
+      targetp%avg_cstar          = dble(sourcesite%fmean_cstar         (ipa))
+      targetp%avg_carbon_ac      = dble(sourcesite%fmean_carbon_ac     (ipa))
+      targetp%avg_carbon_st      = dble(sourcesite%fmean_carbon_st     (ipa))
+      targetp%avg_vapor_gc       = dble(sourcesite%fmean_vapor_gc      (ipa))
+      targetp%avg_throughfall    = dble(sourcesite%fmean_throughfall   (ipa))
+      targetp%avg_vapor_ac       = dble(sourcesite%fmean_vapor_ac      (ipa))
+      targetp%avg_drainage       = dble(sourcesite%fmean_drainage      (ipa))
+      targetp%avg_qdrainage      = dble(sourcesite%fmean_qdrainage     (ipa))
+      targetp%avg_qthroughfall   = dble(sourcesite%fmean_qthroughfall  (ipa))
+      targetp%avg_sensible_gc    = dble(sourcesite%fmean_sensible_gc   (ipa))
+      targetp%avg_sensible_ac    = dble(sourcesite%fmean_sensible_ac   (ipa))
 
       do k = rk4site%lsl, nzg
-         targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
-         targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
-         targetp%avg_transloss(k)   = dble(sourcesite%avg_transloss(k,ipa)  )
+         targetp%avg_sensible_gg(k) = dble(sourcesite%fmean_sensible_gg(k,ipa))
+         targetp%avg_smoist_gg(k)   = dble(sourcesite%fmean_smoist_gg(k,ipa)  )
+         targetp%avg_transloss(k)   = dble(sourcesite%fmean_transloss(k,ipa)  )
       end do
 
       do ico=1,cpatch%ncohorts
-         targetp%cav_sensible_lc    (ico) = dble(cpatch%mean_sensible_lc   (ico))
-         targetp%cav_sensible_wc    (ico) = dble(cpatch%mean_sensible_wc   (ico))
-         targetp%cav_vapor_lc       (ico) = dble(cpatch%mean_vapor_lc      (ico))
-         targetp%cav_vapor_wc       (ico) = dble(cpatch%mean_vapor_wc      (ico))
-         targetp%cav_transp         (ico) = dble(cpatch%mean_transp        (ico))
-         targetp%cav_intercepted_al (ico) = dble(cpatch%mean_intercepted_al(ico))
-         targetp%cav_intercepted_aw (ico) = dble(cpatch%mean_intercepted_aw(ico))
-         targetp%cav_wshed_lg       (ico) = dble(cpatch%mean_wshed_lg      (ico))
-         targetp%cav_wshed_wg       (ico) = dble(cpatch%mean_wshed_wg      (ico))
+         targetp%avg_sensible_lc    (ico) = dble(cpatch%fmean_sensible_lc   (ico))
+         targetp%avg_sensible_wc    (ico) = dble(cpatch%fmean_sensible_wc   (ico))
+         targetp%avg_vapor_lc       (ico) = dble(cpatch%fmean_vapor_lc      (ico))
+         targetp%avg_vapor_wc       (ico) = dble(cpatch%fmean_vapor_wc      (ico))
+         targetp%avg_transp         (ico) = dble(cpatch%fmean_transp        (ico))
+         targetp%avg_intercepted_al (ico) = dble(cpatch%fmean_intercepted_al(ico))
+         targetp%avg_intercepted_aw (ico) = dble(cpatch%fmean_intercepted_aw(ico))
+         targetp%avg_wshed_lg       (ico) = dble(cpatch%fmean_wshed_lg      (ico))
+         targetp%avg_wshed_wg       (ico) = dble(cpatch%fmean_wshed_wg      (ico))
       end do
 
    end if
@@ -587,7 +575,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , patchtype             ! ! structure
    use soil_coms             , only : soil8                 & ! intent(in)
                                     , dslz8                 & ! intent(in)
-                                    , dslzi8                ! ! intent(in)
+                                    , dslzi8                & ! intent(in)
+                                    , matric_potential8     ! ! function
    use grid_coms             , only : nzg                   & ! intent(in)
                                     , nzs                   ! ! intent(in)
    use therm_lib8            , only : uextcm2tl8            & ! subroutine
@@ -621,6 +610,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    integer                          :: ico
    integer                          :: k
    integer                          :: ksn
+   integer                          :: nsoil
    integer                          :: kclosest
    logical                          :: ok_shv
    logical                          :: ok_enthalpy
@@ -629,7 +619,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    logical                          :: ok_sfcw
    logical                          :: ok_leaf
    logical                          :: ok_wood
-   real(kind=8)                     :: soilhcap
+   logical                          :: ok_slwater
+   logical                          :: ok_sltemp
    real(kind=8)                     :: int_sfcw_energy
    real(kind=8)                     :: int_virt_energy
    real(kind=8)                     :: energy_tot
@@ -706,10 +697,29 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !----- Update soil temperature and liquid water fraction. ------------------------------!
+   ok_slwater = .true.
+   ok_sltemp  = .true.
    do k = rk4site%lsl, nzg
-      soilhcap = soil8(rk4site%ntext_soil(k))%slcpd
-      call uextcm2tl8(initp%soil_energy(k),initp%soil_water(k)*wdns8,soilhcap              &
+      nsoil = rk4site%ntext_soil(k)
+      !----- Check whether soil water is fine. --------------------------------------------!
+      ok_slwater = ok_slwater                                  .and.                       &
+                   initp%soil_water(k) >= rk4min_soil_water(k) .and.                       &
+                   initp%soil_water(k) <= rk4max_soil_water(k)
+      if (ok_slwater) then
+         initp%soil_mstpot(k) = matric_potential8(nsoil,initp%soil_water(k))
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      We find the temperature in any case.  If screwy soil water leads to screwy    !
+      ! temperature, the sanity check will fail twice.                                     !
+      !------------------------------------------------------------------------------------!
+      call uextcm2tl8(initp%soil_energy(k),initp%soil_water(k)*wdns8,soil8(nsoil)%slcpd    &
                      ,initp%soil_tempk(k),initp%soil_fracliq(k))
+      ok_sltemp = ok_sltemp                                   .and.                        &
+                  initp%soil_tempk(k) >= rk4min_soil_temp     .and.                        &
+                  initp%soil_tempk(k) <= rk4max_soil_temp
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -757,7 +767,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          !---------------------------------------------------------------------------------!
          call uextcm2tl8(energy_tot,wmass_tot,hcapdry_tot                                  &
                         ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
-         initp%soil_tempk(nzg)   = initp%sfcwater_tempk(k)
+         initp%soil_tempk  (nzg) = initp%sfcwater_tempk  (k)
          initp%soil_fracliq(nzg) = initp%sfcwater_fracliq(k) 
          !---------------------------------------------------------------------------------!
 
@@ -2840,7 +2850,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%cav_wshed_lg(ico) = initp%cav_wshed_lg(ico) + leaf_wshed  * hdidi
+               initp%avg_wshed_lg(ico) = initp%avg_wshed_lg(ico) + leaf_wshed  * hdidi
             end if
             if (print_detailed) then
                initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + leaf_qwshed * hdidi
@@ -2880,7 +2890,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%cav_vapor_lc(ico) = initp%cav_vapor_lc(ico)                           &
+               initp%avg_vapor_lc(ico) = initp%avg_vapor_lc(ico)                           &
                                        + (leaf_boil  - leaf_dew ) * hdidi
             end if
             if (print_detailed) then
@@ -2954,7 +2964,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%cav_wshed_wg(ico) = initp%cav_wshed_wg(ico) + wood_wshed  * hdidi
+               initp%avg_wshed_wg(ico) = initp%avg_wshed_wg(ico) + wood_wshed  * hdidi
             end if
             if (print_detailed) then
                initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + wood_qwshed * hdidi
@@ -2992,7 +3002,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%cav_vapor_wc(ico) = initp%cav_vapor_wc(ico)                           &
+               initp%avg_vapor_wc(ico) = initp%avg_vapor_wc(ico)                           &
                                        + (wood_boil  - wood_dew ) * hdidi
             end if
             if (print_detailed) then
@@ -3049,31 +3059,6 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    initp%can_enthalpy = initp%can_enthalpy                                                 &
                       + (leaf_qboil_tot + wood_qboil_tot - leaf_qdew_tot - wood_qdew_tot)  &
                       * hcapcani
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Updating output fluxes ----------------------------------------------------------!
-   if (fast_diagnostics) then
-      initp%avg_wshed_vg  = initp%avg_wshed_vg                                             &
-                          + (leaf_wshed_tot + wood_wshed_tot)   * hdidi
-      initp%avg_qwshed_vg = initp%avg_qwshed_vg                                            &
-                          + (leaf_qwshed_tot + wood_qwshed_tot) * hdidi
-      initp%avg_vapor_lc  = initp%avg_vapor_lc                                             &
-                          + (leaf_boil_tot - leaf_dew_tot)      * hdidi
-      initp%avg_vapor_wc  = initp%avg_vapor_wc                                             &
-                          + (wood_boil_tot - wood_dew_tot)      * hdidi
-   end if
-   if (print_detailed) then
-      initp%flx_wshed_vg  = initp%flx_wshed_vg                                             &
-                          + (leaf_wshed_tot + wood_wshed_tot)   * hdidi
-      initp%flx_qwshed_vg = initp%flx_qwshed_vg                                            &
-                          + (leaf_qwshed_tot + wood_qwshed_tot) * hdidi
-      initp%flx_vapor_lc  = initp%flx_vapor_lc                                             &
-                          + (leaf_boil_tot - leaf_dew_tot)      * hdidi
-      initp%flx_vapor_wc  = initp%flx_vapor_wc                                             &
-                          + (wood_boil_tot - wood_dew_tot)      * hdidi
-   end if
    !---------------------------------------------------------------------------------------!
 
    return
@@ -3415,9 +3400,22 @@ subroutine print_csiteipa(csite, ipa)
    real                         :: growth_resp
    real                         :: storage_resp
    real                         :: vleaf_resp
+   real                         :: pss_lai
+   real                         :: pss_wai
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
+
+
+   !----- Find the total patch LAI and WAI. -----------------------------------------------!
+   pss_lai = 0.0
+   pss_wai = 0.0
+   do ico=1,cpatch%ncohorts
+      pss_lai = pss_lai + cpatch%lai(ico)
+      pss_wai = pss_wai + cpatch%wai(ico)
+   end do
+   !---------------------------------------------------------------------------------------!
+
 
    write(unit=*,fmt='(80a)') ('=',k=1,80)
    write(unit=*,fmt='(80a)') ('=',k=1,80)
@@ -3503,11 +3501,11 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(7(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'          &
-                                    ,'         LAI','        HTRY','    CAN_RHOS'          &
-                                    ,'   CAN_DEPTH'
-   write (unit=*,fmt='(7(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-                                      ,csite%veg_displace(ipa),csite%lai(ipa)              &
+   write (unit=*,fmt='(8(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'          &
+                                    ,'   PATCH_LAI','   PATCH_WAI','        HTRY'          &
+                                    ,'    CAN_RHOS','   CAN_DEPTH'
+   write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+                                      ,csite%veg_displace(ipa),pss_lai,pss_wai             &
                                       ,csite%htry(ipa),csite%can_rhos(ipa)                 &
                                       ,csite%can_depth(ipa)
 
@@ -3604,7 +3602,22 @@ subroutine print_rk4patch(y,csite,ipa)
    real(kind=8)                    :: y_can_rvap
    real(kind=8)                    :: y_can_theiv
    real(kind=8)                    :: y_can_vpdef
+   real(kind=4)                    :: pss_lai
+   real(kind=4)                    :: pss_wai
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the total patch LAI and WAI. -----------------------------------------------!
+   pss_lai = 0.0
+   pss_wai = 0.0
+   do ico=1,cpatch%ncohorts
+      pss_lai = pss_lai + cpatch%lai(ico)
+      pss_wai = pss_wai + cpatch%wai(ico)
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Find the ice-vapour equivalent potential temperature and vapour pressure deficit !
@@ -3781,20 +3794,19 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(8(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'         &
-                                     ,'   PATCH_LAI','   CAN_DEPTH','     CAN_CO2'         &
-                                     ,'    CAN_PRSS','       GGNET'
-                                     
-   write (unit=*,fmt='(8(es12.4,1x))') y%veg_height,y%veg_rough,y%veg_displace             &
-                                      ,csite%lai(ipa),y%can_depth,y%can_co2,y%can_prss     &
+   write (unit=*,fmt='(9(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'         &
+                                     ,'   PATCH_LAI','   PATCH_WAI','   CAN_DEPTH'         &
+                                     ,'     CAN_CO2','    CAN_PRSS','       GGNET'
+
+   write (unit=*,fmt='(9(es12.4,1x))') y%veg_height,y%veg_rough,y%veg_displace             &
+                                      ,pss_lai,pss_wai,y%can_depth,y%can_co2,y%can_prss    &
                                       ,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(10(a12,1x))') '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
                                     ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'          &
                                     ,'    CAN_RVAP','   CAN_VPDEF','     CAN_RHV'          &
                                     ,'CAN_ENTHALPY'
-                                     
-                                     
+
    write (unit=*,fmt='(10(es12.4,1x))')  y%can_rhos     , y_can_theiv    , y%can_theta     &
                                        , y%can_temp     , y%can_shv      , y%can_ssh       &
                                        , y_can_rvap     , y_can_vpdef    , y%can_rhv       &

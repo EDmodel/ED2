@@ -83,7 +83,7 @@ module ed_therm_lib
          !----- Find branch/twig specific heat and biomass. -------------------------------!
          spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
                      / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bwood = brf_wd(pft) * (bsapwooda + bdead*agf_bs(pft))
+         bwood       = brf_wd(pft) * (bsapwooda + bdead*agf_bs(pft))
       end select
 
       !----- Find the leaf specific heat. -------------------------------------------------!

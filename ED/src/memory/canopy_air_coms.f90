@@ -344,11 +344,10 @@ module canopy_air_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !    Parameters to set the maximum vegetation-level aerodynamic resistance.             !
-   ! rb_max = rb_inter + rb_slope * TAI.                                                   !
+   !    Parameter to set the minimum vegetation-level aerodynamic conductance.             !
    !---------------------------------------------------------------------------------------!
-   real :: rb_slope
-   real :: rb_inter
+   real         :: gbhmos_min
+   real(kind=8) :: gbhmos_min8
 
    !---------------------------------------------------------------------------------------!
    !      This is the minimum vegetation height.  [m]                                      !

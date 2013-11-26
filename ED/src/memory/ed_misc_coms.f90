@@ -47,6 +47,10 @@ Module ed_misc_coms
    integer :: isoutput
    integer :: iclobber
 
+   integer :: iadd_site_means
+   integer :: iadd_patch_means
+   integer :: iadd_cohort_means
+
    integer :: unitfast
    integer :: unitstate
    real ::  frqstate
@@ -183,6 +187,17 @@ Module ed_misc_coms
 
    logical :: fast_diagnostics       !! If ifoutput,idoutput,and imoutput are zero, then
                                      !! there is no need to integrate fast flux diagnostics
+
+
+   logical :: writing_dail ! Writing daily
+   logical :: writing_mont ! Writing monthly
+   logical :: writing_dcyc ! Writing mean diel
+   logical :: writing_year ! Writing yearly
+   logical :: writing_eorq ! If either monthly or mean diel are written.
+   logical :: writing_long ! If either daily, monthly, or mean diel are written.
+   logical :: history_fast ! Save sub-daily (fast) means to history 
+   logical :: history_dail ! Save daily means to history 
+   logical :: history_eorq ! Save monthly means and mean diel to history
 
    ! Namelist option to attach metadata to HDF5 output files 0=no, 1=yes
 

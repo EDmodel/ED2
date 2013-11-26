@@ -15,10 +15,10 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"                          # Current directory.
-there          = "thatpath"                          # Directory where analyses/history are 
-srcdir         = "/n/moorcroft_data/mlongo/util/Rsc" # Source  directory.
-outroot        = "thisoutroot"                       # Directory for figures
+here           = "thispath"    # Current directory.
+there          = "thatpath"    # Directory where analyses/history are 
+srcdir         = "thisrscpath" # Source  directory.
+outroot        = "thisoutroot" # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -48,7 +48,7 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "pdf" - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 14                     # Font size.
+ptsz           = 18                     # Font size.
 lwidth         = 2.5                    # Line width
 plotgrid       = TRUE                   # Should I plot the grid in the background? 
 fcgrid         = TRUE                   # Include a grid on the filled contour plots?
@@ -56,7 +56,6 @@ ncolshov       = 200                    # Target number of colours for Hovmoller
 hovgrid        = TRUE                   # Include a grid on the Hovmoller plots?
 legwhere       = "topleft"              # Where should I place the legend?
 inset          = 0.01                   # Inset between legend and edge of plot region.
-legbg          = "white"                # Legend background colour.
 scalleg        = 0.40                   # Expand y limits by this relative amount to fit
                                         #    the legend
 cex.main       = 0.8                    # Scale coefficient for the title
@@ -68,6 +67,7 @@ drought.mark   = mydroughtmark          # Put a background to highlight droughts
 drought.yeara  = mydroughtyeara         # First year that has drought
 drought.yearz  = mydroughtyearz         # Last year that has drought
 months.drought = mymonthsdrought        # Months with drought
+ibackground    = mybackground           # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
@@ -77,6 +77,7 @@ slz.min        = -5.0         # The deepest depth that trees access water.
 idbh.type      = myidbhtype   # Type of DBH class
                               # 1 -- Every 10 cm until 100cm; > 100cm
                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+klight         = myklight     # Weighting factor for maximum carbon balance
 #------------------------------------------------------------------------------------------#
 
 
@@ -281,10 +282,16 @@ for (place in myplaces){
 
 
    #----- Make some shorter versions of some variables. -----------------------------------#
-   mfac     = datum$month
-   yfac     = datum$year
-   dcycmean = datum$dcycmean
-   dcycmsqu = datum$dcycmsqu
+   mfac   = datum$month
+   yfac   = datum$year
+   emean  = datum$emean
+   emsqu  = datum$emsqu
+   qmean  = datum$qmean
+   qmsqu  = datum$qmsqu
+   szpft  = datum$szpft
+   lu     = datum$lu
+   patch  = datum$patch
+   cohort = datum$cohort
    #---------------------------------------------------------------------------------------#
 
 
@@ -294,310 +301,57 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    cat ("    - Finding the annual statistics for multi-dimensional variables...","\n")
    cat ("      * Aggregating the annual mean of PFT-DBH variables...","\n")
-   datum$agbpftdbh           = qapply(datum$agbpftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$basareapftdbh       = qapply(datum$basareapftdbh       ,yfac,1,mean,na.rm=TRUE)
-   datum$laipftdbh           = qapply(datum$laipftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$waipftdbh           = qapply(datum$waipftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$taipftdbh           = qapply(datum$taipftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$gpppftdbh           = qapply(datum$gpppftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$npppftdbh           = qapply(datum$npppftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$mcopftdbh           = qapply(datum$mcopftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$cbapftdbh           = qapply(datum$cbapftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$cbalightpftdbh      = qapply(datum$cbalightpftdbh      ,yfac,1,mean,na.rm=TRUE)
-   datum$cbamoistpftdbh      = qapply(datum$cbamoistpftdbh      ,yfac,1,mean,na.rm=TRUE)
-   datum$cbal12lightpftdbh   = qapply(datum$cbal12lightpftdbh   ,yfac,1,mean,na.rm=TRUE)
-   datum$cbal12moistpftdbh   = qapply(datum$cbal12moistpftdbh   ,yfac,1,mean,na.rm=TRUE)
-   datum$cbarelpftdbh        = qapply(datum$cbarelpftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$ldroppftdbh         = qapply(datum$ldroppftdbh         ,yfac,1,mean,na.rm=TRUE)
-   datum$fsopftdbh           = qapply(datum$fsopftdbh           ,yfac,1,mean,na.rm=TRUE)
-   datum$demandpftdbh        = qapply(datum$demandpftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$supplypftdbh        = qapply(datum$supplypftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$nplantpftdbh        = qapply(datum$nplantpftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$mortpftdbh          = qapply(datum$mortpftdbh          ,yfac,1,mean,na.rm=TRUE)
-   datum$agemortpftdbh       = qapply(datum$agemortpftdbh       ,yfac,1,mean,na.rm=TRUE)
-   datum$ncbmortpftdbh       = qapply(datum$ncbmortpftdbh       ,yfac,1,mean,na.rm=TRUE)
-   datum$tfallmortpftdbh     = qapply(datum$tfallmortpftdbh     ,yfac,1,mean,na.rm=TRUE)
-   datum$coldmortpftdbh      = qapply(datum$coldmortpftdbh      ,yfac,1,mean,na.rm=TRUE)
-   datum$distmortpftdbh      = qapply(datum$distmortpftdbh      ,yfac,1,mean,na.rm=TRUE)
-   datum$growthpftdbh        = qapply(datum$growthpftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$plresppftdbh        = qapply(datum$plresppftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$bstorepftdbh        = qapply(datum$bstorepftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$hflxlcpftdbh        = qapply(datum$hflxlcpftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$wflxlcpftdbh        = qapply(datum$wflxlcpftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$transppftdbh        = qapply(datum$transppftdbh        ,yfac,1,mean,na.rm=TRUE)
-   datum$i.gpppftdbh         = qapply(datum$i.gpppftdbh         ,yfac,1,mean,na.rm=TRUE)
-   datum$i.npppftdbh         = qapply(datum$i.npppftdbh         ,yfac,1,mean,na.rm=TRUE)
-   datum$i.plresppftdbh      = qapply(datum$i.plresppftdbh      ,yfac,1,mean,na.rm=TRUE)
-   datum$i.mcopftdbh         = qapply(datum$i.mcopftdbh         ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbapftdbh         = qapply(datum$i.cbapftdbh         ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbalightpftdbh    = qapply(datum$i.cbalightpftdbh    ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbamoistpftdbh    = qapply(datum$i.cbamoistpftdbh    ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbal12lightpftdbh = qapply(datum$i.cbal12lightpftdbh ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbal12moistpftdbh = qapply(datum$i.cbal12moistpftdbh ,yfac,1,mean,na.rm=TRUE)
-   datum$i.transppftdbh      = qapply(datum$i.transppftdbh      ,yfac,1,mean,na.rm=TRUE)
-   datum$i.wflxlcpftdbh      = qapply(datum$i.wflxlcpftdbh      ,yfac,1,mean,na.rm=TRUE)
-   datum$i.hflxlcpftdbh      = qapply(datum$i.hflxlcpftdbh      ,yfac,1,mean,na.rm=TRUE)
-   #----- PFT arrays.   The "+1" column contains the total. -------------------------------#
-   cat ("      * Aggregating the annual mean of PFT variables...","\n")
-   datum$agbpft            = qapply(datum$agbpft                ,yfac,1,mean,na.rm=TRUE)
-   datum$bseedspft         = qapply(datum$bseedspft             ,yfac,1,mean,na.rm=TRUE)
-   datum$nplantpft         = qapply(datum$nplantpft             ,yfac,1,mean,na.rm=TRUE)
-   datum$laipft            = qapply(datum$laipft                ,yfac,1,mean,na.rm=TRUE)
-   datum$waipft            = qapply(datum$waipft                ,yfac,1,mean,na.rm=TRUE)
-   datum$taipft            = qapply(datum$taipft                ,yfac,1,mean,na.rm=TRUE)
-   datum$gpppft            = qapply(datum$gpppft                ,yfac,1,mean,na.rm=TRUE)
-   datum$npppft            = qapply(datum$npppft                ,yfac,1,mean,na.rm=TRUE)
-   datum$mcopft            = qapply(datum$mcopft                ,yfac,1,mean,na.rm=TRUE)
-   datum$cbapft            = qapply(datum$cbapft                ,yfac,1,mean,na.rm=TRUE)
-   datum$cbalightpft       = qapply(datum$cbalightpft           ,yfac,1,mean,na.rm=TRUE)
-   datum$cbamoistpft       = qapply(datum$cbamoistpft           ,yfac,1,mean,na.rm=TRUE)
-   datum$cbal12lightpft    = qapply(datum$cbal12lightpft        ,yfac,1,mean,na.rm=TRUE)
-   datum$cbal12moistpft    = qapply(datum$cbal12moistpft        ,yfac,1,mean,na.rm=TRUE)
-   datum$cbarelpft         = qapply(datum$cbarelpft             ,yfac,1,mean,na.rm=TRUE)
-   datum$ldroppft          = qapply(datum$ldroppft              ,yfac,1,mean,na.rm=TRUE)
-   datum$fsopft            = qapply(datum$fsopft                ,yfac,1,mean,na.rm=TRUE)
-   datum$balivepft         = qapply(datum$balivepft             ,yfac,1,mean,na.rm=TRUE)
-   datum$bdeadpft          = qapply(datum$bdeadpft              ,yfac,1,mean,na.rm=TRUE)
-   datum$bleafpft          = qapply(datum$bleafpft              ,yfac,1,mean,na.rm=TRUE)
-   datum$brootpft          = qapply(datum$brootpft              ,yfac,1,mean,na.rm=TRUE)
-   datum$bswoodpft         = qapply(datum$bswoodpft             ,yfac,1,mean,na.rm=TRUE)
-   datum$bstorepft         = qapply(datum$bstorepft             ,yfac,1,mean,na.rm=TRUE)
-   datum$basareapft        = qapply(datum$basareapft            ,yfac,1,mean,na.rm=TRUE)
-   datum$leafresppft       = qapply(datum$leafresppft           ,yfac,1,mean,na.rm=TRUE)
-   datum$rootresppft       = qapply(datum$rootresppft           ,yfac,1,mean,na.rm=TRUE)
-   datum$growthresppft     = qapply(datum$growthresppft         ,yfac,1,mean,na.rm=TRUE)
-   datum$plresppft         = qapply(datum$plresppft             ,yfac,1,mean,na.rm=TRUE)
-   datum$hflxlcpft         = qapply(datum$hflxlcpft             ,yfac,1,mean,na.rm=TRUE)
-   datum$wflxlcpft         = qapply(datum$wflxlcpft             ,yfac,1,mean,na.rm=TRUE)
-   datum$transppft         = qapply(datum$transppft             ,yfac,1,mean,na.rm=TRUE)
-   datum$i.gpppft          = qapply(datum$i.gpppft              ,yfac,1,mean,na.rm=TRUE)
-   datum$i.npppft          = qapply(datum$i.npppft              ,yfac,1,mean,na.rm=TRUE)
-   datum$i.plresppft       = qapply(datum$i.plresppft           ,yfac,1,mean,na.rm=TRUE)
-   datum$i.mcopft          = qapply(datum$i.mcopft              ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbapft          = qapply(datum$i.cbapft              ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbalightpft     = qapply(datum$i.cbalightpft         ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbamoistpft     = qapply(datum$i.cbamoistpft         ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbal12lightpft  = qapply(datum$i.cbal12lightpft      ,yfac,1,mean,na.rm=TRUE)
-   datum$i.cbal12moistpft  = qapply(datum$i.cbal12moistpft      ,yfac,1,mean,na.rm=TRUE)
-   datum$i.transppft       = qapply(datum$i.transppft           ,yfac,1,mean,na.rm=TRUE)
-   datum$i.wflxlcpft       = qapply(datum$i.wflxlcpft           ,yfac,1,mean,na.rm=TRUE)
-   datum$i.hflxlcpft       = qapply(datum$i.hflxlcpft           ,yfac,1,mean,na.rm=TRUE)
-   datum$mortpft           = qapply(datum$mortpft               ,yfac,1,mean,na.rm=TRUE)
-   datum$agemortpft        = qapply(datum$agemortpft            ,yfac,1,mean,na.rm=TRUE)
-   datum$ncbmortpft        = qapply(datum$ncbmortpft            ,yfac,1,mean,na.rm=TRUE)
-   datum$tfallmortpft      = qapply(datum$tfallmortpft          ,yfac,1,mean,na.rm=TRUE)
-   datum$coldmortpft       = qapply(datum$coldmortpft           ,yfac,1,mean,na.rm=TRUE)
-   datum$distmortpft       = qapply(datum$distmortpft           ,yfac,1,mean,na.rm=TRUE)
-   datum$recrpft           = qapply(datum$recrpft               ,yfac,1,mean,na.rm=TRUE)
-   datum$growthpft         = qapply(datum$growthpft             ,yfac,1,mean,na.rm=TRUE)
-   datum$censusnplantpft   = qapply(datum$censusnplantpft       ,yfac,1,mean,na.rm=TRUE)
-   datum$censuslaipft      = qapply(datum$censuslaipft          ,yfac,1,mean,na.rm=TRUE)
-   datum$censuswaipft      = qapply(datum$censuswaipft          ,yfac,1,mean,na.rm=TRUE)
-   datum$censustaipft      = qapply(datum$censustaipft          ,yfac,1,mean,na.rm=TRUE)
-   datum$censusagbpft      = qapply(datum$censusagbpft          ,yfac,1,mean,na.rm=TRUE)
-   datum$censusbapft       = qapply(datum$censusbapft           ,yfac,1,mean,na.rm=TRUE)
+   for (vname in names(szpft)){
+      szpft[[vname]] = qapply(X=szpft[[vname]],INDEX=yfac,DIM=1,FUN=mean,na.rm=TRUE)
+   }#end for
    #----- LU arrays.   The "+1" column contains the total. --------------------------------#
    cat ("      * Aggregating the annual mean of LU variables...","\n")
-   datum$agblu             = qapply(datum$agblu                 ,yfac,1,mean,na.rm=TRUE)
-   datum$lailu             = qapply(datum$lailu                 ,yfac,1,mean,na.rm=TRUE)
-   datum$gpplu             = qapply(datum$gpplu                 ,yfac,1,mean,na.rm=TRUE)
-   datum$npplu             = qapply(datum$npplu                 ,yfac,1,mean,na.rm=TRUE)
-   datum$arealu            = qapply(datum$arealu                ,yfac,1,mean,na.rm=TRUE)
-   datum$basarealu         = qapply(datum$basarealu             ,yfac,1,mean,na.rm=TRUE)
-   #----- Miscellaneous arrays. -----------------------------------------------------------#
-   cat ("      * Aggregating the annual mean of DIST variables...","\n")
-   datum$dist              = qapply(datum$dist                  ,yfac,1,mean,na.rm=TRUE)
+   for (vname in names(lu)){
+      lu   [[vname]] = qapply(X=lu   [[vname]],INDEX=yfac,DIM=1,FUN=mean,na.rm=TRUE)
+   }#end for
    #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
    #      Here we find the monthly means for month, then compute the standard deviation.   #
    #---------------------------------------------------------------------------------------#
-   cat ("    - Finding the monthly mean...","\n")
-   cat ("      * Aggregating the monthly mean...","\n")
-   mont12mn               = list()
-   mont12mn$gpp         = tapply(X=datum$gpp          ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$npp         = tapply(X=datum$npp          ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$nep         = tapply(X=datum$nep          ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$plresp      = tapply(X=datum$plresp       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$leaf.resp   = tapply(X=datum$leaf.resp    ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$root.resp   = tapply(X=datum$root.resp    ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$growth.resp = tapply(X=datum$growth.resp  ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$hetresp     = tapply(X=datum$hetresp      ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$cwdresp     = tapply(X=datum$cwdresp      ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$cflxca      = tapply(X=datum$cflxca       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$cflxst      = tapply(X=datum$cflxst       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$nee         = tapply(X=datum$nee          ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$reco        = tapply(X=datum$reco         ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$hflxca      = tapply(X=datum$hflxca       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$hflxlc      = tapply(X=datum$hflxlc       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$hflxwc      = tapply(X=datum$hflxwc       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$hflxgc      = tapply(X=datum$hflxgc       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$wflxca      = tapply(X=datum$wflxca       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$qwflxca     = tapply(X=datum$qwflxca      ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$wflxlc      = tapply(X=datum$wflxlc       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$wflxwc      = tapply(X=datum$wflxwc       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$wflxgc      = tapply(X=datum$wflxgc       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$evap        = tapply(X=datum$evap         ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$transp      = tapply(X=datum$transp       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$rain        = tapply(X=datum$rain         ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$atm.temp    = tapply(X=datum$atm.temp     ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$rshort      = tapply(X=datum$rshort       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$rshortup    = tapply(X=datum$rshortup     ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$rlong       = tapply(X=datum$rlong        ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$rlongup     = tapply(X=datum$rlongup      ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   # mont12mn$par.tot     = tapply(X=datum$par.tot      ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$parup       = tapply(X=datum$parup        ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$rnet        = tapply(X=datum$rnet         ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$albedo      = tapply(X=datum$albedo       ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$atm.shv     = tapply(X=datum$atm.shv      ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$atm.co2     = tapply(X=datum$atm.co2      ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$atm.prss    = tapply(X=datum$atm.prss     ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$atm.vels    = tapply(X=datum$atm.vels     ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$ustar       = tapply(X=datum$ustar        ,INDEX=mfac      ,FUN=mean,na.rm=T)
-   mont12mn$soil.temp   = qapply(X=datum$soil.temp    ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
-   mont12mn$soil.water  = qapply(X=datum$soil.water   ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
-   mont12mn$soil.mstpot = qapply(X=datum$soil.mstpot  ,INDEX=mfac,DIM=1,FUN=mean,na.rm=T)
-   #----- Find the mean sum of squares. ---------------------------------------------------#
-   cat ("      * Standard deviation of the monthly means...","\n")
-   mont12sd               = list()
-   mont12sd$gpp         = tapply(X=datum$gpp          ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$npp         = tapply(X=datum$npp          ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$nep         = tapply(X=datum$nep          ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$plresp      = tapply(X=datum$plresp       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$leaf.resp   = tapply(X=datum$leaf.resp    ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$root.resp   = tapply(X=datum$root.resp    ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$growth.resp = tapply(X=datum$growth.resp  ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$hetresp     = tapply(X=datum$hetresp      ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$cwdresp     = tapply(X=datum$cwdresp      ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$cflxca      = tapply(X=datum$cflxca       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$cflxst      = tapply(X=datum$cflxst       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$nee         = tapply(X=datum$nee          ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$reco        = tapply(X=datum$reco         ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$hflxca      = tapply(X=datum$hflxca       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$hflxlc      = tapply(X=datum$hflxlc       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$hflxwc      = tapply(X=datum$hflxwc       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$hflxgc      = tapply(X=datum$hflxgc       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$wflxca      = tapply(X=datum$wflxca       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$qwflxca     = tapply(X=datum$qwflxca      ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$wflxlc      = tapply(X=datum$wflxlc       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$wflxwc      = tapply(X=datum$wflxwc       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$wflxgc      = tapply(X=datum$wflxgc       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$evap        = tapply(X=datum$evap         ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$transp      = tapply(X=datum$transp       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$rain        = tapply(X=datum$rain         ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$atm.temp    = tapply(X=datum$atm.temp     ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$rshort      = tapply(X=datum$rshort       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$rshortup    = tapply(X=datum$rshortup     ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$rlong       = tapply(X=datum$rlong        ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$rlongup     = tapply(X=datum$rlongup      ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   # mont12sd$par.tot     = tapply(X=datum$par.tot      ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$parup       = tapply(X=datum$parup        ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$rnet        = tapply(X=datum$rnet         ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$albedo      = tapply(X=datum$albedo       ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$atm.shv     = tapply(X=datum$atm.shv      ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$atm.co2     = tapply(X=datum$atm.co2      ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$atm.prss    = tapply(X=datum$atm.prss     ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$atm.vels    = tapply(X=datum$atm.vels     ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$ustar       = tapply(X=datum$ustar        ,INDEX=mfac      ,FUN=sd  ,na.rm=T)
-   mont12sd$soil.temp   = qapply(X=datum$soil.temp    ,INDEX=mfac,DIM=1,FUN=sd  ,na.rm=T)
-   mont12sd$soil.water  = qapply(X=datum$soil.water   ,INDEX=mfac,DIM=1,FUN=sd  ,na.rm=T)
-   mont12sd$soil.mstpot = qapply(X=datum$soil.mstpot  ,INDEX=mfac,DIM=1,FUN=sd  ,na.rm=T)
-   #---------------------------------------------------------------------------------------#
+   cat ("    - Finding the monthly and annual means...","\n")
+   cat ("      * Aggregating the monthly mean and standard deviation...","\n")
+   mmean = list()
+   msdev = list()
+   ymean = list()
+   ysdev = list()
+   for (vname in names(emean)){
+      if (vname %in% c("soil.temp","soil.water","soil.mstpot")){
+         mmean[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=mean, na.rm=TRUE)
+         msdev[[vname]] = qapply(X=emean[[vname]], INDEX=mfac, DIM=1, FUN=sd  , na.rm=TRUE)
+         ymean[[vname]] = qapply(X=emean[[vname]], INDEX=yfac, DIM=1, FUN=mean, na.rm=TRUE)
+         ysdev[[vname]] = qapply(X=emean[[vname]], INDEX=yfac, DIM=1, FUN=sd  , na.rm=TRUE)
+      }else if (vname %in% c("rain")){
+         mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
+         msdev[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=sd  , na.rm=TRUE)
+         ymean[[vname]] = tapply(X=emean[[vname]], INDEX=yfac, FUN=sum , na.rm=TRUE)
+         ysdev[[vname]] = tapply(X=emean[[vname]], INDEX=yfac, FUN=sd  , na.rm=TRUE)
+      }else{
+         mmean[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=mean, na.rm=TRUE)
+         msdev[[vname]] = tapply(X=emean[[vname]], INDEX=mfac, FUN=sd  , na.rm=TRUE)
+         ymean[[vname]] = tapply(X=emean[[vname]], INDEX=yfac, FUN=mean, na.rm=TRUE)
+         ysdev[[vname]] = tapply(X=emean[[vname]], INDEX=yfac, FUN=sd  , na.rm=TRUE)
+      }#end if
+      #------------------------------------------------------------------------------------#
 
 
-   #---------------------------------------------------------------------------------------#
-   #      Here we find the monthly means for month, then compute the standard deviation.   #
-   #---------------------------------------------------------------------------------------#
-   cat ("    - Finding the annual mean...","\n")
-   cat ("      * Aggregating the annual mean...","\n")
-   year12mn             = list()
-   year12mn$gpp         = tapply(X=datum$gpp          ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$npp         = tapply(X=datum$npp          ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$nep         = tapply(X=datum$nep          ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$plresp      = tapply(X=datum$plresp       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$leaf.resp   = tapply(X=datum$leaf.resp    ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$root.resp   = tapply(X=datum$root.resp    ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$growth.resp = tapply(X=datum$growth.resp  ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$hetresp     = tapply(X=datum$hetresp      ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$cwdresp     = tapply(X=datum$cwdresp      ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$cflxca      = tapply(X=datum$cflxca       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$cflxst      = tapply(X=datum$cflxst       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$nee         = tapply(X=datum$nee          ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$reco        = tapply(X=datum$reco         ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$hflxca      = tapply(X=datum$hflxca       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$hflxlc      = tapply(X=datum$hflxlc       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$hflxwc      = tapply(X=datum$hflxwc       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$hflxgc      = tapply(X=datum$hflxgc       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$wflxca      = tapply(X=datum$wflxca       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$qwflxca     = tapply(X=datum$qwflxca      ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$wflxlc      = tapply(X=datum$wflxlc       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$wflxwc      = tapply(X=datum$wflxwc       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$wflxgc      = tapply(X=datum$wflxgc       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$evap        = tapply(X=datum$evap         ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$transp      = tapply(X=datum$transp       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$rain        = tapply(X=datum$rain         ,INDEX=yfac      ,FUN=sum ,na.rm=T)
-   year12mn$atm.temp    = tapply(X=datum$atm.temp     ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$rshort      = tapply(X=datum$rshort       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$rshortup    = tapply(X=datum$rshortup     ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$rlong       = tapply(X=datum$rlong        ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$rlongup     = tapply(X=datum$rlongup      ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   # year12mn$par.tot     = tapply(X=datum$par.tot      ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$parup       = tapply(X=datum$parup        ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$rnet        = tapply(X=datum$rnet         ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$albedo      = tapply(X=datum$albedo       ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$atm.shv     = tapply(X=datum$atm.shv      ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$atm.co2     = tapply(X=datum$atm.co2      ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$atm.prss    = tapply(X=datum$atm.prss     ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$atm.vels    = tapply(X=datum$atm.vels     ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$ustar       = tapply(X=datum$ustar        ,INDEX=yfac      ,FUN=mean,na.rm=T)
-   year12mn$soil.temp   = qapply(X=datum$soil.temp    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   year12mn$soil.water  = qapply(X=datum$soil.water   ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   year12mn$soil.mstpot = qapply(X=datum$soil.mstpot  ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   cat ("      * Standard deviation of the annual mean...","\n")
-   year12sd             = list()
-   year12sd$gpp         = tapply(X=datum$gpp          ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$npp         = tapply(X=datum$npp          ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$nep         = tapply(X=datum$nep          ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$plresp      = tapply(X=datum$plresp       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$leaf.resp   = tapply(X=datum$leaf.resp    ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$root.resp   = tapply(X=datum$root.resp    ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$growth.resp = tapply(X=datum$growth.resp  ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$hetresp     = tapply(X=datum$hetresp      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$cwdresp     = tapply(X=datum$cwdresp      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$cflxca      = tapply(X=datum$cflxca       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$cflxst      = tapply(X=datum$cflxst       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$nee         = tapply(X=datum$nee          ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$reco        = tapply(X=datum$reco         ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$hflxca      = tapply(X=datum$hflxca       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$hflxlc      = tapply(X=datum$hflxlc       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$hflxwc      = tapply(X=datum$hflxwc       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$hflxgc      = tapply(X=datum$hflxgc       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$wflxca      = tapply(X=datum$wflxca       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$qwflxca     = tapply(X=datum$qwflxca      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$wflxlc      = tapply(X=datum$wflxlc       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$wflxwc      = tapply(X=datum$wflxwc       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$wflxgc      = tapply(X=datum$wflxgc       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$evap        = tapply(X=datum$evap         ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$transp      = tapply(X=datum$transp       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$rain        = tapply(X=datum$rain*12      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$atm.temp    = tapply(X=datum$atm.temp     ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$rshort      = tapply(X=datum$rshort       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$rshortup    = tapply(X=datum$rshortup     ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$rlong       = tapply(X=datum$rlong        ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$rlongup     = tapply(X=datum$rlongup      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   # year12sd$par.tot     = tapply(X=datum$par.tot      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$parup       = tapply(X=datum$parup        ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$rnet        = tapply(X=datum$rnet         ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$albedo      = tapply(X=datum$albedo       ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$atm.shv     = tapply(X=datum$atm.shv      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$atm.co2     = tapply(X=datum$atm.co2      ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$atm.prss    = tapply(X=datum$atm.prss     ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$atm.vels    = tapply(X=datum$atm.vels     ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$ustar       = tapply(X=datum$ustar        ,INDEX=yfac      ,FUN=sd  ,na.rm=T)
-   year12sd$soil.temp   = qapply(X=datum$soil.temp    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   year12sd$soil.water  = qapply(X=datum$soil.water   ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   year12sd$soil.mstpot = qapply(X=datum$soil.mstpot  ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
+      #----- Fix the bad data. ------------------------------------------------------------#
+      bad.mmean = ! is.finite(mmean[[vname]])
+      bad.msdev = ! is.finite(msdev[[vname]])
+      bad.ymean = ! is.finite(ymean[[vname]])
+      bad.ysdev = ! is.finite(ysdev[[vname]])
+      mmean[[vname]][bad.mmean] = NA
+      msdev[[vname]][bad.msdev] = 0.
+      ymean[[vname]][bad.ymean] = NA
+      ysdev[[vname]][bad.ysdev] = 0.
+      #------------------------------------------------------------------------------------#
+   }#end for
    #---------------------------------------------------------------------------------------#
 
 
@@ -607,130 +361,17 @@ for (place in myplaces){
    #      Here we find the Mean diurnal cycle for each month, then compute the standard    #
    # deviation.                                                                            #
    #---------------------------------------------------------------------------------------#
-   cat ("    - Aggregating the annual mean of the diurnal cycle...","\n")
-   dcyc12mn             =list()
-   dcyc12mn$gpp         =qapply(X=dcycmean$gpp         ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$npp         =qapply(X=dcycmean$npp         ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$plresp      =qapply(X=dcycmean$plresp      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$leaf.resp   =qapply(X=dcycmean$leaf.resp   ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$root.resp   =qapply(X=dcycmean$root.resp   ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$hetresp     =qapply(X=dcycmean$hetresp     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$cwdresp     =qapply(X=dcycmean$cwdresp     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$nep         =qapply(X=dcycmean$nep         ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$nee         =qapply(X=dcycmean$nee         ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$reco        =qapply(X=dcycmean$reco        ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$cflxca      =qapply(X=dcycmean$cflxca      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$cflxst      =qapply(X=dcycmean$cflxst      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$hflxca      =qapply(X=dcycmean$hflxca      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$hflxlc      =qapply(X=dcycmean$hflxlc      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$hflxwc      =qapply(X=dcycmean$hflxwc      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$hflxgc      =qapply(X=dcycmean$hflxgc      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$wflxca      =qapply(X=dcycmean$wflxca      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$qwflxca     =qapply(X=dcycmean$qwflxca     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$wflxlc      =qapply(X=dcycmean$wflxlc      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$wflxwc      =qapply(X=dcycmean$wflxwc      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$wflxgc      =qapply(X=dcycmean$wflxgc      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$evap        =qapply(X=dcycmean$evap        ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$transp      =qapply(X=dcycmean$transp      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$atm.temp    =qapply(X=dcycmean$atm.temp    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$can.temp    =qapply(X=dcycmean$can.temp    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$leaf.temp   =qapply(X=dcycmean$leaf.temp   ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$wood.temp   =qapply(X=dcycmean$wood.temp   ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$gnd.temp    =qapply(X=dcycmean$gnd.temp    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$atm.shv     =qapply(X=dcycmean$atm.shv     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$can.shv     =qapply(X=dcycmean$can.shv     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$gnd.shv     =qapply(X=dcycmean$gnd.shv     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$atm.vpd     =qapply(X=dcycmean$atm.vpd     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$can.vpd     =qapply(X=dcycmean$can.vpd     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$leaf.vpd    =qapply(X=dcycmean$leaf.vpd    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$atm.co2     =qapply(X=dcycmean$atm.co2     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$can.co2     =qapply(X=dcycmean$can.co2     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$atm.prss    =qapply(X=dcycmean$atm.prss    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$can.prss    =qapply(X=dcycmean$can.prss    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$atm.vels    =qapply(X=dcycmean$atm.vels    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$ustar       =qapply(X=dcycmean$ustar       ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$fs.open     =qapply(X=dcycmean$fs.open     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rain        =qapply(X=dcycmean$rain        ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rshort      =qapply(X=dcycmean$rshort      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rshort.beam =qapply(X=dcycmean$rshort.beam ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rshort.diff =qapply(X=dcycmean$rshort.diff ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rshort.gnd  =qapply(X=dcycmean$rshort.gnd  ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rshortup    =qapply(X=dcycmean$rshortup    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rlong       =qapply(X=dcycmean$rlong       ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rlong.gnd   =qapply(X=dcycmean$rlong.gnd   ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rlongup     =qapply(X=dcycmean$rlongup     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   # dcyc12mn$par.tot     =qapply(X=dcycmean$par.tot     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   # dcyc12mn$par.beam    =qapply(X=dcycmean$par.beam    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   # dcyc12mn$par.diff    =qapply(X=dcycmean$par.diff    ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   # dcyc12mn$par.gnd     =qapply(X=dcycmean$par.gnd     ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$parup       =qapply(X=dcycmean$parup       ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rnet        =qapply(X=dcycmean$rnet        ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$albedo      =qapply(X=dcycmean$albedo      ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$albedo.beam =qapply(X=dcycmean$albedo.beam ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$albedo.diff =qapply(X=dcycmean$albedo.diff ,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   dcyc12mn$rlong.albedo=qapply(X=dcycmean$rlong.albedo,INDEX=yfac,DIM=1,FUN=mean,na.rm=T)
-   #----- Find the mean sum of squares. ---------------------------------------------------#
-   dcyc12sd             =list()
-   dcyc12sd$gpp         =qapply(X=dcycmean$gpp         ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$npp         =qapply(X=dcycmean$npp         ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$plresp      =qapply(X=dcycmean$plresp      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$leaf.resp   =qapply(X=dcycmean$leaf.resp   ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$root.resp   =qapply(X=dcycmean$root.resp   ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$hetresp     =qapply(X=dcycmean$hetresp     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$cwdresp     =qapply(X=dcycmean$cwdresp     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$nep         =qapply(X=dcycmean$nep         ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$nee         =qapply(X=dcycmean$nee         ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$reco        =qapply(X=dcycmean$reco        ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$cflxca      =qapply(X=dcycmean$cflxca      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$cflxst      =qapply(X=dcycmean$cflxst      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$hflxca      =qapply(X=dcycmean$hflxca      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$hflxlc      =qapply(X=dcycmean$hflxlc      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$hflxwc      =qapply(X=dcycmean$hflxwc      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$hflxgc      =qapply(X=dcycmean$hflxgc      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$wflxca      =qapply(X=dcycmean$wflxca      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$qwflxca     =qapply(X=dcycmean$qwflxca     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$wflxlc      =qapply(X=dcycmean$wflxlc      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$wflxwc      =qapply(X=dcycmean$wflxwc      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$wflxgc      =qapply(X=dcycmean$wflxgc      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$evap        =qapply(X=dcycmean$evap        ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$transp      =qapply(X=dcycmean$transp      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$atm.temp    =qapply(X=dcycmean$atm.temp    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$can.temp    =qapply(X=dcycmean$can.temp    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$leaf.temp   =qapply(X=dcycmean$leaf.temp   ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$wood.temp   =qapply(X=dcycmean$wood.temp   ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$gnd.temp    =qapply(X=dcycmean$gnd.temp    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$atm.shv     =qapply(X=dcycmean$atm.shv     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$can.shv     =qapply(X=dcycmean$can.shv     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$gnd.shv     =qapply(X=dcycmean$gnd.shv     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$atm.vpd     =qapply(X=dcycmean$atm.vpd     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$can.vpd     =qapply(X=dcycmean$can.vpd     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$leaf.vpd    =qapply(X=dcycmean$leaf.vpd    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$atm.co2     =qapply(X=dcycmean$atm.co2     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$can.co2     =qapply(X=dcycmean$can.co2     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$atm.prss    =qapply(X=dcycmean$atm.prss    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$can.prss    =qapply(X=dcycmean$can.prss    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$atm.vels    =qapply(X=dcycmean$atm.vels    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$ustar       =qapply(X=dcycmean$ustar       ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$fs.open     =qapply(X=dcycmean$fs.open     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rain        =qapply(X=dcycmean$rain        ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rshort      =qapply(X=dcycmean$rshort      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rshort.beam =qapply(X=dcycmean$rshort.beam ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rshort.diff =qapply(X=dcycmean$rshort.diff ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rshort.gnd  =qapply(X=dcycmean$rshort.gnd  ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rshortup    =qapply(X=dcycmean$rshortup    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rlong       =qapply(X=dcycmean$rlong       ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rlong.gnd   =qapply(X=dcycmean$rlong.gnd   ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rlongup     =qapply(X=dcycmean$rlongup     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   # dcyc12sd$par.tot     =qapply(X=dcycmean$par.tot     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   # dcyc12sd$par.beam    =qapply(X=dcycmean$par.beam    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   # dcyc12sd$par.diff    =qapply(X=dcycmean$par.diff    ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   # dcyc12sd$par.gnd     =qapply(X=dcycmean$par.gnd     ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$parup       =qapply(X=dcycmean$parup       ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rnet        =qapply(X=dcycmean$rnet        ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$albedo      =qapply(X=dcycmean$albedo      ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$albedo.beam =qapply(X=dcycmean$albedo.beam ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$albedo.diff =qapply(X=dcycmean$albedo.diff ,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
-   dcyc12sd$rlong.albedo=qapply(X=dcycmean$rlong.albedo,INDEX=yfac,DIM=1,FUN=sd  ,na.rm=T)
+   cat ("    - Aggregating the annual mean and std. dev. of the diurnal cycle...","\n")
+   umean = list()
+   usdev = list()
+   for (vname in names(qmean)){
+      umean[[vname]] = qapply(qmean[[vname]],INDEX=yfac,DIM=1,FUN=mean,na.rm=TRUE)
+      usdev[[vname]] = qapply(qmean[[vname]],INDEX=yfac,DIM=1,FUN=sd  ,na.rm=TRUE)
+      bad.umean      = ! is.finite(umean[[vname]])
+      bad.usdev      = ! is.finite(usdev[[vname]])
+      umean[[vname]][bad.umean] = NA
+      usdev[[vname]][bad.usdev] = 0.
+   }#end for
    #---------------------------------------------------------------------------------------#
 
 
@@ -739,84 +380,39 @@ for (place in myplaces){
    #     Remove all elements of the DBH/PFT class that do not have a single valid cohort   #
    # at any given time.                                                                    #
    #---------------------------------------------------------------------------------------#
-   empty = datum$nplantpftdbh == 0
-   datum$agbpftdbh          [empty] = NA
-   datum$basareapftdbh      [empty] = NA
-   datum$laipftdbh          [empty] = NA
-   datum$waipftdbh          [empty] = NA
-   datum$taipftdbh          [empty] = NA
-   datum$gpppftdbh          [empty] = NA
-   datum$npppftdbh          [empty] = NA
-   datum$mcopftdbh          [empty] = NA
-   datum$cbapftdbh          [empty] = NA
-   datum$cbalightpftdbh     [empty] = NA
-   datum$cbamoistpftdbh     [empty] = NA
-   datum$cbal12lightpftdbh  [empty] = NA
-   datum$cbal12moistpftdbh  [empty] = NA
-   datum$cbarelpftdbh       [empty] = NA
-   datum$ldroppftdbh        [empty] = NA
-   datum$fsopftdbh          [empty] = NA
-   datum$demandpftdbh       [empty] = NA
-   datum$supplypftdbh       [empty] = NA
-   datum$mortpftdbh         [empty] = NA
-   datum$agemortpftdbh      [empty] = NA
-   datum$ncbmortpftdbh      [empty] = NA
-   datum$tfallmortpftdbh    [empty] = NA
-   datum$coldmortpftdbh     [empty] = NA
-   datum$distmortpftdbh     [empty] = NA
-   datum$growthpftdbh       [empty] = NA
-   datum$plresppftdbh       [empty] = NA
-   datum$bstorepftdbh       [empty] = NA
-   datum$hflxlcpftdbh       [empty] = NA
-   datum$wflxlcpftdbh       [empty] = NA
-   datum$transppftdbh       [empty] = NA
-   datum$i.gpppftdbh        [empty] = NA
-   datum$i.npppftdbh        [empty] = NA
-   datum$i.plresppftdbh     [empty] = NA
-   datum$i.mcopftdbh        [empty] = NA
-   datum$i.cbapftdbh        [empty] = NA
-   datum$i.cbalightpftdbh   [empty] = NA
-   datum$i.cbamoistpftdbh   [empty] = NA
-   datum$i.cbal12lightpftdbh[empty] = NA
-   datum$i.cbal12moistpftdbh[empty] = NA
-   datum$i.transppftdbh     [empty] = NA
-   datum$i.wflxlcpftdbh     [empty] = NA
-   datum$i.hflxlcpftdbh     [empty] = NA
-   datum$nplantpftdbh       [empty] = NA
+   empty = szpft$nplant == 0
+   for (vname in names(szpft)) szpft[[vname]][empty] = NA
    #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
    #     Convert mortality and recruitment so it is scaled between 0 and 100%.             #
    #---------------------------------------------------------------------------------------#
-   datum$mortpftdbh      = 100. * (1.0 - exp(- datum$mortpftdbh     ))
-   datum$agemortpftdbh   = 100. * (1.0 - exp(- datum$agemortpftdbh  ))
-   datum$ncbmortpftdbh   = 100. * (1.0 - exp(- datum$ncbmortpftdbh  ))
-   datum$tfallmortpftdbh = 100. * (1.0 - exp(- datum$tfallmortpftdbh))
-   datum$coldmortpftdbh  = 100. * (1.0 - exp(- datum$coldmortpftdbh ))
-   datum$distmortpftdbh  = 100. * (1.0 - exp(- datum$distmortpftdbh ))
-   datum$mortpft         = 100. * (1.0 - exp(- datum$mortpft        ))
-   datum$agemortpft      = 100. * (1.0 - exp(- datum$agemortpft     ))
-   datum$ncbmortpft      = 100. * (1.0 - exp(- datum$ncbmortpft     ))
-   datum$tfallmortpft    = 100. * (1.0 - exp(- datum$tfallmortpft   ))
-   datum$coldmortpft     = 100. * (1.0 - exp(- datum$coldmortpft    ))
-   datum$distmortpft     = 100. * (1.0 - exp(- datum$distmortpft    ))
-   datum$recrpft         = 100. * (exp(  datum$recrpft        ) - 1.0)
+   szpft$mort    = 100. * (1.0 - exp(- szpft$mort   ))
+   szpft$dimort  = 100. * (1.0 - exp(- szpft$dimort ))
+   szpft$ncbmort = 100. * (1.0 - exp(- szpft$ncbmort))
+   szpft$recr    = 100. * (exp(  szpft$recr   ) - 1.0)
    #---------------------------------------------------------------------------------------#
 
 
    #----- Find which PFTs, land uses and transitions we need to consider ------------------#
-   pftave  = colMeans(datum$agbpft,na.rm=TRUE)
-   luave   = colMeans(datum$agblu ,na.rm=TRUE)
-   distave = matrix(NA,nrow=3,ncol=3)
-   for (jlu in 1:nlu){
-      for (ilu in 1:nlu){
-          distave[ilu,jlu] = mean(datum$dist[,ilu,jlu])
-      }#end for
-   }#end for
-   selpft  = pftave  > 0.
-   sellu   = luave   > 0.
-   seldist = distave > 0.
+   pftave  = apply( X      = szpft$agb[,ndbh+1,]
+                  , MARGIN = 2
+                  , FUN    = mean
+                  , na.rm  = TRUE
+                  )#end apply
+   luave   = apply( X      = lu$agb 
+                  , MARGIN = 2
+                  , FUN    = mean
+                  , na.rm  = TRUE
+                  )#end apply
+   distave = apply(X=lu$dist,MARGIN=c(2,3),FUN=mean)
+   selpft  = is.finite(pftave ) & pftave  > 0.
+   sellu   = is.finite(luave  ) & luave   > 0.
+   seldist = is.finite(distave) & distave > 0.
+   n.selpft  = sum(selpft )
+   n.sellu   = sum(sellu  )
+   n.seldist = sum(seldist)
    #---------------------------------------------------------------------------------------#
 
 
@@ -825,11 +421,11 @@ for (place in myplaces){
    #      Define a suitable scale for diurnal cycle...                                     #
    #---------------------------------------------------------------------------------------#
    thisday = seq(from=0,to=ndcycle,by=1) * 24 / ndcycle
-   dcycplot = list()
-   dcycplot$levels = c(0,4,8,12,16,20,24)
-   dcycplot$n      = 7
-   dcycplot$scale  = "hours"
-   dcycplot$padj   = rep(0,times=dcycplot$n)
+   uplot = list()
+   uplot$levels = c(0,4,8,12,16,20,24)
+   uplot$n      = 7
+   uplot$scale  = "hours"
+   uplot$padj   = rep(0,times=uplot$n)
    #---------------------------------------------------------------------------------------#
 
 
@@ -852,12 +448,12 @@ for (place in myplaces){
    #      Define a suitable scale for monthly means...                                     #
    #---------------------------------------------------------------------------------------#
    montmont  = seq(from=1,to=12,by=1)
-   montplot  = list()
-   montplot$levels = montmont
-   montplot$labels = capwords(mon2mmm(montmont))
-   montplot$n      = 12
-   montplot$scale  = "months"
-   montplot$padj   = rep(0,times=dcycplot$n)
+   mplot  = list()
+   mplot$levels = montmont
+   mplot$labels = capwords(mon2mmm(montmont))
+   mplot$n      = 12
+   mplot$scale  = "months"
+   mplot$padj   = rep(0,times=mplot$n)
    #---------------------------------------------------------------------------------------#
 
 
@@ -877,13 +473,13 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Time series by PFT.                                                              #
    #---------------------------------------------------------------------------------------#
-   for (v in 1:ntspft){
-      thistspft   = tspft[[v]]
+   for (v in 1:ntspftdbh){
+      thistspft   = tspftdbh[[v]]
       vnam        = thistspft$vnam
       description = thistspft$desc
-      unit        = thistspft$unit
+      unit        = thistspft$e.unit
       plog        = thistspft$plog
-      plotit      = thistspft$plt
+      plotit      = thistspft$pft
 
       #----- Check whether the user wants to have this variable plotted. ------------------#
       if (plotit && any(selpft)){
@@ -896,8 +492,8 @@ for (place in myplaces){
          cat("      +",description,"time series for all PFTs...","\n")
 
          #----- Load variable -------------------------------------------------------------#
-         if (vnam %in% names(datum)){
-            thisvar = datum[[vnam]]
+         if (vnam %in% names(szpft)){
+            thisvar = szpft[[vnam]][,ndbh+1,]
             if (plog){
                #----- Eliminate non-positive values in case it is a log plot. -------------#
                thisvar[thisvar <= 0] = NA
@@ -947,6 +543,7 @@ for (place in myplaces){
             letitre = paste(description,lieu,sep=" - ")
             cols    = pft$colour[selpft]
             legs    = pft$name  [selpft]
+            par(par.user)
             plot(x=datum$toyear,y=thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Year",ylab=unit,cex.main=0.7,log=xylog)
 
@@ -954,19 +551,27 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "gray84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="gray52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (n in 1:(npft+1)){
                if (selpft[n]){
                   lines(datum$toyear,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
                }#end if
             }#end for
-            legend(x=legwhere,inset=inset,bg=legbg,legend=legs,col=cols,lwd=lwidth)
+            legend( x      = legwhere
+                  , inset  = inset
+                  , bg     = background
+                  , legend = legs
+                  , col    = cols
+                  , lwd    = lwidth
+                  , ncol   = min(pretty.box(n.selpft)$ncol,3)
+                  , title  = expression(bold("Plant Functional Type"))
+                  )#end legend
 
             if (outform[o] == "x11"){
                locator(n=1)
@@ -974,6 +579,7 @@ for (place in myplaces){
             }else{
                dev.off()
             }#end if
+            dummy=clean.tmp()
          } #end for outform
       }#end if (tseragbpft)
    } #end for tseries
@@ -986,19 +592,19 @@ for (place in myplaces){
    #      Time series by DBH, by PFT.                                                      #
    #---------------------------------------------------------------------------------------#
    #----- Find the PFTs to plot. ----------------------------------------------------------#
-   pftuse  = which(apply(X=datum$agbpftdbh,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
+   pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
    pftuse  = pftuse[pftuse != (npft+1)]
    for (v in 1:ntspftdbh){
       thistspftdbh   = tspftdbh[[v]]
       vnam        = thistspftdbh$vnam
       description = thistspftdbh$desc
-      unit        = thistspftdbh$unit
+      unit        = thistspftdbh$e.unit
       plog        = thistspftdbh$plog
-      plotit      = thistspftdbh$plt
+      plotit      = thistspftdbh$pftdbh
       
       #----- Load variable ----------------------------------------------------------------#
-      if (vnam %in% names(datum)){
-         thisvar = datum[[vnam]]
+      if (vnam %in% names(szpft)){
+         thisvar = szpft[[vnam]]
          if (plog){
             xylog="y"
             thisvar[thisvar <= 0] = NA
@@ -1064,23 +670,31 @@ for (place in myplaces){
                }#end if
 
                letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               par(par.user)
                plot(x=datum$toyear,y=thisvar[,1,p],type="n",main=letitre,ylim=ylimit
                    ,xlab="Time",ylab=unit,cex.main=0.7,log=xylog)
                if (drought.mark){
                   for (n in 1:ndrought){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                          ,xright = drought[[n]][2],ytop    = ydrought[2]
-                         ,col    = "gray84",border=NA)
+                         ,col    = grid.colour,border=NA)
                   }#end for
                }#end if
                if (plotgrid){ 
-                  abline(v=axTicks(side=1),h=axTicks(side=2),col="gray52",lty="solid")
+                  abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                for (d in seq(from=1,to=ndbh+1,by=1)){
                   lines(datum$toyear,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
                }#end for
-               legend(x=legwhere,inset=inset,bg=legbg,legend=dbhnames,col=dbhcols
-                     ,ncol=2,title="DBH class",lwd=lwidth,cex=0.8)
+               legend( x      = legwhere
+                     , inset  = inset
+                     , bg     = background
+                     , legend = dbhnames
+                     , col    = dbhcols
+                     , ncol   = min(pretty.box(ndbh+1)$ncol,3)
+                     , title  = expression(bold("DBH class"))
+                     , lwd    = lwidth
+                     )#end legend
 
                if (outform[o] == "x11"){
                   locator(n=1)
@@ -1088,6 +702,7 @@ for (place in myplaces){
                }else{
                   dev.off()
                }#end if
+               dummy=clean.tmp()
             } #end for outform
          }#end for (p in pftuse)
       }#end if (tseragbpft)
@@ -1101,10 +716,10 @@ for (place in myplaces){
    #   Plot the comparison between observations and model.                                 #
    #---------------------------------------------------------------------------------------#
    cat("    + Year-by-year comparisons of monthly means...","\n")
-   for (cc in 1:ncompmmean){
+   for (cc in 1:ncompmodel){
 
       #----- Retrieve variable information from the list. ---------------------------------#
-      compnow      = compmmean[[cc]]
+      compnow      = compmodel[[cc]]
       vname        = compnow$vnam  
       description  = compnow$desc  
       unit         = compnow$unit  
@@ -1119,21 +734,20 @@ for (place in myplaces){
       ltype        = compnow$type
       plog         = compnow$plog
       legpos       = compnow$legpos
-      plotit       = compnow$plt
+      plotit       = compnow$mmean
 
-      plotit       = plotit && vname %in% ls() && vname %in% names(mont12mn)
+      plotit       = plotit && vname %in% names(emean) && vname %in% names(mmean)
 
       if (plotit){
          #---------------------------------------------------------------------------------#
          #    Copy the observations to a scratch variable.                                 #
          #---------------------------------------------------------------------------------#
-         thisvar     = datum[[vname]]
-         thismean    = mont12mn[[vname]]
-         thissdev    = mont12sd[[vname]]
-         if (length(mont12sd[[vname]]) == 0){
+         thisvar     = emean [[vname]]
+         thismean    = mmean [[vname]]
+         if (length(msdev[[vname]]) == 0){
             thissdev = 0. * thismean
          }else{
-            thissdev = mont12sd[[vname]]
+            thissdev = msdev[[vname]]
          }#end if
          mod.x       = montmont
          mod.ylow    = thismean - thissdev
@@ -1201,12 +815,13 @@ for (place in myplaces){
 
                #----- Load variable -------------------------------------------------------#
                letitre = paste(description," - ",lieu,"\n","Monthly mean - ",cyear,sep="")
+               par(par.user)
                plot(x=montmont,y=var.year,type="n",main=letitre,xlab="Time"
                    ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
                    ,cex.main=cex.main)
-               axis(side=1,at=montplot$levels,labels=montplot$labels,padj=montplot$padj)
+               axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
                if (plotgrid){ 
-                  abline(v=montplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
+                  abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                if (plotsd){
                   polygon(x=mod.x.poly,y=mod.y.poly,col=errcolours[2],angle=angle[2]
@@ -1225,8 +840,8 @@ for (place in myplaces){
                         , density = dens
                         , lwd     = llwd
                         , col     = lcolours
-                        , bg      = "white"
-                        , title   = "Shaded areas = 1 SD"
+                        , bg      = background
+                        , title   = expression(bold("Shaded areas = 1 SD"))
                         , cex     = 1.0
                         , pch     = 16
                         )#end legend
@@ -1246,6 +861,7 @@ for (place in myplaces){
                }else{
                   dev.off()
                }#end if
+               dummy=clean.tmp()
                #---------------------------------------------------------------------------#
             } #end for outform
             #------------------------------------------------------------------------------#
@@ -1283,7 +899,7 @@ for (place in myplaces){
 
 
          #----- Load variable -------------------------------------------------------------#
-         thisvar = datum[[vnam]]
+         thisvar = lu[[vnam]]
          if (plog){
             #----- Eliminate non-positive values in case it is a log plot. ----------------#
             thisvar[thisvar <= 0] = NA
@@ -1326,6 +942,7 @@ for (place in myplaces){
             letitre = paste(description,lieu,sep=" - ")
             cols    = lucols[sellu]
             legs    = lunames[sellu]
+            par(par.user)
             plot(datum$toyear,thisvar[,1],type="n",main=letitre,ylim=ylimit
                 ,xlab="Year",ylab=unit,cex.main=0.7)
 
@@ -1333,18 +950,26 @@ for (place in myplaces){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "gray84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="gray52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (n in 1:(nlu+1)){
                if (sellu[n]){
                   lines(datum$toyear,thisvar[,n],type="l",col=lucols[n],lwd=lwidth)
                }#end if
             }#end for
-            legend(x=legwhere,inset=inset,bg=legbg,legend=legs,col=cols,lwd=lwidth)
+            legend( x      = legwhere
+                  , inset  = inset
+                  , bg     = background
+                  , legend = legs
+                  , col    = cols
+                  , lwd    = lwidth
+                  , ncol   = min(3,pretty.box(n.sellu)$ncol)
+                  , title  = expression(bold("Land use type"))
+                  )#end legend
 
             if (outform[o] == "x11"){
                locator(n=1)
@@ -1352,6 +977,7 @@ for (place in myplaces){
             }else{
                dev.off()
             }#end if
+            dummy=clean.tmp()
          } #end for outform
       }#end if (tseragbpft)
    } #end for tseries
@@ -1400,17 +1026,18 @@ for (place in myplaces){
          letitre = paste("Disturbance rates",lieu,sep=" - ")
          cols    = NULL
          legs    = NULL
+         par(par.user)
          plot(datum$toyear,datum$dist[,1,1],type="n",main=letitre,ylim=ylimit
              ,xlab="Year",ylab="[1/yr]",cex.main=0.7)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "gray84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="gray52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
          n = 0
          for (jlu in 1:nlu){
@@ -1424,7 +1051,15 @@ for (place in myplaces){
                }#end if
             }#end for
          }#end for
-         legend(x=legwhere,inset=inset,bg=legbg,legend=legs,col=cols,lwd=lwidth)
+         legend(x      = legwhere
+               ,inset  = inset
+               ,bg     = background
+               ,legend = legs
+               ,col    = cols
+               ,lwd    = lwidth
+               , ncol  = min(3,pretty.box(n)$ncol)
+               , title = expression(bold("Transition"))
+               )#end legend
 
          if (outform[o] == "x11"){
             locator(n=1)
@@ -1432,6 +1067,7 @@ for (place in myplaces){
          }else{
             dev.off()
          }#end if
+         dummy=clean.tmp()
       } #end for outform
       #------------------------------------------------------------------------------------#
    }#end if
@@ -1443,31 +1079,31 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the time series diagrams showing annual means.                                 #
    #---------------------------------------------------------------------------------------#
-   cat("      * Plot some time series...","\n")
-   for (hh in 1:ntser){
+   cat("      * Plot time series of groups of variables...","\n")
+   for (hh in 1:ntheme){
 
       #----- Retrieve variable information from the list. ---------------------------------#
-      tsernow      = tser[[hh]]
-      vnames       = tsernow$vnam  
-      description  = tsernow$desc  
-      lcolours     = tsernow$colour
-      llwd         = tsernow$lwd
-      ltype        = tsernow$type
-      plog         = tsernow$plog
-      prefix       = tsernow$prefix
-      theme        = tsernow$theme 
-      unit         = tsernow$unit  
-      legpos       = tsernow$legpos
-      plotit       = tsernow$plt & all(vnames %in% names(year12mn))
+      themenow     = theme[[hh]]
+      vnames       = themenow$vnam  
+      description  = themenow$desc  
+      lcolours     = themenow$colour
+      llwd         = themenow$lwd
+      ltype        = themenow$type
+      plog         = themenow$plog
+      prefix       = themenow$prefix
+      group        = themenow$title 
+      unit         = themenow$unit  
+      legpos       = themenow$legpos
+      plotit       = themenow$ymean
 
       if (plotit){
 
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir = paste(outpref,"tseries",sep="/")
+         outdir = paste(outpref,"theme_ymean",sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      +",theme,"time series for several variables...","\n")
+         cat("      +",group,"time series...","\n")
 
 
          #----- Define the number of layers. ----------------------------------------------#
@@ -1482,7 +1118,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          ylimit    = NULL
          for (l in 1:nlayers){
-            thisvar = year12mn[[vnames[l]]]
+            thisvar = ymean[[vnames[l]]]
             ylimit  = range(c(ylimit,thisvar),na.rm=TRUE)
          }#end for
          ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=plog)
@@ -1502,7 +1138,6 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #
          #---------------------------------------------------------------------------------#
-         cat("        > ",theme," time series ...","\n")
 
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
@@ -1521,34 +1156,42 @@ for (place in myplaces){
             }#end if
 
             #----- Load variable ----------------------------------------------------------#
-            thisvar = year12mn[[vnames[1]]]
+            thisvar = ymean[[vnames[1]]]
 
-            letitre = paste(theme," - ",lieu," \n"," Time series: ",theme,sep="")
+            letitre = paste(" Time series: ",group,"\n",lieu,sep="")
 
+            par(par.user)
             plot(x=datum$toyear,y=thisvar,type="n",main=letitre,xlab="Year"
                 ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,cex.main=cex.main)
             if (drought.mark){
                for (n in 1:ndrought){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = "gray84",border=NA)
+                      ,col    = grid.colour,border=NA)
                }#end for
             }#end if
             if (plotgrid){ 
-               abline(v=axTicks(side=1),h=axTicks(side=2),col="gray52",lty="solid")
+               abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             for (l in 1:nlayers){
-               thisvar = year12mn[[vnames[l]]]
+               thisvar = ymean[[vnames[l]]]
                points(x=datum$toyear,y=thisvar,col=lcolours[l],lwd=llwd[l],type=ltype
                      ,pch=16,cex=0.8)
             }#end for
-            legend(x=legpos,inset=inset,legend=description,col=lcolours,lwd=llwd,cex=0.8)
+            legend( x      = legpos
+                  , inset  = inset
+                  , legend = description
+                  , col    = lcolours
+                  , lwd    = llwd
+                  , ncol   = min(3,pretty.box(nlayers)$ncol)
+                  )#end legend
             if (outform[o] == "x11"){
                locator(n=1)
                dev.off()
             }else{
                dev.off()
             }#end if
+            dummy=clean.tmp()
             #------------------------------------------------------------------------------#
          } #end for outform
          #---------------------------------------------------------------------------------#
@@ -1563,40 +1206,45 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the climatology of the mean diurnal cycle.                                     #
    #---------------------------------------------------------------------------------------#
-   cat("      * Plot some climatology of diurnal cycle...","\n")
-   for (hh in 1:nclim){
+   cat("      * Plot mean diel for groups of variables...","\n")
+   for (hh in 1:ntheme){
 
       #----- Retrieve variable information from the list. ---------------------------------#
-      climnow      = clim[[hh]]
-      vnames       = climnow$vnam  
-      description  = climnow$desc  
-      lcolours     = climnow$colour
-      llwd         = climnow$lwd
-      ltype        = climnow$type
-      plog         = climnow$plog
-      prefix       = climnow$prefix
-      theme        = climnow$theme 
-      unit         = climnow$unit  
-      legpos       = climnow$legpos
-      plotit       = climnow$plt   
+      themenow     = theme[[hh]]
+      vnames       = themenow$vnam
+      description  = themenow$desc
+      lcolours     = themenow$colour
+      llwd         = themenow$lwd
+      ltype        = themenow$type
+      plog         = themenow$plog
+      prefix       = themenow$prefix
+      group        = themenow$title
+      unit         = themenow$unit
+      legpos       = themenow$legpos
+      plotit       = themenow$qmean
+      if (plog){ 
+         xylog = "y"
+      }else{
+         xylog = ""
+      }#end if
    
       if (plotit){
 
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir   = paste(outpref,"climdcyc",sep="/")
+         outdir   = paste(outpref,"theme_qmean",sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
          outtheme = paste(outdir,prefix,sep="/")
          if (! file.exists(outtheme)) dir.create(outtheme)
-         cat("      +",theme,"diurnal cycle for several variables...","\n")
+         cat("      +",group," diurnal cycle...","\n")
 
 
          #----- Define the number of layers. ----------------------------------------------#
          nlayers   = length(vnames)
          ylimit    = NULL
          for (l in 1:nlayers){
-            thisvar = dcyc12mn[[vnames[l]]]
+            thisvar = umean[[vnames[l]]]
             ylimit  = c(ylimit,thisvar)
          }#end for
          ylimit = pretty.xylim(u=ylimit,fracexp=scalleg,is.log=length(grep("y",plog)) > 0)
@@ -1606,18 +1254,17 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #      Loop over all months.                                                      #
          #---------------------------------------------------------------------------------#
-         for (pmon in 1:12){
-            cmon    = sprintf("%2.2i",pmon)
-            namemon = mlist[pmon]
+         yplot = as.numeric(dimnames(umean[[vnames[1]]])[[1]])
+         for (yy in 1:length(yplot)){
+            cyear    = sprintf("%4.4i",yplot[yy])
 
             #------------------------------------------------------------------------------#
             #     Check if the directory exists.  If not, create it.                       #
             #------------------------------------------------------------------------------#
-            cat("        > ",theme," time series - ",namemon,"...","\n")
 
             #----- Loop over formats. -----------------------------------------------------#
             for (o in 1:nout){
-               fichier = paste(outtheme,"/",prefix,"-",cmon,"-",suffix,".",outform[o]
+               fichier = paste(outtheme,"/",prefix,"-",cyear,"-",suffix,".",outform[o]
                               ,sep="")
                if(outform[o] == "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
@@ -1633,32 +1280,39 @@ for (place in myplaces){
                }#end if
 
                #----- Load variable -------------------------------------------------------#
-               thisvar = dcyc12mn[[vnames[1]]]
+               thisvar = umean[[vnames[1]]]
                thisvar = cbind(thisvar[,ndcycle],thisvar)
 
-               letitre = paste(theme," - ",lieu,"\n"
-                              ,"Mean diurnal cycle - ",namemon,sep="")
+               letitre = paste(group," - Mean diurnal cycle - ",cyear,"\n",lieu,sep="")
 
-               plot(x=thisday,y=thisvar[pmon,],type="n",main=letitre,xlab="Time"
-                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=plog,xaxt="n"
+               par(par.user)
+               plot(x=thisday,y=thisvar[yy,],type="n",main=letitre,xlab="Time"
+                   ,ylim=ylimit,ylab=paste("[",unit,"]",sep=""),log=xylog,xaxt="n"
                    ,cex.main=cex.main)
-               axis(side=1,at=dcycplot$levels,labels=dcycplot$labels,padj=dcycplot$padj)
+               axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                if (plotgrid){ 
-                  abline(v=dcycplot$levels,h=axTicks(side=2),col="gray52",lty="solid")
+                  abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                for (l in 1:nlayers){
-                  thisvar = dcyc12mn[[vnames[l]]]
+                  thisvar = umean[[vnames[l]]]
                   thisvar = cbind(thisvar[,ndcycle],thisvar)
-                  points(x=thisday,y=thisvar[pmon,],col=lcolours[l]
-                        ,lwd=llwd[l],type=ltype,pch=16,cex=0.8)
+                  points(x=thisday,y=thisvar[yy,],col=lcolours[l]
+                        ,lwd=llwd[l],type=ltype,pch=16)
                }#end for
-               legend(x=legpos,inset=0.05,legend=description,col=lcolours,lwd=llwd)
+               legend( x      = legpos
+                     , inset  = inset
+                     , legend = description
+                     , col    = lcolours
+                     , lwd    = llwd
+                     , ncol   = min(3,pretty.box(nlayers)$ncol)
+                     )#end legend
                if (outform[o] == "x11"){
                   locator(n=1)
                   dev.off()
                }else{
                   dev.off()
                }#end if
+               dummy=clean.tmp()
                #---------------------------------------------------------------------------#
             }#end for outform
             #------------------------------------------------------------------------------#
@@ -1676,23 +1330,23 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the climatology of the soil properties.                                        #
    #---------------------------------------------------------------------------------------#
-   for (v in 1:nsoilclim){
+   for (v in 1:nsoilplot){
 
       #----- Retrieve variable information from the list. ---------------------------------#
-      thisclim    = soilclim[[v]]
+      thisclim    = soilplot[[v]]
       vnam        = thisclim$vnam
       description = thisclim$desc
       unit        = thisclim$unit
       vcscheme    = thisclim$csch
       pnlog       = thisclim$pnlog
-      plotit      = thisclim$plt
+      plotit      = thisclim$ymean
 
       if (plotit){
 
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #
          #---------------------------------------------------------------------------------#
-         outdir  =  paste(outpref,"soilclim",sep="/")
+         outdir  =  paste(outpref,"soil_ymean",sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
          cat("      + Climatology profile of ",description,"...","\n")
 
@@ -1703,7 +1357,7 @@ for (place in myplaces){
          nsoil    = nzg
 
          #----- Convert the vector data into an array. ------------------------------------#
-         vararr  = year12mn[[vnam]]
+         vararr  = ymean[[vnam]]
 
          #----- Copy the first and the last year to make the edges buffered. --------------#
          first    = vararr[1,]
@@ -1755,7 +1409,8 @@ for (place in myplaces){
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
-            letitre = paste(description," - ",lieu,sep="")
+            letitre = paste(description,"\n",lieu,sep="")
+            par(par.user)
             sombreado(x=yearaxis,y=soilaxis,z=varbuff,levels=vlevels,nlevels=vnlev
                      ,color.palette=get(vcscheme)
                      ,plot.title=title(main=letitre,xlab="Month",ylab="Soil depth [m]"
@@ -1765,7 +1420,7 @@ for (place in myplaces){
                      ,plot.axes={axis(side=1)
                                  axis(side=2,at=zat,labels=znice)
                                  if (hovgrid){
-                                    abline(h=zat,v=axTicks(1),col="gray52",lty="dotted")
+                                    abline(h=zat,v=axTicks(1),col=grid.colour,lty="dotted")
                                  }#end if hovgrid
                                 }#end plot.axes
                      )
@@ -1776,6 +1431,7 @@ for (place in myplaces){
             }else{
                dev.off()
             }#end if
+            dummy = clean.tmp()
          } #end for outform
       }#end if plotit
    }#end for nhov
@@ -1790,19 +1446,19 @@ for (place in myplaces){
    #      Bar plot by DBH class.                                                           #
    #---------------------------------------------------------------------------------------#
    cat("    + Bar plot by DBH classes...","\n")
-   pftuse      = which(apply(X=datum$nplantpftdbh,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
+   pftuse      = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
    pftuse      = pftuse[pftuse != (npft+1)]
    npftuse     = length(pftuse)
    pftname.use = pft$name  [pftuse]
    pftcol.use  = pft$colour[pftuse]
-   for (v in 1:nbarplotdbh){
+   for (v in 1:ntspftdbh){
       #----- Load settings for this variable.----------------------------------------------#
-      thisbar     = barplotdbh[[v]]
+      thisbar     = tspftdbh[[v]]
       vnam        = thisbar$vnam
       description = thisbar$desc
-      unit        = thisbar$unit
+      unit        = thisbar$e.unit
       stacked     = thisbar$stack
-      plotit      = thisbar$plt
+      plotit      = thisbar$bar.plot
       plog        = thisbar$plog
       if (plog){
          stacked = FALSE
@@ -1823,7 +1479,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Retrieve the variable, and keep only the part that is usable.               #
          #---------------------------------------------------------------------------------#
-         thisvnam                  = datum[[vnam]]
+         thisvnam                  = szpft[[vnam]]
          thisvnam                  = thisvnam [,,pftuse]
          thisvnam                  = thisvnam [,-(ndbh+1),]
          
@@ -1848,7 +1504,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #
          #---------------------------------------------------------------------------------#
-         barplotdir = paste(outpref,"barplotdbh",sep="/")
+         barplotdir = paste(outpref,"barplot_dbh",sep="/")
          if (! file.exists(barplotdir)) dir.create(barplotdir)
          outdir = paste(barplotdir,vnam,sep="/")
          if (! file.exists(outdir)) dir.create(outdir)
@@ -1894,17 +1550,25 @@ for (place in myplaces){
 
 
                #----- Plot all monthly means together. ------------------------------------#
+               par(par.user)
                barplot(height=t(thisvnam[y,,]),names.arg=dbhnames[1:ndbh],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border="gray23",xpd=FALSE,cex.main=cex.main)
+                      ,border=grid.colour,xpd=FALSE,cex.main=cex.main)
                if (plotgrid & (! stacked)){
                   xgrid=0.5+(1:ndbh)*(1+npftuse)
-                  abline(v=xgrid,col="gray46",lty="solid")
+                  abline(v=xgrid,col=grid.colour,lty="solid")
                }#end if
                box()
-               legend(x="topleft",inset=0.01,legend=pftname.use,fill=pftcol.use
-                     ,ncol=1,title="PFT",cex=1.0,bg="white")
+               legend( x      = "topleft"
+                     , inset  = inset
+                     , legend = pftname.use
+                     , fill   = pftcol.use
+                     , ncol   = min(3,pretty.box(n.selpft)$ncol)
+                     , title  = expression(bold("Plant functional type"))
+                     , cex    = 1.0
+                     , bg     = background
+                     )#end legend
                #---------------------------------------------------------------------------#
 
 
@@ -1918,6 +1582,7 @@ for (place in myplaces){
                }else{
                   dev.off()
                }#end if
+               dummy = clean.tmp()
                #---------------------------------------------------------------------------#
             } #end for outform
             #------------------------------------------------------------------------------#
