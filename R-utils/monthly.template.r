@@ -754,6 +754,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$wflxlc        = list()
    patch$wflxwc        = list()
    patch$transp        = list()
+   patch$fast.soil.c   = list()
+   patch$slow.soil.c   = list()
+   patch$struct.soil.c = list()
    #---------------------------------------------------------------------------------------#
 
 
@@ -1481,6 +1484,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$wflxlc        = old.datum$patch$wflxlc
    new.datum$patch$wflxwc        = old.datum$patch$wflxwc
    new.datum$patch$transp        = old.datum$patch$transp
+   new.datum$patch$fast.soil.c   = old.datum$patch$fast.soil.c
+   new.datum$patch$slow.soil.c   = old.datum$patch$slow.soil.c
+   new.datum$patch$struct.soil.c = old.datum$patch$struct.soil.c
    #---------------------------------------------------------------------------------------#
 
 

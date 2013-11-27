@@ -194,15 +194,12 @@ use.sites = c("gyf","s67","s83","pdg","rja","m34")
 sim.struct  = list( name     = c("eft_iust00_ictb02","eft_iust01_ictb02")
                   , desc     = c("Prescribed u*"    ,"Predicted u*"     )
                   , verbose  = c("Prescribed u*"    ,"Predicted u*"     )
-                  , colour   = c("#3B24B3"          ,"#A3CC52"          )
-                  , fgcol    = c("#160959"          ,"#4B6614"          )
+                  , colour   = c("#9D57F8"          ,"#99FF02"          )
+                  , fgcol    = c("#2B0071"          ,"#548901"          )
                   )#end list
 #----- List the default simulation. -------------------------------------------------------#
 sim.default = 2
 #------------------------------------------------------------------------------------------#
-
-
-
 
 #------------------------------------------------------------------------------------------#
 #       Plot options.                                                                      #
@@ -276,29 +273,30 @@ alt.fg    = "#2B0071"
 #------------------------------------------------------------------------------------------#
 #      Switch controls to plot only the needed ones.                                       #
 #------------------------------------------------------------------------------------------#
-plot.gpp.light     = c(FALSE,TRUE)[2]
-plot.gpp.vpdef     = c(FALSE,TRUE)[2]
-plot.gpp.wetness   = c(FALSE,TRUE)[2]
-plot.reco.wetness  = c(FALSE,TRUE)[2]
-plot.ust.ftnight   = c(FALSE,TRUE)[2]
-plot.ust.bias      = c(FALSE,TRUE)[2]
-plot.ts.ftnight    = c(FALSE,TRUE)[2]
-plot.bp.diel       = c(FALSE,TRUE)[2]
-plot.qq.dmean      = c(FALSE,TRUE)[2]
-plot.density.dmean = c(FALSE,TRUE)[2]
-plot.spider        = c(FALSE,TRUE)[2]
-plot.skill.taylor  = c(FALSE,TRUE)[2]
-plot.soil.skill    = c(FALSE,TRUE)[2]
-make.summ.table    = c(FALSE,TRUE)[2]
-density.legend     = FALSE
-use.dmean.light    = FALSE
-use.dmean.vpdef    = TRUE
-use.dmean.wetness  = TRUE
-show.dryseason     = TRUE
-col.dryseason      = "papayawhip"
-col.ust.altern     = "firebrick4"
-col.ust.default    = "deeppink"
-slz.cscheme        = "visible"
+plot.gpp.light         = c(FALSE,TRUE)[1]
+plot.gpp.vpdef         = c(FALSE,TRUE)[1]
+plot.gpp.wetness       = c(FALSE,TRUE)[1]
+plot.reco.wetness      = c(FALSE,TRUE)[1]
+plot.ust.ftnight       = c(FALSE,TRUE)[1]
+plot.ust.bias          = c(FALSE,TRUE)[1]
+plot.ts.ftnight        = c(FALSE,TRUE)[2]
+plot.bp.diel           = c(FALSE,TRUE)[1]
+plot.qq.dmean          = c(FALSE,TRUE)[1]
+plot.density.dmean     = c(FALSE,TRUE)[1]
+plot.spider            = c(FALSE,TRUE)[1]
+plot.skill.taylor      = c(FALSE,TRUE)[1]
+plot.soil.skill.taylor = c(FALSE,TRUE)[1]
+make.summ.table        = c(FALSE,TRUE)[2]
+use.alter              = FALSE
+density.legend         = FALSE
+use.dmean.light        = FALSE
+use.dmean.vpdef        = TRUE
+use.dmean.wetness      = TRUE
+show.dryseason         = TRUE
+col.dryseason          = "papayawhip"
+col.ust.altern         = "firebrick4"
+col.ust.default        = "deeppink"
+slz.cscheme            = "visible"
 #------------------------------------------------------------------------------------------#
 
 
@@ -834,8 +832,8 @@ diel.desc    = c("Night"  ,"Rise/Set","Day"    ,"All hours","Daily mean"
                 ,"Semi-monthly mean")
 diel.default = c(TRUE     ,FALSE     ,TRUE     ,TRUE       ,FALSE       
                 ,FALSE    )
-diel.col     = c("#520485","#FF5700" ,"#A00014"  ,"#46FF32","#0742C3"   
-                ,"#F5C858")
+diel.col     = c("#3B24B3","#990F0F","#E65C17","#A3CC52","#2996CC"
+                ,"#306614")
 moment.key   = c("mean","variance","skewness","kurtosis")
 moment.desc  = c("Mean","Variance","Skewness","Kurtosis")
 hour.num     = seq(from=0,to=23,by=3)
@@ -1093,18 +1091,22 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the Q-Q plots of daily means.                                    #
    #---------------------------------------------------------------------------------------#
-   o.qq.dmean         = list()
-   o.qq.dmean$main    = file.path(o.form$main    ,"qq_dmean")
-   o.qq.dmean$sites   = file.path(o.qq.dmean$main,"sites"   )
-   o.qq.dmean$default = file.path(o.qq.dmean$main,"default" )
+   o.qq.dmean              = list()
+   o.qq.dmean$main         = file.path(o.form$main    ,"qq_dmean"     )
+   o.qq.dmean$sites        = file.path(o.qq.dmean$main,"sites"        )
+   o.qq.dmean$default.norm = file.path(o.qq.dmean$main,"default_norm" )
+   o.qq.dmean$default.abs  = file.path(o.qq.dmean$main,"default_abs"  )
    if (is.figure && ! file.exists(o.qq.dmean$main)){
       dir.create(o.qq.dmean$main)
    }#end if
    if (is.figure && ! file.exists(o.qq.dmean$sites  )){
       dir.create(o.qq.dmean$sites)
    }#end if
-   if (is.figure && ! file.exists(o.qq.dmean$default)){
-      dir.create(o.qq.dmean$default)
+   if (is.figure && ! file.exists(o.qq.dmean$default.norm)){
+      dir.create(o.qq.dmean$default.norm)
+   }#end if
+   if (is.figure && ! file.exists(o.qq.dmean$default.abs)){
+      dir.create(o.qq.dmean$default.abs)
    }#end if
    o.form$qq.dmean  = o.qq.dmean
    #---------------------------------------------------------------------------------------#
@@ -1198,6 +1200,21 @@ for (o in sequence(nout)){
    o.form$soil.skill = o.soil.skill
    #---------------------------------------------------------------------------------------#
 
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Create paths for the skill diagrams.                                              #
+   #---------------------------------------------------------------------------------------#
+   o.soil.taylor           = list( main = file.path(o.form$main,"soil_taylor"))
+   o.soil.taylor$variables = file.path(o.soil.taylor$main,"variables")
+   o.soil.taylor$default   = file.path(o.soil.taylor$main,"default"  )
+   if(is.figure&&!file.exists(o.soil.taylor$main     )) dir.create(o.soil.taylor$main     )
+   if(is.figure&&!file.exists(o.soil.taylor$variables)) dir.create(o.soil.taylor$variables)
+   if(is.figure&&!file.exists(o.soil.taylor$default  )) dir.create(o.soil.taylor$default  )
+   o.form$soil.taylor = o.soil.taylor
+   #---------------------------------------------------------------------------------------#
 
 
 
@@ -2932,7 +2949,7 @@ if (plot.gpp.light){
                   if (lo.simul$bottom[s]) axis.rt(side=1,las=5,off=0.1)
                   if (lo.simul$left  [s]) axis(side=2,las=1)
                   grid(col=grid.colour,lty="dotted")
-                  abline(h=0,v=0,lty="solid")
+                  abline(h=0,v=0,col=foreground,lty="dotdash",lwd=1.4)
                   #------ Plot the points. ------------------------------------------------#
                   points( x    = obs.use$par
                         , y    = obs.use$gpp
@@ -3090,7 +3107,7 @@ if (plot.gpp.light){
             if (lo.site$bottom[p]) axis.rt(side=1,las=5,off=0.1)
             if (lo.site$left  [p]) axis(side=2,las=1)
             grid(col=grid.colour,lty="dotted")
-            abline(h=0,v=0,lty="solid")
+            abline(h=0,v=0,col=foreground,lwd=1.4,lty="dotdash")
             #------------------------------------------------------------------------------#
 
             if (n.sel > 0){
@@ -3452,7 +3469,7 @@ if (plot.gpp.vpdef){
                   if (lo.simul$bottom[s]) axis(side=1)
                   if (lo.simul$left  [s]) axis(side=2,las=1)
                   grid(col=grid.colour,lty="dotted")
-                  abline(h=0,v=0,lty="solid")
+                  abline(h=0,v=0,col=foreground,lwd=1.4,lty="dotdash")
                   #------ Plot the points. ------------------------------------------------#
                   now.vpdef  = c(obs.use$vpdef,mod.use[[s]]$vpdef)
                   now.gpp    = c(obs.use$gpp  ,mod.use[[s]]$gpp  )
@@ -3582,7 +3599,7 @@ if (plot.gpp.vpdef){
             if (lo.site$bottom[p]) axis(side=1)
             if (lo.site$left  [p]) axis(side=2,las=1)
             grid(col=grid.colour,lty="dotted")
-            abline(h=0,v=0,lty="solid")
+            abline(h=0,v=0,col=foreground,lwd=1.4,lty="dotdash")
             #------------------------------------------------------------------------------#
 
 
@@ -3937,7 +3954,7 @@ if (plot.gpp.wetness){
                   if (lo.simul$bottom[s]) axis(side=1)
                   if (lo.simul$left  [s]) axis(side=2,las=1)
                   grid(col=grid.colour,lty="dotted")
-                  abline(h=0,v=0,lty="solid")
+                  abline(h=0,v=0,col=foreground,lwd=1.4,lty="dotdash")
                   #------ Plot the points. ------------------------------------------------#
                   now.wetness  = c(obs.use$wetness,mod.use[[s]]$wetness)
                   now.gpp      = c(obs.use$gpp  ,mod.use[[s]]$gpp  )
@@ -4068,7 +4085,7 @@ if (plot.gpp.wetness){
             if (lo.site$bottom[p]) axis(side=1)
             if (lo.site$left  [p]) axis(side=2,las=1)
             grid(col=grid.colour,lty="dotted")
-            abline(h=0,v=0,lty="solid")
+            abline(h=0,v=0,col=foreground,lwd=1.4,lty="dotdash")
             #------------------------------------------------------------------------------#
 
 
@@ -4420,7 +4437,7 @@ if (plot.reco.wetness){
                   if (lo.simul$bottom[s]) axis(side=1)
                   if (lo.simul$left  [s]) axis(side=2,las=1)
                   grid(col=grid.colour,lty="dotted")
-                  abline(h=0,v=0,lty="solid")
+                  abline(h=0,v=0,col=foreground,lwd=1.4,lty="dotdash")
                   #------ Plot the points. ------------------------------------------------#
                   now.wetness  = c(obs.use$wetness,mod.use[[s]]$wetness)
                   now.reco     = c(obs.use$reco   ,mod.use[[s]]$reco   )
@@ -4551,7 +4568,7 @@ if (plot.reco.wetness){
             if (lo.site$bottom[p]) axis(side=1)
             if (lo.site$left  [p]) axis(side=2,las=1)
             grid(col=grid.colour,lty="dotted")
-            abline(h=0,v=0,lty="solid")
+            abline(h=0,v=0,col=foreground,lwd=1.4,lty="dotdash")
             #------------------------------------------------------------------------------#
 
 
@@ -5965,7 +5982,7 @@ if (plot.ts.ftnight){
 
             #------------------------------------------------------------------------------#
             #------------------------------------------------------------------------------#
-            if (this.alt %in% names(obser)){
+            if (use.alter && this.alt %in% names(obser)){
                alt.now              = obser[[this.alt       ]]
                fnmean.alter         = obser[[this.alt.fnmean]]
                fnq025.alter         = obser[[this.alt.fnq025]]
@@ -6060,7 +6077,7 @@ if (plot.ts.ftnight){
          obs.expected  = tsfn.obser[[iata]]$expected
          obs.q025      = tsfn.obser[[iata]]$q025
          obs.q975      = tsfn.obser[[iata]]$q975
-         if (iata %in% names(tsfn.alter)){
+         if (use.alter && iata %in% names(tsfn.alter)){
             alt.when      = tsfn.alter[[iata]]$when
             alt.expected  = tsfn.alter[[iata]]$expected
             alt.q025      = tsfn.alter[[iata]]$q025
@@ -6129,20 +6146,22 @@ if (plot.ts.ftnight){
 
 
                #----- Loop over all simulations. ------------------------------------------#
-               for (s in sequence(nsimul)){
+               ssw = 0
+               for (s in rev(sequence(nsimul))){
+                  ssw = ssw + 1
                   #------ Grab model data for this simulation and column. -----------------#
                   #------------------------------------------------------------------------#
 
 
 
                   #------ Open sub-plot. --------------------------------------------------#
-                  par(mar=lo.simul$mar[s,])
+                  par(mar=lo.simul$mar[ssw,])
                   plot.new()
                   plot.window(xlim=fnmean.limit,ylim=ylimit)
-                  if (lo.simul$bottom[s]){
+                  if (lo.simul$bottom[ssw]){
                      axis(side=1,at=fnmean.at,labels=fnmean.labels,cex.axis=cex.ptsz*0.75)
                   }#end if
-                  if (lo.simul$left  [s]){
+                  if (lo.simul$left  [ssw]){
                      axis(side=2,las=1)
                   }#end if
                   #------------------------------------------------------------------------#
@@ -6369,7 +6388,7 @@ if (plot.ts.ftnight){
                obs.expected   = tsfn.obser[[iata]]$expected     [,cc]
                obs.q025       = tsfn.obser[[iata]]$q025         [,cc]
                obs.q975       = tsfn.obser[[iata]]$q975         [,cc]
-               if (iata %in% names(tsfn.alter)){
+               if (use.alter && iata %in% names(tsfn.alter)){
                   alt.expected   = tsfn.alter[[iata]]$expected     [,cc]
                   alt.q025       = tsfn.alter[[iata]]$q025         [,cc]
                   alt.q975       = tsfn.alter[[iata]]$q975         [,cc]
@@ -6816,7 +6835,9 @@ if (plot.bp.diel){
 
 
                #----- Loop over all simulations. ------------------------------------------#
-               for (s in sequence(nsimul)){
+               ssw = 0
+               for (s in rev(sequence(nsimul))){
+                  ssw = ssw + 1
 
                   #----- Set the lists and colours. ---------------------------------------#
                   bp.list        = c( rbind(obs.list[[cc]],mod.list[[cc]][[s]]))
@@ -6830,16 +6851,16 @@ if (plot.bp.diel){
 
 
                   #------ Open sub-plot. --------------------------------------------------#
-                  par(mar=lo.simul$mar[s,])
+                  par(mar=lo.simul$mar[ssw,])
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit)
-                  if (lo.simul$bottom[s]){
+                  if (lo.simul$bottom[ssw]){
                      axis.rt(side=1,at=xat,labels=xlabels,off=0.05,las=5)
                   }#end if
-                  if (lo.simul$left  [s]){
+                  if (lo.simul$left  [ssw]){
                      axis.rt(side=2,las=1)
                   }#end if
-                  abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                  abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
                   #------------------------------------------------------------------------#
 
 
@@ -6970,7 +6991,7 @@ if (plot.bp.diel){
             if (lo.site$left  [p]){
                axis.rt(side=2,las=1)
             }#end if
-            abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+            abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
             #------------------------------------------------------------------------------#
 
 
@@ -7088,6 +7109,7 @@ if (plot.qq.dmean){
       qq.list     = list()
       qqn.list    = list()
       qq.limit    = NULL
+      qqa.limit   = mapply(FUN=numeric,0*sequence(nsimul),SIMPLIFY=FALSE)
       qqn.limit   = mapply(FUN=numeric,0*sequence(nsimul),SIMPLIFY=FALSE)
       leg.iata    = character(length=nsites); names(leg.iata) = sites$iata
       #------------------------------------------------------------------------------------#
@@ -7198,6 +7220,7 @@ if (plot.qq.dmean){
 
                #----- Update range. -------------------------------------------------------#
                qq.limit       = range(c(qq.limit,qq.now$x,qq.now$y)        ,finite=TRUE)
+               qqa.limit[[s]] = range(c(qqa.limit[[s]],qq.now$x,qq.now$y)  ,finite=TRUE)
                qqn.limit[[s]] = range(c(qqn.limit[[s]],qqn.now$x,qqn.now$y),finite=TRUE)
                #---------------------------------------------------------------------------#
             }#end for (cc in sequence(nlyr))
@@ -7363,7 +7386,7 @@ if (plot.qq.dmean){
       #------------------------------------------------------------------------------------#
       for (o in sequence(nout)){
          #----- Make the file name. -------------------------------------------------------#
-         out.now = out[[outform[o]]]$qq.dmean$default
+         out.now = out[[outform[o]]]$qq.dmean$default.norm
          fichier = file.path(out.now,paste("qqn_dmean-",this.vnam,".",outform[o],sep=""))
          if (outform[o] == "x11"){
             X11(width=size$width,height=size$height,pointsize=ptsz)
@@ -7463,6 +7486,141 @@ if (plot.qq.dmean){
          #----- Plot title. ---------------------------------------------------------------#
          title(main=letitre,line=1.0)
          title(xlab=lex,ylab=ley,line=2.0)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Close the device. ---------------------------------------------------------#
+         if (outform[o] == "x11"){
+            locator(n=1)
+            dev.off()
+         }else{
+            dev.off()
+         }#end if
+         dummy = clean.tmp()
+         #---------------------------------------------------------------------------------#
+      }#end for (o in sequence(nout))
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Plot the Absolute QQ-plots.                                                   #
+      #------------------------------------------------------------------------------------#
+      #------ Set some common features. ---------------------------------------------------#
+      s       = sim.default
+      letitre = "Q-Q plot of daily means"
+      lex     = desc.unit(desc=paste("Observed:" ,this.desc),unit=this.unit)
+      ley     = desc.unit(desc=paste("Simulated:",this.desc),unit=this.unit)
+      xylimit = pretty.xylim(u=qqa.limit[[s]],fracexp=0.0,is.log=FALSE)
+      #------------------------------------------------------------------------------------#
+      for (o in sequence(nout)){
+         #----- Make the file name. -------------------------------------------------------#
+         out.now = out[[outform[o]]]$qq.dmean$default.abs
+         fichier = file.path(out.now,paste("qqa_dmean-",this.vnam,".",outform[o],sep=""))
+         if (outform[o] == "x11"){
+            X11(width=size$width,height=size$height,pointsize=ptsz)
+         }else if(outform[o] == "png"){
+            png(filename=fichier,width=size$width*depth,height=size$height*depth
+               ,pointsize=ptsz,res=depth)
+         }else if(outform[o] == "eps"){
+            postscript(file=fichier,width=size$width,height=size$height
+                      ,pointsize=ptsz,paper=size$paper)
+         }else if(outform[o] == "pdf"){
+            pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
+               ,pointsize=ptsz,paper=size$paper)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Split the device into multiple panels.                                      #
+         #---------------------------------------------------------------------------------#
+         par(par.user)
+         layout(mat=rbind(2,1),heights=c(5,1))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Legend. -------------------------------------------------------------------#
+         par(mar=c(0.2,3.6,0.1,1.1))
+         plot.new()
+         plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+         legend ( x       = "bottom"
+                , inset   = 0.0
+                , legend  = leg.iata
+                , fill    = sites$col
+                , border  = sites$col
+                , ncol    = 2
+                , title   = expression(bold("Sites"))
+                , cex     = 0.7 * cex.ptsz
+                , xpd     = TRUE
+                )#end legend
+         #---------------------------------------------------------------------------------#
+
+
+
+         #------ Open sub-plot. -----------------------------------------------------------#
+         par(mar=c(3.6,3.6,3.1,1.1))
+         plot.new()
+         plot.window(xlim=xylimit,ylim=xylimit)
+         axis(side=1)
+         axis(side=2,las=1)
+         grid(col=grid.colour,lty="dotted")
+         abline(a=0,b=1,col=foreground,lwd=2,lty="dotdash")
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Loop over all sites. ------------------------------------------------------#
+         for (p in sequence(nsites)){
+            #----- Get the basic site information. ----------------------------------------#
+            iata          = sites$iata[p]
+            this.longname = sites$desc[p]
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Get Q-Q plot info for this site. ---------------------------------------#
+            iata      = sites$iata[p]
+            qqa.iata  = qq.list[[iata]]
+            ndat      = qqa.iata$ndat
+            nlyr      = qqa.iata$nlyr
+            cc        = pmin(nlyr,which.min(abs(slz.use-slz.reference)))
+            lyr.key   = qqa.iata$lyr.key  [cc]
+            lyr.desc  = qqa.iata$lyr.desc [cc]
+            lyr.title = qqa.iata$lyr.title[cc]
+            #------------------------------------------------------------------------------#
+
+
+            #------ Plot the lines and points. --------------------------------------------#
+            points( x    = qqa.iata[[simul$name[s]]][[cc]]
+                  , type = "o"
+                  , pch  = 16
+                  , cex  = 0.7
+                  , lwd  = 1.5
+                  , col  = sites$col[p]
+                  )#end points
+            #------------------------------------------------------------------------------#
+
+
+            #------ Final stuff. ----------------------------------------------------------#
+            box()
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Plot title. ---------------------------------------------------------------#
+         title(main=letitre,line=1.0)
+         title(xlab=lex,ylab=ley,line=2.5)
          #---------------------------------------------------------------------------------#
 
 
@@ -9266,7 +9424,7 @@ if (plot.skill.taylor){
                                            , gamma.col  = grey.mg
                                            , gamma.bg   = background
                                            , sd.col     = grey.fg
-                                           , sd.obs.col = foreground
+                                           , sd.obs.col = "violetred"
                                            , corr.col   = foreground
                                            , main       = ""
                                            , normalise  = TRUE
@@ -10001,7 +10159,7 @@ if (plot.skill.taylor){
                                      , gamma.col  = grey.mg
                                      , gamma.bg   = background
                                      , sd.col     = grey.fg
-                                     , sd.obs.col = foreground
+                                     , sd.obs.col = "violetred"
                                      , corr.col   = foreground
                                      , main       = ""
                                      , normalise  = TRUE
@@ -10796,8 +10954,8 @@ if (plot.skill.taylor){
 #------------------------------------------------------------------------------------------#
 #      Plot the skill as a function of depth.                                              #
 #------------------------------------------------------------------------------------------#
-if (plot.soil.skill){
-   cat (" + Plot skill plots for soil variables...","\n")
+if (plot.soil.skill.taylor){
+   cat (" + Plot skill and Taylor plots for soil variables...","\n")
    for (v in sequence(ncompvar)){
       #----- Copy the variable information. -----------------------------------------------#
       this.vnam     = compvar[[v]]$vnam
@@ -10835,8 +10993,10 @@ if (plot.soil.skill){
             cnt.diel    = list()
             bias.iata   = mapply(FUN=numeric,rep(0,times=nsites),SIMPLIFY=FALSE)
             sigma.iata  = mapply(FUN=numeric,rep(0,times=nsites),SIMPLIFY=FALSE)
+            sdev.iata   = mapply(FUN=numeric,rep(0,times=nsites),SIMPLIFY=FALSE)
             bias.simul  = mapply(FUN=numeric,rep(0,times=nsimul),SIMPLIFY=FALSE)
             sigma.simul = mapply(FUN=numeric,rep(0,times=nsimul),SIMPLIFY=FALSE)
+            sdev.simul  = mapply(FUN=numeric,rep(0,times=nsimul),SIMPLIFY=FALSE)
             names(bias.iata)  = names(sigma.iata)  = sites$iata
             names(bias.simul) = names(sigma.simul) = simul$name
             for (p in sequence(nsites)){
@@ -10887,6 +11047,7 @@ if (plot.soil.skill){
                   #------------------------------------------------------------------------#
                   comp         = res[[iata]]$sim[[simul.key[1]]][[this.vnam]]
                   sdev.obs.now = sqrt(comp$obs.moment[cc,d,nseason,2])
+                  sdev.mod.now = sqrt(comp$mod.moment[cc,d,nseason,2])
                   sel          = sel & sdev.obs.now %>% 0
                   n.sel        = sum(sel)
                   #------------------------------------------------------------------------#
@@ -10928,12 +11089,16 @@ if (plot.soil.skill){
                         #----- Find the normalised bias and model standard deviation. -----#
                         comp                = res[[iata]]$sim[[simul.key[s]]][[this.vnam]]
                         sdev.obs.now        = sqrt(comp$obs.moment[cc,d,nseason,2])
+                        sdev.mod.now        = ( sqrt(comp$mod.moment[cc,d,nseason,2])
+                                              / sdev.obs.now )
                         bias.now            = comp$bias [cc,d,nseason] / sdev.obs.now
                         sigma.now           = comp$sigma[cc,d,nseason] / sdev.obs.now
-                        bias.iata  [[iata]] = c(bias.iata  [[iata]],bias.now )
-                        sigma.iata [[iata]] = c(sigma.iata [[iata]],sigma.now)
-                        bias.simul [[s   ]] = c(bias.simul [[s   ]],bias.now )
-                        sigma.simul[[s   ]] = c(sigma.simul[[s   ]],sigma.now)
+                        bias.iata  [[iata]] = c(bias.iata  [[iata]],bias.now    )
+                        sigma.iata [[iata]] = c(sigma.iata [[iata]],sigma.now   )
+                        sdev.iata  [[iata]] = c(sdev.iata  [[iata]],sdev.mod.now)
+                        bias.simul [[s   ]] = c(bias.simul [[s   ]],bias.now    )
+                        sigma.simul[[s   ]] = c(sigma.simul[[s   ]],sigma.now   )
+                        sdev.simul [[s   ]] = c(sdev.simul [[s   ]],sdev.mod.now)
                         #------------------------------------------------------------------#
                      }#end for (s in sequence(nsimul))
                      #---------------------------------------------------------------------#
@@ -10955,6 +11120,7 @@ if (plot.soil.skill){
                #---------------------------------------------------------------------------#
                bias.range  = bias.iata [[iata]]
                sigma.range = sigma.iata[[iata]]
+               sdev.max    = max(1.04 * c(1.0,sdev.iata[[iata]]),na.rm=TRUE)
                ok.taylor.skill = (  length(unlist(obs.diel[[iata]])) > 0
                                  && any(cnt.diel[[iata]] > 0)
                                  && any(is.finite(bias.range ))
@@ -11139,7 +11305,7 @@ if (plot.soil.skill){
                                                                      , pch = 4
                                                                      , cex = cex.diel[[cc]]
                                                                      , lty = "solid"
-                                                                     , lwd = lwd.diel[[cc]]
+                                                                     , lwd = 1.75
                                                                      )#end list
                                                , main           = simul$desc[s]
                                                , bias.lim       = bias.range
@@ -11185,6 +11351,170 @@ if (plot.soil.skill){
                      #---------------------------------------------------------------------#
                   }#end for (o in 1:nout)
                   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+
+
+
+
+                  #------------------------------------------------------------------------#
+                  #      Loop over all formats.                                            #
+                  #------------------------------------------------------------------------#
+                  for (o in sequence(nout)){
+                     #----- Make the file name. -------------------------------------------#
+                     out.taylor = out[[outform[o]]]$soil.taylor$variables
+                     fichier    = file.path(out.taylor
+                                           ,paste("taylor-",this.vnam,"-",diel.key[d],"-"
+                                           ,sites$iata[p],".",outform[o],sep="")
+                                           )#end file.path
+                     if (outform[o] == "x11"){
+                        X11(width=wsize$width,height=wsize$height,pointsize=ptsz)
+                     }else if(outform[o] == "png"){
+                        png(filename=fichier,width=wsize$width*depth
+                           ,height=wsize$height*depth,pointsize=ptsz,res=depth)
+                     }else if(outform[o] == "eps"){
+                        postscript(file=fichier,width=wsize$width,height=wsize$height
+                                  ,pointsize=ptsz,paper=size$paper)
+                     }else if(outform[o] == "pdf"){
+                        pdf(file=fichier,onefile=FALSE,width=wsize$width
+                           ,height=wsize$height,pointsize=ptsz,paper=size$paper)
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Make the legends at the bottom.                                 #
+                     #---------------------------------------------------------------------#
+                     par(par.user)
+                     par.orig = par(no.readonly = TRUE)
+                     mar.orig = par.orig$mar
+                     par(oma = c(0.2,3,3.0,0))
+                     layout( mat     = rbind(lo.simul$mat.off2,c(1,2))
+                           , heights = c(rep(5.0/lo.simul$nrow,lo.simul$nrow),1.0)
+                           )#end layout
+                     #---------------------------------------------------------------------#
+
+
+
+
+                     #----- Legend: the counts. -------------------------------------------#
+                     par(mar=c(0.2,0.1,0.1,0.1))
+                     plot.new()
+                     plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                     legend ( x       = "bottom"
+                            , inset   = 0.0
+                            , legend  = c(st.cnt.min,st.cnt.med,st.cnt.max)
+                            , col     = foreground
+                            , pt.bg   = foreground
+                            , pch     = 15
+                            , pt.lwd  = 3
+                            , ncol    = 3
+                            , title   = expression(bold("Number Obs."))
+                            , pt.cex  = c(st.cex.min,st.cex.med,st.cex.max)
+                            , cex     = 1.0 * cex.ptsz
+                            , xpd     = TRUE
+                            )#end legend
+                     #---------------------------------------------------------------------#
+
+
+
+
+                     #----- Legend: the soil layers. --------------------------------------#
+                     par(mar=c(0.2,0.1,0.1,0.1))
+                     plot.new()
+                     plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                     legend ( x       = "bottom"
+                            , inset   = 0.0
+                            , legend  = slz.desc
+                            , col     = slz.col
+                            , pt.lwd  = 3
+                            , pch     = 4
+                            , ncol    = min(3,pretty.box(length(slz.desc))$ncol)
+                            , title   = expression(bold("Soil layer"))
+                            , cex     = 0.8 * cex.ptsz
+                            , xpd     = TRUE
+                            )#end legend
+                     #---------------------------------------------------------------------#
+
+
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Loop over simulations and layers.                               #
+                     #---------------------------------------------------------------------#
+                     for (s in sequence(nsimul)){
+                        add = FALSE
+                        for (cc in seq_along(obs.diel[[iata]])){
+
+
+                           #---------------------------------------------------------------#
+                           #     Make sure that something is going to be on the objects.   #
+                           #---------------------------------------------------------------#
+                           if (cnt.diel[[iata]][[cc]] != 0){
+                              this.obs = obs.diel[[iata]][[cc]]
+                              this.mod = mod.diel[[iata]][[cc]][,s]
+                           }else{
+                              this.obs = rep(NA,times=4)
+                              this.mod = rep(NA,times=4)
+                           }#end if
+                           #---------------------------------------------------------------#
+
+
+                           #---------------------------------------------------------------#
+                           #     Initialise or update the skill plot.                      #
+                           #---------------------------------------------------------------#
+                           mytaylor = taylor.plot( obs        = this.obs
+                                                 , mod        = this.mod
+                                                 , maxsd      = sdev.max
+                                                 , add        = add
+                                                 , pos.corr   = NA
+                                                 , pt.col     = slz.col[cc]
+                                                 , pt.bg      = slz.col[cc]
+                                                 , pt.pch     = sites$pch[p]
+                                                 , pt.cex     = cex.diel[[cc]]
+                                                 , pt.lwd     = 1.75
+                                                 , obs.col    = foreground
+                                                 , gamma.col  = grey.mg
+                                                 , gamma.bg   = background
+                                                 , sd.col     = grey.fg
+                                                 , sd.obs.col = "violetred"
+                                                 , corr.col   = foreground
+                                                 , main       = ""
+                                                 , normalise  = TRUE
+                                                 )#end taylor.plot
+                           add = TRUE
+                           #---------------------------------------------------------------#
+                        }#end for (cc in seq_along(obs.diel[[iata]]))
+                        #------------------------------------------------------------------#
+                     }#end for (s in sequence(nsimul))
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Plot the global title.                                          #
+                     #---------------------------------------------------------------------#
+                     par(las=0)
+                     mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Close the device. ---------------------------------------------#
+                     if (outform[o] == "x11"){
+                        locator(n=1)
+                        dev.off()
+                     }else{
+                        dev.off()
+                     }#end if
+                     dummy = clean.tmp()
+                     #---------------------------------------------------------------------#
+                  }#end for (o in 1:nout)
+                  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
                }#end if (ok.taylor.skill)
                #---------------------------------------------------------------------------#
             }#end for (p in sequence(nsites))
@@ -11203,6 +11533,7 @@ if (plot.soil.skill){
             s               = sim.default
             bias.range      = bias.simul [[s]]
             sigma.range     = sigma.simul[[s]]
+            sdev.max        = max(1.04 * c(1.0,sdev.simul[[s]]),na.rm=TRUE)
             #----- Check whether there is anything to plot, and grab all soil layers. -----#
             ok.taylor.skill = FALSE
             slz.all         = NULL
@@ -11445,7 +11776,7 @@ if (plot.soil.skill){
                                                                   , pch = sites$pch[p]
                                                                   , cex = this.cex
                                                                   , lty = "solid"
-                                                                  , lwd = this.lwd
+                                                                  , lwd = 1.75
                                                                   )#end list
                                             , main           = ""
                                             , bias.lim       = bias.range
@@ -11464,6 +11795,195 @@ if (plot.soil.skill){
                                             , normalise      = TRUE
                                             , mar            = c(5,4,4,3)+0.1
                                             )#end skill.plot
+                        #------------------------------------------------------------------#
+                     }#end for (cc in seq_along(obs.diel[[iata]]))
+                     #---------------------------------------------------------------------#
+                  }#end for (p in sequence(nsites))
+                  #------------------------------------------------------------------------#
+
+
+
+                  #------------------------------------------------------------------------#
+                  #     Plot the global title.                                             #
+                  #------------------------------------------------------------------------#
+                  par(las=0)
+                  mtext(text=letitre,side=3,outer=TRUE,cex=1.1,font=2)
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Close the device. ------------------------------------------------#
+                  if (outform[o] == "x11"){
+                     locator(n=1)
+                     dev.off()
+                  }else{
+                     dev.off()
+                  }#end if
+                  dummy = clean.tmp()
+                  #------------------------------------------------------------------------#
+               }#end for (o in 1:nout)
+               #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+
+
+
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Loop over all formats.                                               #
+               #---------------------------------------------------------------------------#
+               for (o in sequence(nout)){
+                  #----- Make the file name. ----------------------------------------------#
+                  out.taylor = out[[outform[o]]]$soil.taylor$default
+                  fichier   = file.path(out.taylor
+                                       ,paste("taylor-",this.vnam,"-",diel.key[d]
+                                       ,".",outform[o],sep="")
+                                       )#end file.path
+                  if (outform[o] == "x11"){
+                     X11(width=size$width,height=size$height,pointsize=ptsz)
+                  }else if(outform[o] == "png"){
+                     png(filename=fichier,width=size$width*depth
+                        ,height=size$height*depth,pointsize=ptsz,res=depth)
+                  }else if(outform[o] == "eps"){
+                     postscript(file=fichier,width=size$width,height=size$height
+                               ,pointsize=ptsz,paper=size$paper)
+                  }else if(outform[o] == "pdf"){
+                     pdf(file=fichier,onefile=FALSE,width=size$width
+                        ,height=size$height,pointsize=ptsz,paper=size$paper)
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+
+
+                  #------------------------------------------------------------------------#
+                  #     Make three legends at the bottom.                                  #
+                  #------------------------------------------------------------------------#
+                  par(par.user)
+                  par.orig = par(no.readonly = TRUE)
+                  mar.orig = par.orig$mar
+                  par(oma = c(0.2,3,3.0,0))
+                  layout(mat     = rbind(c(4,4,4,4,4,4,4),c(1,1,2,3,3,3,3))
+                       , heights = c(5.0,1.0)
+                       )#end layout
+                  #------------------------------------------------------------------------#
+
+
+
+
+                  #----- Legend: the sites. -----------------------------------------------#
+                  par(mar=c(0.2,0.1,0.1,0.1))
+                  plot.new()
+                  plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                  legend ( x       = "bottom"
+                         , inset   = 0.0
+                         , legend  = toupper(sites$iata)
+                         , col     = foreground
+                         , pt.bg   = foreground
+                         , pch     = sites$pch
+                         , ncol    = min(3,pretty.box(nsites)$ncol)
+                         , title   = expression(bold("Sites"))
+                         , pt.cex  = st.cex.med
+                         , cex     = 1.1 * cex.ptsz
+                         , xpd     = TRUE
+                         )#end legend
+                  #------------------------------------------------------------------------#
+
+
+
+
+                  #----- Legend: the counts. ----------------------------------------------#
+                  par(mar=c(0.2,0.1,0.1,0.1))
+                  plot.new()
+                  plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                  legend ( x       = "bottom"
+                         , inset   = 0.0
+                         , legend  = c(st.cnt.min,st.cnt.med,st.cnt.max)
+                         , col     = foreground
+                         , pt.bg   = foreground
+                         , pch     = 15
+                         , pt.lwd  = 3
+                         , ncol    = 1
+                         , title   = expression(bold("Number Obs."))
+                         , pt.cex  = c(st.cex.min,st.cex.med,st.cex.max)
+                         , cex     = 1.0 * cex.ptsz
+                         , xpd     = TRUE
+                         )#end legend
+                  #------------------------------------------------------------------------#
+
+
+
+
+                  #----- Legend: the soil layers. -----------------------------------------#
+                  par(mar=c(0.2,0.1,0.1,0.1))
+                  plot.new()
+                  plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
+                  legend ( x       = "bottom"
+                         , inset   = 0.0
+                         , legend  = slz.desc
+                         , fill    = slz.col
+                         , border  = slz.col
+                         , ncol    = 5
+                         , title   = expression(bold("Soil layer"))
+                         , cex     = 0.8 * cex.ptsz
+                         , xpd     = TRUE
+                         )#end legend
+                  #------------------------------------------------------------------------#
+
+
+
+
+
+                  #------------------------------------------------------------------------#
+                  #     Loop over simulations and layers.                                  #
+                  #------------------------------------------------------------------------#
+                  add = FALSE
+                  for (p in sequence(nsites)){
+                     iata    = sites$iata[p]
+                     slz.idx = match(pmin(-0.05,eft[[iata]]$slz),slz.all)
+
+
+                     for (cc in seq_along(obs.diel[[iata]])){
+                        #------------------------------------------------------------------#
+                        #     Make sure that something is going to be on the objects.      #
+                        #------------------------------------------------------------------#
+                        if (cnt.diel[[iata]][[cc]] != 0){
+                           this.obs = obs.diel[[iata]][[cc]]
+                           this.mod = mod.diel[[iata]][[cc]][,s]
+                        }else{
+                           this.obs = rep(NA,times=4)
+                           this.mod = rep(NA,times=4)
+                        }#end if
+                        this.cex = cex.diel[[iata]][[cc]]
+                        this.lwd = lwd.diel[[iata]][[cc]]
+                        this.col = slz.col[slz.idx[cc]]
+                        #------------------------------------------------------------------#
+
+
+                        #------------------------------------------------------------------#
+                        #     Initialise or update the skill plot.                         #
+                        #------------------------------------------------------------------#
+                        mytaylor = taylor.plot( obs        = this.obs
+                                              , mod        = this.mod
+                                              , maxsd      = sdev.max
+                                              , add        = add
+                                              , pos.corr   = NA
+                                              , pt.col     = this.col
+                                              , pt.bg      = this.col
+                                              , pt.pch     = sites$pch[p]
+                                              , pt.cex     = this.cex
+                                              , pt.lwd     = 1.75
+                                              , obs.col    = foreground
+                                              , gamma.col  = grey.mg
+                                              , gamma.bg   = background
+                                              , sd.col     = grey.fg
+                                              , sd.obs.col = "violetred"
+                                              , corr.col   = foreground
+                                              , main       = ""
+                                              , normalise  = TRUE
+                                              )#end taylor.plot
+                        add = TRUE
                         #------------------------------------------------------------------#
                      }#end for (cc in seq_along(obs.diel[[iata]]))
                      #---------------------------------------------------------------------#

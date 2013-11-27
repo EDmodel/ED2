@@ -218,7 +218,7 @@ colourmap  = function( x
       if (missing(plot.axes)) {
           if (axes) {
               axis(1)
-              axis(2)
+              axis(2,las=1)
           }
       }else{
          if (is.list(plot.axes)){

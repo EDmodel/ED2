@@ -27,6 +27,7 @@ outroot = file.path(here,paste("longterm_comp_ibg",sprintf("%2.2i",ibackground),
 
 #----- Info on hourly data. ---------------------------------------------------------------#
 reload.hour  = TRUE
+reload.range = TRUE
 rdata.path   = file.path(here,"RData_longterm")
 rdata.suffix = "longterm_ed22.RData"
 #------------------------------------------------------------------------------------------#
@@ -207,7 +208,7 @@ byeold            = TRUE      # Remove old files of the given format?
 depth             = 96        # PNG resolution, in pixels per inch
 paper             = "letter"  # Paper size, to define the plot shape
 wpaper            = "legal"   # Wide paper size, to define the plot shape
-ptsz              = 18        # Font size.
+ptsz              = 22        # Font size.
 
 st.cex.min        = 1.0       # Minimum and maximum sizes for points in the 
 st.cex.max        = 2.5       #     Skill and Taylor diagrams
@@ -242,6 +243,10 @@ keep.gf.low.ustar = FALSE     # Keep data that has been discarded due to low u*,
 pft.use           = c(1,2,3,4,16,18)
 ncolours.xyz      = 96
 
+#----- Maximum absolute value for Bowen ratio. --------------------------------------------#
+bmn = -0.09
+bmx =  1.99
+#------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
 #      Colours for model comparison.                                                       #
@@ -259,16 +264,22 @@ alt.fg    = "#2B0071"
 #------------------------------------------------------------------------------------------#
 #      Switch controls to plot only the needed ones.                                       #
 #------------------------------------------------------------------------------------------#
-plot.ts.pft            = c(FALSE,TRUE)[2]
-plot.pdf.patch         = c(FALSE,TRUE)[2]
-plot.xyz.patch         = c(FALSE,TRUE)[2]
-plot.ym.theme          = c(FALSE,TRUE)[2]
-col.dryseason          = "papayawhip"
-col.ust.altern         = "firebrick4"
-col.ust.default        = "deeppink"
-slz.cscheme            = "visible"
+plot.ts.pft     = c(FALSE,TRUE)[2]
+plot.pdf.patch  = c(FALSE,TRUE)[2]
+plot.xyz.patch  = c(FALSE,TRUE)[2]
+plot.ym.patch   = c(FALSE,TRUE)[2]
+plot.ym.theme   = c(FALSE,TRUE)[2]
+col.dryseason   = "papayawhip"
+col.ust.altern  = "firebrick4"
+col.ust.default = "deeppink"
+slz.cscheme     = "visible"
 #------------------------------------------------------------------------------------------#
 
+
+
+#----- Treefall disturbance rate. ---------------------------------------------------------#
+treefall.default = 0.0111
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
@@ -309,6 +320,22 @@ compvar[[ n]] = list( vnam         = "agb"
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = "nplant"
+                    , zlog         = TRUE
+                    , spider       = TRUE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "ba"
+                    , desc         = "Basal area"
+                    , unit         = untab$m2om2
+                    , cscheme.mean = "clife"
+                    , hue.low      = "purple"
+                    , hue.high     = "green"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = "nplant"
+                    , zlog         = TRUE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "lai"
@@ -321,6 +348,8 @@ compvar[[ n]] = list( vnam         = "lai"
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "gpp"
@@ -333,18 +362,22 @@ compvar[[ n]] = list( vnam         = "gpp"
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "reco"
                     , desc         = "Ecosystem respiration"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "iclife"
-                    , hue.low      = "green"
-                    , hue.high     = "purple"
+                    , cscheme.mean = "clife"
+                    , hue.low      = "purple"
+                    , hue.high     = "green"
                     , szpftvar     = FALSE
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "nep"
@@ -357,6 +390,8 @@ compvar[[ n]] = list( vnam         = "nep"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "hflxca"
@@ -369,6 +404,8 @@ compvar[[ n]] = list( vnam         = "hflxca"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "wflxca"
@@ -381,6 +418,8 @@ compvar[[ n]] = list( vnam         = "wflxca"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "transp"
@@ -393,6 +432,36 @@ compvar[[ n]] = list( vnam         = "transp"
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = TRUE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "bowen"
+                    , desc         = "Bowen ratio"
+                    , unit         = untab$empty
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = FALSE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "tratio"
+                    , desc         = "Transpiration ratio"
+                    , unit         = untab$empty
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = FALSE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "ustar"
@@ -405,6 +474,8 @@ compvar[[ n]] = list( vnam         = "ustar"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "rshortup"
@@ -417,6 +488,22 @@ compvar[[ n]] = list( vnam         = "rshortup"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "albedo"
+                    , desc         = "Albedo"
+                    , unit         = untab$wom2
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = FALSE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "rlongup"
@@ -429,6 +516,8 @@ compvar[[ n]] = list( vnam         = "rlongup"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "parup"
@@ -441,6 +530,8 @@ compvar[[ n]] = list( vnam         = "parup"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "fast.soil.c"
@@ -450,9 +541,11 @@ compvar[[ n]] = list( vnam         = "fast.soil.c"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
-                    , patchvar     = FALSE
+                    , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "struct.soil.c"
@@ -462,9 +555,11 @@ compvar[[ n]] = list( vnam         = "struct.soil.c"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
-                    , patchvar     = FALSE
+                    , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "slow.soil.c"
@@ -474,9 +569,11 @@ compvar[[ n]] = list( vnam         = "slow.soil.c"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
-                    , patchvar     = FALSE
+                    , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "tot.soil.c"
@@ -486,9 +583,11 @@ compvar[[ n]] = list( vnam         = "tot.soil.c"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
-                    , patchvar     = FALSE
+                    , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "can.depth"
@@ -501,6 +600,8 @@ compvar[[ n]] = list( vnam         = "can.depth"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "can.area"
@@ -513,6 +614,8 @@ compvar[[ n]] = list( vnam         = "can.area"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "wood.dens"
@@ -525,6 +628,64 @@ compvar[[ n]] = list( vnam         = "wood.dens"
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
+                    , zlog         = FALSE
+                    , spider       = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "firemort"
+                    , desc         = "Fire mortality"
+                    , unit         = untab$pcpopoyr
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = FALSE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "ncbmort"
+                    , desc         = "Density-dependent mortality"
+                    , unit         = untab$pcpopoyr
+                    , cscheme.mean = "iclife"
+                    , hue.low      = "green"
+                    , hue.high     = "purple"
+                    , szpftvar     = TRUE
+                    , patchvar     = FALSE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "dimort"
+                    , desc         = "Density independent mortality"
+                    , unit         = untab$pcpopoyr
+                    , cscheme.mean = "iclife"
+                    , hue.low      = "green"
+                    , hue.high     = "purple"
+                    , szpftvar     = TRUE
+                    , patchvar     = FALSE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "mort"
+                    , desc         = "Mortality rate"
+                    , unit         = untab$pcpopoyr
+                    , cscheme.mean = "iclife"
+                    , hue.low      = "green"
+                    , hue.high     = "purple"
+                    , szpftvar     = TRUE
+                    , patchvar     = FALSE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = TRUE
+                    , spider       = FALSE
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -542,6 +703,7 @@ ym.theme[[n]] = list( vnam   = c("fast.soil.c","slow.soil.c","struct.soil.c","to
                     , desc   = c("Fast"       ,"Slow"       ,"Structural"   ,"Total"     )
                     , colour = c("#A3CC52"    ,"#3B24B3"    ,"#E65C17"      ,"#6B6B6B"   )
                     , lwd    = c(2.5          ,2.5          ,2.5            ,2.5         )
+                    , ylog   = FALSE
                     , prefix = "soil_carbon"
                     , title  = "Soil Carbon"
                     , unit   = untab$kgcom2
@@ -551,6 +713,7 @@ ym.theme[[n]] = list( vnam   = c("can.depth"   )
                     , desc   = c("Canopy depth")
                     , colour = c("#A3CC52"     )
                     , lwd    = c(2.5           )
+                    , ylog   = FALSE
                     , prefix = "can_depth"
                     , title  = "Canopy height"
                     , unit   = untab$m
@@ -560,6 +723,7 @@ ym.theme[[n]] = list( vnam   = c("can.area"    )
                     , desc   = c("Canopy area" )
                     , colour = c("#A3CC52"     )
                     , lwd    = c(2.5           )
+                    , ylog   = FALSE
                     , prefix = "can_area"
                     , title  = "Canopy area"
                     , unit   = untab$empty
@@ -569,9 +733,24 @@ ym.theme[[n]] = list( vnam   = c("wood.dens"   )
                     , desc   = c("Wood density")
                     , colour = c("#E65C17"     )
                     , lwd    = c(2.5           )
+                    , ylog   = FALSE
                     , prefix = "wood_dens"
                     , title  = "Wood density"
                     , unit   = untab$gocm3
+                    )#end list
+n             = n + 1
+ym.theme[[n]] = list( vnam   = c("firemort","ncbmort"  ,"dimort"       ,"mort"      )
+                    , desc   = c("Fire"
+                                ,"Neg. carbon balance"
+                                ,"Density independent"
+                                ,"Total"
+                                )#end c
+                    , colour = c("#E65C17" ,"#3B24B3"  ,"#A3CC52"      ,"#6B6B6B"   )
+                    , lwd    = c(2.5        ,2.5            ,2.5         )
+                    , ylog   = FALSE
+                    , prefix = "mortality"
+                    , title  = "Mortality rates"
+                    , unit   = untab$pcpopoyr
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -595,11 +774,11 @@ simul.key   = sim.struct$name
 #----- Description. -----------------------------------------------------------------------#
 simleg.key  = sim.struct$desc
 #---- Create the colours and line type for legend. ----------------------------------------#
-simcol.key     = sim.struct$colour
-simfgc.key     = sim.struct$fgcol
-simlty.key     = rep("solid",times=n.sim)
-simcex.key     = rep(2.0    ,times=n.sim)
-simain.key     = sim.struct$age.interp
+simcol.key  = sim.struct$colour
+simfgc.key  = sim.struct$fgcol
+simlty.key  = rep("solid",times=n.sim)
+simcex.key  = rep(2.0    ,times=n.sim)
+simain.key  = sim.struct$age.interp
 #------------------------------------------------------------------------------------------#
 
 
@@ -688,7 +867,12 @@ psize   = plotsize( proje     = FALSE
                   , stdheight = lo.site$nrow  * 7/6 * one.h
                   , stdwidth  = lo.site$ncol  * one.w
                   )#end plotsize
+zsize   = plotsize( proje     = FALSE
+                  , stdheight = 8.5 * 7/6
+                  , stdwidth  = 11
+                  )#end plotsize
 #------------------------------------------------------------------------------------------#
+
 
 
 #------------------------------------------------------------------------------------------#
@@ -737,6 +921,38 @@ for (o in sequence(nout)){
       #------------------------------------------------------------------------------------#
    }#end for (v in sequence(ncompvar))
    o.form$ts.pft = o.ts.pft
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Create paths for the ym by time of year and patch.                               #
+   #---------------------------------------------------------------------------------------#
+   o.main  = file.path(o.form$main,"ym_patch")
+   o.ym.patch = list( main      = o.main
+                 , default   = file.path(o.main,"default")
+                 , variables = list( main = file.path(o.main,"variables"))
+                 )#end list
+   if (is.figure){
+      if (! file.exists(o.ym.patch$main          )) dir.create(o.ym.patch$main          )
+      if (! file.exists(o.ym.patch$default       )) dir.create(o.ym.patch$default       )
+      if (! file.exists(o.ym.patch$variables$main)) dir.create(o.ym.patch$variables$main)
+   }#end if
+   for (v in sequence(ncompvar)){
+      this.compvar     = compvar[[v]]
+      this.vnam        = this.compvar$vnam
+      is.patch         = this.compvar$patchvar
+
+      #----- Sites. -----------------------------------------------------------------------#
+      if (is.patch){
+         o.compvar        = file.path(o.ym.patch$variables$main,this.vnam)
+         if (is.figure && ! file.exists(o.compvar)) dir.create(o.compvar)
+         o.ym.patch$variables[[this.vnam]] = o.compvar
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for (v in sequence(ncompvar))
+   o.form$ym.patch = o.ym.patch
    #---------------------------------------------------------------------------------------#
 
 
@@ -833,6 +1049,23 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
 
 
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Create paths for the spider web plots.                                            #
+   #---------------------------------------------------------------------------------------#
+   o.main   = file.path(o.form$main,"spider")
+   o.spider = list( main      = o.main
+                  , variables = file.path(o.main,"variables")
+                  )#end list
+   if (is.figure){
+      if (! file.exists(o.spider$main     )) dir.create(o.spider$main     )
+      if (! file.exists(o.spider$variables)) dir.create(o.spider$variables)
+   }#end if
+   o.form$spider = o.spider
+   #---------------------------------------------------------------------------------------#
+
+
    #----- Save the full list to the main path list. ---------------------------------------#
    out[[this.form]] = o.form
    #---------------------------------------------------------------------------------------#
@@ -877,75 +1110,150 @@ for (p in sequence(nsites)){
 #------------------------------------------------------------------------------------------#
 #     Loop over all sites and simulations to determine the age range.                      #
 #------------------------------------------------------------------------------------------#
-cat ("   - Finding the ranges...","\n")
-age.range = array(data=NA,dim=c(2,nsites,nsimul))
-var.range = array(data=NA,dim=c(2,ncompvar,nsites,nsimul))
-for (p in sequence(nsites)){
-   iata          = sites$iata[p]
-   longname      = sites$desc[p]
-   cat("    > ",sites$desc[p],"...","\n")
-   for (s in sequence(nsimul)){
-      cat("      # Simulation: ",simul$desc[s],"...","\n")
-
-      #----- Load hourly averages. --------------------------------------------------------#
-      ans.name = paste("e",iata,"_wmo_",simul$name[s],"_",default.iphen
-                      ,"_",default.ifire,sep="")
-      ans.path = file.path(here,ans.name)
-      ans.file = file.path(ans.path,"rdata_month",paste(ans.name,".RData",sep=""))
-      load(ans.file)
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Grab all relevant times and . ------------------------------------------------#
-      esel       = numyears(datum$when) %wr% c(emean.yeara,emean.yearz)
-      tomonth    = datum$when[esel]
-      nemean     = length(tomonth)
-      emean.loop = sequence(nemean)
-      agepa      = datum$patch$age
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Update ranges. ---------------------------------------------------------------#
-      for (e in emean.loop){
-         now             = tomonth[e]
-         mm              = nummonths(now)
-         yyyy            = numyears (now)
-         stamp           = paste("y",sprintf("%4.4i",yyyy)
-                                ,"m",sprintf("%2.2i",mm)
-                                ,sep="")
-         if (simul$age.interp[s]){
-            agenow          = pmax(1/12,agepa[[stamp]])
-            age.range[,p,s] = range(c(age.range[,p,s],agenow),finite=TRUE)
-         }#end if
-
-
-         for (v in sequence(ncompvar)){
-            #----- Load information. ------------------------------------------------------#
-            this.compvar      = compvar[[v]]
-            this.vnam         = this.compvar$vnam
-            this.patchvar     = this.compvar$patchvar
-            if (this.vnam %in% "tot.soil.c" && this.patchvar){
-               vnow = ( datum$patch [["fast.soil.c"  ]][[stamp]]
-                      + datum$patch [["struct.soil.c"]][[stamp]]
-                      + datum$patch [["slow.soil.c"  ]][[stamp]]
-                      )#end vnow
-            }else{
-               vnow = datum$patch [[this.vnam]][[stamp]]
-            }#end if
-            var.range[,v,p,s] = range(c(var.range[,v,p,s],vnow),finite=TRUE)
-            rm(vnow)
-            #------------------------------------------------------------------------------#
-         }#end for (v in sequence(ncompvar))
-         #---------------------------------------------------------------------------------#
-         rm(now,mm,yyyy,stamp,agenow)
-      }#end for (e in emean.loop)
-      #------------------------------------------------------------------------------------#
-      rm(esel,tomonth,nemean,emean.loop,agepa)
-   }#end for (s in sequence(nsimul))
+#----- Find file name. --------------------------------------------------------------------#
+rdata.range = file.path(rdata.path,paste("var_range",rdata.suffix,sep="_"))
+if (reload.range && file.exists(rdata.range)){
+   #----- Reload ranges. ------------------------------------------------------------------#
+   cat ("   - Loading the ranges...","\n")
+   dummy = load(file=rdata.range)
    #---------------------------------------------------------------------------------------#
-}#end for (p in loop.sites)
+}else{
+   #----- Find ranges. --------------------------------------------------------------------#
+   cat ("   - Finding the ranges...","\n")
+   age.range = array(data=NA,dim=c(2,nsites,nsimul))
+   var.range = array(data=NA,dim=c(2,ncompvar,nsites,nsimul))
+   for (p in sequence(nsites)){
+      iata          = sites$iata[p]
+      longname      = sites$desc[p]
+      cat("    > ",sites$desc[p],"...","\n")
+      for (s in sequence(nsimul)){
+         cat("      # Simulation: ",simul$desc[s],"...","\n")
+
+         #----- Load hourly averages. -----------------------------------------------------#
+         ans.name = paste("e",iata,"_wmo_",simul$name[s],"_",default.iphen
+                         ,"_",default.ifire,sep="")
+         ans.path = file.path(here,ans.name)
+         ans.file = file.path(ans.path,"rdata_month",paste(ans.name,".RData",sep=""))
+         load(ans.file)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Grab all relevant times and . ---------------------------------------------#
+         esel       = numyears(datum$when) %wr% c(emean.yeara,emean.yearz)
+         tomonth    = datum$when[esel]
+         nemean     = length(tomonth)
+         emean.loop = sequence(nemean)
+         agepa      = datum$patch$age
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Update ranges. ------------------------------------------------------------#
+         for (e in emean.loop){
+            now   = tomonth[e]
+            emap  = match(tomonth[e],datum$when)
+            mm    = nummonths(now)
+            yyyy  = numyears (now)
+            stamp = paste("y",sprintf("%4.4i",yyyy),"m",sprintf("%2.2i",mm),sep="")
+            if (simul$age.interp[s]){
+               agenow          = pmax(1/12,agepa[[stamp]])
+               age.range[,p,s] = range(c(age.range[,p,s],agenow),finite=TRUE)
+            }#end if
+
+
+            for (v in sequence(ncompvar)){
+               #----- Load information. ---------------------------------------------------#
+               this.compvar      = compvar[[v]]
+               this.vnam         = this.compvar$vnam
+               this.patchvar     = this.compvar$patchvar
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Several variables require special handling, check these first. ------#
+               if (this.vnam %in% "tot.soil.c" && this.patchvar){
+                  #----- tot.soil.c is a combination of variables. ------------------------#
+                  vnow = ( datum$patch [["fast.soil.c"  ]][[stamp]]
+                         + datum$patch [["struct.soil.c"]][[stamp]]
+                         + datum$patch [["slow.soil.c"  ]][[stamp]]
+                         )#end vnow
+                  #------------------------------------------------------------------------#
+               }else if (this.vnam %in% "tot.soil.c"){
+                  #----- tot.soil.c is a combination of variables. ------------------------#
+                  vnow = with(datum$emean, fast.soil.c  [emap]
+                                         + slow.soil.c  [emap]
+                                         + struct.soil.c[emap]
+                             )#end with
+                  #------------------------------------------------------------------------#
+               }else if(this.vnam %in% "firemort"){
+                  #------ Fire mortality: convert exponential rate to fraction rate. ------#
+                  fire    = pmax(0.,datum$lu$dist[emap,3,3]-treefall.default,na.rm=TRUE)
+                  vnow    = pmax(0.1,100. * ( 1.0 - exp( - fire)))
+                  #------------------------------------------------------------------------#
+               }else if(this.vnam %in% "dimort"){
+                  #------ Dens. Independent rate: remove fire and make it fraction rate. --#
+                  fire    = pmax(0.,datum$lu$dist[emap,3,3]-treefall.default)
+                  dimort  = pmax(0.,datum$szpft$dimort[emap,5,18]-fire)
+                  vnow    = pmax(0.1,100. * ( 1.0 - exp( - dimort )))
+                  #------------------------------------------------------------------------#
+               }else if(this.vnam %in% c("mort","ncbmort")){
+                  #------ Other mortalities: make them fraction rate. ---------------------#
+                  nowmort = pmax(0.0,datum$szpft[[this.vnam]][emap,5,18])
+                  vnow    = pmax(0.1,100. * ( 1.0 - exp( - nowmort)))
+                  #------------------------------------------------------------------------#
+               }else if(this.vnam %in% "bowen"){
+                  #------ Bowen ratio: use the patch-level variable. ----------------------#
+                  hflxca  = datum$patch$hflxca [[stamp]]
+                  qwflxca = datum$patch$qwflxca[[stamp]]
+                  vnow    = ifelse(qwflxca %!=% 0, hflxca/qwflxca, NA)
+               }else if(this.vnam %in% "tratio"){
+                  #------ Bowen ratio: use the patch-level variable. ----------------------#
+                  transp  = datum$patch$transp[[stamp]]
+                  wflxca  = datum$patch$wflxca[[stamp]]
+                  vnow    = ifelse(wflxca %!=% 0, transp/wflxca, NA)
+               }else if(this.patchvar){
+                  #------ Use patch-level info if available... ----------------------------#
+                  vnow = datum$patch [[this.vnam]][[stamp]]
+                  #------------------------------------------------------------------------#
+               }else{
+                  #------ ... otherwise use polygon averaged monthly means... -------------#
+                  vnow = datum$emean[[this.vnam]][emap]
+                  #------------------------------------------------------------------------#
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+               #----- Make sure variables are either finite or NA, and update range. ------#
+               vnow = ifelse(is.finite(vnow),vnow,NA)
+               if (any(is.finite(vnow))){
+                  var.range[,v,p,s] = range(c(var.range[,v,p,s],vnow),finite=TRUE)
+               }#end if
+               rm(vnow)
+               #---------------------------------------------------------------------------#
+            }#end for (v in sequence(ncompvar))
+            #------------------------------------------------------------------------------#
+            rm(now,mm,yyyy,stamp,agenow)
+         }#end for (e in emean.loop)
+         #---------------------------------------------------------------------------------#
+         rm(esel,tomonth,nemean,emean.loop,agepa)
+      }#end for (s in sequence(nsimul))
+      #------------------------------------------------------------------------------------#
+   }#end for (p in loop.sites)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Make sure the range is either finite or NA. -------------------------------------#
+   var.range = ifelse(is.finite(var.range),var.range,NA)
+   dimnames(var.range) = list(c("min","max"),compvar.key,sites$iata,simul$name)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Save range. ---------------------------------------------------------------------#
+   cat ("   - Finding the ranges...","\n")
+   dummy = save(list=c("age.range","var.range"),file=rdata.range)
+   #---------------------------------------------------------------------------------------#
+}#end if (reload.range && file.exists(rdata.range))
 #------------------------------------------------------------------------------------------#
 
 
@@ -1006,12 +1314,7 @@ for (p in loop.sites){
 
 
       #----- Create some variables to describe season and time of the day. ----------------#
-      model = list( ymean  = list()
-                  , emean  = list()
-                  , szpft  = list()
-                  , patch  = list()
-                  , cohort = list()
-                  )#end list
+      model = list()
       #----- Create time stamp for annual and monthly means. ------------------------------#
       model$toyear  = unique(numyears(datum$when))
       esel          = numyears(datum$when) %wr% c(emean.yeara,emean.yearz)
@@ -1064,6 +1367,54 @@ for (p in loop.sites){
                patch = NULL
             }#end if (this.patchvar)
             #------------------------------------------------------------------------------#
+         }else if (this.vnam %in% "ba"){
+            emean = datum$szpft[[this.vnam]][,5,18]
+            szpft = datum$szpft[[this.vnam]]
+            patch = datum$patch[[this.vnam]]
+         }else if (this.vnam %in% "firemort"){
+            emean = pmax(0.0,datum$lu$dist[,3,3] - treefall.default)
+            szpft = array( data     = emean
+                         , dim      = dim(datum$szpft$mort)
+                         , dimnames = dimnames(datum$szpft$mort)
+                         )#end array
+            patch = NULL
+         }else if (this.vnam %in% "dimort"){
+            emean.fire = pmax(0.0,datum$lu$dist[,3,3] - treefall.default)
+            szpft.fire = array(data=emean.fire,dim=dim(datum$szpft$mort))
+            emean      = pmax(0.0,datum$szpft[[this.vnam]][,5,18]-emean.fire)
+            szpft      = ifelse( datum$szpft[[this.vnam]] > szpft.fire
+                               , datum$szpft[[this.vnam]] - szpft.fire
+                               , 0.0
+                               )#end ifelse
+            patch      = NULL
+         }else if (this.vnam %in% c("mort","ncbmort")){
+            emean = datum$szpft[[this.vnam]][,5,18]
+            szpft = datum$szpft[[this.vnam]]
+            patch = NULL
+         }else if (this.vnam %in% "tot.dist"){
+            emean = 100. * pmax(datum$lu$dist[,3,3],0.0,na.rm=TRUE)
+            szpft = NULL
+            patch = NULL
+         }else if (this.vnam %in% "bowen"){
+            emean = with(datum$emean,ifelse(qwflxca %!=% 0,hflxca/qwflxca,NA))
+            szpft = NULL
+            patch = with( data = datum$patch
+                        , expr = mapply( FUN      = function(h,qw) ifelse(qw%!=%0,h/qw,NA)
+                                       , h        = hflxca
+                                       , qw       = qwflxca
+                                       , SIMPLIFY = FALSE
+                                       )#end mapply
+                        )#end with
+         }else if (this.vnam %in% "tratio"){
+            emean = with(datum$emean,ifelse(wflxca %!=% 0,transp/wflxca,NA))
+            szpft = NULL
+            patch = with( data = datum$patch
+                        , expr = mapply( FUN      = function(tp,w) ifelse(w%!=%0,tp/w,NA)
+                                       , tp       = transp
+                                       , w        = wflxca
+                                       , SIMPLIFY = FALSE
+                                       )#end mapply
+                        )#end with
          }else{
             emean = datum$emean [[this.vnam]]
             szpft = datum$szpft [[this.vnam]]
@@ -1109,8 +1460,6 @@ for (p in loop.sites){
          #---------------------------------------------------------------------------------#
 
 
-
-
          #---------------------------------------------------------------------------------#
          #     Crop the monthly means by PFT and DBH, keeping only the period of interest. #
          #---------------------------------------------------------------------------------#
@@ -1122,6 +1471,23 @@ for (p in loop.sites){
                              , FUN   = mean
                              , na.rm = TRUE
                              )#end qapply
+         }else{
+            em.szpft = NULL
+            ym.szpft = NULL
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find mortality rates, "interest" style.                                     #
+         #---------------------------------------------------------------------------------#
+         if (this.vnam %in% c("mort","dimort","ncbmort","firemort")){
+            emean    = 100. * ( 1.0 - exp( - emean    ) )
+            ymean    = 100. * ( 1.0 - exp( - ymean    ) )
+            szpft    = 100. * ( 1.0 - exp( - szpft    ) )
+            em.szpft = 100. * ( 1.0 - exp( - em.szpft ) )
+            ym.szpft = 100. * ( 1.0 - exp( - ym.szpft ) )
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -1208,7 +1574,6 @@ for (p in loop.sites){
          #---------------------------------------------------------------------------------#
 
 
-
          #----- Save variables to a list. -------------------------------------------------#
          model[[this.vnam]] = list( emean    = emean
                                   , ymean    = ymean
@@ -1253,7 +1618,7 @@ for (p in loop.sites){
    rdata.iata = file.path(rdata.path,paste(iata,rdata.suffix,sep="_"))
    cat(" + Saving processed data to ",basename(rdata.iata),"...","\n")
    dummy = save(list=c(res.iata), file=rdata.iata)
-   rm(res.iata,obser,this.sim)
+   rm(res.iata,this.sim)
    #---------------------------------------------------------------------------------------#
 
 }#end for (p in sequence(loop.nsites))
@@ -1667,11 +2032,412 @@ if (plot.ts.pft){
 #==========================================================================================#
 #     Plot the mean annual cycle by age structure.                                         #
 #------------------------------------------------------------------------------------------#
+if (plot.ym.patch){
+   cat(" + Plotting equilibrium averages as a function of age...","\n")
+
+   x.at     = pretty.log(x=ceiling(age.at))
+   x.labels = sprintf("%g",x.at)
+   xlimit   = c( min = max(min(x.at),min(ceiling(age.at)))
+               , max = min(max(x.at),max(ceiling(age.at)))
+               )#end c
+
+   #---------------------------------------------------------------------------------------#
+   #     Loop over variables.                                                              #
+   #---------------------------------------------------------------------------------------#
+   for (v in sequence(ncompvar)){
+      #----- Load variable settings. ------------------------------------------------------#
+      this.compvar    = compvar[[v]]
+      this.vnam       = this.compvar$vnam
+      this.desc       = this.compvar$desc
+      this.unit       = this.compvar$unit
+      cscheme         = get(this.compvar$cscheme.mean)
+      hue.low         = this.compvar$hue.low
+      hue.high        = this.compvar$hue.high
+      is.patch        = this.compvar$patchvar
+      zlog            = this.compvar$zlog
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Skip variable if it isn't PFT-dependent.                                       #
+      #------------------------------------------------------------------------------------#
+      if (is.patch){
+         cat("   - ",this.desc,"...","\n")
+
+
+         #---------------------------------------------------------------------------------#
+         #     Loop over all sites and simulations, and get the range.                     #
+         #---------------------------------------------------------------------------------#
+         yrange = array(NA,dim=c(2,nsites,nsimul))
+         for (p in sequence(nsites)){
+            iata = sites$iata[p]
+            for (s in sequence(nsimul)){
+               #------ Get the data. ------------------------------------------------------#
+               sname    = simul$name[s]
+               model    = res[[iata]][[sname]]
+               mm.age   = model[[this.vnam]]$mm.age
+               ym.age   = colMeans(mm.age)
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Update range.                                                         #
+               #---------------------------------------------------------------------------#
+               if (zlog){
+                  ym.age       = ifelse(ym.age %>% 0.0,ym.age,NA)
+                  yrange[,p,s] = range(c(yrange[,p,s],ym.age),finite=TRUE)
+               }else if (this.vnam %in% "bowen"){
+                  ym.age       = pmax(bmn,pmin(bmx,ym.age))
+                  yrange[,p,s] = range(c(yrange[,p,s],ym.age),finite=TRUE)
+               }else if (this.vnam %in% "tratio"){
+                  ym.age       = pmax(0.0,pmin(1.0,ym.age))
+                  yrange[,p,s] = range(c(yrange[,p,s],ym.age),finite=TRUE)
+               }else{
+                  yrange[,p,s] = range(c(yrange[,p,s],ym.age),finite=TRUE)
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end for (s in sequence(nsimul))
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #------ Make the scale for budget variables symmetric. ---------------------------#
+         if (this.vnam %in% c("nee","nep","cba")){
+            yrange = apply( X      = yrange
+                          , MARGIN = c(2,3)
+                          , FUN    = function(x) c(-1,1)*max(abs(x),na.rm=TRUE)
+                          )#end apply
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Make one panel for each simulation, and one plot per site.                  #
+         #---------------------------------------------------------------------------------#
+         cat("     * Plotting by sites...","\n")
+         for (p in sequence(nsites)){
+            #----- Get the basic information. ---------------------------------------------#
+            iata           = sites$iata[p]
+            this.longname  = sites$desc[p]
+            cat("       > ",this.longname,"...","\n")
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Grab data and arrange them by list.                                     #
+            #------------------------------------------------------------------------------#
+            xdat = list()
+            ydat = list()
+            for (s in sequence(nsimul)){
+               sname        = simul$name[s]
+               model        = res[[iata]][[sname]]
+               ym.age       = colMeans(model[[this.vnam]]$mm.age)
+               xdat   [[s]] = age.at
+               if (this.vnam %in% "bowen"){
+                  ydat[[s]] = pmax(bmn,pmin(bmx,ym.age))
+               }else if (this.vnam %in% "tratio"){
+                  ydat[[s]] = pmax(0.0,pmin(1.0,ym.age))
+               }else{
+                  ydat[[s]] = ym.age
+               }#end if
+            }#end for (s in sequence(nsimul))
+            ylimit = pretty.xylim(u=yrange[,p,],fracexp=0.0,is.log=zlog)
+            if (zlog){
+               plog     = "xy"
+               y.at     = pretty.log(ylimit)
+               y.labels = sprintf("%g",y.at)
+            }else{
+               plog     = "x"
+               y.at     = pretty(ylimit)
+               y.labels = sprintf("%g",y.at)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #------ Set some common features. ---------------------------------------------#
+            letitre = paste(this.desc," - ",this.longname,"\n","Means at equilibrium"
+                           ,sep="")
+            lex     = desc.unit(desc="Age",unit=untab$yr)
+            ley     = desc.unit(desc=this.desc,unit=this.unit)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Loop over formats.                                                      #
+            #------------------------------------------------------------------------------#
+            for (o in sequence(nout)){
+               #----- Make the file name. -------------------------------------------------#
+               out.now = out[[outform[o]]]$ym.patch$variables[[this.vnam]]
+               fichier = file.path( out.now
+                                  , paste("ym_patch-",this.vnam,"-",iata,".",outform[o]
+                                         ,sep="")
+                                  )#end file.path
+               if (outform[o] == "x11"){
+                  X11(width=zsize$width,height=zsize$height,pointsize=col.use)
+               }else if(outform[o] == "png"){
+                  png(filename=fichier,width=zsize$width*depth,height=zsize$height*depth
+                     ,pointsize=ptsz,res=depth)
+               }else if(outform[o] == "eps"){
+                  postscript(file=fichier,width=zsize$width,height=zsize$height
+                            ,pointsize=ptsz,paper=zsize$paper)
+               }else if(outform[o] == "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=zsize$width,height=zsize$height
+                     ,pointsize=ptsz,paper=zsize$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Split the device area into two.                                      #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               layout(mat=rbind(2,1),heights=c(6,1))
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Plot legend.                                                         #
+               #---------------------------------------------------------------------------#
+               par(mar=c(0.1,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x       = "bottom"
+                     , inset   = 0
+                     , legend  = simul$desc
+                     , fill    = simul$colour
+                     , border  = simul$colour
+                     , ncol    = min(3,pretty.box(nsimul)$ncol)
+                     , title   = expression(bold("Simulations"))
+                     , cex     = 0.75
+                     , xpd     = TRUE
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Plot simulations.                                                    #
+               #---------------------------------------------------------------------------#
+               par(mar=c(4.1,4.1,3.1,2.1))
+               plot.new()
+               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+               abline(v=x.at,h=y.at,col=grid.colour,lty="dotted")
+               for (s in sequence(nsimul)){
+                  lines(x=xdat[[s]],y=ydat[[s]],lwd=3.0,col=simul$colour[s])
+               }#end for
+               box()
+               axis(side=1,at=x.at,labels=x.labels)
+               axis(side=2,at=y.at,labels=y.labels,las=1)
+               title(main=letitre,xlab=lex,ylab=ley)
+               #---------------------------------------------------------------------------#
+
+
+
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] == "x11"){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+
+            }#end for (o in sequence(nout))
+            #------------------------------------------------------------------------------#
+         }#end for (p in sequence(nsites))
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Make one panel for each simulation, and one plot per site.                  #
+         #---------------------------------------------------------------------------------#
+         s = sim.default
+         cat("     * Plotting default simulation...","\n")
+         #----- Get the basic information. ------------------------------------------------#
+         sname     = simul$name[s]
+         sdesc     = simul$desc[s]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Grab data and arrange them by list.                                        #
+         #---------------------------------------------------------------------------------#
+         xdat = list()
+         ydat = list()
+         for (p in sequence(nsites)){
+            iata         = sites$iata[p]
+            longname     = sites$desc[p]
+            model        = res[[iata]][[sname]]
+            ym.age       = colMeans(model[[this.vnam]]$mm.age)
+            xdat   [[p]] = age.at
+            if (this.vnam %in% "bowen"){
+               ydat[[p]] = pmax(bmn,pmin(bmx,ym.age))
+            }else if (this.vnam %in% "tratio"){
+               ydat[[p]] = pmax(0.0,pmin(1.0,ym.age))
+            }else{
+               ydat[[p]] = ym.age
+            }#end if
+         }#end for (p in sequence(nsites))
+         ylimit = pretty.xylim(u=yrange[,,s],fracexp=0.0,is.log=zlog)
+         if (zlog){
+            plog     = "xy"
+            y.at     = pretty.log(ylimit)
+            y.labels = sprintf("%g",y.at)
+         }else{
+            plog     = "x"
+            y.at     = pretty(ylimit)
+            y.labels = sprintf("%g",y.at)
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #------ Set some common features. ------------------------------------------------#
+         letitre = paste(this.desc," - ",sdesc,"\n","Means at equilibrium",sep="")
+         lex     = desc.unit(desc="Age",unit=untab$yr)
+         lay     = desc.unit(desc=this.desc,unit=this.unit)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over formats.                                                         #
+         #---------------------------------------------------------------------------------#
+         for (o in sequence(nout)){
+            #----- Make the file name. ----------------------------------------------------#
+            out.now = out[[outform[o]]]$ym.patch$default
+            fichier = file.path( out.now
+                               , paste("ym_patch-",this.vnam,"-",sname,".",outform[o]
+                                      ,sep="")
+                               )#end file.path
+            if (outform[o] == "x11"){
+               X11(width=zsize$width,height=zsize$height,pointsize=col.use)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=zsize$width*depth,height=zsize$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=zsize$width,height=zsize$height
+                         ,pointsize=ptsz,paper=zsize$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=zsize$width,height=zsize$height
+                  ,pointsize=ptsz,paper=zsize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Split the device area into two.                                         #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            layout(mat=rbind(2,1),heights=c(6,1))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot legend.                                                            #
+            #------------------------------------------------------------------------------#
+            par(mar=c(0.1,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x       = "bottom"
+                  , inset   = 0
+                  , legend  = paste(sites$desc," (",toupper(sites$iata),")",sep="")
+                  , fill    = sites$col
+                  , border  = sites$col
+                  , ncol    = min(3,pretty.box(nsites)$ncol)
+                  , title   = expression(bold("Sites"))
+                  , cex     = 0.75
+                  , xpd     = TRUE
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot simulations.                                                       #
+            #------------------------------------------------------------------------------#
+            par(mar=c(4.1,4.6,3.1,2.1))
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+            abline(v=x.at,h=y.at,col=grid.colour,lty="dotted")
+            for (p in sequence(nsites)){
+               lines(x=xdat[[p]],y=ydat[[p]],lwd=3.0,col=sites$col[p])
+            }#end for
+            box()
+            axis(side=1,at=x.at,labels=x.labels)
+            axis(side=2,at=y.at,labels=y.labels,las=1)
+            title(main=letitre,xlab=lex,ylab=ley)
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+
+         }#end for (o in sequence(nout))
+         #---------------------------------------------------------------------------------#
+      }#end if (is.szpft)
+      #------------------------------------------------------------------------------------#
+   }#end for (v in sequence(ncompvar))
+   #---------------------------------------------------------------------------------------#
+}#end if (plot.ym.patch)
+#------------------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#     Plot the mean annual cycle by age structure.                                         #
+#------------------------------------------------------------------------------------------#
 if (plot.xyz.patch){
    cat(" + Plotting mean annual cycle as a function of age...","\n")
 
    y.at   = pretty.log(x=ceiling(age.at))
-   xlimit = pretty.xylim(u=c(1,12),is.log=FALSE)
+   xlimit = pretty.xylim(u=c(1.0,13.0),is.log=FALSE)
    ylimit = c( min = max(min(y.at),min(ceiling(age.at)))
              , max = min(max(y.at),max(ceiling(age.at)))
              )#end c
@@ -1689,6 +2455,7 @@ if (plot.xyz.patch){
       hue.low         = this.compvar$hue.low
       hue.high        = this.compvar$hue.high
       is.patch        = this.compvar$patchvar
+      zlog            = this.compvar$zlog
       #------------------------------------------------------------------------------------#
 
 
@@ -1718,7 +2485,18 @@ if (plot.xyz.patch){
                #---------------------------------------------------------------------------#
                #     Update range.                                                         #
                #---------------------------------------------------------------------------#
-               zrange[,p,s] = range(c(zrange[,p,s],mm.age),finite=TRUE)
+               if (zlog){
+                  mm.age       = ifelse(mm.age %>% 0.0,mm.age,NA)
+                  zrange[,p,s] = range(c(zrange[,p,s],mm.age),finite=TRUE)
+               }else if (this.vnam %in% "bowen"){
+                  mm.age       = pmax(bmn,pmin(bmx,mm.age))
+                  zrange[,p,s] = range(c(zrange[,p,s],mm.age),finite=TRUE)
+               }else if (this.vnam %in% "tratio"){
+                  mm.age       = pmax(0.0,pmin(1.0,mm.age))
+                  zrange[,p,s] = range(c(zrange[,p,s],mm.age),finite=TRUE)
+               }else{
+                  zrange[,p,s] = range(c(zrange[,p,s],mm.age),finite=TRUE)
+               }#end if
                #---------------------------------------------------------------------------#
             }#end for (s in sequence(nsimul))
             #------------------------------------------------------------------------------#
@@ -1746,7 +2524,11 @@ if (plot.xyz.patch){
             #----- Get the basic information. ---------------------------------------------#
             iata           = sites$iata[p]
             this.longname  = sites$desc[p]
-            z.at           = pretty(zrange[,p,],n=ncolours.xyz)
+            if (zlog){
+               z.at     = unique(pretty.log(zrange[,p,],n=ncolours.xyz,forcelog=TRUE))
+            }else{
+               z.at     = unique(pretty(zrange[,p,],n=ncolours.xyz))
+            }#end if
             if (this.vnam %in% c("nee","nep","cba")){
                z.colours      = two.palettes( x     = z.at
                                             , low   = hue.low
@@ -1764,6 +2546,15 @@ if (plot.xyz.patch){
 
 
 
+
+            #----- Find the beginning and end of the dry season, and flag them. -----------#
+            dryaz    = chron(paste(c(sites$drya[p],sites$dryz[p]),2000,sep="/"))
+            xdw      = (numdays(dryaz)-1)/daymax(dryaz) + nummonths(dryaz)
+            ydw      = sqrt(prod(ylimit)) + 0 * xdw
+            #------------------------------------------------------------------------------#
+
+
+
             #------------------------------------------------------------------------------#
             #      Grab data and arrange them by list.                                     #
             #------------------------------------------------------------------------------#
@@ -1777,16 +2568,29 @@ if (plot.xyz.patch){
             for (s in sequence(nsimul)){
                sname               = simul$name[s]
                model               = res[[iata]][[sname]]
-               xdat          [[s]] = rep(sequence(12),times=n.age.at)
+               xdat          [[s]] = rep(sequence(12)+0.5,times=n.age.at)
                ydat          [[s]] = rep(age.at,each=12)
-               zdat          [[s]] = c(model[[this.vnam]]$mm.age)
-               x.axis.options[[s]] = list(side=1,at=1:12,labels=substring(month.abb,1,1))
+               if (this.vnam %in% "bowen"){
+                  zdat          [[s]] = pmax(bmn,pmin(bmx,c(model[[this.vnam]]$mm.age)))
+               }else if (this.vnam %in% "tratio"){
+                  zdat          [[s]] = pmax(0.0,pmin(1.0,c(model[[this.vnam]]$mm.age)))
+               }else{
+                  zdat          [[s]] = c(model[[this.vnam]]$mm.age)
+               }#end if
+               x.axis.options[[s]] = list(side=1,at=1:13
+                                         ,labels=substring(c(month.abb,month.abb[1]),1,1))
                y.axis.options[[s]] = list(side=2,las=1,at=y.at)
                sub.options   [[s]] = list(main=simul$desc[s],line=0.6)
-               plot.after    [[s]] = list( abline = list( v   = 1:12
+               plot.after    [[s]] = list( abline = list( v   = 1:13
                                                         , h   = y.at
                                                         , col = grid.colour
                                                         , lty = "dotted"
+                                                        )#end list
+                                         , points = list( x   = xdw
+                                                        , y   = ydw
+                                                        , pch = 20
+                                                        , cex = 0.4
+                                                        , col = grey.mg
                                                         )#end list
                                          )#end list
             }#end for (s in sequence(nsimul))
@@ -1852,11 +2656,12 @@ if (plot.xyz.patch){
                                                  , cex.main = cex.main
                                                  , line     = 1.0
                                                  )#end list
-                         , key.log         = FALSE
+                         , key.log         = zlog
                          , key.vertical    = FALSE
                          , matrix.plot     = TRUE
+                         , byrow           = FALSE
                          , plot.after      = plot.after
-                         , f.key           = 2/9
+                         , f.key           = 1/6
                          , smidgen         = 0.04
                          )#end image.map
                #---------------------------------------------------------------------------#
@@ -1891,7 +2696,11 @@ if (plot.xyz.patch){
          #----- Get the basic information. ------------------------------------------------#
          sname     = simul$name[s]
          sdesc     = simul$desc[s]
-         z.at      = pretty(zrange[,,s],n=ncolours.xyz)
+         if (zlog){
+            z.at      = pretty.log(zrange[,,s],n=ncolours.xyz,forcelog=TRUE)
+         }else{
+            z.at      = pretty(zrange[,,s],n=ncolours.xyz)
+         }#end if
          if (this.vnam %in% c("nee","nep","cba")){
             z.colours      = two.palettes( x     = z.at
                                          , low   = hue.low
@@ -1919,19 +2728,39 @@ if (plot.xyz.patch){
          sub.options    = list()
          plot.after     = list()
          for (p in sequence(nsites)){
-            iata                = sites$iata[p]
-            longname            = sites$desc[p]
+            iata     = sites$iata[p]
+            longname = sites$desc[p]
+
+            #----- Find the beginning and end of the dry season, and flag them. -----------#
+            dryaz    = chron(paste(c(sites$drya[p],sites$dryz[p]),2000,sep="/"))
+            xdw      = (numdays(dryaz)-1)/daymax(dryaz) + nummonths(dryaz)
+            ydw      = sqrt(prod(ylimit)) + 0.* xdw
+            #------------------------------------------------------------------------------#
+
             model               = res[[iata]][[sname]]
-            xdat          [[p]] = rep(sequence(12),times=n.age.at)
+            xdat          [[p]] = rep(sequence(12)+0.5,times=n.age.at)
             ydat          [[p]] = rep(age.at,each=12)
-            zdat          [[p]] = c(model[[this.vnam]]$mm.age)
-            x.axis.options[[p]] = list(side=1,at=1:12,labels=substring(month.abb,1,1))
+            if (this.vnam %in% "bowen"){
+               zdat       [[p]] = pmax(bmn,pmin(bmx,c(model[[this.vnam]]$mm.age)))
+            }else if (this.vnam %in% "tratio"){
+               zdat       [[p]] = pmax(0.0,pmin(1.0,c(model[[this.vnam]]$mm.age)))
+            }else{
+               zdat       [[p]] = c(model[[this.vnam]]$mm.age)
+            }#end if
+            x.axis.options[[p]] = list(side=1,at=1:13
+                                      ,labels=substring(c(month.abb,month.abb[1]),1,1))
             y.axis.options[[p]] = list(side=2,las=1,at=y.at)
             sub.options   [[p]] = list(main=longname,line=0.6)
-            plot.after    [[p]] = list( abline = list( v   = 1:12
+            plot.after    [[p]] = list( abline = list( v   = 1:13
                                                      , h   = y.at
                                                      , col = grid.colour
                                                      , lty = "dotted"
+                                                     )#end list
+                                      , points = list( x   = xdw
+                                                     , y   = ydw
+                                                     , pch = 20
+                                                     , cex = 0.4
+                                                     , col = grey.mg
                                                      )#end list
                                       )#end list
          }#end for (s in sequence(nsimul))
@@ -1997,11 +2826,12 @@ if (plot.xyz.patch){
                                               , cex.main = cex.main
                                               , line     = 1.0
                                               )#end list
-                      , key.log         = FALSE
+                      , key.log         = zlog
                       , key.vertical    = FALSE
                       , matrix.plot     = TRUE
+                      , byrow           = TRUE
                       , plot.after      = plot.after
-                      , f.key           = 2/9
+                      , f.key           = 1/8
                       , smidgen         = 0.04
                       )#end image.map
             #------------------------------------------------------------------------------#
@@ -2051,6 +2881,7 @@ if (plot.xyz.patch){
 #------------------------------------------------------------------------------------------#
 if (plot.pdf.patch){
    cat(" + Plotting mean annual cycle of variables PDF...","\n")
+   xlimit = pretty.xylim(u=c(1.0,13.0),is.log=FALSE)
 
 
    #---------------------------------------------------------------------------------------#
@@ -2072,8 +2903,8 @@ if (plot.pdf.patch){
 
 
       #-----  Find the density function. --------------------------------------------------#
-      y.levels = seq( from       = min(var.range[1,v,,])
-                    , to         = max(var.range[2,v,,])
+      y.levels = seq( from       = min(var.range[1,v,,],na.rm=TRUE)
+                    , to         = max(var.range[2,v,,],na.rm=TRUE)
                     , length.out = n.dens
                     )#end seq
       #------------------------------------------------------------------------------------#
@@ -2106,7 +2937,7 @@ if (plot.pdf.patch){
                #     Update range.                                                         #
                #---------------------------------------------------------------------------#
                if (any(is.finite(mm.pdf))){
-                  zrange[,p,s] = c(1.0e-5,1.0)*max(mm.pdf,na.rm=TRUE)
+                  zrange[,p,s] = c(5.0e-4,1.0)*max(mm.pdf,na.rm=TRUE)
                }#end if
                #---------------------------------------------------------------------------#
             }#end for (s in sequence(nsimul))
@@ -2135,6 +2966,15 @@ if (plot.pdf.patch){
 
 
 
+
+            #----- Find the beginning and end of the dry season, and flag them. -----------#
+            dryaz    = chron(paste(c(sites$drya[p],sites$dryz[p]),2000,sep="/"))
+            xdw      = (numdays(dryaz)-1)/daymax(dryaz) + nummonths(dryaz)
+            ydw      = sqrt(prod(ylimit)) + 0 * xdw
+            #------------------------------------------------------------------------------#
+
+
+
             #------------------------------------------------------------------------------#
             #      Grab data and arrange them by list.                                     #
             #------------------------------------------------------------------------------#
@@ -2148,16 +2988,24 @@ if (plot.pdf.patch){
             for (s in sequence(nsimul)){
                sname               = simul$name[s]
                model               = res[[iata]][[sname]]
-               xdat          [[s]] = rep(sequence(12),times=n.dens)
+               xdat          [[s]] = rep(sequence(12)+0.5,times=n.dens)
                ydat          [[s]] = rep(y.levels,each=12)
                zdat          [[s]] = c(model[[this.vnam]]$mm.pdf)
-               x.axis.options[[s]] = list(side=1,at=1:12,labels=substring(month.abb,1,1))
+               x.axis.options[[s]] = list(side=1
+                                         ,at=seq(from=1,to=13,by=1)
+                                         ,labels=substring(c(month.abb,month.abb[1]),1,1))
                y.axis.options[[s]] = list(side=2,las=1,at=y.at,labels=y.labels)
                sub.options   [[s]] = list(main=simul$desc[s],line=0.6)
-               plot.after    [[s]] = list( abline = list( v   = 1:12
+               plot.after    [[s]] = list( abline = list( v   = 1:13
                                                         , h   = y.at
                                                         , col = grid.colour
                                                         , lty = "dotted"
+                                                        )#end list
+                                         , points = list( x   = xdw
+                                                        , y   = ydw
+                                                        , pch = 20
+                                                        , cex = 0.4
+                                                        , col = grey.mg
                                                         )#end list
                                          )#end list
             }#end for (s in sequence(nsimul))
@@ -2225,8 +3073,9 @@ if (plot.pdf.patch){
                          , key.log         = TRUE
                          , key.vertical    = FALSE
                          , matrix.plot     = TRUE
+                         , byrow           = FALSE
                          , plot.after      = plot.after
-                         , f.key           = 2/9
+                         , f.key           = 1/6
                          , smidgen         = 0.04
                          )#end image.map
                #---------------------------------------------------------------------------#
@@ -2283,17 +3132,33 @@ if (plot.pdf.patch){
          for (p in sequence(nsites)){
             iata                = sites$iata[p]
             longname            = sites$desc[p]
+
+
+            #----- Find the beginning and end of the dry season, and flag them. -----------#
+            dryaz    = chron(paste(c(sites$drya[p],sites$dryz[p]),2000,sep="/"))
+            xdw      = (numdays(dryaz)-1)/daymax(dryaz) + nummonths(dryaz)
+            ydw      = sqrt(prod(ylimit)) + 0.* xdw
+            #------------------------------------------------------------------------------#
+
+
             model               = res[[iata]][[sname]]
-            xdat          [[p]] = rep(sequence(12),times=n.dens)
+            xdat          [[p]] = rep(sequence(12)+0.5,times=n.dens)
             ydat          [[p]] = rep(y.levels,each=12)
             zdat          [[p]] = c(model[[this.vnam]]$mm.pdf)
-            x.axis.options[[p]] = list(side=1,at=1:12,labels=substring(month.abb,1,1))
+            x.axis.options[[p]] = list(side=1,at=1:13
+                                      ,labels=substring(c(month.abb,month.abb[1]),1,1))
             y.axis.options[[p]] = list(side=2,las=1,at=y.at,labels=y.labels)
             sub.options   [[p]] = list(main=longname,line=0.6)
-            plot.after    [[p]] = list( abline = list( v   = 1:12
+            plot.after    [[p]] = list( abline = list( v   = 1:13
                                                      , h   = y.at
                                                      , col = grid.colour
                                                      , lty = "dotted"
+                                                     )#end list
+                                      , points = list( x   = xdw
+                                                     , y   = ydw
+                                                     , pch = 20
+                                                     , cex = 0.4
+                                                     , col = grey.mg
                                                      )#end list
                                       )#end list
          }#end for (s in sequence(nsimul))
@@ -2360,9 +3225,10 @@ if (plot.pdf.patch){
                                               )#end list
                       , key.log         = TRUE
                       , key.vertical    = FALSE
+                      , byrow           = TRUE
                       , matrix.plot     = TRUE
                       , plot.after      = plot.after
-                      , f.key           = 2/9
+                      , f.key           = 1/8
                       , smidgen         = 0.04
                       )#end image.map
             #------------------------------------------------------------------------------#
@@ -2436,12 +3302,14 @@ if (plot.ym.theme){
       theme.desc   = this.theme$desc
       theme.colour = this.theme$colour
       theme.lwd    = this.theme$lwd
+      ylog         = this.theme$ylog
       theme.prefix = this.theme$prefix
       theme.title  = this.theme$title
       theme.unit   = this.theme$unit
       cat("   - ",theme.desc,"...","\n")
 
       ntheme.vnam  = length(theme.vnam)
+      plog         = ifelse(ylog,"y","")
 
 
       #----- Get range. -------------------------------------------------------------------#
@@ -2449,13 +3317,18 @@ if (plot.ym.theme){
       yrange = array(data=NA,dim=c(2,nsites,nsimul))
       for (p in sequence(nsites)){
          iata = sites$iata[p]
+         
          for (s in sequence(nsimul)){
             sname  = simul$name[s]
             model  = res[[iata]][[sname]]
             xrange[,p,s] = range(model$toyear,finite=TRUE)
             for (v in sequence(ntheme.vnam)){
-               vnow         = model[[theme.vnam[v]]]$ymean
-               yrange[,p,s] = range(vnow,finite=TRUE)
+               vnow = model[[theme.vnam[v]]]$ymean
+               vnow = ifelse(is.finite(vnow),vnow,NA)
+               if (ylog && theme.vnam[v] %in% c("mort","dimort","ncbmort","firemort")){
+                  vnow = pmax(0.1,vnow,na.rm=TRUE)
+               }#end if
+               yrange[,p,s] = range(c(yrange[,p,s],vnow),finite=TRUE)
             }#end for (v in sequence(ntheme.vnam))
             #------------------------------------------------------------------------------#
          }#end for (s in sequence(nsimul))
@@ -2472,10 +3345,19 @@ if (plot.ym.theme){
       cat("     * Plotting by sites...","\n")
       for (p in sequence(nsites)){
          #----- Get the basic information. ------------------------------------------------#
-         iata           = sites$iata[p]
-         this.longname  = sites$desc[p]
-         xlimit         = pretty.xylim(u=xrange[,p,],fracexp=0.0,is.log=FALSE)
-         ylimit         = pretty.xylim(u=yrange[,p,],fracexp=0.0,is.log=FALSE)
+         iata          = sites$iata[p]
+         this.longname = sites$desc[p]
+         xlimit        = pretty.xylim(u=xrange[,p,],fracexp=0.0,is.log=FALSE)
+         x.at          = pretty(xlimit)
+         x.labels      = sprintf("%g",x.at)
+         ylimit        = pretty.xylim(u=yrange[,p,],fracexp=0.0,is.log=ylog )
+         if (ylog){
+            y.at       = pretty.log(ylimit)
+            y.labels   = sprintf("%g",y.at)
+         }else{
+            y.at       = pretty(ylimit)
+            y.labels   = sprintf("%g",y.at)
+         }#end if
          cat("       > ",this.longname,"...","\n")
          #---------------------------------------------------------------------------------#
 
@@ -2558,18 +3440,18 @@ if (plot.ym.theme){
                #----- Open window and plot all time series by PFT. ------------------------#
                par(mar=lo.simul$mar[s,])
                plot.new()
-               plot.window(xlim=xlimit,ylim=ylimit)
-               grid(col=grid.colour,lty="dotted")
+               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+               abline(h=y.at,v=x.at,col=grid.colour,lty="dotted")
                for (v in rev(sequence(ntheme.vnam))){
                   lines( x    = toyear
                        , y    = model[[theme.vnam[v]]]$ymean
                        , col  = theme.colour[v]
-                       , lwd  = theme.lwd[v]
+                       , lwd  = theme.lwd   [v]
                        , type = "l"
                        )#end lines
                }#end for (v in rev(ntheme.vnam))
-               if (lo.simul$bottom[s]) axis(side=1)
-               if (lo.simul$left  [s]) axis(side=2,las=1)
+               if (lo.simul$bottom[s]) axis(side=1,at=x.at,labels=x.labels)
+               if (lo.simul$left  [s]) axis(side=2,las=1,at=y.at,labels=y.labels)
                title(main=simul$desc[s],line=0.5)
                box()
                #---------------------------------------------------------------------------#
@@ -2610,10 +3492,19 @@ if (plot.ym.theme){
       s = sim.default
       cat("     * Plotting default simulation...","\n")
       #----- Get the basic information. ---------------------------------------------------#
-      sname           = simul$name[s]
-      sdesc           = simul$desc[s]
-      xlimit          = pretty.xylim(u=xrange[,,s],fracexp=0.0,is.log=FALSE)
-      ylimit          = pretty.xylim(u=yrange[,,s],fracexp=0.0,is.log=FALSE)
+      sname       = simul$name[s]
+      sdesc       = simul$desc[s]
+      xlimit      = pretty.xylim(u=xrange[,,s],fracexp=0.0,is.log=FALSE)
+      x.at        = pretty(xlimit)
+      x.labels    = sprintf("%g",x.at)
+      ylimit      = pretty.xylim(u=yrange[,,s],fracexp=0.0,is.log=ylog )
+      if (ylog){
+         y.at     = pretty.log(ylimit)
+         y.labels = sprintf("%g",y.at)
+      }else{
+         y.at     = pretty(ylimit)
+         y.labels = sprintf("%g",y.at)
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
@@ -2695,8 +3586,8 @@ if (plot.ym.theme){
             #----- Open window and plot all time series by PFT. ---------------------------#
             par(mar=lo.site$mar[p,])
             plot.new()
-            plot.window(xlim=xlimit,ylim=ylimit)
-            grid(col=grid.colour,lty="dotted")
+            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
+            abline(h=y.at,v=x.at,col=grid.colour,lty="dotted")
             for (v in rev(sequence(ntheme.vnam))){
                lines( x    = toyear
                     , y    = model[[theme.vnam[v]]]$ymean
@@ -2705,8 +3596,8 @@ if (plot.ym.theme){
                     , type = "l"
                     )#end lines
             }#end for (v in rev(ntheme.vnam))
-            if (lo.site$bottom[p]) axis(side=1)
-            if (lo.site$left  [p]) axis(side=2,las=1)
+            if (lo.site$bottom[p]) axis(side=1,at=x.at,labels=x.labels)
+            if (lo.site$left  [p]) axis(side=2,las=1,at=y.at,labels=y.labels)
             title(main=this.longname,line=0.5)
             box()
             #------------------------------------------------------------------------------#

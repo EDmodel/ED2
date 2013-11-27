@@ -2755,6 +2755,36 @@ plotpatch[[n]] = list( vnam       = "reco"
                      , mmean      = TRUE
                      , ymean      = TRUE
                      )#end list
+n              = n + 1
+plotpatch[[n]] = list( vnam       = "fast.soil.c"
+                     , desc       = "Fast soil carbon"
+                     , unit       = untab$kgcom2
+                     , col.scheme = "panoply"
+                     , plog       = TRUE
+                     , emean      = TRUE
+                     , mmean      = TRUE
+                     , ymean      = TRUE
+                     )#end list
+n              = n + 1
+plotpatch[[n]] = list( vnam       = "slow.soil.c"
+                     , desc       = "Slow soil carbon"
+                     , unit       = untab$kgcom2
+                     , col.scheme = "panoply"
+                     , plog       = TRUE
+                     , emean      = TRUE
+                     , mmean      = TRUE
+                     , ymean      = TRUE
+                     )#end list
+n              = n + 1
+plotpatch[[n]] = list( vnam       = "struct.soil.c"
+                     , desc       = "Structural soil carbon"
+                     , unit       = untab$kgcom2
+                     , col.scheme = "panoply"
+                     , plog       = TRUE
+                     , emean      = TRUE
+                     , mmean      = TRUE
+                     , ymean      = TRUE
+                     )#end list
 #------------------------------------------------------------------------------------------#
 
 

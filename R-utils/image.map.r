@@ -72,6 +72,7 @@ image.map <<- function( x
                       , smidgen          = 0
                       , interp.xyz       = FALSE
                       , useRaster        = TRUE
+                      , byrow            = TRUE
                       , ...
                       ){
 
@@ -129,7 +130,7 @@ image.map <<- function( x
 
 
    #----- Find the box structure for the panels. ------------------------------------------#
-   lo.panel = pretty.box(npanels)
+   lo.panel = pretty.box(npanels,byrow=byrow)
    #---------------------------------------------------------------------------------------#
 
 
@@ -161,8 +162,10 @@ image.map <<- function( x
 
 
    #----- Check for outer margins. --------------------------------------------------------#
-   if (is.null(oma)){
-      omd = c(0.02,1.00,0.01,0.93)*(npanels > 1)
+   if (is.null(oma) && npanels == 1){
+      par(oma=c(0,0,0,0))
+   }else if (is.null(oma)){
+      omd = c(0.02,1.00,0.01,0.93)
       par(omd=omd)
    }else{
       par(oma=oma)
@@ -222,7 +225,7 @@ image.map <<- function( x
             )#end layout
    }else if (matrix.plot){
       layout( mat     = rbind(lo.panel$mat.off,rep(1,times=lo.panel$ncol))
-            , heights = c(rep(fh.panel,times=lo.panel$nrow),f.key)
+            , heights = c(rep(fh.panel/lo.panel$nrow,times=lo.panel$nrow),f.key)
             )#end layout
    }else{
       layout( mat     =rbind(1+sequence(npanels),rep(1,times=npanels))
@@ -364,12 +367,12 @@ image.map <<- function( x
    #=======================================================================================#
    #      Now we plot the other panels.                                                    #
    #---------------------------------------------------------------------------------------#
-   for (p in 1:npanels){
+   for (p in sequence(npanels)){
       #----- Find out where the box goes, and set up axes and margins. --------------------#
-      left    = (p %% lo.panel$ncol) == 1
-      right   = (p %% lo.panel$ncol) == 0
-      top     = p <= lo.panel$ncol
-      bottom  = p > (lo.panel$nrow - 1) * lo.panel$ncol
+      left    = lo.panel$left  [p]
+      right   = lo.panel$right [p]
+      top     = lo.panel$top   [p]
+      bottom  = lo.panel$bottom[p]
       #------------------------------------------------------------------------------------#
 
 
@@ -481,7 +484,7 @@ image.map <<- function( x
          #---------------------------------------------------------------------------------#
          #    Split zleft into the breaks defined by the colour palette.                   #
          #---------------------------------------------------------------------------------#
-         zcut              = cut(as.numeric(z[[p]]),breaks=levels)
+         zcut              = try(cut(as.numeric(z[[p]]),breaks=levels))
          zlev              = levels(zcut)
          zcol              = col[match(zcut,zlev)]
          zcol[is.na(zcol)] = na.col

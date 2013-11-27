@@ -285,7 +285,7 @@ xyz.plot = function( x
          do.call("axis",xyz.xaxis)
       }#end if
       if (is.null(xyz.yaxis) && ( lo.box$left[p] | ! fixed.ylim) ){
-         axis(side=2)
+         axis(side=2,las=1)
       }else if ( lo.box$left[p] | ! fixed.ylim ){
          if (! "side" %in% names(xyz.yaxis)) xyz.yaxis$side = 2
          do.call("axis",xyz.yaxis)

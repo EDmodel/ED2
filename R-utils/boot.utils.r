@@ -288,6 +288,73 @@ boot.fortnight.mean <<- function(data.in,R,ci=0.95,...){
 
 #==========================================================================================#
 #==========================================================================================#
+#      This function computes the fortnightly means using hierarchical bootstrap on one    #
+# level.                                                                                   #
+#------------------------------------------------------------------------------------------#
+bhier.onelevel <<- function(data.in,stat=mean,R,ci=0.95,...){
+   call.now = match.call()
+
+
+   #----- Split the data into lists just to test that there aren't empty elements. --------#
+   list.use = split(x = data.in$x, f = data.in$level)
+   n.list   = lapply(X=list.use,FUN=length)
+   n.dat    = nrow(data.in)
+   if (any(unlist(n.list) == 0)){
+      stop("Empty elements in your list!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Find the statistics for each realisation.                                       #
+   #---------------------------------------------------------------------------------------#
+   level.1     = replicate(n=R,expr = boot.one.sample(x=list.use))
+   realisation = apply   (X=level.1,MARGIN=2,FUN=stat,...)
+   expected    = mean    (x=realisation,na.rm=TRUE)
+   std.err     = sd      (x=realisation,na.rm=TRUE)
+   perc.ci     = quantile(x=realisation,prob=c(1.0 + c(-1.0,1.0)*ci ) / 2.0,na.rm=TRUE)
+   t.ci        = expected + std.err * qt(p=c(1.0 + c(-1.0,1.0)*ci ) / 2.0,df=R-1)
+   t.cw        = std.err * qt(p=(1.0+ci)/2.0,df=R-1)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Add the answer to a list.                                                         #
+   #---------------------------------------------------------------------------------------#
+   ans = list( call        = call.now
+             , realisation = realisation
+             , expected    = expected
+             , std.err     = std.err
+             , perc.ci     = perc.ci
+             , perc.cw     = mean(abs(perc.ci-expected))
+             , t.ci        = t.ci
+             , t.cw        = t.cw
+             , ci          = ci
+             , R           = R
+             )#end list
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Return the statistics. ---------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #      This function computes the fortnightly means using hierarchical bootstrap on years  #
 # and hours.                                                                               #
 #------------------------------------------------------------------------------------------#
@@ -373,7 +440,7 @@ bhier.fortnight.mean <<- function(data.in,R,ci=0.95,...){
                           , MoreArgs = list(R=R)
                           , SIMPLIFY = FALSE
                           )#end mapply
-   boot.samples   = mapply( FUN      = boot.collapse
+   boot.samples   = mapply( FUN      = boot.collapse.3d
                           , x        = level.1.sample
                           , SIMPLIFY = FALSE
                           )#end mapply
@@ -547,14 +614,28 @@ high.sampler <<- function(x,R){
                   )#end replicate
    return(ans)
 }#end function high.sampler
+#----- Collapse the realisations by level. ------------------------------------------------#
+boot.collapse.2d <<- function(x){
+    ans                   = apply(X=x,MARGIN=2     ,FUN=mean,na.rm=TRUE )
+    ans[! is.finite(ans)] = NA
+    return(ans)
+}#end function boot.collapse.2d
 #----- Collapse the realisations by hour and by year. -------------------------------------#
-boot.collapse <<- function(x){
+boot.collapse.3d <<- function(x){
     tmp                   = apply(X=x  ,MARGIN=c(2,3),FUN=mean,na.rm=FALSE)
     tmp[! is.finite(tmp)] = NA
     ans                   = apply(X=tmp,MARGIN=2     ,FUN=mean,na.rm=TRUE )
     ans[! is.finite(ans)] = NA
     return(ans)
-}#end function boot.collapse
+}#end function boot.collapse.3d
+#----- Single sampling of nested list. ----------------------------------------------------#
+boot.one.sample <<- function(x){
+   nsize = lapply(X=x,FUN=length)
+   nx    = sample(length(x),size=length(x),prob=unlist(nsize),replace=TRUE)
+   xx    = x[nx]
+   now   = unlist(mapply(FUN=lit.sample,x=xx,size=nsize,MoreArgs=list(replace=TRUE)))
+   return(now)
+}#end boot.one.sample
 #==========================================================================================#
 #==========================================================================================#
 

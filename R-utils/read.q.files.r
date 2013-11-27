@@ -671,26 +671,29 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
       #     Find the patch-level properties that are derived from cohort-level.            #
       #------------------------------------------------------------------------------------#
-      patch$lai       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wai       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$agb       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$ba        [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wood.dens [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
-      patch$can.depth [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$can.area  [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.temp [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
-      patch$leaf.vpd  [[plab]] = mymont$MMEAN.CAN.VPDEF.PA * 0.01
-      patch$wood.temp [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
-      patch$gpp       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$npp       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$plant.resp[[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$leaf.temp [[plab]] = mymont$MMEAN.CAN.TEMP.PA - t00
-      patch$hflxlc    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$hflxwc    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wflxlc    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$wflxwc    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$transp    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
-      patch$soil.resp [[plab]] = mymont$MMEAN.RH.PA
+      patch$lai          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wai          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$agb          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$ba           [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wood.dens    [[plab]] = rep(NA,times=mymont$NPATCHES.GLOBAL)
+      patch$can.depth    [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$can.area     [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.temp    [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
+      patch$leaf.vpd     [[plab]] = mymont$MMEAN.CAN.VPDEF.PA * 0.01
+      patch$wood.temp    [[plab]] = mymont$MMEAN.CAN.TEMP.PA  - t00
+      patch$gpp          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$npp          [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$plant.resp   [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$leaf.temp    [[plab]] = mymont$MMEAN.CAN.TEMP.PA - t00
+      patch$hflxlc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$hflxwc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wflxlc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$wflxwc       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$transp       [[plab]] = rep(0.,times=mymont$NPATCHES.GLOBAL)
+      patch$soil.resp    [[plab]] = mymont$MMEAN.RH.PA
+      patch$fast.soil.c  [[plab]] = mymont$MMEAN.FAST.SOIL.C
+      patch$slow.soil.c  [[plab]] = mymont$MMEAN.SLOW.SOIL.C
+      patch$struct.soil.c[[plab]] = mymont$MMEAN.STRUCT.SOIL.C
 
 
       if (any(ncohorts >0)){

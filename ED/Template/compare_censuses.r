@@ -27,7 +27,7 @@ ibackground = 0       # Sought background colour (actual background will be tran
                       #   0 -- white background
                       #   1 -- black background
                       #   2 -- dark grey background
-oldgrowth   = TRUE    # Use old growth patches only? (FALSE uses everything)
+oldgrowth   = FALSE   # Use old growth patches only? (FALSE uses everything)
 #------------------------------------------------------------------------------------------#
 
 
@@ -58,7 +58,7 @@ outform        = c("pdf")               # Formats for output file.  Supported fo
                                         #   - "pdf" - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 16                     # Font size.
+ptsz           = 18                     # Font size.
 lwidth         = 2.5                    # Line width
 plotgrid       = TRUE                   # Should I plot the grid in the background? 
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
@@ -85,7 +85,7 @@ n.boot         = 1000         # Number of realisations for bootstrap
 
 #----- Simulation settings. ---------------------------------------------------------------#
 place = list()
-year.list = sprintf("%+2.2i",seq(from=-60,to=-5,by=5))
+year.list = sprintf("%+2.2i",seq(from=-8,to=-4,by=1))
 place[[ 1]] = list( iata   = "gyf" 
                   , config = list( yeara    = paste("yra",year.list,sep="")
                                  , iphen    = iphen.key
@@ -1774,11 +1774,12 @@ for (pl in sequence(nplaces)){
                         plot.new()
                         plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                         if (bottom) axis(side=1,at=x.dbh,labels=dbh.names)
-                        if (left  ) axis(side=2)
+                        if (left  ) axis(side=2,las=1)
                         box()
                         title(main=lesub)
                         if (plotgrid){
-                           abline(v=x.edge,h=axTicks(2),col=grid.colour,lty="solid")
+                           abline(v=x.edge,h=axTicks(2),col=grid.colour
+                                 ,lwd=0.75,lty="dotted")
                         }#end if (plotgrid)
                         #----- Plot the taxon rate with confidence interval. --------------#
                         epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
@@ -2046,11 +2047,12 @@ for (pl in sequence(nplaces)){
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                               if (bottom) axis(side=1,at=x.dbh,labels=dbh.names)
-                              if (left  ) axis(side=2)
+                              if (left  ) axis(side=2,las=1)
                               box()
                               title(main=lesub)
                               if (plotgrid){
-                                 abline(v=x.edge,h=axTicks(2),col=grid.colour,lty="solid")
+                                 abline(v=x.edge,h=axTicks(2),col=grid.colour
+                                       ,lwd=0.75,lty="dotted")
                               }#end if (plotgrid)
                               #----- Plot the taxon rate with confidence interval. --------#
                               epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
@@ -2259,7 +2261,7 @@ for (pl in sequence(nplaces)){
                      letitre = paste(theme.desc," - ",longname
                                     ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                      ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                     lex     = desc.unit(desc="Census year",unit=NULL)
+                     lex     = "" # desc.unit(desc="Census year",unit=NULL)
                      #---------------------------------------------------------------------#
 
 
@@ -2302,10 +2304,12 @@ for (pl in sequence(nplaces)){
                      par(mar=c(5.1,4.4,4.1,2.1))
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                     axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
-                     axis(side=2)
+                     axis.rt(side=1,at=when4,labels=when.label,las=5,off=.05)
+                     axis(side=2,las=1)
                      title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
-                     abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                     if (plotgrid){
+                        abline(v=when4,h=axTicks(2),col=grid.colour,lwd=0.75,lty="dotted")
+                     }#end if
                      box()
                      #----- Plot the confidence interval. ---------------------------------#
                      for (r in sequence(nrate+1)){
@@ -2519,10 +2523,13 @@ for (pl in sequence(nplaces)){
                            #----- Plotting window and grid. -------------------------------#
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
-                           axis(side=2)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,off=.05)
+                           axis(side=2,las=1)
                            title(main=lesub,xlab="",ylab="")
-                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                           if (plotgrid){
+                              abline(v=when4,h=axTicks(2),col=grid.colour
+                                    ,lwd=0.75,lty="dotted")
+                           }#end if
                            box()
                            #----- Plot the confidence interval. ---------------------------#
                            for (r in sequence(nrate+1)){
@@ -2544,7 +2551,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(theme.desc," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        lex     = "" # desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
 
@@ -2817,10 +2824,13 @@ for (pl in sequence(nplaces)){
                            par(mar=mar.now)
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                           if (plotgrid){
+                              abline(v=when4,h=axTicks(2),col=grid.colour
+                                    ,lwd=0.75,lty="dotted")
+                           }#end if
                            if (bottom) axis.rt(side=1,at=when4,labels=when.label
-                                              ,las=5,cex=.8,off=.05)
-                           if (left)   axis(side=2)
+                                              ,las=5,off=.05)
+                           if (left)   axis(side=2,las=1)
                            title(main=pft.label)
                            box()
                            #----- Plot the confidence interval. ---------------------------#
@@ -2844,7 +2854,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(theme.desc," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        lex     = "" # desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
 
@@ -3094,10 +3104,13 @@ for (pl in sequence(nplaces)){
                               par(mar=lo.box$mar0)
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                              abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                              if (plotgrid){
+                                 abline(v=when4,h=axTicks(2),col=grid.colour
+                                       ,lwd=0.75,lty="dotted")
+                              }#end if
                               axis.rt(side=1,at=when4,labels=when.label,las=5
-                                     ,cex=.8,off=.05)
-                              axis(side=2)
+                                     ,off=.05)
+                              axis(side=2,las=1)
                               box()
                               title(main=lesub,xlab="",ylab="")
                               #----- Plot the confidence interval. ------------------------#
@@ -3120,7 +3133,7 @@ for (pl in sequence(nplaces)){
                            letitre = paste(theme.desc," - ",longname," - ",pft.label
                                     ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                            ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                           lex     = desc.unit(desc="Census year",unit=NULL)
+                           lex     = "" # desc.unit(desc="Census year",unit=NULL)
                            #---------------------------------------------------------------#
 
 
@@ -3318,7 +3331,7 @@ for (pl in sequence(nplaces)){
                      letitre = paste(theme.desc," - ",longname
                                     ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                      ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                     lex     = desc.unit(desc="Census year",unit=NULL)
+                     lex     = "" # desc.unit(desc="Census year",unit=NULL)
                      #---------------------------------------------------------------------#
 
 
@@ -3361,10 +3374,12 @@ for (pl in sequence(nplaces)){
                      par(mar=c(5.1,4.4,4.1,2.1))
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                     axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
-                     axis(side=2)
+                     axis.rt(side=1,at=when4,labels=when.label,las=5,off=.05)
+                     axis(side=2,las=1)
                      title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
-                     abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                     if (plotgrid){
+                        abline(v=when4,h=axTicks(2),col=grid.colour,lwd=0.75,lty="dotted")
+                     }#end if
                      box()
                      #----- Plot the confidence interval. ---------------------------------#
                      for (r in sequence(nrate+1)){
@@ -3583,10 +3598,13 @@ for (pl in sequence(nplaces)){
                            par(mar=lo.box$mar0)
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
-                           axis(side=2)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,off=.05)
+                           axis(side=2,las=1)
                            title(main=lesub,xlab="",ylab="")
-                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                           if (plotgrid){
+                              abline(v=when4,h=axTicks(2),col=grid.colour
+                                    ,lwd=0.75,lty="dotted")
+                           }#end if
                            box()
                            #----- Plot the confidence interval. ---------------------------#
                            for (r in sequence(nrate+1)){
@@ -3609,7 +3627,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(theme.desc," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        lex     = "" # desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
 
@@ -3892,10 +3910,13 @@ for (pl in sequence(nplaces)){
                            par(mar=mar.now)
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                           if (plotgrid){
+                              abline(v=when4,h=axTicks(2),col=grid.colour
+                                    ,lwd=0.75,lty="dotted")
+                           }#end if
                            if (bottom) axis.rt(side=1,at=when4,labels=when.label
-                                              ,las=5,cex=.8,off=.05)
-                           if (left)   axis(side=2)
+                                              ,las=5,off=.05)
+                           if (left)   axis(side=2,las=1)
                            title(main=pft.label)
                            box()
                            #----- Plot the confidence interval. ---------------------------#
@@ -3922,7 +3943,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(theme.desc," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        lex     = "" # desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
 
@@ -4186,10 +4207,13 @@ for (pl in sequence(nplaces)){
                               #----- Plotting window and grid. ----------------------------#
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                              abline(v=when4,h=axTicks(2),col=grid.colour,lty="solid")
+                              if (plotgrid){
+                                 abline(v=when4,h=axTicks(2),col=grid.colour
+                                       ,lwd=0.75,lty="dotted")
+                              }#end if
                               axis.rt(side=1,at=when4,labels=when.label
-                                     ,las=5,cex=.8,off=.05)
-                              axis(side=2)
+                                     ,las=5,off=.05)
+                              axis(side=2,las=1)
                               box()
                               title(main=lesub,xlab="",ylab="")
                               #----- Plot the confidence interval. ------------------------#
@@ -4213,7 +4237,7 @@ for (pl in sequence(nplaces)){
                            letitre = paste(theme.desc," - ",longname," - ",pft.label
                                     ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                            ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                           lex     = desc.unit(desc="Census year",unit=NULL)
+                           lex     = "" # desc.unit(desc="Census year",unit=NULL)
                            #---------------------------------------------------------------#
 
 
@@ -4458,7 +4482,7 @@ for (pl in sequence(nplaces)){
                      letitre = paste(desc.rate," - ",longname
                                     ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                      ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
-                     lex     = desc.unit(desc="Census year",unit=NULL)
+                     lex     = "" # desc.unit(desc="Census year",unit=NULL)
                      #---------------------------------------------------------------------#
 
 
@@ -4471,9 +4495,11 @@ for (pl in sequence(nplaces)){
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                      title(main=letitre,xlab=lex,ylab=ley,log=plog,cex.main=0.7*cex.main)
-                     if (plotgrid) abline(h=axTicks(2),v=when4,col=grid.colour,lty="solid")
-                     axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
-                     axis(side=2)
+                     if (plotgrid){
+                        abline(h=axTicks(2),v=when4,col=grid.colour,lwd=0.75,lty="dotted")
+                     }#end if
+                     axis.rt(side=1,at=when4,labels=when.label,las=5,off=.05)
+                     axis(side=2,las=1)
                      #----- Plot the taxon rate with confidence interval. -----------------#
                      epolygon(x=plot.poly$x,y=plot.poly$y,col=plot.poly$col,angle=c(-45,45)
                              ,density=40,lty="solid",lwd=1.0)
@@ -4702,12 +4728,13 @@ for (pl in sequence(nplaces)){
                            #----- Plotting window and grid. -------------------------------#
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
-                           axis(side=2)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,off=.05)
+                           axis(side=2,las=1)
                            box()
                            title(main=lesub,xlab="",ylab="")
                            if (plotgrid){
-                              abline(h=axTicks(2),v=when4,col=grid.colour,lty="solid")
+                              abline(h=axTicks(2),v=when4,col=grid.colour
+                                    ,lwd=0.75,lty="dotted")
                            }#end if
                            #----- Plot the taxon rate with confidence interval. -----------#
                            epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
@@ -4728,7 +4755,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(desc.rate," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=untab$cm)
+                        lex     = "" # desc.unit(desc="Census year",unit=untab$cm)
                         #------------------------------------------------------------------#
 
 
@@ -4995,11 +5022,12 @@ for (pl in sequence(nplaces)){
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                            box()
-                           axis.rt(side=1,at=when4,labels=when.label,las=5,cex=.8,off=.05)
-                           axis(side=2)
+                           axis.rt(side=1,at=when4,labels=when.label,las=5,off=.05)
+                           axis(side=2,las=1)
                            title(main=pft.label)
                            if (plotgrid){
-                              abline(h=axTicks(2),v=when4,col=grid.colour,lty="solid")
+                              abline(h=axTicks(2),v=when4,col=grid.colour
+                                    ,lwd=0.75,lty="dotted")
                            }#end if
 
                            #----- Plot the taxon rate with confidence interval. -----------#
@@ -5022,7 +5050,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(desc.rate," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        lex     = "" # desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
 
@@ -5281,10 +5309,12 @@ for (pl in sequence(nplaces)){
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                               axis(side=1)
-                              axis(side=2)
+                              axis(side=2,las=1)
                               box()
                               title(main=lesub,xlab="",ylab="")
-                              if (plotgrid) grid(col=grid.colour,lty="solid")
+                              if (plotgrid){
+                                 grid(col=grid.colour,lwd=0.75,lty="dotted")
+                              }#end if
                               #----- Plot the taxon rate with confidence interval. --------#
                               epolygon(x=size.poly$x,y=size.poly$y,col=size.poly$col
                                       ,angle=c(-45,45),density=40,lty="solid",lwd=1.0)
@@ -5304,7 +5334,7 @@ for (pl in sequence(nplaces)){
                            letitre = paste(desc.rate," - ",longname," - ",pft.label
                                           ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                            ley     = desc.unit(desc=desc.rate,unit=unit.rate[i])
-                           lex     = desc.unit(desc="Census year",unit=untab$cm)
+                           lex     = "" # desc.unit(desc="Census year",unit=untab$cm)
                            #---------------------------------------------------------------#
 
 
@@ -5485,7 +5515,7 @@ for (pl in sequence(nplaces)){
                      letitre = paste(theme.desc," - ",longname
                                     ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                      ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                     lex     = desc.unit(desc="Census year",unit=NULL)
+                     lex     = "" # desc.unit(desc="Census year",unit=NULL)
                      #---------------------------------------------------------------------#
 
 
@@ -5522,9 +5552,12 @@ for (pl in sequence(nplaces)){
                      par(mar=c(5.1,4.4,4.1,2.1))
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
-                     axis.rt(side=1,at=x.bounds,labels=when.label,las=5,cex=.8,off=.05)
-                     axis(side=2)
-                     abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                     axis.rt(side=1,at=x.bounds,labels=when.label,las=5,off=.05)
+                     axis(side=2,las=1)
+                     if (plotgrid){
+                        abline(v=x.bounds,h=axTicks(2),col=grid.colour
+                              ,lwd=0.75,lty="dotted")
+                     }#end if
                      box()
                      title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.ptsz)
                      #---------------------------------------------------------------------#
@@ -5744,9 +5777,11 @@ for (pl in sequence(nplaces)){
                            plot.new()
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
                            axis.rt(side=1,at=x.bounds,labels=when.label
-                                  ,las=5,cex=.8,off=.05)
-                           axis(side=2)
-                           abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                                  ,las=5,off=.05)
+                           axis(side=2,las=1)
+                           if (plotgrid){
+                              abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="dotted")
+                           }#end if
                            box()
                            title(main=lesub,xlab="",ylab="")
                            #---------------------------------------------------------------#
@@ -5787,7 +5822,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(theme.desc," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        lex     = "" # desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
 
@@ -6013,9 +6048,12 @@ for (pl in sequence(nplaces)){
                            plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
                            box()
                            axis.rt(side=1,at=x.bounds,labels=when.label
-                                  ,las=5,cex=.8,off=.05)
-                           axis(side=2)
-                           abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                                  ,las=5,off=.05)
+                           axis(side=2,las=1)
+                           if (plotgrid){
+                              abline(v=x.bounds,h=axTicks(2),col=grid.colour
+                                    ,lwd=0.75,lty="dotted")
+                           }#end if
                            title(main=pft.label)
                            #---------------------------------------------------------------#
 
@@ -6060,7 +6098,7 @@ for (pl in sequence(nplaces)){
                         letitre = paste(theme.desc," - ",longname
                                        ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                         ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                        lex     = desc.unit(desc="Census year",unit=NULL)
+                        lex     = "" # desc.unit(desc="Census year",unit=NULL)
                         #------------------------------------------------------------------#
 
 
@@ -6272,9 +6310,12 @@ for (pl in sequence(nplaces)){
                               plot.new()
                               plot.window(xlim=xlimit,ylim=ylimit,log=plog,yaxs="i")
                               axis.rt(side=1,at=x.bounds,labels=when.label
-                                     ,las=5,cex=.8,off=.05)
-                              axis(side=2)
-                              abline(v=x.bounds,h=axTicks(2),col=grid.colour,lty="solid")
+                                     ,las=5,off=.05)
+                              axis(side=2,las=1)
+                              if (plotgrid){
+                                 abline(v=x.bounds,h=axTicks(2),col=grid.colour
+                                       ,lwd=0.75,lty="dotted")
+                              }#end if
                               box()
                               title(main=lesub,xlab="",ylab="")
                               #------------------------------------------------------------#
@@ -6316,7 +6357,7 @@ for (pl in sequence(nplaces)){
                            letitre = paste(theme.desc," - ",longname," - ",pft.label
                                     ,"\n",iphen.desc[ph]," - ",tfall.desc[tf],sep="")
                            ley     = desc.unit(desc=theme.desc,unit=unit.rate[i])
-                           lex     = desc.unit(desc="Census year",unit=NULL)
+                           lex     = "" # desc.unit(desc="Census year",unit=NULL)
                            #---------------------------------------------------------------#
 
 

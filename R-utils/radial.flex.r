@@ -17,6 +17,7 @@ radial.flex <<- function ( lengths
                          , start            = 0
                          , clockwise        = FALSE
                          , rp.type          = "r"
+                         , pt.type          = "p"
                          , label.prop       = 1.15
                          , main             = ""
                          , xlab             = ""
@@ -208,7 +209,7 @@ radial.flex <<- function ( lengths
          polygon(xpos,ypos,border=linecol,col=polycol,lty=ltype,lwd=lwidth,...)
       }#end if
       if (match("s", rptype, 0)){
-         points(xpos,ypos,pch=pointsymbols,col=pointcol,...)
+         points(xpos,ypos,pch=pointsymbols,col=pointcol,type=pt.type,...)
       }#end if
       #------------------------------------------------------------------------------------#
 

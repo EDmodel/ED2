@@ -52,13 +52,13 @@ rdata.path       = file.path(here,"RData_scenario") # Path with R object.
 #  NA    -- plot only the first   (debugging only).                                        #
 #  FALSE -- skip them altogether                                                           #
 #------------------------------------------------------------------------------------------#
-plot.panel       = c(FALSE,TRUE,NA)[2]
+plot.panel       = c(FALSE,TRUE,NA)[1]
 plot.tseries     = c(FALSE,TRUE,NA)[1]
 plot.szpft       = c(FALSE,TRUE,NA)[2]
 plot.barplot     = c(FALSE,TRUE,NA)[2]
 plot.xyzvars     = c(FALSE,TRUE,NA)[1]
-plot.scencomp    = c(FALSE,TRUE,NA)[2]
-plot.panelbox    = c(FALSE,TRUE,NA)[2]
+plot.scencomp    = c(FALSE,TRUE,NA)[1]
+plot.panelbox    = c(FALSE,TRUE,NA)[1]
 plot.panelxyz    = c(FALSE,TRUE,NA)[2]
 #------------------------------------------------------------------------------------------#
 
@@ -271,7 +271,7 @@ byeold         = TRUE                  # Remove old files of the given format?
 depth          = 96                    # PNG resolution, in pixels per inch
 paper          = "letter"              # Paper size, to define the plot shape
 wpaper         = "long"                # Paper size for wide plots.
-ptsz           = 16                    # Font size.
+ptsz           = 18                    # Font size.
 lwidth         = 2.5                   # Line width
 plotgrid       = TRUE                  # Should I plot the grid in the background? 
 
@@ -2190,10 +2190,10 @@ for (g in loop.global){
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                      if (bottom) axis(side=1)
-                     if (left  ) axis(side=2)
+                     if (left  ) axis(side=2,las=1)
                      box()
                      title(main=lesub,line=0.5)
-                     if (plotgrid) grid(col=grid.colour,lty="solid")
+                     if (plotgrid) grid(col=grid.colour,lty="dotted")
 
                      #----- Plot the lines. -----------------------------------------------#
                      for (n in 1:n.now){
@@ -2331,10 +2331,10 @@ for (g in loop.global){
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit)
                   axis(side=1)
-                  axis(side=2)
+                  axis(side=2,las=1)
                   box()
                   title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.ptsz)
-                  if (plotgrid) grid(col=grid.colour,lty="solid")
+                  if (plotgrid) grid(col=grid.colour,lty="dotted")
                   #------------------------------------------------------------------------#
 
 
@@ -2517,10 +2517,10 @@ for (g in loop.global){
                         plot.new()
                         plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                         if (bottom) axis(side=1)
-                        if (left  ) axis(side=2)
+                        if (left  ) axis(side=2,las=1)
                         box()
                         title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                        if (plotgrid) grid(col=grid.colour,lty="solid")
+                        if (plotgrid) grid(col=grid.colour,lty="dotted")
 
                         #----- Plot the lines. --------------------------------------------#
                         for (n in 1:n.now){
@@ -2681,10 +2681,10 @@ for (g in loop.global){
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                      if (bottom) axis(side=1)
-                     if (left  ) axis(side=2)
+                     if (left  ) axis(side=2,las=1)
                      box()
                      title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                     if (plotgrid) grid(col=grid.colour,lty="solid")
+                     if (plotgrid) grid(col=grid.colour,lty="dotted")
 
                      #----- Plot the lines. -----------------------------------------------#
                      for (n in 1:n.now){
@@ -2886,10 +2886,10 @@ for (g in loop.global){
                         plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n"
                                    ,log=var.xylog.dbh)
                         if (bottom) axis(side=1)
-                        if (left  ) axis(side=2)
+                        if (left  ) axis(side=2,las=1)
                         box()
                         title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                        if (plotgrid) grid(col=grid.colour,lty="solid")
+                        if (plotgrid) grid(col=grid.colour,lty="dotted")
 
                         #----- Plot the lines. --------------------------------------------#
                         for (n in 1:n.now){
@@ -3051,10 +3051,10 @@ for (g in loop.global){
                      plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n"
                                 ,log=var.xylog.dbh)
                      if (bottom) axis(side=1)
-                     if (left  ) axis(side=2)
+                     if (left  ) axis(side=2,las=1)
                      box()
                      title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                     if (plotgrid) grid(col=grid.colour,lty="solid")
+                     if (plotgrid) grid(col=grid.colour,lty="dotted")
 
                      #----- Plot the lines. -----------------------------------------------#
                      for (n in 1:n.now){
@@ -3231,10 +3231,10 @@ for (g in loop.global){
                         plot.new()
                         plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n",log=var.xylog)
                         if (bottom) axis(side=1)
-                        if (left  ) axis(side=2)
+                        if (left  ) axis(side=2,las=1)
                         box()
                         title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                        if (plotgrid) grid(col=grid.colour,lty="solid")
+                        if (plotgrid) grid(col=grid.colour,lty="dotted")
 
                         #----- Plot the lines. --------------------------------------------#
                         for (n in 1:n.now){
@@ -3474,11 +3474,11 @@ for (g in loop.global){
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                      if (bottom) axis(side=1,at=xat,labels=now$label)
-                     if (left  ) axis(side=2)
+                     if (left  ) axis(side=2,las=1)
                      box()
                      title(main=lesub,cex.main=cex.ptsz,line=0.5)
                      if (plotgrid){
-                        abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                        abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
                      }#end if
 
                      #----- Add the box plot, without the x axis. -------------------------#
@@ -3598,10 +3598,10 @@ for (g in loop.global){
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                   axis(side=1,at=xat,labels=now$label)
-                  axis(side=2)
+                  axis(side=2,las=1)
                   box()
                   title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.ptsz)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
                   #----- Add the box plot, without the x axis. ----------------------------#
                   boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
                          ,yaxt="n")
@@ -3814,10 +3814,10 @@ for (g in loop.global){
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                      if (bottom) axis(side=1,at=xat,labels=pft.key[pft.bp])
-                     if (left  ) axis(side=2)
+                     if (left  ) axis(side=2,las=1)
                      box()
                      title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
 
                      #----- Add the box plot, without the x axis. -------------------------#
                      boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
@@ -3969,10 +3969,10 @@ for (g in loop.global){
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                   axis(side=1,at=xat,labels=pft.key[pft.bp])
-                  axis(side=2)
+                  axis(side=2,las=1)
                   box()
                   title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.ptsz)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
                   #----- Add the box plot, without the x axis. ----------------------------#
                   boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
                          ,yaxt="n")
@@ -4183,10 +4183,10 @@ for (g in loop.global){
                      plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n"
                                 ,log=var.xylog.dbh)
                      if (bottom) axis(side=1,at=xat,labels=dbh.bp.key)
-                     if (left  ) axis(side=2)
+                     if (left  ) axis(side=2,las=1)
                      box()
                      title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
 
                      #----- Add the box plot, without the x axis. -------------------------#
                      boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
@@ -4340,10 +4340,10 @@ for (g in loop.global){
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n",log=var.xylog.dbh)
                   axis(side=1,at=xat,labels=dbh.bp.key)
-                  axis(side=2)
+                  axis(side=2,las=1)
                   box()
                   title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.ptsz)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
 
                   #----- Add the box plot, without the x axis. ----------------------------#
                   boxplot(x=bp.plot,col=bp.colour,notch=notch,add=TRUE,show.names=FALSE
@@ -4568,11 +4568,11 @@ for (g in loop.global){
                         plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n"
                                    ,log=var.xylog.dbh)
                         if (bottom) axis(side=1,at=xat,labels=dbh.bp.key)
-                        if (left  ) axis(side=2)
+                        if (left  ) axis(side=2,las=1)
                         box()
                         title(main=lesub,cex.main=cex.ptsz,line=0.5)
                         if (plotgrid){
-                           abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                           abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="dotted")
                         }#end if
 
                         #----- Add the box plot, without the x axis. ----------------------#
@@ -4901,10 +4901,11 @@ for (g in loop.global){
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                      if (bottom) axis(side=1,at=xat,labels=dbh.key)
-                     if (left  ) axis(side=2)
+                     if (left  ) axis(side=2,las=1)
                      box()
                      title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                     if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                     if (plotgrid) abline(h=axTicks(2),col=grid.colour,lty="dotted")
+                     if (plotgrid) abline(v=xgrid,col=grid.colour,lty="solid")
                      #---------------------------------------------------------------------#
 
 
@@ -5090,10 +5091,11 @@ for (g in loop.global){
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
                   axis(side=1,at=xat,labels=dbh.key)
-                  axis(side=2)
+                  axis(side=2,las=1)
                   box()
                   title(main=letitre,xlab=lex,ylab=ley,cex.main=cex.ptsz)
-                  if (plotgrid) abline(v=xgrid,h=axTicks(2),col=grid.colour,lty="solid")
+                  if (plotgrid) abline(h=axTicks(2),col=grid.colour,lty="dotted")
+                  if (plotgrid) abline(v=xgrid,col=grid.colour,lty="solid")
                   #------------------------------------------------------------------------#
 
 
@@ -5468,7 +5470,7 @@ for (g in loop.global){
                                                           , cex.main  = 1.1 * cex.ptsz
                                                           )#end list
                                    , xyz.more       = list(grid=list(col=grid.colour
-                                                                    ,lty="solid"))
+                                                                    ,lty="dotted"))
                                    , key.log        = z.plog
                                    , key.title      = list(main=lacle,cex.main=.8*cex.main)
                                    , xyz.legend     = list( x      = "bottom"
@@ -5593,7 +5595,7 @@ for (g in loop.global){
                                                           )#end list
                                    , xyz.sub        = pft.desc[pft.mp]
                                    , xyz.more       = list(grid=list(col=grid.colour
-                                                                    ,lty="solid"))
+                                                                    ,lty="dotted"))
                                    , key.log        = z.plog
                                    , key.title      = list(main=lacle,cex.main=.8*cex.main)
                                    , xyz.legend     = list( x       = "bottom"
@@ -5716,7 +5718,7 @@ for (g in loop.global){
                                                           )#end list
                                    , xyz.sub        = dbh.desc[dbh.mp]
                                    , xyz.more       = list(grid=list(col=grid.colour
-                                                                    ,lty="solid"))
+                                                                    ,lty="dotted"))
                                    , key.log        = z.plog.dbh
                                    , key.title      = list(main=lacle,cex.main=.8*cex.main)
                                    , xyz.legend     = list( x       = "bottom"
@@ -5867,7 +5869,7 @@ for (g in loop.global){
                                                                 )#end list
                                          , xyz.sub        = pft.desc[pft.mp]
                                          , xyz.more       = list(grid=list(col=grid.colour
-                                                                          ,lty="solid"))
+                                                                          ,lty="dotted"))
                                          , key.log        = z.plog.dbh
                                          , key.title      = list(main=lacle
                                                                 ,cex.main=0.8*cex.main)
@@ -6262,9 +6264,9 @@ for (g in loop.global){
                      plot.new()
                      plot.window(xlim=xlimit,ylim=ylimit)
                      if (bottom) axis(side=1,at=x.value,labels=x.label)
-                     if (left)   axis(side=2)
+                     if (left)   axis(side=2,las=1)
                      box()
-                     grid(col=grid.colour,lty="solid")
+                     grid(col=grid.colour,lty="dotted")
                      title(main=lesub,cex.main=cex.ptsz,line=0.5)
                      abline(h=0,v=0,col=foreground,lty="dotdash",lwd=2.0)
                      for (n in 1:n.now){
@@ -6636,9 +6638,9 @@ for (g in loop.global){
                         plot.new()
                         plot.window(xlim=xlimit,ylim=ylimit)
                         if (bottom) axis(side=1,at=x.value,labels=x.label)
-                        if (left)   axis(side=2)
+                        if (left)   axis(side=2,las=1)
                         box()
-                        grid(col=grid.colour,lty="solid")
+                        grid(col=grid.colour,lty="dotted")
                         title(main=lesub,cex.main=cex.ptsz,line=0.5)
                         abline(h=0,v=0,col=foreground,lty="dotdash",lwd=2.0)
                         for (n in 1:n.now){
@@ -7013,9 +7015,9 @@ for (g in loop.global){
                         plot.new()
                         plot.window(xlim=xlimit,ylim=ylimit)
                         if (bottom) axis(side=1,at=x.value,labels=x.label)
-                        if (left)   axis(side=2)
+                        if (left)   axis(side=2,las=1)
                         box()
-                        grid(col=grid.colour,lty="solid")
+                        grid(col=grid.colour,lty="dotted")
                         title(main=lesub,cex.main=cex.ptsz,line=0.5)
                         abline(h=0,v=0,col=foreground,lty="dotdash",lwd=2.0)
                         for (n in 1:n.now){
@@ -7281,7 +7283,7 @@ for (g in loop.global){
          #---------------------------------------------------------------------------------#
          #      Plot the data by season.                                                   #
          #---------------------------------------------------------------------------------#
-         for (e in 1:n.season){
+         for (e in sequence(n.season)){
             #------------------------------------------------------------------------------#
             #     Keep the current season only.                                            #
             #------------------------------------------------------------------------------#
@@ -7316,7 +7318,7 @@ for (g in loop.global){
             #------------------------------------------------------------------------------#
             #     Loop over all output formats.                                            #
             #------------------------------------------------------------------------------#
-            for (o in 1:nout){
+            for (o in sequence(nout)){
                #----- Get the path and create file name. ----------------------------------#
                if ( e == n.season){
                   now.outpath  = outpath[[o]]$global[[g]]$panelbox.year
@@ -7358,7 +7360,7 @@ for (g in loop.global){
                #      Split the plotting window.                                           #
                #---------------------------------------------------------------------------#
                par(par.user)
-               par(oma = c(0.2,3,4.5,0))
+               par(oma = c(0.2,3,4.5,0.2))
                layout( mat     = rbind(lo.panel$mat.off,rep(1,times=lo.panel$ncol))
                      , heights = c(rep(5/lo.panel$nrow,lo.panel$nrow),1)
                      )#end layout
@@ -7398,11 +7400,11 @@ for (g in loop.global){
                   #------------------------------------------------------------------------#
                   #     Find out where is this box going, and set up axes and margins.     #
                   #------------------------------------------------------------------------#
-                  left    = (p %% lo.panel$ncol) == 1
-                  right   = (p %% lo.panel$ncol) == 0
-                  top     = p <= lo.panel$ncol
-                  bottom  = p > (lo.panel$nrow - 1) * lo.panel$ncol
-                  mar.now = c(1 + 4*bottom,1 + 3*left,1 + 4*top,1 + 3*right) + 0.1
+                  left    = lo.panel$left  [p]
+                  right   = lo.panel$right [p]
+                  top     = lo.panel$top   [p]
+                  bottom  = lo.panel$bottom[p]
+                  mar.now = lo.panel$mar0  
                   #------------------------------------------------------------------------#
 
 
@@ -7431,11 +7433,11 @@ for (g in loop.global){
                   par(mar = mar.now)
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit,xaxt="n",yaxt="n")
-                  if (bottom) axis(side=1,at=xat,labels=sc1$label)
-                  if (left)   axis(side=2)
+                  axis(side=1,at=xat,labels=sc1$label)
+                  axis(side=2,las=1)
                   box()
                   title(main=lesub,cex.main=cex.ptsz,line=0.5)
-                  if (plotgrid) abline(h=axTicks(2),col=grid.colour,lty="solid")
+                  #if (plotgrid) abline(h=axTicks(2),col=grid.colour,lty="dotted")
                   if (plotgrid) abline(v=xgrid,col=grey.fg,lty="solid")
 
                   #----- Add the box plot, without the x axis. ----------------------------#
@@ -7803,7 +7805,7 @@ for (g in loop.global){
                                 , fixed.xlim     = TRUE
                                 , fixed.ylim     = TRUE
                                 , xy.log         = xy.plog
-                                , pch            = pch.list
+                                , pch            = 4 # pch.list
                                 , cex            = 1.2
                                 , nlevels        = n.colourbar
                                 , colour.palette = z.cscheme
@@ -7816,21 +7818,21 @@ for (g in loop.global){
                                                        , cex.main  = 1.1 * cex.ptsz
                                                        )#end list
                                 , xyz.more       = list(grid=list(col=grid.colour
-                                                                 ,lty="solid"))
+                                                                 ,lty="dotted"))
                                 , key.log        = z.plog.xyz
                                 , key.title      = list(main=lacle,cex.main=0.8*cex.main)
-                                , xyz.legend     = list( x      = "bottom"
-                                                       , inset  = 0.0
-                                                       , legend = leg.legend
-                                                       , pch    = now$pch
-                                                       , col    = grey.fg
-                                                       , border = foreground
-                                                       , bg     = background
-                                                       , ncol   = leg.ncol
-                                                       , title  = leg.letitre
-                                                       , cex    = 1.0
-                                                       , xpd    = TRUE
-                                                       )#end legend
+                                # , xyz.legend     = list( x      = "bottom"
+                                #                        , inset  = 0.0
+                                #                        , legend = leg.legend
+                                #                        , pch    = now$pch
+                                #                        , col    = grey.fg
+                                #                        , border = foreground
+                                #                        , bg     = background
+                                #                        , ncol   = leg.ncol
+                                #                        , title  = leg.letitre
+                                #                        , cex    = 1.0
+                                #                        , xpd    = TRUE
+                                #                        )#end legend
                                 )#end xyz.plot
                         #------------------------------------------------------------------#
 
