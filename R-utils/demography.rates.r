@@ -52,6 +52,7 @@ recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime,R=1
    #---------------------------------------------------------------------------------------#
 
 
+
    #---------------------------------------------------------------------------------------#
    #      Convert N.tx and E.tx to lists, and find the median.  In case none of the        #
    # trees were established or all of them were established, we add two trees with         #
@@ -106,7 +107,9 @@ recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime,R=1
                                      )#end mapply
                        , FUN = data.frame
                        )#end lapply
-   boot.tx     = lapply(X= datum.tx,FUN=boot,statistic=boot.recruit,R=R,dtime=dtime)
+   
+   boot.tx     = try(lapply(X= datum.tx,FUN=boot,statistic=boot.recruit,R=R,dtime=dtime))
+   if ("try-error" %in% is(boot.tx)) browser()
    expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
    q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
    q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")

@@ -229,7 +229,7 @@ skill.plot  <<- function ( obs
    skill$sigma.obs     = sd    (x = obs            , na.rm = TRUE)
    skill$sigma.mod     = sapply(X = mod, FUN = sd  , na.rm = TRUE)
    skill$sigma.res     = sapply(X = res, FUN = sd  , na.rm = TRUE)
-   skill$rmse          = sqrt(skill$mean.res^2 + skill$sigma.res^2)
+   skill$rmse          = sqrt(skill$mean.res^2 + (n.mod - 1) * skill$sigma.res^2 / n.mod)
    skill$df.obs        = n.obs - 1
    skill$df.mod        = ifelse( is.null(n.parms), n.mod - 1,n.mod-n.parms)
    skill$r.squared     = 1. - ( skill$sigma.res / skill$sigma.obs ) ^ 2

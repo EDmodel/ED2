@@ -2226,6 +2226,11 @@ $ED2_INFO
    !               b. Balive is retuned, using a few leaf biomass allometric equations for !
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
+   !           3.  Similar to 2, except that tropical leaf biomass is estimated from       !
+   !                  Lescure et al. (1983), and PFT differences on bleaf are based on SLA !
+   !                  instead of wood density.  Also, the leaf allometry is split into     !
+   !                  small classes ("saplings") and large classes ("trees"), like in Cole !
+   !                  and Ewel (2006).                                                     !
    !---------------------------------------------------------------------------------------!
    IALLOM          = 2,
    !---------------------------------------------------------------------------------------!

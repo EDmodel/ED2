@@ -1617,7 +1617,7 @@ subroutine init_pft_photo_params()
       select case (iallom)
       case (0,1)
          ssfact = 3.0
-      case (2)
+      case default
          ssfact = 3.0
       end select
    end select
@@ -2137,6 +2137,9 @@ subroutine init_pft_mort_params()
    real     :: lambda_eff
    real     :: leff_neg
    real     :: leff_pos
+   real     :: m3_slope
+   real     :: m3_scale
+   real     :: tdr_default
    !---------------------------------------------------------------------------------------!
 
 
@@ -2189,46 +2192,36 @@ subroutine init_pft_mort_params()
    mort2(17) = 10.0 ! 20.0
 
    !---------------------------------------------------------------------------------------!
-   !     This variable controls the density-independent mortality rate due to ageing.      !
+   !     Variable mort3 controls the density-independent mortality rate due to ageing.     !
    ! This value is a constant in units of [fraction/year].                                 !
    !---------------------------------------------------------------------------------------!
-   if (treefall_disturbance_rate > 0.) then
-      mort3(1)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(1) / rho(4)) ) / 0.014
-      mort3(2)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(2) / rho(4)) ) / 0.014
-      mort3(3)  = treefall_disturbance_rate * ( 0.15 * (1. - rho(3) / rho(4)) ) / 0.014
-      mort3(4)  = 0.0
-      mort3(5)  = 0.066
-      mort3(6)  = 0.0033928
-      mort3(7)  = 0.0043
-      mort3(8)  = 0.0023568
-      mort3(9)  = 0.006144
-      mort3(10) = 0.003808
-      mort3(11) = 0.00428
-      mort3(12) = 0.066
-      mort3(13) = 0.066
-      mort3(14) = treefall_disturbance_rate * ( 0.15 * (1. - rho(14) / rho(4)) ) / 0.014
-      mort3(15) = treefall_disturbance_rate * ( 0.15 * (1. - rho(15) / rho(4)) ) / 0.014
-      mort3(16) = treefall_disturbance_rate * ( 0.15 * (1. - rho(16) / rho(4)) ) / 0.014
-      mort3(17) = 0.0043 ! Same as pines
+   if (treefall_disturbance_rate >= 0.) then
+      tdr_default               = 0.014
+      m3_slope                  = 0.15
+      m3_scale                  = treefall_disturbance_rate / tdr_default
    else
-      mort3(1)  = 0.15 * (1. - rho(1) / rho(4))
-      mort3(2)  = 0.15 * (1. - rho(2) / rho(4))
-      mort3(3)  = 0.15 * (1. - rho(3) / rho(4))
-      mort3(4)  = 0.0
-      mort3(5)  = 0.066
-      mort3(6)  = 0.0033928
-      mort3(7)  = 0.0043
-      mort3(8)  = 0.0023568
-      mort3(9)  = 0.006144
-      mort3(10) = 0.003808
-      mort3(11) = 0.00428
-      mort3(12) = 0.066
-      mort3(13) = 0.066
-      mort3(14) = 0.15 * (1. - rho(14) / rho(4))
-      mort3(15) = 0.15 * (1. - rho(15) / rho(4))
-      mort3(16) = 0.15 * (1. - rho(16) / rho(4))
-      mort3(17) = 0.0043 ! Same as pines
+      treefall_disturbance_rate = abs(treefall_disturbance_rate)
+      tdr_default               = 0.01137329
+      m3_slope                  = 0.02939297
+      m3_scale                  = treefall_disturbance_rate / tdr_default
    end if
+   mort3(1)  = m3_scale * ( m3_slope * (1. - rho( 1) / rho( 4)) )
+   mort3(2)  = m3_scale * ( m3_slope * (1. - rho( 2) / rho( 4)) )
+   mort3(3)  = m3_scale * ( m3_slope * (1. - rho( 3) / rho( 4)) )
+   mort3(4)  = 0.0
+   mort3(5)  = 0.066
+   mort3(6)  = 0.0033928
+   mort3(7)  = 0.0043
+   mort3(8)  = 0.0023568
+   mort3(9)  = 0.006144
+   mort3(10) = 0.003808
+   mort3(11) = 0.00428
+   mort3(12) = 0.066
+   mort3(13) = 0.066
+   mort3(14) = m3_scale * ( m3_slope * (1. - rho(14) / rho( 4)) )
+   mort3(15) = m3_scale * ( m3_slope * (1. - rho(15) / rho( 4)) )
+   mort3(16) = m3_scale * ( m3_slope * (1. - rho(16) / rho( 4)) )
+   mort3(17) = 0.0043 ! Same as pines
    !---------------------------------------------------------------------------------------!
 
 
@@ -2253,7 +2246,7 @@ subroutine init_pft_mort_params()
       lambda_eff  = 0.
 
    else
-      lambda_ref = abs(treefall_disturbance_rate)
+      lambda_ref = treefall_disturbance_rate
 
       if (time2canopy > 0.) then
          !---------------------------------------------------------------------------------!
@@ -2301,32 +2294,6 @@ subroutine init_pft_mort_params()
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !     Here we check whether patches should be created or the treefall should affect     !
-   ! only the mortality or it should create patches.                                       !
-   !                                                                                       !
-   ! 1.  Setting TREEFALL_DISTURBANCE_RATE < 0 won't be the actual size-structured         !
-   !     approximation, since fires and anthropogenic disturbance will still create        !
-   !     patches.  For a true size-structured approximation, set MAXPATCH=1 and do not     !
-   !     run with anthropogenic disturbance.                                               !
-   ! 2.  Big leaf is no longer treated as the negative case.  Disturbance rates are now    !
-   !     included in the 5th mortality type (which may be either treefall or fire), and    !
-   !     applied to the population in growth_balive.f90.                                   !
-   !---------------------------------------------------------------------------------------!
-   if (ibigleaf == 1 .or. treefall_disturbance_rate >= 0.) then
-      treefall_disturbance_rate = lambda_eff
-   else
-      !------------------------------------------------------------------------------------!
-      !      We incorporate the disturbance rate into the density-independent mortality    !
-      ! rate and turn off the patch-creating treefall disturbance.                         !
-      !------------------------------------------------------------------------------------!
-      mort3(:)                  = mort3(:) + lambda_eff
-      treefall_disturbance_rate = 0.
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -2351,7 +2318,7 @@ subroutine init_pft_mort_params()
          seedling_mortality(9:11)  = onethird
          seedling_mortality(12:16) = 0.9500
          seedling_mortality(17)    = onethird
-      case (2)
+      case default
          seedling_mortality(1)     = 0.9500
          seedling_mortality(2:4)   = 0.4000
          seedling_mortality(5)     = 0.9500
@@ -2440,8 +2407,10 @@ subroutine init_pft_alloc_params()
                            , min_dbh               & ! intent(out)
                            , dbh_crit              & ! intent(out)
                            , dbh_bigleaf           & ! intent(out)
+                           , dbh_adult             & ! intent(out)
                            , min_bdead             & ! intent(out)
                            , bdead_crit            & ! intent(out)
+                           , bleaf_adult           & ! intent(out)
                            , b1Ht                  & ! intent(out)
                            , b2Ht                  & ! intent(out)
                            , b1Bs_small            & ! intent(out)
@@ -2454,8 +2423,10 @@ subroutine init_pft_alloc_params()
                            , b2Rd                  & ! intent(out)
                            , b1Vol                 & ! intent(out)
                            , b2Vol                 & ! intent(out)
-                           , b1Bl                  & ! intent(out)
-                           , b2Bl                  & ! intent(out)
+                           , b1Bl_small            & ! intent(out)
+                           , b2Bl_small            & ! intent(out)
+                           , b1Bl_large            & ! intent(out)
+                           , b2Bl_large            & ! intent(out)
                            , b1WAI                 & ! intent(out)
                            , b2WAI                 & ! intent(out)
                            , C2B                   & ! intent(out)
@@ -2484,6 +2455,7 @@ subroutine init_pft_alloc_params()
    real                              :: init_density_grass
    real                              :: init_bleaf
    logical                           :: write_allom
+   real                              :: bleaf_sapling
    !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    real                  , parameter :: a1          =  -1.981
    real                  , parameter :: b1          =   1.047
@@ -2755,7 +2727,7 @@ subroutine init_pft_alloc_params()
             ! hgt_ref(ipft) = 0.0
          end if
       end do
-   case (2)
+   case default
       !------------------------------------------------------------------------------------!
       !     Use the allometry proposed by:                                                 !
       !                                                                                    !
@@ -2820,10 +2792,13 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------! 
    !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
    !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
+   !   DBH_ADULT   -- minimum DBH for the tree to be considered adult (used only when      !
+   !                  IALLOM = 3 and PFT is tropical).                                     !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
       dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
+      dbh_adult  (ipft) = 10.0
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -2854,7 +2829,7 @@ subroutine init_pft_alloc_params()
       dbh_bigleaf(15) = dbh_crit(15)
       dbh_bigleaf(16) = dbh_crit(16)
       dbh_bigleaf(17) = dbh_crit(17)
-   case (2)
+   case default
       dbh_bigleaf( 1) = dbh_crit( 1)
       dbh_bigleaf( 2) = 29.69716
       dbh_bigleaf( 3) = 31.41038
@@ -2882,31 +2857,34 @@ subroutine init_pft_alloc_params()
    ! size-and-age structure case, but we may overwrite them depending on the allometry.    !
    !---------------------------------------------------------------------------------------!
    !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
-   b1Bl(1:4)   = 0.0
-   b1Bl(5)     = 0.08
-   b1Bl(6)     = 0.024
-   b1Bl(7)     = 0.024
-   b1Bl(8)     = 0.0454
-   b1Bl(9)     = 0.0129
-   b1Bl(10)    = 0.048
-   b1Bl(11)    = 0.017
-   b1Bl(12:13) = 0.08
-   b1Bl(14:15) = 0.0
-   b1Bl(16)    = 0.0
-   b1Bl(17)    = 0.0
+   b1Bl_small(1:4)   = 0.0
+   b1Bl_small(5)     = 0.08
+   b1Bl_small(6)     = 0.024
+   b1Bl_small(7)     = 0.024
+   b1Bl_small(8)     = 0.0454
+   b1Bl_small(9)     = 0.0129
+   b1Bl_small(10)    = 0.048
+   b1Bl_small(11)    = 0.017
+   b1Bl_small(12:13) = 0.08
+   b1Bl_small(14:15) = 0.0
+   b1Bl_small(16)    = 0.0
+   b1Bl_small(17)    = 0.0
    !-----  DBH-leaf allometry slope [dimensionless]. --------------------------------------!
-   b2Bl(1:4)   = 0.0
-   b2Bl(5)     = 1.0
-   b2Bl(6)     = 1.899
-   b2Bl(7)     = 1.899
-   b2Bl(8)     = 1.6829
-   b2Bl(9)     = 1.7477
-   b2Bl(10)    = 1.455
-   b2Bl(11)    = 1.731
-   b2Bl(12:13) = 1.0
-   b2Bl(14:15) = 0.0
-   b2Bl(16)    = 0.0
-   b2Bl(17)    = 0.0
+   b2Bl_small(1:4)   = 0.0
+   b2Bl_small(5)     = 1.0
+   b2Bl_small(6)     = 1.899
+   b2Bl_small(7)     = 1.899
+   b2Bl_small(8)     = 1.6829
+   b2Bl_small(9)     = 1.7477
+   b2Bl_small(10)    = 1.455
+   b2Bl_small(11)    = 1.731
+   b2Bl_small(12:13) = 1.0
+   b2Bl_small(14:15) = 0.0
+   b2Bl_small(16)    = 0.0
+   b2Bl_small(17)    = 0.0
+   !----- The default coefficients for large trees are the same as the small ones. --------!
+   b1Bl_large(:)     = b1Bl_small(:)
+   b2Bl_large(:)     = b2Bl_small(:)
    !---------------------------------------------------------------------------------------!
 
    !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
@@ -2914,17 +2892,68 @@ subroutine init_pft_alloc_params()
       if (is_tropical(ipft)) then
          select case(iallom)
          case (0,1)
-            !---- ED-2.1 allometry. -------------------------------------------------------!
-            b1Bl(ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
-            aux        = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))          &
-                       * (d2l - d1l)) * (1.0/log(dcrit))
-            b2Bl(ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+            !------------------------------------------------------------------------------!
+            !      ED-2.0 allometry, based on:                                             !
+            !                                                                              !
+            !   Saldarriaga, J. G., D. C. West, M. L. Tharp, and C. Uhl.  Long-term        !
+            !      chronosequence of forest succession in the upper Rio Negro of Colombia  !
+            !      and Venezuela.  J. Ecol., 76, 4, 938-958, 1988.                         !
+            !------------------------------------------------------------------------------!
+            b1Bl_small (ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
+            aux               = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))   &
+                                * (d2l - d1l) ) * (1.0/log(dcrit))
+            b2Bl_small (ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+            b1Bl_large (ipft) = b1Bl_small(ipft)
+            b2Bl_large (ipft) = b2Bl_small(ipft)
+            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            !------------------------------------------------------------------------------!
          case (2)
-            !---- Based on modified Chave et al. (2001) allometry. ------------------------!
-            b1Bl(ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
-            b2Bl(ipft) = nleaf(2)
+            !------------------------------------------------------------------------------!
+            !     ED-2.1 allometry, based on:                                              !
+            !                                                                              !
+            !   Calvo-Alvarado, J. C., N. G. McDowell, and R. H. Waring.  Tree Physiol.,   !
+            !      28, 11, 1601-1608, 2008.                                                !
+            !                                                                              !
+            !   Cole, T. G., J. J. Ewel.  Allometric equations for four valuable tropical  !
+            !      tree species.  Forest Ecol. Manag., 229, 1--3, 351-360, 2006.           !
+            !------------------------------------------------------------------------------!
+            b1Bl_small (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
+            b2Bl_small (ipft) = nleaf(2)
+            b1Bl_large (ipft) = b1Bl_small(ipft)
+            b2Bl_large (ipft) = b2Bl_small(ipft)
+            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            !------------------------------------------------------------------------------!
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     ED-2.2 allometry.  For large trees, it is based on:                      !
+            !                                                                              !
+            !   Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and             !
+            !      A. Beneteau.  La phytomasse epigee d'une foret dense en Guyane          !
+            !      Francaise.  Acta Oecol. - Oec. Gen., 4, 3, 237-251, 1983.               !
+            !                                                                              !
+            !   Further modified to scale the leaf biomass by SLA.  For smaller trees, the !
+            !      biomass is a log-linear interpolation from 20gC/plant at minimum size   !
+            !      (scaled by SLA relative to mid-successional) and Lescure's allometry at !
+            !      minimum adult size.                                                     !
+            !------------------------------------------------------------------------------!
+            b1Bl_large (ipft) = 0.00873 * SLA(3) / SLA(ipft)
+            b2Bl_large (ipft) = 2.1360
+            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            bleaf_sapling     = 0.02 * C2B * SLA(3) / SLA(ipft)
+            b2Bl_small (ipft) = log( bleaf_adult(ipft) / bleaf_sapling )                   &
+                              / log( dbh_adult  (ipft) / min_dbh(ipft) )
+            b1Bl_small (ipft) = bleaf_adult(ipft) * C2B                                    &
+                              / dbh_adult(ipft) ** b2Bl_small(ipft)
+            !------------------------------------------------------------------------------!
          end select
+      else
+         !---------------------------------------------------------------------------------!
+         !     Calculate the leaf biomass at minimum adult size.                           !
+         !---------------------------------------------------------------------------------!
+         bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
    end do
    !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] -------------!
    b1Bs_small(1:4)   = 0.0 
@@ -2982,7 +3011,7 @@ subroutine init_pft_alloc_params()
             b1Bs_large(ipft) = C2B * exp(odead_large(1)) * rho(ipft) / odead_large(3)
             b2Bs_large(ipft) = odead_large(2)
 
-         case (2)
+         case default
             !---- Based an alternative modification of Chave et al. (2001) allometry. -----!
             b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
             b2Bs_small(ipft) = ndead_small(2)
@@ -3002,19 +3031,19 @@ subroutine init_pft_alloc_params()
    ! the allometric parameters.                                                            !
    !---------------------------------------------------------------------------------------!
    if (ibigleaf == 1 .and. (iallom == 0 .or. iallom == 1)) then
-      b1Bl      (    1)  = 0.04538826
-      b1Bl      (    2)  = 0.07322115
-      b1Bl      (    3)  = 0.07583497
-      b1Bl      (    4)  = 0.08915847
-      b1Bl      (14:16)  = 0.04538826
-      b1Bl      (   17)  = 0.07322115
+      b1Bl_small(    1)  = 0.04538826
+      b1Bl_small(    2)  = 0.07322115
+      b1Bl_small(    3)  = 0.07583497
+      b1Bl_small(    4)  = 0.08915847
+      b1Bl_small(14:16)  = 0.04538826
+      b1Bl_small(   17)  = 0.07322115
       
-      b2Bl      (    1)  = 1.316338
-      b2Bl      (    2)  = 1.509083
-      b2Bl      (    3)  = 1.646576
-      b2Bl      (    4)  = 1.663773
-      b2Bl      (14:16)  = 1.316338
-      b2Bl      (   17)  = 1.509083
+      b2Bl_small(    1)  = 1.316338
+      b2Bl_small(    2)  = 1.509083
+      b2Bl_small(    3)  = 1.646576
+      b2Bl_small(    4)  = 1.663773
+      b2Bl_small(14:16)  = 1.316338
+      b2Bl_small(   17)  = 1.509083
       
       b1Bs_small(    1)  = 0.05291854
       b1Bs_small(    2)  = 0.15940854
@@ -3030,6 +3059,8 @@ subroutine init_pft_alloc_params()
       b2Bs_small(14:16)  = 3.706955
       b2Bs_small(   17)  = 2.342587
       
+      b1Bl_large    (:)  = b1Bl_small(:)
+      b2Bl_large    (:)  = b2Bl_small(:)
       b1Bs_large    (:)  = b1Bs_small(:)
       b2Bs_large    (:)  = b2Bs_small(:)
    end if
@@ -3080,7 +3111,7 @@ subroutine init_pft_alloc_params()
             b2Ca(ipft) = b2Ht(ipft) * 1.888
          end if
       end do
-   case (2)
+   case default
       !----- Fitted values obtained using Poorter h->DBH to obtain function of DBH. -------!
       do ipft=1,n_pft
          if (is_tropical(ipft)) then
@@ -3172,7 +3203,7 @@ subroutine init_pft_alloc_params()
       b2Rd(6:11)  = 0.277
       b2Rd(12:16) = 0.000
       b2Rd(17)    = 0.277
-   case (1:2)
+   case default
       !------------------------------------------------------------------------------------!
       !     This is just a test, not based on any paper.  This is simply a fit that would  !
       ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
@@ -3201,7 +3232,7 @@ subroutine init_pft_alloc_params()
          init_density(14:15) = 0.1
          init_density(16)    = 1.0
          init_density(17)    = 1.0
-      case (2)
+      case default
          init_density(1)     = 0.1
          init_density(2:4)   = 0.1
          init_density(5)     = 0.1
@@ -3231,24 +3262,28 @@ subroutine init_pft_alloc_params()
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
       write(unit=18,fmt='(312a)') ('-',n=1,312)
-      write(unit=18,fmt='(24(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(28(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
-                                     ,'     Hgt_ref','        b1Bl','        b2Bl'         &
-                                     ,'  b1Bs_Small','  b2Bs_Small','  b1Bs_Large'         &
-                                     ,'  b1Bs_Large','        b1Ca','        b2Ca'         &
-                                     ,'     Hgt_min','     Hgt_max','     Min_DBH'         &
-                                     ,'    DBH_Crit',' DBH_BigLeaf','  Bdead_Crit'         &
-                                     ,'   Init_dens',' Init_LAImax','         SLA'
+                                     ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
+                                     ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
+                                     ,'  b2Bs_Small','  b1Bs_Large','  b1Bs_Large'         &
+                                     ,'        b1Ca','        b2Ca','     Hgt_min'         &
+                                     ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
+                                     ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
+                                     ,'  Bdead_Crit','   Init_dens',' Init_LAImax'         &
+                                     ,'         SLA'
 
       write(unit=18,fmt='(312a)') ('-',n=1,312)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),21(1x,es12.5))')                             &
+         write (unit=18,fmt='(8x,i5,2(12x,l1),25(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
-                       ,b2Ht(ipft),hgt_ref(ipft),b1Bl(ipft),b2Bl(ipft),b1Bs_small(ipft)    &
+                       ,b2Ht(ipft),hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft)         &
+                       ,b1Bl_large(ipft),b2Bl_large(ipft),b1Bs_small(ipft)                 &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
                        ,b2Ca(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
-                       ,dbh_crit(ipft),dbh_bigleaf(ipft),bdead_crit(ipft)                  &
-                       ,init_density(ipft),init_laimax(ipft),sla(ipft)
+                       ,dbh_adult(ipft),dbh_crit(ipft),dbh_bigleaf(ipft)                   &
+                       ,bleaf_adult(ipft),bdead_crit(ipft),init_density(ipft)              &
+                       ,init_laimax(ipft),sla(ipft)
       end do
       write(unit=18,fmt='(312a)') ('-',n=1,312)
       close(unit=18,status='keep')

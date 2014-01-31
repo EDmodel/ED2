@@ -3417,6 +3417,9 @@
                                      )#end c
                           , stringsAsFactors = FALSE
                           )#end vname
+   scen.szpft = data.frame( vname = c(    "agb.ncbmort",     "agb.change")
+                          , stringsAsFactors = FALSE
+                          )#end vname
    #---------------------------------------------------------------------------------------#
 
 

@@ -15,6 +15,7 @@ plotsize = function( proje                  #  Map projection? [T|F]
                                             #   dimension
                    , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
                    , landscape  = TRUE      #  Landscape? (if not swap width and height)
+                   , scale.fac  = 0.8       #  Scaling factor to adjust sizes
                    ){
 
 
@@ -60,29 +61,29 @@ plotsize = function( proje                  #  Map projection? [T|F]
    if (paper == "special") { 
       stdratio = max(c(stdwidth,stdheight))/min(c(stdwidth,stdheight))
    }else if (paper == "letter"){
-      stdwidth  =  0.8 * 11.0
-      stdheight =  0.8 *  8.5
+      stdwidth  =  scale.fac * 11.0
+      stdheight =  scale.fac *  8.5
       stdratio  = 11.0 /  8.5
    }else if (paper == "a4"){
-      stdwidth  =  0.8 * 29.7 / 2.54
-      stdheight =  0.8 * 21.0 / 2.54
+      stdwidth  =  scale.fac * 29.7 / 2.54
+      stdheight =  scale.fac * 21.0 / 2.54
       stdratio  = 29.7 / 21.0
    }else if (paper == "legal"){
-      stdwidth  =  0.8 * 14.0
-      stdheight =  0.8 *  8.5
+      stdwidth  =  scale.fac * 14.0
+      stdheight =  scale.fac *  8.5
       stdratio  = 14.0 /  8.5
    }else if (paper == "long"){
-      stdwidth  =  0.8 * 16.0
-      stdheight =  0.8 *  9.5
+      stdwidth  =  scale.fac * 16.0
+      stdheight =  scale.fac *  9.5
       stdratio  = 16.0 /  9.5
    }else if (paper == "executive"){
-      stdwidth  =  0.8  * 10.25
-      stdheight =  0.8  *  7.25
+      stdwidth  =  scale.fac * 10.25
+      stdheight =  scale.fac *  7.25
       stdratio  = 10.25 /  7.25
    }else{
       warning(paste("Unknown paper size (",paper,").  Using letter instead.",sep=""))
-      stdwidth  =  0.8 * 11.0
-      stdheight =  0.8 *  8.5
+      stdwidth  =  scale.fac * 11.0
+      stdheight =  scale.fac *  8.5
       stdratio  = 11.0 /  8.5
    }#end if 
    #---------------------------------------------------------------------------------------#

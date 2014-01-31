@@ -1629,9 +1629,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iallom < 0 .or. iallom > 2) then
+   if (iallom < 0 .or. iallom > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 2. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 3. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -2208,14 +2208,15 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (treefall_disturbance_rate > 0.0) then
+   if (treefall_disturbance_rate /= 0.0) then
       if (time2canopy < 0.0) then
          write (reason,fmt='(a,1x,es14.7,a)')                                              &
                 'Invalid TIME2CANOPY, it can''t be negative.  Yours is set to'             &
                 ,time2canopy,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
-      elseif (time2canopy >= 2.0 * (1. - epsilon(1.)) / treefall_disturbance_rate) then
+      elseif (time2canopy >= 2.0 * (1. - epsilon(1.)) / abs(treefall_disturbance_rate))    &
+      then
          !---------------------------------------------------------------------------------!
          !     We need this if statement because the effective treefall tends to infinity  !
          ! as time2canopy approaches 2. / treefall_disturbance_rate.                       !
@@ -2224,7 +2225,7 @@ end do
                                              ,treefall_disturbance_rate
          write (unit=*,fmt='(a,1x,es14.7)')   ' MAX(TIME2CANOPY)          ='               &
                                              , 2.0 * (1. - epsilon(1.))                    &
-                                             / treefall_disturbance_rate
+                                             / abs(treefall_disturbance_rate)
          write (reason,fmt='(a,2x,a,1x,es14.7,a)')                                         &
              ' Invalid TIME2CANOPY, it can''t be >= 2. / TREEFALL_DISTURBANCE_RATE.'       &
             ,'Yours is set to',time2canopy,'...'

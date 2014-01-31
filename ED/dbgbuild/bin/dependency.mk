@@ -238,7 +238,8 @@ fuse_fiss_utils.o: allometry.mod budget_utils.mod canopy_layer_coms.mod
 fuse_fiss_utils.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
 fuse_fiss_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
 fuse_fiss_utils.o: ed_state_vars.mod fusion_fission_coms.mod grid_coms.mod
-fuse_fiss_utils.o: mem_polygons.mod pft_coms.mod soil_coms.mod therm_lib.mod
+fuse_fiss_utils.o: mem_polygons.mod pft_coms.mod rk4_coms.mod soil_coms.mod
+fuse_fiss_utils.o: therm_lib.mod
 great_circle.o: consts_coms.mod
 hdf5_utils.o: hdf5_coms.mod
 invmondays.o: ed_misc_coms.mod

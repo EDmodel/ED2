@@ -386,10 +386,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- iallom is the allometry method. -------------------------------------------------#
    flagvar[["iallom"]]          = list( descr   = "Allometry"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=2,by=1)
+                                      , values  = seq(from=0,to=3,by=1)
                                       , names   = c("Original ED-2.1"
                                                   ,"AGB-Chave, BL-Original"
-                                                  ,"AGB-Chave, BL-ColeEwel")
+                                                  ,"AGB-Chave, BL-ColeEwel"
+                                                  ,"AGB-Chave, BL-Lescure")
                                       )#end list
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["h2o.plant.limit"]] = list( descr   = "Water limitation"
@@ -770,6 +771,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(0,1)
                                        , names  = c("Prescribed","Predicted")
                                        )#end list
+   flagvar[["idimort"]]          = list( descr  = "DI Mortality"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("ED-1.0","ED-2.2")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1012,9 +1018,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(       8,        16)
       }else if (lenici == 17){
          nparms = 2
-         param  = c("iphen.scheme","isas")
-         na     = c(            11,    15)
-         nz     = c(            13,    17)
+         param  = c("met.forcing","isoil.text")
+         na     = c(            6,          16)
+         nz     = c(            8,          17)
       }else if (lenici == 18){
          nparms = 2
          param  = c("icanturb","isas")
@@ -1077,19 +1083,19 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(         14,            22,          30)
       }else if (lenici == 31){
          nparms = 3
-         param  = c("iphen.scheme","iddmort.scheme","treefall")
-         na     = c(            11,              20,        28)
-         nz     = c(            13,              21,        31)
+         param  = c("iallom","idimort","include.fire")
+         na     = c(      12,       22,            30)
+         nz     = c(      13,       23,            31)
       }else if (lenici == 32){
          nparms = 4
          param  = c("isoil.text","include.fire","fire.parameter","sm.fire")
          na     = c(         10,             17,              24,       29)
          nz     = c(         11,             18,              25,       32)
       }else if (lenici == 33){
-         nparms = 5
-         param  = c("met.forcing","isas","iage","idiversity","include.fire")
-         na     = c(            6,    10,    18,          24,            32)
-         nz     = c(            8,    12,    19,          25,            33)
+         nparms = 3
+         param  = c("vm0","iallom","idimort")
+         na     = c(   12,      22,       32)
+         nz     = c(   14,      23,       33)
       }else if (lenici == 36){
          nparms = 4
          param  = c("imet.drought","isoil.text","iphen.scheme","idrought")

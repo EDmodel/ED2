@@ -1689,7 +1689,7 @@ for (place in myplaces){
 
          if (pnlog){
             vrange  = range(varbuff,na.rm=TRUE)
-            vlevels = pretty.log(x=vrange,n=ncolshov,forcelog=TRUE)
+            vlevels = pretty.log(x=vrange,n=ncolshov)
             vnlev   = length(vlevels)
          }else{
             vrange  = range(varbuff,na.rm=TRUE)
@@ -1722,7 +1722,6 @@ for (place in myplaces){
                      ,plot.title=title(main=letitre,xlab="Month",ylab=ley,cex.main=0.7)
                      ,key.title=title(main=lacle,cex.main=0.8)
                      ,key.log=pnlog
-                     ,useRaster=TRUE
                      ,plot.axes={axis(side=1)
                                  axis(side=2,at=zat,labels=znice)
                                  if (hovgrid){

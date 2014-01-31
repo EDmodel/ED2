@@ -49,12 +49,14 @@ stipples <<- function(xleft,ybottom,xright,ytop,density=2,pch=".",cex=0.7,col="b
    #---------------------------------------------------------------------------------------#
 
 
-
    #----- Convert x and y back to scale in case of log plot. ------------------------------#
    if (xlog) xpts = lapply(X=xpts,exp)
    if (ylog) ypts = lapply(X=ypts,exp)
-   xypts          = as.data.frame(t(mapply(FUN=expand.grid,x=xpts,y=ypts,SIMPLIFY=TRUE)))
+   xypts          = mapply(FUN=expand.grid,x=xpts,y=ypts,SIMPLIFY=TRUE)
+   xypts          = apply(X=xypts,MARGIN=1,FUN=unlist)
+   xypts          = as.data.frame(xypts)
    #---------------------------------------------------------------------------------------#
+
 
    #------ Plot points. -------------------------------------------------------------------#
    dotdotdot = modifyList(x=dotdotdot,val=list(x=xypts$x,y=xypts$y))

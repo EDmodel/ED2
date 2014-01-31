@@ -216,11 +216,29 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) SLA(myPFT) = real(rval)
            call getConfigREAL  ('b1Bl','pft',i,rval,texist)
            if (texist) then
-              b1Bl(myPFT) = real(rval)
+              b1Bl_small(myPFT) = real(rval)
+              b1Bl_large(myPFT) = real(rval)
            end if
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
            if (texist) then
-              b2Bl(myPFT) = real(rval)
+              b2Bl_small(myPFT) = real(rval)
+              b2Bl_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b1Bl_small','pft',i,rval,texist)
+           if (texist) then
+              b1Bl_small(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b2Bl_small','pft',i,rval,texist)
+           if (texist) then
+              b2Bl_small(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b1Bl_large','pft',i,rval,texist)
+           if (texist) then
+              b1Bl_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b2Bl_large','pft',i,rval,texist)
+           if (texist) then
+              b2Bl_large(myPFT) = real(rval)
            end if
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
            if (texist) then
@@ -230,6 +248,22 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('b2Bs','pft',i,rval,texist)
            if (texist) then
               b2Bs_small(myPFT) = real(rval)
+              b2Bs_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b1Bs_small','pft',i,rval,texist)
+           if (texist) then
+              b1Bs_small(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b2Bs_small','pft',i,rval,texist)
+           if (texist) then
+              b2Bs_small(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b1Bs_large','pft',i,rval,texist)
+           if (texist) then
+              b1Bs_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b2Bs_large','pft',i,rval,texist)
+           if (texist) then
               b2Bs_large(myPFT) = real(rval)
            end if
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
@@ -296,6 +330,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) c2n_recruit(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c2n_storage','pft',i,rval,texist)
 !!$           if(texist) c2n_storage(myPFT) = real(rval)
+           call getConfigREAL  ('dbh_adult','pft',i,rval,texist)
+           if(texist) dbh_adult(myPFT) = real(rval)
            call getConfigREAL  ('dbh_crit','pft',i,rval,texist)
            if(texist) dbh_crit(myPFT) = real(rval)
            call getConfigREAL  ('rho','pft',i,rval,texist)
@@ -996,8 +1032,8 @@ subroutine write_ed_xml_config
         call putConfigINT("include_pft",ival)
         
         call putConfigREAL("SLA",SLA(i))
-        call putConfigREAL("b1Bl",b1Bl(i))
-        call putConfigREAL("b2Bl",b2Bl(i))
+        call putConfigREAL("b1Bl",b1Bl_small(i))
+        call putConfigREAL("b2Bl",b2Bl_small(i))
         call putConfigREAL("b1Bs",b1Bs_small(i))
         call putConfigREAL("b2Bs",b2Bs_small(i))
         call putConfigREAL("b1Ht",b1Ht(i))

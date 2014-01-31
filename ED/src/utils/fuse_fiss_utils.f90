@@ -6133,6 +6133,7 @@ module fuse_fiss_utils
    ! r_xy         -- correlation between x and y                                           !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function fuse_msqu(xmean,xmsqu,xwght,ymean,ymsqu,ywght,r_xy,extensive)
+      use rk4_coms       , only : tiny_offset              ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=4), intent(in) :: xmean
@@ -6144,12 +6145,16 @@ module fuse_fiss_utils
       real(kind=4), intent(in) :: r_xy
       logical     , intent(in) :: extensive
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)             :: xwmean
-      real(kind=4)             :: xwmsqu
-      real(kind=4)             :: ywmean
-      real(kind=4)             :: ywmsqu
-      real(kind=4)             :: w2sumi
-      real(kind=4)             :: xwpywp
+      real(kind=8)             :: xwmean
+      real(kind=8)             :: xwmsqu
+      real(kind=8)             :: ywmean
+      real(kind=8)             :: ywmsqu
+      real(kind=8)             :: w2sumi
+      real(kind=8)             :: xwpywp
+      real(kind=8)             :: r_xy8
+      real(kind=8)             :: fuse_msqu8
+      !----- External function. -----------------------------------------------------------!
+      real(kind=4)    , external      :: sngloff     ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
 
 
@@ -6158,28 +6163,30 @@ module fuse_fiss_utils
       ! wise we find the weighted sum of squares.                                          !
       !------------------------------------------------------------------------------------!
       if (extensive) then
-         xwmean = xmean
-         xwmsqu = xmsqu
-         ywmean = ymean
-         ywmsqu = ymsqu
-         w2sumi = 1.
+         xwmean = dble(xmean)
+         xwmsqu = dble(xmsqu)
+         ywmean = dble(ymean)
+         ywmsqu = dble(ymsqu)
+         w2sumi = 1.d0
       else
-         xwmean = xmean * xwght
-         xwmsqu = xmsqu * xwght * xwght
-         ywmean = ymean * ywght
-         ywmsqu = ymsqu * ywght * ywght
-         w2sumi = 1. / ( (xwght + ywght) * (xwght + ywght) )
+         xwmean = dble(xmean) * dble(xwght)
+         xwmsqu = dble(xmsqu) * dble(xwght) * dble(xwght)
+         ywmean = dble(ymean) * dble(ywght)
+         ywmsqu = dble(ymsqu) * dble(ywght) * dble(ywght)
+         w2sumi = 1.d0 / ( (dble(xwght) + dble(ywght)) * (dble(xwght) + dble(ywght)) )
       end if
+      r_xy8     = dble(r_xy)
       !------------------------------------------------------------------------------------!
 
 
       !----- Find the terms. --------------------------------------------------------------!
-      xwpywp = r_xy * sqrt( ( xwmsqu + xwmean*xwmean) * (ywmsqu + ywmean*ywmean) )
+      xwpywp = r_xy8 * sqrt( ( xwmsqu + xwmean*xwmean) * (ywmsqu + ywmean*ywmean) )
       !------------------------------------------------------------------------------------!
 
 
       !----- Add the terms to the answer. -------------------------------------------------!
-      fuse_msqu = ( xwmsqu + ywmsqu + 2. * ( xwmean * ywmean + xwpywp ) ) * w2sumi
+      fuse_msqu8 = ( xwmsqu + ywmsqu + 2.d0 * ( xwmean * ywmean + xwpywp ) ) * w2sumi
+      fuse_msqu  = sngloff(fuse_msqu8,tiny_offset)
       !------------------------------------------------------------------------------------!
 
       return

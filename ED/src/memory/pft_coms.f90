@@ -416,10 +416,14 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Bs_large
    !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
    real   , dimension(n_pft)    :: b2Bs_large
-   !----- DBH-leaf allometry intercept for all cohorts. All PFTs --------------------------!
-   real   , dimension(n_pft)    :: b1Bl
-   !----- DBH-leaf allometry slope for all cohorts. All PFTs ------------------------------!
-   real   , dimension(n_pft)    :: b2Bl
+   !----- DBH-leaf allometry intercept for small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b1Bl_small
+   !----- DBH-leaf allometry slope for all small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b2Bl_small
+   !----- DBH-leaf allometry intercept for small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b1Bl_large
+   !----- DBH-leaf allometry slope for all small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b2Bl_large
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
@@ -438,6 +442,10 @@ module pft_coms
    real   , dimension(n_pft)    :: min_bdead
    !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
    real   , dimension(n_pft)    :: bdead_crit
+   !----- Minimum DBH for a tree to be considered adult. Used by leaf biomass allometry. --!
+   real   , dimension(n_pft)    :: dbh_adult
+   !----- Minimum Bleaf for a tree to be considered adult. Used by DBH allometry. ---------!
+   real   , dimension(n_pft)    :: bleaf_adult
    !=======================================================================================!
    !=======================================================================================!
 

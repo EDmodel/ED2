@@ -212,6 +212,7 @@ isok[["plotrix"   ]] = require(plotrix   )
 isok[["proto"     ]] = require(proto     )
 isok[["robustbase"]] = require(robustbase)
 isok[["rgdal"     ]] = require(rgdal     )
+isok[["rgdal"     ]] = TRUE
 isok[["RSEIS"     ]] = require(RSEIS     )
 isok[["R.utils"   ]] = require(R.utils   )
 isok[["splancs"   ]] = require(splancs   )

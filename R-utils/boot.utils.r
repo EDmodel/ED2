@@ -291,13 +291,18 @@ boot.fortnight.mean <<- function(data.in,R,ci=0.95,...){
 #      This function computes the fortnightly means using hierarchical bootstrap on one    #
 # level.                                                                                   #
 #------------------------------------------------------------------------------------------#
-bhier.onelevel <<- function(data.in,stat=mean,R,ci=0.95,...){
+bhier.onelevel <<- function(data.in,stat=mean,R,norm=FALSE,ci=0.95,...){
    call.now = match.call()
 
 
    #----- Split the data into lists just to test that there aren't empty elements. --------#
-   list.use = split(x = data.in$x, f = data.in$level)
-   n.list   = lapply(X=list.use,FUN=length)
+   x.list   = split(x = data.in$x, f = data.in$level)
+   if (norm){
+      s.list = split(x = data.in$s, f = data.in$level)
+   }else{
+      s.list = split(x = rep(0,length(data.in$x)), f = data.in$level)
+   }#end if
+   n.list   = lapply(X=x.list,FUN=length)
    n.dat    = nrow(data.in)
    if (any(unlist(n.list) == 0)){
       stop("Empty elements in your list!")
@@ -312,7 +317,7 @@ bhier.onelevel <<- function(data.in,stat=mean,R,ci=0.95,...){
    #---------------------------------------------------------------------------------------#
    #       Find the statistics for each realisation.                                       #
    #---------------------------------------------------------------------------------------#
-   level.1     = replicate(n=R,expr = boot.one.sample(x=list.use))
+   level.1     = replicate(n=R,expr = boot.one.sample(x=x.list,s=s.list,norm=norm))
    realisation = apply   (X=level.1,MARGIN=2,FUN=stat,...)
    expected    = mean    (x=realisation,na.rm=TRUE)
    std.err     = sd      (x=realisation,na.rm=TRUE)
@@ -629,13 +634,28 @@ boot.collapse.3d <<- function(x){
     return(ans)
 }#end function boot.collapse.3d
 #----- Single sampling of nested list. ----------------------------------------------------#
-boot.one.sample <<- function(x){
+boot.one.sample <<- function(x,s,norm){
    nsize = lapply(X=x,FUN=length)
+   if (norm) x = mapply(FUN=boot.one.normal,x=x,s=s,SIMPLIFY=FALSE)
    nx    = sample(length(x),size=length(x),prob=unlist(nsize),replace=TRUE)
    xx    = x[nx]
+#   xx    = x[nx]
+#   ss    = s[nx]
+#   if (norm) xx = mapply(FUN=boot.one.normal,x=xx,s=ss,SIMPLIFY=FALSE)
    now   = unlist(mapply(FUN=lit.sample,x=xx,size=nsize,MoreArgs=list(replace=TRUE)))
    return(now)
 }#end boot.one.sample
+#----- Bootstrap one number when there is a mean and a s.d. associated. -------------------#
+boot.one.normal <<- function(x,s){
+   n.x     = length(x)
+   out     = rep(NA,times=n.x)
+   ok      = is.finite(x) & is.finite(s) & s >= 0
+   n.ok    = sum(ok)
+   if (n.ok > 0){
+      out[ok] = rnorm(n=n.ok,mean=x[ok],sd=s[ok])
+   }#end if
+   return(out)
+}#end boot.one.normal
 #==========================================================================================#
 #==========================================================================================#
 

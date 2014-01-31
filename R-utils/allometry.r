@@ -74,11 +74,11 @@ dbh2bl = function(dbh,ipft){
      zpft = ipft
    }#end if
 
-   dbhuse       = dbh
-   huge         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
-   dbhuse[huge] = pft$dbh.crit[zpft[huge]]
-
-   bleaf = pft$b1Bl [zpft] /C2B * dbhuse ^ pft$b2Bl [zpft] 
+   dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   bleaf  = ifelse( dbhuse %<% pft$dbh.adult[zpft]
+                  , pft$b1Bl.small[zpft] /C2B * dbhuse ^ pft$b2Bl.small[zpft]
+                  , pft$b1Bl.large[zpft] /C2B * dbhuse ^ pft$b2Bl.large[zpft]
+                  )#end ifelse
 
    return(bleaf)
 }# end function dbh2bl
@@ -185,8 +185,10 @@ dbh2wai = function(dbh,ipft,chambers=FALSE){
       abranch  = pi*kterm*log(dcb.use/dbmin)
       wai      = ( abole + abranch )
       wai      = wai * dbh2ca(dbh=pft$dbh.crit[zpft],ipft=zpft)/max(wai)
-   }else{
+   }else if(! iallom %in% c(3)){
       wai      = pft$b1WAI[zpft] * dbh.use ^ pft$b2WAI[zpft]
+   }else{
+      wai      = 0.11 * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
    }#end if
    if (any(is.na(wai))) browser()
    #---------------------------------------------------------------------------------------#

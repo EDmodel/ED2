@@ -476,8 +476,10 @@ pft01 = list( name               = "C4 grass"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -533,8 +535,10 @@ pft02 = list( name               = "Early tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -590,8 +594,10 @@ pft03 = list( name               = "Mid tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -647,8 +653,10 @@ pft04 = list( name               = "Late tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -704,8 +712,10 @@ pft05 = list( name               = "Temperate C3 Grass"
             , hgt.ref            = 0.0
             , b1Ht               = 0.4778
             , b2Ht               = -0.750
-            , b1Bl               = 0.08
-            , b2Bl               = 1.00
+            , b1Bl.small         = 0.08
+            , b2Bl.small         = 1.00
+            , b1Bl.large         = 0.08
+            , b2Bl.large         = 1.00
             , b1Bs.small         = 1.e-5
             , b2Bs.small         = 1.0
             , b1Bs.large         = 1.e-5
@@ -761,8 +771,10 @@ pft06 = list( name               = "North Pine"
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
             , b2Ht               = -0.03884
-            , b1Bl               = 0.024
-            , b2Bl               = 1.899
+            , b1Bl.small         = 0.024
+            , b2Bl.small         = 1.899
+            , b1Bl.large         = 0.024
+            , b2Bl.large         = 1.899
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -818,8 +830,10 @@ pft07 = list( name               = "South Pine"
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
             , b2Ht               = -0.03884
-            , b1Bl               = 0.024
-            , b2Bl               = 1.899
+            , b1Bl.small         = 0.024
+            , b2Bl.small         = 1.899
+            , b1Bl.large         = 0.024
+            , b2Bl.large         = 1.899
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -875,8 +889,10 @@ pft08 = list( name               = "Late conifer"
             , hgt.ref            = 1.3
             , b1Ht               = 22.79
             , b2Ht               = -0.04445
-            , b1Bl               = 0.0454
-            , b2Bl               = 1.6829
+            , b1Bl.small         = 0.0454
+            , b2Bl.small         = 1.6829
+            , b1Bl.large         = 0.0454
+            , b2Bl.large         = 1.6829
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.1536
             , b1Bs.large         = 0.1617
@@ -932,8 +948,10 @@ pft09 = list( name               = "Early hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 22.6799
             , b2Ht               = -0.06534
-            , b1Bl               = 0.0129
-            , b2Bl               = 1.7477
+            , b1Bl.small         = 0.0129
+            , b2Bl.small         = 1.7477
+            , b1Bl.large         = 0.0129
+            , b2Bl.large         = 1.7477
             , b1Bs.small         = 0.02648
             , b2Bs.small         = 2.95954
             , b1Bs.large         = 0.02648
@@ -989,8 +1007,10 @@ pft10 = list( name               = "Mid hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 25.18
             , b2Ht               = -0.04964
-            , b1Bl               = 0.048
-            , b2Bl               = 1.455
+            , b1Bl.small         = 0.048
+            , b2Bl.small         = 1.455
+            , b1Bl.large         = 0.048
+            , b2Bl.large         = 1.455
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.4572
             , b1Bs.large         = 0.1617
@@ -1046,8 +1066,10 @@ pft11 = list( name               = "Late hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 23.3874
             , b2Ht               = -0.05404
-            , b1Bl               = 0.017
-            , b2Bl               = 1.731
+            , b1Bl.small         = 0.017
+            , b2Bl.small         = 1.731
+            , b1Bl.large         = 0.017
+            , b2Bl.large         = 1.731
             , b1Bs.small         = 0.235
             , b2Bs.small         = 2.2518
             , b1Bs.large         = 0.235
@@ -1108,8 +1130,10 @@ pft16 = list( name               = "C3 grass"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1165,8 +1189,10 @@ pft17 = list( name               = "Araucaria"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1212,9 +1238,10 @@ for (p in 1:(npft+1)){
 
 
 #----- Minimum and Maximum DBH. -----------------------------------------------------------#
-pft$dbh.min  = rep(NA,times=npft+1)
-pft$dbh.crit = rep(NA,times=npft+1)
-for (ipft in 1:npft){
+pft$dbh.min   = rep(NA,times=npft+1)
+pft$dbh.crit  = rep(NA,times=npft+1)
+pft$dbh.adult = rep(NA,times=npft+1)
+for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
       if (iallom %in% c(0,1)){
          pft$dbh.min [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
@@ -1233,6 +1260,7 @@ for (ipft in 1:npft){
       pft$dbh.crit[ipft] = ( log(1.0 - (pft$hgt.max[ipft]-pft$hgt.ref[ipft])
                                        / pft$b1Ht[ipft]) / pft$b2Ht[ipft] )
    }#end if
+   pft$dbh.adult[ipft]   = 10.0
 }#end for
 
 
@@ -1285,17 +1313,33 @@ for (ipft in sequence(npft)){
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(0,1)){
          #---- ED-2.1 allometry. ----------------------------------------------------------#
-         pft$b1Bl      [ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
+         pft$b1Bl.small[ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
          aux                  = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
                                 + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
-         pft$b2Bl      [ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
+         pft$b2Bl.small[ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
+         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
       }else if(iallom %in% c(2)){
-         pft$b1Bl      [ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
-         pft$b2Bl      [ipft] = nleaf[2]
+         pft$b1Bl.small[ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
+         pft$b2Bl.small[ipft] = nleaf[2]
+         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
       }else if(iallom %in% c(3)){
-         #----- Lescure et al. (1983). ----------------------------------------------------#
-         pft$b1Bl      [ipft] = 0.00873 / C2B * 11.91 / pft$SLA[ipft]
-         pft$b2Bl      [ipft] = 2.1360
+         #---------------------------------------------------------------------------------#
+         #    Use Lescure et al. (1983) for large trees, assume minimum leaf biomass for   #
+         # mid-successional to be 50gC/plant and interpolate biomass for saplings using a  #
+         # log-linear function.                                                            #
+         #---------------------------------------------------------------------------------#
+         pft$b1Bl.large[ipft] = 0.00873 * 11.91 / pft$SLA[ipft] # * C2B
+         pft$b2Bl.large[ipft] = 2.1360
+         
+         bleaf.min   = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
+         bleaf.adult = ( pft$b1Bl.large[ipft] / C2B
+                       * pft$dbh.adult[ipft] ^ pft$b2Bl.large[ipft] )
+         pft$b2Bl.small[ipft] = ( log(bleaf.adult/bleaf.min)
+                                / log(pft$dbh.adult[ipft]/pft$dbh.min[ipft]) )
+         pft$b1Bl.small[ipft] = ( bleaf.adult * C2B 
+                                / pft$dbh.adult[ipft] ^ pft$b2Bl.small[ipft] )
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1354,8 +1398,8 @@ for (ipft in sequence(npft)){
       #  allometries for stem area index.                                                  #
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(3)){
-         pft$b1WAI[ipft] = 0.11 * pft$SLA[ipft] * pft$b1Bl[ipft]
-         pft$b2WAI[ipft] = pft$b2Bl[ipft]
+         pft$b1WAI[ipft] = 0.11 * pft$SLA[ipft] * pft$b1Bl.large[ipft]
+         pft$b2WAI[ipft] = pft$b2Bl.large[ipft]
       }#end if
       #------------------------------------------------------------------------------------#
    }#end if
