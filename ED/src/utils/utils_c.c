@@ -16,6 +16,8 @@
 #endif
 #ifdef IBM
 #include <malloc/malloc.h>
+#elif MAC_OS_X
+#include <sys/malloc.h>
 #else
 #include <malloc.h>
 #endif

@@ -1,0 +1,177 @@
+diff -Pcr ED.orig/ED/build/bin/generate_deps.sh ED.r82/ED/build/bin/generate_deps.sh
+diff -cr ED.r82/ED/src/driver/edmain.f90 ED.r83/ED/src/driver/edmain.f90
+*** ED.r82/ED/src/driver/edmain.f90	2012-07-01 12:02:28.000000000 -0500
+--- ED.r83/ED/src/driver/edmain.f90	2013-09-15 20:51:40.418160793 -0500
+***************
+*** 49,54 ****
+--- 49,59 ----
+  
+    integer :: nslaves
+  
++   ! isingle: force non mpi run
++   !    0 iff normal run with potential MPI
++   !    1 iff no MPI init is called
++   integer :: isingle=0
++ 
+    ! scratch
+  
+    integer :: n
+***************
+*** 88,96 ****
+    ! if MPI execution, machnum returns process rank and machsize process size;
+  
+    numarg=numarg+1
+!   call MPI_Init(ierr)                                              
+!   call MPI_Comm_rank(MPI_COMM_WORLD,machnum,ierr)                  
+!   call MPI_Comm_size(MPI_COMM_WORLD,machsize,ierr)                 
+    write (*,'(a)')       '+--- Parallel info: -------------------------------------+'
+    write (*,'(a,1x,i6)') '+  - Machnum  =',machnum
+    write (*,'(a,1x,i6)') '+  - Machsize =',machsize
+--- 93,112 ----
+    ! if MPI execution, machnum returns process rank and machsize process size;
+  
+    numarg=numarg+1
+!   do n = 1, numarg
+!       if (cargs(n)(1:2) == '-s') then
+!          isingle=1
+!       end if
+!   end do
+! 
+!   if (isingle == 0) then
+!      call MPI_Init(ierr)                                              
+!      call MPI_Comm_rank(MPI_COMM_WORLD,machnum,ierr)                  
+!      call MPI_Comm_size(MPI_COMM_WORLD,machsize,ierr)                 
+!   else
+!      machnum=0
+!      machsize=1
+!   end if
+    write (*,'(a)')       '+--- Parallel info: -------------------------------------+'
+    write (*,'(a,1x,i6)') '+  - Machnum  =',machnum
+    write (*,'(a,1x,i6)') '+  - Machsize =',machsize
+
+*** ED.orig/ED/build/bin/generate_deps.sh	2012-07-01 12:02:28.000000000 -0500
+--- ED.r82/ED/build/bin/generate_deps.sh	2013-02-01 11:45:32.000000000 -0600
+***************
+*** 4,11 ****
+  edsrc="${edroot}/src/*/*.f90 ${edroot}/src/*/*.F90 ${edroot}/src/*/*.c"
+  rm -f dependency.mk
+  ./sfmakedepend.pl ${includes} -f dependency.mk ${bramssrc} ${edsrc}
+! sed -i s@hdf5.mod@@g dependency.mk
+! sed -i s@leaf.coms.mod@@g dependency.mk
+! sed -i s@grid_dims.mod@@g dependency.mk
+! sed -i s@rconstants.mod@@g dependency.mk
+  /bin/rm -f dependency.alt dependency.mk.old*
+--- 4,11 ----
+  edsrc="${edroot}/src/*/*.f90 ${edroot}/src/*/*.F90 ${edroot}/src/*/*.c"
+  rm -f dependency.mk
+  ./sfmakedepend.pl ${includes} -f dependency.mk ${bramssrc} ${edsrc}
+! sed -i .bak -e s@hdf5.mod@@g dependency.mk
+! sed -i .bak -e s@leaf.coms.mod@@g dependency.mk
+! sed -i .bak -e s@grid_dims.mod@@g dependency.mk
+! sed -i .bak -e s@rconstants.mod@@g dependency.mk
+  /bin/rm -f dependency.alt dependency.mk.old*
+diff -Pcr ED.orig/ED/src/io/h5_output.F90 ED.r82/ED/src/io/h5_output.F90
+*** ED.orig/ED/src/io/h5_output.F90	2012-07-01 12:02:28.000000000 -0500
+--- ED.r82/ED/src/io/h5_output.F90	2013-02-01 10:54:03.000000000 -0600
+***************
+*** 343,349 ****
+           if (verbose) write (unit=*,fmt='(a)') '    > Opening HDF5 environment...'
+           call h5open_f(hdferr)
+           if (hdferr /= 0) then
+!             write(unit=*,fmt='(a,1x,i)') ' - HDF5 Open error #:',hdferr
+              call fatal_error('Could not initialize the hdf environment'                    &
+                              ,'h5_output','h5_output.F90')
+           end if
+--- 343,349 ----
+           if (verbose) write (unit=*,fmt='(a)') '    > Opening HDF5 environment...'
+           call h5open_f(hdferr)
+           if (hdferr /= 0) then
+!             write(unit=*,fmt='(a,1x,i0)') ' - HDF5 Open error #:',hdferr
+              call fatal_error('Could not initialize the hdf environment'                    &
+                              ,'h5_output','h5_output.F90')
+           end if
+***************
+*** 362,369 ****
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 write(unit=*,fmt='(a)'      ) ' Could not create the HDF5 file.'
+                 write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
+!                write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
+!                write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 call fatal_error('Failed creating the HDF file','h5_output','h5_output.F90')
+              end if
+--- 362,369 ----
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 write(unit=*,fmt='(a)'      ) ' Could not create the HDF5 file.'
+                 write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
+!                write(unit=*,fmt='(a,1x,i0)' ) ' - file_id: ',file_id
+!                write(unit=*,fmt='(a,1x,i0)' ) ' - hdferr : ',hdferr
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 call fatal_error('Failed creating the HDF file','h5_output','h5_output.F90')
+              end if
+***************
+*** 374,381 ****
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 write(unit=*,fmt='(a)'      ) ' Could not open the HDF5 file.'
+                 write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
+!                write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
+!                write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 call fatal_error('Failed opening the HDF file','h5_output','h5_output.F90')
+              end if
+--- 374,381 ----
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 write(unit=*,fmt='(a)'      ) ' Could not open the HDF5 file.'
+                 write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
+!                write(unit=*,fmt='(a,1x,i0)' ) ' - file_id: ',file_id
+!                write(unit=*,fmt='(a,1x,i0)' ) ' - hdferr : ',hdferr
+                 write(unit=*,fmt='(a)'      ) '--------------------------------------------'
+                 call fatal_error('Failed opening the HDF file','h5_output','h5_output.F90')
+              end if
+***************
+*** 429,436 ****
+                 if (hdferr /= 0 .or. globdims(1) < 1 ) then
+                    write (unit=*,fmt='(a,1x,a)') ' VTYPE:    ',trim(vtype)
+                    write (unit=*,fmt='(a,1x,a)') ' VAR NAME: ',trim(varn)
+!                   write (unit=*,fmt='(a,1x,i)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
+!                   write (unit=*,fmt='(a,1x,i)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
+                    write (unit=*,fmt=*)          ' DSETRANK: ',dsetrank
+                    write (unit=*,fmt=*)          ' GLOBDIMS: ',globdims
+                    call fatal_error('Could not create the first filespace'                  &
+--- 429,436 ----
+                 if (hdferr /= 0 .or. globdims(1) < 1 ) then
+                    write (unit=*,fmt='(a,1x,a)') ' VTYPE:    ',trim(vtype)
+                    write (unit=*,fmt='(a,1x,a)') ' VAR NAME: ',trim(varn)
+!                   write (unit=*,fmt='(a,1x,i0)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
+!                   write (unit=*,fmt='(a,1x,i0)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
+                    write (unit=*,fmt=*)          ' DSETRANK: ',dsetrank
+                    write (unit=*,fmt=*)          ' GLOBDIMS: ',globdims
+                    call fatal_error('Could not create the first filespace'                  &
+diff -Pcr ED.orig/ED/src/utils/rsys.F90 ED.r82/ED/src/utils/rsys.F90
+*** ED.orig/ED/src/utils/rsys.F90	2012-07-01 12:02:28.000000000 -0500
+--- ED.r82/ED/src/utils/rsys.F90	2013-02-01 10:54:03.000000000 -0600
+***************
+*** 114,119 ****
+--- 114,121 ----
+     real   , external     :: cputime
+  #elif defined(MAC_OS_X)
+     real                  :: etime
++ #elif defined(__GFORTRAN__)
++    real                  :: etime
+  #else
+     real   , external     :: etime
+  #endif
+diff -Pcr ED.orig/ED/src/utils/utils_c.c ED.r82/ED/src/utils/utils_c.c
+*** ED.orig/ED/src/utils/utils_c.c	2012-07-01 12:02:28.000000000 -0500
+--- ED.r82/ED/src/utils/utils_c.c	2013-02-01 11:19:21.000000000 -0600
+***************
+*** 16,21 ****
+--- 16,23 ----
+  #endif
+  #ifdef IBM
+  #include <malloc/malloc.h>
++ #elif MAC_OS_X
++ #include <sys/malloc.h>
+  #else
+  #include <malloc.h>
+  #endif

@@ -1,0 +1,532 @@
++--- Parallel info: -------------------------------------+
++  - Machnum  =      0
++  - Machsize =      1
++--------------------------------------------------------+
+Reading namelist information
+Copying namelist
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ -> Outfast cannot be less than frqfast.
+    Oufast was redefined to    3600. seconds.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!  WARNING! WARNING! WARNING! WARNING! WARNING!   !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ -> Outstate cannot be different than frqstate when
+    unitstate is set to 3 (years).
+    Oustate was set to       1. years.
+    Oustate was redefined to       1. years.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+===========================================================
+   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   
+===========================================================
+You have defined a soil clay fraction < 0. The DEFAULT SOIL
+PARAMETERS WILL BE USED based on NL%NLSCON.                
+===========================================================
+===========================================================
+   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   
+===========================================================
+You have defined a soil sand fraction < 0. The DEFAULT SOIL
+PARAMETERS WILL BE USED based on NL%NLSCON.                
+===========================================================
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ISOILSTATEINIT, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ISOILDEPTHFLG, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ISOILBC, it must be between 0 and 3.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IVEGT_DYNAMICS, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IBIGLEAF, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid INTEGRATION_SCHEME, it must be 0, 1, or 2. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IPHYSIOL, it must be between 0 and 3. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IALLOM, it must be between 0 and 2. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IGRASS, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid REPRO_SCHEME, it must be between  0 and 3. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid RADINT, it must be between -100 and 100. Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid RADSLP, it must be between 0 and 1. Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid H2O_PLANT_LIM, it must be between 0 and 2.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IDDMORT_SCHEME, it must be between 0 and 1.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid DDMORT_CONST, it must be between 0 and 1.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid VMFACT_C3, it must be between 0.01 and 100.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid VMFACT_C4, it must be between 0.01 and 100.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid MPHOTO_TRC3, it must be between 0.1 and 20.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid MPHOTO_TEC3, it must be between 0.1 and 20.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid MPHOTO_C4, it must be between 0.1 and 20.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid BPHOTO_BLC3, it must be between 500. and 50000.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid BPHOTO_NLC3, it must be between 500. and 50000.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid BPHOTO_C4, it must be between 500. and 50000.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid KW_GRASS, it must be between 15 and 15000.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid KW_TREE, it must be between 15 and 15000.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid GAMMA_C3, it must be between 0.001 and 0.1.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid GAMMA_C4, it must be between 0.001 and 0.1.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid D0_GRASS, it must be between 0.01 and 1.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid D0_TREE, it must be between 0.01 and 1. Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ALPHA_C3, it must be between 0.001 and 1.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ALPHA_C4, it must be between 0.001 and 1.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid KLOWCO2IN, it must be between 10. and 1.e6.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid RRFFACT, it must be between 0.1 and 10. Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid GROWTHRESP, it must be between 0 and 1. Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LWIDTH_GRASS, it must be between 0.01 and 0.30 Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LWIDTH_BLTREE, it must be between 0.01 and 0.30 Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LWIDTH_NLTREE, it must be between 0.01 and 0.30 Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid Q10_C3, it must be between 1.0 and 10.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid Q10_C4, it must be between 1.0 and 10.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid THETACRIT, it must be between -1.49 and 1. Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid QUANTUM_EFFICIENCY_T, it must be either 0 or 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid N_DECOMP_LIM, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid DECOMP_SCHEME, it must be between 0 and 2. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid INCLUDE_FIRE, it must be between 0 and 3. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IANTH_DISTURB, it must be between 0 and 1. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ICANTURB, it must be between 0 and 4. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ISFCLYRM, it must be between 1 and 5. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IPERCOL, it must be between 0 and 2. Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      You did not specify any valid INCLUDE_THESE_PFT, the run must have at least one pft...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid PFT_1ST_CHECK, it must be between 0 and 2.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid CROWN_MOD, it must be between 0 or 1.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ICANRAD, it must be between 0 or 1.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LTRANS_VIS, it must be between 0.01 and 0.99.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LTRANS_NIR, it must be between 0.01 and 0.99.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LREFLECT_VIS, it must be between 0.01 and 0.99.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LREFLECT_NIR, it must be between 0.01 and 0.99.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ORIENT_TREE, it must be between -0.40 and 0.60.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ORIENT_GRASS, it must be between -0.40 and 0.60.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid CLUMP_TREE, it must be between 0.01 and 1.00.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid CLUMP_GRASS, it must be between 0.01 and 1.00.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ZROUGH, it must be positive.  Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid RUNOFF_TIME, it can't be negative. Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid UBMIN, it must be between 0.0001 and 2.0.  Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid USTMIN, it must be between 0.0001 and 1.0. Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid GAMM, it must be between 0.1 and 100.0. Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid GAMH, it must be between 0.1 and 100.0. Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid TPRANDTL, it must be between 0.01 and 100.0. Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid RIBMAX, it must be between 0.01 and 1.0..  Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid LEAF_MAXWHC, it must be between 0.0 and 10..  Yours is set to -9.9990002E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid ISHUFFLE, it must be between 0 and 2.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IMETAVG, it must be between -1 and 3.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IMETRAD, it must be between 0 and 4.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid DT_CENSUS, it must be between 1 and 120.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid YR1ST_CENSUS, it must be between 1200 and 3200.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid MON1ST_CENSUS, it must be between 1 and 12.  Yours is set to -999...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid MIN_RECRUIT_DBH, it must be between 0 and 100.  Yours is set to -9.99900E+02...
+------------------------------------------------------
+ 
+ 
+------------------------------------------------------
+>>>>  opspec_misc  error! in your namelist!
+    ---> Reason:      Invalid IDETAILED, it must be between 0 and 63.  Yours is set to -999...
+------------------------------------------------------
+ 
+ -----------ED_OPSPEC_MISC --------------------------
+ Fatal errors:    79
+ ----------------------------------------------------
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ 
+------------------------------------------------------------------
+                     !!! FATAL ERROR !!!                          
+------------------------------------------------------------------
+    ---> File:        ed_opspec.f90
+    ---> Subroutine:  ed_opspec_misc
+    ---> Reason:      Fatal errors at namelist - Misc settings
+------------------------------------------------------------------
+ ED execution halts (see previous error message)...
+------------------------------------------------------------------

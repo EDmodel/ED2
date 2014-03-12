@@ -49,6 +49,11 @@ program main
 
   integer :: nslaves
 
+  ! isingle: force non mpi run
+  !    0 iff normal run with potential MPI
+  !    1 iff no MPI init is called
+  integer :: isingle=0
+
   ! scratch
 
   integer :: n
@@ -88,9 +93,20 @@ program main
   ! if MPI execution, machnum returns process rank and machsize process size;
 
   numarg=numarg+1
-  call MPI_Init(ierr)                                              
-  call MPI_Comm_rank(MPI_COMM_WORLD,machnum,ierr)                  
-  call MPI_Comm_size(MPI_COMM_WORLD,machsize,ierr)                 
+  do n = 1, numarg
+      if (cargs(n)(1:2) == '-s') then
+         isingle=1
+      end if
+  end do
+
+  if (isingle == 0) then
+     call MPI_Init(ierr)                                              
+     call MPI_Comm_rank(MPI_COMM_WORLD,machnum,ierr)                  
+     call MPI_Comm_size(MPI_COMM_WORLD,machsize,ierr)                 
+  else
+     machnum=0
+     machsize=1
+  end if
   write (*,'(a)')       '+--- Parallel info: -------------------------------------+'
   write (*,'(a,1x,i6)') '+  - Machnum  =',machnum
   write (*,'(a,1x,i6)') '+  - Machsize =',machsize

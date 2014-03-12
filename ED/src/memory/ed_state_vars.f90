@@ -10611,6 +10611,7 @@ module ed_state_vars
       implicit none
 
       include 'mpif.h'
+!use mpi
       !----- Local variables. -------------------------------------------------------------!
       type(edtype)                                 , pointer   :: cgrid
       type(polygontype)                            , pointer   :: cpoly

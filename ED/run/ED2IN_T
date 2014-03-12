@@ -1,6 +1,7 @@
+
 !==========================================================================================!
 !==========================================================================================!
-!    ED2IN .                                                                               !
+!    E2IN .                                                                               !
 !                                                                                          !
 !    This is the file that contains the variables that define how ED is to be run.  There  !
 ! is some brief information about the variables here.                                      !
@@ -26,10 +27,13 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
 
 
-
    !---------------------------------------------------------------------------------------!
    !     Start of simulation. Information must be given in UTC time.                       !
    !---------------------------------------------------------------------------------------!
+!   NL%IMONTHA  = 04
+!   NL%IDATEA   = 01
+!   NL%IYEARA   = 2000
+!   NL%ITIMEA   = 0000
    NL%IMONTHA  = 01
    NL%IDATEA   = 01
    NL%IYEARA   = 1996
@@ -41,12 +45,15 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    !     End of simulation. Information must be given in UTC time.                         !
    !---------------------------------------------------------------------------------------!
+!   NL%IMONTHZ  = 01    ! Month
+!   NL%IDATEZ   = 01    ! Day
+!   NL%IYEARZ   = 2006  ! Year
+!   NL%ITIMEZ   = 0000  ! UTC
    NL%IMONTHZ  = 01    ! Month
    NL%IDATEZ   = 01    ! Day
    NL%IYEARZ   = 2000  ! Year
    NL%ITIMEZ   = 0000  ! UTC
    !---------------------------------------------------------------------------------------!
-
 
 
 
@@ -60,8 +67,8 @@ $ED_NL
    ! RADFRQ -- Time step to integrate radiation, in seconds.  This must be an integer      !
    !            multiple of DTLSM, and we recommend it to be exactly the same as DTLSM.    !
    !---------------------------------------------------------------------------------------!
-   NL%DTLSM  =  900
-   NL%RADFRQ  = 900
+   NL%DTLSM  =  900.
+   NL%RADFRQ  = 900.
    !---------------------------------------------------------------------------------------!
 
 
@@ -120,8 +127,8 @@ $ED_NL
       !------------------------------------------------------------------------------------!
       NL%NNXP    = 110
       NL%NNYP    =  70
-      NL%DELTAX  = 60000
-      NL%DELTAY  = 60000
+      NL%DELTAX  = 60000.
+      NL%DELTAY  = 60000.
       NL%POLELAT =  -2.857
       NL%POLELON = -54.959
       NL%CENTLAT =  -2.857
@@ -161,6 +168,10 @@ $ED_NL
     NL%POI_LAT  =  35.5
     NL%POI_LON  = -79.0
     NL%POI_RES  = 1.00   
+!    NL%N_POI    =    1
+!    NL%POI_LAT  =  45.92
+!    NL%POI_LON  = -90.45
+!    NL%POI_RES  = 1.00
    !---------------------------------------------------------------------------------------!
 
 
@@ -208,37 +219,6 @@ $ED_NL
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !     The following variables control whether site-, patch-, and cohort-level time      !
-   ! means and mean sum of squares should be included in the output files or not.          !
-   !                                                                                       !
-   ! Reasons to add them:                                                                  !
-   ! a. Sub-polygon variables are more comprehensive.                                      !
-   ! b. Explore heterogeneity within a polygon and make interesting analysis.              !
-   ! c. More chances to create cool 3-D plots.                                             !
-   !                                                                                       !
-   ! Reasons to NOT add them:                                                              !
-   ! a. Output files will become much larger!                                              !
-   ! b. In regional/coupled runs, the output files will be ridiculously large.             !
-   ! c. You may fill up the disk.                                                          !
-   ! d. Other people's job may crash due to insufficient disk space.                       !
-   ! e. You will gain a bad reputation amongst your colleagues.                            !
-   ! f. And it will be entirely your fault.                                                !
-   !                                                                                       !
-   !     Either way, polygon-level averages are always included, and so are the instan-    !
-   ! taneous site-, patch-, and cohort-level variables needed for resuming the run.        ! 
-   !                                                                                       !
-   ! IADD_SITE_MEANS   --  Add site-level averages to the output   (0 = no; 1 = yes)       !
-   ! IADD_PATCH_MEANS  --  Add patch-level averages to the output  (0 = no; 1 = yes)       !
-   ! IADD_COHORT_MEANS --  Add cohort-level averages to the output (0 = no; 1 = yes)       !
-   !                                                                                       !
-   !---------------------------------------------------------------------------------------!
-   NL%IADD_SITE_MEANS   = 1
-   NL%IADD_PATCH_MEANS  = 1
-   NL%IADD_COHORT_MEANS = 1
-   !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    ! ATTACH_METADATA -- Flag for attaching metadata to HDF datasets.  Attaching metadata   !
@@ -280,7 +260,7 @@ $ED_NL
    !                         Multiple timepoints should not be used in the history files   !
    !                         if you intend to use these for HISTORY runs.                  !
    !---------------------------------------------------------------------------------------!
-   NL%OUTFAST    = -1
+   NL%OUTFAST    = -1.
    NL%OUTSTATE   = 0
    !---------------------------------------------------------------------------------------!
 
@@ -293,8 +273,8 @@ $ED_NL
    ! FRQSTATE -- time interval between history files, units defined by UNITSTATE.          !
    !---------------------------------------------------------------------------------------!
    NL%ICLOBBER  = 1
-   NL%FRQFAST   = 1800
-   NL%FRQSTATE  = 1
+   NL%FRQFAST   = 1800.
+   NL%FRQSTATE  = 1.
    !---------------------------------------------------------------------------------------!
 
 
@@ -305,6 +285,9 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
     NL%FFILOUT = '/projectnb/cheas/afshin/analy/duke'
     NL%SFILOUT = '/projectnb/cheas/afshin/histo/duke'
+
+!   NL%FFILOUT = '/usr3/graduate/ttviskar/ED2/EDBRAMS/ED/run/analy/wcreek'
+!   NL%SFILOUT = '/usr3/graduate/ttviskar/ED2/EDBRAMS/ED/run/histo/wcreek'
    !---------------------------------------------------------------------------------------!
 
 
@@ -384,6 +367,9 @@ $ED_NL
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
    NL%SFILIN   = '/usr2/postdoc/apourmok/duke/duke3.'
+!    NL%SFILIN   = '/usr2/postdoc/apourmok/willow/WCr.NACP.'
+!   NL%SFILIN   = '/usr3/graduate/ttviskar/ED2/EDBRAMS/ED/run/histo/wcreek'
+!   NL%SFILIN = @HISTO@
    !---------------------------------------------------------------------------------------!
 
 
@@ -402,6 +388,10 @@ $ED_NL
    NL%IDATEH   = 01     ! Day
    NL%IMONTHH  = 08     ! Month
    NL%IYEARH   = 2000   ! Year
+!   NL%ITIMEH   = 0000   ! UTC
+!   NL%IDATEH   = 01     ! Day
+!   NL%IMONTHH  = 01     ! Month
+!   NL%IYEARH   = 1996   ! Year
    !---------------------------------------------------------------------------------------!
 
 
@@ -445,6 +435,7 @@ $ED_NL
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
    !---------------------------------------------------------------------------------------!
+!   NL%NSLCON   = 2  
    NL%NSLCON   = 11      ! Default soil type if ISOILFLG = 2 (choices below:)
    !---------------------------------------------------------------------------------------!
 
@@ -493,6 +484,8 @@ $ED_NL
    !     They are used only when ISOILFLG is 2, both values are between 0. and 1., and     !
    ! theira sum doesn't exceed 1.  Otherwise standard ED values will be used instead.      !
    !---------------------------------------------------------------------------------------!
+!   NL%SLXCLAY = 0.23
+!   NL%SLXSAND = 0.26
    NL%SLXCLAY = 0.68
    NL%SLXSAND = 0.20
    !---------------------------------------------------------------------------------------!
@@ -551,6 +544,15 @@ $ED_NL
    NL%ED_MET_DRIVER_DB = '/usr2/postdoc/apourmok/met3/US-Dk3/ED_MET_DRIVER_HEADER'
    NL%SOILSTATE_DB='/usr2/postdoc/apourmok/met3/STW1996OCT.dat'
    NL%SOILDEPTH_DB='/usr2/postdoc/apourmok/met3/soil_depths.dat'
+
+!   NL%VEG_DATABASE     = '/projectnb/cheas/EDI/oge2OLD/OGE2_'
+!   NL%SOIL_DATABASE    = '/projectnb/cheas/EDI/faoOLD_'
+!   NL%LU_DATABASE      = '/projectnb/cheas/EDI/ed_inputs/glu/glu-'
+!   NL%PLANTATION_FILE  = ''
+!   NL%THSUMS_DATABASE  = '/projectnb/cheas/EDI/ed_inputs/'
+!   NL%ED_MET_DRIVER_DB = '/projectnb/cheas/met3/US-WCr/ED_MET_DRIVER_HEADER'
+!   NL%SOILSTATE_DB     = '/projectnb/cheas/EDI/ed_inputs/STW1996OCT.dat'
+!   NL%SOILDEPTH_DB     = '/projectnb/cheas/EDI/ed_inputs/soil_depths.dat'
    !---------------------------------------------------------------------------------------!
 
 
@@ -766,7 +768,8 @@ $ED_NL
    !  New scheme: plants shed their leaves once a 10-day running average of available      !
    !              water becomes less than a critical value.                                !
    !---------------------------------------------------------------------------------------!
-   NL%IPHEN_SCHEME    = 0     
+   NL%IPHEN_SCHEME    = 0
+!  NL%IPHEN_SCHEME    = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -779,6 +782,8 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%RADINT          = -11.3868
    NL%RADSLP          = 0.0824
+!  NL%RADINT          = 0.
+!  NL%RADSLP          = 0.
    !---------------------------------------------------------------------------------------!
 
 
@@ -858,15 +863,25 @@ $ED_NL
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   NL%ICANRAD        =  0
+   NL%ICANRAD        =      0
    NL%LTRANS_VIS     =  0.050
    NL%LTRANS_NIR     =  0.270
-   NL%LREFLECT_VIS   =  0.100
+   NL%LREFLECT_VIS   =  0.150
    NL%LREFLECT_NIR   =  0.540
    NL%ORIENT_TREE    =  0.100
    NL%ORIENT_GRASS   = -0.100
    NL%CLUMP_TREE     =  0.800
    NL%CLUMP_GRASS    =  1.000
+
+!   NL%ICANRAD        =  0
+!   NL%LTRANS_VIS     =  0.050
+!   NL%LTRANS_NIR     =  0.270
+!   NL%LREFLECT_VIS   =  0.150
+!   NL%LREFLECT_NIR   =  0.540
+!   NL%ORIENT_TREE    =  0.150
+!   NL%ORIENT_GRASS   = -0.150
+!   NL%CLUMP_TREE     =  1.000
+!   NL%CLUMP_GRASS    =  1.000
    !---------------------------------------------------------------------------------------!
 
 
@@ -1004,6 +1019,31 @@ $ED_NL
    NL%LWIDTH_NLTREE   = 0.05
    NL%Q10_C3          = 2.4
    NL%Q10_C4          = 2.4
+
+!   NL%VMFACT_C3       = 1.25
+!   NL%VMFACT_C4       = 1.00
+!   NL%MPHOTO_TRC3     = 9.0
+!   NL%MPHOTO_TEC3     = 7.2
+!   NL%MPHOTO_C4       = 5.0
+!   NL%BPHOTO_BLC3     = 10000.
+!   NL%BPHOTO_NLC3     = 1000.
+!   NL%BPHOTO_C4       = 8000.
+!   NL%KW_GRASS        = 300.
+!   NL%KW_TREE         = 300.
+!   NL%GAMMA_C3        = 0.015
+!   NL%GAMMA_C4        = 0.036
+!   NL%D0_GRASS        = 0.015
+!   NL%D0_TREE         = 0.015
+!   NL%ALPHA_C3        = 0.080
+!   NL%ALPHA_C4        = 0.053
+!   NL%KLOWCO2IN       = 4000.
+!   NL%RRFFACT         = 1.000
+!   NL%GROWTHRESP      = 0.333
+!   NL%LWIDTH_GRASS    = 0.05
+!   NL%LWIDTH_BLTREE   = 0.10
+!   NL%LWIDTH_NLTREE   = 0.05
+!   NL%Q10_C3          = 2.4
+!   NL%Q10_C4          = 2.4
    !---------------------------------------------------------------------------------------!
 
 
@@ -1087,6 +1127,10 @@ $ED_NL
    !                   the minimum water deficit relative to the total rainfall, over the  !
    !                   past 12 months, to trigger fires.                                   !
    !---------------------------------------------------------------------------------------!
+!   NL%INCLUDE_FIRE    = 0
+!   NL%FIRE_PARAMETER  = 0.2
+!   NL%SM_FIRE         = -1.45 
+
    NL%INCLUDE_FIRE    = 0
    NL%FIRE_PARAMETER  = 0.5
    NL%SM_FIRE         = 0.07
@@ -1226,6 +1270,9 @@ $ED_NL
    ! 7 - southern pines                   | 17 - "Araucaria" (non-optimised                !
    ! 8 - late conifers                    |      Southern Pines).                          !
    !---------------------------------------------------------------------------------------!
+!   NL%INCLUDE_THESE_PFT = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+!   NL%AGRI_STOCK        = 15
+!   NL%PLANTATION_STOCK  = 15
    NL%INCLUDE_THESE_PFT = 5,6,7,8,9,10,11
    NL%AGRI_STOCK        = 5
    NL%PLANTATION_STOCK  = 6
@@ -1259,11 +1306,6 @@ $ED_NL
    !                   the initialization, and fusion will never happen again.  Notice     !
    !                   that if the patches are too different, then the actual number of    !
    !                   patches in a site may exceed MAXPATCH.                              !
-   !                                                                                       !
-   !                   IMPORTANT: If MAXPATCH = -1 or 1, then the model will force fusion  !
-   !                              until the total number of patches is 1 for each land     !
-   !                              use type.                                                !
-   !                                                                                       !
    ! MAXCOHORT      -- If number of cohorts in a given patch exceeds MAXCOHORT, force      !
    !                   cohort fusion.  If MAXCOHORT is 0, then fusion will never happen.   !
    !                   If MAXCOHORT is negative, then the absolute value is used only      !
@@ -1275,6 +1317,12 @@ $ED_NL
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
+!   NL%MAXSITE        =     1
+!   NL%MAXPATCH       =    20
+!   NL%MAXCOHORT      =    80
+!   NL%MIN_SITE_AREA  = 0.005
+!   NL%MIN_PATCH_AREA = 0.005
+
    NL%MAXSITE        =     1
    NL%MAXPATCH       =     6
    NL%MAXCOHORT      =    20
@@ -1307,8 +1355,10 @@ $ED_NL
    !                              TREEFALL_DISTURBANCE_RATE is internally adjusted so the  !
    !                              average patch age is still 1/TREEFALL_DISTURBANCE_RATE   !
    !---------------------------------------------------------------------------------------!
-   NL%TREEFALL_DISTURBANCE_RATE  = 0.0
-   NL%TIME2CANOPY                = 0
+   NL%TREEFALL_DISTURBANCE_RATE  = 0.
+   NL%TIME2CANOPY                = 0.
+!   NL%TREEFALL_DISTURBANCE_RATE  = 0.014
+!   NL%TIME2CANOPY                = 0.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1319,7 +1369,7 @@ $ED_NL
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
-   NL%RUNOFF_TIME    = 28800
+   NL%RUNOFF_TIME    = 28800.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1405,13 +1455,20 @@ $ED_NL
    ! INITIAL_CO2 -- Initial value for CO2 in case no CO2 is provided at the meteorological !
    !                driver dataset [Units: µmol/mol]                                       !
    !---------------------------------------------------------------------------------------!
+!   NL%IMETTYPE    = 1
+!   NL%ISHUFFLE    = 0
+!   NL%METCYC1     = 2000
+!   NL%METCYCF     = 2005
+!   NL%IMETAVG     = 0
+!   NL%IMETRAD     = 0
+!   NL%INITIAL_CO2 = 370.
    NL%IMETTYPE    = 1
    NL%ISHUFFLE    = 0
    NL%METCYC1     = 1998
    NL%METCYCF     = 2005
    NL%IMETAVG     = 1
    NL%IMETRAD     = 2
-   NL%INITIAL_CO2 = 370
+   NL%INITIAL_CO2 = 370.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1427,6 +1484,11 @@ $ED_NL
    !                                                                                       !
    ! If the years don't cover the entire simulation period, they will be recycled.         !
    !---------------------------------------------------------------------------------------!
+!   NL%IPHENYS1 = 2000
+!   NL%IPHENYSF = 2006
+!   NL%IPHENYF1 = 2000
+!   NL%IPHENYFF = 2006
+!   NL%PHENPATH = '/net/casfsb/vol/ssrchome/active_users/dietze/inputs/fluxnet/willow/phenology'
    NL%IPHENYS1 = 1996
    NL%IPHENYSF = 2009
    NL%IPHENYF1 = 1996
@@ -1508,7 +1570,7 @@ $ED_NL
    !                > 0.  Keep the patch with the provided index.  In case the index is    !
    !                      not valid, the model will crash.                                 !
    !---------------------------------------------------------------------------------------!
-   NL%IDETAILED  = 63
+   NL%IDETAILED  = 48
    NL%PATCH_KEEP = 0
    !---------------------------------------------------------------------------------------!
 
