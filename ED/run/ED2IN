@@ -32,7 +32,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IMONTHA  = 01
    NL%IDATEA   = 01
-   NL%IYEARA   = 1900
+   NL%IYEARA   = 1996
    NL%ITIMEA   = 0000
    !---------------------------------------------------------------------------------------!
 
@@ -43,7 +43,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IMONTHZ  = 01    ! Month
    NL%IDATEZ   = 01    ! Day
-   NL%IYEARZ   = 2012  ! Year
+   NL%IYEARZ   = 2000  ! Year
    NL%ITIMEZ   = 0000  ! UTC
    !---------------------------------------------------------------------------------------!
 
@@ -60,8 +60,8 @@ $ED_NL
    ! RADFRQ -- Time step to integrate radiation, in seconds.  This must be an integer      !
    !            multiple of DTLSM, and we recommend it to be exactly the same as DTLSM.    !
    !---------------------------------------------------------------------------------------!
-   NL%DTLSM  =  600.
-   NL%RADFRQ  = 600.
+   NL%DTLSM  =  900
+   NL%RADFRQ  = 900
    !---------------------------------------------------------------------------------------!
 
 
@@ -77,7 +77,7 @@ $ED_NL
    !                1.  Polar-stereographic                                                !
    !---------------------------------------------------------------------------------------!
    NL%N_ED_REGION   =  0
-   NL%GRID_TYPE     =  1
+   NL%GRID_TYPE     =  0
 
       !------------------------------------------------------------------------------------!
       !     The following variables are used only when GRID_TYPE is set to 0.  You must    !
@@ -120,8 +120,8 @@ $ED_NL
       !------------------------------------------------------------------------------------!
       NL%NNXP    = 110
       NL%NNYP    =  70
-      NL%DELTAX  = 60000.
-      NL%DELTAY  = 60000.
+      NL%DELTAX  = 60000
+      NL%DELTAY  = 60000
       NL%POLELAT =  -2.857
       NL%POLELON = -54.959
       NL%CENTLAT =  -2.857
@@ -157,10 +157,10 @@ $ED_NL
    ! POI_RES -- grid resolution of each POI (degrees).  This is used only to define the    !
    !            soil types                                                                 !
    !---------------------------------------------------------------------------------------!
-   NL%N_POI    =    1
-   NL%POI_LAT  =  -2.857
-   NL%POI_LON  = -54.959
-   NL%POI_RES  = 1.00
+    NL%N_POI    =    1
+    NL%POI_LAT  =  35.5
+    NL%POI_LON  = -79.0
+    NL%POI_RES  = 1.00   
    !---------------------------------------------------------------------------------------!
 
 
@@ -199,10 +199,10 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IFOUTPUT  =  0
    NL%IDOUTPUT  =  0
-   NL%IMOUTPUT  =  0
-   NL%IQOUTPUT  =  3
+   NL%IMOUTPUT  =  3
+   NL%IQOUTPUT  =  0
    NL%IYOUTPUT  =  0
-   NL%ITOUTPUT  =  0
+   NL%ITOUTPUT  =  3
    NL%ISOUTPUT  =  3
    !---------------------------------------------------------------------------------------!
 
@@ -246,7 +246,7 @@ $ED_NL
    !                    will compromise I/O performance significantly.                     !
    !                    0 = no metadata, 1 = attach metadata                               !
    !---------------------------------------------------------------------------------------!
-   NL%ATTACH_METADATA = 0
+   NL%ATTACH_METADATA = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -265,7 +265,7 @@ $ED_NL
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    NL%UNITFAST   = 0
-   NL%UNITSTATE  = 3
+   NL%UNITSTATE  = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -280,8 +280,8 @@ $ED_NL
    !                         Multiple timepoints should not be used in the history files   !
    !                         if you intend to use these for HISTORY runs.                  !
    !---------------------------------------------------------------------------------------!
-   NL%OUTFAST    = 0.
-   NL%OUTSTATE   = 0.
+   NL%OUTFAST    = -1
+   NL%OUTSTATE   = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -293,8 +293,8 @@ $ED_NL
    ! FRQSTATE -- time interval between history files, units defined by UNITSTATE.          !
    !---------------------------------------------------------------------------------------!
    NL%ICLOBBER  = 1
-   NL%FRQFAST   = 3600.
-   NL%FRQSTATE  = 1.
+   NL%FRQFAST   = 1800
+   NL%FRQSTATE  = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -303,8 +303,8 @@ $ED_NL
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
-   NL%FFILOUT = '/mypath/ts66_soil80_ddmort080/analy/santarem_km66'
-   NL%SFILOUT = '/mypath/ts66_soil80_ddmort080/histo/santarem_km66'
+    NL%FFILOUT = '/projectnb/cheas/afshin/analy/duke'
+    NL%SFILOUT = '/projectnb/cheas/afshin/histo/duke'
    !---------------------------------------------------------------------------------------!
 
 
@@ -356,7 +356,7 @@ $ED_NL
    !
    !
    !---------------------------------------------------------------------------------------!
-   NL%IED_INIT_MODE   = 6
+   NL%IED_INIT_MODE   = 3
    !---------------------------------------------------------------------------------------!
 
 
@@ -383,7 +383,7 @@ $ED_NL
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   NL%SFILIN   = '/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data/s66_under_sci005.'
+   NL%SFILIN   = '/usr2/postdoc/apourmok/duke/duke3.'
    !---------------------------------------------------------------------------------------!
 
 
@@ -400,8 +400,8 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%ITIMEH   = 0000   ! UTC
    NL%IDATEH   = 01     ! Day
-   NL%IMONTHH  = 01     ! Month
-   NL%IYEARH   = 1900   ! Year
+   NL%IMONTHH  = 08     ! Month
+   NL%IYEARH   = 2000   ! Year
    !---------------------------------------------------------------------------------------!
 
 
@@ -413,8 +413,8 @@ $ED_NL
    !           into a single layer, so if you are running for places where it doesn't snow !
    !           a lot, leave this set to 1.  One value for all grids.                       ! 
    !---------------------------------------------------------------------------------------!
-   NL%NZG = 16
-   NL%NZS = 4
+   NL%NZG = 9
+   NL%NZS = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -445,7 +445,7 @@ $ED_NL
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
    !---------------------------------------------------------------------------------------!
-   NL%NSLCON   = 17      ! Default soil type if ISOILFLG = 2 (choices below:)
+   NL%NSLCON   = 11      ! Default soil type if ISOILFLG = 2 (choices below:)
    !---------------------------------------------------------------------------------------!
 
 
@@ -477,7 +477,7 @@ $ED_NL
    !   Soil type 21 is a special case in which we use the albedo method that used to be    !
    ! the default in ED-2.1.                                                                !
    !---------------------------------------------------------------------------------------!
-   NL%ISOILCOL  = 2
+   NL%ISOILCOL  = 21
    !---------------------------------------------------------------------------------------!
 
 
@@ -493,8 +493,8 @@ $ED_NL
    !     They are used only when ISOILFLG is 2, both values are between 0. and 1., and     !
    ! theira sum doesn't exceed 1.  Otherwise standard ED values will be used instead.      !
    !---------------------------------------------------------------------------------------!
-   NL%SLXCLAY = -1.000
-   NL%SLXSAND = -1.000
+   NL%SLXCLAY = 0.68
+   NL%SLXSAND = 0.20
    !---------------------------------------------------------------------------------------!
 
 
@@ -514,12 +514,9 @@ $ED_NL
    !               2 = porosity (saturation)                                               !
    ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset)    !
    !---------------------------------------------------------------------------------------!
-   NL%SLZ     =   -8.000,-6.959,-5.995,-5.108,-4.296,-3.560,-2.897,-2.307,-1.789,-1.340,
-                  -0.961,-0.648,-0.400,-0.215,-0.089,-0.020
-   NL%SLMSTR  =    1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
-                   1.000, 1.000, 1.000, 1.000, 1.000, 1.000
-   NL%STGOFF  =    0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
-                   0.000, 0.000, 0.000, 0.000, 0.000, 0.000
+   NL%SLZ     =  -2.307, -1.789, -1.340, -0.961, -0.648, -0.400, -0.215, -0.089, -0.020
+   NL%SLMSTR  =   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00
+   NL%STGOFF  =   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00
    !---------------------------------------------------------------------------------------!
 
 
@@ -546,14 +543,14 @@ $ED_NL
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
-   NL%VEG_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_'
-   NL%SOIL_DATABASE    = '/n/moorcroft_data/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
-   NL%LU_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-'
-   NL%PLANTATION_FILE  = ''
-   NL%THSUMS_DATABASE  = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/'
-   NL%ED_MET_DRIVER_DB = '/scratch/ed2_data/met_driver/site_met_driver/Santarem_KM66/Santarem_KM66_HEADER'
-   NL%SOILSTATE_DB     = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/STW1996OCT.dat'
-   NL%SOILDEPTH_DB     = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/soil_depths.dat'
+   NL%VEG_DATABASE      = '/projectnb/cheas/EDI/oge2OLD/OGE2_'
+   NL%SOIL_DATABASE     = '/projectnb/cheas/EDI/faoOLD/FAO_'
+   NL%LU_DATABASE       = ''
+   NL%PLANTATION_FILE   = ''
+   NL%THSUMS_DATABASE   = '/projectnb/cheas/EDI/ed_inputs/'
+   NL%ED_MET_DRIVER_DB = '/usr2/postdoc/apourmok/met3/US-Dk3/ED_MET_DRIVER_HEADER'
+   NL%SOILSTATE_DB='/usr2/postdoc/apourmok/met3/STW1996OCT.dat'
+   NL%SOILDEPTH_DB='/usr2/postdoc/apourmok/met3/soil_depths.dat'
    !---------------------------------------------------------------------------------------!
 
 
@@ -696,7 +693,7 @@ $ED_NL
    !      (2001).                                                                          !
    ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
    !---------------------------------------------------------------------------------------!
-   NL%IPHYSIOL = 2
+   NL%IPHYSIOL = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -719,7 +716,7 @@ $ED_NL
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
    !---------------------------------------------------------------------------------------!
-   NL%IALLOM          = 2
+   NL%IALLOM          = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -769,7 +766,7 @@ $ED_NL
    !  New scheme: plants shed their leaves once a 10-day running average of available      !
    !              water becomes less than a critical value.                                !
    !---------------------------------------------------------------------------------------!
-   NL%IPHEN_SCHEME    = 2     
+   NL%IPHEN_SCHEME    = 0     
    !---------------------------------------------------------------------------------------!
 
 
@@ -801,7 +798,7 @@ $ED_NL
    !                     drought deciduous plants.  This option is for testing purposes    !
    !                     only, think 50 times before using it...                           !
    !---------------------------------------------------------------------------------------!
-   NL%REPRO_SCHEME    = 2
+   NL%REPRO_SCHEME    = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -911,7 +908,7 @@ $ED_NL
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
    !                      matric potentials at wilting point and field capacity.           !
    !---------------------------------------------------------------------------------------!
-   NL%H2O_PLANT_LIM   = 2
+   NL%H2O_PLANT_LIM   = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -1092,7 +1089,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_FIRE    = 0
    NL%FIRE_PARAMETER  = 0.5
-   NL%SM_FIRE         = -1.40
+   NL%SM_FIRE         = 0.07
    !---------------------------------------------------------------------------------------!
 
 
@@ -1125,7 +1122,7 @@ $ED_NL
    !             4.  Same as 0, but if finds the ground conductance following CLM          !
    !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   NL%ICANTURB        = 2
+   NL%ICANTURB        = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1229,9 +1226,9 @@ $ED_NL
    ! 7 - southern pines                   | 17 - "Araucaria" (non-optimised                !
    ! 8 - late conifers                    |      Southern Pines).                          !
    !---------------------------------------------------------------------------------------!
-   NL%INCLUDE_THESE_PFT = 1,2,3,4,16
-   NL%AGRI_STOCK        = 1
-   NL%PLANTATION_STOCK  = 3
+   NL%INCLUDE_THESE_PFT = 5,6,7,8,9,10,11
+   NL%AGRI_STOCK        = 5
+   NL%PLANTATION_STOCK  = 6
    !---------------------------------------------------------------------------------------!
 
 
@@ -1244,7 +1241,7 @@ $ED_NL
    !                  1.  Add the PFT in the INCLUDE_THESE_PFT list                        !
    !                  2.  Ignore the cohort                                                !
    !---------------------------------------------------------------------------------------!
-   NL%PFT_1ST_CHECK = 0 
+   NL%PFT_1ST_CHECK = 1 
    !---------------------------------------------------------------------------------------!
 
 
@@ -1279,8 +1276,8 @@ $ED_NL
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
    NL%MAXSITE        =     1
-   NL%MAXPATCH       =    20
-   NL%MAXCOHORT      =    80
+   NL%MAXPATCH       =     6
+   NL%MAXCOHORT      =    20
    NL%MIN_SITE_AREA  = 0.005
    NL%MIN_PATCH_AREA = 0.005
    !---------------------------------------------------------------------------------------!
@@ -1310,8 +1307,8 @@ $ED_NL
    !                              TREEFALL_DISTURBANCE_RATE is internally adjusted so the  !
    !                              average patch age is still 1/TREEFALL_DISTURBANCE_RATE   !
    !---------------------------------------------------------------------------------------!
-   NL%TREEFALL_DISTURBANCE_RATE  = 0.014
-   NL%TIME2CANOPY                = 0.
+   NL%TREEFALL_DISTURBANCE_RATE  = 0.0
+   NL%TIME2CANOPY                = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1322,7 +1319,7 @@ $ED_NL
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
-   NL%RUNOFF_TIME    = 3600.
+   NL%RUNOFF_TIME    = 28800
    !---------------------------------------------------------------------------------------!
 
 
@@ -1410,11 +1407,11 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IMETTYPE    = 1
    NL%ISHUFFLE    = 0
-   NL%METCYC1     = 2001
-   NL%METCYCF     = 2010
+   NL%METCYC1     = 1998
+   NL%METCYCF     = 2005
    NL%IMETAVG     = 1
    NL%IMETRAD     = 2
-   NL%INITIAL_CO2 = 378.
+   NL%INITIAL_CO2 = 370
    !---------------------------------------------------------------------------------------!
 
 
@@ -1430,11 +1427,11 @@ $ED_NL
    !                                                                                       !
    ! If the years don't cover the entire simulation period, they will be recycled.         !
    !---------------------------------------------------------------------------------------!
-   NL%IPHENYS1 = 1992
-   NL%IPHENYSF = 2003
-   NL%IPHENYF1 = 1992
-   NL%IPHENYFF = 2003
-   NL%PHENPATH   = '/n/moorcroft_data/data/ed2_data/phenology/phenology'
+   NL%IPHENYS1 = 1996
+   NL%IPHENYSF = 2009
+   NL%IPHENYF1 = 1996
+   NL%IPHENYFF = 2009
+   NL%PHENPATH = ''
    !---------------------------------------------------------------------------------------!
 
 
@@ -1448,7 +1445,7 @@ $ED_NL
    ! PHENPATH   -- path and prefix of the prescribed phenology data.                       !
    !---------------------------------------------------------------------------------------!
    NL%IEDCNFGF   = 'config.xml'
-   NL%EVENT_FILE = 'myevents.xml'
+   NL%EVENT_FILE = ''
    !---------------------------------------------------------------------------------------!
 
 
@@ -1466,7 +1463,7 @@ $ED_NL
    ! MON1ST_CENSUS   -- In which month was the first census conducted?                     !
    ! MIN_RECRUIT_DBH -- Minimum DBH that is measured in the census, in cm.                 !
    !---------------------------------------------------------------------------------------!
-   NL%DT_CENSUS       = 1.
+   NL%DT_CENSUS       = 1
    NL%YR1ST_CENSUS    = 1901
    NL%MON1ST_CENSUS   = 7
    NL%MIN_RECRUIT_DBH = 10
@@ -1511,7 +1508,7 @@ $ED_NL
    !                > 0.  Keep the patch with the provided index.  In case the index is    !
    !                      not valid, the model will crash.                                 !
    !---------------------------------------------------------------------------------------!
-   NL%IDETAILED  = 0
+   NL%IDETAILED  = 63
    NL%PATCH_KEEP = 0
    !---------------------------------------------------------------------------------------!
 

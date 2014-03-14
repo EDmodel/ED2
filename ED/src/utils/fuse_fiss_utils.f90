@@ -3061,8 +3061,6 @@ module fuse_fiss_utils
             end do donloop_check
             !------------------------------------------------------------------------------!
 
-
-
             !------------------------------------------------------------------------------!
             donloope: do donp=csite%npatches,2,-1
                donpatch => csite%patch(donp)
@@ -3073,7 +3071,6 @@ module fuse_fiss_utils
                   cycle donloope
                end if
                !---------------------------------------------------------------------------!
-
 
                !---------------------------------------------------------------------------!
                !     If we reach this point, it means that the donor patch is empty and    !
@@ -3103,7 +3100,7 @@ module fuse_fiss_utils
                   !----- Skip the patch if they don't have the same disturbance type. -----!
                   if ( csite%dist_type(donp) /= csite%dist_type(recp)) cycle recloope
                   !------------------------------------------------------------------------!
-
+                  
                   !------------------------------------------------------------------------!
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
@@ -3161,8 +3158,6 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
 
 
-
-
             !------------------------------------------------------------------------------!
             !     Second loop.  Here we will fuse all patches with the same age and        !
             ! disturbance type.                                                            !
@@ -3175,6 +3170,7 @@ module fuse_fiss_utils
                light_toler  = light_toler_min
 
                mainfuseloopa: do ifus=0,niter_patfus
+
                   npatches_old = count(fuse_table)
                   npatches_new = npatches_old
 
@@ -3432,7 +3428,6 @@ module fuse_fiss_utils
                      end do recloopa
                   end do donloopa
 
-
                   !------------------------------------------------------------------------!
                   !      Check how many patches are valid.  If the total number of patches !
                   ! is less than the target, or if we have reached the maximum tolerance   !
@@ -3450,9 +3445,6 @@ module fuse_fiss_utils
                end do mainfuseloopa
             end if
             !------------------------------------------------------------------------------!
-
-
-
 
 
             !------------------------------------------------------------------------------!
@@ -3475,6 +3467,7 @@ module fuse_fiss_utils
             light_toler  = light_toler_min
 
             mainfuseloop: do ifus=0,niter_patfus
+
                npatches_old = count(fuse_table)
                npatches_new = npatches_old
 
@@ -3493,8 +3486,6 @@ module fuse_fiss_utils
                   close(unit=72,status='keep')
                end if
                !---------------------------------------------------------------------------!
-
-
 
                !---------------------------------------------------------------------------!
                !     Loop from youngest to the second oldest patch.                        !
@@ -3517,7 +3508,6 @@ module fuse_fiss_utils
                   end if
                   !------------------------------------------------------------------------!
 
-
                   !------------------------------------------------------------------------!
                   !      If we have reached this place, the donor patch can be fused.  Now !
                   ! look for the next oldest patch that has the same disturbance type.  In !
@@ -3534,7 +3524,7 @@ module fuse_fiss_utils
                         exit recloopp
                      end if
                   end do recloopp
-                  
+                 
                   if (.not. recp_found) then
                      if (print_fuse_details) then
                         open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
@@ -3546,7 +3536,6 @@ module fuse_fiss_utils
                   end if
                   !------------------------------------------------------------------------!
 
-
                   if (print_fuse_details) then
                      open  (unit=72,file=trim(fuse_fout),status='old',action='write'       &
                                                         ,position='append')
@@ -3554,7 +3543,6 @@ module fuse_fiss_utils
                                                                  ,'RECP =',recp
                      close (unit=72,status='keep')
                   end if
-
 
                   !------------------------------------------------------------------------!
                   !     This should never happen because we have already fused all empty   !
@@ -3575,7 +3563,6 @@ module fuse_fiss_utils
                   dark_lai80 = 0.40 * ( sum(csite%cumlai_profile(:,1,recp))                &
                                       + sum(csite%cumlai_profile(:,1,donp)) )
 
-
                   !------------------------------------------------------------------------!
                   !     Compare the size profile for each PFT.  Here we compare the        !
                   ! maximum LAI for each PFT and height bin.  We switched the classes from !
@@ -3583,6 +3570,7 @@ module fuse_fiss_utils
                   ! given DBH, so we want to make sure the light profile is right.         !
                   !------------------------------------------------------------------------!
                   hgtloop: do ihgt=1,ff_nhgt
+
                      cumlai_recp = sum(csite%cumlai_profile(:,ihgt,recp))
                      cumlai_donp = sum(csite%cumlai_profile(:,ihgt,donp))
 
@@ -3595,8 +3583,6 @@ module fuse_fiss_utils
                      dark_donp = cumlai_donp > dark_toler
                      dark_recp = cumlai_recp > dark_toler
                      !---------------------------------------------------------------------!
-
-
 
                      !---------------------------------------------------------------------!
                      if (dark_recp .and. dark_donp) then
@@ -3616,8 +3602,6 @@ module fuse_fiss_utils
                      end if
                      !---------------------------------------------------------------------!
 
-
-
                      
                      !---------------------------------------------------------------------!
                      !    Check whether these bins contain some LAI.  Bins that have       !
@@ -3630,14 +3614,12 @@ module fuse_fiss_utils
                      !---------------------------------------------------------------------!
 
 
-
-
-
                      !---------------------------------------------------------------------!
                      !    If both patches have little or no biomass in this bin, don't     !
                      ! even bother checking the difference.                                !
                      !---------------------------------------------------------------------!
                      if (sunny_donp .and. sunny_recp) then
+
                         if (print_fuse_details) then
                            open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
                                                               ,position='append')
@@ -3649,6 +3631,7 @@ module fuse_fiss_utils
                              ,'SUNNY_RECP =',sunny_donp
                            close (unit=72,status='keep')
                         end if
+
                         cycle hgtloop
                      end if
                      !---------------------------------------------------------------------!
@@ -3697,7 +3680,7 @@ module fuse_fiss_utils
                   end do hgtloop
                   !------------------------------------------------------------------------!
 
-
+                  print *, 'Left', ifus, donp
 
                   !------------------------------------------------------------------------!
                   !      Reaching this point means that the patches are sufficiently       !
@@ -3710,6 +3693,7 @@ module fuse_fiss_utils
                                      ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
                   !------------------------------------------------------------------------!
 
+                  print *, 'Right', ifus, donp
 
                   !----- Record the fusion if requested by the user. ----------------------!
                   if (print_fuse_details) then
@@ -3755,7 +3739,6 @@ module fuse_fiss_utils
                end do donloopp         ! do donp = csite%npatches,2,-1
                !---------------------------------------------------------------------------!
 
-
                !---------------------------------------------------------------------------!
                !      Check how many patches are valid.  If the total number of patches is !
                ! less than the target, or if we have reached the maximum tolerance and the !
@@ -3773,8 +3756,6 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
             end do mainfuseloop
             !------------------------------------------------------------------------------!
-
-
 
             !----- Set the number of patches in the site to "npatches_new" ----------------!
             tempsite%npatches = npatches_new
@@ -4054,7 +4035,7 @@ module fuse_fiss_utils
                                      ( csite%ggsoil(donp)             * csite%area(donp)   &
                                      + csite%ggsoil(recp)             * csite%area(recp) )
 
-
+      
       !------------------------------------------------------------------------------------!
       !    There is no guarantee that there will be a minimum amount of mass in the tempo- !
       ! rary layer, nor is there any reason for both patches to have the same number of    !
@@ -4118,7 +4099,7 @@ module fuse_fiss_utils
       !    (Both are done in new_patch_sfc_props).                                         !
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
-
+     
 
       !----- Merge soil energy and water. -------------------------------------------------!
       do iii=1,mzg
@@ -4155,7 +4136,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-
+      
 
       !------------------------------------------------------------------------------------!
       !    This subroutine takes care of filling:                                          !
@@ -4190,7 +4171,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-
+ 
 
 
       !------------------------------------------------------------------------------------!
@@ -4536,7 +4517,7 @@ module fuse_fiss_utils
                                                *   newareai
       !------------------------------------------------------------------------------------!
 
-
+        
 
       !------------------------------------------------------------------------------------!
       !    Sub-daily means.                                                                !
@@ -4546,7 +4527,7 @@ module fuse_fiss_utils
       ! are still zero.  To avoid divide by zeros:                                         !
       !------------------------------------------------------------------------------------!
       if(csite%fmean_can_shv(recp)>0.00001) then
-
+  
          !------------------------------------------------------------------------------------!
          !      Now we find the derived properties for the canopy air space.                  !
          !------------------------------------------------------------------------------------!
@@ -4574,7 +4555,7 @@ module fuse_fiss_utils
          end do
          !------------------------------------------------------------------------------------!
 
-
+ 
       !------------------------------------------------------------------------------------!
       !     Find the temporary surface water properties.  They may not be available at all !
       ! times, so we must check.                                                           !
@@ -5437,8 +5418,8 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
-
-
+ 
+      print *, 'First', size (csite%qmean_can_shv)
 
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
@@ -5448,6 +5429,7 @@ module fuse_fiss_utils
       ! are still zero.  To avoid divide by zeros:                                         !
       !------------------------------------------------------------------------------------!                                                                                                                             
       if(csite%qmean_can_shv(1,recp)>0.00001 .and. writing_dcyc) then
+
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
          ! original receptor data is lost after fusion takes place.                        !
@@ -5870,7 +5852,7 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
-
+ print *, 'Second'
 
       !------------------------------------------------------------------------------------!
       !    We now update the canopy thermodynamic propeties:                               !
