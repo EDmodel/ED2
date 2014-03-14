@@ -27,7 +27,7 @@ module mem_varinit
   type (varinit_vars), allocatable :: varinit_g(:), varinitm_g(:)
 
 
-  integer, parameter :: maxnudfiles=5000  ! THIS SHOULD GET US TO ABOUT 5 YEARS
+  integer, parameter :: maxnudfiles=44000  ! THIS SHOULD GET US TO ABOUT 5 YEARS
 
   integer :: nud_type, nnudfiles, nnudfl, nudlat
 

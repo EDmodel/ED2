@@ -863,7 +863,7 @@ module therm_lib
          zside = .true.
       else
          if (abs(fun-funa) < 100.*toler*tempa) then
-            delta = 100.*toler*delta
+            delta = 100.*toler*tempa
          else
             delta = max(abs(funa * (tempz-tempa)/(fun-funa)),100.*toler*tempa)
          end if

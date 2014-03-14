@@ -197,6 +197,23 @@ module ed_max_dims
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !   Number of radiation profiles.                                                       !
+   !  1. PAR, Beam, Down                                                                   !
+   !  2. PAR, Beam, Up (only Medvigy's radiation, zero for others).                        !
+   !  3. PAR, Diff, Down                                                                   !
+   !  4. PAR, Diff, Up                                                                     !
+   !  5. NIR, Beam, Down                                                                   !
+   !  6. NIR, Beam, Up (only Medvigy's radiation, zero for others).                        !
+   !  7. NIR, Diff, Down                                                                   !
+   !  8. NIR, Diff, Up                                                                     !
+   !  9. TIR, Diff, Down                                                                   !
+   ! 10. TIR. Diff, Up                                                                     !
+   !---------------------------------------------------------------------------------------!
+   integer, parameter :: n_radprof = 10
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Maximum number meteorological driver xfiles. ------------------------------------!
    integer, parameter :: max_met_vars = 22
@@ -214,7 +231,7 @@ module ed_max_dims
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
    integer, parameter :: huge_patch   = 3600
-   integer, parameter :: huge_cohort  = 50000
+   integer, parameter :: huge_cohort  = 100000
    integer, parameter :: max_water    = 100
    !---------------------------------------------------------------------------------------!
 

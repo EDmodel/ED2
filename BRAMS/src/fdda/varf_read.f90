@@ -288,7 +288,7 @@ nc=len_trim(varpref)
 nvftot=-1
 vpref=varpref
 thisfile = trim(vpref)//'*.tag'
-call RAMS_filelist(fnames,thisfile,nvftot)
+call RAMS_filelist(maxnudfiles,fnames,thisfile,nvftot)
 
 if(nvftot > maxnudfiles) then
    print*,'too many varf files',nvftot,maxnudfiles

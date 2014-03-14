@@ -157,6 +157,7 @@ metrop.lnormMort.Gibbs <<- function( data
 
  
  mediantheta = apply(spmean,1,median)
+ meantheta   = apply(spmean,1,mean)
  uppertheta  = apply(spmean,1,quantile,probs=.975)
  lowertheta  = apply(spmean,1,quantile,probs=.025)
  
@@ -212,7 +213,7 @@ metrop.lnormMort.Gibbs <<- function( data
                                        , S         = data$S
                                        , time      = data$time
                                        , obsmean   = data$rate
-                                       , fitmort   = mediantheta
+                                       , fitmort   = meantheta
                                        , lowermean = lowertheta
                                        , uppermean = uppertheta
                                        )#end data.frame
@@ -428,6 +429,7 @@ lnorm.growth.Gibbs <<- function( growth
    mu      = mu[whichuse]
 
    mediantheta = apply(spmean,1,median)
+   meantheta   = apply(spmean,1,mean)
    uppertheta  = apply(spmean,1,quantile,prob=.975)
    lowertheta  = apply(spmean,1,quantile,prob=.025)
 
@@ -476,7 +478,7 @@ lnorm.growth.Gibbs <<- function( growth
    result.table = data.frame( N         = abund
                             , obsmean   = obsmean
                             , obssd     = obssd
-                            , fitgrow   = mediantheta
+                            , fitgrow   = meantheta
                             , lowermean = lowertheta
                             , uppermean = uppertheta
                             )#end data.frame

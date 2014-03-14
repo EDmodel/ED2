@@ -9,27 +9,37 @@ subroutine set_polygon_coordinates()
    use ed_work_vars  , only : work_v    ! ! structure
    use ed_node_coms  , only : mynum     ! ! intent(in)
    use ed_state_vars , only : edgrid_g  & ! structure
-                            , gdpy      ! ! intent(in)
+                            , gdpy      & ! intent(in)
+                            , edtype    ! ! intent(in)
    implicit none 
    !----- Local variables -----------------------------------------------------------------!
-   integer                :: ifm
-   integer                :: ipy
-   integer                :: npoly
+   integer               :: ifm
+   integer               :: ipy
+   integer               :: npoly
+   type(edtype), pointer :: cgrid
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Ifort-11.0.083 complained about using edgrid_g(ifm) directly, replaced by cgrid.     !
+   !---------------------------------------------------------------------------------------!
    gridloop: do ifm=1,ngrids
+      cgrid => edgrid_g(ifm)
 
       npoly=gdpy(mynum,ifm)
-
+      !----- Go through every polygon. ----------------------------------------------------!
       polyloop: do ipy=1,npoly
-         edgrid_g(ifm)%lon(ipy)              = work_v(ifm)%glon   (ipy)
-         edgrid_g(ifm)%lat(ipy)              = work_v(ifm)%glat   (ipy)
-         edgrid_g(ifm)%xatm(ipy)             = work_v(ifm)%xid    (ipy)
-         edgrid_g(ifm)%yatm(ipy)             = work_v(ifm)%yid    (ipy)
+         cgrid%lon (ipy) = work_v(ifm)%glon   (ipy)
+         cgrid%lat (ipy) = work_v(ifm)%glat   (ipy)
+         cgrid%xatm(ipy) = work_v(ifm)%xid    (ipy)
+         cgrid%yatm(ipy) = work_v(ifm)%yid    (ipy)
       end do polyloop
+      !------------------------------------------------------------------------------------!
    end do gridloop
+   !---------------------------------------------------------------------------------------!
 
-    
+
    return
 end subroutine set_polygon_coordinates
 !==========================================================================================!
@@ -499,7 +509,6 @@ subroutine sfcdata_ed()
                           , slcons1           & ! intent(out)
                           , slcons18          & ! intent(out)
                           , slden             & ! intent(out)
-                          , emisg             & ! intent(out)
                           , soil              & ! intent(in)
                           , thicknet          & ! intent(out)
                           , thick             ! ! intent(out)
@@ -524,7 +533,8 @@ subroutine sfcdata_ed()
 
 
    !----- Soil vertical grid spacing arrays (some with timestep info). --------------------!
-   slz(nzg+1) = 0.
+   slz (nzg+1) = 0.
+   slz8(nzg+1) = 0.d0
 
    do k = 1,nzg
       dslz    (k) = slz(k+1) - slz(k)
@@ -540,13 +550,28 @@ subroutine sfcdata_ed()
       slzt8   (k) = dble(slzt   (k))
    end do
 
-   !----- Find the exponential increase factor. -------------------------------------------!
+   !----- Find the exponential increase factor to estimate the bottom boundary condition. -!
    ezg  = log(slz(1)/slz(nzg)) / log(real(nzg))
    slz0 = slz(1) * (real(nzg+1)/real(nzg))**ezg
+   !---------------------------------------------------------------------------------------!
 
 
-   slzt (0) = .5 * (slz0 + slz(1))
-   slzt8(0) = dble(slzt(0))
+   !----- Find the thickness of the bottom boundary condition layer. ----------------------!
+   dslz    (0) = slz(1) - slz0
+   dslzo2  (0) = .5 * dslz(0)
+   dslzi   (0) = 1. / dslz(0)
+   dslzidt (0) = dslzi(0) * dtlsm
+   dslz8   (0) = dble(dslz   (0))
+   dslzo28 (0) = dble(dslzo2 (0))
+   dslzi8  (0) = dble(dslzi  (0))
+   dslzidt8(0) = dble(dslzidt(0))
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find the height at the middle of the bottom boundary condition. -----------------!
+   slzt   (0) = .5 * (slz0 + slz(1))
+   slzt8  (0) = dble(slzt(0))
+   !---------------------------------------------------------------------------------------!
 
    do k = 1,nzg
       dslzt    (k) = slzt(k) - slzt(k-1)
@@ -587,7 +612,6 @@ subroutine sfcdata_ed()
       end do
 
       slden    (nnn) =  soil(nnn)%slden    
-      emisg (nnn) = .98
    end do
 
    !----- Defining some snow thickness variables ------------------------------------------!

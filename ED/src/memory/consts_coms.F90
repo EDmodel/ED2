@@ -79,12 +79,10 @@ Module consts_coms
                         , b_p00            => p00            & ! intent(in)
                         , b_prefsea        => prefsea        & ! intent(in)
                         , b_p00i           => p00i           & ! intent(in)
-                        , b_th_diff        => th_diff        & ! intent(in)
-                        , b_th_diffi       => th_diffi       & ! intent(in)
-                        , b_kin_visc       => kin_visc       & ! intent(in)
-                        , b_kin_visci      => kin_visci      & ! intent(in)
-                        , b_th_expan       => th_expan       & ! intent(in)
-                        , b_gr_coeff       => gr_coeff       & ! intent(in)
+                        , b_th_diff0       => th_diff0       & ! intent(in)
+                        , b_dth_diff       => dth_diff       & ! intent(in)
+                        , b_kin_visc0      => kin_visc0      & ! intent(in)
+                        , b_dkin_visc      => dkin_visc      & ! intent(in)
                         , b_rdry           => rdry           & ! intent(in)
                         , b_rdryi          => rdryi          & ! intent(in)
                         , b_cpdry          => cpdry          & ! intent(in)
@@ -120,6 +118,8 @@ Module consts_coms
                         , b_idnsi          => idnsi          & ! intent(in)
                         , b_fdns           => fdns           & ! intent(in)
                         , b_fdnsi          => fdnsi          & ! intent(in)
+                        , b_fsdns          => fsdns          & ! intent(in)
+                        , b_fsdnsi         => fsdnsi         & ! intent(in)
                         , b_cice           => cice           & ! intent(in)
                         , b_cicei          => cicei          & ! intent(in)
                         , b_t3ple          => t3ple          & ! intent(in)
@@ -246,12 +246,10 @@ Module consts_coms
    real, parameter :: p00            = b_p00
    real, parameter :: prefsea        = b_prefsea
    real, parameter :: p00i           = b_p00i
-   real, parameter :: th_diff        = b_th_diff
-   real, parameter :: th_diffi       = b_th_diffi
-   real, parameter :: kin_visc       = b_kin_visc
-   real, parameter :: kin_visci      = b_kin_visci
-   real, parameter :: th_expan       = b_th_expan
-   real, parameter :: gr_coeff       = b_gr_coeff
+   real, parameter :: th_diff0       = b_th_diff0
+   real, parameter :: dth_diff       = b_dth_diff
+   real, parameter :: kin_visc0      = b_kin_visc0
+   real, parameter :: dkin_visc      = b_dkin_visc
    real, parameter :: rdry           = b_rdry
    real, parameter :: rdryi          = b_rdryi
    real, parameter :: cpdry          = b_cpdry
@@ -287,6 +285,8 @@ Module consts_coms
    real, parameter :: idnsi          = b_idnsi
    real, parameter :: fdns           = b_fdns
    real, parameter :: fdnsi          = b_fdnsi
+   real, parameter :: fsdns          = b_fsdns
+   real, parameter :: fsdnsi         = b_fsdnsi
    real, parameter :: cice           = b_cice
    real, parameter :: cicei          = b_cicei
    real, parameter :: t3ple          = b_t3ple
@@ -443,22 +443,16 @@ Module consts_coms
    !     Air diffusion properties. These properties are temperature-dependent in reality,  !
    ! but for simplicity we assume them constants, using the value at 20°C.                 !
    !                                                                                       !
-   ! Thermal diffusivity - Straight from Table 15.1 of MU08                                !
+   ! Thermal diffusivity - Computed from equation on page 32 of MU08;                      !
    ! Kinematic viscosity - Computed from equation on page 32 of MU08;                      !
    ! Thermal expansion coefficient - determined by inverting the coefficient at equation   !
    !                                 10.11 (MU08).                                         !
-   ! These terms could be easily made function of temperature in the future if needed be.  !!
+   ! These terms could be easily made function of temperature in the future if needed be.  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: th_diff   = 2.060e-5     ! Air thermal diffusivity        [     m²/s]
-   real, parameter :: th_diffi  = 1./th_diff   ! 1/ air thermal diffusivity     [     s/m²]
-   real, parameter :: kin_visc  = 1.516e-5     ! Kinematic viscosity            [     m²/s]
-   real, parameter :: kin_visci = 1./kin_visc  ! 1/Kinematic viscosity          [     s/m²]
-   real, parameter :: th_expan  = 3.43e-3      ! Air thermal expansion coeff.   [      1/K]
-   !---------------------------------------------------------------------------------------!
-   !    Grashof coefficient [1/(K m³)].  This is the coefficient a*g/(nu²) in MU08's       !
-   ! equation 10.8, in the equation that defines the Grashof number.                       !
-   !---------------------------------------------------------------------------------------!
-   real, parameter :: gr_coeff = th_expan * grav  * kin_visci * kin_visci
+   real, parameter :: th_diff0  = 1.89e-5     ! Air thermal diffusivity         [     m²/s]
+   real, parameter :: dth_diff  = 0.007       ! Temperature dependency slope    [      1/K]
+   real, parameter :: kin_visc0 = 1.33e-5     ! Kinematic viscosity             [     m²/s]
+   real, parameter :: dkin_visc = 0.007       ! Temperature dependency slope    [      1/K]
    !---------------------------------------------------------------------------------------!
 
 
@@ -520,6 +514,8 @@ Module consts_coms
    real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
    real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m³]
    real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m³/kg]
+   real, parameter :: fsdns    = 1.000e2      ! Fresh snow density              [    kg/m³]
+   real, parameter :: fsdnsi   = 1./fsdns     ! Inverse of liquid water density [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
@@ -720,6 +716,8 @@ Module consts_coms
    real(kind=8), parameter :: idnsi8          = dble(idnsi         )
    real(kind=8), parameter :: fdns8           = dble(fdns          )
    real(kind=8), parameter :: fdnsi8          = dble(fdnsi         )
+   real(kind=8), parameter :: fsdns8          = dble(fsdns         )
+   real(kind=8), parameter :: fsdnsi8         = dble(fsdnsi        )
    real(kind=8), parameter :: cice8           = dble(cice          )
    real(kind=8), parameter :: cicei8          = dble(cicei         )
    real(kind=8), parameter :: t3ple8          = dble(t3ple         )
@@ -744,12 +742,10 @@ Module consts_coms
    real(kind=8), parameter :: ttripoli8       = dble(ttripoli      )
    real(kind=8), parameter :: htripoli8       = dble(htripoli      )
    real(kind=8), parameter :: htripolii8      = dble(htripolii     )
-   real(kind=8), parameter :: th_diff8        = dble(th_diff       )
-   real(kind=8), parameter :: th_diffi8       = dble(th_diffi      )
-   real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
-   real(kind=8), parameter :: kin_visci8      = dble(kin_visci     )
-   real(kind=8), parameter :: th_expan8       = dble(th_expan      )
-   real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
+   real(kind=8), parameter :: th_diff08       = dble(th_diff0      )
+   real(kind=8), parameter :: dth_diff8       = dble(dth_diff      )
+   real(kind=8), parameter :: kin_visc08      = dble(kin_visc0     )
+   real(kind=8), parameter :: dkin_visc8      = dble(dkin_visc     )
    real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )

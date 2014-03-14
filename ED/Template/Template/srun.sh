@@ -1,12 +1,19 @@
+#!/bin/bash
 #--------------------------------- Change settings here -----------------------------------#
 here='pathhere/thispoly'                            # Folder to start the run
 queue='thisqueue'                                   # Queue name
 options=''                                          # Options, or leave it blank...
 bsub='/lsf/7.0/linux2.6-glibc2.3-x86_64/bin/bsub'   # bsub, command to submit the job
-joblog=${here}'/serial_lsf.out'                     # Name of the job output
+joblog="${here}/serial_lsf.out"                     # Name of the job output
 jobname='thisdesc-thispoly'                         # Job name
-callserial=${here}'/callserial.sh'                  # Name of executable
+callserial="${here}/callserial.sh"                  # Name of executable
+initrc='myinitrc'                                   # Script to load before doing anything
 thisnum=myorder
+#------------------------------------------------------------------------------------------#
+
+
+#----- Source script. ---------------------------------------------------------------------#
+. ${initrc}
 #------------------------------------------------------------------------------------------#
 
 

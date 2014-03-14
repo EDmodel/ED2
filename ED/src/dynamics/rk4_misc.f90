@@ -51,7 +51,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
    real(kind=8)                       :: rsat
-   real(kind=8)                       :: sum_sfcw_mass
    integer                            :: ico
    integer                            :: ipft
    integer                            :: k
@@ -165,9 +164,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! which is saved as J/kg outside the integration, but must be converted to J/m² because !
    ! this linearises the differential equations and make the solution more stable.         !
    !---------------------------------------------------------------------------------------!
-   targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
-   ksn                   = targetp%nlev_sfcwater
-   sum_sfcw_mass  = 0.d0
+   targetp%nlev_sfcwater    = sourcesite%nlev_sfcwater(ipa)
+   ksn                      = targetp%nlev_sfcwater
+   targetp%total_sfcw_mass  = 0.d0
    do k = 1, nzs
       targetp%sfcwater_mass(k)    = max(0.d0,dble(sourcesite%sfcwater_mass(k,ipa)))
       targetp%sfcwater_depth(k)   = dble(sourcesite%sfcwater_depth(k,ipa))
@@ -175,13 +174,13 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                   * dble(sourcesite%sfcwater_mass(k,ipa))
       targetp%sfcwater_tempk(k)   = dble(sourcesite%sfcwater_tempk(k,ipa))
       targetp%sfcwater_fracliq(k) = dble(sourcesite%sfcwater_fracliq(k,ipa))
-      sum_sfcw_mass  = sum_sfcw_mass  + targetp%sfcwater_mass (k)
+      targetp%total_sfcw_mass     = targetp%total_sfcw_mass  + targetp%sfcwater_mass (k)
    end do
    !----- Define the temporary surface water flag. ----------------------------------------!
    if (targetp%nlev_sfcwater == 0) then
       !----- No layer. --------------------------------------------------------------------!
       targetp%flag_sfcwater = 0
-   elseif (sum_sfcw_mass < rk4water_stab_thresh) then
+   elseif (targetp%total_sfcw_mass < rk4water_stab_thresh) then
       !----- There is water, but the amount is very small. --------------------------------!
       targetp%flag_sfcwater = 1
    else
@@ -206,9 +205,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    k = max(1,ksn)
    call ed_grndvap8(ksn,targetp%soil_water(nzg),targetp%soil_tempk(nzg)                    &
                    ,targetp%soil_fracliq(nzg),targetp%sfcwater_tempk(k)                    &
-                   ,targetp%sfcwater_fracliq(k),targetp%can_prss,targetp%can_shv           &
-                   ,targetp%ground_shv,targetp%ground_ssh,targetp%ground_temp              &
-                   ,targetp%ground_fliq,targetp%ggsoil)
+                   ,targetp%sfcwater_fracliq(k),targetp%snowfac,targetp%can_prss           &
+                   ,targetp%can_shv,targetp%ground_shv,targetp%ground_ssh                  &
+                   ,targetp%ground_temp,targetp%ground_fliq,targetp%ggsoil)
    !---------------------------------------------------------------------------------------!
 
 
@@ -576,6 +575,9 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    use soil_coms             , only : soil8                 & ! intent(in)
                                     , dslz8                 & ! intent(in)
                                     , dslzi8                & ! intent(in)
+                                    , soil_rough8           & ! intent(in)
+                                    , ny07_eq04_a8          & ! intent(in)
+                                    , ny07_eq04_m8          & ! intent(in)
                                     , matric_potential8     ! ! function
    use grid_coms             , only : nzg                   & ! intent(in)
                                     , nzs                   ! ! intent(in)
@@ -593,11 +595,12 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , cpdry8                & ! intent(in)
                                     , cph2o8                & ! intent(in)
                                     , wdns8                 & ! intent(in)
+                                    , fsdns8                & ! intent(in)
+                                    , fsdnsi8               & ! intent(in)
                                     , rdryi8                & ! intent(in)
                                     , rdry8                 & ! intent(in)
                                     , epim18                & ! intent(in)
-                                    , toodry8               & ! intent(in)
-                                    , t3ple8                ! ! intent(in)
+                                    , toodry8               ! ! intent(in)
    use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
    use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
    implicit none
@@ -633,6 +636,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    real(kind=8)                     :: rk4min_wood_water
    real(kind=8)                     :: wgt_leaf
    real(kind=8)                     :: wgt_wood
+   real(kind=8)                     :: bulk_sfcw_dens
    !---------------------------------------------------------------------------------------!
 
    !----- Then we define some logicals to make the code cleaner. --------------------------!
@@ -734,6 +738,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    ok_sfcw = .true.
    ksn = initp%nlev_sfcwater
    initp%total_sfcw_depth = 0.d0
+   initp%total_sfcw_mass  = 0.d0
    sfcwloop: do k=1,ksn
       if (initp%sfcwater_mass(k) < rk4min_sfcw_mass) then 
          !---------------------------------------------------------------------------------!
@@ -804,6 +809,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          call uint2tl8(int_sfcw_energy,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
       end if
       initp%total_sfcw_depth = initp%total_sfcw_depth + initp%sfcwater_depth(k)
+      initp%total_sfcw_mass  = initp%total_sfcw_mass  + initp%sfcwater_mass (k)
    end do sfcwloop
    !---------------------------------------------------------------------------------------!
    !    For non-existent layers of temporary surface water, we copy the temperature and    !
@@ -823,9 +829,25 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Update the fraction of the canopy covered in snow.                                !
+   !     Update the fraction of the canopy covered in snow.  I could not find any          !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
    !---------------------------------------------------------------------------------------!
-   initp%snowfac = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+   ! initp%snowfac = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+   if (initp%total_sfcw_mass > rk4tiny_sfcw_mass) then
+      bulk_sfcw_dens = max( fsdns8                                                         &
+                          , min( wdns8, initp%total_sfcw_mass / initp%total_sfcw_depth ) )
+      initp%snowfac  = max( 0.d0, min( 9.9d-1                                              &
+                          , tanh( initp%total_sfcw_depth                                   &
+                                / ( ny07_eq04_a8 * soil_rough8                             &
+                                  * (bulk_sfcw_dens * fsdnsi8) ** ny07_eq04_m8 ) ) ) )
+   else
+      initp%snowfac  = 0.d0
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -855,23 +877,21 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    !     Compute the ground temperature and specific humidity.                             !
    !---------------------------------------------------------------------------------------!
-   k = max(1,ksn)
-   if (ksn == 0) then
-      k = 1
-      ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp       .and.                    &
-                  initp%soil_tempk(nzg) <= rk4max_soil_temp       .and.                    &
-                  initp%soil_water(nzg) >= rk4min_soil_water(nzg) .and.                    &
-                  initp%soil_water(nzg) <= rk4max_soil_water(nzg)
-   else
-      k = ksn
-      ok_ground = initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
+   ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp       .and.                       &
+               initp%soil_tempk(nzg) <= rk4max_soil_temp       .and.                       &
+               initp%soil_water(nzg) >= rk4min_soil_water(nzg) .and.                       &
+               initp%soil_water(nzg) <= rk4max_soil_water(nzg)
+   if (ksn > 0) then
+      ok_ground = ok_ground                                     .and.                      &
+                  initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
                   initp%sfcwater_tempk(ksn) <= rk4max_sfcw_temp
    end if
    if (ok_ground) then
+      k = max(1,ksn)
       call ed_grndvap8(ksn,initp%soil_water(nzg),initp%soil_tempk(nzg)                     &
                       ,initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)                     &
-                      ,initp%sfcwater_fracliq(k),initp%can_prss,initp%can_shv              &
-                      ,initp%ground_shv,initp%ground_ssh,initp%ground_temp                 &
+                      ,initp%sfcwater_fracliq(k),initp%snowfac,initp%can_prss              &
+                      ,initp%can_shv,initp%ground_shv,initp%ground_ssh,initp%ground_temp   &
                       ,initp%ground_fliq,initp%ggsoil)
    end if
    !---------------------------------------------------------------------------------------!
@@ -2850,10 +2870,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%avg_wshed_lg(ico) = initp%avg_wshed_lg(ico) + leaf_wshed  * hdidi
+               initp%avg_wshed_lg(ico) = initp%avg_wshed_lg(ico) + leaf_wshed  ! * hdidi
             end if
             if (print_detailed) then
-               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + leaf_qwshed * hdidi
+               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + leaf_qwshed ! * hdidi
             end if
             !------------------------------------------------------------------------------!
  
@@ -2891,11 +2911,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
                initp%avg_vapor_lc(ico) = initp%avg_vapor_lc(ico)                           &
-                                       + (leaf_boil  - leaf_dew ) * hdidi
+                                       + (leaf_boil  - leaf_dew ) ! * hdidi
             end if
             if (print_detailed) then
                initp%cfx_qwflxlc (ico) = initp%cfx_qwflxlc(ico)                            &
-                                       + (leaf_qboil - leaf_qdew) * hdidi
+                                       + (leaf_qboil - leaf_qdew) ! * hdidi
             end if
             !------------------------------------------------------------------------------!
          end if
@@ -2964,10 +2984,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
-               initp%avg_wshed_wg(ico) = initp%avg_wshed_wg(ico) + wood_wshed  * hdidi
+               initp%avg_wshed_wg(ico) = initp%avg_wshed_wg(ico) + wood_wshed  ! * hdidi
             end if
             if (print_detailed) then
-               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + wood_qwshed * hdidi
+               initp%cfx_qwshed  (ico) = initp%cfx_qwshed  (ico) + wood_qwshed ! * hdidi
             end if
             !------------------------------------------------------------------------------!
 
@@ -3003,11 +3023,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !----- Update fluxes if needed be. --------------------------------------------!
             if (fast_diagnostics) then
                initp%avg_vapor_wc(ico) = initp%avg_vapor_wc(ico)                           &
-                                       + (wood_boil  - wood_dew ) * hdidi
+                                       + (wood_boil  - wood_dew ) ! * hdidi
             end if
             if (print_detailed) then
                initp%cfx_qwflxwc (ico) = initp%cfx_qwflxwc (ico)                           &
-                                       + (wood_qboil - wood_qdew) * hdidi
+                                       + (wood_qboil - wood_qdew) ! * hdidi
             end if
             !------------------------------------------------------------------------------!
          end if
@@ -3606,6 +3626,8 @@ subroutine print_rk4patch(y,csite,ipa)
    real(kind=4)                    :: pss_wai
    !---------------------------------------------------------------------------------------!
 
+   cpatch => csite%patch(ipa)
+
 
 
    !----- Find the total patch LAI and WAI. -----------------------------------------------!
@@ -3627,8 +3649,6 @@ subroutine print_rk4patch(y,csite,ipa)
    y_can_theiv = thetaeiv8(y%can_theta,y%can_prss,y%can_temp,y_can_rvap,y_can_rvap)
    y_can_vpdef = vpdefil8 (y%can_prss,y%can_temp,y%can_shv,.true.)
    !---------------------------------------------------------------------------------------!
-
-   cpatch => csite%patch(ipa)
 
    write(unit=*,fmt='(80a)') ('=',k=1,80)
    write(unit=*,fmt='(80a)') ('=',k=1,80)
@@ -3659,6 +3679,7 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Pressure                   : ',rk4site%atm_prss
    write (unit=*,fmt='(a,1x,es12.4)') ' Exner function             : ',rk4site%atm_exner
    write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed                 : ',rk4site%vels
+   write (unit=*,fmt='(a,1x,es12.4)') ' Prescribed u*              : ',rk4site%atm_ustar
    write (unit=*,fmt='(a,1x,es12.4)') ' Height                     : ',rk4site%geoht
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux         : ',rk4site%pcpg
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux         : ',rk4site%qpcpg

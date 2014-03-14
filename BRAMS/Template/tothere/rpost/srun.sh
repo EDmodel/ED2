@@ -1,3 +1,6 @@
+#!/bin/bash
+. ${HOME} i13
+
 #------------------------------------- CUSTOMISE HERE -------------------------------------#
 here='myoutpath/rpost'                                     # Path to start the run
 queue='thisqueue'                                   # Queue name

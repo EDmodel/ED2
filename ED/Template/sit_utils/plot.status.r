@@ -16,11 +16,11 @@ graphics.off()
 
 
 #----- Paths. -----------------------------------------------------------------------------#
-main    = "/n/moorcroftfs2/mlongo/EDBRAMS/final_ed/drought/realisation+rtsph" # Current directory.
-here    = "/n/moorcroftfs2/mlongo/EDBRAMS/final_ed/drought/realisation+rtsph/sit_utils"
+main    = "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx" # Main simulation directory.
+here    = file.path(main,"sit_utils")               # This directory.
 
-srcdir  = "/n/moorcroft_data/mlongo/util/Rsc"  # Source  directory.
-outroot = here                                 # Directory for figures
+srcdir  = "/n/home00/mlongo/util/Rsc"               # Source  directory.
+outroot = here                                      # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -73,6 +73,12 @@ mtext.yadj     =  0.65                # Offset for the y label
 #==========================================================================================#
 #==========================================================================================#
 
+#----- Check that directory main has been set. --------------------------------------------#
+if ( main == "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx"){
+   cat (" Main: ",main,"\n")
+   stop(" Directory main has not been set!!!")
+}#end if
+#------------------------------------------------------------------------------------------#
 
 
 
@@ -128,7 +134,7 @@ jobs$realisation = as.numeric(substring(jobs$run,23,24))
 # last line to avoid trouble, unless the file is complete.                                 #
 #------------------------------------------------------------------------------------------#
 names.check   = c("run","lon","lat","year","month","day","hhmm","runt"
-                 ,"agb","bsa","lai","vel")
+                 ,"agb","bsa","lai","scb","npa")
 cat (" + Reading ",basename(lastcheck),"...","\n")
 last          = read.table(file=lastcheck,skip=0,header=FALSE,comment.char=""
                           ,col.names=names.check,stringsAsFactors=FALSE)
@@ -190,6 +196,8 @@ template   = array( data     = NA
 datum      = list ( agb    = template
                   , lai    = template
                   , bsa    = template
+                  , scb    = template
+                  , npa    = template
                   , status = template
                   , yearn  = template
                   )#end list
@@ -206,6 +214,8 @@ jobs$yearn  = jobs$yeara
 jobs$agb    = rep(NA,times=njobs)
 jobs$bsa    = rep(NA,times=njobs)
 jobs$lai    = rep(NA,times=njobs)
+jobs$scb    = rep(NA,times=njobs)
+jobs$npa    = rep(NA,times=njobs)
 
 il = match(last$run,jobs$run); l.sel = ! is.na(il)
 ic = match(curr$run,jobs$run); c.sel = ! is.na(ic)
@@ -213,6 +223,8 @@ jobs$status[il[l.sel]] = last$runt[l.sel]  ; jobs$status[ic[c.sel]] = curr$runt[
 jobs$agb   [il[l.sel]] = last$agb [l.sel]  ; jobs$agb   [ic[c.sel]] = curr$agb [c.sel]
 jobs$lai   [il[l.sel]] = last$lai [l.sel]  ; jobs$lai   [ic[c.sel]] = curr$lai [c.sel]
 jobs$bsa   [il[l.sel]] = last$bsa [l.sel]  ; jobs$bsa   [ic[c.sel]] = curr$bsa [c.sel]
+jobs$scb   [il[l.sel]] = last$scb [l.sel]  ; jobs$scb   [ic[c.sel]] = curr$scb [c.sel]
+jobs$npa   [il[l.sel]] = last$npa [l.sel]  ; jobs$npa   [ic[c.sel]] = curr$npa [c.sel]
 jobs$yearn [il[l.sel]] = last$year[l.sel]  ; jobs$yearn [ic[c.sel]] = curr$year[c.sel]
 
 
@@ -220,7 +232,8 @@ jobs$yearn [il[l.sel]] = last$year[l.sel]  ; jobs$yearn [ic[c.sel]] = curr$year[
 
 
 keep            = names(jobs) %in% c("drain","dtemp","realisation","iphen","iata","istext"
-                                    ,"yeara","yearz","yearn","status","agb","bsa","lai")
+                                    ,"yeara","yearz","yearn","status"
+                                    ,"agb","bsa","lai","scb","npa")
 jobs            = jobs[,keep]
 weird           = is.finite(jobs$lai) & abs(jobs$lai) > 20
 jobs$lai[weird] = NA
@@ -241,6 +254,8 @@ index               = cbind(i.drain,i.dtemp,i.realisation,i.iphen,i.iata,i.stext
 datum$agb   [index] = jobs$agb
 datum$lai   [index] = jobs$lai
 datum$bsa   [index] = jobs$bsa
+datum$scb   [index] = jobs$scb
+datum$npa   [index] = jobs$npa
 datum$status[index] = jobs$status
 datum$yearn [index] = jobs$yearn
 #------------------------------------------------------------------------------------------#
@@ -266,6 +281,7 @@ n.level               = length(yr.level)
 datum$yr.idx          = match(yr.cut,yr.level) + 0 * datum$yearn
 initial               = datum$status == "INITIAL"
 crashed               = datum$status == "CRASHED"
+bad.met               = datum$status == "BAD_MET"
 metmiss               = datum$status == "METMISS"
 stopped               = datum$status == "STOPPED"
 extinct               = datum$status == "EXTINCT"
@@ -277,17 +293,18 @@ datum$yr.idx[ststate] = n.level + 2
 datum$yr.idx[extinct] = n.level + 3
 datum$yr.idx[stopped] = n.level + 4
 datum$yr.idx[metmiss] = n.level + 5
-datum$yr.idx[crashed] = n.level + 6
+datum$yr.idx[bad.met] = n.level + 6
+datum$yr.idx[crashed] = n.level + 7
 yr.cscheme            = c("grey89",iatlas(n=n.level),"royalblue4","steelblue3","purple3"
-                         ,"mediumpurple1","deepskyblue","hotpink")
-ybottom               = rep(0,times=n.level+7)
-ytop                  = rep(1,times=n.level+7)
-xleft                 = seq(from=-1,to=n.level+5)
-xright                = seq(from= 0,to=n.level+6)
-xat                   = seq(from=-1,to=n.level+5)+0.5
-xbrks                 = seq(from=-1,to=n.level+6)+0.5
+                         ,"mediumpurple1","deepskyblue","red3","hotpink")
+ybottom               = rep(0,times=n.level+8)
+ytop                  = rep(1,times=n.level+8)
+xleft                 = seq(from=-1,to=n.level+6)
+xright                = seq(from= 0,to=n.level+7)
+xat                   = seq(from=-1,to=n.level+6)+0.5
+xbrks                 = seq(from=-1,to=n.level+7)+0.5
 xlabel                = c("Initial",yr.brks[-1],"Finish","StState","Extinct"
-                         ,"Stopped","MetMiss","Crashed")
+                         ,"Stopped","MetMiss","Bad Met","Crashed")
 #------------------------------------------------------------------------------------------#
 
 
@@ -365,7 +382,7 @@ for (st in 1:n.stext){
       rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=yr.cscheme)
       box()
       axis(side=1,at=xat,srt=45,labels=FALSE)
-      text(x=xat,y=par("usr")[3]-0.6,labels=xlabel,srt=30,adj=1,xpd=TRUE,cex=1.15)
+      text(x=xat,y=par("usr")[3]-0.6,labels=xlabel,srt=30,adj=1,xpd=TRUE,cex=1.1)
       title(main="Status",ylab="",xlab="")
       #------------------------------------------------------------------------------------#
 
@@ -446,9 +463,9 @@ for (st in 1:n.stext){
 #      Create parameter space maps for all other variables.                                #
 #------------------------------------------------------------------------------------------#
 cat(" Plot the current properties...","\n")
-key.var  = c("lai","bsa","agb")
+key.var  = c("lai","bsa","agb","scb","npa")
 desc.var = c("Leaf area index [m2/m2]","Basal area [cm2/m2]"
-            ,"Above-ground biomass [kgC/m2]")
+            ,"Above-ground biomass [kgC/m2]","Soil carbon [kgC/m2]","Patch count [---]")
 n.var    = length(key.var)
 lo.box = pretty.box(n.iphen*n.iata)
 for (v in 1:n.var){
@@ -477,8 +494,6 @@ for (v in 1:n.var){
      n.brks      = length(var.brks)
      var.cut     = cut(this.var,breaks=var.brks)
    }#end if
-   n.brks      = length(var.brks)
-   var.cut     = cut(this.var,breaks=var.brks)
    var.lev     = levels(var.cut)
    var.idx     = match(var.cut,var.lev) + 0 * this.var
    var.cscheme = iatlas(n=n.brks-1)

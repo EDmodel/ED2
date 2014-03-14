@@ -379,7 +379,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  cpatch%bstorage(ico)  = max(0.0,bstore_new)
                  
                  if(bleaf_new .le. tiny(1.0)) then
-                    cpatch%phenology_status(ico) = 2
+                    cpatch%phenology_status(ico) = -2
                     cpatch%elongf(ico)           = 0.0
                     !----- No leaves, then set it to zero. --------------------------------!
                     cpatch%bleaf(ico)      = 0.0
@@ -697,6 +697,7 @@ subroutine event_till(rval8)
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
   use budget_utils     , only : update_budget
+  use therm_lib        , only : cmtl2uext
   implicit none
   real(kind=8),intent(in) :: rval8
 
@@ -779,13 +780,19 @@ subroutine event_till(rval8)
                  cpatch%wood_water(ico)       = 0.0
                  cpatch%wood_fliq(ico)        = 0.0
                  cpatch%wood_temp(ico)        = csite%can_temp(ipa)
-                 call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                        &
-                                   ,cpatch%bsapwooda(ico),cpatch%nplant(ico)                   &
-                                   ,cpatch%pft(ico)                                            &
+                 call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                    &
+                                   ,cpatch%bsapwooda(ico),cpatch%nplant(ico)               &
+                                   ,cpatch%pft(ico)                                        &
                                    ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-                 cpatch%leaf_energy(ico)      = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-                 cpatch%wood_energy(ico)      = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
-                 cpatch%phenology_status(ico) = 2
+                 cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)                &
+                                                    ,cpatch%leaf_water(ico)                &
+                                                    ,cpatch%leaf_temp (ico)                &
+                                                    ,cpatch%leaf_fliq (ico))
+                 cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)                &
+                                                    ,cpatch%wood_water(ico)                &
+                                                    ,cpatch%wood_temp (ico)                &
+                                                    ,cpatch%wood_fliq (ico))
+                 cpatch%phenology_status(ico) = -2
                  cpatch%elongf(ico)           = 0.0
                  
               enddo

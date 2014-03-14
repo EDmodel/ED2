@@ -32,7 +32,7 @@ moorcroft_6100b)
    ;;
 moorcroft2a)
    nodes="hero4001 hero4002 hero4003 hero4004 hero4005 hero4006
-          hero4007 hero4008 hero4009 hero4010 hero4011 hero4013"
+          hero4007 hero4008 hero4009 hero4010 hero4011"
    ;;
 moorcroft2b)
    nodes="hero4014 hero4015 hero4016 hero4101 hero4102 hero4103
@@ -48,21 +48,23 @@ camd)
    nodes="camd04 camd05 camd06 camd07 camd09 camd10 camd11 camd13"
    ;;
 unrestricted_parallel)
-   nodes="hero3102 hero3103 hero3104 hero3107 hero3108 hero3109 hero3110
-          hero3111 hero3112 hero3113 hero3114 hero3115 hero3116 hero3201
-          hero3202 hero3203 hero3204 hero3205 hero3206 hero3207 hero3208
-          hero3209 hero3210 hero3211 hero3212 hero3213 hero3214 hero3215
-          hero3216"
+   nodes="hero3103 hero3104 hero3107 hero3108 hero3109 hero3110 
+          hero3111 hero3112 hero3113 hero3114 hero3115 hero3116 
+          hero3201 hero3202 hero3203 hero3204 hero3205 hero3206 
+          hero3207 hero3208 hero3209 hero3210 hero3211 hero3212
+          hero3213 hero3214 hero3215 hero3216"
    ;;
 unrestricted_serial)
-   nodes="soph57 soph58 soph59 soph60 soph61 soph62 soph63 soph64"
+   nodes="hero1301 hero1912 soph57 soph58 soph59 soph60 soph61 soph62 soph63 soph64"
    ;;
 long_serial)
-   nodes="soph03 soph04 soph05 soph13 soph14 soph16 soph17 soph18 soph19 soph24 
-          soph25 soph26 soph27 soph28 soph29 soph30 soph31 soph32 soph33 soph34 
-          soph35 soph36 soph37 soph38 soph39 soph40 soph41 soph42 soph43 soph44 
-          soph45 soph46 soph47 soph48 soph49 soph50 soph51 soph52 soph53 soph54 
-          soph55 soph56"
+   nodes="soph01 soph02 soph03 soph04 soph05 soph06 soph07 soph08
+          soph09 soph10 soph11 soph12 soph13 soph14 soph15 soph16
+          soph17 soph18 soph19 soph20 soph22 soph23 soph24 soph25
+          soph26 soph27 soph28 soph29 soph30 soph31 soph32 soph33
+          soph34 soph35 soph36 soph37 soph38 soph39 soph40 soph41
+          soph42 soph43 soph44 soph45 soph46 soph47 soph48 soph49
+          soph51 soph52 soph53 soph54 soph55 soph56"
    ;;
 *)
    echo ' I cannot recognise queue '${queue}'...'
@@ -78,8 +80,9 @@ esac
 #------------------------------------------------------------------------------------------#
 for node in ${nodes}
 do
-   echo -n ' Deleting files from node '${node}'...'
-   ssh ${node} rm -fr /scratch/${myself} 1> /dev/null 2>&1
-   echo 'Gone!'
+   echo -n ' Scheduling files for deletion - node '${node}'...'
+   ssh ${node} /bin/mv /scratch/${myself} /scratch/goodbye-${myself} 1> /dev/null 2>&1
+   ssh ${node} rm -fr /scratch/goodbye-${myself}                     1> /dev/null 2>&1 &
+   echo 'Done!'
 done
 #------------------------------------------------------------------------------------------#

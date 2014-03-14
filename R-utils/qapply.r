@@ -49,20 +49,16 @@ qapply <<- function(X,INDEX,DIM,FUN,...){
       #------------------------------------------------------------------------------------#
 
 
-      #------------------------------------------------------------------------------------#
-      #     Define the "zapply" function, which is the tapply with different arguments.    #
-      #------------------------------------------------------------------------------------#
-      zapply = function(zx,zindex,zfunc,...){
-         zout = tapply(X=zx,INDEX=zindex,FUN=zfunc,...)
-         return(zout)
-      } #end function zapply
-      #------------------------------------------------------------------------------------#
-
-
       #----- Call zapply by the apply function. -------------------------------------------#
-      eout  = apply(X=X,MARGIN=margin,FUN=zapply,zindex=INDEX,zfunc=FUN,...)
+      eout  = apply( X       = X
+                   , MARGIN  = margin
+                   , FUN     = function(z,zIND,zFUN,...) tapply(X=z,INDEX=zIND,FUN=zFUN,...)
+                   , zIND    = INDEX
+                   , zFUN    = FUN
+                   ,...
+                   )#end apply
       if (is.list(INDEX) && length(INDEX) > 1){
-         uniqlist       = sapply(X=lapply(X=INDEX,FUN=sort),FUN=unique)
+         uniqlist       = lapply(X=lapply(X=INDEX,FUN=sort),FUN=unique)
          dimuniq        = sapply(X=uniqlist,FUN=length,simplify=TRUE)
          eout           = array (data=eout,dim=c(dimuniq,dim(X)[margin]))
          dimnames(eout) = uniqlist

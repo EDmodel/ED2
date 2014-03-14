@@ -67,7 +67,29 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       lat     = poilist$lat[pp]
       wmo     = poilist$wmo[pp]
 
-      lieu     = simul.description(ici,testpoi)
+      lieu     = simul.description(ici,testpoi,iata=TRUE)
+      pathroot = paste(here,ici,sep="/")
+      pathin   = paste(pathroot,"analy",ici,sep="/")
+      pathrst  = paste(here,ici,"histo",ici,sep="/")
+      pathout  = paste(pathroot,"epost",sep="/")
+
+   }else if( substring(ici,4,4) == "_" & substring(ici,9,9) == "_"){
+      #---- Convert back to upper case. ---------------------------------------------------#
+      ici      = paste(toupper(substring(ici,1,3)),substring(ici,4),sep="")
+
+      #---- Regional polygon. -------------------------------------------------------------#
+      pnumber  = as.numeric(substring(ici,5,8))
+      testpoi  = paste("Polygon",pnumber)
+
+      #----- Grab the "IATA" code. --------------------------------------------------------#
+      iata    = substring(ici,1,8)
+
+      #----- Put the name of the place and the meteorological forcing. --------------------#
+      lon     = as.numeric(substring(ici,13,18))
+      lat     = as.numeric(substring(ici,23,28))
+      wmo     = NA
+
+      lieu     = simul.description(ici,testpoi,iata=FALSE)
       pathroot = paste(here,ici,sep="/")
       pathin   = paste(pathroot,"analy",ici,sep="/")
       pathrst  = paste(here,ici,"histo",ici,sep="/")
@@ -141,7 +163,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon=substring(100+mona,2)
          filename     = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -153,7 +176,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mo,2)
          filename     = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -174,7 +198,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mona,2)
          filename     = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -186,7 +211,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mo,2)
          filename     = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -207,7 +233,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon=substring(100+mona,2)
          filename     = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -219,7 +246,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cmon         = substring(100+mo,2)
          filename     = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -243,7 +271,8 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          cday         = substring(100+daya,2)
          filename     = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    ,sep="")
          filename.bz2 = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2",sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
          } #end if
@@ -263,7 +292,9 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
          filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
                              ,sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
+                             ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
          }#end if
@@ -278,7 +309,9 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
          filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
                              ,sep="")
-         if (file.exists(filename) || file.exists(filename.bz2)){
+         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
+                             ,sep="")
+         if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             dayz = dy
             dy   = daya #----- This will make it leave the loop. -------------------------#
          } #end if
@@ -318,7 +351,7 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 #==========================================================================================#
 #     This function finds a good name to describe the simulation.                          #
 #------------------------------------------------------------------------------------------#
-simul.description <<- function(ici,testpoi,max.char=66){
+simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
 
    #---------------------------------------------------------------------------------------#
    #     This block contains names for the commonest settings for variables that are       #
@@ -337,8 +370,8 @@ simul.description <<- function(ici,testpoi,max.char=66){
    #----- icanrad is the canopy radiation model. ------------------------------------------#
    flagvar[["icanrad"]]         = list( descr   = "Canopy radiation method"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=1,by=1)
-                                      , names   = c("Medvigy","Zhao and Qualls")
+                                      , values  = seq(from=0,to=2,by=1)
+                                      , names   = c("Medvigy","Zhao and Qualls","Liou")
                                       )#end list
    #----- imetavg is the averaging method for met driver. ---------------------------------#
    flagvar[["imetavg"]]         = list( descr   = "Met driver average"
@@ -353,10 +386,11 @@ simul.description <<- function(ici,testpoi,max.char=66){
    #----- iallom is the allometry method. -------------------------------------------------#
    flagvar[["iallom"]]          = list( descr   = "Allometry"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=2,by=1)
+                                      , values  = seq(from=0,to=3,by=1)
                                       , names   = c("Original ED-2.1"
                                                   ,"AGB-Chave, BL-Original"
-                                                  ,"AGB-Chave, BL-ColeEwel")
+                                                  ,"AGB-Chave, BL-ColeEwel"
+                                                  ,"AGB-Chave, BL-Lescure")
                                       )#end list
    #----- h2o.plant.limit is the water limitation method. ---------------------------------#
    flagvar[["h2o.plant.limit"]] = list( descr   = "Water limitation"
@@ -696,10 +730,51 @@ simul.description <<- function(ici,testpoi,max.char=66){
                                        )#end list
    flagvar[["met.forcing"]]      = list( descr  = "Meteorological forcing"
                                        , numeric = FALSE
-                                       , values = c("eft","wmo")
+                                       , values = c("eft","shr","wmo")
                                        , names  = c("Eddy flux tower"
+                                                   ,"Sub-hourly"
                                                    ,"WMO-based"
                                                    )#end names
+                                       )#end list
+   flagvar[["init.mode"]]        = list( descr  = "Initial Cond.:"
+                                       , numeric = TRUE
+                                       , values = c(-1,0,1,2,3,4,5,6)
+                                       , names  = c("Bare Ground"
+                                                   ,"Near bare ground"
+                                                   ,"ED-1.0"
+                                                   ,"ED-2.0"
+                                                   ,"ED-2.0 + Hydro"
+                                                   ,"ED-2.1"
+                                                   ,"ED-2.2"
+                                                   ,"Biometry"
+                                                   )#end names
+                                       )#end list
+   flagvar[["struct"]]           = list( descr  = "Structure"
+                                       , numeric = FALSE
+                                       , values = c("ble_iage30_pft02"
+                                                   ,"ble_iage30_pft05"
+                                                   ,"sas_iage01_pft02"
+                                                   ,"sas_iage01_pft05"
+                                                   ,"sas_iage30_pft02"
+                                                   ,"sas_iage30_pft05"
+                                                   )#end values
+                                       , names  = c("2 PFTs"
+                                                   ,"5 PFTs"
+                                                   ,"Size + 2 PFTs"
+                                                   ,"Size + 5 PFTs"
+                                                   ,"Size + Age + 2 PFTs"
+                                                   ,"Size + Age + 5 PFTs"
+                                                   )#end names
+                                       )#end list
+   flagvar[["iustar"]]           = list( descr  = "Friction Vel."
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("Prescribed","Predicted")
+                                       )#end list
+   flagvar[["idimort"]]          = list( descr  = "DI Mortality"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("ED-1.0","ED-2.2")
                                        )#end list
    #---------------------------------------------------------------------------------------#
 
@@ -880,6 +955,26 @@ simul.description <<- function(ici,testpoi,max.char=66){
                                      , fmt   = "%3i"
                                      , off   =   0.0
                                      , mult  =   1.0)
+   numvar[["yeara"]]           = list( descr = "Initial year"
+                                     , unit  = ""
+                                     , fmt   = "%4.4i"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
+   numvar[["yearz"]]           = list( descr = "Final year"
+                                     , unit  = ""
+                                     , fmt   = "%4.4i"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
+   numvar[["lon"  ]]           = list( descr = "Longitude"
+                                     , unit  = ""
+                                     , fmt   = "%.2f"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
+   numvar[["lat"  ]]           = list( descr = "Latitude"
+                                     , unit  = ""
+                                     , fmt   = "%.2f"
+                                     , off   =   0.0
+                                     , mult  =   1.0)
    #---------------------------------------------------------------------------------------#
 
 
@@ -889,122 +984,157 @@ simul.description <<- function(ici,testpoi,max.char=66){
    #         The following list is currently hardcoded, it could be better designed in the #
    # future so the script would recognise the terms automatically.                         #
    #---------------------------------------------------------------------------------------#
-   lenici = nchar(ici)
-   if (lenici == 8){
-      nparms = 1
-      param  = c("isas")
-      na     = c(     6)
-      nz     = c(     8)
-   }else if (lenici == 11){
-      nparms = 1
-      param  = c("revision")
-      na     = c(         9)
-      nz     = c(        11)
-   }else if (lenici == 15){
-      nparms = 1
-      param  = c("revision")
-      na     = c(        13)
-      nz     = c(        15)
-   }else if (lenici == 16){
-      nparms = 2
-      param  = c("igrass","icanturb")
-      na     = c(       7,        15)
-      nz     = c(       8,        16)
-   }else if (lenici == 17){
-      nparms = 2
-      param  = c("iphen.scheme","isas")
-      na     = c(            11,    15)
-      nz     = c(            13,    17)
-   }else if (lenici == 18){
-      nparms = 2
-      param  = c("icanturb","isas")
-      na     = c(        13,    16)
-      nz     = c(        14,    18)
-   }else if (lenici == 19){
-      nparms = 2
-      param  = c("isoilcol","leaf.absorb.nir")
-      na     = c(        10,               17)
-      nz     = c(        11,               19)
-   }else if (lenici == 21){
-      nparms = 3
-      param  = c("isas","ipatch","idiversity")
-      na     = c(     6,      14,          20)
-      nz     = c(     8,      15,          21)
-   }else if (lenici == 22){
-      nparms = 2
-      param  = c("iscenario","iphen.scheme")
-      na     = c(         11,            20)
-      nz     = c(         14,            22)
-   }else if (lenici == 23){
-      nparms = 3
-      param  = c("idiversity","icanrad","isas")
-      na     = c(          9,        18,    21)
-      nz     = c(         10,        19,    23)
-   }else if (lenici == 24){
-      nparms = 3
-      param  = c("soil.depth","kw.tree","atm.co2")
-      na     = c(          10,       15,       22)
-      nz     = c(          11,       17,       24)
-   }else if (lenici == 25){
-      nparms = 3
-      param  = c("iphen.scheme","d0","include.fire")
-      na     = c(            10,  16,            24)
-      nz     = c(            12,  18,            25)
-   }else if (lenici == 26){
-      nparms = 3
-      param  = c("soil.depth","dd.mort.control", "iphen.scheme")
-      na     = c(          10,               17,             24)
-      nz     = c(          11,               18,             26)
-   }else if (lenici == 27){
-      nparms = 3
-      param  = c("soil.depth","sand", "clay")
-      na     = c(          10,    17,     25)
-      nz     = c(          11,    19,     27)
-   }else if (lenici == 28){
-      nparms = 3
-      param  = c("iphen.scheme", "isoil.text","treefall")
-      na     = c(            11,           20,        25)
-      nz     = c(            13,           21,        28)
-   }else if (lenici == 30){
-      nparms = 3
-      param  = c("iscenario","iphen.scheme","isoil.text")
-      na     = c(         11,            20,          29)
-      nz     = c(         14,            22,          30)
-   }else if (lenici == 31){
-      nparms = 3
-      param  = c("iphen.scheme","iddmort.scheme","treefall")
-      na     = c(            11,              20,        28)
-      nz     = c(            13,              21,        31)
-   }else if (lenici == 32){
-      nparms = 4
-      param  = c("isoil.text","include.fire","fire.parameter","sm.fire")
-      na     = c(         10,             17,              24,       29)
-      nz     = c(         11,             18,              25,       32)
-   }else if (lenici == 33){
-      nparms = 5
-      param  = c("met.forcing","isas","iage","idiversity","include.fire")
-      na     = c(            6,    10,    18,          24,            32)
-      nz     = c(            8,    12,    19,          25,            33)
-   }else if (lenici == 36){
-      nparms = 4
-      param  = c("imet.drought","isoil.text","iphen.scheme","idrought")
-      na     = c(             9,          17,            24,        35)
-      nz     = c(            10,          18,            26,        36)
-   }else if (lenici == 39){
-      nparms = 6
-      param  = c("met.forcing","isas","iage","idiversity","iphen.scheme","include.fire")
-      na     = c(            6,    10,    17,          23,            30,            38)
-      nz     = c(            8,    12,    18,          24,            32,            39)
-   }else if (lenici == 40){
-      nparms = 5
-      param  = c("iphen.scheme","iddmort.scheme","treefall","include.fire","isas")
-      na     = c(            10,              18,        26,            35,    38)
-      nz     = c(            12,              19,        29,            36,    40)
-   }else if (lenici == 41){
-      nparms = 5
-      param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
-      na     = c(            7,           13,           23,            31,          40)
-      nz     = c(           10,           16,           24,            33,          41)
+   if (iata){
+      lenici = nchar(ici)
+      if (lenici == 8){
+         nparms = 1
+         param  = c("met.forcing")
+         na     = c(     6)
+         nz     = c(     8)
+      }else if (lenici == 11){
+         nparms = 1
+         param  = c("revision")
+         na     = c(         9)
+         nz     = c(        11)
+      }else if (lenici == 12){
+         nparms = 2
+         param  = c("met.forcing","isas")
+         na     = c(            6,    10)
+         nz     = c(            8,    12)
+      }else if (lenici == 14){
+         nparms = 1
+         param  = c("icanrad")
+         na     = c(        13)
+         nz     = c(        15)
+      }else if (lenici == 15){
+         nparms = 1
+         param  = c("revision")
+         na     = c(        13)
+         nz     = c(        15)
+      }else if (lenici == 16){
+         nparms = 2
+         param  = c("igrass","icanturb")
+         na     = c(       7,        15)
+         nz     = c(       8,        16)
+      }else if (lenici == 17){
+         nparms = 2
+         param  = c("met.forcing","isoil.text")
+         na     = c(            6,          16)
+         nz     = c(            8,          17)
+      }else if (lenici == 18){
+         nparms = 2
+         param  = c("icanturb","isas")
+         na     = c(        13,    16)
+         nz     = c(        14,    18)
+      }else if (lenici == 19){
+         nparms = 3
+         param  = c("met.forcing","isas","iage")
+         na     = c(            6,    10,    18)
+         nz     = c(            8,    12,    19)
+      }else if (lenici == 21){
+         nparms = 3
+         param  = c("isas","iage","idiversity")
+         na     = c(     6,    14,          20)
+         nz     = c(     8,    15,          21)
+      }else if (lenici == 22){
+         nparms = 3
+         param  = c("met.forcing","iustar","icanturb")
+         na     = c(            6,      14,        21)
+         nz     = c(            8,      15,        22)
+      }else if (lenici == 23){
+         nparms = 3
+         param  = c("met.forcing","iphen.scheme","include.fire")
+         na     = c(            6,            14,            22)
+         nz     = c(            8,            16,            23)
+      }else if (lenici == 24){
+         nparms = 3
+         param  = c("met.forcing","icanrad","init.mode")
+         na     = c(            6,      14,          22)
+         nz     = c(            8,      16,          24)
+      }else if (lenici == 25){
+         nparms = 3
+         param  = c("iphen.scheme","d0","include.fire")
+         na     = c(            10,  16,            24)
+         nz     = c(            12,  18,            25)
+      }else if (lenici == 26){
+         nparms = 3
+         param  = c("soil.depth","dd.mort.control", "iphen.scheme")
+         na     = c(          10,               17,             24)
+         nz     = c(          11,               18,             26)
+      }else if (lenici == 27){
+         nparms = 3
+         param  = c("soil.depth","sand", "clay")
+         na     = c(          10,    17,     25)
+         nz     = c(          11,    19,     27)
+      }else if (lenici == 28){
+         nparms = 3
+         param  = c("iphen.scheme", "isoil.text","treefall")
+         na     = c(            11,           20,        25)
+         nz     = c(            13,           21,        28)
+      }else if (lenici == 29){
+         nparms = 3
+         param  = c("yeara","iphen.scheme", "isoil.text")
+         na     = c(      9,            19,           28)
+         nz     = c(     12,            21,           29)
+      }else if (lenici == 30){
+         nparms = 3
+         param  = c("iscenario","iphen.scheme","isoil.text")
+         na     = c(         11,            20,          29)
+         nz     = c(         14,            22,          30)
+      }else if (lenici == 31){
+         nparms = 3
+         param  = c("iallom","idimort","include.fire")
+         na     = c(      12,       22,            30)
+         nz     = c(      13,       23,            31)
+      }else if (lenici == 32){
+         nparms = 4
+         param  = c("isoil.text","include.fire","fire.parameter","sm.fire")
+         na     = c(         10,             17,              24,       29)
+         nz     = c(         11,             18,              25,       32)
+      }else if (lenici == 33){
+         nparms = 3
+         param  = c("vm0","iallom","idimort")
+         na     = c(   12,      22,       32)
+         nz     = c(   14,      23,       33)
+      }else if (lenici == 36){
+         nparms = 4
+         param  = c("imet.drought","isoil.text","iphen.scheme","idrought")
+         na     = c(             9,          17,            24,        35)
+         nz     = c(            10,          18,            26,        36)
+      }else if (lenici == 37){
+         nparms = 4
+         param  = c("yeara","iphen.scheme","isoil.text","treefall")
+         na     = c(      9,            18,          27,        35)
+         nz     = c(     11,            20,          28,        37)
+      }else if (lenici == 39){
+         nparms = 6
+         param  = c("met.forcing","isas","iage","idiversity","iphen.scheme","include.fire")
+         na     = c(            6,    10,    17,          23,            30,            38)
+         nz     = c(            8,    12,    18,          24,            32,            39)
+      }else if (lenici == 40){
+         nparms = 5
+         param  = c("iphen.scheme","iddmort.scheme","treefall","include.fire","isas")
+         na     = c(            10,              18,        26,            35,    38)
+         nz     = c(            12,              19,        29,            36,    40)
+      }else if (lenici == 41){
+         nparms = 5
+         param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")
+         na     = c(            7,           13,           23,            31,          40)
+         nz     = c(           10,           16,           24,            33,          41)
+      }else if (lenici == 50){
+         nparms = 5
+         param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","struct")
+         na     = c(            7,           13,           23,            31,      35)
+         nz     = c(           10,           16,           24,            33,      50)
+      }#end if
+   }else{
+      lenici = nchar(ici)
+      if (lenici == 28){
+         nparms = 2
+         param  = c("lon","lat")
+         na     = c(   13,   23)
+         nz     = c(   18,   28)
+      }#end if
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -1401,21 +1531,21 @@ u           = u + 1
 poitmp[[u]] = list( short           = "brasilia"          
                   , longname        = "Brasilia, DF"                
                   , iata            = "bsb"
-                  , lon             = -47.910
-                  , lat             = -15.860
-                  , alt             = 1054
-                  , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
+                  , lon             = -47.713
+                  , lat             = -15.601
+                  , alt             = 1023
+                  , wmo             = 83378
+                  , isoilflg        = 2
+                  , ntext           = 17
                   , sand            = -1.000
                   , clay            = -1.000
-                  , depth           = "F"
+                  , depth           = "H"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Brasilia"
+                  , yeara           = 2006
+                  , yearz           = 2012
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1482,6 +1612,27 @@ poitmp[[u]] = list( short           = "cacoal_grande"
                   , iphen           = -1
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "caico"        
+                  , longname        = "Caico, RN"              
+                  , iata            = "cqo"
+                  , lon             = -37.085
+                  , lat             =  -6.467
+                  , alt             = 176
+                  , wmo             = 82690
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Caico"
+                  , yeara           = 1998
+                  , yearz           = 2008
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "cajazeiras"        
                   , longname        = "Cajazeiras, PB"              
                   , iata            = "cjz"
@@ -1521,6 +1672,27 @@ poitmp[[u]] = list( short           = "calabozo"
                   , met.driver      = "Sheffield"
                   , yeara           = 1964
                   , yearz           = 2009
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "campo_grande"          
+                  , longname        = "Campo Grande, MS"                
+                  , iata            = "cgr"
+                  , lon             = -54.538
+                  , lat             = -20.438
+                  , alt             = 677
+                  , wmo             = 83612
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Campo_Grande"
+                  , yeara           = 2002
+                  , yearz           = 2013
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -1737,9 +1909,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "cuiaba"            
                   , longname        = "Cuiaba, MT"                  
                   , iata            = "cgb"
-                  , lon             = -56.100
-                  , lat             = -15.600
-                  , alt             = 187
+                  , lon             = -56.070
+                  , lat             = -15.555
+                  , alt             = 185
                   , wmo             = 83362
                   , isoilflg        = 1
                   , ntext           = 1
@@ -1749,9 +1921,9 @@ poitmp[[u]] = list( short           = "cuiaba"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Cuiaba"
+                  , yeara           = 2002
+                  , yearz           = 2013
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2086,8 +2258,8 @@ poitmp[[u]] = list( short           = "harvard"
                   , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Harvard"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , yeara           = 1987
+                  , yearz           = 2003
                   , iphen           = 1
                   )#end list
 u           = u + 1
@@ -2319,6 +2491,27 @@ poitmp[[u]] = list( short           = "joao_pessoa"
                   , met.driver      = "Sheffield"
                   , yeara           = 1964
                   , yearz           = 2009
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "joinville"       
+                  , longname        = "Joinville, SC"             
+                  , iata            = "joi"
+                  , lon             = -48.858
+                  , lat             = -26.252
+                  , alt             = 48
+                  , wmo             = 83905
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Joinville"
+                  , yeara           = 2004
+                  , yearz           = 2013
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2654,7 +2847,7 @@ poitmp[[u]] = list( short           = "manaus_km34"
                   , scolour         = 14
                   , met.driver      = "Manaus_Km34"
                   , yeara           = 1994
-                  , yearz           = 2006
+                  , yearz           = 2007
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -2829,9 +3022,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "natal"           
                   , longname        = "Natal, RN"                
                   , iata            = "nat"
-                  , lon             = -35.250
-                  , lat             = -5.920
-                  , alt             = 49
+                  , lon             = -35.206
+                  , lat             = -5.837
+                  , alt             = 58
                   , wmo             = 82599
                   , isoilflg        = 1
                   , ntext           = 1
@@ -2841,9 +3034,9 @@ poitmp[[u]] = list( short           = "natal"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Natal"
+                  , yeara           = 2004
+                  , yearz           = 2013
                   , iphen           = 2
                   )#end list
 u           = u + 1
@@ -2963,13 +3156,13 @@ poitmp[[u]] = list( short           = "paracou"
                   , ntext           = 6
                   , sand            = 0.562
                   , clay            = 0.345
-                  , depth           = "C"
-                  , isoilbc         = 2
-                  , sldrain         = 6.
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
                   , scolour         = 14
                   , met.driver      = "Paracou"
                   , yeara           = 1999
-                  , yearz           = 2010
+                  , yearz           = 2013
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3540,6 +3733,27 @@ poitmp[[u]] = list( short           = "sao_luis"
                   , iphen           = 2
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "sao_martinho"          
+                  , longname        = "Sao Martinho da Serra, RS"                
+                  , iata            = "mhs"
+                  , lon             = -53.823
+                  , lat             = -29.443
+                  , alt             = 489
+                  , wmo             = 83937
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sao_Martinho"
+                  , yeara           = 2000
+                  , yearz           = 2013
+                  , iphen           = 2
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "santa_fe"          
                   , longname        = "Santa Fe, ARG"                
                   , iata            = "sfn"
@@ -3599,7 +3813,7 @@ poitmp[[u]] = list( short           = "santarem_km67"
                   , scolour         = 14
                   , met.driver      = "Santarem_Km67"
                   , yeara           = 1996
-                  , yearz           = 2011
+                  , yearz           = 2012
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -3690,9 +3904,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "sinop"             
                   , longname        = "Sinop, MT"                   
                   , iata            = "ops"
-                  , lon             = -55.325
-                  , lat             = -11.412
-                  , alt             = NA
+                  , lon             = -55.322
+                  , lat             = -11.421
+                  , alt             = 423
                   , wmo             = NA
                   , isoilflg        = 2
                   , ntext           = 2
@@ -3776,8 +3990,8 @@ poitmp[[u]] = list( short           = "tarauaca"
                   , iata            = "trq"
                   , lon             = -70.781
                   , lat             =  -8.157
-                  , alt             = NA
-                  , wmo             = NA
+                  , alt             = 197
+                  , wmo             = 82807
                   , isoilflg        = 1
                   , ntext           = 1
                   , sand            = -1.000

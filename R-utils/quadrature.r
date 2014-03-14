@@ -11,6 +11,7 @@
 #               Possible values are:                                                       #
 #               "trapezoid" - linear interpolation.                                        #
 #               "spline"    - use spline then integrate.                                   #
+#   ~ cum    -- return cumulative sum?                                                     #
 #------------------------------------------------------------------------------------------#
 quadrature <<- function(y,x,method="trapezoid",subdivisions=10000,cum=FALSE){
 
@@ -19,10 +20,15 @@ quadrature <<- function(y,x,method="trapezoid",subdivisions=10000,cum=FALSE){
        cat (" Length of y: ",length(y),"\n")
        cat (" Length of x: ",length(x),"\n")
        stop(" X and Y must have the same size...")
-    }else if (any(is.na(x) | is.na(y))){
-       cat (" NA found in y: ",any(is.na(y)),"\n")
-       cat (" NA found in x: ",any(is.na(x)),"\n")
-       stop(" X and Y cannot contain NA...")
+    }else if (any(is.na(x))){
+       stop(" X cannot contain NA...")
+    }else if (any(is.na(y))){
+       if (cum){
+          cumint = NA * x
+       }else{
+          cumint = NA
+       }#end if
+       return(cumint)
     }#end if
     #--------------------------------------------------------------------------------------#
 
@@ -70,6 +76,7 @@ quadrature <<- function(y,x,method="trapezoid",subdivisions=10000,cum=FALSE){
        stop(paste("Cannot recognise the method : ",method,"...",sep=" "))
     }#end if
     #--------------------------------------------------------------------------------------#
+    return(cumint)
 }#end function quadrature
 #==========================================================================================#
 #==========================================================================================#

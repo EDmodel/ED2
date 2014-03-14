@@ -7,5 +7,6 @@ commonest = function(x,na.rm=FALSE) {
 
   unique.x = unique(x)
   often    = unique.x[which.max(tabulate(match(x, unique.x)))]
+  return(often)
 }#end function
 #------------------------------------------------------------------------------------------#

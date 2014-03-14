@@ -35,6 +35,10 @@ subroutine model()
        nsubs,         &
        dtlt,          &
        dtlongn,       &
+       iyeara,        &
+       imontha,       &
+       idatea,        &
+       itimea,        &
        f_thermo_e,    & ! INTENT(OUT)
        f_thermo_w,    & ! INTENT(OUT)
        f_thermo_s,    & ! INTENT(OUT)
@@ -71,6 +75,7 @@ subroutine model()
   ! Local Variables:
 
   integer :: npass,nndtflg,icm,ifm,nfeed,mynum,i
+  integer :: iyeare,imonthe,idatee,itimee
   real :: wtime_start,t1,wtime1,wtime2,t2,wtime_tot
   real, external :: walltime
   character(len=10) :: c0, c1, c2
@@ -210,12 +215,14 @@ subroutine model()
      wtime2=walltime(wtime_start)
      call TIMING(2,T2)
 
-     write(*,"(a,i6,a,f9.1,2(a,f6.2),a)") &
-          " Timestep ",istp,&
-          "; Sim time",time,&
-          "s; Wall",wtime2-wtime1,&
-          "s; CPU",t2-t1,&
-          "s"
+     call date_add_to(iyeara,imontha,idatea,itimea*100,time,'s'                            &
+                     ,iyeare,imonthe,idatee,itimee)
+
+     write (unit=*,fmt='(a,i9,a,i4.4,a,2(i2.2,a),i6.6,a,2(a,f9.2,a))')                     &
+                             ' Timestep: ',istp                                            &
+                           ,'; Sim time: ',iyeare,'-',imonthe,'-',idatee,' ',itimee,' UTC' &
+                           ,'; Wall: '    ,wtime2-wtime1,'s'                               &
+                           ,'; CPU: '     ,t2-t1,'s'
 
      call rams_output
 
@@ -247,6 +254,10 @@ subroutine par_model(master_num)
        nxtnest,        & ! INTENT(IN)
        nndtrat,        & ! INTENT(IN) - Modifyed in DTSET
        nsubs,          & ! INTENT(OUT)
+       iyeara,         & ! INTENT(IN)
+       imontha,        & ! INTENT(IN)
+       idatea,         & ! INTENT(IN)
+       itimea,         & ! INTENT(IN)
        dtlongn           ! INTENT(IN) - Modifyed in DTSET
 
   use rpara, only : &
@@ -266,6 +277,7 @@ subroutine par_model(master_num)
   ! Local Variables:
 
   integer :: isendflg,isendlite,isendmean,isendboth,nndtflg,ntsend,nmach,n,i
+  integer :: iyeare,imonthe,idatee,itimee
   real :: wtime_start,t1,wtime1,wtime2,t2,wtime_tot,pcpu,pwall
   real, external :: walltime
   integer :: isendbackflg ! ALF - For local processing
@@ -412,11 +424,14 @@ subroutine par_model(master_num)
         pwall=pwall+ptimes(n,2)
      enddo
 
-     write(*,'(a,i6,a,f12.1,2(a,f12.2),a)') &
-          ' Timestep ',istp,&
-          '; Sim Time',time,&
-          's; Wall',wtime2-wtime1,&
-          's; sum CPU slaves',pcpu,'s'
+     call date_add_to(iyeara,imontha,idatea,itimea*100,time,'s'                            &
+                     ,iyeare,imonthe,idatee,itimee)
+
+     write (unit=*,fmt='(a,i9,a,i4.4,a,2(i2.2,a),i6.6,a,2(a,f9.2,a))')                     &
+                             ' Timestep: ',istp                                            &
+                           ,'; Sim time: ',iyeare,'-',imonthe,'-',idatee,' ',itimee,' UTC' &
+                           ,'; Wall: '    ,wtime2-wtime1,'s'                               &
+                           ,'; CPU: '     ,t2-t1,'s'
 
      call rams_output()
 

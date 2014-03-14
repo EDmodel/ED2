@@ -1,5 +1,5 @@
 #!/bin/bash
-
+. ${HOME}/.bashrc i11
 
 #----  Change settings here ---------------------------------------------------------------#
 here='thispath'                                       # Directory to start the run

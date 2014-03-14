@@ -38,21 +38,20 @@ module fusion_fission_coms
    !----- Cohort maximum tolerance factor -------------------------------------------------!
    real    :: coh_tolerance_max
 
-   !----- Patch maximum tolerance factor --------------------------------------------------!
-   real    :: dark_cumlai_min
-   real    :: dark_cumlai_max
-   real    :: sunny_cumlai_min
-   real    :: sunny_cumlai_max
-   real    :: dark_cumlai_mult
-   real    :: sunny_cumlai_mult
+   !---- Patch fusion variables. ----------------------------------------------------------!
+   real :: dark_cumlai_min
+   real :: dark_cumlai_max
+   real :: sunny_cumlai_min
+   real :: sunny_cumlai_max
+   real :: dark_cumlai_mult
+   real :: sunny_cumlai_mult
+   real :: light_toler_min
+   real :: light_toler_max
+   real :: light_toler_mult
+   !---------------------------------------------------------------------------------------!
 
    !----- Flag to allow a less strict fusion test for short cohorts. ----------------------!
    logical :: fuse_relax
-
-   !----- Fractional tolerance for patch pft height comparisons (dimensionless) -----------!
-   real    :: light_toler_min
-   real    :: light_toler_max
-   real    :: light_toler_mult
 
    !---------------------------------------------------------------------------------------!
    !      Correlation coefficient that is assumed between two patches and two cohorts when !

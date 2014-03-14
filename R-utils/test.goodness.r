@@ -58,11 +58,25 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
 
 
       #------------------------------------------------------------------------------------#
+      #      Find the four moments of the distributions.                                   #
+      #------------------------------------------------------------------------------------#
+      obs.moment = c( mean     = mean(x.obs.ok), variance = var (x.obs.ok)
+                    , skewness = skew(x.obs.ok), kurtosis = kurt(x.obs.ok) )
+      mod.moment = c( mean     = mean(x.mod.ok), variance = var (x.mod.ok)
+                    , skewness = skew(x.mod.ok), kurtosis = kurt(x.mod.ok) )
+      res.moment = c( mean     = mean(x.res.ok), variance = var (x.res.ok)
+                    , skewness = skew(x.res.ok), kurtosis = kurt(x.res.ok) )
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
       #     Find the mean bias, standard deviation of the residuals, and the support for   #
       # the errors being normally distributed around the mean.                             #
       #------------------------------------------------------------------------------------#
-      bias        = mean(-x.res.ok)
-      sigma       = sd  (-x.res.ok)
+      bias        = -res.moment["mean"]
+      sigma       = sqrt(res.moment["variance"])
       lsq.lnlike  = sum(dnorm(x.res.ok,mean=0,sd=sigma,log=TRUE))
       #------------------------------------------------------------------------------------#
 
@@ -94,7 +108,7 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
       #     Find the estimator's fraction of variance unexplained (FVU).  Because we use   #
       # MSE instead of ss.err, this is not 1 - R2.                                         #
       #------------------------------------------------------------------------------------#
-      fvue = mse / var(x.obs.ok)
+      fvue = mse / obs.moment["variance"]
       #------------------------------------------------------------------------------------#
 
 
@@ -107,10 +121,23 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
       sw.statistic = sw.test$statistic
       sw.p.value   = sw.test$p.value
       #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Run the Kolmogorov-Smirnov test to compare the distributions.                 #
+      #------------------------------------------------------------------------------------#
+      this.ks      = ks.test(x=x.obs.ok,y=x.mod.ok)
+      ks.statistic = this.ks$statistic
+      ks.p.value   = this.ks$p.value
+      #------------------------------------------------------------------------------------#
    }else{
       #------------------------------------------------------------------------------------#
       #    Not enough data points.                                                         #
       #------------------------------------------------------------------------------------#
+      obs.moment   = c(mean=NA,variance=NA,skewness=NA,kurtosis=NA)
+      mod.moment   = c(mean=NA,variance=NA,skewness=NA,kurtosis=NA)
+      res.moment   = c(mean=NA,variance=NA,skewness=NA,kurtosis=NA)
       bias         = NA
       sigma        = NA
       lsq.lnlike   = NA
@@ -122,6 +149,8 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
       fvue         = NA
       sw.statistic = NA
       sw.p.value   = NA
+      ks.statistic = NA
+      ks.p.value   = NA
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -133,6 +162,9 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
    ans = list ( n            = n.ok 
               , df.tot       = df.tot
               , df.err       = df.err
+              , obs.moment   = obs.moment
+              , mod.moment   = mod.moment
+              , res.moment   = res.moment
               , bias         = bias
               , sigma        = sigma
               , lsq.lnlike   = lsq.lnlike
@@ -144,6 +176,8 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
               , fvue         = fvue
               , sw.statistic = sw.statistic
               , sw.p.value   = sw.p.value
+              , ks.statistic = ks.statistic
+              , ks.p.value   = ks.p.value
               )#end list
    return(ans)
    #---------------------------------------------------------------------------------------#

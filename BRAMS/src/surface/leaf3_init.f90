@@ -1065,11 +1065,12 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                                                  ,.true.                                   )
 
             call leaf3_solve_veg(ipat,mzs,leaf_class                  (i,j,ipat)           &
-                                         ,veg_height                (  i,j,ipat)           &
+                                         ,soil_rough                (  i,j,ipat)           &
                                          ,patch_area                  (i,j,ipat)           &
                                          ,veg_fracarea                (i,j,ipat)           &
                                          ,veg_tai                   (  i,j,ipat)           &
                                          ,sfcwater_nlev               (i,j,ipat)           &
+                                         ,sfcwater_mass             (:,i,j,ipat)           &
                                          ,sfcwater_depth            (:,i,j,ipat)           &
                                          ,.true.                                           )
 

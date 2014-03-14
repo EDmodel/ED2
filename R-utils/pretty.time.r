@@ -5,7 +5,7 @@
 # different way as time has a non-decimal scale.                                           #
 #  The result is a list containing the levels, and nice labels for the plots.              #
 #------------------------------------------------------------------------------------------#
-pretty.time = function(when,n=10,...){
+pretty.time <<- function(when,n=10,...){
 
    #----- Find the 1st and last time. -----------------------------------------------------#
    whena = min(when,na.rm=TRUE)

@@ -1179,7 +1179,8 @@ subroutine ed_opspec_misc
                                     , sldrain                      & ! intent(in)
                                     , zrough                       & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
-   use mem_polygons          , only : maxsite                      ! ! intent(in)
+   use mem_polygons          , only : maxsite                      & ! intent(in)
+                                    , maxpatch                     ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
@@ -1576,9 +1577,9 @@ end do
          'Invalid IBIGLEAF, it must be between 0 and 1. Yours is set to',ibigleaf,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   elseif (ibigleaf == 1 .and. crown_mod /= 0) then
+   elseif (ibigleaf == 1 .and. ( crown_mod /= 0 .or. abs(maxpatch) == 1 )) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-         'CROWN_MOD must be turned off when IBIGLEAF is set to 1...'
+         'CROWN_MOD must be 0 and MAXPATCH cannot be -1 or 1 when IBIGLEAF is set to 1...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1628,9 +1629,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iallom < 0 .or. iallom > 2) then
+   if (iallom < 0 .or. iallom > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 2. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 3. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1992,9 +1993,9 @@ end do
       ifaterr = ifaterr +1
    end select
 
-   if (isfclyrm < 1 .or. isfclyrm > 5) then
+   if (isfclyrm < 0 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISFCLYRM, it must be between 1 and 5. Yours is set to',isfclyrm,'...'
+        'Invalid ISFCLYRM, it must be between 0 and 4. Yours is set to',isfclyrm,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
@@ -2094,16 +2095,20 @@ end do
 
    if (crown_mod < 0 .or. crown_mod > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid CROWN_MOD, it must be between 0 or 1.  Yours is set to'       &
+                    'Invalid CROWN_MOD, it must be either 0 or 1.  Yours is set to'        &
                     ,crown_mod,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if  (icanrad <0 .or. icanrad > 1) then
+   if  (icanrad <0 .or. icanrad > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid ICANRAD, it must be between 0 or 1.  Yours is set to'         &
+                    'Invalid ICANRAD, it must be between 0 and 2.  Yours is set to'        &
                     ,icanrad,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   elseif (icanrad /= 0 .and. crown_mod == 1) then
+      write(reason,fmt='(a)') 'CROWN_MOD must be turned off when ICANRAD is 1 or 2...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
@@ -2203,14 +2208,15 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (treefall_disturbance_rate > 0.0) then
+   if (treefall_disturbance_rate /= 0.0) then
       if (time2canopy < 0.0) then
          write (reason,fmt='(a,1x,es14.7,a)')                                              &
                 'Invalid TIME2CANOPY, it can''t be negative.  Yours is set to'             &
                 ,time2canopy,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
-      elseif (time2canopy >= 2.0 * (1. - epsilon(1.)) / treefall_disturbance_rate) then
+      elseif (time2canopy >= 2.0 * (1. - epsilon(1.)) / abs(treefall_disturbance_rate))    &
+      then
          !---------------------------------------------------------------------------------!
          !     We need this if statement because the effective treefall tends to infinity  !
          ! as time2canopy approaches 2. / treefall_disturbance_rate.                       !
@@ -2219,7 +2225,7 @@ end do
                                              ,treefall_disturbance_rate
          write (unit=*,fmt='(a,1x,es14.7)')   ' MAX(TIME2CANOPY)          ='               &
                                              , 2.0 * (1. - epsilon(1.))                    &
-                                             / treefall_disturbance_rate
+                                             / abs(treefall_disturbance_rate)
          write (reason,fmt='(a,2x,a,1x,es14.7,a)')                                         &
              ' Invalid TIME2CANOPY, it can''t be >= 2. / TREEFALL_DISTURBANCE_RATE.'       &
             ,'Yours is set to',time2canopy,'...'

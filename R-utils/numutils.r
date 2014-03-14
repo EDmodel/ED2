@@ -3,14 +3,9 @@
 #     Function that finds the cubic root, for both positive and negative numbers.          #
 #------------------------------------------------------------------------------------------#
 cbrt <<- function(x){
-   x333 = NA * x
-
-   pos  = is.finite(x) & x >= 0.
-   neg  = is.finite(x) & x <  0.
-   
-   x333[pos] =  ( x[pos])^(1./3.)
-   x333[neg] = -(-x[neg])^(1./3.)
-
+   x333      = sign(x) * abs(x)^onethird
+   bad       = is.nan(x333)
+   x333[bad] = NA
    return(x333)
 }#end function cbrt
 #==========================================================================================#
@@ -27,6 +22,19 @@ cbrt <<- function(x){
 round.log   <<- function(x,base=exp(1),...) base^(round(log(x,base=base),...))
 round.log10 <<- function(x,...) 10^(round(log10(x),...))
 round.log2  <<- function(x,...) 2^(round(log2(x),...))
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Base 10 exponential.                                                                 #
+#------------------------------------------------------------------------------------------#
+exp10 <<- function(x,...) 10^x
+
 #==========================================================================================#
 #==========================================================================================#
 
@@ -176,80 +184,50 @@ weighted.quantile = function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
 
 
 
-
 #==========================================================================================#
 #==========================================================================================#
-#        For each element of vector x, this function finds the value in the "onto" vector  #
-# that corresponds to the same quantile of the distribution defined by x.                  #
+#     This function computes the standard error.                                           #
 #------------------------------------------------------------------------------------------#
-qqproject <<- function(x,onto){
-   #----- Find out which elements are finite and save the position. -----------------------#
-   ok      = which(! is.na(x))
-   project = NA * x
-   #---------------------------------------------------------------------------------------#
-
-   #----- Keep only the non-NA elements. --------------------------------------------------#
-   xf      = x[!is.na(x)]
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- Find the corresponding cdf to which of the elements. ----------------------------#
-   of      = order(xf)
-   qxf     = seq(from=0,to=1,length.out=length(xf))
-   qxf[of] = qxf
-   #---------------------------------------------------------------------------------------#
-
-   #---------------------------------------------------------------------------------------#
-   project[ok] = quantile(x=onto,probs=qxf,na.rm=TRUE)
-   return(project)
-   #---------------------------------------------------------------------------------------#
-}#end
-#==========================================================================================#
-#==========================================================================================#
-
-
-
-
-
-
-#==========================================================================================#
-#==========================================================================================#
-#        Pick the element in array A that has the closest value to x.                      #
-#------------------------------------------------------------------------------------------#
-which.closest <<- function(x,A,mask=rep(TRUE,length(A)) ){
-
-   #----- Create indices before applying the mask, so we retrieve the actual index. -------#
-   A.idx = sequence(length(A))
-   A     = A    [mask]
-   A.idx = A.idx[mask]
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Check whether there is any data that 
-   #---------------------------------------------------------------------------------------#
-   if (! is.finite(x) || ! any(mask,na.rm=TRUE)){
-      #----- x is invalid, return NA. -----------------------------------------------------#
-      idx = NA
-   }else if(sum(x == A,na.rm=TRUE) > 1){
-      #------------------------------------------------------------------------------------#
-      #      If there are multiple values of x that are the same as x, we randomly sample  #
-      # one value.                                                                         #
-      #------------------------------------------------------------------------------------#
-      idx = sample(A.idx[x == A],size=1)
-      #------------------------------------------------------------------------------------#
+se <<- function (x, na.rm = FALSE){
+   #---- We follow the same convention as the standard deviation. -------------------------#
+   if (is.matrix(x)) {
+      msg = "se(<matrix>) is deprecated.\n Use apply(*, 2, se) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = apply(X = x, MARGIN = 2, FUN = se, na.rm = na.rm)
+   }else if (is.list(x)){
+      msg = "se(<list>) is deprecated.\n Use lapply(*, se) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = lapply(X = x, FUN = se, na.rm = na.rm)
+   }else if (is.data.frame(x)){
+      msg = "se(<data.frame>) is deprecated.\n Use sapply(*, se) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = sapply(X = x, se, na.rm = na.rm)
    }else{
+      #----- Coerce x to a vector. --------------------------------------------------------#
+      if (is.vector(x)){
+         xx = x
+      }else{
+         xx = as.vector(x)
+      }#end if
       #------------------------------------------------------------------------------------#
-      #      Either there is a single value that matches, or none of them match.  Either   #
-      # way, we select the closest match.                                                  #
+
+
+
+      #----- Decide whether to delete NA or not. ------------------------------------------#
+      if (na.rm) xx = xx[! is.na(xx)]
       #------------------------------------------------------------------------------------#
-      idx = A.idx[which.min((A-x)^2)]
+
+
+
+      #----- Find the standard error. -----------------------------------------------------#
+      nx  = length(xx)
+      ans = sd(xx)/sqrt(nx)
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
 
-   return(idx)
-}#end which.closest
+   return(ans)
+}#end function se
 #==========================================================================================#
 #==========================================================================================#
 
@@ -367,6 +345,62 @@ kurt <<- function (x, na.rm = FALSE){
 
 #==========================================================================================#
 #==========================================================================================#
+#     This function computes the first four moments of the distribution.                   #
+#------------------------------------------------------------------------------------------#
+four.moments <<- function (x, na.rm = FALSE){
+
+   #---- We follow the same convention as the standard deviation. -------------------------#
+   if (is.matrix(x)) {
+      msg = "four.moment(<matrix>) is deprecated.\n Use apply(*, 2, kurt) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = apply(X = x, MARGIN = 2, FUN = kurt, na.rm = na.rm)
+   }else if (is.list(x)){
+      msg = "four.moment(<list>) is deprecated.\n Use lapply(*, kurt) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = lapply(X = x, FUN = kurt, na.rm = na.rm)
+   }else if (is.data.frame(x)){
+      msg = "four.moment(<data.frame>) is deprecated.\n Use sapply(*, kurt) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = sapply(X = x, kurt, na.rm = na.rm)
+   }else{
+      #----- Coerce x to a vector. --------------------------------------------------------#
+      if (is.vector(x)){
+         xx = x
+      }else{
+         xx = as.vector(x)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Decide whether to delete NA or not. ------------------------------------------#
+      if (na.rm) xx = xx[! is.na(xx)]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find the skewness. -----------------------------------------------------------#
+      nx  = length(xx)
+      ans = c( mean     = mean(xx)
+             , variance = var (xx)
+             , skewness = skew(xx)
+             , kurtosis = kurt(xx)
+             )#end c
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function four.moments
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #      This function finds the element index given the array index and the dimensions of   #
 # the array.  This is the inverse of function arrayInd in R.                               #
 #                                                                                          #
@@ -378,7 +412,7 @@ kurt <<- function (x, na.rm = FALSE){
 #                  Last modified on 25 Oct 2012 - 10:56 EST                                #
 #                                                                                          #
 #                  The script now recognises whether the arr.ind is a vector, matrix, or   #
-#                  list and call it self recursively to return the full list. 
+#                  list and call it self recursively to return the full list.              #
 #------------------------------------------------------------------------------------------#
 whichInd <<- function(ai, dims){
 
@@ -457,5 +491,506 @@ lit.sample <<- function(x,size,replace=FALSE,prob=NULL){
    }#end if
    return(ans)
 }#end function lit.sample
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function creates a sequence of integers that has the same length as the length  #
+# of the argument.                                                                         #
+#------------------------------------------------------------------------------------------#
+seq.len <<- function(x){
+   ans = sequence(length(x))
+   return(ans)
+}#end function lit.sample
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function creates a sequence that covers the entire range of data: length.out is #
+# the sought length (n is a shorter option).                                               #
+#------------------------------------------------------------------------------------------#
+seq.range <<- function(x,n=length.out,length.out){
+   xrange = range(x,finite=TRUE)
+   if (any(is.finite(xrange))){
+      ans = seq(from=xrange[1],to=xrange[2],length.out=n)
+   }else{
+      ans = rep(NA,times=n)
+   }#end if
+   return(ans)
+}#end function seq.range
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function counts how many unique values exist in a vector.                       #
+#------------------------------------------------------------------------------------------#
+length.unique <<- function(x){
+   ans = length(unique(x))
+   return(ans)
+}#end function lit.sample
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the ratio of consecutive elements.  All arguments used by diff   #
+# can be used here too.                                                                    #
+#------------------------------------------------------------------------------------------#
+ediff <<- function(x,lag=1,differences=1){
+   if (differences == 1){
+      n   = length(x)
+      ans = x[seq(from=1+lag,to=n,by=lag)]/x[seq(from=1,to=n-lag,by=lag)]
+      ans[! is.finite(ans)] = NA
+   }else{
+      ans = ediff(x,lag=lag,differences=differences-1)
+   }#end if
+   return(ans)
+}#end ediff
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the weighted.mean for each col, similar to colMeans.             #
+#------------------------------------------------------------------------------------------#
+colWgtMeans <<- function(x,w,...,na.rm=FALSE){
+   #---------------------------------------------------------------------------------------#
+   #     First sanity check.                                                               #
+   #---------------------------------------------------------------------------------------#
+   mess  = c("x must be a matrix, data.frame, or an array of dimension 2!"
+            ,"w must be a matrix, data.frame, or an array of dimension 2!"
+            ,"x and w must have identical sizes!"
+            )#end mess
+   error = c(! (is.matrix(x) || is.data.frame(x) || (is.array(x) && length(dim(x)) == 2))
+            ,! (is.matrix(w) || is.data.frame(w) || (is.array(w) && length(dim(w)) == 2))
+            ,any(dim(x) != dim(w))
+            )#end c
+   if (any(error)) stop(paste(mess,collapse="\n"))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Convert x and w into matrices                                                     #
+   #---------------------------------------------------------------------------------------#
+   x            = as.matrix(x)
+   w            = as.matrix(w)
+   x[is.nan(x)] = NA
+   w[is.nan(w)] = NA
+   w[is.na (w)] = 0
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Second sanity check.                                                              #
+   #---------------------------------------------------------------------------------------#
+   mess   = c("NA/NaN are not allowed in w (only x may contain NA)!"
+             ,"All w must be finite and positive"
+             ,"Some w columns have only zeroes"
+             )#end c
+   error  = c( any(is.na(c(w)))
+             , any(! is.finite(c(w)) | (is.finite(c(w)) & c(w) < 0))
+             , any(apply(X=w,MARGIN=2,FUN=sum) == 0,na.rm=TRUE)
+             )#end error
+   if (any(error)) stop(paste(mess,collapse="\n"))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Find weighted means.                                                              #
+   #---------------------------------------------------------------------------------------#
+   ans = apply(X=x*w,MARGIN=2,FUN=sum,na.rm=na.rm) / apply(X=w,MARGIN=2,FUN=sum)
+   #---------------------------------------------------------------------------------------#
+   return(ans)
+}#end colWgtMeans
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the weighted.mean for each row, similar to rowMeans.             #
+#------------------------------------------------------------------------------------------#
+rowWgtMeans <<- function(x,w,...,na.rm=FALSE){
+   #---------------------------------------------------------------------------------------#
+   #     First sanity check.                                                               #
+   #---------------------------------------------------------------------------------------#
+   mess  = c("x must be a matrix, data.frame, or an array of dimension 2!"
+            ,"w must be a matrix, data.frame, or an array of dimension 2!"
+            ,"x and w must have identical sizes!"
+            )#end mess
+   error = c(! (is.matrix(x) || is.data.frame(x) || (is.array(x) && length(dim(x)) == 2))
+            ,! (is.matrix(w) || is.data.frame(w) || (is.array(w) && length(dim(w)) == 2))
+            ,any(dim(x) != dim(w))
+            )#end c
+   if (any(error)) stop(paste(mess,collapse="\n"))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Convert x and w into matrices                                                     #
+   #---------------------------------------------------------------------------------------#
+   x            = as.matrix(x)
+   w            = as.matrix(w)
+   x[is.nan(x)] = NA
+   w[is.nan(w)] = NA
+   w[is.na (w)] = 0
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Second sanity check.                                                              #
+   #---------------------------------------------------------------------------------------#
+   mess   = c("NA/NaN are not allowed in w (only x may contain NA)!"
+             ,"All w must be finite and positive"
+             ,"Some w columns have only zeroes"
+             )#end c
+   error  = c( any(is.na(c(w)))
+             , any(! is.finite(c(w)) | (is.finite(c(w)) & c(w) < 0))
+             , any(apply(X=w,MARGIN=1,FUN=sum) == 0,na.rm=TRUE)
+             )#end error
+   if (any(error)) stop(paste(mess,collapse="\n"))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Find weighted means.                                                              #
+   #---------------------------------------------------------------------------------------#
+   ans = apply(X=x*w,MARGIN=1,FUN=sum,na.rm=na.rm) / apply(X=w,MARGIN=1,FUN=sum)
+   #---------------------------------------------------------------------------------------#
+   return(ans)
+}#end colWgtMeans
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function normalises a vector.  Results are just the normalised values, mean and #
+# standard deviation are in attributes.                                                    #
+#------------------------------------------------------------------------------------------#
+normalise <<- function(x,mu,sigma){
+   if (missing(mu   )) mu    = mean(x,na.rm = TRUE)
+   if (missing(sigma)) sigma = sd  (x,na.rm = TRUE)
+   nx      = sum(is.finite(x))
+   normal  = (x - mu) / sigma
+   normal  = ifelse(is.finite(normal),normal,NA)
+   attributes(normal) = list(mean = mu, sdev = sigma, n = nx)
+   return(normal)
+}#end normalise
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function converts data into percentil (0-100).                                  #
+#------------------------------------------------------------------------------------------#
+percentil <<- function(x,trim=0.0){
+   qlow    = 0.0+0.5*trim
+   qhigh   = 1.0-0.5*trim
+
+   xlow    = quantile(x,probs=qlow ,na.rm=TRUE)
+   xhigh   = quantile(x,probs=qhigh,na.rm=TRUE)
+   xperc   = 100. * pmax(0.,pmin(1.,(x-xlow)/(xhigh-xlow)))
+   xperc   = ifelse(is.finite(xperc),xperc,NA)
+   return(xperc)
+}#end normalise
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     A lazy option of square root of sum of squares and root mean sum of squares.         #
+#------------------------------------------------------------------------------------------#
+sum2           <<- function(x,...)   sqrt(x = sum          (x=x^2               ,...))
+mean2          <<- function(x,...)   sqrt(x = mean         (x=x^2               ,...))
+weighted.mean2 <<- function(x,w,...) sqrt(x = weighted.mean(x=x^2,w=(w/sum(w))^2,...))
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Function to return the mid points between two consecutive points.                    #
+#------------------------------------------------------------------------------------------#
+mid.points <<- function(x,islog=FALSE,finite=FALSE){
+   cx   = if (islog){log(c(x))}else{c(x)}
+   cx   = ifelse(is.finite(cx),cx,NA)
+   ix   = seq_along(cx)
+   last = length(cx)
+   if (finite){
+      cx    = na.approx(cx,na.rm=FALSE)
+      fa    = min(which(is.finite(cx)))
+      fz    = max(which(is.finite(cx)))
+      delta = max(c(0,mean(diff(cx),na.rm=TRUE)),na.rm=TRUE)
+      #----- Append data to the left. -----------------------------------------------------#
+      if (fa > 1){
+         fill     = seq(from=1,to=fa-1,by=1)
+         cx[fill] = cx[fa] + delta * (ix[fill]-ix[fa])
+      }#end if
+      if (fz < last){
+         fill     = seq(from=fz+1,to=last,by=1)
+         cx[fill] = cx[fz] + delta * (ix[fill]-ix[fz])
+      }#end if
+   }#end if
+
+   xmid = rowMeans(cbind(cx[-1],cx[-last]))
+   if(islog) xmid = exp(xmid)
+   return(xmid)
+}#end mid.points
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Functions to return the fraction of points that are xxx (xxx = finite, NA, NaN).     #
+#------------------------------------------------------------------------------------------#
+frac.finite <<- function(x) sum(is.finite(x))/max(1,length(x))
+frac.na     <<- function(x) sum(is.na    (x))/max(1,length(x))
+frac.nan    <<- function(x) sum(is.nan   (x))/max(1,length(x))
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function evaluates the function only if there are enough finite points, other-  #
+# wise it returns NA.                                                                      #
+#------------------------------------------------------------------------------------------#
+ifenough <<- function(x,f,ef.min = 1/3, ...){
+   if (frac.finite(x) >= ef.min){
+      ans = f(x,...)
+   }else{
+      ans = NA + f(runif(n=length(x),min=1,max=2),...)
+   }#end if
+   return(ans)
+}#end ifenough
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#        For each element of vector x, this function finds the value in the "onto" vector  #
+# that corresponds to the same quantile of the distribution defined by x.                  #
+#------------------------------------------------------------------------------------------#
+qqproject <<- function(x,onto){
+   #----- Find out which elements are finite and save the position. -----------------------#
+   ok      = which(! is.na(x))
+   project = NA * x
+   #---------------------------------------------------------------------------------------#
+
+   #----- Keep only the non-NA elements. --------------------------------------------------#
+   xf      = x[!is.na(x)]
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the corresponding cdf to which of the elements. ----------------------------#
+   of      = order(xf)
+   qxf     = seq(from=0,to=1,length.out=length(xf))
+   qxf[of] = qxf
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   project[ok] = quantile(x=onto,probs=qxf,na.rm=TRUE)
+   return(project)
+   #---------------------------------------------------------------------------------------#
+}#end
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function evaluates the confidence interval of a mean without assuming that the  #
+# sample size is large enough.                                                             #
+#------------------------------------------------------------------------------------------#
+ci.mean <<- function(x,conf=0.95,finite=FALSE,...){
+   if (finite) x = x[is.finite(x)]
+   nx = length(x)
+   if (nx <= 1){
+      ci = c(NA,NA)
+   }else{
+      ci = mean(x) + qt(p=0.5*(1.+c(-1.,1.)*conf),df=nx-1) * se(x)
+   }#end if
+   return(ci)
+}#end ifenough
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     These variables may be used everywhere, they define the order of the six-summary     #
+# vector.                                                                                  #
+#------------------------------------------------------------------------------------------#
+six.summary.names <<- c("expected","variance","skewness","kurtosis","ci.lower","ci.upper")
+n.six.summary     <<- length(six.summary.names)
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function calculates the four moments of the distribution plus the 95% C.I. of   #
+# the mean using t distributioon.                                                          #
+#------------------------------------------------------------------------------------------#
+six.summary <<- function(x,conf=0.95,finite=TRUE,...){
+   #------ Remove non-finite data in case finite=TRUE. ------------------------------------#
+   if (finite) x = x[is.finite(x)]
+   nx = length(x)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Initialise data with NA in case the function fails. ----------------------------#
+   ans = rep(NA,times=n.six.summary)
+   names(ans) = six.summary.names
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Check that there are sufficient points for at least the mean.                    #
+   #---------------------------------------------------------------------------------------#
+   if (nx >= 1){
+      #----- Find the moments and confidence interval. ------------------------------------#
+      expected = mean(x)
+      variance = var (x)
+      skewness = skew(x)
+      kurtosis = kurt(x)
+      ci.lower = expected + qt(p=0.5*(1.0-conf),df=nx-1) * se(x)
+      ci.upper = expected + qt(p=0.5*(1.0+conf),df=nx-1) * se(x)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Standardise non-finite values to NA. -----------------------------------------#
+      expected = ifelse(is.finite(expected),expected,NA)
+      variance = ifelse(is.finite(variance),variance,NA)
+      skewness = ifelse(is.finite(skewness),skewness,NA)
+      kurtosis = ifelse(is.finite(kurtosis),kurtosis,NA)
+      ci.lower = ifelse(is.finite(ci.lower),ci.lower,NA)
+      ci.upper = ifelse(is.finite(ci.upper),ci.upper,NA)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Make sure statistics go to the right place. ----------------------------------#
+      ans[match("expected",six.summary.names)] = expected
+      ans[match("variance",six.summary.names)] = variance
+      ans[match("skewness",six.summary.names)] = skewness
+      ans[match("kurtosis",six.summary.names)] = kurtosis
+      ans[match("ci.lower",six.summary.names)] = ci.lower
+      ans[match("ci.upper",six.summary.names)] = ci.upper
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function six.summary
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Function to calculate the eddy covariance.                                           # 
+#------------------------------------------------------------------------------------------#
+eddy.cov <<- function(x,y,...){
+   xbar   = mean(x,...)
+   ybar   = mean(y,...)
+   xprime = x - xbar
+   yprime = y - ybar
+   eddy   = mean(xprime*yprime,...)
+   return(eddy)
+}#end function eddy.cov
 #==========================================================================================#
 #==========================================================================================#

@@ -8,7 +8,7 @@
 axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
 
    #----- Make sure side is correct. ------------------------------------------------------#
-   stopifnot(side %in% c(1,2,3,4,5,6))
+   stopifnot(side %in% c(1,2,3,4))
    #---------------------------------------------------------------------------------------#
 
 
@@ -42,8 +42,8 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
 
    }else{
       #------------------------------------------------------------------------------------#
-      #     las is either 5 or 6, and labels is not FALSE.  We first plot the axis ticks, using the default axis      #
-      # function, then add the labels using rotation.                                      #
+      #     las is either 5 or 6, and labels is not FALSE.  We first plot the axis ticks,  #
+      # using the default axis function, then add the labels using rotation.               #
       #------------------------------------------------------------------------------------#
 
 
@@ -61,7 +61,7 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
             is.log  = par.orig$ylog
             nint    = par.orig$lab[2]
          }#end if
-         at = axisTicks(usr=usr,log=is.log,axp=axp,nint=nint)
+         at   = axisTicks(usr=usr,log=is.log,axp=axp,nint=nint)
       }#end if
       #------------------------------------------------------------------------------------#
       
@@ -78,7 +78,7 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
 
 
 
-      #------ Use text to print the labels. -----------------------------------------------#
+      #------ Find the x and y positions to add text. -------------------------------------#
       if (side == 1){
          x   = at
          y   = rep(par.orig$usr[3]-off*diff(par.orig$usr[3:4]),times=length(x))
@@ -96,6 +96,10 @@ axis.rt <<- function(side,at=NULL,labels=TRUE,las=NULL,off=0.15,...){
          x   = rep(par.orig$usr[2]+off*diff(par.orig$usr[1:2]),times=length(y))
          adj = if(las == 5){ c(0.0,0.0) }else{ c(0.0,1.0)}
       }#end if
+      #----- If the other axis is in log scale, par$usr must be adjusted. -----------------#
+      if (side %in% c(1,3) && par.orig$ylog) y = 10^y
+      if (side %in% c(2,4) && par.orig$xlog) x = 10^x
+      #----- Additional options. ----------------------------------------------------------#
       srt  = if(las == 5          ){45                }else{-45      }
       col  = if(is.null(dots$col )){par.orig$col.axis }else{dots$col }
       cex  = if(is.null(dots$cex )){par.orig$cex.axis }else{dots$cex }

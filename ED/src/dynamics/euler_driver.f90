@@ -128,11 +128,11 @@ subroutine euler_timestep(cgrid)
             !    Copy the meteorological variables to the rk4site structure.               !
             !------------------------------------------------------------------------------!
             call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)            &
-                                   ,csite%can_depth(ipa),cmet%vels,cmet%atm_theiv          &
-                                   ,cmet%atm_vpdef,cmet%atm_theta,cmet%atm_tmp             &
-                                   ,cmet%atm_shv,cmet%atm_co2,cmet%geoht,cmet%exner        &
-                                   ,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss,cmet%rshort  &
-                                   ,cmet%rlong,cmet%par_beam,cmet%par_diffuse              &
+                                   ,csite%can_depth(ipa),cmet%atm_ustar,cmet%vels          &
+                                   ,cmet%atm_theiv,cmet%atm_vpdef,cmet%atm_theta           &
+                                   ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
+                                   ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
+                                   ,cmet%rshort,cmet%rlong,cmet%par_beam,cmet%par_diffuse  &
                                    ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht              &
                                    ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)                 &
                                    ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
@@ -458,7 +458,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
 
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(initp,dinitp,csite,ipa,h)
+      call leaf_derivs(initp,dinitp,csite,ipa,h,.false.)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(initp,dinitp,h,yscal,cpatch)
@@ -506,9 +506,6 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          else
 
             errmax = 1.d-1
-
-            !----- Take the derivative of the upcoming step. ------------------------------!
-!!            call leaf_derivs(ytemp,dydx,csite,ipa)
          end if
 
 
@@ -585,7 +582,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             endif
             hnext = max(2.d0*hmin,hnext)
 
-            call leaf_derivs(ytemp,dydx,csite,ipa,hnext)
+            call leaf_derivs(ytemp,dydx,csite,ipa,hnext,.false.)
             
 
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!

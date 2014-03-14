@@ -151,6 +151,14 @@ module canopy_radiation_coms
 
 
 
+   !----- Emissivity of the vegetation (TIR). ---------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_emiss_tir
+   real(kind=8), dimension(n_pft) :: wood_emiss_tir
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Scattering coefficients.                                                          !
    !---------------------------------------------------------------------------------------!
@@ -160,6 +168,9 @@ module canopy_radiation_coms
    !----- Near infrared. ------------------------------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_scatter_nir
    real(kind=8), dimension(n_pft) :: wood_scatter_nir
+   !----- Thermal infrared. ---------------------------------------------------------------!
+   real(kind=8), dimension(n_pft) :: leaf_scatter_tir
+   real(kind=8), dimension(n_pft) :: wood_scatter_tir
    !---------------------------------------------------------------------------------------!
 
 
@@ -174,24 +185,21 @@ module canopy_radiation_coms
    !----- Near infrared. ------------------------------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_backscatter_nir
    real(kind=8), dimension(n_pft) :: wood_backscatter_nir
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !----- Emissivity of the vegetation. ---------------------------------------------------!
-   real(kind=8), dimension(n_pft) :: leaf_emis
-   real(kind=8), dimension(n_pft) :: wood_emis
-   !---------------------------------------------------------------------------------------!
-
-
-
-
    !----- Backscattering of thermal infrared. ---------------------------------------------!
    real(kind=8), dimension(n_pft) :: leaf_backscatter_tir
    real(kind=8), dimension(n_pft) :: wood_backscatter_tir
    !---------------------------------------------------------------------------------------!
 
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Snow pack properties.                                                              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) :: snow_albedo_vis
+   real(kind=4) :: snow_albedo_nir
+   real(kind=4) :: snow_emiss_tir
+   !---------------------------------------------------------------------------------------!
 
 
 

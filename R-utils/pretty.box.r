@@ -2,7 +2,8 @@
 #    This function splits the number into number of rows and columns that will make the    #
 # prettiest (prettiest here means the closest to a golden ratio rectangle).                #
 #------------------------------------------------------------------------------------------#
-pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180./pi){
+pretty.box = function(n,horizontal=TRUE,byrow=TRUE
+                     ,angle.crit=atan2((1.+sqrt(5))/2.,1)*180./pi){
 
 
    #---------------------------------------------------------------------------------------#
@@ -56,7 +57,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
          #---------------------------------------------------------------------------------#
          #      Choose the one that is the closest to the square.                          #
          #---------------------------------------------------------------------------------#
-         nuse = which.min(abs(nbrow.pot-nbcol.pot))
+         nuse  = which.min(abs(nbrow.pot-nbcol.pot))
          nbrow = nbrow.pot[nuse]
          nbcol = nbcol.pot[nuse]
          #---------------------------------------------------------------------------------#
@@ -65,7 +66,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
          #---------------------------------------------------------------------------------#
          #      Make a matrix for the layout.                                              #
          #---------------------------------------------------------------------------------#
-         mat          = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=TRUE)
+         mat          = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=byrow)
          mat[mat > n] = 0
          #---------------------------------------------------------------------------------#
 
@@ -77,6 +78,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
          yangle = atan2(nbcol,nbrow) * 180. / pi
          iterate = nbox > 2 && (xangle > angle.crit | yangle > angle.crit)
          if (iterate) nbox = nbox + 1
+         #---------------------------------------------------------------------------------#
       }#end while
       #------------------------------------------------------------------------------------#
 
@@ -87,7 +89,7 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
       nbcol  = max(n[1],1)
       nbrow  = max(n[2],1)
       nbox   = nbcol*nbrow
-      mat    = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=TRUE)
+      mat    = matrix(sequence(nbrow*nbcol),ncol=nbcol,nrow=nbrow,byrow=byrow)
       xangle = atan2(nbrow,nbcol) * 180. / pi
       yangle = atan2(nbcol,nbrow) * 180. / pi
       #------------------------------------------------------------------------------------#
@@ -104,16 +106,116 @@ pretty.box = function(n,horizontal=TRUE,angle.crit=atan2((1.+sqrt(5))/2.,1)*180.
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Make a matrix with offset of one in case the user appends a legend. -------------#
+   sel           = mat == 0
+   mat.off       = mat + 1
+   mat.off[sel]  = 0
+   mat.off2      = mat + 2
+   mat.off2[sel] = 0
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Create the margins for each box assuming that axes should be plotted only on the  #
+   # bottom and left panels.                                                               #
+   #---------------------------------------------------------------------------------------#
+   n.seq = sequence(nbox)
+   if (byrow){
+      left   = ( n.seq %% nbcol ) == 1 | nbcol == 1
+      right  = ( n.seq %% nbcol ) == 0
+      top    = n.seq <=   nbcol
+      bottom = n.seq >  ( nbrow - 1 ) * nbcol
+   }else{
+      left   = n.seq <= nbrow
+      right  = n.seq > ( nbcol - 1 ) * nbrow
+      top    = ( n.seq %% nbrow ) == 1 | nbrow == 1
+      bottom = ( n.seq %% nbrow ) == 0
+   }#end if
+   centre = ! ( left | right )
+   middle = ! ( bottom | top )
+   if (nbcol == 1){
+      mar.left  = rep(5.1,times=n)
+      mar.right = rep(1.1,times=n)
+   }else if (nbcol == 2){
+      mar.left  = 2.1 + 2 * left
+      mar.right = 0.1 + 2 * right
+   }else{
+      mar.left  = 2.1 + 2 * left   - 2 * right
+      mar.right = 0.1 + 2 * centre + 4 * right
+   }#end if
+   if (nbrow == 1){
+      mar.bottom = rep(5.1,times=n)
+      mar.top    = rep(4.1,times=n)
+   }else if (nbrow == 2){
+      mar.bottom = 2.1 + 2 * bottom
+      mar.top    = 2.1 + 2 * top
+   }else{
+      mar.bottom = 2.1 + 2 * bottom - 2 * top
+      mar.top    = 1.1 + 2 * middle + 4 * top
+   }#end if
+   mar                = cbind(mar.bottom,mar.left,mar.top,mar.right)
+   dimnames(mar)[[2]] = c("bottom","left","top","right")
+
+   #----- Margins for when all boxes get axis plots. --------------------------------------#
+   if (nbcol == 1){
+      mar0.left  = 5.1
+      mar0.right = 1.1
+   }else{
+      mar0.left  = 4.1
+      mar0.right = 0.1
+   }#end if
+   if (nbrow == 1){
+      mar0.bottom = 5.1
+      mar0.top    = 4.1
+   }else{
+      mar0.bottom = 4.1
+      mar0.top    = 2.1
+   }#end if
+   mar0        = c(mar0.bottom,mar0.left,mar0.top,mar0.right)
+   names(mar0) = c("bottom","left","top","right")
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #----- Key margins for when all boxes get axis plots. ----------------------------------#
+   key.left  = 0.6
+   key.right = 4.1
+   if (nbrow == 1){
+      key.bottom = 5.1
+      key.top    = 4.1
+   }else{
+      key.bottom = 4.1
+      key.top    = 2.1
+   }#end if
+   mar.key        = c(key.bottom,key.left,key.top,key.right)
+   names(mar.key) = c("bottom","left","top","right")
+   #---------------------------------------------------------------------------------------#
+
+
 
 
    #---------------------------------------------------------------------------------------#
    #     Return a list with the information.                                               #
    #---------------------------------------------------------------------------------------#
-   if (horizontal){
-      ans = list(nrow=nbrow,ncol=nbcol,nbox=nbox,angle=yangle,mat=mat)
-   }else{
-      ans = list(nrow=nbrow,ncol=nbcol,nbox=nbox,angle=xangle,mat=mat)
-   }#end if
+   ans = list( nrow       = nbrow
+             , ncol       = nbcol
+             , nbox       = nbox
+             , angle      = horizontal * yangle + (1 - horizontal) * xangle
+             , mat        = mat
+             , mat.off    = mat.off
+             , mat.off2   = mat.off2
+             , bottom     = bottom
+             , left       = left
+             , top        = top
+             , right      = right
+             , mar        = mar
+             , mar0       = mar0
+             , mar.key    = mar.key
+             )#end list
    return(ans)
+   #---------------------------------------------------------------------------------------#
 }#end function
 #------------------------------------------------------------------------------------------#

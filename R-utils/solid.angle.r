@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------------------#
 #     This function computes the solid angle or the area associated, of a "rectangle"      #
-# defined by two pairs of coordinates, representing the Southwestern and Northeaster       #
+# defined by two pairs of coordinates, representing the Southwestern and Northeastern      #
 # corners.                                                                                 #
 #                                                                                          #
 #    INPUTS.                                                                               #

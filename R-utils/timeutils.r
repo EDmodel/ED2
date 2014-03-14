@@ -1,8 +1,17 @@
 #==========================================================================================#
 #==========================================================================================#
+#     Function that checks whether an object is chron.                                     #
+#------------------------------------------------------------------------------------------#
+is.dates <<- function(x) inherits(x,"dates")
+is.times <<- function(x) inherits(x,"times")
+#------------------------------------------------------------------------------------------#
+
+
+#==========================================================================================#
+#==========================================================================================#
 #      Function that determines whether the year is leap or not.                           #
 #------------------------------------------------------------------------------------------#
-is.leap = function(when){
+is.leap <<- function(when){
 
    wit = is(when)
    
@@ -26,7 +35,7 @@ is.leap = function(when){
 #==========================================================================================#
 #      Function that determines the number of days in a given month.                       #
 #------------------------------------------------------------------------------------------#
-daymax = function(month,year){
+daymax <<- function(month,year){
   mmm  = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
   if (missing(year)){
@@ -58,12 +67,14 @@ daymax = function(month,year){
 #==========================================================================================#
 #      Function that determines the number of the month given the character name.          #
 #------------------------------------------------------------------------------------------#
-mmm2mon = function(mmm,lang="English"){
-  lang = tolower(lang)
-  if (lang == "english"){
-     m3l  = c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
-  }else if(lang == "portuguese"){
+mmm2mon <<- function(mmm,lang="English"){
+  lang = substring(tolower(lang),1,2)
+  if (lang %in% c("en")){
+     m3l  = tolower(month.abb)
+  }else if(lang %in% c("po","pt")){
      m3l  = c("jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez")
+  }else if(lang %in% c("fr")){
+     m3l  = c("jan","fev","mar","avr","mai","jun","jul","aou","sep","oct","nov","dec")
   }#end if
 
   mmmloc = tolower(substring(as.character(mmm),1,3))
@@ -82,21 +93,17 @@ mmm2mon = function(mmm,lang="English"){
 #==========================================================================================#
 #      Function that determines 3-letter name of the month given their number.             #
 #------------------------------------------------------------------------------------------#
-mon2mmm = function(mon,lang="English",cap1=FALSE){
-  lang = tolower(lang)
-  if (cap1){
-     if (lang == "english"){
-        m3l  = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
-     }else if(lang == "portuguese"){
-        m3l  = c("Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez")
-     }#end if
-  }else{
-     if (lang == "english"){
-        m3l  = c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
-     }else if(lang == "portuguese"){
-        m3l  = c("jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez")
-     }#end if
+mon2mmm <<- function(mon,lang="English",cap1=FALSE){
+  lang = substring(tolower(lang),1,2)
+  if (lang %in% c("en")){
+     m3l  = month.abb
+  }else if(lang %in% c("po","pt")){
+     m3l  = c("Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez")
+  }else if(lang %in% c("fr")){
+     m3l  = c("Jan","Fev","Mar","Avr","Mai","Jun","Jul","Aou","Sep","Oct","Nov","Dec")
   }#end if
+
+  if (! cap1) m3l = tolower(m3l)
   monout = m3l[mon]
   return(monout)
 } #end function
@@ -112,7 +119,7 @@ mon2mmm = function(mon,lang="English",cap1=FALSE){
 #==========================================================================================#
 #      Function that converts a chron object to numeric years.                             #
 #------------------------------------------------------------------------------------------#
-numyears = function(when){
+numyears <<- function(when){
    yrs    = years(when)
    lyrs   = levels(yrs)
    yrout  = as.numeric(lyrs[match(yrs,lyrs)])
@@ -130,7 +137,7 @@ numyears = function(when){
 #==========================================================================================#
 #      Function that converts a chron object to numeric months.                            #
 #------------------------------------------------------------------------------------------#
-nummonths = function(when){
+nummonths <<- function(when){
    mos    = months(when)
    lmos   = levels(mos)
    moout  = match(mos,lmos)
@@ -146,9 +153,30 @@ nummonths = function(when){
 
 #==========================================================================================#
 #==========================================================================================#
+#      Function that converts a chron object to numeric fortnight count.                   #
+# Fortnight index goes from 1 to 26, where 1 includes January 1-14, 2 is January 15-28,    #
+# and so on.  Some periods get 15 days just to make sure that nothing is lost.             #
+#------------------------------------------------------------------------------------------#
+numfortnight <<- function(when){
+   doy   = floor(dayofyear(when))
+   dmax  = 365 + is.leap(when)
+   fnfac = dmax / 26
+   fnout = ceiling(doy/fnfac)
+   return(fnout)
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #      Function that converts a chron object to numeric days.                              #
 #------------------------------------------------------------------------------------------#
-numdays = function(when){
+numdays <<- function(when){
    dys    = days(when)
    ldys   = levels(dys)
    dyout  = match(dys,ldys)
@@ -166,7 +194,7 @@ numdays = function(when){
 #==========================================================================================#
 #      Function that returns the dates as characters.                                      #
 #------------------------------------------------------------------------------------------#
-chardates = function(when){
+chardates <<- function(when){
    mymonth = substring(100   + nummonths(when),2,3)
    myday   = substring(100   + numdays  (when),2,3)
    myyear  = substring(10000 + numyears (when),2,5)
@@ -185,7 +213,7 @@ chardates = function(when){
 #==========================================================================================#
 #      Function that returns the dates as characters.                                      #
 #------------------------------------------------------------------------------------------#
-label.dates = function(when,add.hours=TRUE){
+label.dates <<- function(when,add.hours=TRUE){
    mymonth = substring(100   + nummonths(when),2,3)
    myday   = substring(100   + numdays  (when),2,3)
    myyear  = substring(10000 + numyears (when),2,5)
@@ -215,7 +243,7 @@ label.dates = function(when,add.hours=TRUE){
 #==========================================================================================#
 #      Function that returns the times as characters.                                      #
 #------------------------------------------------------------------------------------------#
-chartimes = function(when){
+chartimes <<- function(when){
    myhour = substring(100 + hours  (when),2,3)
    myminu = substring(100 + minutes(when),2,3)
    myseco = substring(100 + seconds(when),2,3)
@@ -234,7 +262,7 @@ chartimes = function(when){
 #==========================================================================================#
 #      Function that finds the fraction of the day.                                        #
 #------------------------------------------------------------------------------------------#
-hms2frac = function(when){
+hms2frac <<- function(when){
    thishour  = hours    (when)
    thismin   = minutes  (when)
    thissec   = seconds  (when)
@@ -254,7 +282,7 @@ hms2frac = function(when){
 #==========================================================================================#
 #      Function that finds the numeric version of the days.                                #
 #------------------------------------------------------------------------------------------#
-dayofyear = function(when){
+dayofyear <<- function(when){
    offdays   = c(0, 31,59,90,120,151,181,212,243,273,304,334,365)
 
    thisday   = numdays  (when)
@@ -279,7 +307,7 @@ dayofyear = function(when){
 #==========================================================================================#
 #     This function appends several time-related variables for a given data frame.         #
 #------------------------------------------------------------------------------------------#
-alltimes = function(datin,lon,lat,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetavg=1
+alltimes <<- function(datin,lon,lat,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetavg=1
                    ,nmean=120,...){
    #------ Copy the input data frame, and call the other functions. -----------------------#
    datout = datin
@@ -295,14 +323,15 @@ alltimes = function(datin,lon,lat,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetav
                                 ,zeronight=zeronight,meanval=meanval,imetavg=imetavg
                                 ,nmean=nmean,...)
    datout$cosz       =   zenith$cosz
+   datout$zen        =   zenith$zen
    datout$sunhgt     =   zenith$hgt
    datout$nighttime  =   zenith$night
    datout$daytime    =   zenith$day
    datout$twilight   = (! zenith$night) & (! zenith$day)
+   datout$diel       = as.integer(! datout$nighttime) + as.integer(datout$daytime)
    datout$highsun    = zenith$cosz >= cosz.highsun
    datout$riseset    = zenith$cosz >= cosz.twilight & zenith$cosz < cosz.highsun
    datout$notdaytime = ! zenith$day
-
    datout$season     = sign(-lat) * cos( 2.0 * pi * (dayofyear(datout$when) - 1)
                                        / (365 + is.leap(datout$year)) )
 
@@ -420,13 +449,61 @@ period.day <<- function(when,dtblock=3){
 
 
 
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Create a time stamp that is a chron object from fortnight index and year.  The      #
+# default is the middle point of the fortnight period.                                     #
+#------------------------------------------------------------------------------------------#
+fnyear.2.chron <<- function(fortnight,year,loc="centre"){
+
+   loc    = tolower(substring(loc,1,1))
+
+
+   #---------------------------------------------------------------------------------------#
+   #     If fortnight is actually a chron object, find the fortnight index.                #
+   #---------------------------------------------------------------------------------------#
+   if (missing(year)){
+      wit = is(fortnight)
+      if ("dates" %in% wit || "chron" %in% wit){
+         when      = fortnight
+         fortnight = numfortnight(when)
+         year      = numyears (when)
+      }else{
+         stop("  No year given and fortnight is not time")
+      }#end if
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   dmax  = ifelse(is.leap(year),366,365)
+   fnfac = dmax / 26
+   zero  = chron(paste(12,31,year-1,sep="/"))
+
+
+   if ( loc %in% c("l","b","s")){
+      when.out = chron(floor(zero+(fortnight-1)*fnfac + 1))
+   }else if ( loc %in% c("c","m")){
+      when.out = chron(round(zero+(fortnight-0.5)*fnfac))
+   }else{
+      when.out = chron(floor(zero+fortnight*fnfac))
+   }#end if
+
+   return(when.out)
+}#end fnyear.2.chron
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
 #==========================================================================================#
 #==========================================================================================#
 #      List with the names of months and seasons.                                          #
 #------------------------------------------------------------------------------------------#
-mlist          <<- c("January","February","March","April","May","June","July","August"
-                    ,"September","October","November","December")
-mlist3         <<- substring(mlist,1,3)
+mlist          <<- month.name
+mlist3         <<- month.abb
 
 if (! "mseason.1st" %in% ls()) mseason.1st = 12
 

@@ -376,7 +376,7 @@ module disturbance_utils
                      !----- Fuse then terminate cohorts. ----------------------------------!
                      if (csite%patch(new_lu+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
                         call fuse_cohorts(csite,new_lu+onsp,cpoly%green_leaf_factor(:,isi) &
-                                         ,cpoly%lsl(isi))
+                                         ,cpoly%lsl(isi),.false.)
                         call terminate_cohorts(csite,new_lu+onsp,elim_nplant,elim_lai)
                         call split_cohorts(qpatch,cpoly%green_leaf_factor(:,isi)           &
                                           ,cpoly%lsl(isi))
@@ -553,6 +553,19 @@ module disturbance_utils
                   call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1    &
                                                  ,cpoly%lsl(isi))
                end do
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !       Reset mortality rates due to disturbance.                           !
+               !---------------------------------------------------------------------------!
+               resetdist_bl: do ipa=1,onsp
+                  cpatch => csite%patch(ipa)
+                  do ico=1,cpatch%ncohorts
+                     cpatch%mort_rate(5,ico) = 0.0
+                  end do
+               end do resetdist_bl
+               !---------------------------------------------------------------------------!
 
 
 
@@ -1377,8 +1390,8 @@ module disturbance_utils
       csite%fmean_rshortup       (ipa) = csite%fmean_rshortup       (ipa) * area_fac
       csite%fmean_rnet           (ipa) = csite%fmean_rnet           (ipa) * area_fac
       csite%fmean_albedo         (ipa) = csite%fmean_albedo         (ipa) * area_fac
-      csite%fmean_albedo_beam    (ipa) = csite%fmean_albedo_beam    (ipa) * area_fac
-      csite%fmean_albedo_diff    (ipa) = csite%fmean_albedo_diff    (ipa) * area_fac
+      csite%fmean_albedo_par     (ipa) = csite%fmean_albedo_par     (ipa) * area_fac
+      csite%fmean_albedo_nir     (ipa) = csite%fmean_albedo_nir     (ipa) * area_fac
       csite%fmean_rlong_albedo   (ipa) = csite%fmean_rlong_albedo   (ipa) * area_fac
       csite%fmean_ustar          (ipa) = csite%fmean_ustar          (ipa) * area_fac
       csite%fmean_tstar          (ipa) = csite%fmean_tstar          (ipa) * area_fac
@@ -1642,11 +1655,11 @@ module disturbance_utils
       csite%fmean_albedo         (np) = csite%fmean_albedo         (np)                    &
                                       + csite%fmean_albedo         (cp)                    &
                                       * area_fac 
-      csite%fmean_albedo_beam    (np) = csite%fmean_albedo_beam    (np)                    &
-                                      + csite%fmean_albedo_beam    (cp)                    &
+      csite%fmean_albedo_par     (np) = csite%fmean_albedo_par     (np)                    &
+                                      + csite%fmean_albedo_par     (cp)                    &
                                       * area_fac 
-      csite%fmean_albedo_diff    (np) = csite%fmean_albedo_diff    (np)                    &
-                                      + csite%fmean_albedo_diff    (cp)                    &
+      csite%fmean_albedo_nir     (np) = csite%fmean_albedo_nir     (np)                    &
+                                      + csite%fmean_albedo_nir     (cp)                    &
                                       * area_fac 
       csite%fmean_rlong_albedo   (np) = csite%fmean_rlong_albedo   (np)                    &
                                       + csite%fmean_rlong_albedo   (cp)                    &
@@ -1831,11 +1844,11 @@ module disturbance_utils
          csite%dmean_albedo         (    np) = csite%dmean_albedo         (    np)         &
                                              + csite%dmean_albedo         (    cp)         &
                                              * area_fac
-         csite%dmean_albedo_beam    (    np) = csite%dmean_albedo_beam    (    np)         &
-                                             + csite%dmean_albedo_beam    (    cp)         &
+         csite%dmean_albedo_par     (    np) = csite%dmean_albedo_par     (    np)         &
+                                             + csite%dmean_albedo_par     (    cp)         &
                                              * area_fac
-         csite%dmean_albedo_diff    (    np) = csite%dmean_albedo_diff    (    np)         &
-                                             + csite%dmean_albedo_diff    (    cp)         &
+         csite%dmean_albedo_nir     (    np) = csite%dmean_albedo_nir     (    np)         &
+                                             + csite%dmean_albedo_nir     (    cp)         &
                                              * area_fac
          csite%dmean_rlong_albedo   (    np) = csite%dmean_rlong_albedo   (    np)         &
                                              + csite%dmean_rlong_albedo   (    cp)         &
@@ -2045,11 +2058,11 @@ module disturbance_utils
          csite%mmean_albedo         (    np) = csite%mmean_albedo         (    np)         &
                                              + csite%mmean_albedo         (    cp)         &
                                              * area_fac
-         csite%mmean_albedo_beam    (    np) = csite%mmean_albedo_beam    (    np)         &
-                                             + csite%mmean_albedo_beam    (    cp)         &
+         csite%mmean_albedo_par     (    np) = csite%mmean_albedo_par     (    np)         &
+                                             + csite%mmean_albedo_par     (    cp)         &
                                              * area_fac
-         csite%mmean_albedo_diff    (    np) = csite%mmean_albedo_diff    (    np)         &
-                                             + csite%mmean_albedo_diff    (    cp)         &
+         csite%mmean_albedo_nir     (    np) = csite%mmean_albedo_nir     (    np)         &
+                                             + csite%mmean_albedo_nir     (    cp)         &
                                              * area_fac
          csite%mmean_rlong_albedo   (    np) = csite%mmean_rlong_albedo   (    np)         &
                                              + csite%mmean_rlong_albedo   (    cp)         &
@@ -2304,11 +2317,11 @@ module disturbance_utils
          csite%qmean_albedo         (  :,np) = csite%qmean_albedo         (  :,np)         &
                                              + csite%qmean_albedo         (  :,cp)         &
                                              * area_fac
-         csite%qmean_albedo_beam    (  :,np) = csite%qmean_albedo_beam    (  :,np)         &
-                                             + csite%qmean_albedo_beam    (  :,cp)         &
+         csite%qmean_albedo_par     (  :,np) = csite%qmean_albedo_par     (  :,np)         &
+                                             + csite%qmean_albedo_par     (  :,cp)         &
                                              * area_fac
-         csite%qmean_albedo_diff    (  :,np) = csite%qmean_albedo_diff    (  :,np)         &
-                                             + csite%qmean_albedo_diff    (  :,cp)         &
+         csite%qmean_albedo_nir     (  :,np) = csite%qmean_albedo_nir     (  :,np)         &
+                                             + csite%qmean_albedo_nir     (  :,cp)         &
                                              * area_fac
          csite%qmean_rlong_albedo   (  :,np) = csite%qmean_rlong_albedo   (  :,np)         &
                                              + csite%qmean_rlong_albedo   (  :,cp)         &
@@ -2697,6 +2710,7 @@ module disturbance_utils
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
       use phenology_coms , only : retained_carbon_fraction ! ! intent(in)
       use phenology_aux  , only : pheninit_balive_bstorage ! ! intent(in)
+      use therm_lib      , only : cmtl2uext                ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target     :: csite
@@ -2829,9 +2843,10 @@ module disturbance_utils
                         ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
-      cpatch%leaf_energy(nc) = cpatch%leaf_hcap(nc) * cpatch%leaf_temp(nc)
-      cpatch%wood_energy(nc) = cpatch%wood_hcap(nc) * cpatch%wood_temp(nc)
-
+      cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc),cpatch%leaf_water(nc)       &
+                                        ,cpatch%leaf_temp (nc),cpatch%leaf_fliq (nc))
+      cpatch%wood_energy(nc) = cmtl2uext(cpatch%wood_hcap (nc),cpatch%wood_water(nc)       &
+                                        ,cpatch%wood_temp (nc),cpatch%wood_fliq (nc))
       call is_resolvable(csite,np,nc)
 
       !----- Should plantations be considered recruits? -----------------------------------!

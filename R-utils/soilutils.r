@@ -25,6 +25,79 @@ nstext.lines      = length(stext.lines)
 for(n in 1:nstext.lines){
    stext.lines[[n]]$silt = pmax(0,pmin(1,1.-stext.lines[[n]]$sand-stext.lines[[n]]$clay))
 }#end for
+stext.lines   <<- stext.lines
+nstext.lines  <<- nstext.lines
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This variable has the "polygons" for all soil types.                                #
+#------------------------------------------------------------------------------------------#
+stext.polygon       = list()
+stext.polygon[[ 1]] = list(sand = c(1.000,0.900,0.850)
+                          ,clay = c(0.000,0.100,0.000)
+                          )#end list
+stext.polygon[[ 2]] = list(sand = c(0.900,0.850,0.700,0.850)
+                          ,clay = c(0.100,0.150,0.000,0.000)
+                          )#end list
+stext.polygon[[ 3]] = list(sand = c(0.850,0.800,0.525,0.525,0.425,0.500,0.700)
+                          ,clay = c(0.150,0.200,0.200,0.075,0.075,0.000,0.000)
+                          )#end list
+stext.polygon[[ 4]] = list(sand = c(0.500,0.225,0.000,0.000,0.075,0.200)
+                          ,clay = c(0.000,0.275,0.275,0.125,0.125,0.000)
+                          )#end list
+stext.polygon[[ 5]] = list(sand = c(0.525,0.450,0.225,0.425,0.525)
+                          ,clay = c(0.200,0.275,0.275,0.075,0.075)
+                          )#end list
+stext.polygon[[ 6]] = list(sand = c(0.800,0.650,0.450,0.450,0.525)
+                          ,clay = c(0.200,0.350,0.350,0.275,0.200)
+                          )#end list
+stext.polygon[[ 7]] = list(sand = c(0.200,0.000,0.000,0.200)
+                          ,clay = c(0.400,0.400,0.275,0.275)
+                          )#end list
+stext.polygon[[ 8]] = list(sand = c(0.450,0.200,0.200,0.450)
+                          ,clay = c(0.400,0.400,0.275,0.275)
+                          )#end list
+stext.polygon[[ 9]] = list(sand = c(0.650,0.450,0.450)
+                          ,clay = c(0.350,0.550,0.350)
+                          )#end list
+stext.polygon[[10]] = list(sand = c(0.200,0.000,0.000)
+                          ,clay = c(0.400,0.600,0.400)
+                          )#end list
+stext.polygon[[11]] = list(sand = c(0.300,0.300,0.000)
+                          ,clay = c(0.400,0.700,0.700)
+                          )#end list
+stext.polygon[[12]] = list(sand = c(NA,NA)
+                          ,clay = c(NA,NA)
+                          )#end list
+stext.polygon[[13]] = list(sand = c(NA,NA)
+                          ,clay = c(NA,NA)
+                          )#end list
+stext.polygon[[14]] = list(sand = c(0.200,0.075,0.000,0.000)
+                          ,clay = c(0.000,0.125,0.125,0.000)
+                          )#end list
+stext.polygon[[15]] = list(sand = c(0.300,0.000,0.000)
+                          ,clay = c(0.700,1.000,0.700)
+                          )#end list
+stext.polygon[[16]] = list(sand = c(0.450,0.300,0.300,0.450)
+                          ,clay = c(0.550,0.700,0.400,0.400)
+                          )#end list
+stext.polygon[[17]] = list(sand = c(0.300,0.000,0.000,0.200)
+                          ,clay = c(0.400,0.700,0.600,0.400)
+                          )#end list
+nstext.polygon      = length(stext.polygon)
+
+for(n in 1:nstext.polygon){
+   sand.now = stext.polygon[[n]]$sand
+   clay.now = stext.polygon[[n]]$clay
+   stext.polygon[[n]]$silt = pmax(0,pmin(1,1.-sand.now-clay.now))
+}#end for
+stext.polygon  <<- stext.polygon
+nstext.polygon <<- nstext.polygon
 #==========================================================================================#
 #==========================================================================================#
 
@@ -33,7 +106,7 @@ for(n in 1:nstext.lines){
 #==========================================================================================#
 #     This function finds the soil parameters.                                             #
 #------------------------------------------------------------------------------------------#
-soil.params = function(ntext,isoilflg,slxsand,slxclay){
+soil.params <<- function(ntext,isoilflg,slxsand,slxclay){
    #----- Define some prescribed fractions. -----------------------------------------------#
    xsand.def = c( 0.920, 0.825, 0.660, 0.200, 0.410, 0.590
                 , 0.100, 0.320, 0.520, 0.060, 0.200, 0.200
@@ -45,6 +118,8 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
    soil.name = c("Sand","Loamy sand","Sandy loam","Silt loam","Loam","Sandy clay loam"
                 ,"Silty clay loam","Clayey loam","Sandy clay","Silty clay","Clay"
                 ,"Peat","Bedrock","Silt","Heavy clay","Clayey sand","Clayey silt")
+   soil.key  = c("Sa","LSa","SaL","SiL","L","SaCL","SiCL","CL","SaC","SiC","C","P","BR"
+                ,"Si","CC","CSa","CSi")
    #----- Define some constants. ----------------------------------------------------------#
    fieldcp.K  = 0.1  # hydraulic conduct. at field capacity                       [ mm/day]
    soilcp.MPa = 3.1  # soil-water potential for air dry soil                      [    MPa]
@@ -66,9 +141,21 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   # Soil heat capacity.  Didn't find silt values, using average between sand and clay     #
+   #---------------------------------------------------------------------------------------#
+   sand.cond = 8.80
+   clay.cond = 2.92
+   silt.cond = .5 * (sand.cond + clay.cond)
+   air.cond  = 0.025
+   h2o.cond  = 0.57
+   #---------------------------------------------------------------------------------------#
+
+
    #----- Initialise the list with meaningless parameters. --------------------------------#
    mysoil = list( ntext      = NA
                 , name       = NA
+                , key        = NA
                 , xsand      = NA
                 , xclay      = NA
                 , xsilt      = NA
@@ -89,6 +176,10 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
                 , slpotfc    = 0.
                 , slpotld    = 0.
                 , slpotfr    = 0.
+                , thcond0    = 0.
+                , thcond1    = 0.
+                , thcond2    = 0.
+                , thcond3    = 0.
                 )#end list
    #---------------------------------------------------------------------------------------#
 
@@ -97,15 +188,24 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
    #---------------------------------------------------------------------------------------#
    #     Find soil class and sand, silt, and clay fractions.                               #
    #---------------------------------------------------------------------------------------#
-   if (isoilflg == 2 & slxsand > 0 & slxclay > 0 & (slxsand + slxclay) < 1 ){
+   if (missing(slxsand) || missing(slxclay) || missing(isoilflg)){
+      mysoil$ntext = ntext
+      mysoil$name  = soil.name[mysoil$ntext]
+      mysoil$key   = soil.key [mysoil$ntext]
+      mysoil$xsand = xsand.def[ntext]
+      mysoil$xclay = xclay.def[ntext]
+      mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay
+   }else if (isoilflg == 2 & slxsand > 0 & slxclay > 0 & (slxsand + slxclay) < 1 ){
       mysoil$ntext = sclass(slxsand,slxclay)
       mysoil$name  = soil.name[mysoil$ntext]
+      mysoil$key   = soil.key [mysoil$ntext]
       mysoil$xsand = slxsand
       mysoil$xclay = slxclay
       mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay
    }else{
       mysoil$ntext = ntext
       mysoil$name  = soil.name[mysoil$ntext]
+      mysoil$key   = soil.key [mysoil$ntext]
       mysoil$xsand = xsand.def[ntext]
       mysoil$xclay = xclay.def[ntext]
       mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay
@@ -120,14 +220,14 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
    #---------------------------------------------------------------------------------------#
    if (mysoil$ntext == 13){
       #----- Bedrock.  Most things are zero, because it is an impermeable soil. -----------#
-      mysoil$slbs    =  0.
-      mysoil$slpots  =  0.
-      mysoil$slcons  =  0.
-      mysoil$slmsts  =  0.
-      mysoil$sfldcap =  0.
-      mysoil$soilcp  =  0.
-      mysoil$soilwp  =  0.
-      mysoil$slcpd   =  2130000.
+      mysoil$slbs      =  0.
+      mysoil$slpots    =  0.
+      mysoil$slcons    =  0.
+      mysoil$slmsts    =  0.
+      mysoil$sfldcap   =  0.
+      mysoil$soilcp    =  0.
+      mysoil$soilwp    =  0.
+      mysoil$slcpd     =  2130000.
       #------------------------------------------------------------------------------------#
    }else if (mysoil$ntext == 12){
       #------------------------------------------------------------------------------------#
@@ -179,6 +279,28 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
       mysoil$slpotfc   = smoist2mpot(mysoil$sfldcap, mysoil)
    }#end if
    #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Soil conductivity.                                                               #
+   #---------------------------------------------------------------------------------------#
+   ksand = 3. * h2o.cond / ( 2. * h2o.cond + sand.cond )
+   ksilt = 3. * h2o.cond / ( 2. * h2o.cond + silt.cond )
+   kclay = 3. * h2o.cond / ( 2. * h2o.cond + clay.cond )
+   kair  = 3. * h2o.cond / ( 2. * h2o.cond +  air.cond )
+     
+   mysoil$thcond0 = ( ksand * mysoil$xsand  * ( 1. - mysoil$slmsts ) * sand.cond 
+                      + ksilt * mysoil$xsilt  * ( 1. - mysoil$slmsts ) * silt.cond
+                      + kclay * mysoil$xclay  * ( 1. - mysoil$slmsts ) * clay.cond
+                      + kair                  *       mysoil$slmsts    *  air.cond  )
+   mysoil$thcond1 = h2o.cond - kair * air.cond
+   mysoil$thcond2 = ( ksand * mysoil$xsand  * ( 1. - mysoil$slmsts )
+                      + ksilt * mysoil$xsilt  * ( 1. - mysoil$slmsts )
+                      + kclay * mysoil$xclay  * ( 1. - mysoil$slmsts )
+                      + kair                  *        mysoil$slmsts   )
+   mysoil$thcond3 = 1. - kair
+   #---------------------------------------------------------------------------------------#
+
    return(mysoil)
 }#end function
 #==========================================================================================#
@@ -193,7 +315,7 @@ soil.params = function(ntext,isoilflg,slxsand,slxclay){
 #     This function determines the soil class based on the fraction of sand, clay, and     #
 # silt separates.                                                                          #
 #------------------------------------------------------------------------------------------#
-sclass = function(sandfrac,clayfrac){
+sclass <<- function(sandfrac,clayfrac){
     
    #----- Define the percentage of sand, clay, and silt. ----------------------------------#
    sand = 100. * sandfrac
@@ -275,7 +397,7 @@ sclass = function(sandfrac,clayfrac){
 #  1. : Field capacity                                                                     #
 #  2. : Porosity (saturation)                                                              #
 #------------------------------------------------------------------------------------------#
-soil.scale = function(soil.water,soil){
+soil.scale <<- function(soil.water,soil){
    low = soil.water <  soil$soilcp
    dry = soil.water <= soil$soilwp 
    mid = soil.water >  soil$soilwp & soil.water <= soil$sfldcap
@@ -310,7 +432,7 @@ soil.scale = function(soil.water,soil){
 #  1. : Field capacity                                                                     #
 #  2. : Porosity (saturation)                                                              #
 #------------------------------------------------------------------------------------------#
-soil.idx2water = function(soil.index,soil){
+soil.idx2water <<- function(soil.index,soil){
    soil.index[soil.index < -1.0] = -1.0
    soil.index[soil.index > +2.0] = +2.0
    dry = soil.index <= 0.0
@@ -335,7 +457,7 @@ soil.idx2water = function(soil.index,soil){
 
 #==========================================================================================#
 #==========================================================================================#
-smoist2mpot = function(smoist,mysoil){
+smoist2mpot <<- function(smoist,mysoil){
    smfrac = smoist / mysoil$slmsts
    mpot   = mysoil$slpots / smfrac ^ mysoil$slbs
    return(mpot)
@@ -350,10 +472,25 @@ smoist2mpot = function(smoist,mysoil){
 
 #==========================================================================================#
 #==========================================================================================#
-mpot2smoist = function(mpot,mysoil){
+mpot2smoist <<- function(mpot,mysoil){
    smfrac = ( mpot / mysoil$slpots) ^ (-1. / mysoil$slbs)
    smoist = smfrac * mysoil$slmsts
    return(smoist)
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+smoist2hydcond <<- function(smoist,mysoil){
+   smfrac  = smoist / mysoil$slmsts
+   hydcond = mysoil$slcons * smfrac ^ (2. * mysoil$slbs + 3.)
+   return(hydcond)
 }#end function
 #==========================================================================================#
 #==========================================================================================#

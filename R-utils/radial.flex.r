@@ -13,9 +13,11 @@ radial.flex <<- function ( lengths
                          , radlab           = FALSE
                          , lab.col          = par("fg")
                          , lab.bg           = par("bg")
+                         , lab.cex          = par("cex.axis")
                          , start            = 0
                          , clockwise        = FALSE
                          , rp.type          = "r"
+                         , pt.type          = "p"
                          , label.prop       = 1.15
                          , main             = ""
                          , xlab             = ""
@@ -27,6 +29,7 @@ radial.flex <<- function ( lengths
                          , show.grid        = TRUE
                          , show.grid.labels = 4
                          , show.radial.grid = TRUE
+                         , show.radial.edge = FALSE
                          , grid.col         = "grey"
                          , grid.bg          = "transparent"
                          , grid.left        = FALSE
@@ -38,6 +41,7 @@ radial.flex <<- function ( lengths
                          , radial.labels    = NULL
                          , radial.col       = lab.col
                          , radial.bg        = lab.bg
+                         , radial.cex       = par("cex.lab")
                          , boxed.radial     = TRUE
                          , poly.col         = NULL
                          , add              = FALSE
@@ -138,7 +142,7 @@ radial.flex <<- function ( lengths
        title(main = main, xlab = xlab, ylab = ylab)
        #---- Add the grid in case it is sought. -------------------------------------------#
        if (show.grid){
-          for (i in seq(length(grid.pos), 1, by = -1)){
+          for (i in rev(seq_along(grid.pos))){
              xpos = cos(angles) * (grid.pos[i] - radial.lim[1])
              ypos = sin(angles) * (grid.pos[i] - radial.lim[1])
              polygon(xpos, ypos, border = grid.col, col = grid.bg)
@@ -205,7 +209,7 @@ radial.flex <<- function ( lengths
          polygon(xpos,ypos,border=linecol,col=polycol,lty=ltype,lwd=lwidth,...)
       }#end if
       if (match("s", rptype, 0)){
-         points(xpos,ypos,pch=pointsymbols,col=pointcol,...)
+         points(xpos,ypos,pch=pointsymbols,col=pointcol,type=pt.type,...)
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -317,7 +321,7 @@ radial.flex <<- function ( lengths
             text( x      = xpos[label]
                 , y      = ypos[label]
                 , labels = if (is.exp){as.expression(labels[label])}else{labels[label]}
-                , cex    = par("cex.axis")
+                , cex    = lab.cex
                 , srt    = lab.srt
                 , col    = lab.col
                 , bg     = lab.bg
@@ -331,7 +335,7 @@ radial.flex <<- function ( lengths
                      , border = FALSE
                      , col    = lab.col
                      , bg     = lab.bg
-                     , cex    = par("cex.axis")
+                     , cex    = lab.cex
                      )#end boxed.labels
       }#end if (radlab)
       #------------------------------------------------------------------------------------#
@@ -361,10 +365,15 @@ radial.flex <<- function ( lengths
          # provided it.                                                                    #
          #---------------------------------------------------------------------------------#
          if (is.null(radial.labels)) radial.labels = as.character(grid.pos)
+         n.pos            = length(grid.pos)
          if (! is.null(grid.unit)){
-            n.pos                = length(grid.pos)
             radial.labels[n.pos] = paste(radial.labels[n.pos],grid.unit)
-         }#end if (! is.null(grid.unit))
+         }else if (! show.radial.edge){
+            xpos          = xpos         [-n.pos]
+            ypos          = ypos         [-n.pos]
+            radial.labels = radial.labels[-n.pos]
+            n.pos         = n.pos-1
+         }#end if
          #---------------------------------------------------------------------------------#
 
 
@@ -376,7 +385,7 @@ radial.flex <<- function ( lengths
                         , y      = ypos
                         , labels = radial.labels
                         , border = FALSE
-                        , cex    = par("cex.lab")
+                        , cex    = radial.cex
                         , col    = radial.col
                         , bg     = radial.bg
                         )#end boxed.labels
@@ -386,7 +395,7 @@ radial.flex <<- function ( lengths
                 , labels = radial.labels
                 , col    = radial.col
                 , bg     = radial.bg
-                , cex    = par("cex.lab")
+                , cex    = radial.cex
                 )#end text
          }#end if (boxed.radial)
          #---------------------------------------------------------------------------------#

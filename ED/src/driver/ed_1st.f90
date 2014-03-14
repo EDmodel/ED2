@@ -157,7 +157,7 @@ end subroutine ed_1st_master
 ! serial run.                                                                              !
 !------------------------------------------------------------------------------------------!
 subroutine ed_1st_node(init)
-
+   use ed_mem_alloc, only : ed_memory_allocation ! ! subroutine
    implicit none
    !----- Pre-compiled variables from MPI. ------------------------------------------------!
    include 'mpif.h'
@@ -181,7 +181,7 @@ subroutine ed_1st_node(init)
 
    !----- Get the polygon dimensions and allocate structures. -----------------------------!
    call ed_nodeget_poly_dims()
-   call ed_mem_alloc(2)
+   call ed_memory_allocation(2)
    call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
    !----- Get the work load structures. ---------------------------------------------------!

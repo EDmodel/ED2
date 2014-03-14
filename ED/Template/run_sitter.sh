@@ -17,7 +17,7 @@ source $HOME/.bashrc
 
 
 #----- Main path, you must actually type the path in case you add to chron. ---------------#
-here='/n/moorcroftfs1/mlongo/EDBRAMS/final_ed/biophysics/long_term/met+size+age+pft+fire'
+here='xxxxxxxxxxxxxxxxxxxxx'
 if [ ${here} == 'xxxxxxxxxxxxxxxxxxxxx' ]
 then
    echo ' You must set up variable here before using run_sitter.sh!!!'
@@ -37,7 +37,7 @@ situtils="${here}/sit_utils"
 
 
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
+bioinit='/n/home00/mlongo/data/ed2_data/site_bio_data'
 #------------------------------------------------------------------------------------------#
 
 
@@ -47,7 +47,21 @@ bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
 #   runtitle -- Full name of this simulation, this is used only in the e-mail subject.     #
 #------------------------------------------------------------------------------------------#
 desc=`basename ${here}`
-runtitle="Drought/warming scenario"
+runtitle="ED-2 simulation"
+#------------------------------------------------------------------------------------------#
+
+
+#----- This is the header with the Sheffield data. ----------------------------------------#
+shefhead='SHEF_NCEP_DRIVER_DS314'
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#      Variables that tell whether to check for steady state and deserts.                  #
+#------------------------------------------------------------------------------------------#
+checksteady="FALSE"   #   Check whether to stop simulations? (TRUE of FALSE, R style)
+nyearmin=160          #   Minimum number of years before we check
+ststcrit=0.01         #   Maximum change allowed between two cycles
 #------------------------------------------------------------------------------------------#
 
 
@@ -60,10 +74,12 @@ moi=`whoami`
 #------------------------------------------------------------------------------------------#
 #    Met driver location settings.                                                         #
 #    copy2scratch -- Should the met driver be copied to local scratch disks? ("y"|"n")     #
+#    metmaindef   -- Source path if we are not going to copy.                              #
 #    packdatasrc  -- Source path from where to copy to scratch.                            #
 #------------------------------------------------------------------------------------------#
 copy2scratch='y'
-packdatasrc='/n/nss2b/moorcroft_lab/mlongo/data/2scratch'
+metmaindef='/n/home00/mlongo/data/ed2_data'
+packdatasrc='/n/home00/mlongo/data/2scratch'
 #------------------------------------------------------------------------------------------#
 
 
@@ -87,7 +103,7 @@ fixqueue=0
 #  potveg  -- Path where to look for initialisation files in case waitpot = 'y'.           #
 #------------------------------------------------------------------------------------------#
 waitpot='n'
-potveg='/n/moorcroft_data/data/ed2_data/restarts_sci_006/potveg'
+potveg='/n/home00/mlongo/data/ed2_data/restarts_sci_006/potveg'
 #------------------------------------------------------------------------------------------#
 
 
@@ -96,7 +112,7 @@ potveg='/n/moorcroft_data/data/ed2_data/restarts_sci_006/potveg'
 # restart     -- Path to where to copy restart files in case copyrestart = 'y'.            #
 #------------------------------------------------------------------------------------------#
 copyrestart='n'
-restart='/n/moorcroft_data/mlongo/ed2_data/restarts_XXX'
+restart='/n/home00/mlongo/data/ed2_data/restarts_XXX'
 #------------------------------------------------------------------------------------------#
 
 
@@ -115,7 +131,7 @@ situation="${situtils}/situation.txt"
 
 
 #------ Calculator. -----------------------------------------------------------------------#
-ccc='/n/Moorcroft_Lab/Users/mlongo/util/calc.sh'  # Calculator
+ccc="${HOME}/util/calc.sh"  # Calculator
 #------------------------------------------------------------------------------------------#
 
 
@@ -125,9 +141,12 @@ ccc='/n/Moorcroft_Lab/Users/mlongo/util/calc.sh'  # Calculator
 #    - umax: maximum number of jobs in the queue that I am allowed to run                  #
 #    - pmax: maximum number of pending jobs that we may leave                              #
 #------------------------------------------------------------------------------------------#
+#------ Queue: sandy. ---------------------------------------------------------------------#
+sdyfull=64
+sdyumax=0
 #------ Queue: moorcroft2a. ---------------------------------------------------------------#
-m2afull=96
-m2aumax=96
+m2afull=88
+m2aumax=0
 #------ Queue: moorcroft2b. ---------------------------------------------------------------#
 m2bfull=88
 m2bumax=0
@@ -136,13 +155,13 @@ m2cfull=64
 m2cumax=64
 #------ Queue: moorcroft_6100a. -----------------------------------------------------------#
 a61full=48
-a61umax=48
+a61umax=0
 #------ Queue: moorcroft_6100b. -----------------------------------------------------------#
 b61full=480
 b61umax=204
 #------ Queue: wofsy. ---------------------------------------------------------------------#
 wsyfull=96
-wsyumax=96
+wsyumax=0
 #------ Queue: unrestricted_serial. -------------------------------------------------------#
 usefull=80
 useumax=80
@@ -155,6 +174,9 @@ upapmax=0
 #    E-mail options (normally only the first three options may require changes.            #
 #    email1day    -- Should I e-mail once a day (1) or every time I run (0)?               #
 #    recipient    -- To which e-mail should I send the update?                             #
+#    mailprog     -- Which e-mail program to use? mutt works best, I installed in my util  #
+#                    directory.  Give a try, if it doesn't work you may need to install    #
+#                    locally on your directory.                                            #
 #    plotstatus   -- Plot the current status of the run (you will need to create some R    #
 #                    script for each simulation). 0: no; 1: yes                            #
 #    Rscript_plot -- Script that you want to run to generate some plots.                   #
@@ -169,17 +191,16 @@ upapmax=0
 #    email1day    -- Reminder so the script knows whether an e-mail has been sent or not.  #
 #------------------------------------------------------------------------------------------#
 email1day=1
-recipient='mdplongo@gmail.com'
+recipient="xxxxxx@xxxx.com"
+mailprog="/n/home00/mlongo/util/mutt"
 plotstatus=1
 Rscript_plot="${situtils}/plot.status.r"
-R_figlist="${situtils}/stt_stext16.png
-           ${situtils}/stt_stext06.png
-           ${situtils}/agb_stext16.png
-           ${situtils}/agb_stext06.png
-           ${situtils}/bsa_stext16.png
-           ${situtils}/bsa_stext06.png
-           ${situtils}/lai_stext16.png
-           ${situtils}/lai_stext06.png"
+R_figlist="${situtils}/stt_t+000.png
+           ${situtils}/agb_t+000.png
+           ${situtils}/bsa_t+000.png
+           ${situtils}/lai_t+000.png
+           ${situtils}/scb_t+000.png
+           ${situtils}/npa_t+000.png"
 emailbody="${situtils}/email.txt"
 headfile="${situtils}/head.txt"
 tailfile="${situtils}/tail.txt"
@@ -203,6 +224,15 @@ fi
 #------------------------------------------------------------------------------------------#
 callunpa=${here}'/callunpa.sh'
 unparun=${here}'/unparun.sh'
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Executable name. -------------------------------------------------------------------#
+optname='ed_2.1-opt'
+cs6name='ed_2.1-cs6'
+optinit="${HOME}/.bashrc"
+cs6init="${HOME}/util/centos6.rc"
 #------------------------------------------------------------------------------------------#
 
 
@@ -237,6 +267,31 @@ unparun=${here}'/unparun.sh'
 
 
 
+#------------------------------------------------------------------------------------------#
+#   Check whether the executable is copied.  If not, let the user know and stop the        #
+# script.                                                                                  #
+#------------------------------------------------------------------------------------------#
+missexec=0
+if [ ! -s ${here}/executable/${optname} ]
+then
+   echo 'Executable file : '${optname}' is not in the executable directory'
+   echo 'Copy the executable to the file before running this script!'
+   let missexec=${missexec}+1
+fi
+if [ ${sdyumax} -gt 0 ] && [ ! -s ${here}/executable/${cs6name} ]
+then
+   echo 'CentOS 6 executable file : '${cs6name}' is not in the executable directory'
+   echo 'Copy the executable or set sdyumax to zero!'
+   let missexec=${missexec}+1
+fi
+if [ ${missexec} -gt 0 ]
+then
+   exit 99
+fi
+#------------------------------------------------------------------------------------------#
+
+
+
 
 
 #----- Check whether run_sitter.sh is still running or not.  If it is, exit. --------------#
@@ -252,13 +307,9 @@ fi
 #----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
-   sitemet='/scratch/mlongo/site_met_driver'
-   scenariopath='/scratch/mlongo/wmo+eft_driver'
-   shefpath='/scratch/mlongo/sheff_met_driver'
+   metmain='/scratch/mlongo'
 else
-   sitemet=${sitemetdef}
-   scenariopath=${scenariopathdef}
-   shefpath=''
+   metmain=${metmaindef}
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -275,16 +326,19 @@ echo 'Number of polygons: '${npolys}'...'
 #------------------------------------------------------------------------------------------#
 #     Reset most counters.                                                                 #
 #------------------------------------------------------------------------------------------#
-ff=0          # Polygon counter.
-nstart=0      # Number of new polygons that initialised
-nmetmiss=0    # Number of new polygons that crashed due to missing met driver
-nsigsegv=0    # Number of new polygons that crashed due to segmentation violation
-nstopped=0    # Number of new polygons that crashed due to unknown reason
-ncrashed=0    # Number of new polygons that crashed due to numeric instability
-newststate=0  # Number of new polygons at steady state
-newextinct=0  # Number of new extinct polygons
-nresubmit=0   # Number of long_serial polygons that were submitted again.
-deathrow=""   # List of polygons to be killed (they went extinct or reached steady state)
+ff=0           # Polygon counter.
+nstart=0       # Number of new polygons that initialised
+nmetmiss=0     # Number of new polygons that crashed due to missing met driver
+nbad_met=0     # Number of new polygons that crashed due to bad met driver
+nsigsegv=0     # Number of new polygons that crashed due to segmentation violation
+nstopped=0     # Number of new polygons that crashed due to unknown reason
+ncrashed=0     # Number of new polygons that crashed due to numeric instability
+newsuspend=0   # Number of new polygons that have been suspended by priority people
+newunknown=0   # Number of new polygons whose status is unknown
+newststate=0   # Number of new polygons at steady state
+newextinct=0   # Number of new extinct polygons
+nresubmit=0    # Number of long_serial polygons that were submitted again.
+deathrow=""    # List of polygons to be killed (they went extinct or reached steady state)
 #------------------------------------------------------------------------------------------#
 
 
@@ -410,6 +464,18 @@ then
       irepro=`echo ${oi}       | awk '{print $90}'`
       treefall=`echo ${oi}     | awk '{print $91}'`
       #------------------------------------------------------------------------------------#
+
+
+
+      #----- Check whether the directories exist or not. ----------------------------------#
+      if [ ! -s ${here}/${polyname} ]
+      then
+         echo 'Order: '${ff}', creating directory for polygon '${polyname}'...'
+         #----- Copy the Template directory to a unique polygon directory. -------------------#
+         oldtol=''
+         cp -r ${here}/Template ${here}/${polyname}
+      fi
+      #---------------------------------------------------------------------------------------#
 
 
 
@@ -783,7 +849,7 @@ then
       gyf)
          dtcensus=24
          let yr1stcensus=${yeara}+${yodd}
-         mon1stcensus=7
+         mon1stcensus=3
          minrecruitdbh=10
          ;;
       s67)
@@ -829,9 +895,43 @@ then
 
 
 
+
+
+      #------------------------------------------------------------------------------------#
+      #     Determine the scenario paths.                                                  #
+      #------------------------------------------------------------------------------------#
+      case ${iscenario} in
+      default)
+         case ${metdriver} in
+         Sheffield)
+            #----- Sheffield. -------------------------------------------------------------#
+            scentype='sheffield'
+            iscenario='sheffield'
+            ;;
+         *)
+            #----- Tower data. ------------------------------------------------------------#
+            scentype='wmo+eft'
+            iscenario='eft'
+            ;;
+         esac
+         ;;
+      eft|wmo|shr)
+         #----- Tower data, keep scenario as is. ------------------------------------------#
+         scentype='wmo+eft'
+         ;;
+      *)
+         #----- Rainfall scenario, keep scenario as is. -----------------------------------#
+         scentype='realisation_scen_driver'
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
       #------------------------------------------------------------------------------------#
       #      Choose the scenario to use.  Iscenario follows the following convention:      #
       # "default"    -- No scenario.  Use the tower/Sheffield data.                        #
+      # "wmo"        -- No scenario.  Use the WMO-based data.                              #
       # "rRRR_tTTT   -- Use scenarios, with rRRRR controlling the rainfall, and tTTTT      #
       #                 controlling temperature.                                           #
       #                                                                                    #
@@ -852,281 +952,127 @@ then
       #                        the same and correct by +Y.YY Kelvin.                       #
       #                 r+XXX: Similar to above, but make the time series wetter.          #
       #------------------------------------------------------------------------------------#
-      if [ ${iscenario} == "default" ]
+      #----- Find out which scenario to use. ----------------------------------------------#
+      fullscen="${metmain}/met_driver/${scentype}/${iscenario}"
+      #------------------------------------------------------------------------------------#
+      #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
+      # dataset, otherwise the site-level tower data is used.                              #
+      #------------------------------------------------------------------------------------#
+      case ${metdriver} in
+      Bananal)
+         metdriverdb=${fullscen}'/Bananal/Bananal_HEADER'
+         metcyc1=2004
+         metcycf=2006
+         imetavg=1
+         ;;
+      Brasilia)
+         metdriverdb=${fullscen}'/Brasilia/Brasilia_HEADER'
+         metcyc1=2006
+         metcycf=2012
+         imetavg=1
+         ;;
+      Caxiuana)
+         metdriverdb=${fullscen}'/Caxiuana/Caxiuana_HEADER'
+         metcyc1=1999
+         metcycf=2003
+         imetavg=1
+         ;;
+      Fazenda_Nossa_Senhora)
+         metdriverdb=${fullscen}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
+         metcyc1=1999
+         metcycf=2002
+         imetavg=1
+         ;;
+      Harvard)
+         metdriverdb=${fullscen}'/Harvard/Harvard_HEADER'
+         metcyc1=1992
+         metcycf=2003
+         imetavg=3
+         ;;
+      Manaus_Km34)
+         metdriverdb=${fullscen}'/Manaus_Km34/Manaus_Km34_HEADER'
+         metcyc1=1999
+         metcycf=2006
+         imetavg=1
+         ;;
+      Natal)
+         metdriverdb=${fullscen}'/Natal/Natal_HEADER'
+         metcyc1=2009
+         metcycf=2012
+         imetavg=1
+         ;;
+      Paracou)
+         metdriverdb=${fullscen}'/Paracou/Paracou_HEADER'
+         metcyc1=2004
+         metcycf=2012
+         imetavg=1
+         ;;
+      Pe-de-Gigante)
+         metdriverdb=${fullscen}'/Pe-de-Gigante/Pe-de-Gigante_HEADER'
+         metcyc1=2001
+         metcycf=2003
+         imetavg=1
+         ;;
+      Petrolina)
+         metdriverdb=${fullscen}'/Petrolina/Petrolina_HEADER'
+         metcyc1=2004
+         metcycf=2012
+         imetavg=1
+         ;;
+      Rebio_Jaru)
+         metdriverdb=${fullscen}'/Rebio_Jaru/Rebio_Jaru_HEADER'
+         metcyc1=1999
+         metcycf=2002
+         imetavg=1
+         ;;
+      Santarem_Km67)
+         metdriverdb=${fullscen}'/Santarem_Km67/Santarem_Km67_HEADER'
+         metcyc1=2001
+         metcycf=2011
+         imetavg=1
+         ;;
+      Santarem_Km77)
+         metdriverdb=${fullscen}'/Santarem_Km77/Santarem_Km77_HEADER'
+         metcyc1=2001
+         metcycf=2005
+         imetavg=1
+         ;;
+      Santarem_Km83)
+         metdriverdb=${fullscen}'/Santarem_Km83/Santarem_Km83_HEADER'
+         metcyc1=2000
+         metcycf=2003
+         imetavg=1
+         ;;
+      Sheffield)
+         metdriverdb=${fullscen}/${shefhead}
+         metcyc1=1969
+         metcycf=2008
+         imetavg=2
+         ;;
+      Tonzi)
+         metdriverdb=${fullscen}'/Tonzi/Tonzi_HEADER'
+         metcyc1=2000
+         metcycf=2010
+         imetavg=1
+         ;;
+      *)
+         echo 'Met driver: '${metdriver}
+         echo 'Sorry, this met driver is not valid for regular runs'
+         exit 85
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Correct years so it is not tower-based or Sheffield.                           #
+      #------------------------------------------------------------------------------------#
+      if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
+         [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ]
       then
-         #---------------------------------------------------------------------------------#
-         #     Determine which meteorological data set to use.  Default is the             #
-         # Sheffield/NCEP dataset, otherwise the site-level tower data is used.            #
-         #---------------------------------------------------------------------------------#
-         case ${metdriver} in
-         Bananal)
-            metdriverdb=${sitemet}'/Bananal/Bananal_HEADER'
-            metcyc1=2004
-            metcycf=2006
-            imetavg=1
-            ;;
-         Caxiuana)
-            metdriverdb=${sitemet}'/Caxiuana/Caxiuana_HEADER'
-            metcyc1=1999
-            metcycf=2003
-            imetavg=1
-            ;;
-         Fazenda_Nossa_Senhora)
-            metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
-            metcyc1=1999
-            metcycf=2002
-            imetavg=1
-            ;;
-         Harvard)
-            metdriverdb=${sitemet}'/Harvard/Harvard_HEADER'
-            metcyc1=1992
-            metcycf=2003
-            imetavg=1
-            ;;
-         Manaus_Km34)
-            metdriverdb=${sitemet}'/Manaus_Km34/Manaus_Km34_HEADER'
-            metcyc1=1999
-            metcycf=2005
-            imetavg=1
-            ;;
-         Paracou)
-            metdriverdb=${sitemet}'/Paracou/Paracou_HEADER'
-            metcyc1=2004
-            metcycf=2009
-            imetavg=1
-            ;;
-         Pe-de-Gigante)
-            metdriverdb=${sitemet}'/Pe-de-Gigante/Pe-de-Gigante_HEADER'
-            metcyc1=2001
-            metcycf=2003
-            imetavg=1
-            ;;
-         Petrolina)
-            metdriverdb=${sitemet}'/Petrolina/Petrolina_HEADER'
-            metcyc1=2004
-            metcycf=2011
-            imetavg=1
-            ;;
-         Rebio_Jaru)
-            metdriverdb=${sitemet}'/Rebio_Jaru/Rebio_Jaru_HEADER'
-            metcyc1=1999
-            metcycf=2002
-            imetavg=1
-            ;;
-         Santarem_Km67)
-            metdriverdb=${sitemet}'/Santarem_Km67/Santarem_Km67_HEADER'
-            metcyc1=2001
-            metcycf=2010
-            imetavg=1
-            ;;
-         Santarem_Km77)
-            metdriverdb=${sitemet}'/Santarem_Km77/Santarem_Km77_HEADER'
-            metcyc1=2001
-            metcycf=2005
-            imetavg=1
-            ;;
-         Santarem_Km83)
-            metdriverdb=${sitemet}'/Santarem_Km83/Santarem_Km83_HEADER'
-            metcyc1=2000
-            metcycf=2003
-            imetavg=1
-            ;;
-         Sheffield)
-            if [ 'x'${shefpath} == 'x' ]
-            then
-               metdriverdb=${here}/${polyname}/${shefhead}
-            else
-               metdriverdb=${shefpath}/${shefhead}
-            fi
-            metcyc1=1969
-            metcycf=2008
-            imetavg=2
-            ;;
-         Tonzi)
-            metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
-            metcyc1=2000
-            metcycf=2010
-            imetavg=1
-            ;;
-         *)
-            echo 'Met driver: '${metdriver}
-            echo 'Sorry, this met driver is not valid for regular runs'
-            exit 85
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-      else
-         #---------------------------------------------------------------------------------#
-         #     Find out which scenario to use.                                             #
-         #---------------------------------------------------------------------------------#
-         fullscen="${scenariopath}/${iscenario}"
-         #---------------------------------------------------------------------------------#
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Check whether this is a true scenario or just the tower.                    #
-         #---------------------------------------------------------------------------------#
-         if [ ${iscenario} == "eft" ]
-         then
-            #------------------------------------------------------------------------------#
-            #     EFT.  This is actually the same thing as "default", for convenience      #
-            # placed as a scenario.                                                        #
-            #------------------------------------------------------------------------------#
-            case ${metdriver} in
-            Bananal)
-               metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
-               metcyc1=2004
-               metcycf=2006
-               imetavg=1
-               ;;
-            Caxiuana)
-               metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
-               metcyc1=1999
-               metcycf=2003
-               imetavg=1
-               ;;
-            Fazenda_Nossa_Senhora)
-               metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
-               metcyc1=1999
-               metcycf=2002
-               imetavg=1
-               ;;
-            Manaus_Km34)
-               metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
-               metcyc1=1999
-               metcycf=2005
-               imetavg=1
-               ;;
-            Paracou)
-               metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
-               metcyc1=2004
-               metcycf=2009
-               imetavg=1
-               ;;
-            Pe-de-Gigante)
-               metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
-               metcyc1=2001
-               metcycf=2003
-               imetavg=1
-               ;;
-            Petrolina)
-               metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
-               metcyc1=2004
-               metcycf=2011
-               imetavg=1
-               ;;
-            Rebio_Jaru)
-               metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
-               metcyc1=1999
-               metcycf=2002
-               imetavg=1
-               ;;
-            Santarem_Km67)
-               metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
-               metcyc1=2001
-               metcycf=2010
-               imetavg=1
-               ;;
-            Santarem_Km77)
-               metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
-               metcyc1=2001
-               metcycf=2005
-               imetavg=1
-               ;;
-            Santarem_Km83)
-               metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
-               metcyc1=2000
-               metcycf=2003
-               imetavg=1
-               ;;
-            *)
-               echo 'Met driver: '${metdriver}
-               echo 'Sorry, this met driver is not valid for scenario runs'
-               exit 85
-               ;;
-            esac
-            #------------------------------------------------------------------------------#
-         else
-            #------------------------------------------------------------------------------#
-            #     INMET data, or any other scenario based on INMET. Years are fixed.       #
-            #------------------------------------------------------------------------------#
-            case ${metdriver} in
-            Bananal)
-               metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Caxiuana)
-               metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Fazenda_Nossa_Senhora)
-               metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Manaus_Km34)
-               metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Paracou)
-               metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Pe-de-Gigante)
-               metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Petrolina)
-               metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Rebio_Jaru)
-               metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Santarem_Km67)
-               metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Santarem_Km77)
-               metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            Santarem_Km83)
-               metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
-               metcyc1=1972
-               metcycf=2011
-               imetavg=1
-               ;;
-            *)
-               echo 'Met driver: '${metdriver}
-               echo 'Sorry, this met driver is not valid for scenario runs'
-               exit 85
-               ;;
-            esac
-            #------------------------------------------------------------------------------#
-         fi
-         #---------------------------------------------------------------------------------#
+         metcyc1=1972
+         metcycf=2012
+         imetavg=1
       fi
       #------------------------------------------------------------------------------------#
 
@@ -1138,12 +1084,45 @@ then
 
 
 
+      #----- Update the R script that controls the run. -----------------------------------#
+      /bin/rm -f ${here}/${polyname}/whichrun.r
+      /bin/cp -f ${here}/Template/whichrun.r    ${here}/${polyname}/whichrun.r
+      sed -i s@thispoly@${polyname}@g           ${here}/${polyname}/whichrun.r
+      sed -i s@thisqueue@${queue}@g             ${here}/${polyname}/whichrun.r
+      sed -i s@pathhere@${here}@g               ${here}/${polyname}/whichrun.r
+      sed -i s@paththere@${here}@g              ${here}/${polyname}/whichrun.r
+      sed -i s@thisyeara@${yeara}@g             ${here}/${polyname}/whichrun.r
+      sed -i s@thismontha@${montha}@g           ${here}/${polyname}/whichrun.r
+      sed -i s@thisdatea@${datea}@g             ${here}/${polyname}/whichrun.r
+      sed -i s@thistimea@${timea}@g             ${here}/${polyname}/whichrun.r
+      sed -i s@thischecksteady@${checksteady}@g ${here}/${polyname}/whichrun.r
+      sed -i s@thismetcyc1@${metcyc1}@g         ${here}/${polyname}/whichrun.r
+      sed -i s@thismetcycf@${metcycf}@g         ${here}/${polyname}/whichrun.r
+      sed -i s@thisnyearmin@${nyearmin}@g       ${here}/${polyname}/whichrun.r
+      sed -i s@thisststcrit@${ststcrit}@g       ${here}/${polyname}/whichrun.r
       #------------------------------------------------------------------------------------#
-      #      Here we check whether the directory exists.  If not, we cannot do anything,   #
-      # we must wait for the next time.                                                    #
+
+
+
       #------------------------------------------------------------------------------------#
-      if [ ! -s ${here}/${polyname} ]
+      #    Retrie ve the information on statusrun.txt because it may tell whether the      #
+      # run was in steady state or all PFTs went extinct.  These will never start          #
+      # again.                                                                             #
+      #------------------------------------------------------------------------------------#
+      statrun=${here}/${polyname}/statusrun.txt
+      if [ -s ${statrun} ]
       then
+         yearh=`cat ${statrun}  | awk '{print  $2}'`
+         monthh=`cat ${statrun} | awk '{print  $3}'`
+         dateh=`cat ${statrun}  | awk '{print  $4}'`
+         timeh=`cat ${statrun}  | awk '{print  $5}'`
+         runt=`cat ${statrun}   | awk '{print  $6}'`
+         agb=`cat ${statrun}    | awk '{print  $7}'`
+         bsa=`cat ${statrun}    | awk '{print  $8}'`
+         lai=`cat ${statrun}    | awk '{print  $9}'`
+         scb=`cat ${statrun}    | awk '{print $10}'`
+         npa=`cat ${statrun}    | awk '{print $11}'`
+      else
          yearh=${yeara}
          monthh=${montha}
          dateh=${datea}
@@ -1152,90 +1131,98 @@ then
          agb='NA'
          bsa='NA'
          lai='NA'
-         echo "${ff} H:-\ ${polyname} doesn't have a home directory..."
-      else
+         scb='NA'
+         npa='NA'
+      fi
+      #------------------------------------------------------------------------------------#
 
-         #----- Update the R script that controls the run. --------------------------------#
-         /bin/rm -f ${here}/${polyname}/whichrun.r
-         /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
-         sed -i s@thispoly@${polyname}@g        ${here}/${polyname}/whichrun.r
-         sed -i s@thisqueue@${queue}@g          ${here}/${polyname}/whichrun.r
-         sed -i s@pathhere@${here}@g            ${here}/${polyname}/whichrun.r
-         sed -i s@paththere@${here}@g           ${here}/${polyname}/whichrun.r
-         sed -i s@thisyeara@${yeara}@g          ${here}/${polyname}/whichrun.r
-         sed -i s@thismontha@${montha}@g        ${here}/${polyname}/whichrun.r
-         sed -i s@thisdatea@${datea}@g          ${here}/${polyname}/whichrun.r
-         sed -i s@thistimea@${timea}@g          ${here}/${polyname}/whichrun.r
+
+
+
+      #------------------------------------------------------------------------------------#
+      #    We only check those polygons that may be running, so the check doesn't take     #
+      # too long.  Once a polygon has reached a steady state / gone extinct / finished,    #
+      # then its status should remain the same.                                            #
+      #------------------------------------------------------------------------------------#
+      # if [ ${runt} != 'EXTINCT' ] && [ ${runt} != 'STSTATE' ] && 
+      #    [ ${runt} != 'THE_END' ]
+      # then
+         #----- Call R to check status. ---------------------------------------------------#
+         whichrun=${here}/${polyname}/whichrun.r
+         outwhich=${here}/${polyname}/outwhich.txt
+         R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
+         year=`cat ${statrun}  | awk '{print  $2}'`
+         month=`cat ${statrun} | awk '{print  $3}'`
+         day=`cat ${statrun}   | awk '{print  $4}'`
+         hhmm=`cat ${statrun}  | awk '{print  $5}'`
+         runt=`cat ${statrun}  | awk '{print  $6}'`
+         agb=`cat ${statrun}   | awk '{print  $7}'`
+         bsa=`cat ${statrun}   | awk '{print  $8}'`
+         lai=`cat ${statrun}   | awk '{print  $9}'`
+         scb=`cat ${statrun}   | awk '{print $10}'`
+         npa=`cat ${statrun}   | awk '{print $11}'`
+      # fi
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Variables with the simulation output.                                         #
+      #------------------------------------------------------------------------------------#
+      serial_out="${here}/${polyname}/serial_out.out"
+      serial_err="${here}/${polyname}/serial_out.err"
+      serial_lsf="${here}/${polyname}/serial_lsf.out"
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Check whether the job has been suspended because a priority job by a          #
+      # priority user have priority over yours, second-class user.  If so, kill the job    #
+      # and re-submit, it may be faster.                                                   #
+      #------------------------------------------------------------------------------------#
+      suspended=`bjobs -w -J ${jobname} 2> /dev/null | grep SSUSP | wc -l`
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Check whether the status is unknown.  If so, kill it because the node is      #
+      # probably down.                                                                     #
+      #------------------------------------------------------------------------------------#
+      unknown=`bjobs -w -J ${jobname}   2> /dev/null | grep UNKWN | wc -l`
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #    In case the polygon has crashed, we may need to re-submit...                    #
+      #------------------------------------------------------------------------------------#
+      if [ ${suspended} -gt 0 ]
+      then
+         #----- Kill the job to resubmit it. ----------------------------------------------#
+         echo "${ff} >:-@ ${polyname} HAS BEEN beeeeeeeeeeeeeep SUSPENDED... <========="
+         deathrow="${deathrow} ${jobname}"
+         let newsuspend=${newsuspend}+1
          #---------------------------------------------------------------------------------#
-
-
-
+      elif [ ${unknown} -gt 0 ]
+      then
+         #----- Kill the job to resubmit it. ----------------------------------------------#
+         echo "${ff}  :-S ${polyname} status is UNKNOWN..."
+         deathrow="${deathrow} ${jobname}"
+         let newunknown=${newunknown}+1
          #---------------------------------------------------------------------------------#
-         #    Retrie ve the information on statusrun.txt because it may tell whether the   #
-         # run was in steady state or all PFTs went extinct.  These will never start       #
-         # again.                                                                          #
+      elif [ ${runt} == 'CRASHED' ] || [ ${runt} == 'STOPPED' ] ||
+         [ ${runt} == 'METMISS' ] || [ ${runt} == 'SIGSEGV' ] ||
+         [ ${runt} == 'BAD_MET' ]
+      then
          #---------------------------------------------------------------------------------#
-         statrun=${here}/${polyname}/statusrun.txt
-         if [ -s ${statrun} ]
-         then
-            yearh=`cat ${statrun}  | awk '{print $2}'`
-            monthh=`cat ${statrun} | awk '{print $3}'`
-            dateh=`cat ${statrun}  | awk '{print $4}'`
-            timeh=`cat ${statrun}  | awk '{print $5}'`
-            runt=`cat ${statrun}   | awk '{print $6}'`
-            agb=`cat ${statrun}    | awk '{print $7}'`
-            bsa=`cat ${statrun}    | awk '{print $8}'`
-            lai=`cat ${statrun}    | awk '{print $9}'`
-         else
-            yearh=${yeara}
-            monthh=${montha}
-            dateh=${datea}
-            timeh=${timea}
-            runt='INITIAL'
-            agb='NA'
-            bsa='NA'
-            lai='NA'
-         fi
+         #     If serial_out exists, then it must be because the simulation is not         #
+         # running.  We must re-submit.                                                    #
          #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #    We only check those polygons that may be running, so the check doesn't take  #
-         # too long.  Once a polygon has reached a steady state / gone extinct / finished, #
-         # then its status should remain the same.                                         #
-         #---------------------------------------------------------------------------------#
-         # if [ ${runt} != 'EXTINCT' ] && [ ${runt} != 'STSTATE' ] && 
-         #    [ ${runt} != 'THE_END' ]
-         # then
-            #----- Call R to check status. ------------------------------------------------#
-            whichrun=${here}/${polyname}/whichrun.r
-            outwhich=${here}/${polyname}/outwhich.txt
-            R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
-            year=`cat ${statrun}  | awk '{print $2}'`
-            month=`cat ${statrun} | awk '{print $3}'`
-            day=`cat ${statrun}   | awk '{print $4}'`
-            hhmm=`cat ${statrun}  | awk '{print $5}'`
-            runt=`cat ${statrun}  | awk '{print $6}'`
-            agb=`cat ${statrun}   | awk '{print $7}'`
-            bsa=`cat ${statrun}   | awk '{print $8}'`
-            lai=`cat ${statrun}   | awk '{print $9}'`
-         # fi
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #    In case the polygon has crashed, we must do some stuff...                    #
-         #---------------------------------------------------------------------------------#
-         if [ ${runt} == 'CRASHED' ] || [ ${runt} == 'STOPPED' ] ||
-            [ ${runt} == 'METMISS' ] || [ ${runt} == 'SIGSEGV' ]
+         if [ -s ${serial_out} ]
          then
             #------------------------------------------------------------------------------#
-            #     Find out the tolerance used in the unfortunate run, then submit the job  #
-            # with a tolerance 10 times more strict.                                       #
+            #     Find out the tolerance used in the unfortunate run, then submit the      #
+            # job with a tolerance 10 times more strict.                                   #
             #------------------------------------------------------------------------------#
             ED2IN=${here}'/'${polyname}'/ED2IN'
             #----- Save the tolerance before we delete the file. --------------------------#
@@ -1246,12 +1233,10 @@ then
             fi # [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
             #------------------------------------------------------------------------------#
 
-            serial_out="${here}/${polyname}/serial_out.out"
-            serial_err="${here}/${polyname}/serial_out.err"
 
             if [ ${runt} == 'CRASHED' ]
             then
-               echo "${ff}  :-( ${polyname} HAS CRASHED (RK4 PROBLEM)..."
+               echo "${ff}  :-( ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
                let ncrashed=${ncrashed}+1
                #----- Make the tolerance 10 times smaller. --------------------------------#
                toler=`${ccc} ${toler}/10`
@@ -1267,9 +1252,18 @@ then
             elif [ ${runt} == 'METMISS' ]
             then
                let nmetmiss=${nmetmiss}+1
-               echo "${ff}  :-/ ${polyname} DID NOT FIND MET DRIVERS... <==========="
+               echo "${ff}  :-@ ${polyname} DID NOT FIND MET DRIVERS... <==========="
                /bin/mv ${serial_out} ${here}/${polyname}/metmiss_out.out
                /bin/mv ${serial_err} ${here}/${polyname}/metmiss_out.err
+            elif [ ${runt} == 'BAD_MET' ]
+            then
+               let nbad_met=${nbad_met}+1
+               echo "${ff}  :-[ ${polyname} HAS BAD MET DRIVERS... <==========="
+               /bin/mv ${serial_out} ${here}/${polyname}/bad_met_out.out
+               /bin/mv ${serial_err} ${here}/${polyname}/bad_met_out.err
+               #----- Delete files as they are the met driver is bad. ---------------------#
+               /bin/rm -fvr ${here}/${polyname}/analy/*
+               /bin/rm -fvr ${here}/${polyname}/histo/*
             elif [ ${runt} == 'STOPPED' ]
             then
                let nstopped=${nstopped}+1
@@ -1279,7 +1273,9 @@ then
             fi
             #------------------------------------------------------------------------------#
 
-            if [ ${toler} != '0.0000010' -a ${toler} != '0.0000001' -a ${toler} != '00' ]
+            if [ ${toler} != '.0000100' ] && [ ${toler} != '.0000010' ] && 
+               [ ${toler} != '.0000001' ] && [ ${toler} != '0' ]        && 
+               [ ${runt} != 'BAD_MET' ]
             then
 
                #----- Re-generate ED2IN. --------------------------------------------------#
@@ -1290,10 +1286,23 @@ then
                cp ${here}/Template/ED2IN ${ED2IN}
 
 
+               #----- If last history is the first year, switch it to initial. ------------#
+               if [ ${year} -eq ${yeara} ] || [ ${runt} == 'INITIAL' ]
+               then
+                  runflag='INITIAL'
+               else
+                  runflag='HISTORY'
+               fi
+               #---------------------------------------------------------------------------#
+
+
                #----- Check whether to use SFILIN as restart or history. ------------------#
-               if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
+               if [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
                then
                   thissfilin=${thisbiomin}
+               elif [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 5 ]
+               then
+                  thissfilin=${restart}
                else
                   thissfilin=${there}/${polyname}/histo/${polyname}
                fi
@@ -1337,7 +1346,7 @@ then
                sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
                sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
                sed -i s@mytoler@${toler}@g                  ${ED2IN}
-               sed -i s@RUNFLAG@HISTORY@g                   ${ED2IN}
+               sed -i s@RUNFLAG@${runflag}@g                ${ED2IN}
                sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
                sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
                sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
@@ -1436,11 +1445,12 @@ then
 
                #---------------------------------------------------------------------------#
                #      A crashed polygon will inevitably go to the long_serial queue.       #
-               # Check whether this is a head of a unrestricted parallel run.  If it is,   #
-               # then call this something else, otherwise use the polygon name.  In any    #
-               # case, re-write the srun.sh file.                                          #
+               # Check whether this is a head of a unrestricted parallel run.  If it       #
+               # is, then call this something else, otherwise use the polygon name.        #
+               # In any case, re-write the srun.sh file.                                   #
                #---------------------------------------------------------------------------#
-               srun=${here}'/'${polyname}'/srun.sh'
+               srun="${here}/${polyname}/srun.sh"
+               callserial="${here}/${polyname}/callserial.sh"
 
                unpahead=`bjobs -w -J ${jobname} 2> /dev/null | wc -l`
                if [ ${unpahead} -eq 0 ]
@@ -1449,6 +1459,13 @@ then
                else
                   polyIATA=`echo ${polyiata} | tr '[:lower:]' '[:upper:]'`
                   thisname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
+                  #----- In case IATA is defined in capital letters. ----------------------#
+                  if [ ${thisname} == ${jobname} ]
+                  then
+                     polyIATA=`echo ${polyiata} | tr '[:upper:]' '[:lower:]'`
+                     thisname=`echo ${jobname} | sed s@${polyiata}@${polyIATA}@g`
+                  fi
+                  #------------------------------------------------------------------------#
                fi
                #---------------------------------------------------------------------------#
 
@@ -1462,12 +1479,15 @@ then
                #----- Copy the data set again. --------------------------------------------#
                /bin/rm -f ${srun}
                /bin/rm -f ${here}/${polyname}/skipper.txt
-               /bin/cp ${here}/Template/srun.sh ${here}/${polyname}/srun.sh
+               /bin/cp ${here}/Template/srun.sh       ${here}/${polyname}/srun.sh
+               /bin/cp ${here}/Template/callserial.sh ${here}/${polyname}/callserial.sh
                #---------------------------------------------------------------------------#
 
 
                #----- The new queue is by default the long_serial. ------------------------#
                newqueue='long_serial'
+               initrc=${optinit}
+               execname=${optname}
                #---------------------------------------------------------------------------#
 
 
@@ -1481,337 +1501,437 @@ then
                sed -i s@thisqueue@${newqueue}@g ${srun}
                sed -i s@zzzzzzzz@${wtime}@g     ${srun}
                sed -i s@myorder@${ff}@g         ${srun}
-               #---------------------------------------------------------------------------#
-
-            else
-               #----- Give up on this node. -----------------------------------------------#
-               echo "${ff}  :-{ Tolerance is tiny and it still doesn't work.  Giving up..."
-               runt='THE_END'
-               #---------------------------------------------------------------------------#
-            fi # [ ${toler} != '0.0000010' -a ${toler} != '0.0000001' -a ${toler} != '00' ]
-            #------------------------------------------------------------------------------#
-
-         elif [ ${runt} == 'THE_END' ]
-         then 
-            echo "${ff} o/\o ${polyname} has finished..."
-
-         elif [ ${runt} == 'EXTINCT' -o ${runt} == 'STSTATE' ] && 
-              [ ${queue} != 'unrestricted_parallel' ]
-         then
-            running=`bjobs -w -J ${jobname} 2> /dev/null | grep RUN | wc -l`
-            if [ ${running} -gt 0 ]
-            then
-               deathrow="${deathrow} ${jobname}"
-               if [ ${runt} == 'EXTINCT' ]
-               then
-                  let newextinct=${newextinct}+1
-                  echo "${ff}  B-) ${polyname} has become a desert..."
-               elif [ ${runt} == 'STSTATE' ]
-               then
-                  let newststate=${newststate}+1
-                  echo "${ff}  :-D ${polyname} has reached steady state..."
-               fi
-            fi
-         elif [ ${runt} == 'HISTORY' ]
-         then
-            #----- Check whether the simulation is running, and when in model time it is. -#
-            stdout="${here}/${polyname}/serial_out.out"
-            simline=`grep "Simulating: "   ${stdout} | tail -1`
-            runtime=`echo ${simline} | awk '{print $3}'`
-            simline=`grep "Simulating: "   ${stdout} | tail -1`
-            runtime=`echo ${simline} | awk '{print $3}'`
-            echo "${ff}  :-) ${polyname} is running (${runtime})..."
-            #------------------------------------------------------------------------------#
-         elif [ ${runt} == 'INITIAL' ]
-         then
-            echo "${ff}  :-| ${polyname} is pending ..."
-         else
-            echo "${ff} <:-| ${polyname} status is unknown..."
-         fi # [ ${runt} == 'CRASHED' ]...
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #    Last, we check whether the job is still running or not.  In case it is not   #
-         # but it should, update the ED2IN with the latest history and re-submit the job.  #
-         #---------------------------------------------------------------------------------#
-         if [ ${runt} != 'THE_END' ] && [ ${runt} != 'STSTATE' ] && 
-            [ ${runt} != 'EXTINCT' ]
-         then
-            if [ ${queue} == 'unrestricted_parallel' ]
-            then
-               nlist=`grep ${polyname} ${here}/*/callunpa.sh | wc -l`
-               if [ ${nlist} -eq 0 ]
-               then
-                  running=0
-               else
-                  j=0
-                  running=0
-                  while [ ${j} -lt ${nlist} ] && [ ${running} -eq 0 ]
-                  do
-                     let j=${j}+1
-                     thisline=`grep ${polyname} ${here}/*/callunpa.sh | head -${j} \
-                                                                      | tail -1`
-                     parent=`echo ${thisline} | awk '{print substr($1,1,8)}'`
-                     parjob="${desc}-${parent}"
-                     running=`bjobs -w -q ${queue} -J ${parjob} 2> /dev/null | tail -1 \
-                                                                             | wc -l`
-                  done
-               fi
-            else
-               running=`bjobs -w -J ${jobname} 2> /dev/null | tail -1 | wc -l`
-            fi
-
-            if [ ${running} -eq 0 ]
-            then
-               echo "${polyname} is missing.  Re-submitting..." >> ${situation}
-
-               let nresubmit=${nresubmit}+1
-
-               #---------------------------------------------------------------------------#
-               #     Job was kicked out, submit it again.                                  #
-               #---------------------------------------------------------------------------#
-               ED2IN=${here}'/'${polyname}'/ED2IN'
-               #----- Save the tolerance before we delete the file. -----------------------#
-               toler=`grep NL%RK4_TOLERANCE ${ED2IN} | awk '{print $3}'`
-               #---------------------------------------------------------------------------#
-               #   This should never happen, but...                                        #
-               #---------------------------------------------------------------------------#
-               if [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
-               then
-                  toler=0.01
-               else
-                  toler=${oldtol}
-               fi # [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
-               #---------------------------------------------------------------------------#
-
-
-               #----- Re-generate ED2IN. --------------------------------------------------#
-               rm -f ${ED2IN} 
-               rm -f ${here}/${polyname}/serial_out.out
-               rm -f ${here}/${polyname}/serial_lsf.out
-               rm -f ${here}/${polyname}/serial_out.err
-
-               #----- Copy the Template to the right directory. ---------------------------#
-               cp ${here}/Template/ED2IN ${ED2IN}
-
-               #---------------------------------------------------------------------------#
-               #     Determine which PFTs to use.                                          #
-               #---------------------------------------------------------------------------#
-               lonint=${polylon/.*}
-               latint=${polylat/.*}
-               pfts='1,2,3,4,16'
+               sed -i s@myinitrc@${initrc}@g    ${srun}
                #---------------------------------------------------------------------------#
 
 
 
 
-               #----- Check whether to use SFILIN as restart or history. ------------------#
-               if [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
-               then
-                  thissfilin=${thisbiomin}
-               else
-                  thissfilin=${there}/${polyname}/histo/${polyname}
-               fi
-               #---------------------------------------------------------------------------#
-
-               #----- Update the polygon information on ED2IN. ----------------------------#
-               sed -i s@paththere@${there}@g                ${ED2IN}
-               sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
-               sed -i s@mymontha@${montha}@g                ${ED2IN}
-               sed -i s@mydatea@${datea}@g                  ${ED2IN}
-               sed -i s@mytimea@${timea}@g                  ${ED2IN}
-               sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
-               sed -i s@mymonthz@${monthz}@g                ${ED2IN}
-               sed -i s@mydatez@${datez}@g                  ${ED2IN}
-               sed -i s@mytimez@${timez}@g                  ${ED2IN}
-               sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
-               sed -i s@thispoly@${polyname}@g              ${ED2IN}
-               sed -i s@plonflag@${polylon}@g               ${ED2IN}
-               sed -i s@platflag@${polylat}@g               ${ED2IN}
-               sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
-               sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
-               sed -i s@monthhhh@${monthh}@g                ${ED2IN}
-               sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
-               sed -i s@myinitmode@${initmode}@g            ${ED2IN}
-               sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
-               sed -i s@mytrees@${pfts}@g                   ${ED2IN}
-               sed -i s@mycrop@${crop}@g                    ${ED2IN}
-               sed -i s@myplantation@${plantation}@g        ${ED2IN}
-               sed -i s@myiphen@${iphen}@g                  ${ED2IN}
-               sed -i s@myallom@${iallom}@g                 ${ED2IN}
-               sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
-               sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
-               sed -i s@myslxsand@${polysand}@g             ${ED2IN}
-               sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
-               sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
-               sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
-               sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
-               sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
-               sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
-               sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
-               sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
-               sed -i s@mytoler@${toler}@g                  ${ED2IN}
-               sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
-               sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
-               sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
-               sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
-               sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
-               sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
-               sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
-               sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
-               sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
-               sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
-               sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
-               sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
-               sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
-               sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
-               sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
-               sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
-               sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
-               sed -i s@mydecomp@${decomp}@g                ${ED2IN}
-               sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
-               sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
-               sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
-               sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
-               sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
-               sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
-               sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
-               sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
-               sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
-               sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
-               sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
-               sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
-               sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
-               sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
-               sed -i s@mysmfire@${smfire}@g                ${ED2IN}
-               sed -i s@myfire@${ifire}@g                   ${ED2IN}
-               sed -i s@myfuel@${fireparm}@g                ${ED2IN}
-               sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
-               sed -i s@mypercol@${ipercol}@g               ${ED2IN}
-               sed -i s@myrunoff@${runoff}@g                ${ED2IN}
-               sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
-               sed -i s@mybranch@${ibranch}@g               ${ED2IN}
-               sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
-               sed -i s@mycrown@${crown}@g                  ${ED2IN}
-               sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
-               sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
-               sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
-               sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
-               sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
-               sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
-               sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
-               sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
-               sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
-               sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
-               sed -i s@myrepro@${irepro}@g                 ${ED2IN}
-               sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
-               sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
-               sed -i s@myustmin@${ustmin}@g                ${ED2IN}
-               sed -i s@mygamm@${gamm}@g                    ${ED2IN}
-               sed -i s@mygamh@${gamh}@g                    ${ED2IN}
-               sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
-               sed -i s@myribmax@${ribmax}@g                ${ED2IN}
-               sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
-               sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
-               sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
-               sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
-               sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
-               sed -i s@mytreefall@${treefall}@g            ${ED2IN}
-               sed -i s@mymaxpatch@${iage}@g                ${ED2IN}
-               #------ Soil variables. ----------------------------------------------------#
-               sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
-               sed -i s@myslz2@"${polyslz2}"@g           ${ED2IN}
-               sed -i s@myslz3@"${polyslz3}"@g           ${ED2IN}
-               sed -i s@myslz4@"${polyslz4}"@g           ${ED2IN}
-               sed -i s@myslz5@"${polyslz5}"@g           ${ED2IN}
-               sed -i s@myslz6@"${polyslz6}"@g           ${ED2IN}
-               sed -i s@myslz7@"${polyslz7}"@g           ${ED2IN}
-               sed -i s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
-               sed -i s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
-               sed -i s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
-               sed -i s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
-               sed -i s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
-               sed -i s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
-               sed -i s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
-               sed -i s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
-               sed -i s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
-               sed -i s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
-               sed -i s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
-               sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
-               sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
-               sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
-               #----- Change run type. ----------------------------------------------------#
-               if [ ${runt} == 'INITIAL' ]
-               then
-                  sed -i s@RUNFLAG@${runt}@g      ${ED2IN}
-              else
-                  sed -i s@RUNFLAG@HISTORY@g      ${ED2IN}
-               fi
+               #----- Change the callserial.sh file. --------------------------------------#
+               sed -i s@thisroot@${here}@g          ${callserial}
+               sed -i s@thispoly@${polyname}@g      ${callserial}
+               sed -i s@myexec@${execname}@g        ${callserial}
+               sed -i s@myname@${moi}@g             ${callserial}
+               sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+               sed -i s@myscenario@${iscenario}@g   ${callserial}
+               sed -i s@myscenmain@${scentype}@g    ${callserial}
+               sed -i s@myinitrc@${initrc}@g        ${callserial}
                #---------------------------------------------------------------------------#
 
 
-
-               #---------------------------------------------------------------------------#
-               #      A halted polygon will inevitably go to the long_serial queue.        #
-               # Re-write the srun.sh file.                                                #
-               #---------------------------------------------------------------------------#
-               srun=${here}'/'${polyname}'/srun.sh'
-
-               #----- Get the waiting time used before. -----------------------------------#
-               thiswait=`grep 'Sleep time is' ${polyname}/srun.sh | awk '{print $5}'`
-               if [ 'x'${thiswait} == 'x' ]
-               then
-                  let wtime=${ff}%8
-                  let wtime=${wtime}*20
-                  nudge=`date +%S`
-                  if [ ${nudge} -lt 10 ]
-                  then 
-                     nudge=`echo ${nudge} | awk '{print substr($1,2,1)}'`
-                  fi
-                  let nudge=${nudge}%15
-                  let wtime=${wtime}+${nudge}
-                  let wtime=${wtime}+2
-               fi
-               /bin/rm -f ${srun}
-               /bin/rm -f ${here}/${polyname}/skipper.txt
-
-               cp ${here}/Template/srun.sh ${here}/${polyname}/srun.sh
-
-               #----- The new queue is by default the long_serial. ------------------------#
-               newqueue='long_serial'
-
-               #----- Change some settings in srun.sh. ------------------------------------#
-               sed -i s@pathhere@${here}@g      ${srun}
-               sed -i s@paththere@${here}@g     ${srun}
-               sed -i s@thispoly@${polyname}@g  ${srun}
-               sed -i s@thisqueue@${newqueue}@g ${srun}
-               sed -i s@thisdesc@${desc}@g      ${srun}
-               sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-               sed -i s@myorder@${ff}@g         ${srun}
 
                #----- Re-submit the job to long_serial queue. -----------------------------#
-               ${here}'/'${polyname}'/srun.sh'
+               ${srun}
+               #---------------------------------------------------------------------------#
 
-               #----- Switch the status to pending. ---------------------------------------#
+
+
+               #----- Remove information but keep the crashing sign. ----------------------#
                year=${yeara}
                month=${montha}
                day=${datea}
                hhmm=${timea}
-               runt='INITIAL'
                agb='NA'
                bsa='NA'
                lai='NA'
+               scb='NA'
+               npa='NA'
+               #---------------------------------------------------------------------------#
+
             else
-               echo "${polyname} is running/pending..." >> ${situation}
-            fi # [ ${running} -eq 0 ]
+               #----- Give up on this node. -----------------------------------------------#
+               echo "${ff}  :-{ Tolerance is tiny and it still crashes.  I gave up..."
+               #----- Delete files as they are the simulation can't run. ------------------#
+               /bin/rm -fvr ${here}/${polyname}/analy/*
+               /bin/rm -fvr ${here}/${polyname}/histo/*
+               #---------------------------------------------------------------------------#
+            fi # [ ${toler} != '0.0000010','0.0000001','00' ]
+            #------------------------------------------------------------------------------#
          else
-            echo "${polyname} status is ${runt}.  No need to resubmit." >> ${situation}
-         fi # [ ${runt} == 'HISTORY' -a ${queue} == 'long_serial' ]
+            #------------------------------------------------------------------------------#
+            #      Something bad happened, but it has already been re-submitted.           #
+            #------------------------------------------------------------------------------#
+            if [ ${runt} == 'CRASHED' ]
+            then
+               echo "${ff}  :-( ${polyname} HAS CRASHED (RK4 PROBLEM)..."
+               let ncrashed=${ncrashed}+1
+            elif [ ${runt} == 'SIGSEGV' ]
+            then
+               let nsigsegv=${nsigsegv}+1
+               echo "${ff} >:-# ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+            elif [ ${runt} == 'METMISS' ]
+            then
+               let nmetmiss=${nmetmiss}+1
+               echo "${ff}  :-@ ${polyname} DID NOT FIND MET DRIVERS... <==========="
+            elif [ ${runt} == 'BAD_MET' ]
+            then
+               let nbad_met=${nbad_met}+1
+               echo "${ff}  :-[ ${polyname} HAS BAD MET DRIVERS... <==========="
+            elif [ ${runt} == 'STOPPED' ]
+            then
+               let nstopped=${nstopped}+1
+               echo "${ff}  :-S ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+            fi
+            #------------------------------------------------------------------------------#
+         fi # [ -s ${serial_out} ]
          #---------------------------------------------------------------------------------#
-      fi
+
+      elif [ ${runt} == 'THE_END' ]
+      then 
+         echo "${ff} o/\o ${polyname} has finished..."
+
+      elif [ ${runt} == 'EXTINCT' -o ${runt} == 'STSTATE' ] && 
+           [ ${queue} != 'unrestricted_parallel' ]
+      then
+         running=`bjobs -w -J ${jobname} 2> /dev/null | grep RUN | wc -l`
+         if [ ${running} -gt 0 ]
+         then
+            deathrow="${deathrow} ${jobname}"
+            if [ ${runt} == 'EXTINCT' ]
+            then
+               let newextinct=${newextinct}+1
+               echo "${ff}  B-) ${polyname} has become a desert..."
+            elif [ ${runt} == 'STSTATE' ]
+            then
+               let newststate=${newststate}+1
+               echo "${ff}  :-D ${polyname} has reached steady state..."
+            fi
+         fi
+      elif [ -s ${serial_out} ]
+      then
+         #----- Check whether the simulation is running, and when in model time it is. ----#
+         stdout="${here}/${polyname}/serial_out.out"
+         simline=`grep "Simulating: "   ${stdout} | tail -1`
+         runtime=`echo ${simline} | awk '{print $3}'`
+         simline=`grep "Simulating: "   ${stdout} | tail -1`
+         runtime=`echo ${simline} | awk '{print $3}'`
+         echo "${ff}  :-) ${polyname} is running (${runtime})..."
+         #---------------------------------------------------------------------------------#
+      elif [ ${runt} == 'HISTORY' ] 
+      then
+         echo "${ff}  :-/ ${polyname} is pending again ..."
+      elif [ ${runt} == 'INITIAL' ]
+      then
+         echo "${ff}  :-| ${polyname} is pending (never started)..."
+      else
+         echo "${ff} <:-| ${polyname} status is unknown..."
+      fi # [ ${runt} == 'CRASHED' ]...
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #    Last, we check whether the job is still running or not.  In case it is not      #
+      # but it should, update the ED2IN with the latest history and re-submit the job.     #
+      #------------------------------------------------------------------------------------#
+      if [ ${runt} != 'THE_END' ] && [ ${runt} != 'STSTATE' ] && 
+         [ ${runt} != 'EXTINCT' ] && [ ${runt} != 'BAD_MET' ]
+      then
+         if [ ${queue} == 'unrestricted_parallel' ]
+         then
+            nlist=`grep ${polyname} ${here}/*/callunpa.sh | wc -l`
+            if [ ${nlist} -eq 0 ]
+            then
+               running=0
+            else
+               j=0
+               running=0
+               while [ ${j} -lt ${nlist} ] && [ ${running} -eq 0 ]
+               do
+                  let j=${j}+1
+                  thisline=`grep ${polyname} ${here}/*/callunpa.sh | head -${j} \
+                                                                   | tail -1`
+                  parent=`echo ${thisline} | awk '{print substr($1,1,8)}'`
+                  parjob="${desc}-${parent}"
+                  running=`bjobs -w -q ${queue} -J ${parjob} 2> /dev/null | tail -1 \
+                                                                          | wc -l`
+               done
+            fi
+         else
+            running=`bjobs -w -J ${jobname} 2> /dev/null | tail -1 | wc -l`
+         fi
+
+         if [ ${running} -eq 0 ]
+         then
+            echo "${polyname} is missing.  Re-submitting..." >> ${situation}
+
+            let nresubmit=${nresubmit}+1
+
+            #------------------------------------------------------------------------------#
+            #     Job was kicked out, submit it again.                                     #
+            #------------------------------------------------------------------------------#
+            ED2IN=${here}'/'${polyname}'/ED2IN'
+            #----- Save the tolerance before we delete the file. --------------------------#
+            toler=`grep NL%RK4_TOLERANCE ${ED2IN} | awk '{print $3}'`
+            #------------------------------------------------------------------------------#
+            #   This should never happen, but...                                           #
+            #------------------------------------------------------------------------------#
+            if [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
+            then
+               toler=0.01
+            else
+               toler=${oldtol}
+            fi # [ 'x'${oldtol} == 'xmytoler' -o 'x'${oldtol} == 'x' ]
+            #------------------------------------------------------------------------------#
+
+
+            #----- Re-generate ED2IN. -----------------------------------------------------#
+            rm -f ${ED2IN} 
+            rm -f ${here}/${polyname}/serial_out.out
+            rm -f ${here}/${polyname}/serial_lsf.out
+            rm -f ${here}/${polyname}/serial_out.err
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Copy the Template to the right directory. ------------------------------#
+            cp ${here}/Template/ED2IN ${ED2IN}
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- If last history is the first year, switch it to initial. ---------------#
+            if [ ${year} -eq ${yeara} ] || [ ${runt} == 'INITIAL' ]
+            then
+               runflag='INITIAL'
+            else
+               runflag='HISTORY'
+            fi
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Check whether to use SFILIN as restart or history. ---------------------#
+            if [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
+            then
+               thissfilin=${thisbiomin}
+            elif [ ${runflag} == 'INITIAL' ] && [ ${initmode} -eq 5 ]
+            then
+               thissfilin=${restart}
+            else
+               thissfilin=${there}/${polyname}/histo/${polyname}
+            fi
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Update the polygon information on ED2IN. -------------------------------#
+            sed -i s@paththere@${there}@g                ${ED2IN}
+            sed -i s@RUNFLAG@${runflag}@g                ${ED2IN}
+            sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
+            sed -i s@mymontha@${montha}@g                ${ED2IN}
+            sed -i s@mydatea@${datea}@g                  ${ED2IN}
+            sed -i s@mytimea@${timea}@g                  ${ED2IN}
+            sed -i s@myyearz@${thisyearz}@g              ${ED2IN}
+            sed -i s@mymonthz@${monthz}@g                ${ED2IN}
+            sed -i s@mydatez@${datez}@g                  ${ED2IN}
+            sed -i s@mytimez@${timez}@g                  ${ED2IN}
+            sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
+            sed -i s@thispoly@${polyname}@g              ${ED2IN}
+            sed -i s@plonflag@${polylon}@g               ${ED2IN}
+            sed -i s@platflag@${polylat}@g               ${ED2IN}
+            sed -i s@timehhhh@${timeh}@g                 ${ED2IN}
+            sed -i s@datehhhh@${dateh}@g                 ${ED2IN}
+            sed -i s@monthhhh@${monthh}@g                ${ED2IN}
+            sed -i s@yearhhhh@${yearh}@g                 ${ED2IN}
+            sed -i s@myinitmode@${initmode}@g            ${ED2IN}
+            sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
+            sed -i s@mytrees@${pfts}@g                   ${ED2IN}
+            sed -i s@mycrop@${crop}@g                    ${ED2IN}
+            sed -i s@myplantation@${plantation}@g        ${ED2IN}
+            sed -i s@myiphen@${iphen}@g                  ${ED2IN}
+            sed -i s@myallom@${iallom}@g                 ${ED2IN}
+            sed -i s@myisoilflg@${polyisoil}@g           ${ED2IN}
+            sed -i s@mynslcon@${polyntext}@g             ${ED2IN}
+            sed -i s@myslxsand@${polysand}@g             ${ED2IN}
+            sed -i s@myslxclay@${polyclay}@g             ${ED2IN}
+            sed -i s@mysoilbc@${polysoilbc}@g            ${ED2IN}
+            sed -i s@mysldrain@${polysldrain}@g          ${ED2IN}
+            sed -i s@mysoilcol@${polycol}@g              ${ED2IN}
+            sed -i s@mynzg@${polynzg}@g                  ${ED2IN}
+            sed -i s@mymetdriverdb@${metdriverdb}@g      ${ED2IN}
+            sed -i s@mymetcyc1@${metcyc1}@g              ${ED2IN}
+            sed -i s@mymetcycf@${metcycf}@g              ${ED2IN}
+            sed -i s@mytoler@${toler}@g                  ${ED2IN}
+            sed -i s@myvmfactc3@${vmfactc3}@g            ${ED2IN}
+            sed -i s@myvmfactc4@${vmfactc4}@g            ${ED2IN}
+            sed -i s@mymphototrc3@${mphototrc3}@g        ${ED2IN}
+            sed -i s@mymphototec3@${mphototec3}@g        ${ED2IN}
+            sed -i s@mymphotoc4@${mphotoc4}@g            ${ED2IN}
+            sed -i s@mybphotoblc3@${bphotoblc3}@g        ${ED2IN}
+            sed -i s@mybphotonlc3@${bphotonlc3}@g        ${ED2IN}
+            sed -i s@mybphotoc4@${bphotoc4}@g            ${ED2IN}
+            sed -i s@mykwgrass@${kwgrass}@g              ${ED2IN}
+            sed -i s@mykwtree@${kwtree}@g                ${ED2IN}
+            sed -i s@mygammac3@${gammac3}@g              ${ED2IN}
+            sed -i s@mygammac4@${gammac4}@g              ${ED2IN}
+            sed -i s@myd0grass@${d0grass}@g              ${ED2IN}
+            sed -i s@myd0tree@${d0tree}@g                ${ED2IN}
+            sed -i s@myalphac3@${alphac3}@g              ${ED2IN}
+            sed -i s@myalphac4@${alphac4}@g              ${ED2IN}
+            sed -i s@myklowco2@${klowco2}@g              ${ED2IN}
+            sed -i s@mydecomp@${decomp}@g                ${ED2IN}
+            sed -i s@myrrffact@${rrffact}@g              ${ED2IN}
+            sed -i s@mygrowthresp@${growthresp}@g        ${ED2IN}
+            sed -i s@mylwidthgrass@${lwidthgrass}@g      ${ED2IN}
+            sed -i s@mylwidthbltree@${lwidthbltree}@g    ${ED2IN}
+            sed -i s@mylwidthnltree@${lwidthnltree}@g    ${ED2IN}
+            sed -i s@myq10c3@${q10c3}@g                  ${ED2IN}
+            sed -i s@myq10c4@${q10c4}@g                  ${ED2IN}
+            sed -i s@myh2olimit@${h2olimit}@g            ${ED2IN}
+            sed -i s@mymortscheme@${imortscheme}@g       ${ED2IN}
+            sed -i s@myddmortconst@${ddmortconst}@g      ${ED2IN}
+            sed -i s@mysfclyrm@${isfclyrm}@g             ${ED2IN}
+            sed -i s@myicanturb@${icanturb}@g            ${ED2IN}
+            sed -i s@myatmco2@${atmco2}@g                ${ED2IN}
+            sed -i s@mythcrit@${thcrit}@g                ${ED2IN}
+            sed -i s@mysmfire@${smfire}@g                ${ED2IN}
+            sed -i s@myfire@${ifire}@g                   ${ED2IN}
+            sed -i s@myfuel@${fireparm}@g                ${ED2IN}
+            sed -i s@mymetavg@${imetavg}@g               ${ED2IN}
+            sed -i s@mypercol@${ipercol}@g               ${ED2IN}
+            sed -i s@myrunoff@${runoff}@g                ${ED2IN}
+            sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
+            sed -i s@mybranch@${ibranch}@g               ${ED2IN}
+            sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
+            sed -i s@mycrown@${crown}@g                  ${ED2IN}
+            sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
+            sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
+            sed -i s@mylreflectvis@${lreflectvis}@g      ${ED2IN}
+            sed -i s@mylreflectnir@${lreflectnir}@g      ${ED2IN}
+            sed -i s@myorienttree@${orienttree}@g        ${ED2IN}
+            sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
+            sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
+            sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+            sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
+            sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
+            sed -i s@myrepro@${irepro}@g                 ${ED2IN}
+            sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
+            sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
+            sed -i s@myustmin@${ustmin}@g                ${ED2IN}
+            sed -i s@mygamm@${gamm}@g                    ${ED2IN}
+            sed -i s@mygamh@${gamh}@g                    ${ED2IN}
+            sed -i s@mytprandtl@${tprandtl}@g            ${ED2IN}
+            sed -i s@myribmax@${ribmax}@g                ${ED2IN}
+            sed -i s@mygndvap@${igndvap}@g               ${ED2IN}
+            sed -i s@mydtcensus@${dtcensus}@g            ${ED2IN}
+            sed -i s@myyr1stcensus@${yr1stcensus}@g      ${ED2IN}
+            sed -i s@mymon1stcensus@${mon1stcensus}@g    ${ED2IN}
+            sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
+            sed -i s@mytreefall@${treefall}@g            ${ED2IN}
+            sed -i s@mymaxpatch@${iage}@g                ${ED2IN}
+            #------ Soil variables. -------------------------------------------------------#
+            sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
+            sed -i s@myslz2@"${polyslz2}"@g           ${ED2IN}
+            sed -i s@myslz3@"${polyslz3}"@g           ${ED2IN}
+            sed -i s@myslz4@"${polyslz4}"@g           ${ED2IN}
+            sed -i s@myslz5@"${polyslz5}"@g           ${ED2IN}
+            sed -i s@myslz6@"${polyslz6}"@g           ${ED2IN}
+            sed -i s@myslz7@"${polyslz7}"@g           ${ED2IN}
+            sed -i s@myslmstr1@"${polyslm1}"@g        ${ED2IN}
+            sed -i s@myslmstr2@"${polyslm2}"@g        ${ED2IN}
+            sed -i s@myslmstr3@"${polyslm3}"@g        ${ED2IN}
+            sed -i s@myslmstr4@"${polyslm4}"@g        ${ED2IN}
+            sed -i s@myslmstr5@"${polyslm5}"@g        ${ED2IN}
+            sed -i s@myslmstr6@"${polyslm6}"@g        ${ED2IN}
+            sed -i s@myslmstr7@"${polyslm7}"@g        ${ED2IN}
+            sed -i s@mystgoff1@"${polyslt1}"@g        ${ED2IN}
+            sed -i s@mystgoff2@"${polyslt2}"@g        ${ED2IN}
+            sed -i s@mystgoff3@"${polyslt3}"@g        ${ED2IN}
+            sed -i s@mystgoff4@"${polyslt4}"@g        ${ED2IN}
+            sed -i s@mystgoff5@"${polyslt5}"@g        ${ED2IN}
+            sed -i s@mystgoff6@"${polyslt6}"@g        ${ED2IN}
+            sed -i s@mystgoff7@"${polyslt7}"@g        ${ED2IN}
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      A halted polygon will inevitably go to the long_serial queue.           #
+            # Re-write the srun.sh file.                                                   #
+            #------------------------------------------------------------------------------#
+            srun="${here}/${polyname}/srun.sh"
+            callserial="${here}/${polyname}/callserial.sh"
+
+            #----- Get the waiting time used before. --------------------------------------#
+            thiswait=`grep 'Sleep time is' ${polyname}/srun.sh | awk '{print $5}'`
+            if [ 'x'${thiswait} == 'x' ]
+            then
+               let wtime=${ff}%8
+               let wtime=${wtime}*20
+               nudge=`date +%S`
+               if [ ${nudge} -lt 10 ]
+               then 
+                  nudge=`echo ${nudge} | awk '{print substr($1,2,1)}'`
+               fi
+               let nudge=${nudge}%15
+               let wtime=${wtime}+${nudge}
+               let wtime=${wtime}+2
+            fi
+            /bin/rm -f ${srun}
+            /bin/rm -f ${here}/${polyname}/skipper.txt
+
+            cp ${here}/Template/srun.sh       ${srun}
+            cp ${here}/Template/callserial.sh ${callserial}
+
+            #----- The new queue is by default the long_serial. ---------------------------#
+            newqueue='long_serial'
+            initrc=${optinit}
+            execname=${optname}
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Change some settings in srun.sh. ---------------------------------------#
+            sed -i s@pathhere@${here}@g      ${srun}
+            sed -i s@paththere@${here}@g     ${srun}
+            sed -i s@thispoly@${polyname}@g  ${srun}
+            sed -i s@thisqueue@${newqueue}@g ${srun}
+            sed -i s@thisdesc@${desc}@g      ${srun}
+            sed -i s@zzzzzzzz@${wtime}@g     ${srun}
+            sed -i s@myorder@${ff}@g         ${srun}
+            sed -i s@myinitrc@${initrc}@g    ${srun}
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #----- Change the callserial.sh file. -----------------------------------------#
+            sed -i s@thisroot@${here}@g          ${callserial}
+            sed -i s@thispoly@${polyname}@g      ${callserial}
+            sed -i s@myexec@${execname}@g        ${callserial}
+            sed -i s@myname@${moi}@g             ${callserial}
+            sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+            sed -i s@myscenario@${iscenario}@g   ${callserial}
+            sed -i s@myscenmain@${scentype}@g    ${callserial}
+            sed -i s@myinitrc@${initrc}@g        ${callserial}
+            #------------------------------------------------------------------------------#
+
+
+            #----- Re-submit the job to long_serial queue. --------------------------------#
+            ${srun}
+
+            #----- Switch the status to pending. ------------------------------------------#
+            year=${yeara}
+            month=${montha}
+            day=${datea}
+            hhmm=${timea}
+            runt='INITIAL'
+            agb='NA'
+            bsa='NA'
+            lai='NA'
+            scb='NA'
+            npa='NA'
+         else
+            echo "${polyname} is running/pending..." >> ${situation}
+         fi # [ ${running} -eq 0 ]
+      else
+         echo "${polyname} status is ${runt}.  No need to resubmit." >> ${situation}
+      fi # [ ${runt} == 'HISTORY' -a ${queue} == 'long_serial' ]
       #------------------------------------------------------------------------------------#
 
 
@@ -1861,7 +1981,7 @@ then
             echo " >>> Initial submission of polygon ${polyname}!!!!"
 
             #----- Re-submit the job to long_serial queue. --------------------------------#
-            ${here}'/'${polyname}'/srun.sh'
+            "${here}/${polyname}/srun.sh"
 
          elif [ ${readytostart} -gt 1 ]
          then
@@ -1875,7 +1995,7 @@ then
 
       #----- Write polygon check into a single table. -------------------------------------#
       output="${polyname} ${polylon} ${polylat} ${year} ${month} ${day} ${hhmm}"
-      output="${output} ${runt} ${agb} ${bsa} ${lai} NA"
+      output="${output} ${runt} ${agb} ${bsa} ${lai} ${scb} ${npa}"
       echo ${output} >> ${outcheck}
       #------------------------------------------------------------------------------------#
 
@@ -2121,7 +2241,7 @@ fi
 
 
 #----- Kill all jobs that can be killed. --------------------------------------------------#
-echo 'Killing polygons that went extinct or reached steady state...'
+echo 'Killing polygons that have been suspended, went extinct, or reached steady state...'
 if [ "x${deathrow}" != "x" ]
 then
    for killme in ${deathrow}
@@ -2139,6 +2259,10 @@ sleep 180
 
 #----- Check how many jobs are left on our preferred queues. ------------------------------#
 echo 'Counting the number of polygons on queues'
+#----- Sandy. -----------------------------------------------------------------------------#
+sdyrun=`bqueues sandy                         | tail -1 | awk '{print $10}'`
+sdypen=`bqueues sandy                         | tail -1 | awk '{print  $9}'`
+sdymoi=`bjobs -q sandy           2> /dev/null | wc -l`
 #----- Moorcroft_6100a. -------------------------------------------------------------------#
 a61run=`bqueues moorcroft_6100a               | tail -1 | awk '{print $10}'`
 a61pen=`bqueues moorcroft_6100a               | tail -1 | awk '{print  $9}'`
@@ -2342,6 +2466,30 @@ echo "   Potential = ${wsypot} "                                    >> ${tablefi
 echo "   User max  = ${wsyumax}"                                    >> ${tablefile}
 echo " -----------------------------------------------------------" >> ${tablefile}
 echo " "                                                            >> ${tablefile}
+#------ Sandy. ----------------------------------------------------------------------------#
+let sdytot=${sdyrun}+${sdypen}
+let sdyroom=${sdyfull}-${sdytot}
+let sdypot=${sdyumax}-${sdymoi}
+if [ ${sdypot} -lt 0 ] || [ ${sdyroom} -lt 0 ]
+then
+   sdyroom=0
+elif [ ${sdypot} -lt ${sdyroom} ]
+then
+   sdyroom=${sdypot}
+fi
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo "   Sandy"                                                     >> ${tablefile}
+echo " "                                                            >> ${tablefile}
+echo "   TOTAL     = ${sdytot} "                                    >> ${tablefile}
+echo "   RUN       = ${sdyrun} "                                    >> ${tablefile}
+echo "   PEND      = ${sdypen} "                                    >> ${tablefile}
+echo "   User max  = ${sdyumax}"                                    >> ${tablefile}
+echo "   My runs   = ${sdymoi} "                                    >> ${tablefile}
+echo "   Room      = ${sdyroom}"                                    >> ${tablefile}
+echo "   Potential = ${sdypot} "                                    >> ${tablefile}
+echo "   User max  = ${sdyumax}"                                    >> ${tablefile}
+echo " -----------------------------------------------------------" >> ${tablefile}
+echo " "                                                            >> ${tablefile}
 #------ Unrestricted_serial. --------------------------------------------------------------#
 let usetot=${userun}+${usepen}
 let useroom=${usefull}-${usetot}
@@ -2372,12 +2520,14 @@ echo " "                                                            >> ${tablefi
 #------------------------------------------------------------------------------------------#
 #      Count the total free room.                                                          #
 #------------------------------------------------------------------------------------------#
-let freeroom=${useroom}+${b61room}+${a61room}+${wsyroom}+${m2croom}+${m2broom}+${m2aroom}
-let b61pa61=${b61room}+${a61room}
-let b61pa61pwsy=${b61pa61}+${wsyroom}
-let b61pa61pwsypm2c=${b61pa61pwsy}+${m2croom}
-let b61pa61pwsypm2cpm2b=${b61pa61pwsypm2c}+${m2broom}
-let b61pa61pwsypm2cpm2bpm2a=${b61pa61pwsypm2cpm2b}+${m2aroom}
+let freeroom=${useroom}+${b61room}+${a61room}+${wsyroom}
+let freeroom=${freeroom}+${m2croom}+${m2broom}+${m2aroom}+${sdyroom}
+let sdypb61=${sdyroom}+${b61room}
+let sdypb61pa61=${sdypb61}+${a61room}
+let sdypb61pa61pwsy=${sdypb61pa61}+${wsyroom}
+let sdypb61pa61pwsypm2c=${sdypb61pa61pwsy}+${m2croom}
+let sdypb61pa61pwsypm2cpm2b=${sdypb61pa61pwsypm2c}+${m2broom}
+let sdypb61pa61pwsypm2cpm2bpm2a=${sdypb61pa61pwsypm2cpm2b}+${m2aroom}
 
 #----- Find out how many cores can be moved. ----------------------------------------------#
 if [ ${lsepen} -le ${freeroom} ]
@@ -2531,29 +2681,111 @@ do
       let ff=${ff}+1
 
       #----- Decide the new queue. --------------------------------------------------------#
-      if [ ${ff} -le ${b61room} ]
+      if [ ${ff} -le ${sdyroom} ]
+      then
+         newqueue='sandy'
+      elif [ ${ff} -le ${sdypb61} ]
       then
          newqueue='moorcroft_6100b'
-      elif [ ${ff} -le ${b61pa61} ]
+      elif [ ${ff} -le ${sdypb61pa61} ]
       then
          newqueue='moorcroft_6100a'
-      elif [ ${ff} -le ${b61pa61pwsy} ]
+      elif [ ${ff} -le ${sdypb61pa61pwsy} ]
       then
          newqueue='wofsy'
-      elif [ ${ff} -le ${b61pa61pwsypm2c} ]
+      elif [ ${ff} -le ${sdypb61pa61pwsypm2c} ]
       then
          newqueue='moorcroft2c'
-      elif [ ${ff} -le ${b61pa61pwsypm2cpm2b} ]
+      elif [ ${ff} -le ${sdypb61pa61pwsypm2cpm2b} ]
       then
          newqueue='moorcroft2b'
-      elif [ ${ff} -le ${b61pa61pwsypm2cpm2bpm2a} ]
+      elif [ ${ff} -le ${sdypb61pa61pwsypm2cpm2bpm2a} ]
       then
          newqueue='moorcroft2a'
       else
          newqueue='unrestricted_serial'
       fi # [ ${ff} -le ${m2croom} ]
 
-      bswitch -J ${thisjob} ${newqueue}
+
+      #------------------------------------------------------------------------------------#
+      #     
+      #------------------------------------------------------------------------------------#
+      case ${newqueue} in
+      sandy)
+         bkill -J ${thisjob}
+
+         #---------------------------------------------------------------------------------#
+         #      We must switch to CentOS 6, and to do this we must ensure it uses the      #
+         # right executable.  Trash the old run and submit it again.                       #
+         #---------------------------------------------------------------------------------#
+         srun="${here}/${polyname}/srun.sh"
+         callserial="${here}/${polyname}/callserial.sh"
+
+         #----- Get the waiting time used before. -----------------------------------------#
+         thiswait=`grep 'Sleep time is' ${polyname}/srun.sh | awk '{print $5}'`
+         if [ 'x'${thiswait} == 'x' ]
+         then
+            let wtime=${ff}%8
+            let wtime=${wtime}*20
+            nudge=`date +%S`
+            if [ ${nudge} -lt 10 ]
+            then 
+               nudge=`echo ${nudge} | awk '{print substr($1,2,1)}'`
+            fi
+            let nudge=${nudge}%15
+            let wtime=${wtime}+${nudge}
+            let wtime=${wtime}+2
+         fi
+         /bin/rm -f ${srun}
+         /bin/rm -f ${here}/${polyname}/skipper.txt
+
+         cp ${here}/Template/srun.sh       ${srun}
+         cp ${here}/Template/callserial.sh ${callserial}
+
+         #----- Fix the initialisation script and executable for CentOS 6. ----------------#
+         initrc=${cs6init}
+         execname=${cs6name}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Change some settings in srun.sh. ------------------------------------------#
+         sed -i s@pathhere@${here}@g      ${srun}
+         sed -i s@paththere@${here}@g     ${srun}
+         sed -i s@thispoly@${polyname}@g  ${srun}
+         sed -i s@thisqueue@${newqueue}@g ${srun}
+         sed -i s@thisdesc@${desc}@g      ${srun}
+         sed -i s@zzzzzzzz@${wtime}@g     ${srun}
+         sed -i s@myorder@${ff}@g         ${srun}
+         sed -i s@myinitrc@${initrc}@g    ${srun}
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #----- Change the callserial.sh file. --------------------------------------------#
+         sed -i s@thisroot@${here}@g          ${callserial}
+         sed -i s@thispoly@${polyname}@g      ${callserial}
+         sed -i s@myexec@${execname}@g        ${callserial}
+         sed -i s@myname@${moi}@g             ${callserial}
+         sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+         sed -i s@myscenario@${iscenario}@g   ${callserial}
+         sed -i s@myscenmain@${scentype}@g    ${callserial}
+         sed -i s@myinitrc@${initrc}@g        ${callserial}
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Re-submit the job to current queue. ---------------------------------------#
+         ${srun}
+         #---------------------------------------------------------------------------------#
+         ;;
+      *)
+         bswitch -J ${thisjob} ${newqueue}
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
 
       #----- Update the queue in joborder.txt. --------------------------------------------#
       oldline=${oi}
@@ -2964,13 +3196,15 @@ sleep 300
 #----- Quick check the status of the queues. ----------------------------------------------#
 /bin/rm -f ${recefile}
 touch ${recefile}
-echo '------- Polygon recent activity status. ----------------------------' >> ${recefile}
-echo 'Number of polygons that were re-submitted:    '${nresubmit}  >> ${recefile}
-echo 'Number of polygons that switched queues:      '${nfill}      >> ${recefile}
-echo 'Number of polygons to unrestricted_parallel:  '${nptounpa}   >> ${recefile}
-echo 'Number of polygons that went extinct:         '${newextinct} >> ${recefile}
-echo 'Number of polygons that reached steady state: '${newststate} >> ${recefile}
-echo '--------------------------------------------------------------------' >> ${recefile}
+echo "------- Polygon recent activity status. ----------------------------" >> ${recefile}
+echo "Number of polygons that were re-submitted:    ${nresubmit}"           >> ${recefile}
+echo "Number of polygons that switched queues:      ${nfill}"               >> ${recefile}
+echo "Number of polygons to unrestricted_parallel:  ${nptounpa}"            >> ${recefile}
+echo "Number of polygons that have been suspended:  ${newsuspend}"          >> ${recefile}
+echo "Number of polygons that were unknown:         ${newunknown}"          >> ${recefile}
+echo "Number of polygons that went extinct:         ${newextinct}"          >> ${recefile}
+echo "Number of polygons that reached steady state: ${newststate}"          >> ${recefile}
+echo "--------------------------------------------------------------------" >> ${recefile}
 #------------------------------------------------------------------------------------------#
 
 
@@ -2978,6 +3212,7 @@ echo '--------------------------------------------------------------------' >> $
 
 #----- Check the queue status. ------------------------------------------------------------#
 echo 'Counting the jobs...'
+sdyrun=`bjobs -J ${desc}-* -w -q sandy                 2> /dev/null | grep RUN   | wc -l`
 a61run=`bjobs -J ${desc}-* -w -q moorcroft_6100a       2> /dev/null | grep RUN   | wc -l`
 b61run=`bjobs -J ${desc}-* -w -q moorcroft_6100b       2> /dev/null | grep RUN   | wc -l`
 m2arun=`bjobs -J ${desc}-* -w -q moorcroft2a           2> /dev/null | grep RUN   | wc -l`
@@ -2987,6 +3222,7 @@ wsyrun=`bjobs -J ${desc}-* -w -q wofsy                 2> /dev/null | grep RUN  
 lserun=`bjobs -J ${desc}-* -w -q long_serial           2> /dev/null | grep RUN   | wc -l`
 userun=`bjobs -J ${desc}-* -w -q unrestricted_serial   2> /dev/null | grep RUN   | wc -l`
 uparun=`bjobs -J ${desc}-* -w -q unrestricted_parallel 2> /dev/null | grep RUN   | wc -l`
+sdypen=`bjobs -J ${desc}-* -w -q sandy                 2> /dev/null | grep PEND  | wc -l`
 a61pen=`bjobs -J ${desc}-* -w -q moorcroft_6100a       2> /dev/null | grep PEND  | wc -l`
 b61pen=`bjobs -J ${desc}-* -w -q moorcroft_6100b       2> /dev/null | grep PEND  | wc -l`
 m2apen=`bjobs -J ${desc}-* -w -q moorcroft2a           2> /dev/null | grep PEND  | wc -l`
@@ -3001,6 +3237,7 @@ m2artot=`bjobs -q moorcroft2a                          2> /dev/null | grep RUN  
 m2brtot=`bjobs -q moorcroft2b                          2> /dev/null | grep RUN  | wc -l`
 m2crtot=`bjobs -q moorcroft2c                          2> /dev/null | grep RUN  | wc -l`
 wsyrtot=`bjobs -q wofsy                                2> /dev/null | grep RUN  | wc -l`
+sdyrtot=`bjobs -q sandy                                2> /dev/null | grep RUN  | wc -l`
 a61rtot=`bjobs -q moorcroft_6100a                      2> /dev/null | grep RUN  | wc -l`
 b61rtot=`bjobs -q moorcroft_6100b                      2> /dev/null | grep RUN  | wc -l`
 usertot=`bjobs -q unrestricted_serial                  2> /dev/null | grep RUN  | wc -l`
@@ -3010,6 +3247,7 @@ m2aptot=`bjobs -q moorcroft2a                          2> /dev/null | grep PEND 
 m2bptot=`bjobs -q moorcroft2b                          2> /dev/null | grep PEND | wc -l`
 m2cptot=`bjobs -q moorcroft2c                          2> /dev/null | grep PEND | wc -l`
 wsyptot=`bjobs -q wofsy                                2> /dev/null | grep PEND | wc -l`
+sdyptot=`bjobs -q sandy                                2> /dev/null | grep PEND | wc -l`
 a61ptot=`bjobs -q moorcroft_6100a                      2> /dev/null | grep PEND | wc -l`
 b61ptot=`bjobs -q moorcroft_6100b                      2> /dev/null | grep PEND | wc -l`
 useptot=`bjobs -q unrestricted_serial                  2> /dev/null | grep PEND | wc -l`
@@ -3019,6 +3257,7 @@ let m2atot=${m2artot}+${m2aptot}
 let m2btot=${m2brtot}+${m2bptot}
 let m2ctot=${m2crtot}+${m2cptot}
 let wsytot=${wsyrtot}+${wsyptot}
+let sdytot=${sdyrtot}+${sdyptot}
 let a61tot=${a61rtot}+${a61ptot}
 let b61tot=${b61rtot}+${b61ptot}
 let usetot=${usertot}+${useptot}
@@ -3034,6 +3273,7 @@ let upatot=${upartot}+${upaptot}
 /bin/rm -f ${queuefile}
 touch ${queuefile}
 echo "------- Queue status. --------------------------------------------" >> ${queuefile}
+echo "Sandy                  RUN=${sdyrun}  PEN=${sdypen}  TOT=${sdytot}" >> ${queuefile}
 echo "Moorcroft_6100a        RUN=${a61run}  PEN=${a61pen}  TOT=${a61tot}" >> ${queuefile}
 echo "Moorcroft_6100b        RUN=${b61run}  PEN=${b61pen}  TOT=${b61tot}" >> ${queuefile}
 echo "Moorcroft2a            RUN=${m2arun}  PEN=${m2apen}  TOT=${m2atot}" >> ${queuefile}
@@ -3052,6 +3292,7 @@ echo "------------------------------------------------------------------" >> ${q
 n_initial=`grep INITIAL ${outcheck} | wc -l`
 n_history=`grep HISTORY ${outcheck} | wc -l`
 n_metmiss=`grep METMISS ${outcheck} | wc -l`
+n_bad_met=`grep BAD_MET ${outcheck} | wc -l`
 n_crashed=`grep CRASHED ${outcheck} | wc -l`
 n_stopped=`grep STOPPED ${outcheck} | wc -l`
 n_extinct=`grep EXTINCT ${outcheck} | wc -l`
@@ -3063,31 +3304,13 @@ echo "------- Simulation status. -----------------------------------------" >> $
 echo " Number of polygons that have never started           : ${n_initial}" >> ${statfile}
 echo " Number of polygons that have partially run           : ${n_history}" >> ${statfile}
 echo " Number of polygons that haven't found met drivers    : ${n_metmiss}" >> ${statfile}
+echo " Number of polygons that have bad met drivers         : ${n_bad_met}" >> ${statfile}
 echo " Number of polygons that have crashed                 : ${n_crashed}" >> ${statfile}
 echo " Number of polygons that have mysteriously stopped    : ${n_stopped}" >> ${statfile}
 echo " Number of polygons that became desert                : ${n_extinct}" >> ${statfile}
 echo " Number of polygons that have reached steady state    : ${n_ststate}" >> ${statfile}
 echo " Number of polygons that have reached the end         : ${n_the_end}" >> ${statfile}
 echo "--------------------------------------------------------------------" >> ${statfile}
-#------------------------------------------------------------------------------------------#
-
-
-
-
-#----- Convert the figure files to an e-mail friendly format. -----------------------------#
-if [ ${plotstatus} -eq 1 ]
-then
-   echo 'Converting the PNG files to e-mail format...'
-   for fichier in ${R_figlist}
-   do
-      ext=`echo ${fichier##*.}`
-      path=`dirname ${fichier}`
-      base=`basename ${fichier}`
-      prefix=`basename ${base} .${ext}`
-      text="${path}/${prefix}.txt"
-      uuencode ${fichier} ${base} > ${text}
-   done
-fi
 #------------------------------------------------------------------------------------------#
 
 
@@ -3111,17 +3334,16 @@ echo ' '         >> ${emailbody}
 #----- Check whether to append some plots. ------------------------------------------------#
 if [ ${plotstatus} -eq 1 ]
 then
+   attach=""
    for fichier in ${R_figlist}
    do
-      ext=`echo ${fichier##*.}`
-      path=`dirname ${fichier}`
-      base=`basename ${fichier}`
-      prefix=`basename ${base} .${ext}`
-      text="${path}/${prefix}.txt"
-      cat ${text} >> ${emailbody}
-      echo ' '    >> ${emailbody}
-      /bin/rm -f ${text}
+      if [ -s ${fichier} ]
+      then
+         attach="${attach} -a ${fichier}"
+      fi
    done
+else
+   attach=""
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -3174,7 +3396,7 @@ if [ ${sendemail} == "y" ]
 then
    echo ${today} > ${emailday}
    echo 'Sending e-mail...'
-   mail -s "${subject}" ${recipient} < ${emailbody}
+   ${mailprog} -s "${subject}" ${attach} ${recipient} < ${emailbody}
 else
    echo 'Skipping e-mail...'
 fi

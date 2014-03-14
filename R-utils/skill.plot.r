@@ -229,7 +229,7 @@ skill.plot  <<- function ( obs
    skill$sigma.obs     = sd    (x = obs            , na.rm = TRUE)
    skill$sigma.mod     = sapply(X = mod, FUN = sd  , na.rm = TRUE)
    skill$sigma.res     = sapply(X = res, FUN = sd  , na.rm = TRUE)
-   skill$rmse          = sqrt(skill$mean.res^2 + skill$sigma.res^2)
+   skill$rmse          = sqrt(skill$mean.res^2 + (n.mod - 1) * skill$sigma.res^2 / n.mod)
    skill$df.obs        = n.obs - 1
    skill$df.mod        = ifelse( is.null(n.parms), n.mod - 1,n.mod-n.parms)
    skill$r.squared     = 1. - ( skill$sigma.res / skill$sigma.obs ) ^ 2
@@ -277,7 +277,14 @@ skill.plot  <<- function ( obs
          #------ Find the range, making sure that 0 is always included. -------------------#
          bias.max  = max(mean.res)
          bias.min  = min(mean.res)
-         if (bias.min > 0 && bias.max > 0){
+         if (bias.min == bias.max && bias.min == 0){
+            bias.min = -0.25
+            bias.max =  0.25
+         }else if (bias.min == bias.max){
+            #----- Biases switch sign.  Coerce them to be simmetric. ----------------------#
+            bias.min = -abs(bias.min)
+            bias.max =  abs(bias.max)
+         }else if (bias.min > 0 && bias.max > 0){
             #----- All biases are positive.  Coerce maximum to be zero. -------------------#
             bias.min = 0
          }else if (bias.min < 0 && bias.max < 0){
@@ -309,13 +316,22 @@ skill.plot  <<- function ( obs
       #     Find limits for R2.                                                            #
       #------------------------------------------------------------------------------------#
       if (is.null(r2.lim)){
-         #----- Expand the sigma a bit so edge points won't be cropped. -------------------#
-         sigma.max = 1.04 * max(sigma.res)
+         if (all(is.na(sigma.obs))){
+            #----- Fix R2 to -1 to 1. -----------------------------------------------------#
+            r2.lim = c(-1,1)
+            #------------------------------------------------------------------------------#
+         }else{
+            #----- Expand the sigma a bit so edge points won't be cropped. ----------------#
+            sigma.max = 1.04 * max(sigma.res)
+            #------------------------------------------------------------------------------#
+
+            #----- Find the R2 range associated with this sigma.max. ----------------------#
+            r2.lim    = c(1.0 - ( sigma.max / sigma.obs )^2 , 1.0)
+            #------------------------------------------------------------------------------#
+         }#end if
          #---------------------------------------------------------------------------------#
 
-         #----- Find the R2 range associated with this sigma.max. -------------------------#
-         r2.lim    = c(1.0 - ( sigma.max / sigma.obs )^2 , 1.0)
-         #---------------------------------------------------------------------------------#
+
 
          #---------------------------------------------------------------------------------#
          #      Find a nice range for R2, but force the maximum to be 1.0 and the scale to #
@@ -329,12 +345,18 @@ skill.plot  <<- function ( obs
          #---------------------------------------------------------------------------------#
          #      Correct the sigma scale based on R2 and update the maximum sigma.          #
          #---------------------------------------------------------------------------------#
-         sigma.at       = sigma.obs * sqrt(1. - r2.at)
-         sigma.lim      = range(sigma.obs * sqrt(1. - r2.lim))
-         sigma.max      = max(sigma.lim)
+         if (all(is.na(sigma.obs))){
+            sigma.at       = sqrt(1. - r2.at)
+            sigma.lim      = range(sqrt(1. - r2.lim))
+            sigma.max      = max(sigma.lim)
+         }else{
+            sigma.at       = sigma.obs * sqrt(1. - r2.at)
+            sigma.lim      = range(sigma.obs * sqrt(1. - r2.lim))
+            sigma.max      = max(sigma.lim)
+         }#end if
          #---------------------------------------------------------------------------------#
       }else{
-         r2.lim = range(c(r2.lim,1))
+         r2.lim = range(pmin(r2.lim,1))
          r2.at  = sort(unique(c(pretty(r2.lim),1.)),decreasing=TRUE)
          r2.at  = sort  (r2.at[r2.at >= r2.lim[1] & r2.at <= 1.],decreasing=TRUE)
          #---------------------------------------------------------------------------------#
@@ -343,9 +365,15 @@ skill.plot  <<- function ( obs
          #---------------------------------------------------------------------------------#
          #      Correct the sigma scale based on R2 and update the maximum sigma.          #
          #---------------------------------------------------------------------------------#
-         sigma.at       = sigma.obs * sqrt(1. - r2.at)
-         sigma.lim      = range(sigma.obs * sqrt(1. - r2.lim))
-         sigma.max      = max(sigma.lim)
+         if (all(is.na(sigma.obs))){
+            sigma.at       = sqrt(1. - r2.at)
+            sigma.lim      = range(sqrt(1. - r2.lim))
+            sigma.max      = max(sigma.lim)
+         }else{
+            sigma.at       = sigma.obs * sqrt(1. - r2.at)
+            sigma.lim      = range(sigma.obs * sqrt(1. - r2.lim))
+            sigma.max      = max(sigma.lim)
+         }#end if
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -391,6 +419,7 @@ skill.plot  <<- function ( obs
       #------------------------------------------------------------------------------------#
       par(...)
       plot.new()
+      if (! ( all(is.finite(bias.lim)) && all(is.finite(sigma.lim)))) browser()
       plot.window(x=bias.lim,y=sigma.lim,xaxs="i",yaxs="i",...)
       box()
       title(main=main,xlab=bias.lab,ylab=r2.lab,cex.lab=cex.xyzlab,cex.main=cex.main)

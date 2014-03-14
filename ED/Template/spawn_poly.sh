@@ -11,7 +11,9 @@ moi=`whoami`
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=`basename ${here}`
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/n/moorcroft_data/mlongo/data/ed2_data/site_bio_data'
+bioinit='/n/home00/mlongo/data/ed2_data/site_bio_data'
+#----- Path and file prefix for init_mode = 5. --------------------------------------------#
+restart='/x/xxxxxx/xxxxxx/xxxxxxxxx/xxxx/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
 lonlat=${here}'/joborder.txt'
 #----- Should the output be in a disk other than the one set in "here"? -------------------#
@@ -19,18 +21,14 @@ outthere='n'
 #----- Disk name (usually just the path until right before your own directory). -----------#
 diskthere='/n/moorcroftfs2'
 #----- This is the default path with the met driver. --------------------------------------#
-sitemetdef='/n/moorcroft_data/mlongo/data/ed2_data/site_met_driver'
+sitemetdef='/n/home00/mlongo/data/ed2_data/site_met_driver'
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
-#----- Path with default pseudo past drivers. ---------------------------------------------#
-scenariopathdef='/n/moorcroft_data/mlongo/data/ed2_data/realisation_scen_driver'
+#----- Path with drivers for each scenario. -----------------------------------------------#
+metmaindef='/n/home00/mlongo/data/ed2_data'
+packdatasrc='/n/home00/mlongo/data/2scratch'
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch='y'
-#------------------------------------------------------------------------------------------#
-#    In case we should copy, this is the source where the data is organised to go.  This   #
-# will override sitemetdef and scenariopath.                                               #
-#------------------------------------------------------------------------------------------#
-packdatasrc='/n/nss2b/moorcroft_lab/mlongo/data/2scratch'
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -55,8 +53,12 @@ toldef='0.01'
 callunpa=${here}'/callunpa.sh'
 unparun=${here}'/unparun.sh'
 
-#----- Executable name. -------------------------------------------------------------------#
-execname='ed_2.1-opt'
+#----- Executable names. ------------------------------------------------------------------#
+optname='ed_2.1-opt'               # Normal executable, for most queues
+cs6name='ed_2.1-cs6'               # Executable compiled in CentOS 6
+#----- Initialisation scripts. ------------------------------------------------------------#
+optinit="${HOME}/.bashrc"          # Initialisation script for most nodes
+cs6init="${HOME}/util/centos6.rc"  # Initialisation script for CentOS 6 nodes
 #------------------------------------------------------------------------------------------#
 #==========================================================================================#
 #==========================================================================================#
@@ -80,13 +82,9 @@ execname='ed_2.1-opt'
 #----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
 if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
 then
-   sitemet='/scratch/mlongo/site_met_driver'
-   scenariopath='/scratch/mlongo/wmo+eft_driver'
-   shefpath='/scratch/mlongo/sheff_met_driver'
+   metmain='/scratch/mlongo'
 else
-   sitemet=${sitemetdef}
-   scenariopath=${scenariopathdef}
-   shefpath=''
+   metmain=${metmaindef}
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -418,14 +416,19 @@ do
    /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
    whichrun="${here}/${polyname}/whichrun.r"
    outwhich="${here}/${polyname}/outwhichrun.txt"
-   sed -i s@thispoly@${polyname}@g ${whichrun}
-   sed -i s@thisqueue@${queue}@g   ${whichrun}
-   sed -i s@pathhere@${here}@g     ${whichrun}
-   sed -i s@paththere@${there}@g   ${whichrun}
-   sed -i s@thisyeara@${yeara}@g   ${whichrun}
-   sed -i s@thismontha@${montha}@g ${whichrun}
-   sed -i s@thisdatea@${datea}@g   ${whichrun}
-   sed -i s@thistimea@${timea}@g   ${whichrun}
+   sed -i s@thispoly@${polyname}@g           ${whichrun}
+   sed -i s@thisqueue@${queue}@g             ${whichrun}
+   sed -i s@pathhere@${here}@g               ${whichrun}
+   sed -i s@paththere@${there}@g             ${whichrun}
+   sed -i s@thisyeara@${yeara}@g             ${whichrun}
+   sed -i s@thismontha@${montha}@g           ${whichrun}
+   sed -i s@thisdatea@${datea}@g             ${whichrun}
+   sed -i s@thistimea@${timea}@g             ${whichrun}
+   sed -i s@thischecksteady@FALSE@g          ${whichrun}
+   sed -i s@thismetcyc1@${metcyc1}@g         ${whichrun}
+   sed -i s@thismetcycf@${metcycf}@g         ${whichrun}
+   sed -i s@thisnyearmin@10000@g             ${whichrun}
+   sed -i s@thisststcrit@0.0@g               ${whichrun}
    R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
    while [ ! -s ${here}/${polyname}/statusrun.txt ]
    do
@@ -518,7 +521,7 @@ do
    gyf)
       dtcensus=24
       let yr1stcensus=${yeara}+${yodd}
-      mon1stcensus=7
+      mon1stcensus=3
       minrecruitdbh=10
       ;;
    s67)
@@ -539,10 +542,42 @@ do
 
 
 
+
+   #---------------------------------------------------------------------------------------#
+   #     Determine the scenario paths.                                                     #
+   #---------------------------------------------------------------------------------------#
+   case ${iscenario} in
+   default)
+      case ${metdriver} in
+      Sheffield)
+         #----- Sheffield. ----------------------------------------------------------------#
+         scentype='sheffield'
+         iscenario='sheffield'
+         ;;
+      *)
+         #----- Tower data. ---------------------------------------------------------------#
+         scentype='wmo+eft'
+         iscenario='eft'
+         ;;
+      esac
+      ;;
+   eft|wmo|shr)
+      #----- Tower data, keep scenario as is. ---------------------------------------------#
+      scentype='wmo+eft'
+      ;;
+   *)
+      #----- Rainfall scenario, keep scenario as is. --------------------------------------#
+      scentype='realisation_scen_driver'
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
    #---------------------------------------------------------------------------------------#
    #      Choose the scenario to use.  Iscenario follows the following convention:         #
    # "default"    -- No scenario.  Use the tower/Sheffield data.                           #
-   # "inmet"      -- No scenario.  Use the INMET-based data.                               #
+   # "wmo"        -- No scenario.  Use the WMO-based data.                                 #
    # "rRRR_tTTT   -- Use scenarios, with rRRRR controlling the rainfall, and tTTTT         #
    #                 controlling temperature.                                              #
    #                                                                                       #
@@ -562,281 +597,127 @@ do
    #                        the same and correct by +Y.YY Kelvin.                          #
    #                 r+XXX: Similar to above, but make the time series wetter.             #
    #---------------------------------------------------------------------------------------#
-   if [ ${iscenario} == "default" ]
+   #----- Find out which scenario to use. -------------------------------------------------#
+   fullscen="${metmain}/met_driver/${scentype}/${iscenario}"
+   #------------------------------------------------------------------------------------#
+   #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
+   # dataset, otherwise the site-level tower data is used.                              #
+   #------------------------------------------------------------------------------------#
+   case ${metdriver} in
+   Bananal)
+      metdriverdb=${fullscen}'/Bananal/Bananal_HEADER'
+      metcyc1=2004
+      metcycf=2006
+      imetavg=1
+      ;;
+   Brasilia)
+      metdriverdb=${fullscen}'/Brasilia/Brasilia_HEADER'
+      metcyc1=2006
+      metcycf=2012
+      imetavg=1
+      ;;
+   Caxiuana)
+      metdriverdb=${fullscen}'/Caxiuana/Caxiuana_HEADER'
+      metcyc1=1999
+      metcycf=2003
+      imetavg=1
+      ;;
+   Fazenda_Nossa_Senhora)
+      metdriverdb=${fullscen}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
+      metcyc1=1999
+      metcycf=2002
+      imetavg=1
+      ;;
+   Harvard)
+      metdriverdb=${fullscen}'/Harvard/Harvard_HEADER'
+      metcyc1=1992
+      metcycf=2003
+      imetavg=3
+      ;;
+   Manaus_Km34)
+      metdriverdb=${fullscen}'/Manaus_Km34/Manaus_Km34_HEADER'
+      metcyc1=1999
+      metcycf=2006
+      imetavg=1
+      ;;
+   Natal)
+      metdriverdb=${fullscen}'/Natal/Natal_HEADER'
+      metcyc1=2009
+      metcycf=2012
+      imetavg=1
+      ;;
+   Paracou)
+      metdriverdb=${fullscen}'/Paracou/Paracou_HEADER'
+      metcyc1=2004
+      metcycf=2012
+      imetavg=1
+      ;;
+   Pe-de-Gigante)
+      metdriverdb=${fullscen}'/Pe-de-Gigante/Pe-de-Gigante_HEADER'
+      metcyc1=2001
+      metcycf=2003
+      imetavg=1
+      ;;
+   Petrolina)
+      metdriverdb=${fullscen}'/Petrolina/Petrolina_HEADER'
+      metcyc1=2004
+      metcycf=2012
+      imetavg=1
+      ;;
+   Rebio_Jaru)
+      metdriverdb=${fullscen}'/Rebio_Jaru/Rebio_Jaru_HEADER'
+      metcyc1=1999
+      metcycf=2002
+      imetavg=1
+      ;;
+   Santarem_Km67)
+      metdriverdb=${fullscen}'/Santarem_Km67/Santarem_Km67_HEADER'
+      metcyc1=2001
+      metcycf=2011
+      imetavg=1
+      ;;
+   Santarem_Km77)
+      metdriverdb=${fullscen}'/Santarem_Km77/Santarem_Km77_HEADER'
+      metcyc1=2001
+      metcycf=2005
+      imetavg=1
+      ;;
+   Santarem_Km83)
+      metdriverdb=${fullscen}'/Santarem_Km83/Santarem_Km83_HEADER'
+      metcyc1=2000
+      metcycf=2003
+      imetavg=1
+      ;;
+   Sheffield)
+      metdriverdb=${fullscen}/${shefhead}
+      metcyc1=1969
+      metcycf=2008
+      imetavg=2
+      ;;
+   Tonzi)
+      metdriverdb=${fullscen}'/Tonzi/Tonzi_HEADER'
+      metcyc1=2000
+      metcycf=2010
+      imetavg=1
+      ;;
+   *)
+      echo 'Met driver: '${metdriver}
+      echo 'Sorry, this met driver is not valid for regular runs'
+      exit 85
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Correct years so it is not tower-based or Sheffield.                              #
+   #---------------------------------------------------------------------------------------#
+   if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
+      [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ]
    then
-      #------------------------------------------------------------------------------------#
-      #     Determine which meteorological data set to use.  Default is the Sheffield/NCEP #
-      # dataset, otherwise the site-level tower data is used.                              #
-      #------------------------------------------------------------------------------------#
-      case ${metdriver} in
-      Bananal)
-         metdriverdb=${sitemet}'/Bananal/Bananal_HEADER'
-         metcyc1=2004
-         metcycf=2006
-         imetavg=1
-         ;;
-      Caxiuana)
-         metdriverdb=${sitemet}'/Caxiuana/Caxiuana_HEADER'
-         metcyc1=1999
-         metcycf=2003
-         imetavg=1
-         ;;
-      Fazenda_Nossa_Senhora)
-         metdriverdb=${sitemet}'/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER'
-         metcyc1=1999
-         metcycf=2002
-         imetavg=1
-         ;;
-      Harvard)
-         metdriverdb=${sitemet}'/Harvard/Harvard_HEADER'
-         metcyc1=1992
-         metcycf=2003
-         imetavg=1
-         ;;
-      Manaus_Km34)
-         metdriverdb=${sitemet}'/Manaus_Km34/Manaus_Km34_HEADER'
-         metcyc1=1999
-         metcycf=2005
-         imetavg=1
-         ;;
-      Paracou)
-         metdriverdb=${sitemet}'/Paracou/Paracou_HEADER'
-         metcyc1=2004
-         metcycf=2009
-         imetavg=1
-         ;;
-      Pe-de-Gigante)
-         metdriverdb=${sitemet}'/Pe-de-Gigante/Pe-de-Gigante_HEADER'
-         metcyc1=2001
-         metcycf=2003
-         imetavg=1
-         ;;
-      Petrolina)
-         metdriverdb=${sitemet}'/Petrolina/Petrolina_HEADER'
-         metcyc1=2004
-         metcycf=2011
-         imetavg=1
-         ;;
-      Rebio_Jaru)
-         metdriverdb=${sitemet}'/Rebio_Jaru/Rebio_Jaru_HEADER'
-         metcyc1=1999
-         metcycf=2002
-         imetavg=1
-         ;;
-      Santarem_Km67)
-         metdriverdb=${sitemet}'/Santarem_Km67/Santarem_Km67_HEADER'
-         metcyc1=2001
-         metcycf=2010
-         imetavg=1
-         ;;
-      Santarem_Km77)
-         metdriverdb=${sitemet}'/Santarem_Km77/Santarem_Km77_HEADER'
-         metcyc1=2001
-         metcycf=2005
-         imetavg=1
-         ;;
-      Santarem_Km83)
-         metdriverdb=${sitemet}'/Santarem_Km83/Santarem_Km83_HEADER'
-         metcyc1=2000
-         metcycf=2003
-         imetavg=1
-         ;;
-      Sheffield)
-         if [ 'x'${shefpath} == 'x' ]
-         then
-            metdriverdb=${here}/${polyname}/${shefhead}
-         else
-            metdriverdb=${shefpath}/${shefhead}
-         fi
-         metcyc1=1969
-         metcycf=2008
-         imetavg=2
-         ;;
-      Tonzi)
-         metdriverdb=${sitemet}'/Tonzi/Tonzi_HEADER'
-         metcyc1=2000
-         metcycf=2010
-         imetavg=1
-         ;;
-      *)
-         echo 'Met driver: '${metdriver}
-         echo 'Sorry, this met driver is not valid for regular runs'
-         exit 85
-         ;;
-      esac
-      #------------------------------------------------------------------------------------#
-   else
-      #------------------------------------------------------------------------------------#
-      #     Find out which scenario to use.                                                #
-      #------------------------------------------------------------------------------------#
-      fullscen="${scenariopath}/${iscenario}"
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Check whether this is a true scenario or just the tower.                       #
-      #------------------------------------------------------------------------------------#
-      if [ ${iscenario} == "eft" ]
-      then
-         #---------------------------------------------------------------------------------#
-         #     EFT.  This is actually the same thing as "default", for convenience placed  #
-         # as a scenario.                                                                  #
-         #---------------------------------------------------------------------------------#
-         case ${metdriver} in
-         Bananal)
-            metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
-            metcyc1=2004
-            metcycf=2006
-            imetavg=1
-            ;;
-         Caxiuana)
-            metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
-            metcyc1=1999
-            metcycf=2003
-            imetavg=1
-            ;;
-         Fazenda_Nossa_Senhora)
-            metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
-            metcyc1=1999
-            metcycf=2002
-            imetavg=1
-            ;;
-         Manaus_Km34)
-            metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
-            metcyc1=1999
-            metcycf=2005
-            imetavg=1
-            ;;
-         Paracou)
-            metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
-            metcyc1=2004
-            metcycf=2009
-            imetavg=1
-            ;;
-         Pe-de-Gigante)
-            metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
-            metcyc1=2001
-            metcycf=2003
-            imetavg=1
-            ;;
-         Petrolina)
-            metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
-            metcyc1=2004
-            metcycf=2011
-            imetavg=1
-            ;;
-         Rebio_Jaru)
-            metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
-            metcyc1=1999
-            metcycf=2002
-            imetavg=1
-            ;;
-         Santarem_Km67)
-            metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
-            metcyc1=2001
-            metcycf=2010
-            imetavg=1
-            ;;
-         Santarem_Km77)
-            metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
-            metcyc1=2001
-            metcycf=2005
-            imetavg=1
-            ;;
-         Santarem_Km83)
-            metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
-            metcyc1=2000
-            metcycf=2003
-            imetavg=1
-            ;;
-         *)
-            echo 'Met driver: '${metdriver}
-            echo 'Sorry, this met driver is not valid for scenario runs'
-            exit 85
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-      else
-         #---------------------------------------------------------------------------------#
-         #     INMET data, or any other scenario based on INMET. Years are fixed.          #
-         #---------------------------------------------------------------------------------#
-         case ${metdriver} in
-         Bananal)
-            metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Caxiuana)
-            metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Fazenda_Nossa_Senhora)
-            metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Manaus_Km34)
-            metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Paracou)
-            metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Pe-de-Gigante)
-            metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Petrolina)
-            metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Rebio_Jaru)
-            metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Santarem_Km67)
-            metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Santarem_Km77)
-            metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         Santarem_Km83)
-            metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
-            metcyc1=1972
-            metcycf=2011
-            imetavg=1
-            ;;
-         *)
-            echo 'Met driver: '${metdriver}
-            echo 'Sorry, this met driver is not valid for scenario runs'
-            exit 85
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-      fi
-      #------------------------------------------------------------------------------------#
+      metcyc1=1972
+      metcycf=2012
+      imetavg=1
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -1135,7 +1016,7 @@ do
    else
       thisyearz=${yearz}
    fi
-
+   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
@@ -1158,6 +1039,17 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
+   elif [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 5 ]
+   then
+      if [ ${restart} == '/x/xxxxxx/xxxxxx/xxxxxxxxx/xxxx/ed2_data/restarts_XXX' ]
+      then
+         echo " Directory restart has not been set!"
+         echo " Change the variable restart at the beginning of the script"
+         exit 44
+      else
+         runt='INITIAL'
+         thissfilin=${restart}
+      fi
    elif [ ${runt} == 'INITIAL' ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
@@ -1215,6 +1107,7 @@ do
       thissfilin=${there}/${polyname}/histo/${polyname}
    fi
    #---------------------------------------------------------------------------------------#
+
 
 
 
@@ -1359,15 +1252,18 @@ do
    sed -i s@thisdesc@${desc}@g      ${srun}
    sed -i s@zzzzzzzz@${wtime}@g     ${srun}
    sed -i s@myorder@${ff}@g         ${srun}
+   sed -i s@myinitrc@${initrc}@g    ${srun}
 
    #----- Change the callserial.sh file. --------------------------------------------------#
    callserial=${here}'/'${polyname}'/callserial.sh'
    sed -i s@thisroot@${here}@g          ${callserial}
    sed -i s@thispoly@${polyname}@g      ${callserial}
    sed -i s@myexec@${execname}@g        ${callserial}
+   sed -i s@myinitrc@${initrc}@g        ${callserial}
    sed -i s@myname@${moi}@g             ${callserial}
    sed -i s@mypackdata@${packdatasrc}@g ${callserial}
    sed -i s@myscenario@${iscenario}@g   ${callserial}
+   sed -i s@myscenmain@${scentype}@g    ${callserial}
 
    if [ ${queue} == 'unrestricted_parallel' ]
    then

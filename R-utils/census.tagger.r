@@ -4,7 +4,7 @@
 # elsewhere.  It creates a collection of unique tags based on various variables such as    #
 # tags, coordinates, common name, and the older values that these variables once had.      #
 #------------------------------------------------------------------------------------------#
-census.tagger.s67 = function(merged,this,survey.years){
+census.tagger.s67 <<- function(merged,this,survey.years){
    #=======================================================================================#
    #=======================================================================================#
    #      Create all possible tags.  We must declare them as global variables because they #
@@ -327,6 +327,366 @@ census.tagger.s67 = function(merged,this,survey.years){
                           , tag         = a.tag.this
                           , xy          = b.xy.this
                           , common      = a.common.this
+                          )#end expand.grid
+   eg.merged = sapply(eg.merged,as.character)
+   eg.this   = sapply(eg.this  ,as.character)
+   if (is.null(dim(eg.merged))) eg.merged = matrix(eg.merged,nrow=1)
+   if (is.null(dim(eg.this  ))) eg.this   = matrix(eg.this  ,nrow=1)
+   combo     = expand.grid( merged = sequence(nrow(eg.merged))
+                          , this   = sequence(nrow(eg.this  ))
+                          )#end expand.grid
+   #----- Loop over all combinations. -----------------------------------------------------#
+   for (co in 1:nrow(combo)){
+      u                 = u + 1
+      em                = combo[co,1]
+      et                = combo[co,2]
+      retrieved.merged  = t(t(sapply(X=eg.merged[em,],FUN=get)))
+      retrieved.this    = t(t(sapply(X=eg.this  [et,],FUN=get)))
+      t.merged          = apply(X=retrieved.merged,MARGIN=1,FUN=paste,collapse="+")
+      t.this            = apply(X=retrieved.this  ,MARGIN=1,FUN=paste,collapse="+")
+      #----- Save the tags to the output list. --------------------------------------------#
+      uni.tag[[u]]      = list(t.merged = t.merged, t.this = t.this)
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Return the tags.                                                                  #
+   #---------------------------------------------------------------------------------------#
+   return (uni.tag)
+   #---------------------------------------------------------------------------------------#
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function is supposed to work for Paracou census only, feel free to adapt it     #
+# elsewhere.  It creates a collection of unique tags based on various variables such as    #
+# tags, coordinates, common name, and the older values that these variables once had.      #
+#------------------------------------------------------------------------------------------#
+census.tagger.gyf <<- function(merged,this,survey.years){
+   #=======================================================================================#
+   #=======================================================================================#
+   #      Create all possible tags.  We must declare them as global variables because they #
+   # must be accessed from sapply.                                                         #
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Transects. ----------------------------------------------------------------------#
+   n.trans.merged        <<- merged$trans
+   n.trans.this          <<- this$trans
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Scientific name flag, use the scientific name.                                   #
+   #---------------------------------------------------------------------------------------#
+   n.scientific.merged   <<- merged$scientific
+   n.scientific.this     <<- this$scientific
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Coordinates. --------------------------------------------------------------------#
+   n.x.merged                     = as.integer(10 * merged$x)
+   o.x.merged                     = as.integer(10 * merged$old.x)
+   f.x.merged                     = as.integer(10 * merged$x.1st)
+   n.x.this                       = as.integer(10 * this$x)
+   n.y.merged                     = as.integer(10 * merged$y)
+   o.y.merged                     = as.integer(10 * merged$old.y)
+   f.y.merged                     = as.integer(10 * merged$y.1st)
+   n.y.this                       = as.integer(10 * this$y)
+   f.x.merged [is.na(f.x.merged)] = n.x.merged[is.na(f.x.merged)     ]
+   f.y.merged [is.na(f.y.merged)] = n.y.merged[is.na(f.y.merged)     ]
+   o.x.merged [is.na(o.x.merged)] = f.x.merged[is.na(o.x.merged)     ]
+   o.y.merged [is.na(o.y.merged)] = f.y.merged[is.na(o.y.merged)     ]
+   n.xy.merged <<- paste("x",n.x.merged,"+y",n.y.merged,sep="")
+   o.xy.merged <<- paste("x",o.x.merged,"+y",o.y.merged,sep="")
+   f.xy.merged <<- paste("x",f.x.merged,"+y",f.y.merged,sep="")
+   n.xy.this   <<- paste("x",n.x.this  ,"+y",n.y.this  ,sep="")
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #------ Tags. --------------------------------------------------------------------------#
+   n.tag.merged                      <<- merged$tag
+   o.tag.merged                      <<- merged$tag.1st
+   f.tag.merged                      <<- merged$tag.1st
+   n.tag.this                        <<- this$tag
+   o.tag.this                        <<- this$old.tag
+   f.tag.merged[is.na(f.tag.merged)] <<- n.tag.merged   [is.na(f.tag.merged)]
+   o.tag.merged[is.na(o.tag.merged)] <<- f.tag.merged   [is.na(o.tag.merged)]
+   o.tag.this  [is.na(o.tag.this)  ] <<- n.tag.this     [is.na(o.tag.this)  ]
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------- gbh. --------------------------------------------------------------------------#
+   f.gbh.merged                      <<- as.integer(10 * round(merged$gbh.2004,1))
+   f.gbh.this                        <<- as.integer(10 * round(this$gbh.2004  ,1))
+   #----- The gbh tag changes according to the census. ------------------------------------#
+   if (survey.years[1] < 2006){
+      o.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2004,1))
+      o.gbh.this                     <<- as.integer(10 * round(this$gbh.2004  ,1))
+      n.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2004,1))
+      n.gbh.this                     <<- as.integer(10 * round(this$gbh.2004  ,1))
+   }else if (survey.years[1] < 2008){
+      o.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2004,1))
+      o.gbh.this                     <<- as.integer(10 * round(this$gbh.2004  ,1))
+      n.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2006,1))
+      n.gbh.this                     <<- as.integer(10 * round(this$gbh.2006  ,1))
+   }else if (survey.years[1] < 2010){
+      o.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2006,1))
+      o.gbh.this                     <<- as.integer(10 * round(this$gbh.2006  ,1))
+      n.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2008,1))
+      n.gbh.this                     <<- as.integer(10 * round(this$gbh.2008  ,1))
+   }else{
+      o.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2008,1))
+      o.gbh.this                     <<- as.integer(10 * round(this$gbh.2008  ,1))
+      n.gbh.merged                   <<- as.integer(10 * round(merged$gbh.2010,1))
+      n.gbh.this                     <<- as.integer(10 * round(this$gbh.2010  ,1))
+   }#end if
+   f.gbh.merged[is.na(f.gbh.merged)] <<- "MM"
+   o.gbh.merged[is.na(o.gbh.merged)] <<- "MM"
+   n.gbh.merged[is.na(n.gbh.merged)] <<- "MM"
+   f.gbh.this  [is.na(f.gbh.this  )] <<- "TT"
+   o.gbh.this  [is.na(o.gbh.this  )] <<- "TT"
+   n.gbh.this  [is.na(n.gbh.this  )] <<- "TT"
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     List of flags.  Here the order matters, the first is the preferred method and the #
+   # last is the desperate method.                                                         #
+   #---------------------------------------------------------------------------------------#
+   cat("     * Create tags for matching...","\n")
+   a.trans.merged        = c("n.trans.merged"     )
+   a.trans.this          = c("n.trans.this"       )
+   a.scientific.merged   = c("n.scientific.merged")
+   a.scientific.this     = c("n.scientific.this"  )
+   #---- Check whether there is any tag change. -------------------------------------------#
+   if ( any(o.tag.merged != f.tag.merged,na.rm=TRUE) 
+      & any(o.tag.merged != n.tag.merged,na.rm=TRUE)){
+      a.tag.merged     = c("n.tag.merged"    , "f.tag.merged"    , "o.tag.merged"   )
+   }else if ( any(f.tag.merged != n.tag.merged,na.rm=TRUE)){
+      a.tag.merged     = c("n.tag.merged"    , "f.tag.merged"    )
+   }else{
+      a.tag.merged     = c("n.tag.merged"    )
+   }#end if
+   if ( any(o.tag.this   != n.tag.this,na.rm=TRUE)){
+      a.tag.this       = c("n.tag.this", "o.tag.this")
+   }else{
+      a.tag.this       = c("n.tag.this"      )
+   }#end if
+   #---- Check whether there is any coordinate change. ------------------------------------#
+   if ( any(o.xy.merged != f.xy.merged,na.rm=TRUE) 
+      & any(o.xy.merged != n.xy.merged,na.rm=TRUE)){
+      a.xy.merged     = c("n.xy.merged"    , "f.xy.merged"    , "o.xy.merged"   )
+   }else if ( any(f.xy.merged != n.xy.merged,na.rm=TRUE)){
+      a.xy.merged     = c("n.xy.merged"    , "f.xy.merged"    )
+   }else{
+      a.xy.merged     = c("n.xy.merged"    )
+   }#end if
+   a.xy.this          = c("n.xy.this"       )
+   #---- Check whether there are various gbh to compare. ----------------------------------#
+   if (survey.years[1] < 2006){
+      a.gbh.merged  = c("f.gbh.merged"    )
+      a.gbh.this    = c("f.gbh.this"      )
+   }else if (survey.years[1] < 2008){
+      a.gbh.merged  = c("n.gbh.merged"    , "f.gbh.merged"    )
+      a.gbh.this    = c("n.gbh.this"      , "f.gbh.this"      )
+   }else{
+      a.gbh.merged  = c("n.gbh.merged"    , "o.gbh.merged"    , "f.gbh.merged"   )
+      a.gbh.this    = c("n.gbh.this"      , "o.gbh.this"      , "f.gbh.this"     )
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Initialise the tag.                                                               #
+   #---------------------------------------------------------------------------------------#
+   uni.tag          = list()
+   u = 0
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     First we create the long tags that explore all variables.                         #
+   #---------------------------------------------------------------------------------------#
+   cat("     * Full tags...","\n")
+   eg.merged = expand.grid( trans       = a.trans.merged
+                          , scientific  = a.scientific.merged
+                          , tag         = a.tag.merged
+                          , xy          = a.xy.merged
+                          , gbh         = a.gbh.merged
+                          )#end expand.grid
+   eg.this   = expand.grid( trans       = a.trans.this
+                          , scientific  = a.scientific.this
+                          , tag         = a.tag.this  
+                          , xy          = a.xy.this  
+                          , gbh         = a.gbh.this  
+                          )#end expand.grid
+   eg.merged = sapply(eg.merged,as.character)
+   eg.this   = sapply(eg.this  ,as.character)
+   if (is.null(dim(eg.merged))) eg.merged = matrix(eg.merged,nrow=1)
+   if (is.null(dim(eg.this  ))) eg.this   = matrix(eg.this  ,nrow=1)
+
+   combo     = expand.grid( merged = sequence(nrow(eg.merged))
+                          , this   = sequence(nrow(eg.this  ))
+                          )#end expand.grid
+   #----- Loop over all combinations. -----------------------------------------------------#
+   for (co in 1:nrow(combo)){
+      u                 = u + 1
+      em                = combo[co,1]
+      et                = combo[co,2]
+      retrieved.merged  = t(t(sapply(X=eg.merged[em,],FUN=get)))
+      retrieved.this    = t(t(sapply(X=eg.this  [et,],FUN=get)))
+      t.merged          = apply(X=retrieved.merged,MARGIN=1,FUN=paste,collapse="+")
+      t.this            = apply(X=retrieved.this  ,MARGIN=1,FUN=paste,collapse="+")
+      #----- Save the tags to the output list. --------------------------------------------#
+      uni.tag[[u]]      = list(t.merged = t.merged, t.this = t.this)
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Now we only check the transect, the tag, and the coordinates.                     #
+   #---------------------------------------------------------------------------------------#
+   cat("     * Trans, scientific, tag, xy...","\n")
+   eg.merged = expand.grid( trans       = a.trans.merged
+                          , scientific  = a.scientific.merged
+                          , tag         = a.tag.merged
+                          , xy          = a.xy.merged
+                          )#end expand.grid
+   eg.this   = expand.grid( trans       = a.trans.this
+                          , scientific  = a.scientific.this
+                          , tag         = a.tag.this
+                          , xy          = a.xy.this
+                          )#end expand.grid
+   eg.merged = sapply(eg.merged,as.character)
+   eg.this   = sapply(eg.this  ,as.character)
+   if (is.null(dim(eg.merged))) eg.merged = matrix(eg.merged,nrow=1)
+   if (is.null(dim(eg.this  ))) eg.this   = matrix(eg.this  ,nrow=1)
+   combo     = expand.grid( merged = sequence(nrow(eg.merged))
+                          , this   = sequence(nrow(eg.this  ))
+                          )#end expand.grid
+   #----- Loop over all combinations. -----------------------------------------------------#
+   for (co in 1:nrow(combo)){
+      u                 = u + 1
+      em                = combo[co,1]
+      et                = combo[co,2]
+      retrieved.merged  = t(t(sapply(X=eg.merged[em,],FUN=get)))
+      retrieved.this    = t(t(sapply(X=eg.this  [et,],FUN=get)))
+      t.merged          = apply(X=retrieved.merged,MARGIN=1,FUN=paste,collapse="+")
+      t.this            = apply(X=retrieved.this  ,MARGIN=1,FUN=paste,collapse="+")
+      #----- Save the tags to the output list. --------------------------------------------#
+      uni.tag[[u]]      = list(t.merged = t.merged, t.this = t.this)
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Now we check trans, scientific, xy, and gbh (no tags).                            #
+   #---------------------------------------------------------------------------------------#
+   cat("     * Trans, scientific, xy, gbh...","\n")
+   eg.merged = expand.grid( trans       = a.trans.merged
+                          , scientific  = a.scientific.merged
+                          , xy          = a.xy.merged
+                          , gbh         = a.gbh.merged
+                          )#end expand.grid
+   eg.this   = expand.grid( trans       = a.trans.this
+                          , scientific  = a.scientific.this
+                          , xy          = a.xy.this  
+                          , gbh         = a.gbh.this  
+                          )#end expand.grid
+   eg.merged = sapply(eg.merged,as.character)
+   eg.this   = sapply(eg.this  ,as.character)
+   if (is.null(dim(eg.merged))) eg.merged = matrix(eg.merged,nrow=1)
+   if (is.null(dim(eg.this  ))) eg.this   = matrix(eg.this  ,nrow=1)
+
+   combo     = expand.grid( merged = sequence(nrow(eg.merged))
+                          , this   = sequence(nrow(eg.this  ))
+                          )#end expand.grid
+   #----- Loop over all combinations. -----------------------------------------------------#
+   for (co in 1:nrow(combo)){
+      u                 = u + 1
+      em                = combo[co,1]
+      et                = combo[co,2]
+      retrieved.merged  = t(t(sapply(X=eg.merged[em,],FUN=get)))
+      retrieved.this    = t(t(sapply(X=eg.this  [et,],FUN=get)))
+      t.merged          = apply(X=retrieved.merged,MARGIN=1,FUN=paste,collapse="+")
+      t.this            = apply(X=retrieved.this  ,MARGIN=1,FUN=paste,collapse="+")
+      #----- Save the tags to the output list. --------------------------------------------#
+      uni.tag[[u]]      = list(t.merged = t.merged, t.this = t.this)
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Now we only check the transect, the tag, and the coordinates.                     #
+   #---------------------------------------------------------------------------------------#
+   cat("     * Transect, tags, xy...","\n")
+   eg.merged = expand.grid( trans       = a.trans.merged
+                          , tag         = a.tag.merged
+                          , xy          = a.xy.merged
+                          )#end expand.grid
+   eg.this   = expand.grid( trans       = a.trans.this
+                          , tag         = a.tag.this
+                          , xy          = a.xy.this
+                          )#end expand.grid
+   eg.merged = sapply(eg.merged,as.character)
+   eg.this   = sapply(eg.this  ,as.character)
+   if (is.null(dim(eg.merged))) eg.merged = matrix(eg.merged,nrow=1)
+   if (is.null(dim(eg.this  ))) eg.this   = matrix(eg.this  ,nrow=1)
+   combo     = expand.grid( merged = sequence(nrow(eg.merged))
+                          , this   = sequence(nrow(eg.this  ))
+                          )#end expand.grid
+   #----- Loop over all combinations. -----------------------------------------------------#
+   for (co in 1:nrow(combo)){
+      u                 = u + 1
+      em                = combo[co,1]
+      et                = combo[co,2]
+      retrieved.merged  = t(t(sapply(X=eg.merged[em,],FUN=get)))
+      retrieved.this    = t(t(sapply(X=eg.this  [et,],FUN=get)))
+      t.merged          = apply(X=retrieved.merged,MARGIN=1,FUN=paste,collapse="+")
+      t.this            = apply(X=retrieved.this  ,MARGIN=1,FUN=paste,collapse="+")
+      #----- Save the tags to the output list. --------------------------------------------#
+      uni.tag[[u]]      = list(t.merged = t.merged, t.this = t.this)
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Now we check only transect, tag, name, and gbh (no XY).                           #
+   #---------------------------------------------------------------------------------------#
+   cat("     * Transect, tags, gbh...","\n")
+   eg.merged = expand.grid( trans       = a.trans.merged
+                          , tag         = a.tag.merged
+                          , gbh         = a.gbh.merged
+                          )#end expand.grid
+   eg.this   = expand.grid( trans       = a.trans.this
+                          , tag         = a.tag.this  
+                          , gbh         = a.gbh.this  
                           )#end expand.grid
    eg.merged = sapply(eg.merged,as.character)
    eg.this   = sapply(eg.this  ,as.character)

@@ -3,13 +3,12 @@ n.min.skew.norm <<- 15
 
 #==========================================================================================#
 #==========================================================================================#
-#    This function finds the location parameter for a skew normal distribution.  In case   #
-# the distribution is not skewed, location parameter becomes the mean.                     #
+#    This function finds all three parameters for skew normal distribution.                #
 #------------------------------------------------------------------------------------------#
-sn.location = function(x,na.rm=FALSE,maxit=9999){
+sn.stats <<- function(x,na.rm=FALSE,maxit=9999){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function sn.stats requires package sn!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -18,6 +17,7 @@ sn.location = function(x,na.rm=FALSE,maxit=9999){
    if (na.rm){
       sel = is.finite(x)
       xsel = x[sel]
+      rm(sel)
    }else{
       xsel = x
    }#end if
@@ -35,9 +35,10 @@ sn.location = function(x,na.rm=FALSE,maxit=9999){
       warning(" - MLE failed, falling back to EM")
       converged = FALSE
    }else{
-      dp        = cp.to.dp(myfit.mle$cp)
-      ans       = dp[1]
-      converged = myfit.mle$optim$convergence == 0
+      dp         = cp.to.dp(myfit.mle$cp)
+      ans        = c(dp,0)
+      rm(dp)
+      converged  = myfit.mle$optim$convergence == 0
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -53,15 +54,44 @@ sn.location = function(x,na.rm=FALSE,maxit=9999){
          #      Not enough point, assume Gaussian and warn the user...                     #
          #---------------------------------------------------------------------------------#
          warning("EM failed too, using mean instead.")
-         ans = mean(xsel,na.rm=TRUE)
+         ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
          #---------------------------------------------------------------------------------#
       }else{
-         ans = myfit.em$dp[1]
+         ans = c(myfit.em$dp,0)
       }#end if
+      rm(myfit.em)
    }#end if
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #     Delete everything else.                                                           #
+   #---------------------------------------------------------------------------------------#
+   rm(xsel,myfit.mle,converged)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Return the answer.                                                                #
+   #---------------------------------------------------------------------------------------#
+   names(ans) = c("location","scale","shape","gaussian")
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function sn.stats
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    This function finds the location parameter for a skew normal distribution.  In case   #
+# the distribution is not skewed, location parameter becomes the mean.                     #
+#------------------------------------------------------------------------------------------#
+sn.location <<- function(x,na.rm=FALSE,maxit=9999){
+   ans = sn.stats(x,na.rm,maxit)["location"]
    #---------------------------------------------------------------------------------------#
    #     Return the answer.                                                                #
    #---------------------------------------------------------------------------------------#
@@ -81,60 +111,8 @@ sn.location = function(x,na.rm=FALSE,maxit=9999){
 #    This function finds the scale parameter for a skew normal distribution.  In case      #
 # the distribution is not skewed, scale parameter becomes the standard deviation.          #
 #------------------------------------------------------------------------------------------#
-sn.scale = function(x,na.rm=FALSE,maxit=9999){
-   #----- Stop if package fGarch isn't loaded. --------------------------------------------#
-   if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- If na.rm is TRUE, we select only the data that is finite. -----------------------#
-   if (na.rm){
-      sel = is.finite(x)
-      xsel = x[sel]
-   }else{
-      xsel = x
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     The default is to try the maximum likelihood estimator.  It is fast, but it       #
-   # doesn't always converge.  In case it fails, we fall back to EM algorithm, which is    #
-   # more robust but a lot slower.  If none of them work, then falls back to Gaussian, as  #
-   # this usually happens when there are very few points, or all points being the same.    #
-   #---------------------------------------------------------------------------------------#
-   myfit.mle = try(sn.mle(y=xsel,plot.it=FALSE,control=list(maxit=maxit)),silent=TRUE)
-   if ("try-error" %in% is(myfit.mle)){
-      warning(" - MLE failed, falling back to EM")
-      converged = FALSE
-   }else{
-      dp        = cp.to.dp(myfit.mle$cp)
-      ans       = dp[2]
-      converged = myfit.mle$optim$convergence == 0
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Run EM if it failed.                                                              #
-   #---------------------------------------------------------------------------------------#
-   if (! converged){
-      myfit.em = try(sn.em(y=xsel),silent=TRUE)
-      if ("try-error" %in% is(myfit.em)){
-         #---------------------------------------------------------------------------------#
-         #      Not enough point, assume Gaussian and warn the user...                     #
-         #---------------------------------------------------------------------------------#
-         warning("EM failed too, using standard deviation instead.")
-         ans = sd(xsel,na.rm=TRUE)
-         #---------------------------------------------------------------------------------#
-      }else{
-         ans = myfit.em$dp[2]
-      }#end if
-   }#end if
-   #---------------------------------------------------------------------------------------#
+sn.scale <<- function(x,na.rm=FALSE,maxit=9999){
+   ans = sn.stats(x,na.rm,maxit)["scale"]
 
 
    #---------------------------------------------------------------------------------------#
@@ -156,60 +134,8 @@ sn.scale = function(x,na.rm=FALSE,maxit=9999){
 #    This function finds the shape parameter for a skew normal distribution.  In case      #
 # the distribution is not skewed, shape parameter becomes 0.                               #
 #------------------------------------------------------------------------------------------#
-sn.shape = function(x,na.rm=FALSE,maxit=9999){
-   #----- Stop if package fGarch isn't loaded. --------------------------------------------#
-   if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- If na.rm is TRUE, we select only the data that is finite. -----------------------#
-   if (na.rm){
-      sel = is.finite(x)
-      xsel = x[sel]
-   }else{
-      xsel = x
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     The default is to try the maximum likelihood estimator.  It is fast, but it       #
-   # doesn't always converge.  In case it fails, we fall back to EM algorithm, which is    #
-   # more robust but a lot slower.  If none of them work, then falls back to Gaussian, as  #
-   # this usually happens when there are very few points, or all points being the same.    #
-   #---------------------------------------------------------------------------------------#
-   myfit.mle = try(sn.mle(y=xsel,plot.it=FALSE,control=list(maxit=maxit)),silent=TRUE)
-   if ("try-error" %in% is(myfit.mle)){
-      warning(" - MLE failed, falling back to EM")
-      converged = FALSE
-   }else{
-      dp        = cp.to.dp(myfit.mle$cp)
-      ans       = dp[3]
-      converged = myfit.mle$optim$convergence == 0
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Run EM if it failed.                                                              #
-   #---------------------------------------------------------------------------------------#
-   if (! converged){
-      myfit.em = try(sn.em(y=xsel),silent=TRUE)
-      if ("try-error" %in% is(myfit.em)){
-         #---------------------------------------------------------------------------------#
-         #      Not enough point, assume Gaussian and warn the user...                     #
-         #---------------------------------------------------------------------------------#
-         warning("EM failed too, using Gaussian (shape 0) instead.")
-         ans = 0.
-         #---------------------------------------------------------------------------------#
-      }else{
-         ans = myfit.em$dp[3]
-      }#end if
-   }#end if
-   #---------------------------------------------------------------------------------------#
+sn.shape <<- function(x,na.rm=FALSE,maxit=9999){
+   ans = sn.stats(x,na.rm,maxit)["shape"]
 
 
    #---------------------------------------------------------------------------------------#
@@ -231,46 +157,8 @@ sn.shape = function(x,na.rm=FALSE,maxit=9999){
 #    This function finds the shape parameter for a skew normal distribution.  In case      #
 # the distribution is not skewed, location parameter becomes the standard deviation.       #
 #------------------------------------------------------------------------------------------#
-sn.converged = function(x,na.rm=FALSE){
-   #----- Stop if package fGarch isn't loaded. --------------------------------------------#
-   if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     The very least number of valid input data for skewed normal is 3.                 #
-   #---------------------------------------------------------------------------------------#
-   if (sum(is.finite(x)) < n.min.skew.norm){
-      ans = FALSE
-      return(ans)
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- If na.rm is TRUE, we select only the data that is finite. -----------------------#
-   if (na.rm){
-      sel = is.finite(x)
-      xsel = x[sel]
-   }else{
-      xsel = x
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Fit the skewed normal distribution.                                              #
-   #---------------------------------------------------------------------------------------#
-   if (length(xsel) > n.min.skew.norm & sum(is.finite(xsel)) > n.min.skew.norm){
-      #----- Possible to run the maximum likelihood method. -------------------------------#
-      myfit = sn.em(y=xsel)
-      ans   = myfit$logL
-   }else{
-      warning("Not enough data to determine skewed normal distribution.")
-      ans = FALSE
-   }#end if
-   #---------------------------------------------------------------------------------------#
+sn.converged <<- function(x,na.rm=FALSE){
+   ans = sn.stats(x,na.rm,maxit)["gaussian"] == 0
 
 
    #---------------------------------------------------------------------------------------#
@@ -291,10 +179,10 @@ sn.converged = function(x,na.rm=FALSE){
 #     This function normalises the dataset, using the skewed normal distribution.  The     #
 # output values is the normalised value equivalent to the normal distribution.             #
 #------------------------------------------------------------------------------------------#
-skew2normal = function(x,location,scale,shape,idx=rep(1,times=length(x))){
+skew2normal <<- function(x,location,scale,shape,idx=rep(1,times=length(x))){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function skew2normal requires package sn!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -321,7 +209,7 @@ skew2normal = function(x,location,scale,shape,idx=rep(1,times=length(x))){
 
    #------ Find the cumulative density function. ------------------------------------------#
    cdf.skew      = x * NA
-   for (n in 1:nidx){
+   for (n in sequence(nidx)){
       sel          = is.finite(x) & idx == unique.idx[n]
       stats.ok     = is.finite(location[n]) && is.finite(scale[n]) && is.finite(shape[n])
       if (any(sel) && stats.ok){
@@ -329,10 +217,10 @@ skew2normal = function(x,location,scale,shape,idx=rep(1,times=length(x))){
       }#end if
    }#end for
    #---------------------------------------------------------------------------------------#
-   
 
 
-   #------Find the equivalent quantile for the Gaussian distribution. ---------------------#
+
+   #----- Find the equivalent quantile for the Gaussian distribution. ---------------------#
    xnorm    = qnorm(p=cdf.skew,mean=0,sd=1)
    #---------------------------------------------------------------------------------------#
 
@@ -340,6 +228,7 @@ skew2normal = function(x,location,scale,shape,idx=rep(1,times=length(x))){
    #---------------------------------------------------------------------------------------#
    #     Return the answer.                                                                #
    #---------------------------------------------------------------------------------------#
+   rm(nx,unique.idx,nidx,cdf.skew,sel,stats.ok)
    return(xnorm)
    #---------------------------------------------------------------------------------------#
 }#end function
@@ -355,7 +244,7 @@ skew2normal = function(x,location,scale,shape,idx=rep(1,times=length(x))){
 #     This function normalises the dataset, using the skewed normal distribution.  The     #
 # output values is the normalised value equivalent to the normal distribution.             #
 #------------------------------------------------------------------------------------------#
-normal2skew = function(xnorm,location,scale,shape,idx=rep(1,times=length(x))){
+normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(xnorm))){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
       stop("Function normal2skew requires package sn!")
@@ -394,8 +283,275 @@ normal2skew = function(xnorm,location,scale,shape,idx=rep(1,times=length(x))){
    #---------------------------------------------------------------------------------------#
    #     Return the answer.                                                                #
    #---------------------------------------------------------------------------------------#
+   rm(unique.idx,nidx,cdf.skew,sel,stats.ok)
    return(x)
    #---------------------------------------------------------------------------------------#
 }#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#       Estimate the probability of multiple independent events given the distribution.    #
+#------------------------------------------------------------------------------------------#
+psn.mult <<- function(z,n,nsample=10000,location=0,scale=1,shape=0,lower.tail=TRUE
+                     ,log.p=FALSE,force.sample=FALSE){
+
+
+   if ( n == 1 && ! force.sample){
+      #----- Use the standard probability distribution function (no sampling). ------------#
+      prob = psn(x=z,location=location,scale=scale,shape=shape,lower.tail=lower.tail
+                ,log.p=log.p)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Create an array with multiple data sets. -------------------------------------#
+      x    = rsn(n=n*nsample,location=location,scale=scale,shape=shape)
+      i    = rep(sequence(nsample),each=n)
+      ztry = tapply(X=x,INDEX=i,FUN=sum)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Estimate probability based on the number of successes. -----------------------#
+      if (lower.tail){
+         prob  = sum(ztry <= z) / nsample
+      }else{
+         prob  = sum(ztry >= z) / nsample
+      }#end if (lower.tail
+      prob.min = 0 + 0.5 / nsample
+      prob.max = 1 - 0.5 / nsample
+      prob     = pmax(prob.min,pmin(prob.max,prob))
+      if (log.p) prob = log(prob)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Free memory. -----------------------------------------------------------------#
+      rm(x,i,ztry,prob.min,prob.max)
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Return probability. -------------------------------------------------------------#
+   return(prob)
+   #---------------------------------------------------------------------------------------#
+}#end function psn.mult
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#       Auxiliary function, to find the root of the cumulative probability function.       #
+#------------------------------------------------------------------------------------------#
+psn.root <<- function(x,z,n,p,shift="location",...){
+   short = substring(tolower(shift),1,2)
+   if ( short == "lo"){
+      ans = psn.mult(z,n,location=x,...) - p
+   }else if ( short == "sc" ){
+      ans = psn.mult(z,n,scale=x,...) - p
+   }else if ( short == "sh" ){
+      ans = psn.mult(z,n,shape=x,...) - p
+   }else{
+      cat(" - Invalid statistics request! Shift has been set to ",shift,"\n")
+      cat("   Acceptable options are location, scale, and shape","\n")
+      stop("Invalid statistics!")
+   }#end if
+
+   #----- Return value. -------------------------------------------------------------------#
+   rm(short)
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the location parameter that makes the probability of z with n    #
+# independent approaches to become p.                                                      #
+#------------------------------------------------------------------------------------------#
+qsn.mult <<- function( z
+                     , n
+                     , p
+                     , location
+                     , scale
+                     , shape
+                     , shift    = "location"
+                     , lower
+                     , upper
+                     , nsample  = 10000
+                     , ...
+                     ){
+
+
+
+
+
+   #----- Find the basic statistics in terms of the original parameters. ------------------#
+   delta         = shape / sqrt(1. + shape^2)
+   old.mean      = location     + scale * delta * sqrt(2/pi)
+   old.sdev      = scale * sqrt( 1 - 2*delta^2/pi)
+   old.skew      = 0.5 * (4 - pi) * (delta*sqrt(2/pi) / sqrt(1-2*delta^2/pi))^3
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the location parameter that solves P(Z) = p. -------------------------------#
+   tol        = 0.1 / nsample
+   short      = substring(tolower(shift),1,2)
+   if ( short == "lo"){
+      sol        = uniroot(f=psn.root,lower=lower,upper=upper,z=z,n=n,p=p,scale=scale
+                          ,shape=shape,shift=shift,nsample=nsample,tol=tol,maxiter = 1000)
+
+
+      #----- Find the change in relative and absolute mean and location. ------------------#
+      new.location  = sol$root
+      new.mean      = new.location + scale * delta * sqrt(2/pi)
+      sol$dlocation = ( new.location - location)
+      sol$dmean     = ( new.mean     - old.mean)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Free memory. -----------------------------------------------------------------#
+      rm(new.location,new.mean)
+      #------------------------------------------------------------------------------------#
+   }else if (short == "sc"){
+      sol        = uniroot(f=psn.root,lower=lower,upper=upper,z=z,n=n,p=p,location=location
+                          ,shape=shape,shift=shift,nsample=nsample,tol=tol,maxiter = 1000)
+
+
+      #----- Find the change in relative and absolute std. dev. and scale. ----------------#
+      new.scale      = sol$root
+      new.sdev       = new.scale * sqrt( 1 - 2*delta^2/pi)
+      sol$dscale     = ( new.scale - scale)
+      sol$dsdev      = ( new.sdev - old.sdev)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Free memory. -----------------------------------------------------------------#
+      rm(new.scale,new.sdev)
+      #------------------------------------------------------------------------------------#
+   }else if (short == "sh"){
+      sol        = uniroot(f=psn.root,lower=lower,upper=upper,z=z,n=n,p=p,location=location
+                          ,scale=scale,shift=shift,nsample=nsample,tol=tol,maxiter = 1000)
+
+      #----- Find the change in relative and absolute std. dev. and scale. ----------------#
+      new.shape      = sol$root
+      new.delta      = new.shape / sqrt(1. + new.shape^2)
+      new.skew       = 0.5 * (4 - pi) * (new.delta*sqrt(2/pi) / sqrt(1-2*new.delta^2/pi))^3
+      sol$dshape     = ( new.shape - shape   )
+      sol$dskew      = ( new.skew  - old.skew)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Free memory. -----------------------------------------------------------------#
+      rm(new.shape,new.delta,new.skew)
+      #------------------------------------------------------------------------------------#
+   }else{
+      cat(" - Invalid statistics request! Shift has been set to ",shift,"\n")
+      cat("   Acceptable options are location, scale, and shape","\n")
+      stop("Invalid statistics!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Free memory. --------------------------------------------------------------------#
+   rm(delta,old.mean,old.sdev,old.skew)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Return solution. ----------------------------------------------------------------#
+   ans        = unlist(sol)
+   names(ans) = names(sol)
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end lsn
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This function is the equivalent to maximum likelihood estimator for least squares   #
+# in the normal distribution, but assuming that the residuals have skew normal             #
+# distribution with mean = 0.                                                              #
+#------------------------------------------------------------------------------------------#
+sn.lsq <<- function(r,skew=FALSE){
+
+   #---------------------------------------------------------------------------------------#
+   #     If all data are missing, return NA.                                               #
+   #---------------------------------------------------------------------------------------#
+   if (all(is.na(r))){
+      ans = NA
+      return(ans)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Keep only the good data. --------------------------------------------------------#
+   r.fine = r[! is.na(r)]
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Decide which PDF to use (normal or skew normal.                                   #
+   #---------------------------------------------------------------------------------------#
+   if (skew){
+      rstats    = sn.stats(r.fine)
+      rscale    = rstats["scale"]
+      rshape    = rstats["shape"]
+      rdelta    = rshape / sqrt(1. + rshape^2)
+      #----- This is the location that produces mean 0. -----------------------------------#
+      rlocation = - rscale * rdelta * sqrt(2/pi)
+      #------------------------------------------------------------------------------------#
+
+
+      #------ Find the log-likelihood of the distribution. --------------------------------#
+      ans = sum(x=dsn(x=r.fine,location=rlocation,scale=rscale,shape=rshape,log=TRUE))
+      #------------------------------------------------------------------------------------#
+
+      #----- Free memory. -----------------------------------------------------------------#
+      rm(rstats,rscale,rshape,rdelta,rlocation)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #------ Find the log-likelihood of the distribution. --------------------------------#
+      ans = sum(x=dnorm(x=r.fine,mean=0,sd=sd(r.fine),log=TRUE))
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Free memory. --------------------------------------------------------------------#
+   rm(r.fine)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Free memory and return solution. ------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end sn.lsq
 #==========================================================================================#
 #==========================================================================================#

@@ -1287,7 +1287,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_dept
       end if
       rlongup    = rlongup + patch_area * stefan * soil_tempk(mzg) ** 4
 
-      rshort_gnd = alb * rshort
+      rshort_gnd = (1.0 - alb) * rshort
       rlong_gnd  = 0.0
 
    elseif (isfcl == 0) then
@@ -1295,7 +1295,7 @@ subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_dept
       albedt     = albedt  + patch_area * albedo
       rlongup    = rlongup + patch_area * stefan * can_temp ** 4
 
-      rshort_gnd = albedt * rshort
+      rshort_gnd = (1.0 - albedo) * rshort
       rlong_gnd  = 0.0
    else
       !------ Running an actual land surface model... -------------------------------------!
@@ -1602,9 +1602,12 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
                         , gbh_2_gbw  & ! intent(in)
                         , gbh        & ! intent(in)
                         , gbw        ! ! intent(in)
-   use rconstants, only : gr_coeff   & ! intent(in)
-                        , th_diffi   & ! intent(in)
-                        , th_diff    ! ! intent(in)
+   use rconstants, only : t00        & ! intent(in)
+                        , grav       & ! intent(in)
+                        , kin_visc0  & ! intent(in)
+                        , dkin_visc  & ! intent(in)
+                        , th_diff0   & ! intent(in)
+                        , dth_diff   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                      :: iveg            ! Vegetation class           [      ---]
@@ -1616,6 +1619,10 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat      [   J/kg/K]
    !----- Local variables. ----------------------------------------------------------------!
    real(kind=4)                 :: lwidth          ! Leaf width                 [        m]
+   real(kind=4)                 :: kin_visc        ! Kinematic viscosity        [     m²/s]
+   real(kind=4)                 :: th_diff         ! Kinematic viscosity        [     m²/s]
+   real(kind=4)                 :: th_expan        ! Thermal expansion          [      1/K]
+   real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_visc²    [   1/K/m³]
    real(kind=4)                 :: grashof         ! Grashof number             [      ---]
    real(kind=4)                 :: reynolds        ! Reynolds number            [      ---]
    real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)   [      ---]
@@ -1632,11 +1639,32 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Compute kinematic viscosity, thermal diffusivity, and expansion coefficient as    !
+   ! functions of temperature.  Here we use the canopy air space temperature because       !
+   ! this is the representative temperature of the fluid.                                  !
+   !                                                                                       !
+   !     Kinematic viscosity and thermal diffusivity are determined from MU08, see         !
+   ! discussion on page 32.  Thermal expansion is assumed to be of an ideal gas (1/T),     !
+   ! like in Dufour and van Mieghem (1975), for example.                                   !
+   !---------------------------------------------------------------------------------------!
+   th_expan = 1.0 / can_temp
+   !----- kin_visc and th_diff are assumed linear functions of temperature. ---------------!
+   kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( can_temp - t00 ) )
+   th_diff  = th_diff0  * ( 1.0 + dth_diff  * ( can_temp - t00 ) )
+   !---------------------------------------------------------------------------------------!
+   !    Grashof coefficient (a*g/nu²) in MU08's equation 10.8.                             !
+   !---------------------------------------------------------------------------------------!
+   gr_coeff = th_expan * grav  / ( kin_visc * kin_visc )
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !     Find the conductance, in m/s, associated with forced convection.                  !
    !---------------------------------------------------------------------------------------!
    !----- 1. Compute the Reynolds number. -------------------------------------------------!
-   reynolds        = veg_wind * lwidth * th_diffi
+   reynolds        = veg_wind * lwidth / th_diff
    !----- 2. Compute the Nusselt number for both the laminar and turbulent case. ----------!
    nusselt_lami    = aflat_lami * reynolds ** nflat_lami
    nusselt_turb    = aflat_turb * reynolds ** nflat_turb
@@ -2031,30 +2059,52 @@ end subroutine normal_accfluxes
 !==========================================================================================!
 !     This sub-routine decides whether this patch should be solved or not.                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,veg_tai    &
-                          ,sfcwater_nlev,sfcwater_depth,initial)
-   use leaf_coms, only : min_patch_area  & ! intent(in)
-                       , tai_max         & ! intent(in)
-                       , tai_min         & ! intent(in)
-                       , snowfac_max     & ! intent(in)
-                       , snowfac         & ! intent(inout)
-                       , resolvable      ! ! intent(inout)
+subroutine leaf3_solve_veg(ip,mzs,leaf_class,soil_rough,patch_area,veg_fracarea,veg_tai    &
+                          ,sfcwater_nlev,sfcwater_mass,sfcwater_depth,initial)
+   use leaf_coms , only : min_patch_area    & ! intent(in)
+                        , min_sfcwater_mass & ! intent(in)
+                        , tai_max           & ! intent(in)
+                        , tai_min           & ! intent(in)
+                        , snowfac_max       & ! intent(in)
+                        , ny07_eq04_a       & ! intent(in)
+                        , ny07_eq04_m       & ! intent(in)
+                        , snowfac           & ! intent(inout)
+                        , resolvable        ! ! intent(inout)
+   use rconstants, only : wdns              & ! intent(in)
+                        , fsdns             & ! intent(in)
+                        , fsdnsi            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                , intent(in) :: ip
    integer                , intent(in) :: mzs
    real                   , intent(in) :: leaf_class
-   real                   , intent(in) :: veg_height
+   real                   , intent(in) :: soil_rough
    real                   , intent(in) :: patch_area
    real                   , intent(in) :: veg_fracarea
    real                   , intent(in) :: veg_tai
    real                   , intent(in) :: sfcwater_nlev
+   real   , dimension(mzs), intent(in) :: sfcwater_mass
    real   , dimension(mzs), intent(in) :: sfcwater_depth
    logical                , intent(in) :: initial
    !----- Local variables. ----------------------------------------------------------------!
    integer                             :: nveg
    integer                             :: k
    integer                             :: ksn
+   real                                :: total_sfcw_depth
+   real                                :: total_sfcw_mass
+   real                                :: bulk_sfcw_dens
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the fraction of the canopy covered in snow.  I could not find any            !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
    !---------------------------------------------------------------------------------------!
 
 
@@ -2062,11 +2112,22 @@ subroutine leaf3_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,
    !     Find the area covered by snow.  This should be done every time.                   !
    !---------------------------------------------------------------------------------------!
    ksn     = nint(sfcwater_nlev)
-   snowfac = 0.
+   total_sfcw_depth = 0.0
+   total_sfcw_mass  = 0.0
    do k=1,ksn
-      snowfac = snowfac + sfcwater_depth(k)
+      total_sfcw_depth = total_sfcw_depth + sfcwater_depth(k)
+      total_sfcw_mass  = total_sfcw_mass  + sfcwater_mass (k)
    end do
-   snowfac = min(.99, snowfac / max(.001,veg_height))
+   if (total_sfcw_mass > min_sfcwater_mass) then
+      bulk_sfcw_dens = max( fsdns, min( wdns, total_sfcw_mass / total_sfcw_depth))
+      snowfac        = max( 0.0, min( 0.99                                                 &
+                              , tanh( total_sfcw_depth                                     &
+                                    / ( ny07_eq04_a * max(0.001,soil_rough)                &
+                                      * (bulk_sfcw_dens * fsdnsi) ** ny07_eq04_m ) ) ) )
+   else
+      snowfac = 0.0
+   end if
+   ! snowfac = min(.99, total_sfcw_depth / max(.001,veg_height))
    !---------------------------------------------------------------------------------------!
 
 

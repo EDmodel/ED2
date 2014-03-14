@@ -1694,6 +1694,11 @@ multiple_scatter.o : $(ED_DYNAMICS)/multiple_scatter.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+old_twostream_rad.o : $(ED_DYNAMICS)/old_twostream_rad.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 optimiz_coms.o : $(ED_MEMORY)/optimiz_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

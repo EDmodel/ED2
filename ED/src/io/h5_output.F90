@@ -342,7 +342,7 @@ subroutine h5_output(vtype)
          if (verbose) write (unit=*,fmt='(a)') '    > Opening HDF5 environment...'
          call h5open_f(hdferr)
          if (hdferr /= 0) then
-            write(unit=*,fmt='(a,1x,i)') ' - HDF5 Open error #:',hdferr
+            write(unit=*,fmt='(a,1x,i6)') ' - HDF5 Open error #:',hdferr
             call fatal_error('Could not initialize the hdf environment'                    &
                             ,'h5_output','h5_output.F90')
          end if
@@ -361,8 +361,8 @@ subroutine h5_output(vtype)
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not create the HDF5 file.'
                write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
-               write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
-               write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
+               write(unit=*,fmt='(a,1x,i6)' ) ' - file_id: ',file_id
+               write(unit=*,fmt='(a,1x,i6)' ) ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                call fatal_error('Failed creating the HDF file','h5_output','h5_output.F90')
             end if
@@ -373,8 +373,8 @@ subroutine h5_output(vtype)
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not open the HDF5 file.'
                write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
-               write(unit=*,fmt='(a,1x,i)' ) ' - file_id: ',file_id
-               write(unit=*,fmt='(a,1x,i)' ) ' - hdferr : ',hdferr
+               write(unit=*,fmt='(a,1x,i6)' ) ' - file_id: ',file_id
+               write(unit=*,fmt='(a,1x,i6)' ) ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                call fatal_error('Failed opening the HDF file','h5_output','h5_output.F90')
             end if
@@ -428,8 +428,8 @@ subroutine h5_output(vtype)
                if (hdferr /= 0 .or. globdims(1) < 1 ) then
                   write (unit=*,fmt='(a,1x,a)') ' VTYPE:    ',trim(vtype)
                   write (unit=*,fmt='(a,1x,a)') ' VAR NAME: ',trim(varn)
-                  write (unit=*,fmt='(a,1x,i)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
-                  write (unit=*,fmt='(a,1x,i)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
+                  write (unit=*,fmt='(a,1x,i6)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
+                  write (unit=*,fmt='(a,1x,i6)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
                   write (unit=*,fmt=*)          ' DSETRANK: ',dsetrank
                   write (unit=*,fmt=*)          ' GLOBDIMS: ',globdims
                   call fatal_error('Could not create the first filespace'                  &
@@ -834,7 +834,8 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
                                  , n_dist_types   & ! intent(in)
                                  , n_dbh          & ! intent(in)
                                  , n_age          & ! intent(in)
-                                 , n_mort         ! ! intent(in)
+                                 , n_mort         & ! intent(in)
+                                 , n_radprof      ! ! intent(in)
    use hdf5_coms          , only : chnkdims       & ! intent(in)
                                  , chnkoffs       & ! intent(in)
                                  , cnt            & ! intent(in)
@@ -1440,6 +1441,35 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
+
+   case (411) !(n_radprof,ncohorts)
+      
+      ! Radiation profile type
+      dsetrank    = 2
+      globdims(1) = int(n_radprof,8)
+      chnkdims(1) = int(n_radprof,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+
+   case (-411) !(n_radprof,ndcycle,ncohorts)
+      
+      ! Radiation profile type
+      dsetrank    = 3
+      globdims(1) = int(n_radprof,8)
+      chnkdims(1) = int(n_radprof,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(ndcycle,8)
+      chnkdims(2) = int(ndcycle,8)
+      chnkoffs(2) = 0_8
+      globdims(3) = int(var_len_global,8)
+      chnkdims(3) = int(varlen,8)
+      chnkoffs(3) = int(globid,8)
+      cnt(1:3)    = 1_8
+      stride(1:3) = 1_8
 
    case default
       write (unit=*,fmt='(a)')       '--------------------------------------------------'

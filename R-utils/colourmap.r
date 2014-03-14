@@ -12,7 +12,7 @@ colourmap  = function( x
                      , ylim             = range(y,finite=TRUE)
                      , zlim             = range(z,finite=TRUE)
                      , levels           = if (key.log){
-                                             pretty.log(x=zlim,n=nlevels)
+                                             pretty.log(x=zlim,n=nlevels,forcelog=TRUE)
                                           }else{
                                             pretty(x=zlim,n=nlevels)
                                           }#end if
@@ -218,7 +218,7 @@ colourmap  = function( x
       if (missing(plot.axes)) {
           if (axes) {
               axis(1)
-              axis(2)
+              axis(2,las=1)
           }
       }else{
          if (is.list(plot.axes)){

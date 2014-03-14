@@ -308,12 +308,14 @@ do
 
    if [ 'x'${1} == 'x-d' ]
    then
-      rm -frv ${here}'/'${polyname} 
-      rm -frv ${there}'/'${polyname} 
+      rm -frv "${here}/${polyname}"
+      rm -frv "${there}/${polyname}"
    else
-      cd ${here}'/'${polyname}
+      /bin/cp "${here}/Template/purge.sh" "${here}/${polyname}/purge.sh"
+      /bin/cp "${here}/Template/purge.sh" "${there}/${polyname}/purge.sh"
+      cd "${here}/${polyname}"
       ./purge.sh
-      cd ${there}'/'${polyname}
+      cd "${there}/${polyname}"
       ./purge.sh
    fi
 done

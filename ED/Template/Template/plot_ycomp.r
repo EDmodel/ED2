@@ -52,7 +52,7 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "pdf" - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 14                     # Font size.
+ptsz           = 16                     # Font size.
 lwidth         = 2.5                    # Line width
 plotgrid       = TRUE                   # Should I plot the grid in the background? 
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
@@ -80,11 +80,13 @@ ibackground    = mybackground           # Background settings (check load_everyt
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
-slz.min        = -5.0         # The deepest depth that trees access water.
-idbh.type      = myidbhtype   # Type of DBH class
-                              # 1 -- Every 10 cm until 100cm; > 100cm
-                              # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
-klight         = myklight     # Weighting factor for maximum carbon balance
+slz.min             = -5.0         # The deepest depth that trees access water.
+idbh.type           = myidbhtype   # Type of DBH class
+                                   # 1 -- Every 10 cm until 100cm; > 100cm
+                                   # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+klight              = myklight     # Weighting factor for maximum carbon balance
+corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+                                   #   storage respiration
 #------------------------------------------------------------------------------------------#
 
 
@@ -326,8 +328,8 @@ for (place in myplaces){
       thisvar = yc.tvar[[tt]]
       vname   = thisvar$vnam
       desc    = thisvar$desc
-      if (vname == "rain"){
-         unit    = "mm/month"
+      if (vname %in% c("rain","runoff","intercepted","wshed")){
+         unit    = untab$mmomo
       }else{
          unit    = thisvar$unit
       }#end if
@@ -420,25 +422,25 @@ for (place in myplaces){
             
             letitre = paste(lieu," \n",desc,sep="")
             lex     = "Months"
-            ley     = paste(desc," [",unit,"]")
+            ley     = desc.unit(desc=desc,unit=unit)
 
 
             par(par.user)
             par(oma=c(0,0,0,0))
             layout (mat=rbind(2,1),heights=c(5,1))
             
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
             legend(x="bottom",legend=year.desc[-1]
                   ,lwd=2.5,col=year.col[-1],title="Period",cex=0.9,ncol=4)
 
-            par(mar=c(3.1,4.1,4.1,2.1))
+            par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=range(outplot[[2]]$x),ylim=ylimit)
             title(main=letitre,xlab=lex,ylab=ley,cex.main=0.8)
             axis(side=1,at=whenplot$levels,labels=whenplot$labels,padj=whenplot$padj)
-            axis(side=2)
+            axis(side=2,las=1)
             box()
             if (plotgrid){ 
                abline(v=whenplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
@@ -494,7 +496,7 @@ for (place in myplaces){
                             , dimnames = list(yr3mon.desc,season.list[-nseasons])
                             , byrow    = TRUE
                             )#end matrix
-         if (vname == "rain"){
+         if (vname %in% c("rain","runoff","intercepted","wshed")){
             ylimit = c(0,max(season.vec,na.rm=TRUE))
          }else{
             ylimit = pretty.xylim(u=season.vec,fracexp=0.0,is.log=FALSE)
@@ -519,25 +521,25 @@ for (place in myplaces){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
-            
+
             letitre = paste(lieu," \n Year comparison: ",desc,sep="")
             lex     = "Season"
-            ley     = paste(desc," [",unit,"]")
+            ley     = desc.unit(desc=desc,unit=unit)
 
 
             par(par.user)
             layout (mat=rbind(2,1),heights=c(5,1))
-            par(mar=c(0.1,4.1,0.1,2.1))
+            par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1),xaxt="n",yaxt="n")
             legend(x="bottom",inset=0.0,legend=yr3mon.desc,fill=yr3mon.col
                   ,title="Period",cex=0.9,ncol=2)
 
 
-            par(mar=c(3.1,4.1,4.1,2.1))
+            par(mar=c(3.1,4.6,4.1,2.1))
             barplot(season.mat,col=yr3mon.col,main=letitre,xlab=lex,ylab=ley
                    ,cex.main=cex.main,ylim=ylimit,legend.text=FALSE,beside=TRUE
-                   ,border=grey.fg,xpd=FALSE)
+                   ,border=grey.fg,xpd=FALSE,las=1)
             box()
 
 
@@ -602,21 +604,21 @@ for (place in myplaces){
             this.pch  = eft.pch[match(yr.season,eft.year)]
             #----- Expand the edges of the x axis. ----------------------------------------#
             xvar      = emean[[xvname]]
-            lex       = paste(xdesc," [",xunit,"]",sep="")
+            lex       = desc.unit(desc=xdesc,unit=xunit)
             xrange    = range(xvar,na.rm=TRUE)
             xlimit    = xrange
             xlimit[1] = xrange[1] - 0.05 * (xrange[2] - xrange[1])
             xlimit[2] = xrange[2] + 0.05 * (xrange[2] - xrange[1])
             #----- Expand the edges of the y axis. ----------------------------------------#
             yvar      = emean[[yvname]]
-            ley       = paste(ydesc," [",yunit[y],"]",sep="")
+            ley       = desc.unit(desc=ydesc,unit=yunit)
             yrange    = range(yvar,na.rm=TRUE)
             ylimit    = yrange
             ylimit[1] = yrange[1] - 0.05 * (yrange[2] - yrange[1])
             ylimit[2] = yrange[2] + 0.40 * (yrange[2] - yrange[1])
             #----- Annotation for the colour map ("Z" axis). ------------------------------#
             zvar      = emean[[zvname]]
-            lez       = paste(zkey,"\n [",zunit,"]",sep="")
+            lez       = desc.unit(desc=zdesc,unit=zunit)
             #----- Find the position to plot the legend. ----------------------------------#
             leg.pos   = paste(yleg,xleg,sep="")
 
@@ -629,7 +631,7 @@ for (place in myplaces){
             ptitle[[1]] = list(main=letitre,xlab=lex,ylab=ley,cex.main=cex.main)
             paxes       = list()
             paxes[[1]]  = list( x.axis = list(side=1)
-                              , y.axis = list(side=2)
+                              , y.axis = list(side=2,las=1)
                               , grid   = list(col=grey.fg,lty="solid")
                               , legend = list( x      = leg.pos
                                              , inset  = 0.01
