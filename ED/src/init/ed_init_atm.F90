@@ -354,6 +354,8 @@ subroutine ed_init_atm()
       !----- Fuse similar patches to speed up the run. ------------------------------------!
       select case(ibigleaf)
       case (0)
+
+
          !---------------------------------------------------------------------------------!
          !    Size and age structure.  Start by fusing similar patches.                    !
          !---------------------------------------------------------------------------------!
