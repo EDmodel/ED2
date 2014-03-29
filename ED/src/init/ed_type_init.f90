@@ -1325,7 +1325,7 @@ subroutine init_ed_poly_vars(cgrid)
       !       Hydrology stuff.                                                             !
       !------------------------------------------------------------------------------------!
       cgrid%wbar     (ipy) = 0.0
-      cgrid%Te       (ipy) = 0.0
+ !     cgrid%Te       (ipy) = 0.0
       cgrid%zbar     (ipy) = 0.0
       cgrid%sheat    (ipy) = 0.0
       cgrid%baseflow (ipy) = 0.0

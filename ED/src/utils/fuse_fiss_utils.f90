@@ -3680,7 +3680,7 @@ module fuse_fiss_utils
                   end do hgtloop
                   !------------------------------------------------------------------------!
 
-                  print *, 'Left', ifus, donp
+                 
 
                   !------------------------------------------------------------------------!
                   !      Reaching this point means that the patches are sufficiently       !
@@ -3693,7 +3693,7 @@ module fuse_fiss_utils
                                      ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
                   !------------------------------------------------------------------------!
 
-                  print *, 'Right', ifus, donp
+                  
 
                   !----- Record the fusion if requested by the user. ----------------------!
                   if (print_fuse_details) then
@@ -4604,7 +4604,7 @@ module fuse_fiss_utils
       ! It is possible that this is an initial type run, in which case, these values       !
       ! are still zero.  To avoid divide by zeros:                                         !
       !------------------------------------------------------------------------------------!
-      if(csite%dmean_can_shv(recp)>0.00001 .and. writing_long) then
+      if(writing_long .and. csite%dmean_can_shv(recp)>0.00001) then
 
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
@@ -4931,7 +4931,7 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
-
+ 
 
 
       !------------------------------------------------------------------------------------! 
@@ -4941,7 +4941,7 @@ module fuse_fiss_utils
       ! It is possible that this is an initial type run, in which case, these values       !
       ! are still zero.  To avoid divide by zeros:                                         !
       !------------------------------------------------------------------------------------!                                                                                                                             
-      if(csite%mmean_can_shv(recp)>0.00001 .and. writing_eorq) then
+      if(writing_eorq .and. csite%mmean_can_shv(recp)>0.00001) then
 
          !---------------------------------------------------------------------------------!
          !    First we find the mean sum of squares, because they depend on the means too, !
@@ -5419,7 +5419,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
  
-      print *, 'First', size (csite%qmean_can_shv)
+      
 
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
@@ -5428,7 +5428,7 @@ module fuse_fiss_utils
       ! It is possible that this is an initial type run, in which case, these values       !
       ! are still zero.  To avoid divide by zeros:                                         !
       !------------------------------------------------------------------------------------!                                                                                                                             
-      if(csite%qmean_can_shv(1,recp)>0.00001 .and. writing_dcyc) then
+      if(writing_dcyc .and. csite%qmean_can_shv(1,recp)>0.00001) then
 
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
@@ -5852,7 +5852,7 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
- print *, 'Second'
+
 
       !------------------------------------------------------------------------------------!
       !    We now update the canopy thermodynamic propeties:                               !
