@@ -186,7 +186,7 @@ subroutine initHydroSubsurface()
                  else
                     fliq = 0.5
                  end if
-
+                 
                  csite%soil_energy(k,ipa)  = cmtl2uext( soil(nsoil)%slcpd                  &
                                                       , csite%soil_water(k,ipa)  * wdns    &
                                                       , csite%soil_tempk(k,ipa)            &
@@ -345,7 +345,7 @@ subroutine calcHydroSubsurface()
         !! soil water converted from m3 -> kg                                      !!
         !!*************************************************************************!!
         call uextcm2tl(soil_sat_energy,soil_sat_water*wdns,soil_sat_heat,tempk,fracliqtotal)
-
+       
 
         !!*************************************************************************!!
         !!  If there is no saturated water or if saturated soil is more than       !!
@@ -446,7 +446,7 @@ subroutine calcHydroSubsurface()
            !! temperature and liquid fraction of water in flux                     !!
            !!**********************************************************************!!
            call uint2tl(sheat/1000.0,tempk,fracliq)
-
+           
            !!**********************************************************************!!
            !! Next, add water to other patches                                     !!
            !!**********************************************************************!!
@@ -632,6 +632,7 @@ subroutine calcWatertable(cpoly,isi,ipa)
      csite%soil_sat_energy(ipa) = csite%soil_sat_energy(ipa) + csite%soil_energy(k,ipa)*dslz(k)
      csite%soil_sat_water(ipa)  = csite%soil_sat_water(ipa)  + csite%soil_water(k,ipa)*dslz(k)
      csite%soil_sat_heat(ipa)   = csite%soil_sat_heat(ipa)   + soil(nsoil)%slcpd*dslz(k)
+     
      if (fracw < MoistSatThresh) exit layerloop!change from original version to go one layer up
   end do layerloop
   !!store watertable depth integer
@@ -980,19 +981,19 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    integer                           :: nsoil,slsl
    real                              :: tempk, fracliq, freezeCor
 
-
+   
    csite => cpoly%site(isi)
    slsl  = cpoly%lsl(isi)
-
+   nsoil = cpoly%ntext_soil(slsl,isi)
    !! determine freeze
    call uextcm2tl(csite%soil_energy(slsl,ipa),csite%soil_water(slsl,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
    freezeCor = fracliq
    if(freezeCor .lt. 1.0) freezeCor = 10.0**(-freezeCoef*(1.0-freezeCor))
-
+   
    !! calc max free-drainage as cap to baseflow
    !! assumes layer below is permenantly at minimal water capacity
    slsl  = cpoly%lsl(isi)
-   nsoil = cpoly%ntext_soil(slsl,isi)
+!   nsoil = cpoly%ntext_soil(slsl,isi)
    potn_fd = -dslzi(slsl)+soil(nsoil)%slpots* &
         ((soil(nsoil)%slmsts/soil(nsoil)%soilcp)**soil(nsoil)%slbs - &
         (soil(nsoil)%slmsts/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
