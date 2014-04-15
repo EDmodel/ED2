@@ -221,7 +221,7 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
    real                                       :: soilhcap
    real                                       :: can_exner
    !---------------------------------------------------------------------------------------!
-
+   
 
    do ipa=ipaa,ipaz
 
@@ -233,7 +233,7 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
                                         , csite%can_shv   (ipa)                            )
       !------------------------------------------------------------------------------------!
 
-
+      
       !----- Update soil temperature and liquid water fraction. ---------------------------!
       do k = 1, mzg
          nsoil    = ntext_soil(k)
@@ -325,7 +325,7 @@ subroutine update_patch_thermo_fmean(csite,ipaa,ipaz,mzg,ntext_soil)
                                               , csite%fmean_can_shv   (ipa)                )
       !------------------------------------------------------------------------------------!
 
-
+      
       !----- Update soil temperature and liquid water fraction. ---------------------------!
       do k = 1, mzg
          nsoil    = ntext_soil(k)
