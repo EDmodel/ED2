@@ -735,6 +735,7 @@ subroutine h5_output(vtype)
                              ,', as it doesn''t belong to this file...'
             end if
          end do varloop
+	 call h5fflush_f(file_id,H5F_SCOPE_LOCAL_F, hdferr)
          !---------------------------------------------------------------------------------!
 
          if (verbose) write (unit=*,fmt='(a)') '    > Closing file...'
