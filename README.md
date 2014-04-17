@@ -8,7 +8,7 @@ structure:
 ED: This directory contains the ED source code (src) and the 
 directory for compilation (build). For further instructions on how to 
 compile and use the model, we strongly suggest accessing the ED 
-Wiki website: http://128.197.34.149/wiki/index.php/ED2_Documentation 
+Wiki website: https://github.com/EDmodel/ED2/wiki
  
 RAPP: This directory contains the NCEP reanalysis pre-processor, that 
 produces meteorological forcing in the ED-friendly format (HDF5) 
