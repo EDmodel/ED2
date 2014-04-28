@@ -737,6 +737,8 @@ subroutine h5_output(vtype)
          end do varloop
          !---------------------------------------------------------------------------------!
 
+         call h5fflush_f(file_id,H5F_SCOPE_LOCAL_F, hdferr)
+
          if (verbose) write (unit=*,fmt='(a)') '    > Closing file...'
          call h5fclose_f(file_id,hdferr)
          if (hdferr /= 0) then
