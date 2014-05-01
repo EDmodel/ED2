@@ -11,20 +11,21 @@
 # are rk and you tried 4 iterations of this test before your commits
 # were verified, you would use:
 
-VERSION="r85"
+VERSION="ENTER_VERSION"
 
 # FILE PATHS TO YOUR THREE EXECUTABLES
 
-TEST_EXE_PATH=/global/homes/r/rgknox/Models/ed2.2_mainline_test/EDBRAMS/ED/build/ed_2.1-opt
-DBUG_EXE_PATH=/global/homes/r/rgknox/Models/ed2.2_mainline_test/EDBRAMS/ED/build/ed_2.1-dbg
-MAIN_EXE_PATH=/global/homes/r/rgknox/Models/ed2.2_ghub_master/ED2/ED/build/ed_2.1-opt
+TEST_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85_rgknox/ED/build/ed_2.1-opt
+DBUG_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85_rgknox/ED/build/ed_2.1-dbg
+MAIN_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r84_master/ED/build/ed_2.1-opt
 
 # Provide the path where the test-suit driver archive is stored
 
-DATAPATH='/global/scratch2/sd/rgknox/edts_data'
+DATAPATH="${YOUR_PATH_TO_DATA}/edts_data_reduced'
 
 # Decide on a "rapid" (2 year) or "long" (300 year)
 # THE long tests will take a really really long time, beware
+# Don't do long, its too long
 
 TESTTYPE="rapid"
 
@@ -71,27 +72,18 @@ Q_RJG=regular     #Gridded 12x12 simulation centerd on Reserva Jaru
 
 # Give an explanation of the tests.  Explain what the commits had involved.
 
-TEST_DESCRIPTION="This is a test of the removal of floating point numeric parameters from 
-the ED2IN namelist.  Parameters were chosen for removal by a task force. Floating point 
-parameters were kept in the namelist if they were site specific or if they modify 
-module logic.  For instance thetacrit negatives and positives modify the physical processes 
-that are used. All parameters removed from the namelist were introduced to the XML if not 
-already there.  Parameter dependancies were corrected.  Successfull test should show exactly 
-the same results between the test simulations and the existing mainline simulations.  NL parameters
-removed: RADINT, RADSLP, VMFACT_*, MPHOTO_*, BPHOTO_*, KW_*, GAMMA_*, D0_*, ALPHA_*, KLOWCO2IN, 
-RRFFACT, GROWTHRESP, LWIDTH_*, Q10_*, LTRANS_*, LREFLECT_*, ORIENT_*, CLUMP_*, DDMORT_CONST, GAMM, 
-GAMH, TPRANDTL, RIBMAX, LEAF_MAXWHC, ZROUGH**, TIME2CANOPY, UMIN*"
+TEST_DESCRIPTION="I did not write a sufficient description of what was tested."
 
 # The identifier may had indicated which version you branched from, but indicate it here
 # also
     
-VERSION_BRANCHED_FROM='r81'
+VERSION_BRANCHED_FROM='rXX'
 
 # Who is running this test?
-TESTER_NAME='Ryan Knox'
+TESTER_NAME='YOU'
 
 # Who was the developer(s) that actually made the changes to the code that is being tested?
-COMMITTER_NAME='Ryan Knox'
+COMMITTER_NAME='YOU AND/OR OTHERS'
 
 
 
@@ -589,7 +581,7 @@ mkdir -p ${VERSION}/S_dbug_${HIFRID[i]}
   echo ""                                                      >> $PBSFILE
   echo 'cd $PBS_O_WORKDIR'                                     >> $PBSFILE
   echo ""                                                      >> $PBSFILE
-  echo "${MAIN_EXE} -f ED2IN-${SITEPFX[i]}-MAIN"                            >> $PBSFILE
+  echo "${MAIN_EXE} -f ED2IN-${HIFRPFX[i]}-MAIN"                            >> $PBSFILE
   echo "" >> ${VERSION}/submit_batch.sh
   echo "qsub batch_main_${HIFRID[i]}" >> ${VERSION}/submit_batch.sh
 
@@ -606,7 +598,7 @@ mkdir -p ${VERSION}/S_dbug_${HIFRID[i]}
   echo ""                                               >> $PBSFILE
   echo 'cd $PBS_O_WORKDIR'                              >> $PBSFILE
   echo ""                                               >> $PBSFILE
-  echo "${TEST_EXE} -f ED2IN-${SITEPFX[i]}-TEST"                     >> $PBSFILE
+  echo "${TEST_EXE} -f ED2IN-${HIFRPFX[i]}-TEST"                     >> $PBSFILE
   echo "" >> ${VERSION}/submit_batch.sh
   echo "qsub batch_test_${HIFRID[i]}" >> ${VERSION}/submit_batch.sh
 
@@ -623,7 +615,7 @@ mkdir -p ${VERSION}/S_dbug_${HIFRID[i]}
   echo ""                                               >> $PBSFILE
   echo 'cd $PBS_O_WORKDIR'                              >> $PBSFILE
   echo ""                                               >> $PBSFILE
-  echo "${DBUG_EXE} -f ED2IN-${SITEPFX[i]}-DBUG"                     >> $PBSFILE
+  echo "${DBUG_EXE} -f ED2IN-${HIFRPFX[i]}-DBUG"                     >> $PBSFILE
   echo "" >> ${VERSION}/submit_batch.sh
   echo "qsub batch_dbug_${HIFRID[i]}" >> ${VERSION}/submit_batch.sh
 
@@ -649,7 +641,7 @@ do
 
   TEMPLATEMAIN=Templates/ED2IN-${GRIDPFX[i]}-MAIN
   TEMPLATETEST=Templates/ED2IN-${GRIDPFX[i]}-TEST
-  TEMPLATEDBUG=Templates/ED2IN-${SITEPFX[i]}-DBUG
+  TEMPLATEDBUG=Templates/ED2IN-${GRIDPFX[i]}-DBUG
 
   FILEMAIN=${VERSION}/ED2IN-${GRIDPFX[i]}-MAIN
   FILETEST=${VERSION}/ED2IN-${GRIDPFX[i]}-TEST

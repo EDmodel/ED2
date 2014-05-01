@@ -1345,8 +1345,8 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IMETTYPE    = 1
    NL%ISHUFFLE    = 0
-   NL%METCYC1     = 1969
-   NL%METCYCF     = 2008
+   NL%METCYC1     = 1998
+   NL%METCYCF     = 2002
    NL%IMETAVG     = 2
    NL%IMETRAD     = 2
    NL%INITIAL_CO2 = 378.
