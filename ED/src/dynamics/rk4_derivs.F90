@@ -1111,7 +1111,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    if (ksn > 0) then
       hflxsc       = initp%snowfac * initp%ggnet * initp%can_rhos * initp%can_cp           &
                    * (initp%sfcwater_tempk(ksn) - initp%can_temp)
-      sfcwater_ssh = qslif8(initp%can_shv,initp%sfcwater_tempk(ksn))
+      sfcwater_ssh = qslif8(initp%can_prss,initp%sfcwater_tempk(ksn))
       is_dew_cp    = sfcwater_ssh <= initp%can_shv
    else
       hflxsc       = 0.d0

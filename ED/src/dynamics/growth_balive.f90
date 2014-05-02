@@ -949,7 +949,7 @@ module growth_balive
       !------------------------------------------------------------------------------------!
       if (time_to_flush) then 
          select case (cpatch%phenology_status(ico))
-         case (1)
+         case (0,1)
             !------------------------------------------------------------------------------!
             !     There are leaves, we are not actively dropping leaves and we're off      !
             ! allometry.  Here we will compute the maximum amount that can go to balive    !
@@ -1629,7 +1629,7 @@ module growth_balive
                       (cpatch%phenology_status(ico) == 1) 
 
       if (carbon_balance > 0.0 .or. time_to_flush) then 
-         if (cpatch%phenology_status(ico) == 1) then
+         if (cpatch%phenology_status(ico) == 1 .or. cpatch%phenology_status(ico) == 0) then
             !------------------------------------------------------------------------------!
             ! There are leaves, we are not actively dropping leaves and we're off          !
             ! allometry.  Here we will compute the maximum amount that can go to balive    !

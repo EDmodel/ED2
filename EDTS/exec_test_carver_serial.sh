@@ -17,6 +17,7 @@ VERSION="ENTER_VERSION"
 
 TEST_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85_rgknox/ED/build/ed_2.1-opt
 DBUG_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85_rgknox/ED/build/ed_2.1-dbg
+
 MAIN_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r84_master/ED/build/ed_2.1-opt
 
 # Provide the path where the test-suit driver archive is stored
@@ -45,7 +46,7 @@ USE_ATA=Y     #Atacama Desert SOI
 USE_PET=Y     #Petrolina SOI
 USE_HIP=Y     #Petrolina High Frequency Detailed Short SOI
 USE_HIM=Y     #Manaus High Frequency Detailed Short SOI
-USE_RJG=Y     #Gridded 12x12 simulation centerd on Reserva Jaru
+USE_RJG=Y     #Gridded 9x9 simulation centerd on Reserva Jaru
 
 # How many cores do you want to use for the gridded simulations
 # Currently there are 3 (RJG-MAIN RJG-TEST and RJG-DBUG)
