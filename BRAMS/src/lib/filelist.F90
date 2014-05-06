@@ -18,23 +18,24 @@
 ! filelist.  This version uses some that just uses dir if this is a Windows run, or some   !
 ! C code otherwise.                                                                        !
 !------------------------------------------------------------------------------------------!
-subroutine rams_filelist(fnames,file_prefix,nfile)
+subroutine rams_filelist(nfmax,fnames,file_prefix,nfile)
    use grid_dims, only : str_len  & ! intent(in)
                        , maxfiles ! ! intent(in)
    implicit none
 
    !------ Arguments. ---------------------------------------------------------------------!
-   integer                              , intent(out)    :: nfile
-   character(len=str_len), dimension(*) , intent(inout)  :: fnames
-   character(len=str_len)               , intent(inout)  :: file_prefix
+   integer                                  , intent(in)     :: nfmax
+   integer                                  , intent(out)    :: nfile
+   character(len=str_len), dimension(nfmax) , intent(inout)  :: fnames
+   character(len=str_len)                   , intent(inout)  :: file_prefix
    !------ Local variables. ---------------------------------------------------------------!
-   character(len=maxfiles*str_len)                 :: filelist
-   character(len=str_len)                          :: prefix
-   character(len=str_len)                          :: myform
-   integer, dimension(maxfiles)                    :: indices
-   integer                                         :: iprelen
-   integer                                         :: nf
-   integer                                         :: n
+   character(len=maxfiles*str_len)                           :: filelist
+   character(len=str_len)                                    :: prefix
+   character(len=str_len)                                    :: myform
+   integer, dimension(maxfiles)                              :: indices
+   integer                                                   :: iprelen
+   integer                                                   :: nf
+   integer                                                   :: n
    !---------------------------------------------------------------------------------------!
 
 

@@ -345,6 +345,7 @@ OBJ_MODEL =                         \
 	met_driver_coms.o           \
 	mortality.o                 \
 	multiple_scatter.o          \
+	old_twostream_rad.o         \
 	optimiz_coms.o              \
 	phenology_aux.o             \
 	phenology_coms.o            \

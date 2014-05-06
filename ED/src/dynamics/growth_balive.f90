@@ -10,7 +10,7 @@ module growth_balive
 
 
 
-   !==============================================================1=========================!
+   !=======================================================================================!
    !=======================================================================================!
    !     This subroutine will update the alive biomass, and compute the respiration terms  !
    ! other than leaf respiration.                                                          !
@@ -38,7 +38,8 @@ module growth_balive
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
-      use ed_misc_coms    , only : igrass                 ! ! intent(in)
+      use ed_misc_coms    , only : igrass                 & ! intent(in)
+                                 , ibigleaf               ! ! intent(in)
       use budget_utils    , only : update_budget          ! ! sub-routine
 
       implicit none
@@ -241,15 +242,28 @@ module growth_balive
                   end if
                   
                   !------------------------------------------------------------------------!
-                  !      Do mortality --- note that only frost mortality changes daily.    !
-                  ! Here we do not add the 5th mortality rate (disturbance), because this  !
-                  ! mortality creates a new patch instead of reducing the area.  The 5th   !
-                  ! mortality is for diagnostic purposes only.                             !
+                  !      Update mortality rates.  Notice that the only mortality rate that !
+                  ! changes daily is the frost mortality, and the disturbance mortality is !
+                  ! not updated here (it is updated in the main disturbance procedure).    !
+                  !                                                                        !
+                  !      How we integrate mortality also depends on whether we are running !
+                  ! size-and-age (or size-only) structure, or big leaf.  Big leaf doesn't  !
+                  ! create new patches, thus we also include the disturbance mortality     !
+                  ! here.  Loss of plants in size-and-age is represented by creating a new !
+                  ! patch, so it shouldn't be included here.  Size-only is done by         !
+                  ! creating and merging the patch back, so it should not be added here    !
+                  ! either.                                                                !
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico,csite%avg_daily_temp(ipa)            &
                                       ,csite%age(ipa))
-                  dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
-                  dndt     = dlnndt * cpatch%nplant(ico)
+                  select case (ibigleaf)
+                  case (0)
+                     dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  case (1)
+                     dlnndt   = - sum(cpatch%mort_rate(1:5,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  end select
                   !------------------------------------------------------------------------!
 
                   !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
@@ -332,6 +346,7 @@ module growth_balive
       use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           ! ! subroutine
+      use ed_misc_coms    , only : ibigleaf               ! ! intent(in)
       use mortality       , only : mortality_rates        ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -357,6 +372,8 @@ module growth_balive
       real                          :: carbon_balance_moistmax
       real                          :: balive_in
       real                          :: nitrogen_supply
+      real                          :: dndt
+      real                          :: dlnndt
       real                          :: old_leaf_hcap
       real                          :: old_wood_hcap
       real                          :: nitrogen_uptake
@@ -402,6 +419,9 @@ module growth_balive
                   !    For the no vegetation dynamics case, we update the carbon balance   !
                   ! but we do NOT update the living tissues.                               !
                   !------------------------------------------------------------------------!
+                  cpatch%cb         (13,ico) = cpatch%cb                  (13,ico)         &
+                                             - cpatch%leaf_maintenance       (ico)         &
+                                             - cpatch%root_maintenance       (ico)
                   cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax         (13,ico)         &
                                              - cpatch%leaf_maintenance       (ico)         &
                                              - cpatch%root_maintenance       (ico)
@@ -431,12 +451,6 @@ module growth_balive
 
                   cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
                                          - cpatch%storage_respiration(ico)
-
-                  !------------------------------------------------------------------------!
-                  !     When storage carbon is lost, allow the associated nitrogen to go   !
-                  ! to litter in order to maintain prescribed C2N ratio.                   !
-                  !------------------------------------------------------------------------!
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa)
 
                   !------------------------------------------------------------------------!
                   !      Calculate actual, potential and maximum carbon balances.          !
@@ -518,6 +532,20 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ipa,ico,csite%avg_daily_temp(ipa)            &
                                       ,csite%age(ipa))
+                  select case (ibigleaf)
+                  case (0)
+                     dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  case (1)
+                     dlnndt   = - sum(cpatch%mort_rate(1:5,ico))
+                     dndt     = dlnndt * cpatch%nplant(ico)
+                  end select
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
+                  cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico) + dndt   * tfact
+                  cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico) + dlnndt * tfact
 
                end do
 
@@ -572,7 +600,7 @@ module growth_balive
       !------------------------------------------------------------------------------------!
       !     Only do the transfer if leaves exist.                                          !
       !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(ico) == 2) return
+      if (cpatch%phenology_status(ico) == -2) return
      
       !----- Alias for pft type. ----------------------------------------------------------!
       ipft = cpatch%pft(ico)
@@ -714,7 +742,6 @@ module growth_balive
                                 , day_sec            ! ! intent(in)
       use ed_misc_coms   , only : current_time       ! ! intent(in)
       use ed_max_dims    , only : n_pft              ! ! intent(in)
-      use physiology_coms, only : iddmort_scheme     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)          , target      :: cpatch
@@ -732,7 +759,6 @@ module growth_balive
       real                                   :: growth_respiration_pot
       real                                   :: growth_respiration_lightmax
       real                                   :: growth_respiration_moistmax
-      real                                   :: storage_offset
       integer                                :: ipft
       !----- Local constants. -------------------------------------------------------------!
       logical                  , parameter   :: print_debug = .false.
@@ -742,25 +768,6 @@ module growth_balive
 
       !----- Alias for PFT type. ----------------------------------------------------------!
       ipft = cpatch%pft(ico)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Compute the storage offset for carbon balance.  By including this term we     !
-      ! make sure that plants won't start dying as soon as they shed their leaves, but     !
-      ! only when they are in negative carbon balance and without storage.  This is done   !
-      ! only when iddmort_scheme is set to 1.                                              !
-      !------------------------------------------------------------------------------------!
-      select case (iddmort_scheme)
-      case (0)
-         !------ Storage is not accounted. ------------------------------------------------!
-         storage_offset = 0
-         !---------------------------------------------------------------------------------!
-      case (1)
-         !------ Storage is accounted. ----------------------------------------------------!
-         storage_offset = cpatch%bstorage(ico)
-         !---------------------------------------------------------------------------------!
-      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -821,28 +828,24 @@ module growth_balive
       end if
 
       !----- Carbon balances for mortality. -----------------------------------------------!
-      cpatch%cb         (13,ico) = cpatch%cb         (13,ico) + carbon_balance             &
-                                                              + storage_offset
-      cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax(13,ico) + carbon_balance_lightmax    &
-                                                              + storage_offset
-      cpatch%cb_moistmax(13,ico) = cpatch%cb_moistmax(13,ico) + carbon_balance_moistmax    &
-                                                              + storage_offset
+      cpatch%cb         (13,ico) = cpatch%cb         (13,ico) + carbon_balance
+      cpatch%cb_lightmax(13,ico) = cpatch%cb_lightmax(13,ico) + carbon_balance_lightmax
+      cpatch%cb_moistmax(13,ico) = cpatch%cb_moistmax(13,ico) + carbon_balance_moistmax
 
       if (print_debug) then
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,19(1x,a18))')                                    &
+            write (unit=30+ipft,fmt='(a10,18(1x,a18))')                                    &
                '      TIME','             PATCH','            COHORT','            NPLANT' &
                            ,'          CB_TODAY','       GROWTH_RESP','        VLEAF_RESP' &
                            ,'         TODAY_GPP','TODAY_GPP_LIGHTMAX','TODAY_GPP_MOISTMAX' &
                            ,'   TODAY_LEAF_RESP','   TODAY_ROOT_RESP',' CB_LIGHTMAX_TODAY' &
                            ,' CB_MOISTMAX_TODAY','                CB','       CB_LIGHTMAX' &
-                           ,'       CB_MOISTMAX','  LEAF_MAINTENANCE','  ROOT_MAINTENANCE' &
-                           ,'    STORAGE_OFFSET'
+                           ,'       CB_MOISTMAX','  LEAF_MAINTENANCE','  ROOT_MAINTENANCE'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),17(1x,es18.5))')               &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),16(1x,es18.5))')               &
               current_time%month,'/',current_time%date,'/',current_time%year               &
              ,ipa,ico,cpatch%nplant(ico),carbon_balance,cpatch%growth_respiration(ico)     &
              ,cpatch%vleaf_respiration(ico),cpatch%today_gpp(ico)                          &
@@ -850,7 +853,7 @@ module growth_balive
              ,cpatch%today_leaf_resp(ico),cpatch%today_root_resp(ico)                      &
              ,carbon_balance_lightmax,carbon_balance_moistmax,cpatch%cb(13,ico)            &
              ,cpatch%cb_lightmax(13,ico),cpatch%cb_moistmax(13,ico)                        &
-             ,cpatch%leaf_maintenance(ico),cpatch%root_maintenance(ico),storage_offset
+             ,cpatch%leaf_maintenance(ico),cpatch%root_maintenance(ico)
       end if
 
       return
@@ -946,7 +949,7 @@ module growth_balive
       !------------------------------------------------------------------------------------!
       if (time_to_flush) then 
          select case (cpatch%phenology_status(ico))
-         case (1)
+         case (0,1)
             !------------------------------------------------------------------------------!
             !     There are leaves, we are not actively dropping leaves and we're off      !
             ! allometry.  Here we will compute the maximum amount that can go to balive    !
@@ -1213,7 +1216,7 @@ module growth_balive
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
-         case (-1,2)
+         case (-1,-2)
             !------------------------------------------------------------------------------!
             !      Plants were already shedding leaves.  We swap the order here and remove !
             ! living tissues first, and only if there is nothing left that we remove       !
@@ -1626,7 +1629,7 @@ module growth_balive
                       (cpatch%phenology_status(ico) == 1) 
 
       if (carbon_balance > 0.0 .or. time_to_flush) then 
-         if (cpatch%phenology_status(ico) == 1) then
+         if (cpatch%phenology_status(ico) == 1 .or. cpatch%phenology_status(ico) == 0) then
             !------------------------------------------------------------------------------!
             ! There are leaves, we are not actively dropping leaves and we're off          !
             ! allometry.  Here we will compute the maximum amount that can go to balive    !

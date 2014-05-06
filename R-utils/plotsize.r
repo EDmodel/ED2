@@ -3,16 +3,23 @@
 #    This function that defines the size of the figure to be plotted in case of maps.      #
 # In case the plot is a map, it correct sizes so the map doesn't look distorted.           #
 #------------------------------------------------------------------------------------------#
-plotsize = function( proje                 #  Map projection? [T|F]
-                   , limlon    = NULL      #  Longitude range, if proje = TRUE
-                   , limlat    = NULL      #  Latitude range, if proje = TRUE
-                   , deg       = TRUE      #  Are longitude and latitude in degrees?
-                   , stdheight = NULL      #  Standard height
-                   , stdwidth  = NULL      #  Standard 
-                   , extendfc  = FALSE     #  Extend width for filled.contour [T|F]
-                   , paper     = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
+plotsize = function( proje                  #  Map projection? [T|F]
+                   , limlon     = NULL      #  Longitude range, if proje = TRUE
+                   , limlat     = NULL      #  Latitude range, if proje = TRUE
+                   , deg        = TRUE      #  Are longitude and latitude in degrees?
+                   , stdheight  = NULL      #  Standard height
+                   , stdwidth   = NULL      #  Standard 
+                   , extendfc   = FALSE     #  Extend width for filled.contour [T|F]
+                                            #  TRUE/FALSE  -- True means yes for longitude
+                                            #  "lon","lat" -- will extend the specific
+                                            #   dimension
+                   , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
+                   , landscape  = TRUE      #  Landscape? (if not swap width and height)
+                   , scale.fac  = 0.8       #  Scaling factor to adjust sizes
                    ){
 
+
+   null.std = is.null(stdheight) | is.null(stdwidth)
 
    #---------------------------------------------------------------------------------------#
    #     Check whether projection is TRUE or false.  In case it is TRUE, limlon and limlat #
@@ -54,25 +61,29 @@ plotsize = function( proje                 #  Map projection? [T|F]
    if (paper == "special") { 
       stdratio = max(c(stdwidth,stdheight))/min(c(stdwidth,stdheight))
    }else if (paper == "letter"){
-      stdwidth  =  0.8 * 11.0
-      stdheight =  0.8 *  8.5
+      stdwidth  =  scale.fac * 11.0
+      stdheight =  scale.fac *  8.5
       stdratio  = 11.0 /  8.5
    }else if (paper == "a4"){
-      stdwidth  =  0.8 * 29.7 / 2.54
-      stdheight =  0.8 * 21.0 / 2.54
+      stdwidth  =  scale.fac * 29.7 / 2.54
+      stdheight =  scale.fac * 21.0 / 2.54
       stdratio  = 29.7 / 21.0
    }else if (paper == "legal"){
-      stdwidth  =  0.8 * 14.0
-      stdheight =  0.8 *  8.5
+      stdwidth  =  scale.fac * 14.0
+      stdheight =  scale.fac *  8.5
       stdratio  = 14.0 /  8.5
+   }else if (paper == "long"){
+      stdwidth  =  scale.fac * 16.0
+      stdheight =  scale.fac *  9.5
+      stdratio  = 16.0 /  9.5
    }else if (paper == "executive"){
-      stdwidth  =  0.8  * 10.25
-      stdheight =  0.8  *  7.25
+      stdwidth  =  scale.fac * 10.25
+      stdheight =  scale.fac *  7.25
       stdratio  = 10.25 /  7.25
    }else{
       warning(paste("Unknown paper size (",paper,").  Using letter instead.",sep=""))
-      stdwidth  =  0.8 * 11.0
-      stdheight =  0.8 *  8.5
+      stdwidth  =  scale.fac * 11.0
+      stdheight =  scale.fac *  8.5
       stdratio  = 11.0 /  8.5
    }#end if 
    #---------------------------------------------------------------------------------------#
@@ -84,10 +95,18 @@ plotsize = function( proje                 #  Map projection? [T|F]
    #---------------------------------------------------------------------------------------#
    if (proje){
       #----- Extend the width in case this will be used for filled.contour. ---------------#
-      if (extendfc){
-         width.fac = 1.0 + 1/6
+      if (is.logical(extendfc)){
+         width.fac  = 1.0 + 1/6 * as.numeric(extendfc)
+         height.fac = 1.0
+      }else if (tolower(substring(extendfc,1,2)) == "lo"){
+         width.fac  = 1.0 + 1/6
+         height.fac = 1.0
+      }else if (tolower(substring(extendfc,1,2)) == "la"){
+         width.fac  = 1.0
+         height.fac = 1.0 + 1/6
       }else{
-         width.fac = 1.0
+         width.fac  = 1.0
+         height.fac = 1.0
       }#end if extendfc
       #------------------------------------------------------------------------------------#
 
@@ -108,10 +127,10 @@ plotsize = function( proje                 #  Map projection? [T|F]
       #     Fix the width or height to account for the sought ratio.                       #
       #------------------------------------------------------------------------------------#
       if (ratio >= stdratio){ 
-         height = stdwidth / ratio
+         height = stdwidth * height.fac / ratio
          width  = width.fac * stdwidth
       }else{
-         height = stdheight
+         height = stdheight * height.fac
          width  = height * ratio * width.fac
       }#end if(actualratio >= stdratio)
       #------------------------------------------------------------------------------------#
@@ -125,6 +144,19 @@ plotsize = function( proje                 #  Map projection? [T|F]
       #------------------------------------------------------------------------------------#
 
    }#end if (proje)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Swap height and width if portrait.                                              #
+   #---------------------------------------------------------------------------------------#
+   if (! landscape & null.std ){
+      phold = height
+      height = width
+      width  = phold
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 

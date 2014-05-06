@@ -8,8 +8,8 @@ h2dbh = function(h,ipft){
      zpft = ipft
    }#end if
 
-   tropo = pft$tropical[zpft] & (iallom == 0 | iallom == 1)
-   tropn = pft$tropical[zpft] & iallom == 2
+   tropo = pft$tropical[zpft] & iallom %in% c(0,1)
+   tropn = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe = ! pft$tropical[zpft]
 
    dbh = NA * h
@@ -43,8 +43,8 @@ dbh2h = function(ipft,dbh){
    large         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
    dbhuse[large] = pft$dbh.crit[zpft[large]]
 
-   tropo         = pft$tropical[zpft] & (iallom == 0 | iallom == 1)
-   tropn         = pft$tropical[zpft] & iallom == 2
+   tropo         = pft$tropical[zpft] & iallom %in% c(0,1)
+   tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe         = ! pft$tropical[zpft]
 
    h         = NA * dbh
@@ -74,11 +74,11 @@ dbh2bl = function(dbh,ipft){
      zpft = ipft
    }#end if
 
-   dbhuse       = dbh
-   huge         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
-   dbhuse[huge] = pft$dbh.crit[zpft[huge]]
-
-   bleaf = pft$b1Bl [zpft] /C2B * dbhuse ^ pft$b2Bl [zpft] 
+   dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   bleaf  = ifelse( dbhuse %<% pft$dbh.adult[zpft]
+                  , pft$b1Bl.small[zpft] /C2B * dbhuse ^ pft$b2Bl.small[zpft]
+                  , pft$b1Bl.large[zpft] /C2B * dbhuse ^ pft$b2Bl.large[zpft]
+                  )#end ifelse
 
    return(bleaf)
 }# end function dbh2bl
@@ -138,8 +138,7 @@ dbh2ca = function(dbh,ipft){
    crown         = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
 
    #----- Local LAI / Crown area should never be less than one. ---------------------------#
-   small        = crown < loclai
-   crown[small] = loclai[small]
+   crown = pmin(crown,loclai)
 
    return(crown)
 }#end function dbh2ca
@@ -155,17 +154,45 @@ dbh2ca = function(dbh,ipft){
 #==========================================================================================#
 #    Wood area index from Ahrends et al. (2010).                                           #
 #------------------------------------------------------------------------------------------#
-dbh2wai = function(dbh,ipft){
+dbh2wai = function(dbh,ipft,chambers=FALSE){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
      zpft = ipft
    }#end if
 
-   dbhuse        = dbh
-   large         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
-   dbhuse[large] = pft$dbh.crit[zpft[large]]
-   wai           = pft$b1WAI[zpft] * dbhuse ^ pft$b2WAI[zpft]
+
+   dbh.use  = pmin(pft$dbh.crit[zpft],dbh)
+   #---------------------------------------------------------------------------------------#
+   #     Chambers method.                                                                  #
+   #---------------------------------------------------------------------------------------#
+   if (chambers){
+      height   = dbh2h(ipft=zpft,dbh=dbh.use)
+      wdens    = ifelse(is.na(pft$rho[zpft]),0.6,pft$rho[zpft])
+      hcb      = h2crownbh(height=height,ipft=zpft)
+      dcb      = 1.045676 * dbh/hcb^0.091
+      dcb.use  = 1.045676 * dbh.use/hcb^0.091
+      abole    = 2.5e-3 * pi * (dbh.use+dcb.use) * sqrt(4*hcb^2-1.e-4*(dbh.use-dcb.use)^2)
+      vbole    = 1.0e-4 * pi * hcb * (dbh.use^2+dbh.use*dcb.use+dcb.use^2) / 12.
+      bbole    = 1000. * wdens * vbole / C2B
+      bleaf    = dbh2bl(dbh=dbh.use,ipft=zpft)
+      bsapwood = bleaf * pft$qsw[zpft] * height
+      bdead    = dbh2bd(dbh=dbh.use,ipft=zpft)
+      agb.wood = pft$agf.bs[zpft] * (bsapwood + bdead)
+      bbranch  = agb.wood - bbole
+      dbmin    = 0.2 + 0 * dbh.use
+      kterm    = 0.4 * bbranch*C2B/(pi*wdens*(dcb.use-dbmin))
+      abranch  = pi*kterm*log(dcb.use/dbmin)
+      wai      = ( abole + abranch )
+      wai      = wai * dbh2ca(dbh=pft$dbh.crit[zpft],ipft=zpft)/max(wai)
+   }else if(! iallom %in% c(3)){
+      wai      = pft$b1WAI[zpft] * dbh.use ^ pft$b2WAI[zpft]
+   }else{
+      wai      = 0.11 * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
+   }#end if
+   if (any(is.na(wai))) browser()
+   #---------------------------------------------------------------------------------------#
+   
 
    return(wai)
 }#end function dbh2ca
@@ -198,13 +225,13 @@ dbh2vol = function(hgt,dbh,ipft){
 #    Rooting depth.                                                                        #
 #------------------------------------------------------------------------------------------#
 dbh2rd = function(hgt,dbh,ipft){
-   if (iallom == 0){
+   if (iallom %in% c(0)){
       #------------------------------------------------------------------------------------#
       #    Original ED-2.1 (I don't know the source for this equation, though).            #
       #------------------------------------------------------------------------------------#
       vol  = dbh2vol(hgt,dbh,ipft)
       rd   = pft$b1Rd[ipft] * vol ^ pft$b2Rd[ipft]
-   }else if (iallom == 1 || iallom == 2){
+   }else if (iallom %in% c(1,2,3)){
        #-----------------------------------------------------------------------------------#
        #    This is just a test allometry, that imposes root depth to be 0.5 m for         #
        # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.             #
@@ -230,13 +257,10 @@ dbh2rd = function(hgt,dbh,ipft){
 # Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree           #
 #     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.          #
 #------------------------------------------------------------------------------------------#
-h2crownbh = function (height,ipft){
-   crown_length = pft$b1Cl[ipft] * height ^ pft$b2Cl[ipft]
-   h2crownbh    = height - crown_length
-
-   h2crownbh[is.finite(h2crowndbh) & h2crownbh < 0.05] = 0.05
-
-   return(h2crownbh)
+h2crownbh <<- function (height,ipft){
+   crown.length = pft$b1Cl[ipft] * height ^ pft$b2Cl[ipft]
+   ans          = pmax(0.05,height - crown.length)
+   return(ans)
 }#end function h2crownbh
 #==========================================================================================#
 #==========================================================================================#

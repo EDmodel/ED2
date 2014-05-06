@@ -1000,6 +1000,7 @@ subroutine ed_masterput_worklist_info(par_run)
    use ed_state_vars, only : gdpy                  & ! intent(in)
                            , py_off                ! ! intent(in)
    use mem_polygons , only : maxsite               ! ! intent(in)
+   use ed_mem_alloc , only : ed_memory_allocation  ! ! subroutine
    implicit none
    !------ Pre-compiled options. ----------------------------------------------------------!
    include 'mpif.h'
@@ -1124,7 +1125,7 @@ subroutine ed_masterput_worklist_info(par_run)
    !     So here it will be 2 (node-style) if it is a parallel run, and 0 if it is a       !
    ! serial run.                                                                           !
    !---------------------------------------------------------------------------------------!
-   call ed_mem_alloc(2*par_run) 
+   call ed_memory_allocation(2*par_run) 
    allocate (work_v(ngrids))
    do ifm=1,ngrids
 

@@ -398,6 +398,11 @@ numutils.o: $(ED_UTILS)/numutils.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+old_twostream_rad.o : $(ED_DYNAMICS)/old_twostream_rad.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 optimiz_coms.o : $(ED_MEMORY)/optimiz_coms.f90
 	/bin/rm -f $(<F:.f90=.f90) 
 	/bin/cp -f $< $(<F:.f90=.f90)
@@ -531,7 +536,7 @@ update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
 utils_c.o: $(ED_UTILS)/utils_c.c
 	/bin/rm -f $(<F:.c=.c)
 	/bin/cp -f $< $(<F:.c=.c)
-	$(CXX_COMMAND) $<
+	$(CXX_COMMAND) $(<F:.c=.c)
 
 utils_f.o: $(ED_UTILS)/utils_f.f90
 	/bin/rm -f $(<F:.f90=.f90)

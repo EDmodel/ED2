@@ -60,6 +60,14 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                   , ez                         & ! intent(in)
                                   , vh2vr                      & ! intent(in)
                                   , vh2dh                      ! ! intent(in)
+   use soil_coms           , only : soil_rough                 & ! intent(in)
+                                  , ny07_eq04_a                & ! intent(in)
+                                  , ny07_eq04_m                & ! intent(in)
+                                  , tiny_sfcwater_mass         ! ! intent(in)
+   use consts_coms         , only : wdns                       & ! intent(in)
+                                  , fsdns                      & ! intent(in)
+                                  , fsdnsi                     ! ! intent(in)
+   
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -71,6 +79,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    type(patchtype) , pointer    :: cpatch
    real                         :: weight
    real                         :: weight_sum
+   real                         :: total_sfcw_mass
+   real                         :: bulk_sfcw_dens
    integer                      :: ico
    integer                      :: k
    integer                      :: ksn
@@ -81,9 +91,12 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Find the total snow depth. ------------------------------------------------------!
    ksn = csite%nlev_sfcwater(ipa)
    csite%total_sfcw_depth(ipa) = 0.
+   total_sfcw_mass             = 0.
    do k=1,ksn
       csite%total_sfcw_depth(ipa) = csite%total_sfcw_depth(ipa)                            &
                                   + csite%sfcwater_depth(k,ipa)
+      total_sfcw_mass             = total_sfcw_mass                                        &
+                                  + csite%sfcwater_mass(k,ipa)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -163,8 +176,26 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
 
 
-   !----- Find the fraction of vegetation buried in snow. ---------------------------------!
-   csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   !---------------------------------------------------------------------------------------!
+   !     Find the fraction of the canopy covered in snow.  I could not find any            !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
+   !---------------------------------------------------------------------------------------!
+   ! csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   if (total_sfcw_mass > tiny_sfcwater_mass) then
+      bulk_sfcw_dens     = max( fsdns, min( wdns                                           &
+                              , total_sfcw_mass / csite%total_sfcw_depth(ipa)))
+      csite%snowfac(ipa) = max( 0.0, min( 0.99                                             &
+                              , tanh( csite%total_sfcw_depth(ipa)                          &
+                                    / ( ny07_eq04_a * soil_rough                           &
+                                      * (bulk_sfcw_dens * fsdnsi) ** ny07_eq04_m ) ) ) )
+   else
+      csite%snowfac(ipa) = 0.0
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -670,18 +701,16 @@ subroutine update_polygon_derived_props(cgrid)
                cgrid%nplant          (p,d,ipy) = cgrid%nplant          (p,d,ipy)           &
                                                + cpatch%nplant             (ico)           &
                                                * patch_wgt
+               cgrid%lai             (p,d,ipy) = cgrid%lai             (p,d,ipy)           &
+                                               + cpatch%lai                (ico)           &
+                                               * patch_wgt
+               cgrid%wai             (p,d,ipy) = cgrid%wai             (p,d,ipy)           &
+                                               + cpatch%wai                (ico)           &
+                                               * patch_wgt
                cgrid%agb             (p,d,ipy) = cgrid%agb             (p,d,ipy)           &
                                                + cpatch%agb                (ico)           &
                                                * cpatch%nplant             (ico)           &
                                                * patch_wgt
-               cgrid%lai             (p,d,ipy) = cgrid%lai             (p,d,ipy)           &
-                                               + cpatch%lai                (ico)           &
-!                                               * cpatch%nplant             (ico)
-                                               *patch_wgt   ! RGK: MLOr340
-               cgrid%wai             (p,d,ipy) = cgrid%wai             (p,d,ipy)           &
-                                               + cpatch%wai                (ico)           &
-!                                               * cpatch%nplant             (ico)
-                                               *patch_wgt    ! RGK: MLOr340
                cgrid%basal_area      (p,d,ipy) = cgrid%basal_area      (p,d,ipy)           &
                                                + cpatch%basarea            (ico)           &
                                                * cpatch%nplant             (ico)           &
@@ -1005,7 +1034,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                                        ,csite%soil_fracliq(nzg,ipa)                        &
                                        ,csite%sfcwater_tempk(nlsw1,ipa)                    &
                                        ,csite%sfcwater_fracliq(nlsw1,ipa)                  &
-                                       ,csite%can_prss(ipa)                                &
+                                       ,csite%snowfac(ipa),csite%can_prss(ipa)             &
                                        ,csite%can_shv(ipa),csite%ground_shv(ipa)           &
                                        ,csite%ground_ssh(ipa),csite%ground_temp(ipa)       &
                                        ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
@@ -1251,6 +1280,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
       cpatch%fmean_wshed_lg      (ico) = cpatch%fmean_wshed_lg      (ico) * mult
       cpatch%fmean_rshort_w      (ico) = cpatch%fmean_rshort_w      (ico) * mult
       cpatch%fmean_rlong_w       (ico) = cpatch%fmean_rlong_w       (ico) * mult
+      cpatch%fmean_rad_profile (:,ico) = cpatch%fmean_rad_profile (:,ico) * mult
       cpatch%fmean_sensible_wc   (ico) = cpatch%fmean_sensible_wc   (ico) * mult
       cpatch%fmean_vapor_wc      (ico) = cpatch%fmean_vapor_wc      (ico) * mult
       cpatch%fmean_intercepted_aw(ico) = cpatch%fmean_intercepted_aw(ico) * mult
@@ -1276,6 +1306,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
          cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico) * mult
          cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico) * mult
          cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico) * mult
+         cpatch%dmean_rad_profile (:,ico) = cpatch%dmean_rad_profile (:,ico) * mult
          cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico) * mult
          cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico) * mult
          cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico) * mult
@@ -1303,6 +1334,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
          cpatch%mmean_wshed_lg      (ico) = cpatch%mmean_wshed_lg      (ico) * mult
          cpatch%mmean_rshort_w      (ico) = cpatch%mmean_rshort_w      (ico) * mult
          cpatch%mmean_rlong_w       (ico) = cpatch%mmean_rlong_w       (ico) * mult
+         cpatch%mmean_rad_profile (:,ico) = cpatch%mmean_rad_profile (:,ico) * mult
          cpatch%mmean_sensible_wc   (ico) = cpatch%mmean_sensible_wc   (ico) * mult
          cpatch%mmean_vapor_wc      (ico) = cpatch%mmean_vapor_wc      (ico) * mult
          cpatch%mmean_intercepted_aw(ico) = cpatch%mmean_intercepted_aw(ico) * mult
@@ -1337,6 +1369,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
          cpatch%qmean_wshed_lg      (:,ico) = cpatch%qmean_wshed_lg      (:,ico) * mult
          cpatch%qmean_rshort_w      (:,ico) = cpatch%qmean_rshort_w      (:,ico) * mult
          cpatch%qmean_rlong_w       (:,ico) = cpatch%qmean_rlong_w       (:,ico) * mult
+         cpatch%qmean_rad_profile (:,:,ico) = cpatch%qmean_rad_profile (:,:,ico) * mult
          cpatch%qmean_sensible_wc   (:,ico) = cpatch%qmean_sensible_wc   (:,ico) * mult
          cpatch%qmean_vapor_wc      (:,ico) = cpatch%qmean_vapor_wc      (:,ico) * mult
          cpatch%qmean_intercepted_aw(:,ico) = cpatch%qmean_intercepted_aw(:,ico) * mult

@@ -245,11 +245,12 @@ subroutine leaf3_timestep()
                                                ,.true.)
 
             call leaf3_solve_veg(ip,nzs,leaf_g(ngrid)%leaf_class               (  i,j,ip)  &
-                                       ,leaf_g(ngrid)%veg_height               (  i,j,ip)  &
+                                       ,leaf_g(ngrid)%soil_rough               (  i,j,ip)  &
                                        ,leaf_g(ngrid)%patch_area               (  i,j,ip)  &
                                        ,leaf_g(ngrid)%veg_fracarea             (  i,j,ip)  &
                                        ,leaf_g(ngrid)%veg_tai                  (  i,j,ip)  &
                                        ,leaf_g(ngrid)%sfcwater_nlev            (  i,j,ip)  &
+                                       ,leaf_g(ngrid)%sfcwater_mass            (:,i,j,ip)  &
                                        ,leaf_g(ngrid)%sfcwater_depth           (:,i,j,ip)  &
                                        ,.true.)
 
@@ -529,11 +530,12 @@ subroutine leaf3_timestep()
                                           ,leaf_g(ngrid)%sfcwater_depth     (  :,i,j,ip)   &
                                           ,.false.)
                   call leaf3_solve_veg(ip,nzs,leaf_g(ngrid)%leaf_class      (    i,j,ip)   &
-                                             ,leaf_g(ngrid)%veg_height      (    i,j,ip)   &
+                                             ,leaf_g(ngrid)%soil_rough      (    i,j,ip)   &
                                              ,leaf_g(ngrid)%patch_area      (    i,j,ip)   &
                                              ,leaf_g(ngrid)%veg_fracarea    (    i,j,ip)   &
                                              ,leaf_g(ngrid)%veg_tai         (    i,j,ip)   &
                                              ,leaf_g(ngrid)%sfcwater_nlev   (    i,j,ip)   &
+                                             ,leaf_g(ngrid)%sfcwater_mass   (  :,i,j,ip)   &
                                              ,leaf_g(ngrid)%sfcwater_depth  (  :,i,j,ip)   &
                                              ,.false.)
 

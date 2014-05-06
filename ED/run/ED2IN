@@ -303,8 +303,13 @@ $ED_NL
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
+<<<<<<< HEAD
+   NL%FFILOUT = '/mypath/ts67_eft/analy/santarem_km67'
+   NL%SFILOUT = '/mypath/ts67_eft/histo/santarem_km67'
+=======
     NL%FFILOUT = '/projectnb/cheas/afshin/analy/duke'
     NL%SFILOUT = '/projectnb/cheas/afshin/histo/duke'
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 
@@ -383,7 +388,11 @@ $ED_NL
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
+<<<<<<< HEAD
+   NL%SFILIN   = '/n/gstore/Labs/moorcroft_data_protected/mlongo/data/ed2_data/site_bio_data/s67_default.'
+=======
    NL%SFILIN   = '/usr2/postdoc/apourmok/duke/duke3.'
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 
@@ -445,7 +454,11 @@ $ED_NL
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
    !---------------------------------------------------------------------------------------!
+<<<<<<< HEAD
+   NL%NSLCON   = 16      ! Default soil type if ISOILFLG = 2 (choices below:)
+=======
    NL%NSLCON   = 11      ! Default soil type if ISOILFLG = 2 (choices below:)
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 
@@ -477,7 +490,11 @@ $ED_NL
    !   Soil type 21 is a special case in which we use the albedo method that used to be    !
    ! the default in ED-2.1.                                                                !
    !---------------------------------------------------------------------------------------!
+<<<<<<< HEAD
+   NL%ISOILCOL  = 14
+=======
    NL%ISOILCOL  = 21
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 
@@ -543,6 +560,16 @@ $ED_NL
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
+<<<<<<< HEAD
+   NL%VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_'
+   NL%SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
+   NL%LU_DATABASE       = '/n/home00/mlongo/protected/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
+   NL%PLANTATION_FILE   = ''
+   NL%THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/'
+   NL%ED_MET_DRIVER_DB  = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/met_driver/wmo+eft/eft/Santarem_Km67/Santarem_Km67_HEADER'
+   NL%SOILSTATE_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat'
+   NL%SOILDEPTH_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat'
+=======
    NL%VEG_DATABASE      = '/projectnb/cheas/EDI/oge2OLD/OGE2_'
    NL%SOIL_DATABASE     = '/projectnb/cheas/EDI/faoOLD/FAO_'
    NL%LU_DATABASE       = ''
@@ -551,6 +578,7 @@ $ED_NL
    NL%ED_MET_DRIVER_DB = '/usr2/postdoc/apourmok/met3/US-Dk3/ED_MET_DRIVER_HEADER'
    NL%SOILSTATE_DB='/usr2/postdoc/apourmok/met3/STW1996OCT.dat'
    NL%SOILDEPTH_DB='/usr2/postdoc/apourmok/met3/soil_depths.dat'
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 
@@ -598,7 +626,7 @@ $ED_NL
    !            then lateral drainage becomes free drainage.  SLDRAIN must be between 0    !
    !            and 90.                                                                    !
    !---------------------------------------------------------------------------------------!
-   NL%SLDRAIN        = 10.
+   NL%SLDRAIN        = 90.
    !---------------------------------------------------------------------------------------!
 
 
@@ -715,6 +743,11 @@ $ED_NL
    !               b. Balive is retuned, using a few leaf biomass allometric equations for !
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
+   !           3.  Similar to 2, except that tropical leaf biomass is estimated from       !
+   !                  Lescure et al. (1983), and PFT differences on bleaf are based on SLA !
+   !                  instead of wood density.  Also, the leaf allometry is split into     !
+   !                  small classes ("saplings") and large classes ("trees"), like in Cole !
+   !                  and Ewel (2006).                                                     !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 0
    !---------------------------------------------------------------------------------------!
@@ -823,7 +856,7 @@ $ED_NL
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
    !---------------------------------------------------------------------------------------!
-   NL%CROWN_MOD       = 1
+   NL%CROWN_MOD       = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -833,10 +866,12 @@ $ED_NL
    !                                                                                       !
    ! ICANRAD      -- Specifies how canopy radiation is solved.  This variable sets both    !
    !                 shortwave and longwave.                                               !
-   !                 0.  Two-stream model (Medvigy 2006), with the possibility to apply    !
-   !                     finite crown area to direct shortwave radiation.                  !
+   !                 0.  Original two-stream model (Medvigy 2006), with the possibility to !
+   !                     apply finite crown area to direct shortwave radiation.            !
    !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
    !                     possibility to apply finite crown area to all radiation fluxes.   !
+   !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
+   !                     apply finite crown area to all radiation fluxes.                  !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
@@ -860,11 +895,11 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%ICANRAD        =  0
    NL%LTRANS_VIS     =  0.050
-   NL%LTRANS_NIR     =  0.270
+   NL%LTRANS_NIR     =  0.230
    NL%LREFLECT_VIS   =  0.100
-   NL%LREFLECT_NIR   =  0.540
+   NL%LREFLECT_NIR   =  0.460
    NL%ORIENT_TREE    =  0.100
-   NL%ORIENT_GRASS   = -0.100
+   NL%ORIENT_GRASS   =  0.000
    NL%CLUMP_TREE     =  0.800
    NL%CLUMP_GRASS    =  1.000
    !---------------------------------------------------------------------------------------!
@@ -885,7 +920,7 @@ $ED_NL
    !                      rates when it is close to the optimal, plumetting when it is     !
    !                      almost saturated.                                                !
    !---------------------------------------------------------------------------------------!
-   NL%DECOMP_SCHEME   = 0
+   NL%DECOMP_SCHEME   = 2
    !---------------------------------------------------------------------------------------!
 
 
@@ -990,8 +1025,8 @@ $ED_NL
    NL%BPHOTO_C4       = 10000.
    NL%KW_GRASS        = 900.
    NL%KW_TREE         = 600.
-   NL%GAMMA_C3        = 0.015
-   NL%GAMMA_C4        = 0.040
+   NL%GAMMA_C3        = 0.0145
+   NL%GAMMA_C4        = 0.0350
    NL%D0_GRASS        = 0.016
    NL%D0_TREE         = 0.016
    NL%ALPHA_C3        = 0.080
@@ -1427,11 +1462,19 @@ $ED_NL
    !                                                                                       !
    ! If the years don't cover the entire simulation period, they will be recycled.         !
    !---------------------------------------------------------------------------------------!
+<<<<<<< HEAD
+   NL%IPHENYS1 = 1992
+   NL%IPHENYSF = 2003
+   NL%IPHENYF1 = 1992
+   NL%IPHENYFF = 2003
+   NL%PHENPATH   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/phenology/phenology'
+=======
    NL%IPHENYS1 = 1996
    NL%IPHENYSF = 2009
    NL%IPHENYF1 = 1996
    NL%IPHENYFF = 2009
    NL%PHENPATH = ''
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 

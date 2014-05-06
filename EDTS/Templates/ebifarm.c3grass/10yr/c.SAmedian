@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!DOCTYPE config SYSTEM "ed.dtd">
+<config>
+ <radiation>
+  <lai_min>0.01</lai_min>
+ </radiation>
+ <comment></comment>
+ <ed_misc>
+  <comment></comment>
+  <burnin>1</burnin>
+  <output_month>12</output_month>
+ </ed_misc>
+ <pft>
+  <num>5</num>
+  <phenology>2</phenology>
+  <max_dbh>0.78</max_dbh>
+  <hgt_min>1.0</hgt_min>
+  <qsw>0.0</qsw>
+  <mort1>1.0</mort1>
+  <plant_min_temp>-100</plant_min_temp>
+  <storage_turnover_rate>0</storage_turnover_rate>
+  <c2n_leaf>40.8</c2n_leaf>
+  <seedling_mortality>0.6</seedling_mortality>
+  <name>ebifarm.c3grass</name>
+  <mort2>20.0158407287811</mort2>
+  <growth_resp_factor>0.271609391629712</growth_resp_factor>
+  <q>2.23472397730248</q>
+  <root_turnover_rate>0.525676251754082</root_turnover_rate>
+  <Vm0>40.0907882264445</Vm0>
+  <stomatal_slope>13.338800220669</stomatal_slope>
+  <r_fract>0.313143512006085</r_fract>
+  <root_respiration_factor>1.93129642049639</root_respiration_factor>
+  <SLA>32.1267730013304</SLA>
+  <water_conductance>0.00463854397707329</water_conductance>
+  <quantum_efficiency>0.0594065704952214</quantum_efficiency>
+  <dark_respiration_factor>0.0258304626385955</dark_respiration_factor>
+ </pft>
+</config>

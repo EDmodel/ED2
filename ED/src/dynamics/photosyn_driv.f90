@@ -74,7 +74,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: compp
    real                                    :: broot_tot
    real                                    :: broot_loc
-   real                                    :: wgpfrac
    real                                    :: water_demand
    real                                    :: psiplusz
    real                                    :: avail_h2o_lyr
@@ -182,11 +181,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
          do k = mzg, kroot, -1
             !----- Alias for soil type. ---------------------------------------------------!
             nsoil = ntext_soil(k)
-            !------------------------------------------------------------------------------!
-
-
-            !----- Find the average soil wetness. -----------------------------------------!
-            wgpfrac = csite%soil_water(k,ipa) / soil(nsoil)%slmsts
             !------------------------------------------------------------------------------!
 
 
@@ -488,10 +482,10 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
 
 
             !----- GPP, averaged over frqstate. -------------------------------------------!
-            cpatch%gpp(ico)       = cpatch%lai(ico)                                        &
-                                  * ( cpatch%fs_open(ico) * cpatch%A_open(ico)             &
-                                    + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) ) &
-                                  + cpatch%leaf_respiration(ico)
+            cpatch%gpp(ico) = max(0., cpatch%lai(ico)                                      &
+                                    * ( cpatch%fs_open(ico) * cpatch%A_open(ico)           &
+                                      + (1. - cpatch%fs_open(ico)) * cpatch%A_closed(ico)) &
+                                    + cpatch%leaf_respiration(ico) )
             !----- The average must be in [kgC/plant/yr]. ---------------------------------!
             cpatch%fmean_gpp(ico) = cpatch%fmean_gpp(ico)                                  &
                                   + cpatch%gpp      (ico) * umols_2_kgCyr * dtlsm_o_frqsum &
@@ -560,6 +554,10 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
       !    Not really a part of the photosynthesis scheme, but this will do it.  We must   !
       ! integrate the "mean" of the remaining respiration terms, except for the root one.  !
       ! This is done regardless on whether the cohort is doing photosynthesis.             !
+      !                                                                                    !
+      !    The "_respiration(ico) terms are in kgC/plant/day, so we must also multiply     !
+      ! them by the number of years per day so the output is in kgC/plant/yr.  High time   !
+      ! we switched everything to SI...                                                    !
       !------------------------------------------------------------------------------------!
       cpatch%fmean_growth_resp (ico) = cpatch%fmean_growth_resp  (ico)                     &
                                      + cpatch%growth_respiration (ico) * dtlsm_o_frqsum    &

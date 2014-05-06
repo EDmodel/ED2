@@ -1057,10 +1057,10 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_RNET_PY             ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_albedo         (ipy:ipy)                              &
                         ,'DMEAN_ALBEDO_PY           ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%dmean_albedo_beam    (ipy:ipy)                              &
-                        ,'DMEAN_ALBEDO_BEAM_PY      ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%dmean_albedo_diff    (ipy:ipy)                              &
-                        ,'DMEAN_ALBEDO_DIFF_PY      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_albedo_par     (ipy:ipy)                              &
+                        ,'DMEAN_ALBEDO_PAR_PY       ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_albedo_nir     (ipy:ipy)                              &
+                        ,'DMEAN_ALBEDO_NIR_PY       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_rlong_albedo   (ipy:ipy)                              &
                         ,'DMEAN_RLONG_ALBEDO_PY     ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_ustar          (ipy:ipy)                              &
@@ -1460,10 +1460,10 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
                         ,'MMEAN_RNET_PY             ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_albedo         (ipy:ipy)                              &
                         ,'MMEAN_ALBEDO_PY           ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%mmean_albedo_beam    (ipy:ipy)                              &
-                        ,'MMEAN_ALBEDO_BEAM_PY      ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%mmean_albedo_diff    (ipy:ipy)                              &
-                        ,'MMEAN_ALBEDO_DIFF_PY      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_albedo_par     (ipy:ipy)                              &
+                        ,'MMEAN_ALBEDO_PAR_PY       ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_albedo_nir     (ipy:ipy)                              &
+                        ,'MMEAN_ALBEDO_NIR_PY       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_rlong_albedo   (ipy:ipy)                              &
                         ,'MMEAN_RLONG_ALBEDO_PY     ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_ustar          (ipy:ipy)                              &
@@ -2107,10 +2107,10 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
                         ,'QMEAN_RNET_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_albedo         (:,ipy)                                &
                         ,'QMEAN_ALBEDO_PY          ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%qmean_albedo_beam    (:,ipy)                                &
-                        ,'QMEAN_ALBEDO_BEAM_PY     ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%qmean_albedo_diff    (:,ipy)                                &
-                        ,'QMEAN_ALBEDO_DIFF_PY     ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_albedo_par     (:,ipy)                                &
+                        ,'QMEAN_ALBEDO_PAR_PY      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_albedo_nir     (:,ipy)                                &
+                        ,'QMEAN_ALBEDO_NIR_PY      ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_rlong_albedo   (:,ipy)                                &
                         ,'QMEAN_RLONG_ALBEDO_PY    ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_ustar          (:,ipy)                                &
@@ -3736,22 +3736,14 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
                      ,'NIR_B_DIFFUSE               ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%rlong_g                                                        &
                      ,'RLONG_G                     ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%rlong_g_surf                                                   &
-                     ,'RLONG_G_SURF                ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%rlong_g_incid                                                  &
-                     ,'RLONG_G_INCID               ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%rlong_s                                                        &
                      ,'RLONG_S                     ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%rlong_s_surf                                                   &
-                     ,'RLONG_S_SURF                ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%rlong_s_incid                                                  &
-                     ,'RLONG_S_INCID               ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%albedo                                                         &
                      ,'ALBEDO                      ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%albedo_beam                                                    &
-                     ,'ALBEDO_BEAM                 ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%albedo_diffuse                                                 &
-                     ,'ALBEDO_DIFFUSE              ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(csite%albedo_par                                                     &
+                     ,'ALBEDO_PAR                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(csite%albedo_nir                                                     &
+                     ,'ALBEDO_NIR                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%rlong_albedo                                                   &
                      ,'RLONG_ALBEDO                ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%rnet                                                           &
@@ -3876,10 +3868,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
                         ,'DMEAN_RNET_PA             ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_albedo                                                &
                         ,'DMEAN_ALBEDO_PA           ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(csite%dmean_albedo_beam                                           &
-                        ,'DMEAN_ALBEDO_BEAM_PA      ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(csite%dmean_albedo_diff                                           &
-                        ,'DMEAN_ALBEDO_DIFF_PA      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%dmean_albedo_par                                            &
+                        ,'DMEAN_ALBEDO_PAR_PA       ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%dmean_albedo_nir                                            &
+                        ,'DMEAN_ALBEDO_NIR_PA       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_rlong_albedo                                          &
                         ,'DMEAN_RLONG_ALBEDO_PA     ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_ustar                                                 &
@@ -3999,10 +3991,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
                         ,'MMEAN_RNET_PA             ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_albedo                                                &
                         ,'MMEAN_ALBEDO_PA           ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(csite%mmean_albedo_beam                                           &
-                        ,'MMEAN_ALBEDO_BEAM_PA      ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(csite%mmean_albedo_diff                                           &
-                        ,'MMEAN_ALBEDO_DIFF_PA      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%mmean_albedo_par                                            &
+                        ,'MMEAN_ALBEDO_PAR_PA       ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%mmean_albedo_nir                                            &
+                        ,'MMEAN_ALBEDO_NIR_PA       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_rlong_albedo                                          &
                         ,'MMEAN_RLONG_ALBEDO_PA     ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_ustar                                                 &
@@ -4170,10 +4162,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
                         ,'QMEAN_RNET_PA            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%qmean_albedo                                                &
                         ,'QMEAN_ALBEDO_PA          ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(csite%qmean_albedo_beam                                           &
-                        ,'QMEAN_ALBEDO_BEAM_PA     ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(csite%qmean_albedo_diff                                           &
-                        ,'QMEAN_ALBEDO_DIFF_PA     ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%qmean_albedo_par                                            &
+                        ,'QMEAN_ALBEDO_PAR_PA      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%qmean_albedo_nir                                            &
+                        ,'QMEAN_ALBEDO_NIR_PA      ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%qmean_rlong_albedo                                          &
                         ,'QMEAN_RLONG_ALBEDO_PA    ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%qmean_ustar                                                 &
@@ -4549,7 +4541,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    use ed_max_dims        , only : n_pft         & ! intent(in)
                                  , n_mort        & ! intent(in)
                                  , max_site      & ! intent(in)
-                                 , n_dist_types  ! ! intent(in)
+                                 , n_dist_types  & ! intent(in)
+                                 , n_radprof     ! ! intent(in)
    use hdf5
    use hdf5_coms          , only : file_id       & ! intent(inout)
                                  , dset_id       & ! intent(inout)
@@ -4704,7 +4697,13 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-  
+
+
+   !----- Swap phenology_status from 2 to -2. ---------------------------------------------!
+   do ico = 1,cpatch%ncohorts
+      if (cpatch%phenology_status(ico) == 2) cpatch%phenology_status(ico) = -2
+   end do
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -4866,10 +4865,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
                      ,'RSHORT_L_DIFFUSE          ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%rlong_l                                                       &
                      ,'RLONG_L                   ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpatch%rlong_l_surf                                                  &
-                     ,'RLONG_L_SURF              ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpatch%rlong_l_incid                                                 &
-                     ,'RLONG_L_INCID             ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%rshort_w                                                      &
                      ,'RSHORT_W                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%rshort_w_beam                                                 &
@@ -4878,10 +4873,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
                      ,'RSHORT_W_DIFFUSE          ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%rlong_w                                                       &
                      ,'RLONG_W                   ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpatch%rlong_w_surf                                                  &
-                     ,'RLONG_W_SURF              ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpatch%rlong_w_incid                                                 &
-                     ,'RLONG_W_INCID             ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%leaf_gbh                                                      &
                      ,'LEAF_GBH                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%leaf_gbw                                                      &
@@ -5201,7 +5192,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      2-D variables, dimensions: (n_pft,npatches).                                     !
+   !      2-D variables, dimensions: (13 ,ncohorts).                                       !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
    globdims(1) = 13_8
@@ -5226,7 +5217,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-  
+
 
 
 
@@ -5234,7 +5225,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      2-D variables, dimensions: (n_mort,npatches).                                    !
+   !      2-D variables, dimensions: (n_mort,ncohorts).                                    !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
    globdims(1) = int(n_mort,8)
@@ -5260,7 +5251,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-  
+
 
 
 
@@ -5268,7 +5259,45 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      2-D variables, dimensions: (ndcycle,npatches).                                   !
+   !      2-D variables, dimensions: (n_radprof,ncohorts).                                 !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 2
+   globdims(1) = int(n_radprof,8)
+   chnkdims(1) = int(n_radprof,8)
+   chnkoffs(1) = 0_8
+   memdims (1) = int(n_radprof,8)
+   memsize (1) = int(n_radprof,8)
+   memoffs (1) = 0_8
+   
+   globdims(2) = int(ncohorts_global,8)
+   chnkdims(2) = int(cpatch%ncohorts,8)
+   chnkoffs(2) = int(paco_index - 1,8)
+   memdims (2) = int(cpatch%ncohorts,8)
+   memsize (2) = int(cpatch%ncohorts,8)
+   memoffs (2) = 0_8
+   call hdf_getslab_r(cpatch%rad_profile                                                   &
+                     ,'RAD_PROFILE_CO              ',dsetrank,iparallel,.true. ,foundvar)
+   if (writing_long) then
+      call hdf_getslab_r(cpatch%dmean_rad_profile                                          &
+                        ,'DMEAN_RAD_PROFILE_CO     ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   if (writing_eorq) then
+      call hdf_getslab_r(cpatch%mmean_rad_profile                                          &
+                        ,'MMEAN_RAD_PROFILE_CO     ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      2-D variables, dimensions: (ndcycle,ncohorts).                                   !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
    globdims(1) = int(ndcycle,8)
@@ -5396,6 +5425,43 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
       call hdf_getslab_r(cpatch%qmsqu_vapor_wc                                             &
                         ,'QMSQU_VAPOR_WC_CO         ',dsetrank,iparallel,.false.,foundvar)
    end if
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      3-D variables, dimensions: (n_radprof,ndcycle,ncohorts).                                 !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 3
+   globdims(1) = int(n_radprof,8)
+   chnkdims(1) = int(n_radprof,8)
+   chnkoffs(1) = 0_8
+   memdims (1) = int(n_radprof,8)
+   memsize (1) = int(n_radprof,8)
+   memoffs (1) = 0_8
+   globdims(2) = int(ndcycle,8)
+   chnkdims(2) = int(ndcycle,8)
+   chnkoffs(2) = 0_8
+   memdims (2) = int(ndcycle,8)
+   memsize (2) = int(ndcycle,8)
+   memoffs (2) = 0_8
+   globdims(3) = int(ncohorts_global,8)
+   chnkdims(3) = int(cpatch%ncohorts,8)
+   chnkoffs(3) = int(paco_index - 1,8)
+   memdims (3) = int(cpatch%ncohorts,8)
+   memsize (3) = int(cpatch%ncohorts,8)
+   memoffs (3) = 0_8
+   if (writing_dcyc) then
+      call hdf_getslab_r(cpatch%qmean_rad_profile                                          &
+                        ,'QMEAN_RAD_PROFILE_CO     ',dsetrank,iparallel,.false.,foundvar)
+   end if
+   !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!

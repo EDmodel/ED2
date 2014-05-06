@@ -418,6 +418,8 @@ subroutine grell_cupar_area_scaler(cldd,clds,m1,mgmzp,maxens_cap)
    real                            :: sumuparea  ! Total area for a SC
    real                            :: sumupmf    ! Sum of updraft MF for a given SC
    real                            :: scalfac    ! Scaling factor
+   !----- Local constants. ----------------------------------------------------------------!
+   logical,parameter               :: do_rescale = .false.
    !---------------------------------------------------------------------------------------!
    
    cloudloop1: do icld = cldd, clds
@@ -489,19 +491,21 @@ subroutine grell_cupar_area_scaler(cldd,clds,m1,mgmzp,maxens_cap)
          klod = ensemble_e(icld)%klod_cap(icap)
          klou = ensemble_e(icld)%klou_cap(icap)
          !----- Find the scaled area and reference downdraft. -----------------------------!
-         if ( ensemble_e(icld)%comp_down_cap(icap) .and.                                   &
-              ensemble_e(icld)%ierr_cap(icap) == 0 .and. sumdnmf > 0. ) then
+         if (do_rescale) then
+            if ( ensemble_e(icld)%comp_down_cap(icap) .and.                                &
+                 ensemble_e(icld)%ierr_cap(icap) == 0 .and. sumdnmf > 0. ) then
 
-            ensemble_e(icld)%areadn_cap(icap)   = ensemble_e(icld)%areadn_cap(icap)        &
-                                                * ensemble_e(icld)%dnmf_cap(icap)          &
-                                                / sumdnmf
-         end if
+               ensemble_e(icld)%areadn_cap(icap)   = ensemble_e(icld)%areadn_cap(icap)     &
+                                                   * ensemble_e(icld)%dnmf_cap(icap)       &
+                                                   / sumdnmf
+            end if
 
-         !----- Find the scaled area and reference updraft. -------------------------------!
-         if (ensemble_e(icld)%ierr_cap(icap) == 0 .and. sumupmf > 0.) then
-            ensemble_e(icld)%areaup_cap(icap)   = ensemble_e(icld)%areaup_cap(icap)        &
-                                                * ensemble_e(icld)%upmf_cap(icap)          &
-                                                / sumupmf
+            !----- Find the scaled area and reference updraft. ----------------------------!
+            if (ensemble_e(icld)%ierr_cap(icap) == 0 .and. sumupmf > 0.) then
+               ensemble_e(icld)%areaup_cap(icap)   = ensemble_e(icld)%areaup_cap(icap)     &
+                                                   * ensemble_e(icld)%upmf_cap(icap)       &
+                                                   / sumupmf
+            end if
          end if
          sumdnarea = sumdnarea + ensemble_e(icld)%areadn_cap(icap)
          sumuparea = sumuparea + ensemble_e(icld)%areaup_cap(icap)

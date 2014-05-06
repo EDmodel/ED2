@@ -276,8 +276,12 @@ module node_mod
       
       this_buff%nsend = 0
       this_buff%nrecv = 0
-      if (associated(this_buff%pack_send_buff)) deallocate(this_buff%pack_send_buff)
-      if (associated(this_buff%pack_send_buff)) deallocate(this_buff%pack_recv_buff)
+      if (associated(this_buff%pack_send_buff)) then
+         deallocate(this_buff%pack_send_buff)
+      end if
+      if (associated(this_buff%pack_recv_buff)) then
+         deallocate(this_buff%pack_recv_buff)
+      end if
 
       return
    end subroutine dealloc_node_buff

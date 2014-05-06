@@ -10,7 +10,7 @@
 #     don.2.rec       -- The indices of the receptor that will receive the data.           #
 #     update.yr.notes -- Should we use notes.orig to make year notes? (TRUE/FALSE).        #
 #------------------------------------------------------------------------------------------#
-fuse.trees = function(receptor,donor,don.2.rec,survey.years){
+fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
 
    #---------------------------------------------------------------------------------------#
    #       Get the list of all variables.                                                  #
@@ -25,9 +25,11 @@ fuse.trees = function(receptor,donor,don.2.rec,survey.years){
    #---------------------------------------------------------------------------------------#
    #     Copy the scientific name and family.                                              #
    #---------------------------------------------------------------------------------------#
-   this.1st = empty; this.1st[don.2.rec] = donor$common.1st
-   this.sci = empty; this.sci[don.2.rec] = donor$scientific
-   this.fam = empty; this.fam[don.2.rec] = donor$family
+   this.1st  = empty; this.1st[don.2.rec] = donor$common.1st
+   this.sci  = empty; this.sci[don.2.rec] = donor$scientific
+   this.fam  = empty; this.fam[don.2.rec] = donor$family
+   this.gen  = empty; this.gen[don.2.rec] = donor$genus
+   this.full = ifelse(is.na(this.sci),FALSE, this.sci != this.gen)
    #---------------------------------------------------------------------------------------#
 
 
@@ -61,6 +63,7 @@ fuse.trees = function(receptor,donor,don.2.rec,survey.years){
            length(grep(pattern="old."      ,x=vname)) > 0 ||
            length(grep(pattern=".1st"      ,x=vname)) > 0 ||
            length(grep(pattern="scientific",x=vname)) > 0 ||
+           length(grep(pattern="genus"     ,x=vname)) > 0 ||
            length(grep(pattern="family"    ,x=vname)) > 0 ||
            length(grep(pattern="conflict." ,x=vname)) > 0){
          #---- We never copy these variables. ---------------------------------------------#
@@ -137,6 +140,7 @@ fuse.trees = function(receptor,donor,don.2.rec,survey.years){
          receptor$common    [don.sci] = this.val       [don.sci]
          receptor$common.1st[don.sci] = this.1st       [don.sci]
          receptor$scientific[don.sci] = this.sci       [don.sci]
+         receptor$genus     [don.sci] = this.sci       [don.sci]
          receptor$family    [don.sci] = this.fam       [don.sci]
          #---------------------------------------------------------------------------------#
 
@@ -172,7 +176,13 @@ fuse.trees = function(receptor,donor,don.2.rec,survey.years){
          #---------------------------------------------------------------------------------#
          diff.sci = ( (! is.na(receptor$scientific)) & (! is.na(this.sci))
                     & receptor$scientific != this.sci )
-         if (any(diff.sci)) stop ("Mismatch between scientific names!")
+         if (any(diff.sci) && sci.strict){
+            stop ("Mismatch between scientific names!")
+         }else if (any(diff.sci)){
+            update.scientific   = this.full | is.na(receptor$scientific)
+            receptor$scientific = ifelse(update.scientific,this.sci,receptor$scientific)
+            receptor$genus      = ifelse(update.scientific,this.gen,receptor$genus     )
+         }#end if
          #---------------------------------------------------------------------------------#
 
 
@@ -197,6 +207,7 @@ fuse.trees = function(receptor,donor,don.2.rec,survey.years){
 
 
       }else if ( length(grep(pattern="dbh."  ,x=vname)) > 0 ||
+                 length(grep(pattern="gbh."  ,x=vname)) > 0 ||
                  ( length(grep(pattern="notes.",x=vname)) > 0 && 
                    ! vname %in% c("notes.orig","notes.qaqc") ) ){
          #---------------------------------------------------------------------------------#
@@ -229,6 +240,8 @@ fuse.trees = function(receptor,donor,don.2.rec,survey.years){
                || length(grep(pattern="pom."      ,x=vname)) > 0
                || length(grep(pattern="ladder"    ,x=vname)) > 0
                || length(grep(pattern="cnpj"      ,x=vname)) > 0
+               || length(grep(pattern="soil"      ,x=vname)) > 0
+               || length(grep(pattern="code"      ,x=vname)) > 0
                ){
          #---- Variables that we update only if they have NA. -----------------------------#
          sel                      = ( is.na(receptor[[vname]])

@@ -334,7 +334,7 @@ subroutine varweight(n1,n2,n3,varwts,topt,rtgt)
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: n1,n2,n3
    real   , dimension(n1,n2,n3), intent(inout) :: varwts
-   real   , dimension(n2,n2)   , intent(in)    :: topt
+   real   , dimension(n2,n3)   , intent(in)    :: topt
    real   , dimension(n2,n3)   , intent(in)    :: rtgt
    !----- Local variables. ----------------------------------------------------------------!
    integer                                     :: i

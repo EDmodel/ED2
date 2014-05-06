@@ -316,10 +316,11 @@ subroutine ed_init_atm()
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
                                  ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
-                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
-                                 ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
-                                 ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
-                                 ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
+                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%snowfac(ipa)     &
+                                 ,csite%can_prss(ipa),csite%can_shv(ipa)                   &
+                                 ,csite%ground_shv(ipa),csite%ground_ssh(ipa)              &
+                                 ,csite%ground_temp(ipa),csite%ground_fliq(ipa)            &
+                                 ,csite%ggsoil(ipa))
                else
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
@@ -330,17 +331,19 @@ subroutine ed_init_atm()
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
                                  ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
-                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
-                                 ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
-                                 ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
-                                 ,csite%ground_fliq(ipa),csite%ggsoil(ipa))
+                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%snowfac(ipa)     &
+                                 ,csite%can_prss(ipa),csite%can_shv(ipa)                   &
+                                 ,csite%ground_shv(ipa),csite%ground_ssh(ipa)              &
+                                 ,csite%ground_temp(ipa),csite%ground_fliq(ipa)            &
+                                 ,csite%ggsoil(ipa))
                end if
 
                !----- Initialise vegetation wind and turbulence parameters. ---------------!
                call canopy_turbulence(cpoly,isi,ipa)
 
-               !----- Computing the storage terms for CO2, energy, and water budgets. -----!
+               !----- Compute the storage terms for CO2, energy, and water budgets. -------!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+
             end do patchloop2
 
             !----- Compute basal area and AGB profiles. -----------------------------------!
@@ -359,7 +362,7 @@ subroutine ed_init_atm()
          !---------------------------------------------------------------------------------!
          !    Size and age structure.  Start by fusing similar patches.                    !
          !---------------------------------------------------------------------------------!
-         call fuse_patches(cgrid,igr)
+         call fuse_patches(cgrid,igr,.true.)
          !---------------------------------------------------------------------------------!
 
 
@@ -386,7 +389,7 @@ subroutine ed_init_atm()
 
                   if (cpatch%ncohorts > 0) then
                      call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi)            &
-                                      ,cpoly%lsl(isi))
+                                      ,cpoly%lsl(isi),.true.)
                      call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                      call split_cohorts(cpatch,cpoly%green_leaf_factor(:,isi)              &
                                        ,cpoly%lsl(isi))

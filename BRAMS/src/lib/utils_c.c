@@ -312,9 +312,9 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
   
 
   struct dirent **nameout;
-  char filestr[200],filestr_p[200],filestr_a[200];
-  char dir[200],tmpdir[200];
-  char fpref0[80],fpref1[80],fpref2[80];
+  char filestr[300],filestr_p[300],filestr_a[300];
+  char dir[300],tmpdir[300];
+  char fpref0[300],fpref1[300],fpref2[300];
   char c1[1];
   int n,m,i;
   int good,val,num,lastlen,index,tfound;

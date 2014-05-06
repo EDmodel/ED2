@@ -1,10 +1,11 @@
 #!/bin/sh
-here=`pwd`
-lonlat=${here}'/joborder.txt'
+here=`pwd`                     # Current path
+lonlat="${here}/joborder.txt"  # Job list
+forcesubmit="y"                # Force submission? [y/N]
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=`wc -l ${lonlat} | awk '{print $1 }'`-3
-echo 'Number of polygons: '${npolys}'...'
+echo "Number of polygons: ${npolys}..."
 
 #------------------------------------------------------------------------------------------#
 #     Loop over all polygons.                                                              #
@@ -133,10 +134,10 @@ do
       runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
    else
       year=${yeara}
-      month='01'
-      date='01'
-      time='0000'
-      runt='INITIAL'
+      month="01"
+      date="01"
+      time="0000"
+      runt="INITIAL"
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -146,34 +147,35 @@ do
    #---------------------------------------------------------------------------------------#
    #     We will not even consider the files that have gone extinct.                       #
    #---------------------------------------------------------------------------------------#
-   if [ ${runt} == 'INITIAL' -o ${runt} == 'HISTORY' ]
+   if [ ${runt} == "INITIAL" -o ${runt} == "HISTORY" ] ||
+      [ ${forcesubmit} == "y" -o ${forcesubmit} == "Y" ]
    then
       #----- Check whether I should submit from this path or not. -------------------------#
       if [ ! -s ${here}/${polyname}/skipper.txt ]
       then
-         blah='Order: '${ff}' Polygon '${polyname}' - Regular job submitted. '
+         blah="Order: ${ff} Polygon ${polyname} - Regular job submitted."
          ${here}/${polyname}/srun.sh 1> /dev/null 2> /dev/null
       elif [ -s ${here}/${polyname}/unparun.sh ]
       then
-         blah='Order: '${ff}' Polygon '${polyname}' - Unrestricted_parallel job submitted. '
+         blah="Order: ${ff} Polygon ${polyname} - Unrestricted_parallel job submitted."
          ${here}/${polyname}/unparun.sh 1> /dev/null 2> /dev/null
-      elif [ ${queue} == 'unrestricted_parallel' ]
+      elif [ ${queue} == "unrestricted_parallel" ]
       then
-         blah='Order: '${ff}' Polygon '${polyname}' - Job will be submitted with unrestricted_parallel'
+         blah="Order: ${ff} Polygon ${polyname} is scheduled for unrestricted_parallel"
       else
-         blah='Order: '${ff}' Polygon '${polyname}' - Job will not be submitted this time.'
+         blah="Order: ${ff} Polygon ${polyname} won't be submitted this time."
       fi
-   elif [ ${runt} == 'THE_END' ]
+   elif [ ${runt} == "THE_END" ]
    then
-      blah='Order: '${ff}' Polygon '${polyname}' - This polygon has already finished.'
-   elif [ ${runt} == 'STSTATE' ]
+      blah="Order: ${ff} Polygon ${polyname} has already finished."
+   elif [ ${runt} == "STSTATE" ]
    then
-      blah='Order: '${ff}' Polygon '${polyname}' - This polygon has already reached steady state.'
-   elif [ ${runt} == 'EXTINCT' ]
+      blah="Order: ${ff} Polygon ${polyname} has already reached steady state."
+   elif [ ${runt} == "EXTINCT" ]
    then
-      blah='Order: '${ff}' Polygon '${polyname}' - This polygon has gone extinct.'
+      blah="Order: ${ff} Polygon ${polyname} has gone extinct."
    else
-      blah='Order: '${ff}' Polygon '${polyname}' - No idea of what is going on.'
+      blah="Order: ${ff} Polygon ${polyname} - No idea of what is going on."
    fi
    #---------------------------------------------------------------------------------------#
 

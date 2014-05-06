@@ -114,10 +114,10 @@ subroutine timing(icall,t1)
    real   , external     :: cputime
 #elif defined(MAC_OS_X)
    real                  :: etime
-#elif defined(__GFORTRAN__)
+#elif defined(PC_GFORTRAN)
    real                  :: etime
 #else
-   real   , external     :: etime
+   real   ,external      :: etime
 #endif
 
    select case (icall)

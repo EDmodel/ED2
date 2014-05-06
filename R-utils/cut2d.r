@@ -11,7 +11,7 @@ cut2d = function(x,y=NULL,xbreaks=10,ybreaks=10){
       #----- Point. -----------------------------------------------------------------------#
       if (is.data.frame(x)){
          if (("x" %in% names(x) & "y" %in% names(x))){
-            xy = data.frame(x=x$x,y=x$y)
+            xy = with(x,data.frame(x=x,y=y))
          }else if(dim(x)[2] == 2){
             xy = data.frame(x=x[,1],y=x[,2])
          }else{
@@ -31,7 +31,7 @@ cut2d = function(x,y=NULL,xbreaks=10,ybreaks=10){
          dum = bad.input.syntax("x")
       }#end if
    }else{
-      xy=as.data.frame(cbind(x,y))
+      xy=data.frame(x=x,y=y)
    }#end if
 
    #---------------------------------------------------------------------------------------# 

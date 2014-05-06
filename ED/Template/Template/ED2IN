@@ -553,14 +553,14 @@ $ED_NL
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
-   NL%VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_'
-   NL%SOIL_DATABASE     = '/n/moorcroft_data/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
-   NL%LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-'
+   NL%VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_'
+   NL%SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
+   NL%LU_DATABASE       = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
    NL%PLANTATION_FILE   = ''
-   NL%THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/'
-   NL%ED_MET_DRIVER_DB = 'mymetdriverdb'
-   NL%SOILSTATE_DB='/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/STW1996OCT.dat'
-   NL%SOILDEPTH_DB='/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/soil_depths.dat'
+   NL%THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/'
+   NL%ED_MET_DRIVER_DB  = 'mymetdriverdb'
+   NL%SOILSTATE_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat'
+   NL%SOILDEPTH_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat'
    !---------------------------------------------------------------------------------------!
 
 
@@ -725,6 +725,11 @@ $ED_NL
    !               b. Balive is retuned, using a few leaf biomass allometric equations for !
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
+   !           3.  Similar to 2, except that tropical leaf biomass is estimated from       !
+   !                  Lescure et al. (1983), and PFT differences on bleaf are based on SLA !
+   !                  instead of wood density.  Also, the leaf allometry is split into     !
+   !                  small classes ("saplings") and large classes ("trees"), like in Cole !
+   !                  and Ewel (2006).                                                     !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = myallom
    !---------------------------------------------------------------------------------------!
@@ -843,10 +848,12 @@ $ED_NL
    !                                                                                       !
    ! ICANRAD      -- Specifies how canopy radiation is solved.  This variable sets both    !
    !                 shortwave and longwave.                                               !
-   !                 0.  Two-stream model (Medvigy 2006), with the possibility to apply    !
-   !                     finite crown area to direct shortwave radiation.                  !
+   !                 0.  Original two-stream model (Medvigy 2006), with the possibility to !
+   !                     apply finite crown area to direct shortwave radiation.            !
    !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
    !                     possibility to apply finite crown area to all radiation fluxes.   !
+   !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
+   !                     apply finite crown area to all radiation fluxes.                  !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
@@ -1286,7 +1293,7 @@ $ED_NL
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
    NL%MAXSITE        =     1
-   NL%MAXPATCH       =    20
+   NL%MAXPATCH       = mymaxpatch
    NL%MAXCOHORT      =    80
    NL%MIN_SITE_AREA  = 0.005
    NL%MIN_PATCH_AREA = 0.005
@@ -1441,7 +1448,7 @@ $ED_NL
    NL%IPHENYSF = 2003
    NL%IPHENYF1 = 1992
    NL%IPHENYFF = 2003
-   NL%PHENPATH   = '/n/moorcroft_data/data/ed2_data/phenology/phenology'
+   NL%PHENPATH   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/phenology/phenology'
    !---------------------------------------------------------------------------------------!
 
 

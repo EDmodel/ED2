@@ -22,6 +22,9 @@
 #                 means NIR, and any other letter will be assumed shortwave.               #
 #------------------------------------------------------------------------------------------#
 rshort.bdown = function(rad.in,atm.prss,cosz,rad.type="rshort"){
+
+   if (length(atm.prss) == 1) atm.prss = rep(atm.prss,times=length(rad.in))
+
    #---------------------------------------------------------------------------------------#
    #    Local constants.                                                                   #
    #---------------------------------------------------------------------------------------#
@@ -76,10 +79,10 @@ rshort.bdown = function(rad.in,atm.prss,cosz,rad.type="rshort"){
    #---------------------------------------------------------------------------------------#
    par.beam    [night] = 0.0
    nir.beam    [night] = 0.0
-   if (rty == "p"){
+   if (rty %in% "p"){
       par.diff    [night] = rad.in[night]
       nir.diff    [night] = fnir.diff.def * rad.in[night] / fvis.diff.def
-   }else if(rty == "n"){
+   }else if(rty %in% "n"){
       par.diff    [night] = fvis.diff.def * rad.in[night] / fnir.diff.def
       nir.diff    [night] = rad.in[night]
    }else{
@@ -216,6 +219,7 @@ rshort.bdown = function(rad.in,atm.prss,cosz,rad.type="rshort"){
                       , nir.max     = nir.max
                       , rshort.max  = rshort.max
                       )#end list
+
    return(rshort.bdown)
 }#end function rshort.bdown
 #==========================================================================================#

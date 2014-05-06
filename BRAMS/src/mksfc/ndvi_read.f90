@@ -270,7 +270,7 @@ do ng = 1, ngrids
    nftot = -1
    write(cgrid,'(i1)') ng
    thisfile = trim(ndvifilin)//'-N-*-g'//cgrid//'.vfm'
-   call RAMS_filelist(fnames,thisfile,nftot)
+   call RAMS_filelist(maxndvifiles,fnames,thisfile,nftot)
    
    if(nftot <= 0) then
       print*,'No ndvi files for grid '//cgrid

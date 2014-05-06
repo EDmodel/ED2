@@ -31,7 +31,7 @@ module allometry
          case (0,1)
             !----- Default ED-2.1 allometry. ----------------------------------------------!
             h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
-         case (2)
+         case default
             !----- Poorter et al. (2006) allometry. ---------------------------------------!
             h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )          &
                   ** ( 1.0 / b2Ht(ipft) )
@@ -83,7 +83,7 @@ module allometry
             case (0,1)
                !----- Default ED-2.1 allometry. -------------------------------------------!
                dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
-            case (2)
+            case default
                !----- Poorter et al. (2006) allometry. ------------------------------------!
                dbh2h = hgt_ref(ipft) * (1. - exp (-b1Ht(ipft) * mdbh ** b2Ht(ipft) ) )
             end select
@@ -199,10 +199,13 @@ module allometry
    ! single generic function that should be used by all plants.                            !
    !---------------------------------------------------------------------------------------!
    real function size2bl(dbh,hite,ipft)
-      use pft_coms    , only : dbh_crit    & ! intent(in), lookup table
+      use pft_coms    , only : dbh_adult   & ! intent(in), lookup table
+                             , dbh_crit    & ! intent(in), lookup table
                              , C2B         & ! intent(in), lookup table
-                             , b1Bl        & ! intent(in), lookup table
-                             , b2Bl        & ! intent(in), lookup table
+                             , b1Bl_small  & ! intent(in), lookup table
+                             , b2Bl_small  & ! intent(in), lookup table
+                             , b1Bl_large  & ! intent(in), lookup table
+                             , b2Bl_large  & ! intent(in), lookup table
                              , hgt_max     & ! intent(in), lookup table
                              , is_grass    ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
@@ -216,7 +219,11 @@ module allometry
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
       !------------------------------------------------------------------------------------!
-      
+
+
+      !------------------------------------------------------------------------------------!
+      !     Get the DBH, or potential DBH in case of grasses.                              !
+      !------------------------------------------------------------------------------------!
       if (is_grass(ipft) .and. igrass == 1) then 
          !---- Use height for new grasses. ------------------------------------------------!
          mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
@@ -224,9 +231,21 @@ module allometry
          !---- Use dbh for trees. ---------------------------------------------------------!
          mdbh   = min(dbh,dbh_crit(ipft))
       end if
-      
-      size2bl = b1Bl(ipft) / C2B * mdbh ** b2Bl(ipft)
-      
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find leaf biomass depending on the tree size.                                  !
+      !------------------------------------------------------------------------------------!
+      if (mdbh < dbh_adult(ipft)) then
+         size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
+      else
+         size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
       return
    end function size2bl
    !=======================================================================================!
@@ -249,8 +268,11 @@ module allometry
                              , hgt_max     & ! intent(in), lookup table
                              , is_grass    & ! intent(in)
                              , C2B         & ! intent(in)
-                             , b1Bl        & ! intent(in), lookup table
-                             , b2Bl        ! ! intent(in), lookup table
+                             , b1Bl_small  & ! intent(in), lookup table
+                             , b2Bl_small  & ! intent(in), lookup table
+                             , b1Bl_large  & ! intent(in), lookup table
+                             , b2Bl_large  & ! intent(in), lookup table
+                             , bleaf_adult ! ! intent(in), lookup table
       use ed_misc_coms, only : igrass      ! ! intent(in)
 
       implicit none
@@ -261,14 +283,26 @@ module allometry
       real                :: mdbh
       !------------------------------------------------------------------------------------!
 
-      mdbh = (bleaf * C2B / b1Bl(ipft) ) ** (1./b2Bl(ipft))
 
-      if (is_grass(ipft) .and. igrass==1) then  
-          ! For grasses, limit maximum effective dbh by maximum height
+
+      !----- Find out whether this is an adult tree or a sapling/grass. -------------------!
+      if (bleaf < bleaf_adult(ipft)) then
+         mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
+      else
+         mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     For grasses, limit maximum effective dbh by maximum height.                    !
+      !------------------------------------------------------------------------------------!
+      if (is_grass(ipft) .and. igrass == 1) then
           bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
       else
           bl2dbh = min(mdbh, dbh_crit(ipft))
       end if
+      !------------------------------------------------------------------------------------!
 
       return
     end function bl2dbh
@@ -421,7 +455,7 @@ module allometry
          volume     = dbh2vol(hite,dbh,ipft) 
          root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
 
-      case (1,2)
+      case default
          !---------------------------------------------------------------------------------!
          !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
          ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
@@ -519,10 +553,17 @@ module allometry
    ! constant.  The wood area index WAI is found using the model proposed by Järvelä       !
    ! (2004) to find the specific projected area.                                           !
    !                                                                                       !
-   !    Ahrends, B., C. Penne, O. Panferov, 2010: Impact of target diameter harvesting on  !
-   !        spatial and temporal pattern of drought risk in forest ecosystems under        !
-   !        climate change conditions.  The Open Geography Journal, 3, 91-102  (they       !
-   !        didn't develop the allometry, but the original reference is in German...)      !
+   ! G. Hormann, S. Irrgan, H. Jochheim, M. Lukes, H. Meesenburg, J. Muller, B. Scheler,   !
+   !    J. Scherzer, G. Schuler, B. Schultze, B. Strohbach, F. Suckow, M. Wegehenkel, and  !
+   !    G. Wessolek.   Wasserhaushalt von waldokosystemen: methodenleitfaden zur           !
+   !    bestimmung der wasserhaushaltskomponenten auf level II-flachen. Technical note,    !
+   !    Bundesministerium fur Verbraucherschutz, Ernahrung und Landwirtschaft (BMVEL),     !
+   !    Bonn, Germany, 2003. URL http://www.wasklim.de/download/Methodenband.pdf.          !
+   !                                                                                       !
+   ! P. C. Olivas, S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan, J. J. O'Brien,   !
+   !    and H. Ordonez.  Comparison of direct and indirect methods for assessing leaf area !
+   !    index across a tropical rain forest landscape.  Agric. For. Meteorol., 177,        !
+   !    110--116, 2013.                                                                    !
    !---------------------------------------------------------------------------------------!
    subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
                           ,bsapwooda)
@@ -537,7 +578,8 @@ module allometry
       use consts_coms , only : onethird        & ! intent(in)
                              , pi1             ! ! intent(in)
       use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
-      use ed_misc_coms, only : igrass          ! ! intent(in)
+      use ed_misc_coms, only : igrass          & ! intent(in)
+                             , iallom          ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer , intent(in)  :: pft        ! Plant functional type            [         ---]
@@ -582,15 +624,23 @@ module allometry
 
       case (1,2)
          !---------------------------------------------------------------------------------!
-         !    Solve branches using the equations from Ahrends et al. (2010).               !
+         !     Decide the WAI according to the allometry.                                  !
          !---------------------------------------------------------------------------------!
-         wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
+         select case (iallom)
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
+            ! always 11% of the potential LAI.                                             !
+            !------------------------------------------------------------------------------!
+            wai = 0.11 * nplant * sla * size2bl(dbh,hite,pft)
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Solve branches using the equations from Hormann et al. (2003) ----------!
+            wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
-
       end select
-      !------------------------------------------------------------------------------------!
-
-
       !------------------------------------------------------------------------------------!
 
       return

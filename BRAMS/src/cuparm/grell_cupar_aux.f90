@@ -580,8 +580,8 @@ subroutine grell_draft_area(m1,mgmzp,kgoff,comp_down,klod,klou,klfc,klnb,ktop,dz
    real                                :: cdfval    ! Scratch with CDF value      [    ---]
    !----- Minimum draft to prevent square root of negative values -------------------------!
    real, parameter                     :: min_downdraft2      = 0.01
-   real, parameter                     :: min_updraft         = 0.60
-   real, parameter                     :: min_updraft2        = min_updraft*min_updraft
+   real, parameter                     :: min_wupdraft        = 0.60
+   real, parameter                     :: max_wupdraft        = 7.00
    real, parameter                     :: max_areaup          = 0.50
    !----- External functions --------------------------------------------------------------!
    real, external                      :: cdf
@@ -628,12 +628,110 @@ subroutine grell_draft_area(m1,mgmzp,kgoff,comp_down,klod,klou,klfc,klnb,ktop,dz
    ! integrated only between wbuoymin and infinity.  With this we can use the mass flux    !
    ! and the density at the level klou to determine the fraction of area of the cloud.     !
    !---------------------------------------------------------------------------------------!
-   wupdraft = expected(wbuoymin,wwind(klou),sigw(klou))
+   wupdraft = min(max_wupdraft,max(expected(wbuoymin,wwind(klou),sigw(klou)),min_wupdraft))
    wnorm    = (wbuoymin - wwind(klou)) / sigw(klou)
-   areaup   = max(1.e-5,1. - cdf(wnorm))
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      If there is no convective inhibition, then the FC80 method does not do so hot    !
+   ! because the necessary velocities are so low.  Use use the normalized wind-speed       !
+   ! method instead.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   areaup = min(1.000,max(1.e-5,upmf / (rhou_cld(klou) * wupdraft)))
+   ! areaup   = max(1.e-5,1. - cdf(wnorm))
+   !---------------------------------------------------------------------------------------!
+
+
 
    return
 end subroutine grell_draft_area
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!      This method of calculating the updraft area and updraft velocity assumes vertical   !
+! winds in the boundary layer where the updraft starts have a normal distribution defined  !
+! by mu_w and sigma_w.  The expectancy is found by integrating  p(w)*w from the wbin to    !
+! infinity, divided by the integration of p(w) from the w_bmin to infity.  There are cases !
+! where some singularities can occur when w_bin >> mu_w, in which case there is not enough !
+! mechanical energy in the boundary layer winds to lift a parcel anyway.                   !
+!      Once the expected updraft value is calculated, this follows Fritsch and Chappell    !
+! (1980) for the area of the updraft.                                                      !
+!                                                                                          !
+! J. M. Fritsch and C. F. Chappell., 1980: Numerical prediction of convectively driven     !
+!    mesoscale pressure systems. part I: Convective parameterization. J. Atmos. Sci., 37,  !
+!    1722--1733. doi:10.1175/1520- 0469(1980)037<1722:NPOCDM>2.0.CO;2.                     !
+!------------------------------------------------------------------------------------------!
+subroutine grell_mb_updraft(mu_w,sigma_w,w_bmin,mflux_up,rho,ex_w_up,area_up)
+
+   use rconstants,only : pi1        & ! intent(in)
+                       , sqrttwopi  & ! intent(in)
+                       , sqrthalfpi & ! intent(in)
+                       , srtwo      & ! intent(in)
+                       , lnexp_min  ! ! intent(in)
+
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), intent(in)  :: mu_w     ! Mean of normal vertical winds          [    m/s]
+   real(kind=4), intent(in)  :: sigma_w  ! Std. dev. of normal vertical winds     [    m/s]
+   real(kind=4), intent(in)  :: w_bmin   ! Min. vert. vel. to achieve bouyancy    [    m/s]
+   real(kind=4), intent(in)  :: mflux_up ! Upward mass flux at draft base         [kg/m2/s]
+   real(kind=4), intent(in)  :: rho      ! Density of upward mass flux air        [  kg/m3]
+   real(kind=4), intent(out) :: ex_w_up  ! Expected value for the updraft         [    m/s]
+   real(kind=4), intent(out) :: area_up  ! Fractional area of this cloud updraft  [      -]
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4)              :: lnterm   ! Partial solution to ex_w_up
+   real(kind=4)              :: ewu_1    ! Partial solution to ex_w_up
+   real(kind=4)              :: ewu_2    ! Partial solution to ex_w_up
+   real(kind=4)              :: ewu_21   ! Partial solution to ex_w_up
+   real(kind=4)              :: ewu_22   ! Partial solution to ex_w_up
+   real(kind=4)              :: ewu_3    ! Partial solution to ex_w_up
+   real(kind=4)              :: ewu_4    ! Partial solution to ex_w_up
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4), external    :: errorfun ! Error function
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Terms to find ex_w_up.                                                            !
+   !---------------------------------------------------------------------------------------!
+   ewu_1  = 0.5*mu_w
+   lnterm = max(- (mu_w-w_bmin) *(mu_w-w_bmin) / ( 2.0 * sigma_w * sigma_w ),lnexp_min )
+
+   ewu_21 = ( sigma_w * sigma_w ) * -exp(lnterm) / ( sqrttwopi * sigma_w)
+   ewu_22 = sqrthalfpi * mu_w * sigma_w * errorfun( (mu_w-w_bmin) / ( srtwo * sigma_w ) )  &
+          / ( sqrttwopi * sigma_w )
+   ewu_2  = ewu_21 - ewu_22
+
+   ewu_3  = 0.5
+   ewu_4  = 0.5 * errorfun( (mu_w-w_bmin) / (srtwo*sigma_w) )
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether it can become a singularity.  This only happens when ewu_4 = -0.5,  !
+   ! but in this case it would be very unlikely to have convection anyway.                 !
+   !---------------------------------------------------------------------------------------!
+   if ( ewu_4 < - 0.49999 ) then
+      ex_w_up = w_bmin
+   else
+      ex_w_up = (ewu_1 - ewu_2) / (ewu_3 + ewu_4)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !------ Find the area based on the vertical velocity and mass flux. --------------------!
+   area_up = mflux_up / (rho*ex_w_up)
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine grell_mb_updraft
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1246,7 +1344,10 @@ subroutine grell_sanity_thil2tqall(k,z,thil,exner,press,qtot,which)
    integer :: m               ! Counter 
    !---------------------------------------------------------------------------------------!
 
-   
+   !----- Exiting this subroutine because the bounds may be too small... ------------------!
+   return
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !      Let's be optimistic and assume that everything is fine.                          !

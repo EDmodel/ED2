@@ -2,7 +2,7 @@
 . ${HOME}/.bashrc
 here=`pwd`                            # ! Main path
 myself=`whoami`                       # ! You
-diskthere='/n/moorcroftfs2'           # ! Disk where the output files are
+diskthere=''                          # ! Disk where the output files are
 thisqueue='moorcroft_6100b'           # ! Queue where jobs should be submitted
 lonlat=${here}'/joborder.txt'         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
@@ -14,6 +14,7 @@ useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # 't' -- One eddy flux tower met cycle
                  # 'u' -- User defined period, defined by the variables below.
                  # 'f' -- Force the tower cycle.  You may need to edit the script, though
+                 # 'b' -- Force one biometry cycle.
 yusera=1972      # First year to use
 yuserz=2011      # Last year to use
 #----- Check whether to use openlava or typical job submission. ---------------------------#
@@ -28,7 +29,7 @@ usedistrib='edf' # Which distribution to plot on top of histograms:
                  #   sn   -- Skewed normal distribution      (requires package sn)
                  #   edf  -- Empirical distribution function (function density)
 #----- Output format. ---------------------------------------------------------------------#
-outform='c("eps","png","pdf")' # x11 - On screen (deprecated on shell scripts)
+outform='c("pdf")'             # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
@@ -41,10 +42,17 @@ idbhtype=3                     # Type of DBH class
 background=0                   # 0 -- White
                                # 1 -- Pitch black
                                # 2 -- Dark grey
+#----- Select integration interval for some photosynthesis-related variables. -------------#
+iint_photo=1                   # 0 -- 24h
+                               # 1 -- daytime only
 #----- Trim the year comparison for tower years only? -------------------------------------#
 efttrim="TRUE"
+#----- Correction factor for respiration. -------------------------------------------------#
+correct_gs=1.0                 # Correction factor for growth and storage respiration
+#----- Use only old-growth patches for census comparison? (plot_census.r only). -----------#
+oldgrowth="FALSE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
-rscpath="/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/R-utils"
+rscpath="${HOME}/EDBRAMS/R-utils"
 #------------------------------------------------------------------------------------------#
 
 
@@ -107,7 +115,7 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 if [ ${myself} == "mlongo" ]
 then
-   rscpath="/n/moorcroft_data/mlongo/util/Rsc"
+   rscpath="/n/home00/mlongo/util/Rsc"
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -127,33 +135,38 @@ fi
 #    Make sure that the directory there exists, if not, create all parent directories      #
 # needed.                                                                                  #
 #------------------------------------------------------------------------------------------#
-while [ ! -s ${outroot} ]
-do
-   namecheck=`basename ${outroot}`
-   dircheck=`dirname ${outroot}`
-   while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+if [ "x${outroot}" == "x" ]
+then
+   outroot=${here}
+else
+   while [ ! -s ${outroot} ]
    do
-      namecheck=`basename ${dircheck}`
-      dircheck=`dirname ${dircheck}`
-   done
+      namecheck=`basename ${outroot}`
+      dircheck=`dirname ${outroot}`
+      while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+      do
+         namecheck=`basename ${dircheck}`
+         dircheck=`dirname ${dircheck}`
+      done
 
-   if [ ${namecheck} == '/' ]
-   then
-      echo 'Invalid disk for variable outroot:'
-      echo ' DISK ='${diskhere}
-      exit 58
-   elif [ ${namecheck} == 'xxxxxxxx' ] || [ ${namecheck} == 'xxx_XXX' ] ||
-        [ ${namecheck} == 'XXXXXXXXXXX' ]
-   then
-      echo " - Found this directory in your path: ${namecheck} ..."
-      echo " - Outroot given: ${outroot} ..."
-      echo " - It looks like you forgot to set up your outroot path, check it!"
-      exit 92
-   else
-      echo 'Making directory: '${dircheck}/${namecheck}
-      mkdir ${dircheck}/${namecheck}
-   fi
-done
+      if [ ${namecheck} == '/' ]
+      then
+         echo 'Invalid disk for variable outroot:'
+         echo ' DISK ='${diskhere}
+         exit 58
+      elif [ ${namecheck} == 'xxxxxxxx' ] || [ ${namecheck} == 'xxx_XXX' ] ||
+           [ ${namecheck} == 'XXXXXXXXXXX' ]
+      then
+         echo " - Found this directory in your path: ${namecheck} ..."
+         echo " - Outroot given: ${outroot} ..."
+         echo " - It looks like you forgot to set up your outroot path, check it!"
+         exit 92
+      else
+         echo 'Making directory: '${dircheck}/${namecheck}
+         mkdir ${dircheck}/${namecheck}
+      fi
+   done
+fi
 #------------------------------------------------------------------------------------------#
 
 
@@ -337,7 +350,7 @@ do
    case ${polyiata} in
    gyf)
       eftyeara=2004
-      eftyearz=2009
+      eftyearz=2012
       ;;
    cax)
       eftyeara=1999
@@ -345,7 +358,7 @@ do
       ;;
    m34)
       eftyeara=1999
-      eftyearz=2005
+      eftyearz=2006
       ;;
    s67)
       eftyeara=2001
@@ -379,6 +392,10 @@ do
       eftyeara=2001
       eftyearz=2003
       ;;
+   bsb)
+      eftyeara=2006
+      eftyearz=2011
+      ;;
    hvd)
       eftyeara=1992
       eftyearz=2003
@@ -392,11 +409,34 @@ do
 
 
 
+   #---- The eddy flux tower cycles. ------------------------------------------------------#
+   case ${polyiata} in
+   gyf)
+      bioyeara=2004
+      bioyearz=2010
+      ;;
+   s67)
+      bioyeara=1999
+      bioyearz=2011
+      ;;
+   *)
+      bioyeara=${eftcyca}
+      bioyearz=${eftcycz}
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
    #---- Cheat and force the met cycle to be the tower cycle. -----------------------------#
    if [ ${useperiod} == "f" ]
    then
       metcyca=${eftyeara}
       metcycz=${eftyearz}
+   elif [ ${useperiod} == "b" ]
+   then
+      metcyca=${bioyeara}
+      metcycz=${bioyearz}
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -479,6 +519,14 @@ do
             thisyeara=${eftyeara}
             thisyearz=${eftyearz}
             #------------------------------------------------------------------------------#
+
+         elif [ ${useperiod} == 'b' ]
+         then
+            #----- The user said to use the eddy flux period. -----------------------------#
+            thisyeara=${bioyeara}
+            thisyearz=${bioyearz}
+            #------------------------------------------------------------------------------#
+
          else
             #----- Grab all years that the simulation is supposed to run. -----------------#
             thisyeara=${yeara}
@@ -633,7 +681,7 @@ do
 
          #----- Define the job name, and the names of the output files. -------------------#
          case ${script} in 
-         plot_budget)
+         plot_budget.r)
             epostout='pbdg_epost.out'
             epostsh='pbdg_epost.sh'
             epostlsf='pbdg_epost.lsf'
@@ -829,8 +877,11 @@ do
       sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
       sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
       sed -i s@mybackground@${background}@g       ${scriptnow}
+      sed -i s@mycorrection@${correct_gs}@g       ${scriptnow}
+      sed -i s@myiintphoto@${iint_photo}@g        ${scriptnow}
       sed -i s@myklight@${klight}@g               ${scriptnow}
       sed -i s@myefttrim@${efttrim}@g             ${scriptnow}
+      sed -i s@myoldgrowth@${oldgrowth}@g         ${scriptnow}
       sed -i s@myeftyeara@${eftyeara}@g           ${scriptnow}
       sed -i s@myeftyearz@${eftyearz}@g           ${scriptnow}
       #------------------------------------------------------------------------------------#

@@ -1,0 +1,622 @@
+\documentclass[12pt]{beamer}
+\useoutertheme{infolines}
+\usetheme{Boadilla}
+\usepackage{beamerthemesplit}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{framed,color}
+\usepackage{minibox}
+\usepackage{picture,xcolor}
+\setbeamertemplate{caption}[numbered]
+\setbeamerfont{caption}{size=\scriptsize}
+%\setbeamertemplate{navigation symbols}{}
+\usecolortheme{beaver}
+
+%\usebackgroundtemplate
+%{%\includegraphics[with=\paperwidthheight=\paperheight]{Images/P1000750.eps}
+%}
+
+\title[ED 2.2, Scale \& Biophysics]{Shop Talk: Biophysics and Patch Dynamics in the Ecosystem Demography Model 2.2}
+
+\author{Ryan Knox}
+\institute[LBNL]{
+  LBNL \\
+  CESM Annual Workshop - Land Modeling Working Group \\
+  Brekenridge CO}
+\date{June 19, 2013}
+
+\begin{document}
+{
+  \usebackgroundtemplate{\includegraphics[width=\paperwidth,height=\paperheight]{Images/P1000750_nocont.eps}}
+  \frame{
+    \titlepage
+  }
+}
+
+\section{Overview}
+
+\frame{
+\begin{center}
+ED?
+\end{center}
+\setlength{\unitlength}{1cm}
+\begin{figure}[hp]
+\begin{center}
+  \begin{picture}(11,7)(0,0)
+    \setlength\fboxsep{0pt}
+    \scriptsize
+    \put( 0.25,0.25){\colorbox{green!10}{\framebox(5,6)
+        {\minibox{ Terrestrial Ecosystem Dynamics \\
+                   \quad Size-Age-Structure \\
+                   \quad \quad Approximation\\
+                   \quad Photosynthesis \\
+                   \quad Growth \& Allocation \\
+                   \quad Allometry \\
+                   \quad Mortality \\
+                   \quad Disturbance \\
+                   \quad Recruitment }}}}
+    \put( 5.75,0.25){\colorbox{blue!10}{\framebox(5,6)
+        {\minibox{ LSM/SVAT/Biophysics Stuff
+                   }}}}
+  \end{picture}
+\end{center}
+\end{figure}
+}  
+
+\frame{
+  \begin{figure}[!ht]
+    \begin{center}
+      \includegraphics[height=0.95\textheight]{Images/mlo_submodels.eps}
+    \end{center}
+  \end{figure}
+}
+
+%\frame{
+%\begin{block}{Development History}
+%  \scriptsize
+%Concepts Ecosystem Scaling: [Hurtt et al, 1998] \\
+%Dynamic Vegetation Model, ED1: [Moorcroft et al, 2001]\\
+%Land Model, ED 2: [Medvigy et al, 2009] \\
+%\end{block}
+%
+%\setlength{\unitlength}{1cm}
+%\begin{figure}[hp]
+%\begin{center}
+%  \begin{picture}(10,7)(0,0)
+%    \setlength\fboxsep{0pt}
+%    \scriptsize
+%    \put( 0.00,1.5){\colorbox{green!20}{\framebox(3,1.25){\minibox{Parameter\\Optimization}}}}
+%    \put( 3.33,1.5){\colorbox{green!20}{\framebox(3,1.25){Allometry}}}
+%    \put( 6.66,1.5){\colorbox{green!20}{\framebox(3,1.25){\minibox{OLAM\\BRAMS}}}}
+%    \put( 0.00,3.0){\colorbox{green!20}{\framebox(3,1.25){Vectorization}}}
+%    \put( 3.33,3.0){\colorbox{green!20}{\framebox(3,1.25){Disturbance}}}
+%    \put( 0.00,4.75){\colorbox{green!20}{\framebox(3,1.25){PFTs}}}
+%    \put( 3.33,4.75){\colorbox{green!20}{\framebox(3,1.25){\minibox{Massively\\Parallel}}}}
+%    \put( 6.66,4.75){\colorbox{green!20}{\framebox(3,1.25){HDF5}}}
+%    \put( 6.66,3.00){\colorbox{green!20}{\framebox(3,1.25){Biophysics}}}
+%  \end{picture}
+%\end{center}
+%\end{figure}
+%}  
+
+\frame{
+\begin{columns}[c]
+\column{0.8\textwidth}
+\includegraphics[width=0.9\textwidth]{Images/scale_poly_far.eps}
+\column{0.2\textwidth}
+\begin{center}
+  ``\emph{Polygon}''\\~\\
+  Climate
+  \end{center}
+\end{columns}
+}
+
+\frame{
+\begin{columns}[c]
+\column{0.7\textwidth}
+\includegraphics[width=0.9\textwidth]{Images/scale_tree.eps}
+\column{0.3\textwidth}
+\scriptsize
+\begin{table}[h!b!p!]
+  \begin{tabular}{ c }
+    Meteorology \\
+    \\
+    \\
+    \\
+    Soil Properties -\\
+    Terrain \\
+    \\
+    \\
+    Disturbance - \\
+    Canopy Biophysics \\
+    Conservation of Mass and Energy \\
+    \\
+    \\
+    \\
+    Plant Biophysics - \\
+    Mortality -\\
+    Recruitment - \\
+    Carbon Assimilation -\\
+    Phenology\\
+    \end{tabular}
+  \end{table}
+\end{columns}
+}
+
+
+%%\frame{
+%%\begin{columns}[c]
+%%\column{0.7\textwidth}
+%%\includegraphics[width=0.80\textwidth]{Images/soil_types_circle.eps}
+%%\column{0.3\textwidth}
+%%  ``\emph{Site}''\\
+%%  Soil Texture \\
+%%  Depth to Bedrock \\
+%%  Slope \\
+%%  Aspect \\
+%%  Basin Delineation
+%%\end{columns}
+%%}
+
+%%\frame{
+%%\begin{columns}[c]
+%%\column{0.6\textwidth}
+%%\includegraphics[width=1.0\textwidth]{Images/gap_google.eps}
+%%\column{0.4\textwidth}
+%\begin{center}
+%%  ``\emph{Patch}''\\
+%%  Disturbance \\
+%%  Conservation of Mass and Energy 
+%  \end{center}
+%%\end{columns}
+%%}
+
+%\frame{
+%\begin{columns}[c]
+%\column{0.5\textwidth}
+%\includegraphics[width=1.0\textwidth]{Images/dist_pie_1.eps}
+%\column{0.5\textwidth}
+%``\emph{Patch}''
+%\scriptsize
+%  \[
+%    \underbrace{ \frac{\partial}{\partial t}p(a,t)}_\text{$\Delta$ age structure} =
+%    \text{    }
+%    \underbrace{-\frac{\partial}{\partial a}p(a,t)}_\text{aging} 
+%    \text{    }
+%    \underbrace{-\lambda(a,t)p(a,t)}_\text{disturbance}
+%  \]
+%  \\
+%  \[ \]
+%  \[ \int_0^{\inf} p(a,t) da = 1 \]
+%\end{columns}
+%}
+
+%\frame{
+%\begin{columns}[c]
+%\column{0.5\textwidth}
+%\includegraphics[width=1.0\textwidth]{Images/dist_pie_2.eps}
+%\column{0.5\textwidth}
+%  ``\emph{Patch}''\\
+%\scriptsize
+%  \[
+%    \underbrace{ \frac{\partial}{\partial t}p(a,t)}_\text{$\Delta$ age structure} = 
+%    \text{    }
+%    \underbrace{-\frac{\partial}{\partial a}p(a,t)}_\text{aging} 
+%    \text{    }
+%    \underbrace{-\lambda(a,t)p(a,t)}_\text{disturbance}
+%  \]
+%  \\
+%  \[ \]
+%  \[ \int_0^{\inf} p(a,t) da = 1 \]
+%\end{columns}
+%}
+
+%\frame{
+%\begin{columns}[c]
+%\column{0.5\textwidth}
+%\includegraphics[width=1.0\textwidth]{Images/dist_pie_2.eps}
+
+%\column{0.5\textwidth}
+%\includegraphics[width=1.0\textwidth]{Images/dist_pie_3.eps}
+%
+%\end{columns}
+%}
+
+
+
+%\frame{
+%\frametitle{Disturbance}
+%\begin{center}
+%\includegraphics[width=0.75\textwidth]{Images/disturbance_questions.eps}
+%\scriptsize
+%\setlength{\unitlength}{1cm}
+%\begin{figure}[hp]
+%\begin{center}
+%  \begin{picture}(11,3)(0,0)
+%    \setlength\fboxsep{0pt}
+%    \put( 3.00,1.25){\colorbox{blue!20}{\framebox(5,1.52)
+%        {\minibox{Distribution of Disturbance?\\Environment of post-disturbance?\\Functional Relationships?}}}}
+%  \end{picture}
+%\end{center}
+%\end{figure}
+%\end{center}
+%}
+
+%\frame{
+%\frametitle{Disturbance}
+%\begin{center}
+%\includegraphics[width=0.9\textwidth]{Images/chambers_p3_pnas.eps}
+%\end{center}
+%~\\
+%\scriptsize
+%Chambers et al. PNAS, 110(10), 2013.
+%
+%}
+
+
+%\frame{
+%\begin{columns}[c]
+%\column{0.7\textwidth}
+%\includegraphics[width=0.95\textwidth]{Images/patch1_n-lai.eps}
+%\column{0.3\textwidth}
+%\begin{center}
+%  ``\emph{Cohort}''\\
+%  Plant Groups \\
+%  Number Density \\
+%  Size and Allometry \\
+%  Functional Type (PFT) \\
+%  Carbon Balance \\
+%  Phenologic Status \\
+%  Thermodynamics
+%  \end{center}
+%\end{columns}
+%}
+
+%\frame{
+%  \begin{figure}[!ht]
+%    \begin{center}
+%      \includegraphics[height=1.00\textheight,orientation=\landscape]{Images/marcos_slide_cohorts_rotate.eps}
+%    \end{center}
+%  \end{figure}
+%}
+
+\section{Biophysics \& Information Structure}
+
+\subsection{1D Canopy}
+
+\frame{
+  \begin{center}
+    \includegraphics[height=0.98\textheight]{Images/patch4_n-lai_v2.eps}
+  \end{center}
+}
+
+\frame{
+  \begin{center}
+    \includegraphics[height=0.90\textheight]{Images/patch4_intarea.eps}
+  \end{center}
+}
+
+\frame{
+
+  \frametitle{Mixed Model}
+  \begin{columns}[cc]
+    \column{0.57\textwidth}
+    \begin{center}
+      \includegraphics[width=0.99\textwidth]{Images/patch4_mixed_v2.eps}
+    \end{center}
+    \column{0.43\textwidth}
+    \scriptsize
+    Wind-Speed Scaling \\
+    Turbulent Transport \\~\\
+    \[
+      u_{(z)}/u_{(z_c)} = e^{-n(1-\zeta_{(z)}/\zeta_{(z_c)})}
+    \]
+    \\~\\
+    cumulative drag $\zeta$ \\
+    \[ \zeta_{(z)} = \int_o^z[C_{d(z^\prime)}a_{(z^\prime)}/P_{m(z^\prime)}]dz^\prime \]
+    fluid drag $C_d$ \\
+    frontal area of the drag elements $a$ \\
+    sheltering factor $P_m$     \\~\\
+    Massman and Weil, \\
+    \quad Boundary Layer Meteorology 91, 1999.
+  \end{columns}
+}
+
+\frame{
+
+  \frametitle{Plate Model}
+  \begin{columns}[cc]
+    \column{0.57\textwidth}
+    \begin{center}
+      \includegraphics[width=0.98\textwidth]{Images/patch4_plate_v2.eps}
+    \end{center}
+    \column{0.43\textwidth}
+    \scriptsize
+    Two-Stream Canopy Radiation \\
+    Scattering \\~\\
+    \[
+    \begin{array}{l}
+      \frac{dI_{du}}{dL} = \\
+      \quad - f_1(\text{pft},\theta,\text{LAI}) I_{du} \\
+      \quad + f_2(\text{pft},\theta,\text{LAI}) I_{dd}  \\
+      \quad + f_3(\text{pft},\theta,\text{LAI}) e^{-KL} I_{b0} \\
+    \end{array}
+    \]
+    Sellers, \\
+    \quad Int. J. Remote Sensing, 6(8), 1985.
+  \end{columns}
+}
+
+%\frame{
+%  \begin{center}
+%    \includegraphics[width=1.0\textwidth]{Images/2_canopies.eps}
+%  \end{center}
+
+%  \begin{columns}[cc]
+%  \column{0.5\textwidth}
+%  \scriptsize
+%  Massman and Weil, \\
+%  \quad Boundary Layer Meteorology 91, 1999.
+%  \column{0.5\textwidth}
+%  \scriptsize
+%  Sellers, \\
+%  \quad Int. J. Remote Sensing, 6(8), 1985.
+%  \end{columns}
+%}
+
+%\subsection{Enthalpy Transfer}
+
+%\frame{
+%  \begin{center}
+%    Design Objectives: \\~\\
+%    \quad Conservative state variables \\
+%    \quad Consistent energy scale across mediums \\
+%    \quad Conserve phase change energy at different temperatures \\
+%    \quad Conserve of liquid internal energy \\
+%  \end{center}
+%}
+
+%\frame{
+%  \begin{columns}[cc]
+%    \column{0.4\textwidth}
+%    \scriptsize
+%    Vegetation State Equation:
+%    \\
+%    \[
+%    \begin{array}{l}
+%      H_{v}  =  \\
+%      \quad f_{l} [ (m_{v}c_{i})T_3 + m_{v}L_{F(T_3)} + \\
+%      \quad \quad (T_{v}-T_3)(m_{v}c_{l}) ] + \\
+%      \quad (1-f_{l}) \left( (m_{v}c_{i})T_{v} \right) + \\
+%      \quad T_{v} m_{b} c_{b} \\
+%    \end{array}
+%    \]
+%    \\~\\
+%    Canopy Air State Equation:
+%    \[
+%    \begin{array}{l}
+%      H_c =  m_{dry} c_{pd} T_c + \\
+%      \quad m_{vapor} \left(c_i T_3 + L_{S(T_3)} + c_{pv}(T_c-T_3)\right) \\
+%    \end{array}
+%    \]
+    
+%    \column{0.6\textwidth}
+%    \begin{center}
+%      \includegraphics[width=0.88\textwidth]{Images/enthalpy_diag.eps}
+%    \end{center}
+%  \end{columns}
+%}
+
+\frame{
+\frametitle{Amorphous}
+  \begin{center}
+      \includegraphics[width=0.80\textwidth]{Images/canopy_diag_2.eps}
+    \end{center}
+}
+
+\frame{
+  \begin{columns}[cc]
+    \column{0.4\textwidth}
+    \scriptsize
+    Vegetation Dynamic Equation:
+    \[
+    \begin{array}{rl}
+      \frac{ \partial{H_{v(i)}}  }{ \partial{t}  }    = &   R_{S,net} \\
+      & - R_{L,net} \\
+      & - \dot{H}_{vc} \\
+      & - \dot{H}_{TR(vapor)} \\
+      & + \int \dot{H}_{TR,soil(z)} \\
+      & + \dot{H}_{pint} \\
+      & - \dot{H}_{ds} \\
+    \end{array}
+    \]
+    \\~\\
+    Canopy Dynamic Equation:
+    \[
+    \begin{array}{rl}
+      \frac{\partial H_c}{\partial t} = & \dot{H}_{gc} + \dot{H}_{ac} \\
+      & + \int \dot{H}_{vc} + \int \dot{H}_{TR} \\
+      & + \dot{H}_{\Delta P} + \dot{H}_{\Delta \rho} \\
+    \end{array}
+    \]
+    \column{0.6\textwidth}
+    \begin{center}
+      \includegraphics[width=0.88\textwidth]{Images/canopy_diag_4.eps}
+    \end{center}
+  \end{columns}
+}
+
+\subsection{Hyrbid Numerical Solvers - BDF2}
+
+\frame{
+\begin{columns}[c]
+\column{0.50\textwidth}
+
+\scriptsize
+BDF2 - Trapezoidal Backwards Euler (implicit)
+\[
+  \frac{Y_{n+1}-Y_n}{\Delta t} + \frac{1}{2} \frac{Y_{n+1}-2Y_n+Y_{n-1}}{\Delta t} \approx \frac{\partial{Y_{n+1}}}{\partial{t}}
+\]
+
+\column{0.50\textwidth}
+\includegraphics[height=0.6\textheight]{Images/bdf2_example.eps}
+\end{columns}
+}
+
+\frame{
+\scriptsize
+\[
+  \frac{Y_{n+1}-Y_n}{\Delta t} + \frac{1}{2} \frac{Y_{n+1}-2Y_n+Y_{n-1}}{\Delta t} \approx \frac{\partial{Y_{n+1}}}{\partial{t}}
+\]
+\\~\\
+\[
+\frac{\partial{Y_{n+1}}}{\partial{t}} = A \cdot Y_{n+1} + B
+\]
+\\~\\
+\[
+\begin{array}{lcl}
+  Y_{n+1} = & \left[3I-2A\Delta t_+ \right]^{-1} \\
+       & \left[ \left(3+\frac{\Delta t_+}{\Delta t_-}\right)Y_n 
+    - \left(\frac{\Delta t_+}{\Delta t_-}\right)Y_{n-1} + 2B\Delta t_+\right] \\
+\end{array}
+\]
+}
+
+\frame{
+\begin{columns}[cc]
+\column{0.4\textwidth}
+\scriptsize
+\[
+Y = \begin{bmatrix} H_c \\ H_{v(1)} \\ H_{v(2)} \\ ... \\ H_{v(n)} \end{bmatrix}
+\]
+\column{0.6\textwidth}
+\includegraphics[width=0.85\textwidth]{Images/canopy_diag_4.eps}
+\end{columns}
+}
+
+
+\frame{
+\begin{columns}[cc]
+\column{0.4\textwidth}
+\scriptsize
+\[
+\frac{\partial{Y_{n+1}}}{\partial{t}} = A \cdot Y_{n+1} + B
+\]
+\\~\\
+\[
+\begin{array}{rl}
+  \frac{ \partial{H_{v(i)}}  }{ \partial{t}  }    = &   R_{S,net} \\
+  & - R_{L,net} \\
+  & - \dot{H}_{vc} \\
+  & - \dot{H}_{TR(vapor)} \\
+  & + \int \dot{H}_{TR,soil(z)} \\
+  & + \dot{H}_{pint} \\
+  & - \dot{H}_{ds} \\
+\end{array}
+\]
+\\~\\
+\[
+\begin{array}{rl}
+  \frac{\partial H_c}{\partial t} = & \dot{H}_{gc} + \dot{H}_{ac} \\
+  & + \int \dot{H}_{vc} + \int \dot{H}_{TR} \\
+  & + \dot{H}_{\Delta P} + \dot{H}_{\Delta \rho} \\
+\end{array}
+\]
+\column{0.6\textwidth}
+\includegraphics[width=0.85\textwidth]{Images/canopy_diag_4.eps}
+\end{columns}
+}
+
+\frame{
+\begin{center}
+\includegraphics[height=0.80\textheight]{Images/rkvshyb200_leafemp.eps}
+\end{center}
+}
+
+
+\section{Future Directions}
+
+\frame{
+
+  \begin{columns}[c]
+    \column{0.75\textwidth}
+    \includegraphics[height=0.80\textheight]{Images/amap_012002_av.eps}
+    \column{0.25\textwidth}
+    \scriptsize
+    Present Day (2008) \\
+    Above Ground Biomass \\
+    ``Spun-Up'' 500 years \\
+  \end{columns}
+
+}
+
+\frame{
+%  \frametitle{Model Structure - Challenges and Successes}
+  \begin{itemize}
+    \item{Best Axis for a Probabalistic Model?}
+    \item{Characterization of Disturbance}
+    \item{Global Scale PFT Parameterizations}
+    \item{Speed, Stability, Accuracy}
+    \item{Coordinating with other communities like CLM!}
+  \end{itemize}
+}
+
+\frame{
+\begin{center}
+Thank you  \\
+Discussion? Comments?
+\end{center}
+
+}
+
+
+
+
+
+%\frame{
+%\begin{itemize}
+%  \item AV: mean annual precipitation deficit on the order of $15\%$
+%  \item AV: decrease in total latent heat flux and total energy flux
+%  \item AV: greater dynamic variability in upper column soil moisture
+%  \item AV: lower leaf area promotes increased throughfall
+%\end{itemize}
+%}
+%\subsection{Differential Hydrometeorology near Site 2, April 2003}
+
+%\frame{
+%  \begin{figure}[!ht]
+%    \begin{center}
+%      \includegraphics[height=0.95\textheight]{Images/diag_z3_apr03_pcpetmap.eps}
+%    \end{center}
+%  \end{figure}
+%}
+
+%\frame{
+%\begin{columns}[c]
+%\column{0.5\textwidth}
+%\scriptsize
+%\begin{table}[h!b!p!]
+%  \begin{center}
+%  \begin{tabular}{| c | c  c  c  c |}
+%    \hline
+%    Case    & $\Delta M_{pw}$ & $ET$ & $P$ & $Mc$ \\
+%    \hline
+%    AV      & -11.42 & 82.95  & 41.89 & -52.49 \\
+%    PV      & -11.02 & 111.89 & 85.91 & -36.99 \\
+%    \hline
+%  \end{tabular}
+%  \caption{Monthly mean sources and sinks of water mass for focus region 2.  Total change in column precipitable water $\Delta M_{pw}$, evapotranspiration $ET$, precipitation $P$ and resolved moisture convergence $Mc$ are spatial means integrated over the month of April 2003. Units are $[kg/m^2]$.}
+%  \end{center}
+%\end{table}
+
+%\column{0.5\textwidth}
+
+%\scriptsize
+%\[\Delta M_{pw} = \text{ET} + Mc - P \]
+%\[ Mc = F_{x-}-F_{x+} + F_{y-}-F_{y+} \]
+%\includegraphics[width=0.99\textwidth]{Images/mc_flux_diag_crop.eps}
+%\end{columns}
+%}
+
+
+\end{document}

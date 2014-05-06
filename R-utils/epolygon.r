@@ -6,7 +6,6 @@
 epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
                      ,col = NA, lty = par("lty"), ..., fillOddEven = FALSE){
 
-
    #----- Check whether x or y are in log scale. -----------------------------------------#
    plog = ""
    xlog = par("xlog")
@@ -47,9 +46,20 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
       for (end in ends) {
          if (end > start) {
             den = density[i]
-            if (is.na(den) || den < 0){ 
-               .Internal(polygon( xy$x[start:(end - 1)]
-                                , xy$y[start:(end - 1)], col[i], NA, lty[i], ...))
+            if (is.na(den) || den < 0){
+               if (R.Version()$major == "3"){
+                  polygon( x       = xy$x[start:(end - 1)]
+                         , y       = xy$y[start:(end - 1)]
+                         , col     = col[i]
+                         , border  = NA
+                         , density = den
+                         , lty     = lty[i]
+                         , ...
+                         )#end polygon
+               }else{
+                  .Internal(polygon( xy$x[start:(end - 1)]
+                                   , xy$y[start:(end - 1)], col[i], NA, lty[i], ...))
+               }#end if
             }else if (den > 0) {
                epolygon.fullhatch( x           = xy$x[start:(end - 1)]
                                  , y           = xy$y[start:(end - 1)]
@@ -67,7 +77,18 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
          }#end if
          start = end + 1
       }#end for
-      .Internal(polygon(xy$x, xy$y, NA, border, lty, ...))
+      if (R.Version()$major == "3"){
+         polygon( x       = xy$x
+                , y       = xy$y
+                , density = 0
+                , col     = NA
+                , border  = border
+                , lty     = lty
+                , ...
+                )#end polygon
+      }else{
+         .Internal(polygon(xy$x, xy$y, NA, border, lty, ...))
+      }#end if
    }else{
       if (is.logical(border)) {
          if (!is.na(border) && border){
@@ -76,7 +97,19 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
             border = NA
          }#end if
       }#end if
-      .Internal(polygon(xy$x, xy$y, col, border, lty, ...))
+      
+      if (R.Version()$major == "3"){
+         polygon( x       = xy$x
+                , y       = xy$y
+                , density = NULL
+                , col     = col
+                , border  = border
+                , lty     = lty
+                , ...
+                )#end polygon
+      }else{
+         .Internal(polygon(xy$x, xy$y, col, border, lty, ...))
+      }#end if
    }#end if
 }#end function
 #==========================================================================================#
@@ -131,7 +164,6 @@ epolygon.onehatch <<- function(x, y, x0, y0, xd, yd, xlog,ylog, fillOddEven = FA
       ly1 = 10^(ly1)
       ly2 = 10^(ly2)
    }#end if
-
    segments(lx1, ly1, lx2, ly2, ...)
 }#end function
 #==========================================================================================#
@@ -158,8 +190,8 @@ epolygon.fullhatch <<- function(x, y, xlog,ylog, density, angle, fillOddEven = F
    usr = par("usr")
    pin = par("pin")
 
-   upix = ( usr[2L] - usr[1L] ) / pin
-   upiy = ( usr[4L] - usr[3L] ) / pin
+   upix = ( usr[2L] - usr[1L] ) / pin[1L]
+   upiy = ( usr[4L] - usr[3L] ) / pin[2L]
    upi  = c(upix,upiy)
    
    if (upi[1L] < 0) angle = 180 - angle
@@ -169,13 +201,14 @@ epolygon.fullhatch <<- function(x, y, xlog,ylog, density, angle, fillOddEven = F
    xd  = cos(angle/180 * pi) * upi[1L]
    yd  = sin(angle/180 * pi) * upi[2L]
 
+
    if (angle < 45 || angle > 135) {
        if (angle < 45) {
          first.x = max(x)
-         last.x = min(x)
+         last.x  = min(x)
        }else{
          first.x = min(x)
-         last.x = max(x)
+         last.x  = max(x)
        }#end if
        y.shift = upi[2L]/density/abs(cos(angle/180 * pi))
        x0      = 0

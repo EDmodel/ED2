@@ -47,11 +47,10 @@ module met_driver_coms
    !---------------------------------------------------------------------------------------!
    integer, parameter :: metname_len = 128    !
    integer, parameter :: metvars_len =  16    !
-   logical            :: have_co2             ! Do the H5 data have CO2, or did the user
+   logical            :: has_co2              ! Do the H5 data have CO2, or did the user
                                               !    specify it with initial_co2?
-   logical            :: have_latlon          ! Do the H5 data have lat-lon grids or 
-                                              !    does the user specify its spacing 
-                                              !    directly?
+   logical            :: has_ustar            ! Do the H5 data have u*, or the model is
+                                              !    supposed to calculate it?
    real               :: initial_co2          ! CO2 in case the meteorological forcing 
                                               !    doesn't have one.
    integer            :: lapse_scheme         ! Which variant of lapse rate correction 
@@ -114,6 +113,7 @@ module met_driver_coms
       real, pointer, dimension(:) :: hgt
       real, pointer, dimension(:) :: ugrd
       real, pointer, dimension(:) :: vgrd
+      real, pointer, dimension(:) :: atm_ustar
       real, pointer, dimension(:) :: sh
       real, pointer, dimension(:) :: tmp
       real, pointer, dimension(:) :: co2
@@ -145,6 +145,7 @@ module met_driver_coms
       real :: vels
       real :: vels_stab
       real :: vels_unstab
+      real :: atm_ustar
       real :: prss
       real :: exner
       real :: geoht

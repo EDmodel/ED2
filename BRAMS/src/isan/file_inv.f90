@@ -51,23 +51,24 @@ if(igridfl.ne.0) then
       select case (trim(guess1st))
       case ('PRESS')
          thisfile = iapr(1:nc)//'*00'
-         call RAMS_filelist(fnames_fg,thisfile,nfgfiles)
+         call RAMS_filelist(maxisfiles,fnames_fg,thisfile,nfgfiles)
       case ('NC')
          thisfile = iapr(1:nc)//'*nc'
-         call RAMS_filelist(fnames_fg,thisfile,nfgfiles)
+         call RAMS_filelist(maxisfiles,fnames_fg,thisfile,nfgfiles)
       case ('RAMS')
          thisfile = iapr(1:nc)//'*-head.txt'
-         call RAMS_filelist(fnames_fg,thisfile,nfgfiles)
+         call RAMS_filelist(maxisfiles,fnames_fg,thisfile,nfgfiles)
       end select 
 
 !      do nf=1,nfgfiles
 !         print*,'reading fg:',nc,nfgfiles,fnames_fg(nf)
 !      enddo
 
-      if(nfgfiles.gt.maxisfiles) then
-         print*,'too many first guess files'
-         stop 'lots_of_first_guess'
-      endif
+      if (nfgfiles > maxisfiles) then
+         write (unit=*,fmt='(a,1x,i6)') ' NFGFILES   = ',nfgfiles
+         write (unit=*,fmt='(a,1x,i6)') ' MAXISFILES = ',maxisfiles
+         call abort_run('Too many first guess files','ISAN_file_inv','file_inv.f90')
+      end if
 
       do nf=1,nfgfiles
 
@@ -112,12 +113,15 @@ if(igridfl.ne.3) then
     nupfiles=-1
       nc=len_trim(iarawi)
       thisfile = iarawi(1:nc)//'*00'
-      call RAMS_filelist(fnames_up,thisfile,nupfiles)
+      call RAMS_filelist(maxisfiles,fnames_up,thisfile,nupfiles)
 
-      if(nupfiles.gt.maxisfiles) then
-         print*,'too many upper air files'
-         stop 'lots_of_upper_air'
-      endif
+
+
+      if (nupfiles > maxisfiles) then
+         write (unit=*,fmt='(a,1x,i6)') ' NUPFILES   = ',nupfiles
+         write (unit=*,fmt='(a,1x,i6)') ' MAXISFILES = ',maxisfiles
+         call abort_run('Too many upper air files','ISAN_file_inv','file_inv.f90')
+      end if
 
       do nf=1,nupfiles
          lnf=len_trim(fnames_up(nf))
@@ -141,12 +145,14 @@ if(igridfl.ne.3) then
     nsffiles=-1
       nc=len_trim(iasrfce)
       thisfile = iasrfce(1:nc)//'*00'
-      call RAMS_filelist(fnames_sf,thisfile,nsffiles)
+      call RAMS_filelist(maxisfiles,fnames_sf,thisfile,nsffiles)
 
-      if(nsffiles.gt.maxisfiles) then
-         print*,'too many surface air files'
-         stop 'lots_of_surface'
-      endif
+
+      if (nsffiles > maxisfiles) then
+         write (unit=*,fmt='(a,1x,i6)') ' NSFFILES   = ',nsffiles
+         write (unit=*,fmt='(a,1x,i6)') ' MAXISFILES = ',maxisfiles
+         call abort_run('Too many upper air files','ISAN_file_inv','file_inv.f90')
+      end if
 
       do nf=1,nsffiles
          lnf=len_trim(fnames_sf(nf))

@@ -4,7 +4,7 @@
 # This function extracts the variablem, within the asked interval, using the processed ctl #
 # information.                                                                             #
 #------------------------------------------------------------------------------------------#
-readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
+readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
 
    #----- Assign the number of variables. -------------------------------------------------#
    nvars = length(vari)
@@ -12,8 +12,8 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
    #----- Check whether all requested variables are present. ------------------------------#
    isthere = tolower(vari) %in% info$varname
    if (! all(isthere)){
-     print (paste("Variable ",vari[! isthere]," was not found in the ctl file ",
-                  info$ctl,"...",sep=""))
+     cat("Variable ",vari[! isthere]," was not found in the ctl file "
+        ,info$ctl,"...",sep="","\n")
      stop("The variable list has invalid variables...")
    }else{
      varid = match(tolower(vari),info$varname)
@@ -91,7 +91,7 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
       # variables with the right size.  We first assign a template variable, and assign it #
       # to each variable.                                                                  #
       #------------------------------------------------------------------------------------#
-      for (v in 1:nvars){
+      for (v in sequence(nvars)){
          data  = array(NA,c(length(ta:tz),length(za:zz[v]),length(xa:xz),length(ya:yz)))
          assign(x=vari[v],value=data)
          rm(data)
@@ -106,9 +106,43 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
       tt = 0
       for (tabs in ta:tz){
          tt = tt + 1
-         if (file.exists(info$binary[tabs])){
-            print(paste("[+] Reading data from ",info$binary[tabs],"...",sep=""))
-            mybin    = file(description=info$binary[tabs],open="rb")
+
+         #----- Create the file name, and supported compressed files. ---------------------#
+         this.file     = info$binary[tabs]
+         this.file.gz  = paste(this.file,"gz" ,sep=".")
+         this.file.bz2 = paste(this.file,"bz2",sep=".")
+         #---------------------------------------------------------------------------------#
+
+         #----- Set up a temporary file, and make sure it doesn't exist. ------------------#
+         temp.file = file.path(tempdir(),basename(this.file))
+         warn.orig = getOption("warn")
+         options(warn=-1)
+         file.remove(temp.file)
+         options(warn=warn.orig)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Check whether the file (or the compressed file) exists. -------------------#
+         if (file.exists(this.file)){
+            dummy    = file.copy(from=this.file,to=temp.file)
+            read.now = TRUE
+         }else if (file.exists(this.file.gz)){
+            dummy    = gunzip(filename=this.file.gz,destname=temp.file,remove=FALSE)
+            read.now = TRUE
+         }else if (file.exists(this.file.bz2)){
+            dummy    = bunzip2(filename=this.file.gz,destname=temp.file,remove=FALSE)
+            read.now = TRUE
+         }else{
+            read.now = FALSE
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         if (read.now){
+            cat("[+] Reading data from ",basename(info$binary[tabs]),"...",sep="","\n")
+
+            mybin    = file(description=temp.file,open="rb")
 
             #----- Find the range of the full domain for this time and variable. ----------#
             xmx   = info$xmax
@@ -117,10 +151,9 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
             yr    = 1:info$ymax
             nzall = sum(info$zmax)
             npts  = xmx*ymx*nzall
-            aux   = readBin(mybin,n=npts,what="numeric",size=info$size,
-                            endian=info$endian)
+            aux   = readBin(mybin,n=npts,what="numeric",size=info$size,endian=info$endian)
 
-            for (v in 1:nvars){
+            for (v in sequence(nvars)){
                zmx = info$zmax[varid[v]]
                zr  = 1:info$zmax[varid[v]]
                pr  = info$posica[varid[v]]:info$posicz[varid[v]]
@@ -140,7 +173,7 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
 
                dmin = min(thisdata,na.rm=TRUE)
                dmax = max(thisdata,na.rm=TRUE)
-               print(paste("   [-] Reading variable ",vari[v],"...",sep=""))
+               cat("   [-] Reading variable ",vari[v],"...",sep="","\n")
 
                #---------------------------------------------------------------------------#
                #     Copy the variable to the scratch, copy the subset to this scratch,    #
@@ -155,8 +188,9 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
             }#end for (v in 1:nvars)
             rm(aux)
             close(mybin)
+            file.remove(temp.file)
          }else{
-            warning(paste("Skipping the non-existent file",info$binary[tabs],
+            warning(paste("Skipping the non-existent file",basename(info$binary[tabs]),
                           "and adding NA..."))
          } #end if
       }#end for (tt in ta:tz)
@@ -166,27 +200,74 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
       # domain first, and crop it to the subset afterwards.  Here because we only need to  #
       # open one file, we loop the variable outside the time loop.                         #
       #------------------------------------------------------------------------------------#
-      mybin = file(description=info$binary[1],open="rb")
+
+      #----- Create the file name, and supported compressed files. ------------------------#
+      this.file     = info$binary[1]
+      this.file.gz  = paste(this.file,"gz" ,sep=".")
+      this.file.bz2 = paste(this.file,"bz2",sep=".")
+      #------------------------------------------------------------------------------------#
+
+      #----- Set up a temporary file, and make sure it doesn't exist. ---------------------#
+      temp.file = file.path(tempdir(),basename(this.file))
+      warn.orig = getOption("warn")
+      options(warn=-1)
+      file.remove(temp.file)
+      options(warn=warn.orig)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Check whether the file (or the compressed file) exists. ----------------------#
+      if (file.exists(this.file)){
+         dummy    = file.copy(from=this.file,to=temp.file)
+         read.now = TRUE
+      }else if (file.exists(this.file.gz)){
+         dummy    = gunzip(filename=this.file.gz,destname=temp.file,remove=FALSE)
+         read.now = TRUE
+      }else if (file.exists(this.file.bz2)){
+         dummy    = bunzip2(filename=this.file.gz,destname=temp.file,remove=FALSE)
+         read.now = TRUE
+      }else{
+         stop(paste("File",basename(info$binary[1]),"(or compressed form) doesn't exist!"))
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      mybin = file(description=temp.file,open="rb")
 
       #----- Find the range of the full domain for this variable. -------------------------#
       xmx   = info$xmax
       ymx   = info$ymax
       nzall = sum(info$zmax)
       tmx   = info$tmax
+      #------------------------------------------------------------------------------------#
+
+
 
       #----- Read all variables. ----------------------------------------------------------#
       aux   = readBin(mybin,n=xmx*ymx*nzall*tmx,what="numeric",size=info$size,
                       endian=info$endian)
+      #------------------------------------------------------------------------------------#
+
+
 
       #----- Close connection only after all variables have been read. --------------------#
       close(mybin)
+      file.remove(temp.file)
+      #------------------------------------------------------------------------------------#
 
-      for (v in 1:nvars){
-         print(paste("[+] Reading variable ",vari[v],"...",sep=""))
+
+
+      #------------------------------------------------------------------------------------#
+      #     Loop over variables.                                                           #
+      #------------------------------------------------------------------------------------#
+      for (v in sequence(nvars)){
+         cat("[+] Reading variable ",vari[v],"...",sep="","\n")
          zmx   = info$zmax[varid[v]]
-         xr    = 1:info$xmax
-         yr    = 1:info$ymax
-         zr    = 1:info$zmax[varid[v]]
+         xr    = sequence(info$xmax)
+         yr    = sequence(info$ymax)
+         zr    = sequence(info$zmax[varid[v]])
 
          #----- Find the full dimensions of the output array of this variable. ------------#
          nxsub = xz    - xa + 1
@@ -218,17 +299,19 @@ readgrads = function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
       }#end for (v in 1:nvars)
       rm (aux)
    }#end if(info$template)
+   #---------------------------------------------------------------------------------------#
 
 
-  #----- Include the variables to the output list. ----------------------------------------#
-  namesoutd = names(outd)
-  for (v in 1:nvars){
-     data = get(x=vari[v])
-     outd$data   = data
-     rm(data)
-     namesoutd   = c(namesoutd,vari[v])
-     names(outd) = namesoutd
-  }#end for (v in 1:nvars)
-
+   #----- Include the variables to the output list. ----------------------------------------#
+   namesoutd = names(outd)
+   for (v in 1:nvars){
+      data = get(x=vari[v])
+      outd$data   = data
+      rm(data)
+      namesoutd   = c(namesoutd,vari[v])
+      names(outd) = namesoutd
+   }#end for (v in 1:nvars)
+   #---------------------------------------------------------------------------------------#
   return(outd)
-} #end function readgrads
+}#end function readgrads
+#------------------------------------------------------------------------------------------#

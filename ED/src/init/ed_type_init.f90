@@ -166,14 +166,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%rshort_l_beam         (ico) = 0.0
    cpatch%rshort_l_diffuse      (ico) = 0.0
    cpatch%rlong_l               (ico) = 0.0
-   cpatch%rlong_l_surf          (ico) = 0.0
-   cpatch%rlong_l_incid         (ico) = 0.0
    cpatch%rshort_w              (ico) = 0.0
    cpatch%rshort_w_beam         (ico) = 0.0
    cpatch%rshort_w_diffuse      (ico) = 0.0
    cpatch%rlong_w               (ico) = 0.0
-   cpatch%rlong_w_surf          (ico) = 0.0
-   cpatch%rlong_w_incid         (ico) = 0.0
+   cpatch%rad_profile         (:,ico) = 0.0
    cpatch%leaf_gbh              (ico) = 0.0
    cpatch%leaf_gbw              (ico) = 0.0
    cpatch%wood_gbh              (ico) = 0.0
@@ -221,53 +218,54 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    !---------------------------------------------------------------------------------------!
    !     Fast-averages.                                                                    !
    !---------------------------------------------------------------------------------------!
-   cpatch%fmean_gpp             (ico) = 0.0
-   cpatch%fmean_npp             (ico) = 0.0
-   cpatch%fmean_leaf_resp       (ico) = 0.0
-   cpatch%fmean_root_resp       (ico) = 0.0
-   cpatch%fmean_growth_resp     (ico) = 0.0
-   cpatch%fmean_storage_resp    (ico) = 0.0
-   cpatch%fmean_vleaf_resp      (ico) = 0.0
-   cpatch%fmean_plresp          (ico) = 0.0
-   cpatch%fmean_leaf_energy     (ico) = 0.0
-   cpatch%fmean_leaf_water      (ico) = 0.0
-   cpatch%fmean_leaf_hcap       (ico) = 0.0
-   cpatch%fmean_leaf_vpdef      (ico) = 0.0
-   cpatch%fmean_leaf_temp       (ico) = 0.0
-   cpatch%fmean_leaf_fliq       (ico) = 0.0
-   cpatch%fmean_leaf_gsw        (ico) = 0.0
-   cpatch%fmean_leaf_gbw        (ico) = 0.0
-   cpatch%fmean_wood_energy     (ico) = 0.0
-   cpatch%fmean_wood_water      (ico) = 0.0
-   cpatch%fmean_wood_hcap       (ico) = 0.0
-   cpatch%fmean_wood_temp       (ico) = 0.0
-   cpatch%fmean_wood_fliq       (ico) = 0.0
-   cpatch%fmean_wood_gbw        (ico) = 0.0
-   cpatch%fmean_fs_open         (ico) = 0.0
-   cpatch%fmean_fsw             (ico) = 0.0
-   cpatch%fmean_fsn             (ico) = 0.0
-   cpatch%fmean_psi_open        (ico) = 0.0
-   cpatch%fmean_psi_closed      (ico) = 0.0
-   cpatch%fmean_water_supply    (ico) = 0.0
-   cpatch%fmean_light_level     (ico) = 0.0
-   cpatch%fmean_light_level_beam(ico) = 0.0
-   cpatch%fmean_light_level_diff(ico) = 0.0
-   cpatch%fmean_par_l           (ico) = 0.0
-   cpatch%fmean_par_l_beam      (ico) = 0.0
-   cpatch%fmean_par_l_diff      (ico) = 0.0
-   cpatch%fmean_rshort_l        (ico) = 0.0
-   cpatch%fmean_rlong_l         (ico) = 0.0
-   cpatch%fmean_sensible_lc     (ico) = 0.0
-   cpatch%fmean_vapor_lc        (ico) = 0.0
-   cpatch%fmean_transp          (ico) = 0.0
-   cpatch%fmean_intercepted_al  (ico) = 0.0
-   cpatch%fmean_wshed_lg        (ico) = 0.0
-   cpatch%fmean_rshort_w        (ico) = 0.0
-   cpatch%fmean_rlong_w         (ico) = 0.0
-   cpatch%fmean_sensible_wc     (ico) = 0.0
-   cpatch%fmean_vapor_wc        (ico) = 0.0
-   cpatch%fmean_intercepted_aw  (ico) = 0.0
-   cpatch%fmean_wshed_wg        (ico) = 0.0
+   cpatch%fmean_gpp               (ico) = 0.0
+   cpatch%fmean_npp               (ico) = 0.0
+   cpatch%fmean_leaf_resp         (ico) = 0.0
+   cpatch%fmean_root_resp         (ico) = 0.0
+   cpatch%fmean_growth_resp       (ico) = 0.0
+   cpatch%fmean_storage_resp      (ico) = 0.0
+   cpatch%fmean_vleaf_resp        (ico) = 0.0
+   cpatch%fmean_plresp            (ico) = 0.0
+   cpatch%fmean_leaf_energy       (ico) = 0.0
+   cpatch%fmean_leaf_water        (ico) = 0.0
+   cpatch%fmean_leaf_hcap         (ico) = 0.0
+   cpatch%fmean_leaf_vpdef        (ico) = 0.0
+   cpatch%fmean_leaf_temp         (ico) = 0.0
+   cpatch%fmean_leaf_fliq         (ico) = 0.0
+   cpatch%fmean_leaf_gsw          (ico) = 0.0
+   cpatch%fmean_leaf_gbw          (ico) = 0.0
+   cpatch%fmean_wood_energy       (ico) = 0.0
+   cpatch%fmean_wood_water        (ico) = 0.0
+   cpatch%fmean_wood_hcap         (ico) = 0.0
+   cpatch%fmean_wood_temp         (ico) = 0.0
+   cpatch%fmean_wood_fliq         (ico) = 0.0
+   cpatch%fmean_wood_gbw          (ico) = 0.0
+   cpatch%fmean_fs_open           (ico) = 0.0
+   cpatch%fmean_fsw               (ico) = 0.0
+   cpatch%fmean_fsn               (ico) = 0.0
+   cpatch%fmean_psi_open          (ico) = 0.0
+   cpatch%fmean_psi_closed        (ico) = 0.0
+   cpatch%fmean_water_supply      (ico) = 0.0
+   cpatch%fmean_light_level       (ico) = 0.0
+   cpatch%fmean_light_level_beam  (ico) = 0.0
+   cpatch%fmean_light_level_diff  (ico) = 0.0
+   cpatch%fmean_par_l             (ico) = 0.0
+   cpatch%fmean_par_l_beam        (ico) = 0.0
+   cpatch%fmean_par_l_diff        (ico) = 0.0
+   cpatch%fmean_rshort_l          (ico) = 0.0
+   cpatch%fmean_rlong_l           (ico) = 0.0
+   cpatch%fmean_sensible_lc       (ico) = 0.0
+   cpatch%fmean_vapor_lc          (ico) = 0.0
+   cpatch%fmean_transp            (ico) = 0.0
+   cpatch%fmean_intercepted_al    (ico) = 0.0
+   cpatch%fmean_wshed_lg          (ico) = 0.0
+   cpatch%fmean_rshort_w          (ico) = 0.0
+   cpatch%fmean_rlong_w           (ico) = 0.0
+   cpatch%fmean_rad_profile     (:,ico) = 0.0
+   cpatch%fmean_sensible_wc       (ico) = 0.0
+   cpatch%fmean_vapor_wc          (ico) = 0.0
+   cpatch%fmean_intercepted_aw    (ico) = 0.0
+   cpatch%fmean_wshed_wg          (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -277,60 +275,61 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! output, or the mean diurnal cycle.                                                    !
    !---------------------------------------------------------------------------------------!
    if (writing_long) then
-      cpatch%dmean_nppleaf         (ico) = 0.0
-      cpatch%dmean_nppfroot        (ico) = 0.0
-      cpatch%dmean_nppsapwood      (ico) = 0.0
-      cpatch%dmean_nppcroot        (ico) = 0.0
-      cpatch%dmean_nppseeds        (ico) = 0.0
-      cpatch%dmean_nppwood         (ico) = 0.0
-      cpatch%dmean_nppdaily        (ico) = 0.0
-      cpatch%dmean_gpp             (ico) = 0.0
-      cpatch%dmean_npp             (ico) = 0.0
-      cpatch%dmean_leaf_resp       (ico) = 0.0
-      cpatch%dmean_root_resp       (ico) = 0.0
-      cpatch%dmean_growth_resp     (ico) = 0.0
-      cpatch%dmean_storage_resp    (ico) = 0.0
-      cpatch%dmean_vleaf_resp      (ico) = 0.0
-      cpatch%dmean_plresp          (ico) = 0.0
-      cpatch%dmean_leaf_energy     (ico) = 0.0
-      cpatch%dmean_leaf_water      (ico) = 0.0
-      cpatch%dmean_leaf_hcap       (ico) = 0.0
-      cpatch%dmean_leaf_vpdef      (ico) = 0.0
-      cpatch%dmean_leaf_temp       (ico) = 0.0
-      cpatch%dmean_leaf_fliq       (ico) = 0.0
-      cpatch%dmean_leaf_gsw        (ico) = 0.0
-      cpatch%dmean_leaf_gbw        (ico) = 0.0
-      cpatch%dmean_wood_energy     (ico) = 0.0
-      cpatch%dmean_wood_water      (ico) = 0.0
-      cpatch%dmean_wood_hcap       (ico) = 0.0
-      cpatch%dmean_wood_temp       (ico) = 0.0
-      cpatch%dmean_wood_fliq       (ico) = 0.0
-      cpatch%dmean_wood_gbw        (ico) = 0.0
-      cpatch%dmean_fs_open         (ico) = 0.0
-      cpatch%dmean_fsw             (ico) = 0.0
-      cpatch%dmean_fsn             (ico) = 0.0
-      cpatch%dmean_psi_open        (ico) = 0.0
-      cpatch%dmean_psi_closed      (ico) = 0.0
-      cpatch%dmean_water_supply    (ico) = 0.0
-      cpatch%dmean_light_level     (ico) = 0.0
-      cpatch%dmean_light_level_beam(ico) = 0.0
-      cpatch%dmean_light_level_diff(ico) = 0.0
-      cpatch%dmean_par_l           (ico) = 0.0
-      cpatch%dmean_par_l_beam      (ico) = 0.0
-      cpatch%dmean_par_l_diff      (ico) = 0.0
-      cpatch%dmean_rshort_l        (ico) = 0.0
-      cpatch%dmean_rlong_l         (ico) = 0.0
-      cpatch%dmean_sensible_lc     (ico) = 0.0
-      cpatch%dmean_vapor_lc        (ico) = 0.0
-      cpatch%dmean_transp          (ico) = 0.0
-      cpatch%dmean_intercepted_al  (ico) = 0.0
-      cpatch%dmean_wshed_lg        (ico) = 0.0
-      cpatch%dmean_rshort_w        (ico) = 0.0
-      cpatch%dmean_rlong_w         (ico) = 0.0
-      cpatch%dmean_sensible_wc     (ico) = 0.0
-      cpatch%dmean_vapor_wc        (ico) = 0.0
-      cpatch%dmean_intercepted_aw  (ico) = 0.0
-      cpatch%dmean_wshed_wg        (ico) = 0.0
+      cpatch%dmean_nppleaf           (ico) = 0.0
+      cpatch%dmean_nppfroot          (ico) = 0.0
+      cpatch%dmean_nppsapwood        (ico) = 0.0
+      cpatch%dmean_nppcroot          (ico) = 0.0
+      cpatch%dmean_nppseeds          (ico) = 0.0
+      cpatch%dmean_nppwood           (ico) = 0.0
+      cpatch%dmean_nppdaily          (ico) = 0.0
+      cpatch%dmean_gpp               (ico) = 0.0
+      cpatch%dmean_npp               (ico) = 0.0
+      cpatch%dmean_leaf_resp         (ico) = 0.0
+      cpatch%dmean_root_resp         (ico) = 0.0
+      cpatch%dmean_growth_resp       (ico) = 0.0
+      cpatch%dmean_storage_resp      (ico) = 0.0
+      cpatch%dmean_vleaf_resp        (ico) = 0.0
+      cpatch%dmean_plresp            (ico) = 0.0
+      cpatch%dmean_leaf_energy       (ico) = 0.0
+      cpatch%dmean_leaf_water        (ico) = 0.0
+      cpatch%dmean_leaf_hcap         (ico) = 0.0
+      cpatch%dmean_leaf_vpdef        (ico) = 0.0
+      cpatch%dmean_leaf_temp         (ico) = 0.0
+      cpatch%dmean_leaf_fliq         (ico) = 0.0
+      cpatch%dmean_leaf_gsw          (ico) = 0.0
+      cpatch%dmean_leaf_gbw          (ico) = 0.0
+      cpatch%dmean_wood_energy       (ico) = 0.0
+      cpatch%dmean_wood_water        (ico) = 0.0
+      cpatch%dmean_wood_hcap         (ico) = 0.0
+      cpatch%dmean_wood_temp         (ico) = 0.0
+      cpatch%dmean_wood_fliq         (ico) = 0.0
+      cpatch%dmean_wood_gbw          (ico) = 0.0
+      cpatch%dmean_fs_open           (ico) = 0.0
+      cpatch%dmean_fsw               (ico) = 0.0
+      cpatch%dmean_fsn               (ico) = 0.0
+      cpatch%dmean_psi_open          (ico) = 0.0
+      cpatch%dmean_psi_closed        (ico) = 0.0
+      cpatch%dmean_water_supply      (ico) = 0.0
+      cpatch%dmean_light_level       (ico) = 0.0
+      cpatch%dmean_light_level_beam  (ico) = 0.0
+      cpatch%dmean_light_level_diff  (ico) = 0.0
+      cpatch%dmean_par_l             (ico) = 0.0
+      cpatch%dmean_par_l_beam        (ico) = 0.0
+      cpatch%dmean_par_l_diff        (ico) = 0.0
+      cpatch%dmean_rshort_l          (ico) = 0.0
+      cpatch%dmean_rlong_l           (ico) = 0.0
+      cpatch%dmean_sensible_lc       (ico) = 0.0
+      cpatch%dmean_vapor_lc          (ico) = 0.0
+      cpatch%dmean_transp            (ico) = 0.0
+      cpatch%dmean_intercepted_al    (ico) = 0.0
+      cpatch%dmean_wshed_lg          (ico) = 0.0
+      cpatch%dmean_rshort_w          (ico) = 0.0
+      cpatch%dmean_rlong_w           (ico) = 0.0
+      cpatch%dmean_rad_profile     (:,ico) = 0.0
+      cpatch%dmean_sensible_wc       (ico) = 0.0
+      cpatch%dmean_vapor_wc          (ico) = 0.0
+      cpatch%dmean_intercepted_aw    (ico) = 0.0
+      cpatch%dmean_wshed_wg          (ico) = 0.0
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -340,77 +339,78 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! the mean diurnal cycle.                                                               !
    !---------------------------------------------------------------------------------------!
    if (writing_eorq) then
-      cpatch%mmean_gpp               (ico) = 0.0
-      cpatch%mmean_npp               (ico) = 0.0
-      cpatch%mmean_leaf_resp         (ico) = 0.0
-      cpatch%mmean_root_resp         (ico) = 0.0
-      cpatch%mmean_growth_resp       (ico) = 0.0
-      cpatch%mmean_storage_resp      (ico) = 0.0
-      cpatch%mmean_vleaf_resp        (ico) = 0.0
-      cpatch%mmean_plresp            (ico) = 0.0
-      cpatch%mmean_leaf_energy       (ico) = 0.0
-      cpatch%mmean_leaf_water        (ico) = 0.0
-      cpatch%mmean_leaf_hcap         (ico) = 0.0
-      cpatch%mmean_leaf_vpdef        (ico) = 0.0
-      cpatch%mmean_leaf_temp         (ico) = 0.0
-      cpatch%mmean_leaf_fliq         (ico) = 0.0
-      cpatch%mmean_leaf_gsw          (ico) = 0.0
-      cpatch%mmean_leaf_gbw          (ico) = 0.0
-      cpatch%mmean_wood_energy       (ico) = 0.0
-      cpatch%mmean_wood_water        (ico) = 0.0
-      cpatch%mmean_wood_hcap         (ico) = 0.0
-      cpatch%mmean_wood_temp         (ico) = 0.0
-      cpatch%mmean_wood_fliq         (ico) = 0.0
-      cpatch%mmean_wood_gbw          (ico) = 0.0
-      cpatch%mmean_fs_open           (ico) = 0.0
-      cpatch%mmean_fsw               (ico) = 0.0
-      cpatch%mmean_fsn               (ico) = 0.0
-      cpatch%mmean_psi_open          (ico) = 0.0
-      cpatch%mmean_psi_closed        (ico) = 0.0
-      cpatch%mmean_water_supply      (ico) = 0.0
-      cpatch%mmean_light_level       (ico) = 0.0
-      cpatch%mmean_light_level_beam  (ico) = 0.0
-      cpatch%mmean_light_level_diff  (ico) = 0.0
-      cpatch%mmean_par_l             (ico) = 0.0
-      cpatch%mmean_par_l_beam        (ico) = 0.0
-      cpatch%mmean_par_l_diff        (ico) = 0.0
-      cpatch%mmean_rshort_l          (ico) = 0.0
-      cpatch%mmean_rlong_l           (ico) = 0.0
-      cpatch%mmean_sensible_lc       (ico) = 0.0
-      cpatch%mmean_vapor_lc          (ico) = 0.0
-      cpatch%mmean_transp            (ico) = 0.0
-      cpatch%mmean_intercepted_al    (ico) = 0.0
-      cpatch%mmean_wshed_lg          (ico) = 0.0
-      cpatch%mmean_rshort_w          (ico) = 0.0
-      cpatch%mmean_rlong_w           (ico) = 0.0
-      cpatch%mmean_sensible_wc       (ico) = 0.0
-      cpatch%mmean_vapor_wc          (ico) = 0.0
-      cpatch%mmean_intercepted_aw    (ico) = 0.0
-      cpatch%mmean_wshed_wg          (ico) = 0.0
-      cpatch%mmean_lai               (ico) = 0.0
-      cpatch%mmean_bleaf             (ico) = 0.0
-      cpatch%mmean_broot             (ico) = 0.0
-      cpatch%mmean_bstorage          (ico) = 0.0
-      cpatch%mmean_mort_rate       (:,ico) = 0.0
-      cpatch%mmean_leaf_maintenance  (ico) = 0.0
-      cpatch%mmean_root_maintenance  (ico) = 0.0
-      cpatch%mmean_leaf_drop         (ico) = 0.0
-      cpatch%mmean_cb                (ico) = 0.0
-      cpatch%mmean_nppleaf           (ico) = 0.0
-      cpatch%mmean_nppfroot          (ico) = 0.0
-      cpatch%mmean_nppsapwood        (ico) = 0.0
-      cpatch%mmean_nppcroot          (ico) = 0.0
-      cpatch%mmean_nppseeds          (ico) = 0.0
-      cpatch%mmean_nppwood           (ico) = 0.0
-      cpatch%mmean_nppdaily          (ico) = 0.0
-      cpatch%mmsqu_gpp               (ico) = 0.0
-      cpatch%mmsqu_npp               (ico) = 0.0
-      cpatch%mmsqu_plresp            (ico) = 0.0
-      cpatch%mmsqu_sensible_lc       (ico) = 0.0
-      cpatch%mmsqu_vapor_lc          (ico) = 0.0
-      cpatch%mmsqu_transp            (ico) = 0.0
-      cpatch%mmsqu_sensible_wc       (ico) = 0.0
-      cpatch%mmsqu_vapor_wc          (ico) = 0.0
+      cpatch%mmean_gpp                 (ico) = 0.0
+      cpatch%mmean_npp                 (ico) = 0.0
+      cpatch%mmean_leaf_resp           (ico) = 0.0
+      cpatch%mmean_root_resp           (ico) = 0.0
+      cpatch%mmean_growth_resp         (ico) = 0.0
+      cpatch%mmean_storage_resp        (ico) = 0.0
+      cpatch%mmean_vleaf_resp          (ico) = 0.0
+      cpatch%mmean_plresp              (ico) = 0.0
+      cpatch%mmean_leaf_energy         (ico) = 0.0
+      cpatch%mmean_leaf_water          (ico) = 0.0
+      cpatch%mmean_leaf_hcap           (ico) = 0.0
+      cpatch%mmean_leaf_vpdef          (ico) = 0.0
+      cpatch%mmean_leaf_temp           (ico) = 0.0
+      cpatch%mmean_leaf_fliq           (ico) = 0.0
+      cpatch%mmean_leaf_gsw            (ico) = 0.0
+      cpatch%mmean_leaf_gbw            (ico) = 0.0
+      cpatch%mmean_wood_energy         (ico) = 0.0
+      cpatch%mmean_wood_water          (ico) = 0.0
+      cpatch%mmean_wood_hcap           (ico) = 0.0
+      cpatch%mmean_wood_temp           (ico) = 0.0
+      cpatch%mmean_wood_fliq           (ico) = 0.0
+      cpatch%mmean_wood_gbw            (ico) = 0.0
+      cpatch%mmean_fs_open             (ico) = 0.0
+      cpatch%mmean_fsw                 (ico) = 0.0
+      cpatch%mmean_fsn                 (ico) = 0.0
+      cpatch%mmean_psi_open            (ico) = 0.0
+      cpatch%mmean_psi_closed          (ico) = 0.0
+      cpatch%mmean_water_supply        (ico) = 0.0
+      cpatch%mmean_light_level         (ico) = 0.0
+      cpatch%mmean_light_level_beam    (ico) = 0.0
+      cpatch%mmean_light_level_diff    (ico) = 0.0
+      cpatch%mmean_par_l               (ico) = 0.0
+      cpatch%mmean_par_l_beam          (ico) = 0.0
+      cpatch%mmean_par_l_diff          (ico) = 0.0
+      cpatch%mmean_rshort_l            (ico) = 0.0
+      cpatch%mmean_rlong_l             (ico) = 0.0
+      cpatch%mmean_sensible_lc         (ico) = 0.0
+      cpatch%mmean_vapor_lc            (ico) = 0.0
+      cpatch%mmean_transp              (ico) = 0.0
+      cpatch%mmean_intercepted_al      (ico) = 0.0
+      cpatch%mmean_wshed_lg            (ico) = 0.0
+      cpatch%mmean_rshort_w            (ico) = 0.0
+      cpatch%mmean_rlong_w             (ico) = 0.0
+      cpatch%mmean_rad_profile       (:,ico) = 0.0
+      cpatch%mmean_sensible_wc         (ico) = 0.0
+      cpatch%mmean_vapor_wc            (ico) = 0.0
+      cpatch%mmean_intercepted_aw      (ico) = 0.0
+      cpatch%mmean_wshed_wg            (ico) = 0.0
+      cpatch%mmean_lai                 (ico) = 0.0
+      cpatch%mmean_bleaf               (ico) = 0.0
+      cpatch%mmean_broot               (ico) = 0.0
+      cpatch%mmean_bstorage            (ico) = 0.0
+      cpatch%mmean_mort_rate         (:,ico) = 0.0
+      cpatch%mmean_leaf_maintenance    (ico) = 0.0
+      cpatch%mmean_root_maintenance    (ico) = 0.0
+      cpatch%mmean_leaf_drop           (ico) = 0.0
+      cpatch%mmean_cb                  (ico) = 0.0
+      cpatch%mmean_nppleaf             (ico) = 0.0
+      cpatch%mmean_nppfroot            (ico) = 0.0
+      cpatch%mmean_nppsapwood          (ico) = 0.0
+      cpatch%mmean_nppcroot            (ico) = 0.0
+      cpatch%mmean_nppseeds            (ico) = 0.0
+      cpatch%mmean_nppwood             (ico) = 0.0
+      cpatch%mmean_nppdaily            (ico) = 0.0
+      cpatch%mmsqu_gpp                 (ico) = 0.0
+      cpatch%mmsqu_npp                 (ico) = 0.0
+      cpatch%mmsqu_plresp              (ico) = 0.0
+      cpatch%mmsqu_sensible_lc         (ico) = 0.0
+      cpatch%mmsqu_vapor_lc            (ico) = 0.0
+      cpatch%mmsqu_transp              (ico) = 0.0
+      cpatch%mmsqu_sensible_wc         (ico) = 0.0
+      cpatch%mmsqu_vapor_wc            (ico) = 0.0
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -421,61 +421,62 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! output, or the mean diurnal cycle.                                                    !
    !---------------------------------------------------------------------------------------!
    if (writing_dcyc) then
-      cpatch%qmean_gpp             (:,ico) = 0.0
-      cpatch%qmean_npp             (:,ico) = 0.0
-      cpatch%qmean_leaf_resp       (:,ico) = 0.0
-      cpatch%qmean_root_resp       (:,ico) = 0.0
-      cpatch%qmean_growth_resp     (:,ico) = 0.0
-      cpatch%qmean_storage_resp    (:,ico) = 0.0
-      cpatch%qmean_vleaf_resp      (:,ico) = 0.0
-      cpatch%qmean_plresp          (:,ico) = 0.0
-      cpatch%qmean_leaf_energy     (:,ico) = 0.0
-      cpatch%qmean_leaf_water      (:,ico) = 0.0
-      cpatch%qmean_leaf_hcap       (:,ico) = 0.0
-      cpatch%qmean_leaf_vpdef      (:,ico) = 0.0
-      cpatch%qmean_leaf_temp       (:,ico) = 0.0
-      cpatch%qmean_leaf_fliq       (:,ico) = 0.0
-      cpatch%qmean_leaf_gsw        (:,ico) = 0.0
-      cpatch%qmean_leaf_gbw        (:,ico) = 0.0
-      cpatch%qmean_wood_energy     (:,ico) = 0.0
-      cpatch%qmean_wood_water      (:,ico) = 0.0
-      cpatch%qmean_wood_hcap       (:,ico) = 0.0
-      cpatch%qmean_wood_temp       (:,ico) = 0.0
-      cpatch%qmean_wood_fliq       (:,ico) = 0.0
-      cpatch%qmean_wood_gbw        (:,ico) = 0.0
-      cpatch%qmean_fs_open         (:,ico) = 0.0
-      cpatch%qmean_fsw             (:,ico) = 0.0
-      cpatch%qmean_fsn             (:,ico) = 0.0
-      cpatch%qmean_psi_open        (:,ico) = 0.0
-      cpatch%qmean_psi_closed      (:,ico) = 0.0
-      cpatch%qmean_water_supply    (:,ico) = 0.0
-      cpatch%qmean_light_level     (:,ico) = 0.0
-      cpatch%qmean_light_level_beam(:,ico) = 0.0
-      cpatch%qmean_light_level_diff(:,ico) = 0.0
-      cpatch%qmean_par_l           (:,ico) = 0.0
-      cpatch%qmean_par_l_beam      (:,ico) = 0.0
-      cpatch%qmean_par_l_diff      (:,ico) = 0.0
-      cpatch%qmean_rshort_l        (:,ico) = 0.0
-      cpatch%qmean_rlong_l         (:,ico) = 0.0
-      cpatch%qmean_sensible_lc     (:,ico) = 0.0
-      cpatch%qmean_vapor_lc        (:,ico) = 0.0
-      cpatch%qmean_transp          (:,ico) = 0.0
-      cpatch%qmean_intercepted_al  (:,ico) = 0.0
-      cpatch%qmean_wshed_lg        (:,ico) = 0.0
-      cpatch%qmean_rshort_w        (:,ico) = 0.0
-      cpatch%qmean_rlong_w         (:,ico) = 0.0
-      cpatch%qmean_sensible_wc     (:,ico) = 0.0
-      cpatch%qmean_vapor_wc        (:,ico) = 0.0
-      cpatch%qmean_intercepted_aw  (:,ico) = 0.0
-      cpatch%qmean_wshed_wg        (:,ico) = 0.0
-      cpatch%qmsqu_gpp             (:,ico) = 0.0
-      cpatch%qmsqu_npp             (:,ico) = 0.0
-      cpatch%qmsqu_plresp          (:,ico) = 0.0
-      cpatch%qmsqu_sensible_lc     (:,ico) = 0.0
-      cpatch%qmsqu_vapor_lc        (:,ico) = 0.0
-      cpatch%qmsqu_transp          (:,ico) = 0.0
-      cpatch%qmsqu_sensible_wc     (:,ico) = 0.0
-      cpatch%qmsqu_vapor_wc        (:,ico) = 0.0
+      cpatch%qmean_gpp               (:,ico) = 0.0
+      cpatch%qmean_npp               (:,ico) = 0.0
+      cpatch%qmean_leaf_resp         (:,ico) = 0.0
+      cpatch%qmean_root_resp         (:,ico) = 0.0
+      cpatch%qmean_growth_resp       (:,ico) = 0.0
+      cpatch%qmean_storage_resp      (:,ico) = 0.0
+      cpatch%qmean_vleaf_resp        (:,ico) = 0.0
+      cpatch%qmean_plresp            (:,ico) = 0.0
+      cpatch%qmean_leaf_energy       (:,ico) = 0.0
+      cpatch%qmean_leaf_water        (:,ico) = 0.0
+      cpatch%qmean_leaf_hcap         (:,ico) = 0.0
+      cpatch%qmean_leaf_vpdef        (:,ico) = 0.0
+      cpatch%qmean_leaf_temp         (:,ico) = 0.0
+      cpatch%qmean_leaf_fliq         (:,ico) = 0.0
+      cpatch%qmean_leaf_gsw          (:,ico) = 0.0
+      cpatch%qmean_leaf_gbw          (:,ico) = 0.0
+      cpatch%qmean_wood_energy       (:,ico) = 0.0
+      cpatch%qmean_wood_water        (:,ico) = 0.0
+      cpatch%qmean_wood_hcap         (:,ico) = 0.0
+      cpatch%qmean_wood_temp         (:,ico) = 0.0
+      cpatch%qmean_wood_fliq         (:,ico) = 0.0
+      cpatch%qmean_wood_gbw          (:,ico) = 0.0
+      cpatch%qmean_fs_open           (:,ico) = 0.0
+      cpatch%qmean_fsw               (:,ico) = 0.0
+      cpatch%qmean_fsn               (:,ico) = 0.0
+      cpatch%qmean_psi_open          (:,ico) = 0.0
+      cpatch%qmean_psi_closed        (:,ico) = 0.0
+      cpatch%qmean_water_supply      (:,ico) = 0.0
+      cpatch%qmean_light_level       (:,ico) = 0.0
+      cpatch%qmean_light_level_beam  (:,ico) = 0.0
+      cpatch%qmean_light_level_diff  (:,ico) = 0.0
+      cpatch%qmean_par_l             (:,ico) = 0.0
+      cpatch%qmean_par_l_beam        (:,ico) = 0.0
+      cpatch%qmean_par_l_diff        (:,ico) = 0.0
+      cpatch%qmean_rshort_l          (:,ico) = 0.0
+      cpatch%qmean_rlong_l           (:,ico) = 0.0
+      cpatch%qmean_sensible_lc       (:,ico) = 0.0
+      cpatch%qmean_vapor_lc          (:,ico) = 0.0
+      cpatch%qmean_transp            (:,ico) = 0.0
+      cpatch%qmean_intercepted_al    (:,ico) = 0.0
+      cpatch%qmean_wshed_lg          (:,ico) = 0.0
+      cpatch%qmean_rshort_w          (:,ico) = 0.0
+      cpatch%qmean_rlong_w           (:,ico) = 0.0
+      cpatch%qmean_rad_profile     (:,:,ico) = 0.0
+      cpatch%qmean_sensible_wc       (:,ico) = 0.0
+      cpatch%qmean_vapor_wc          (:,ico) = 0.0
+      cpatch%qmean_intercepted_aw    (:,ico) = 0.0
+      cpatch%qmean_wshed_wg          (:,ico) = 0.0
+      cpatch%qmsqu_gpp               (:,ico) = 0.0
+      cpatch%qmsqu_npp               (:,ico) = 0.0
+      cpatch%qmsqu_plresp            (:,ico) = 0.0
+      cpatch%qmsqu_sensible_lc       (:,ico) = 0.0
+      cpatch%qmsqu_vapor_lc          (:,ico) = 0.0
+      cpatch%qmsqu_transp            (:,ico) = 0.0
+      cpatch%qmsqu_sensible_wc       (:,ico) = 0.0
+      cpatch%qmsqu_vapor_wc          (:,ico) = 0.0
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -644,14 +645,10 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%nir_b_beam                      (ipaa:ipaz) = 0.0
    csite%nir_b_diffuse                   (ipaa:ipaz) = 0.0
    csite%rlong_g                         (ipaa:ipaz) = 0.0
-   csite%rlong_g_surf                    (ipaa:ipaz) = 0.0
-   csite%rlong_g_incid                   (ipaa:ipaz) = 0.0
    csite%rlong_s                         (ipaa:ipaz) = 0.0
-   csite%rlong_s_surf                    (ipaa:ipaz) = 0.0
-   csite%rlong_s_incid                   (ipaa:ipaz) = 0.0
    csite%albedo                          (ipaa:ipaz) = 0.0
-   csite%albedo_beam                     (ipaa:ipaz) = 0.0
-   csite%albedo_diffuse                  (ipaa:ipaz) = 0.0
+   csite%albedo_par                      (ipaa:ipaz) = 0.0
+   csite%albedo_nir                      (ipaa:ipaz) = 0.0
    csite%rlong_albedo                    (ipaa:ipaz) = 0.0
    csite%rlongup                         (ipaa:ipaz) = 0.0
    csite%parup                           (ipaa:ipaz) = 0.0
@@ -729,8 +726,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%fmean_rshortup                  (ipaa:ipaz) = 0.0
    csite%fmean_rnet                      (ipaa:ipaz) = 0.0
    csite%fmean_albedo                    (ipaa:ipaz) = 0.0
-   csite%fmean_albedo_beam               (ipaa:ipaz) = 0.0
-   csite%fmean_albedo_diff               (ipaa:ipaz) = 0.0
+   csite%fmean_albedo_par                (ipaa:ipaz) = 0.0
+   csite%fmean_albedo_nir                (ipaa:ipaz) = 0.0
    csite%fmean_rlong_albedo              (ipaa:ipaz) = 0.0
    csite%fmean_ustar                     (ipaa:ipaz) = 0.0
    csite%fmean_tstar                     (ipaa:ipaz) = 0.0
@@ -800,8 +797,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
       csite%dmean_rshortup               (ipaa:ipaz) = 0.0
       csite%dmean_rnet                   (ipaa:ipaz) = 0.0
       csite%dmean_albedo                 (ipaa:ipaz) = 0.0
-      csite%dmean_albedo_beam            (ipaa:ipaz) = 0.0
-      csite%dmean_albedo_diff            (ipaa:ipaz) = 0.0
+      csite%dmean_albedo_par             (ipaa:ipaz) = 0.0
+      csite%dmean_albedo_nir             (ipaa:ipaz) = 0.0
       csite%dmean_rlong_albedo           (ipaa:ipaz) = 0.0
       csite%dmean_ustar                  (ipaa:ipaz) = 0.0
       csite%dmean_tstar                  (ipaa:ipaz) = 0.0
@@ -867,8 +864,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
       csite%mmean_rshortup               (ipaa:ipaz) = 0.0
       csite%mmean_rnet                   (ipaa:ipaz) = 0.0
       csite%mmean_albedo                 (ipaa:ipaz) = 0.0
-      csite%mmean_albedo_beam            (ipaa:ipaz) = 0.0
-      csite%mmean_albedo_diff            (ipaa:ipaz) = 0.0
+      csite%mmean_albedo_par             (ipaa:ipaz) = 0.0
+      csite%mmean_albedo_nir             (ipaa:ipaz) = 0.0
       csite%mmean_rlong_albedo           (ipaa:ipaz) = 0.0
       csite%mmean_ustar                  (ipaa:ipaz) = 0.0
       csite%mmean_tstar                  (ipaa:ipaz) = 0.0
@@ -961,8 +958,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
       csite%qmean_rshortup             (:,ipaa:ipaz) = 0.0
       csite%qmean_rnet                 (:,ipaa:ipaz) = 0.0
       csite%qmean_albedo               (:,ipaa:ipaz) = 0.0
-      csite%qmean_albedo_beam          (:,ipaa:ipaz) = 0.0
-      csite%qmean_albedo_diff          (:,ipaa:ipaz) = 0.0
+      csite%qmean_albedo_par           (:,ipaa:ipaz) = 0.0
+      csite%qmean_albedo_nir           (:,ipaa:ipaz) = 0.0
       csite%qmean_rlong_albedo         (:,ipaa:ipaz) = 0.0
       csite%qmean_ustar                (:,ipaa:ipaz) = 0.0
       csite%qmean_tstar                (:,ipaa:ipaz) = 0.0
@@ -1121,26 +1118,26 @@ subroutine init_ed_site_vars(cpoly, lat)
    !---------------------------------------------------------------------------------------!
    !      Initialise several disturbance- and LU-related variables.                        !
    !---------------------------------------------------------------------------------------!
-   cpoly%plantation                                                (:) = 0
-   cpoly%agri_stocking_pft                                         (:) = agri_stock
-   cpoly%agri_stocking_density                                     (:) = 10.0
-   cpoly%plantation_stocking_pft                                   (:) = plantation_stock
-   cpoly%plantation_stocking_density                               (:) = 4.0
-   cpoly%primary_harvest_memory                                    (:) = 0.0
-   cpoly%secondary_harvest_memory                                  (:) = 0.0
-   cpoly%fire_disturbance_rate                                     (:) = 0.0
-   cpoly%ignition_rate                                             (:) = 0.0
-   cpoly%lambda_fire                                          (1:12,:) = 0.0
-   cpoly%nat_disturbance_rate                                      (:) = 0.0
-   cpoly%nat_dist_type                                             (:) = 0
-   cpoly%disturbance_memory         (1:n_dist_types, 1:n_dist_types,:) = 0.0
-   cpoly%disturbance_rates          (1:n_dist_types, 1:n_dist_types,:) = 0.0
+   cpoly%plantation                       (:) = 0
+   cpoly%agri_stocking_pft                (:) = agri_stock
+   cpoly%agri_stocking_density            (:) = 10.0
+   cpoly%plantation_stocking_pft          (:) = plantation_stock
+   cpoly%plantation_stocking_density      (:) = 4.0
+   cpoly%primary_harvest_memory           (:) = 0.0
+   cpoly%secondary_harvest_memory         (:) = 0.0
+   cpoly%fire_disturbance_rate            (:) = 0.0
+   cpoly%ignition_rate                    (:) = 0.0
+   cpoly%lambda_fire                    (:,:) = 0.0
+   cpoly%nat_disturbance_rate             (:) = 0.0
+   cpoly%nat_dist_type                    (:) = 0
+   cpoly%disturbance_memory           (:,:,:) = 0.0
+   cpoly%disturbance_rates            (:,:,:) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Initialise the mean radiation. --------------------------------------------------!
-   cpoly%rad_avg(:) = 200.0
+   cpoly%rad_avg                          (:) = 200.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1466,8 +1463,8 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%fmean_rshortup             (ipy) = 0.0
       cgrid%fmean_rnet                 (ipy) = 0.0
       cgrid%fmean_albedo               (ipy) = 0.0
-      cgrid%fmean_albedo_beam          (ipy) = 0.0
-      cgrid%fmean_albedo_diff          (ipy) = 0.0
+      cgrid%fmean_albedo_par           (ipy) = 0.0
+      cgrid%fmean_albedo_nir           (ipy) = 0.0
       cgrid%fmean_rlong_albedo         (ipy) = 0.0
       cgrid%fmean_ustar                (ipy) = 0.0
       cgrid%fmean_tstar                (ipy) = 0.0
@@ -1607,8 +1604,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%dmean_rshortup             (ipy) = 0.0
          cgrid%dmean_rnet                 (ipy) = 0.0
          cgrid%dmean_albedo               (ipy) = 0.0
-         cgrid%dmean_albedo_beam          (ipy) = 0.0
-         cgrid%dmean_albedo_diff          (ipy) = 0.0
+         cgrid%dmean_albedo_par           (ipy) = 0.0
+         cgrid%dmean_albedo_nir           (ipy) = 0.0
          cgrid%dmean_rlong_albedo         (ipy) = 0.0
          cgrid%dmean_ustar                (ipy) = 0.0
          cgrid%dmean_tstar                (ipy) = 0.0
@@ -1735,8 +1732,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%mmean_rshortup             (ipy) = 0.0
          cgrid%mmean_rnet                 (ipy) = 0.0
          cgrid%mmean_albedo               (ipy) = 0.0
-         cgrid%mmean_albedo_beam          (ipy) = 0.0
-         cgrid%mmean_albedo_diff          (ipy) = 0.0
+         cgrid%mmean_albedo_par           (ipy) = 0.0
+         cgrid%mmean_albedo_nir           (ipy) = 0.0
          cgrid%mmean_rlong_albedo         (ipy) = 0.0
          cgrid%mmean_ustar                (ipy) = 0.0
          cgrid%mmean_tstar                (ipy) = 0.0
@@ -1917,8 +1914,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%qmean_rshortup           (:,ipy) = 0.0
          cgrid%qmean_rnet               (:,ipy) = 0.0
          cgrid%qmean_albedo             (:,ipy) = 0.0
-         cgrid%qmean_albedo_beam        (:,ipy) = 0.0
-         cgrid%qmean_albedo_diff        (:,ipy) = 0.0
+         cgrid%qmean_albedo_par         (:,ipy) = 0.0
+         cgrid%qmean_albedo_nir         (:,ipy) = 0.0
          cgrid%qmean_rlong_albedo       (:,ipy) = 0.0
          cgrid%qmean_ustar              (:,ipy) = 0.0
          cgrid%qmean_tstar              (:,ipy) = 0.0
@@ -2011,23 +2008,30 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    use soil_coms     , only : soil               & ! intent(in), look-up table
                             , slz                & ! intent(in)
                             , tiny_sfcwater_mass & ! intent(in)
+                            , soil_rough         & ! intent(in)
+                            , ny07_eq04_a        & ! intent(in)
+                            , ny07_eq04_m        & ! intent(in)
                             , matric_potential   ! ! intent(in)
-   use consts_coms   , only : wdns               ! ! intent(in)
+   use consts_coms   , only : wdns               & ! intent(in)
+                            , fsdns              & ! intent(in)
+                            , fsdnsi             ! ! intent(in)
    use therm_lib     , only : uextcm2tl          & ! subroutine
                             , uint2tl            ! ! subroutine
    use ed_therm_lib  , only : ed_grndvap         ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)                 , target     :: csite      ! Current site
-   integer                        , intent(in) :: ipa        ! Number of the current patch
-   integer                        , intent(in) :: mzg        ! Number of soil layers
-   integer                        , intent(in) :: mzs        ! Number of sfc. water layers
-   integer        , dimension(mzg), intent(in) :: ntext_soil ! Soil texture
+   type(sitetype)                 , target     :: csite          ! Current site
+   integer                        , intent(in) :: ipa            ! Current patch #
+   integer                        , intent(in) :: mzg            ! # of soil layers
+   integer                        , intent(in) :: mzs            ! # of sfc. water layers
+   integer        , dimension(mzg), intent(in) :: ntext_soil     ! Soil texture
    !----- Local variables -----------------------------------------------------------------!
-   type(patchtype)                , pointer    :: cpatch     ! Current patch
-   integer                                     :: k          ! Layer counter
-   integer                                     :: ico        ! Cohort counter
-   integer                                     :: nsoil      ! Alias for soil texture class
+   type(patchtype)                , pointer    :: cpatch         ! Current patch
+   integer                                     :: k              ! Layer counter
+   integer                                     :: ico            ! Cohort counter
+   integer                                     :: nsoil          ! Soil texture class
+   real                                        :: tot_sfcw_mass  ! Total mass
+   real                                        :: bulk_sfcw_dens ! Bulk density
    !---------------------------------------------------------------------------------------!
 
 
@@ -2050,11 +2054,16 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    ! checking the mass.  In case there is a layer, we convert sfcwater_energy from J/m2 to !
    ! J/kg, and compute the temperature and liquid fraction.                                !
    !---------------------------------------------------------------------------------------! 
-   csite%nlev_sfcwater(ipa) = 0
+   csite%nlev_sfcwater   (ipa) = 0
+   tot_sfcw_mass               = 0.
+   csite%total_sfcw_depth(ipa) = 0.
    snowloop: do k=1,mzs
       !----- Leave the loop if there is not enough mass in this layer... ------------------!
       if (csite%sfcwater_mass(k,ipa) <= tiny_sfcwater_mass)  exit snowloop
       csite%nlev_sfcwater(ipa) = k
+      tot_sfcw_mass                = tot_sfcw_mass  + csite%sfcwater_mass (k,ipa)
+      csite%total_sfcw_depth(ipa)  = csite%total_sfcw_depth(ipa)                           &
+                                   + csite%sfcwater_depth(k,ipa)
       csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa)                          &
                                    / csite%sfcwater_mass(k,ipa)
       call uint2tl(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                &
@@ -2075,8 +2084,31 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
          csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
       end if
    end do
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the fraction of the canopy covered in snow.  I could not find any            !
+   ! reference for the original method (commented out), so I implemented the method used   !
+   ! in CLM-4, which is based on:                                                          !
+   !                                                                                       !
+   ! Niu, G.-Y., and Z.-L. Yang (2007), An observation-based formulation of snow cover     !
+   !    fraction and its evaluation over large North American river basins,                !
+   !    J. Geophys. Res., 112, D21101, doi:10.1029/2007JD008674                            !
+   !---------------------------------------------------------------------------------------!
+   ! csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   if (tot_sfcw_mass > tiny_sfcwater_mass) then
+      bulk_sfcw_dens     = max( fsdns, min( wdns                                           &
+                              , tot_sfcw_mass / csite%total_sfcw_depth(ipa)))
+      csite%snowfac(ipa) = max( 0.0, min( 0.99                                             &
+                              , tanh( csite%total_sfcw_depth(ipa)                          &
+                                    / ( ny07_eq04_a * soil_rough                           &
+                                      * (bulk_sfcw_dens * fsdnsi) ** ny07_eq04_m ) ) ) )
+   else
+      csite%snowfac(ipa) = 0.0
+   end if
+   !---------------------------------------------------------------------------------------!
 
    
    !----- Now we can compute the surface properties. --------------------------------------!
@@ -2084,7 +2116,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    call ed_grndvap(csite%nlev_sfcwater(ipa),ntext_soil(mzg)                                &
                   ,csite%soil_water(mzg,ipa),csite%soil_tempk(mzg,ipa)                     &
                   ,csite%soil_fracliq(mzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
-                  ,csite%sfcwater_fracliq(k,ipa),csite%can_prss(ipa)                       &
+                  ,csite%sfcwater_fracliq(k,ipa),csite%snowfac(ipa),csite%can_prss(ipa)    &
                   ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
                   ,csite%ground_temp(ipa),csite%ground_fliq(ipa),csite%ggsoil(ipa))
    !---------------------------------------------------------------------------------------! 

@@ -94,7 +94,7 @@ subroutine copy_lake_init(i,j,ifm,initp)
    !----- Find the characteristic scales (a.k.a. stars). ----------------------------------!
    call ed_stars8(lakemet%atm_theta,lakemet%atm_enthalpy,lakemet%atm_shv,lakemet%atm_co2   &
                  ,initp%can_theta  ,initp%can_enthalpy  ,initp%can_shv  ,initp%can_co2     &
-                 ,lakemet%geoht,0.d0,lakemet%atm_vels,initp%lake_rough                     &
+                 ,lakemet%geoht,0.d0,ustmin8,lakemet%atm_vels,initp%lake_rough             &
                  ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar              &
                  ,initp%zeta,initp%ribulk,initp%gglake)
    !---------------------------------------------------------------------------------------!
@@ -334,9 +334,9 @@ subroutine lake_diagnostics(initp)
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars8(lakemet%atm_theta,lakemet%atm_enthalpy,lakemet%atm_shv             &
                        ,lakemet%atm_co2,initp%can_theta,initp%can_enthalpy,initp%can_shv   &
-                       ,initp%can_co2,lakemet%geoht,0.d0,lakemet%atm_vels,initp%lake_rough &
-                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk,initp%gglake)
+                       ,initp%can_co2,lakemet%geoht,0.d0,ustmin8,lakemet%atm_vels          &
+                       ,initp%lake_rough,initp%ustar,initp%tstar,initp%estar,initp%qstar   &
+                       ,initp%cstar,initp%zeta,initp%ribulk,initp%gglake)
          !---------------------------------------------------------------------------------!
 
 
@@ -489,7 +489,7 @@ subroutine lake_derivs(initp,dinitp)
    !---------------------------------------------------------------------------------------!
    dinitp%avg_albedt     = min(max(albt_inter + albt_slope*lakemet%tanz,albt_min),albt_max)
    dinitp%avg_rlongup    = emiss_h2o * stefan8 * initp%lake_temp ** 4
-   dinitp%avg_rshort_gnd = dinitp%avg_albedt * lakemet%rshort
+   dinitp%avg_rshort_gnd = (1.d0 - dinitp%avg_albedt) * lakemet%rshort
    !---------------------------------------------------------------------------------------!
 
 

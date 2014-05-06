@@ -102,7 +102,7 @@ call date_abs_secs2(iyear1,imonth1,idate1,itime1*100,secs_init)
 
 nhftot=-1
 thisfile = cu_prefix(1:len_trim(cu_prefix))//'*.vfm'
-call RAMS_filelist(fnames,thisfile,nhftot)
+call RAMS_filelist(maxcufiles,fnames,thisfile,nhftot)
 
 if(nhftot > maxcufiles) then
    print*,'too many cu files'

@@ -36,7 +36,7 @@ module mortality
       real           , intent(in) :: patch_age
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft            ! PFT 
-      real                        :: threshtemp      ! Cold threshold temperature
+      real                        :: temp_dep        ! Temp. function (frost mortality)
       real                        :: expmort         ! Carbon-balance term
       !------------------------------------------------------------------------------------!
 
@@ -49,6 +49,7 @@ module mortality
       ! 1.  Ageing, PFT-dependent but otherwise constant.                                  !
       !------------------------------------------------------------------------------------!
       cpatch%mort_rate(1,ico) = mort3(ipft)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -74,19 +75,14 @@ module mortality
 
 
       !------------------------------------------------------------------------------------!
-      ! 4.   Mortality due to cold.                                                         !
+      ! 4.   Mortality due to cold, after:                                                 !
+      !      Albani, M.; D. Medvigy; G. C. Hurtt; P. R. Moorcroft, 2006: The contributions !
+      !           of land-use change, CO2 fertilization, and climate variability to the    !
+      !           Eastern US carbon sink.  Glob. Change Biol., 12, 2370-2390,              !
+      !           doi: 10.1111/j.1365-2486.2006.01254.x                                    !
       !------------------------------------------------------------------------------------!
-      threshtemp = 5.0 + plant_min_temp(ipft)
-      if(avg_daily_temp < threshtemp)then
-         cpatch%mort_rate(4,ico) = frost_mort(ipft)
-         if (avg_daily_temp > plant_min_temp(ipft)) then
-            cpatch%mort_rate(4,ico) = cpatch%mort_rate(4,ico)                              &
-                                    * (1.0 - (avg_daily_temp - plant_min_temp(ipft))       &
-                                             / (threshtemp - plant_min_temp(ipft)) )
-         end if
-      else
-         cpatch%mort_rate(4,ico) = 0.
-      end if
+      temp_dep = max( 0.0, min( 1.0, 1.0 - (avg_daily_temp - plant_min_temp(ipft)) / 5.0) )
+      cpatch%mort_rate(4,ico) = frost_mort(ipft) * temp_dep
       !------------------------------------------------------------------------------------!
 
 
@@ -156,9 +152,12 @@ module mortality
    real function survivorship(dest_type,poly_dest_type,mindbh_harvest,csite,ipa,ico)
       use ed_state_vars, only : patchtype                & ! structure
                               , sitetype                 ! ! structure
-      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
+      use disturb_coms , only : treefall_hite_threshold  & ! intent(in)
+                              , fire_hite_threshold      ! ! intent(in)
       use pft_coms     , only : treefall_s_ltht          & ! intent(in)
-                              , treefall_s_gtht          ! ! intent(in)
+                              , treefall_s_gtht          & ! intent(in)
+                              , fire_s_ltht              & ! intent(in)
+                              , fire_s_gtht              ! ! intent(in)
       use ed_max_dims  , only : n_pft                    ! ! intent(in)
       
       implicit none
@@ -210,13 +209,17 @@ module mortality
          select case (poly_dest_type)
          case (0) !----- Treefall, we must check the cohort height. -----------------------!
             if (cpatch%hite(ico) < treefall_hite_threshold) then
-               survivorship =  treefall_s_ltht(ipft)
+               survivorship = treefall_s_ltht(ipft)
             else
                survivorship = treefall_s_gtht(ipft)
             end if
 
-         case (1) !----- Fire, no survival. -----------------------------------------------!
-            survivorship = 0.0
+         case (1) !----- Fire, also check the cohort height. ------------------------------!
+            if (cpatch%hite(ico) < fire_hite_threshold) then
+               survivorship = fire_s_ltht(ipft)
+            else
+               survivorship = fire_s_gtht(ipft)
+            end if
          end select
       end select
 

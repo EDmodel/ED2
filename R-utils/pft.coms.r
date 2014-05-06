@@ -163,10 +163,12 @@ ko2.hor.b02  <<-  2852.844                        # "Activation energy          
 #     These are constants obtained in Leuning et al. (1995) and Collatz et al. (1991) to   #
 # convert different conductivities.                                                        #
 #------------------------------------------------------------------------------------------#
-gbh.2.gbw  <<- 1.075           # heat  to water  - leaf boundary layer
-gbw.2.gbc  <<- 1.0 / 1.4       # water to carbon - leaf boundary layer
-gsw.2.gsc  <<- 1.0 / 1.6       # water to carbon - stomata
-gsc.2.gsw  <<- 1./gsw.2.gsc    # carbon to water - stomata
+gbh.2.gbw  <<- 1.075               # heat   to water  - leaf boundary layer
+gsc.2.gsw  <<- 1.60                # carbon to water  - stomata
+gbc.2.gbw  <<- gsc.2.gsw^twothirds # carbon to water  - leaf boundary layer
+gsw.2.gsc  <<- 1.0 / gsc.2.gsw     # water  to carbon - stomata
+gbw.2.gbc  <<- 1.0 / gbc.2.gbw     # water  to carbon - leaf boundary layer
+gsc.2.gsw  <<- 1.0 / gsw.2.gsc     # carbon to water  - stomata
 #------------------------------------------------------------------------------------------#
 
 
@@ -307,6 +309,21 @@ if (! "clumping.grass" %in% ls()){
 }else{
    clumping.grass    <<-   clumping.grass
 }#end if
+if (! "lwidth.grass" %in% ls()){
+   lwidth.grass      <<-   0.05
+}else{
+   lwidth.grass      <<-   lwidth.grass
+}#end if
+if (! "lwidth.bltree" %in% ls()){
+   lwidth.bltree     <<-   0.10
+}else{
+   lwidth.bltree     <<-   lwidth.bltree
+}#end if
+if (! "lwidth.nltree" %in% ls()){
+   lwidth.nltree     <<-   0.05
+}else{
+   lwidth.nltree     <<-   lwidth.nltree
+}#end if
 #------------------------------------------------------------------------------------------#
 
 
@@ -403,17 +420,18 @@ odead.large = c(  0.13625460, 2.42173900,  6.94835320)
 ndead.small = c( -1.26395300, 2.43236100,  1.80180100)
 ndead.large = c( -0.83468050, 2.42557360,  2.68228050)
 nleaf       = c(  0.01925119, 0.97494935,  2.58585087)
+uleaf       = c( -1.09254800, 1.28505100,  3.199019  )
 ncrown.area = c(  0.11842950, 1.05211970)
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Define reference height and coefficients for tropical allometry. -------------------#
-if (iallom == 0 | iallom == 1){
+if (iallom %in% c(0,1)){
    hgt.ref.trop = NA
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
-}else if (iallom == 2){
+}else if (iallom %in% c(2,3)){
    hgt.ref.trop = 61.7
    b1Ht.trop    = 0.0352
    b2Ht.trop    = 0.694 
@@ -458,8 +476,10 @@ pft01 = list( name               = "C4 grass"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -479,6 +499,9 @@ pft01 = list( name               = "C4 grass"
             , agf.bs             = 0.7
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
+            , leaf.width         = lwidth.grass
+            , init.density       = 0.1
+            , veg.hcap.min       = 3.68093E+00
             )
 
 pft02 = list( name               = "Early tropical"
@@ -512,8 +535,10 @@ pft02 = list( name               = "Early tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -533,6 +558,9 @@ pft02 = list( name               = "Early tropical"
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
+            , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 9.75446E+00
             )
 
 pft03 = list( name               = "Mid tropical"
@@ -566,8 +594,10 @@ pft03 = list( name               = "Mid tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -587,6 +617,9 @@ pft03 = list( name               = "Mid tropical"
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
+            , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 1.30673E+01
             )
 
 pft04 = list( name               = "Late tropical"
@@ -620,8 +653,10 @@ pft04 = list( name               = "Late tropical"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -641,6 +676,9 @@ pft04 = list( name               = "Late tropical"
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
+            , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 1.65642E+01
             )
 
 pft05 = list( name               = "Temperate C3 Grass"
@@ -674,8 +712,10 @@ pft05 = list( name               = "Temperate C3 Grass"
             , hgt.ref            = 0.0
             , b1Ht               = 0.4778
             , b2Ht               = -0.750
-            , b1Bl               = 0.08
-            , b2Bl               = 1.00
+            , b1Bl.small         = 0.08
+            , b2Bl.small         = 1.00
+            , b1Bl.large         = 0.08
+            , b2Bl.large         = 1.00
             , b1Bs.small         = 1.e-5
             , b2Bs.small         = 1.0
             , b1Bs.large         = 1.e-5
@@ -695,6 +735,9 @@ pft05 = list( name               = "Temperate C3 Grass"
             , agf.bs             = 0.7
             , orient.factor      = -0.30
             , clumping.factor    =  1.00
+            , leaf.width         = lwidth.grass
+            , init.density       = 0.1
+            , veg.hcap.min       = 9.16551E+00
             )
 
 pft06 = list( name               = "North Pine"
@@ -728,8 +771,10 @@ pft06 = list( name               = "North Pine"
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
             , b2Ht               = -0.03884
-            , b1Bl               = 0.024
-            , b2Bl               = 1.899
+            , b1Bl.small         = 0.024
+            , b2Bl.small         = 1.899
+            , b1Bl.large         = 0.024
+            , b2Bl.large         = 1.899
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -749,6 +794,9 @@ pft06 = list( name               = "North Pine"
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
+            , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 2.34683E-01
             )
 
 pft07 = list( name               = "South Pine"
@@ -782,8 +830,10 @@ pft07 = list( name               = "South Pine"
             , hgt.ref            = 1.3
             , b1Ht               = 27.14
             , b2Ht               = -0.03884
-            , b1Bl               = 0.024
-            , b2Bl               = 1.899
+            , b1Bl.small         = 0.024
+            , b2Bl.small         = 1.899
+            , b1Bl.large         = 0.024
+            , b2Bl.large         = 1.899
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -803,6 +853,9 @@ pft07 = list( name               = "South Pine"
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
+            , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 2.34683E-01
             )
 
 pft08 = list( name               = "Late conifer"
@@ -836,8 +889,10 @@ pft08 = list( name               = "Late conifer"
             , hgt.ref            = 1.3
             , b1Ht               = 22.79
             , b2Ht               = -0.04445
-            , b1Bl               = 0.0454
-            , b2Bl               = 1.6829
+            , b1Bl.small         = 0.0454
+            , b2Bl.small         = 1.6829
+            , b1Bl.large         = 0.0454
+            , b2Bl.large         = 1.6829
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.1536
             , b1Bs.large         = 0.1617
@@ -857,6 +912,9 @@ pft08 = list( name               = "Late conifer"
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
+            , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 6.80074E-01
             )
 
 pft09 = list( name               = "Early hardwood"
@@ -890,8 +948,10 @@ pft09 = list( name               = "Early hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 22.6799
             , b2Ht               = -0.06534
-            , b1Bl               = 0.0129
-            , b2Bl               = 1.7477
+            , b1Bl.small         = 0.0129
+            , b2Bl.small         = 1.7477
+            , b1Bl.large         = 0.0129
+            , b2Bl.large         = 1.7477
             , b1Bs.small         = 0.02648
             , b2Bs.small         = 2.95954
             , b1Bs.large         = 0.02648
@@ -911,6 +971,9 @@ pft09 = list( name               = "Early hardwood"
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
+            , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 8.95049E-02
             )
 
 pft10 = list( name               = "Mid hardwood"
@@ -944,8 +1007,10 @@ pft10 = list( name               = "Mid hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 25.18
             , b2Ht               = -0.04964
-            , b1Bl               = 0.048
-            , b2Bl               = 1.455
+            , b1Bl.small         = 0.048
+            , b2Bl.small         = 1.455
+            , b1Bl.large         = 0.048
+            , b2Bl.large         = 1.455
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.4572
             , b1Bs.large         = 0.1617
@@ -965,6 +1030,9 @@ pft10 = list( name               = "Mid hardwood"
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
+            , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 7.65271E-01
             )
 
 pft11 = list( name               = "Late hardwood"
@@ -998,8 +1066,10 @@ pft11 = list( name               = "Late hardwood"
             , hgt.ref            = 1.3
             , b1Ht               = 23.3874
             , b2Ht               = -0.05404
-            , b1Bl               = 0.017
-            , b2Bl               = 1.731
+            , b1Bl.small         = 0.017
+            , b2Bl.small         = 1.731
+            , b1Bl.large         = 0.017
+            , b2Bl.large         = 1.731
             , b1Bs.small         = 0.235
             , b2Bs.small         = 2.2518
             , b1Bs.large         = 0.235
@@ -1019,6 +1089,9 @@ pft11 = list( name               = "Late hardwood"
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
+            , leaf.width         = lwidth.bltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 1.60601E-01
             )
 
 pft12 = pft05; pft12$name = "C3 crop"   ; pft12$key = "CC3"; pft12$colour="purple4"
@@ -1057,8 +1130,10 @@ pft16 = list( name               = "C3 grass"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1078,6 +1153,9 @@ pft16 = list( name               = "C3 grass"
             , agf.bs             = 0.7
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
+            , leaf.width         = lwidth.grass
+            , init.density       = 0.1
+            , veg.hcap.min       = 3.68093E+00
             )
 
 pft17 = list( name               = "Araucaria"
@@ -1111,8 +1189,10 @@ pft17 = list( name               = "Araucaria"
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
-            , b1Bl               = NA
-            , b2Bl               = NA
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1132,6 +1212,9 @@ pft17 = list( name               = "Araucaria"
             , agf.bs             = 0.7
             , orient.factor      = orient.aa
             , clumping.factor    = clumping.aa
+            , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 9.93851E+00
             )
 pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour=all.colour
 #------------------------------------------------------------------------------------------#
@@ -1155,12 +1238,15 @@ for (p in 1:(npft+1)){
 
 
 #----- Minimum and Maximum DBH. -----------------------------------------------------------#
-for (ipft in 1:npft){
+pft$dbh.min   = rep(NA,times=npft+1)
+pft$dbh.crit  = rep(NA,times=npft+1)
+pft$dbh.adult = rep(NA,times=npft+1)
+for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
-      if (iallom == 0 | iallom == 1){
+      if (iallom %in% c(0,1)){
          pft$dbh.min [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit[ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
-      }else if (iallom == 2){
+      }else if (iallom %in% c(2,3)){
          pft$dbh.min [ipft] = ( log(   pft$hgt.ref[ipft]
                                    / ( pft$hgt.ref[ipft] - pft$hgt.min[ipft]) )
                               / pft$b1Ht[ipft] ) ^ (1.0 / pft$b2Ht[ipft])
@@ -1174,6 +1260,7 @@ for (ipft in 1:npft){
       pft$dbh.crit[ipft] = ( log(1.0 - (pft$hgt.max[ipft]-pft$hgt.ref[ipft])
                                        / pft$b1Ht[ipft]) / pft$b2Ht[ipft] )
    }#end if
+   pft$dbh.adult[ipft]   = 10.0
 }#end for
 
 
@@ -1181,13 +1268,16 @@ for (ipft in 1:npft){
 #    Specific leaf area for those PFTs whose specific leaf area depends on the leaf turn-  #
 # over rate.                                                                               #
 #------------------------------------------------------------------------------------------#
-for (ipft in 1:npft){
+#pft$SLA = rep(NA,times=npft+1)
+for (ipft in sequence(npft)){
    if (is.na(pft$SLA[ipft])){
       pft$SLA[ipft] = ( 10^( (2.4 - 0.46 * log10(12./pft$leaf.turnover.rate[ipft]))) 
                       * C2B * 0.1 )
    }#end if
 }#end for
 #------------------------------------------------------------------------------------------#
+
+
 
 #----- Constants shared by both bdead and bleaf -------------------------------------------#
 a1    =  -1.981
@@ -1208,21 +1298,48 @@ b2l   =   0.605
 c2l   =   0.848
 d2l   =   0.438
 #------------------------------------------------------------------------------------------#
-
-for (ipft in 1:npft){
+#pft$b1Bl       = rep(NA,times=npft+1)
+#pft$b2Bl       = rep(NA,times=npft+1)
+#pft$b1Bs.small = rep(NA,times=npft+1)
+#pft$b2Bs.small = rep(NA,times=npft+1)
+#pft$b1Bs.large = rep(NA,times=npft+1)
+#pft$b2Bs.large = rep(NA,times=npft+1)
+#pft$b1Ca       = rep(NA,times=npft+1)
+#pft$b2Ca       = rep(NA,times=npft+1)
+for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
       #------------------------------------------------------------------------------------#
       #      Fill in the leaf biomass parameters.                                          #
       #------------------------------------------------------------------------------------#
-      if (iallom == 0 || iallom == 1){
+      if (iallom %in% c(0,1)){
          #---- ED-2.1 allometry. ----------------------------------------------------------#
-         pft$b1Bl      [ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
+         pft$b1Bl.small[ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
          aux                  = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
                                 + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
-         pft$b2Bl      [ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
-      }else if(iallom == 2){
-         pft$b1Bl      [ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
-         pft$b2Bl      [ipft] = nleaf[2]
+         pft$b2Bl.small[ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
+         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
+      }else if(iallom %in% c(2)){
+         pft$b1Bl.small[ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
+         pft$b2Bl.small[ipft] = nleaf[2]
+         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
+      }else if(iallom %in% c(3)){
+         #---------------------------------------------------------------------------------#
+         #    Use Lescure et al. (1983) for large trees, assume minimum leaf biomass for   #
+         # mid-successional to be 50gC/plant and interpolate biomass for saplings using a  #
+         # log-linear function.                                                            #
+         #---------------------------------------------------------------------------------#
+         pft$b1Bl.large[ipft] = 0.00873 * 11.91 / pft$SLA[ipft] # * C2B
+         pft$b2Bl.large[ipft] = 2.1360
+         
+         bleaf.min   = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
+         bleaf.adult = ( pft$b1Bl.large[ipft] / C2B
+                       * pft$dbh.adult[ipft] ^ pft$b2Bl.large[ipft] )
+         pft$b2Bl.small[ipft] = ( log(bleaf.adult/bleaf.min)
+                                / log(pft$dbh.adult[ipft]/pft$dbh.min[ipft]) )
+         pft$b1Bl.small[ipft] = ( bleaf.adult * C2B 
+                                / pft$dbh.adult[ipft] ^ pft$b2Bl.small[ipft] )
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1230,7 +1347,7 @@ for (ipft in 1:npft){
       #------------------------------------------------------------------------------------#
       #      Fill in the structural biomass parameters.                                    #
       #------------------------------------------------------------------------------------#
-      if (iallom == 0){
+      if (iallom %in% c(0)){
          #---- ED-2.1 allometry. ----------------------------------------------------------#
          pft$b1Bs.small[ipft] = exp(a1 + c1d * pft$b1Ht[ipft] + d1d * log(pft$rho[ipft]))
          pft$b1Bs.large[ipft] = exp(a1 + c1d * log(pft$hgt.max[ipft]) 
@@ -1243,13 +1360,13 @@ for (ipft in 1:npft){
                                 + log(pft$rho[ipft]) * (d2d - d1d)) * (1.0/log(dcrit))
          pft$b2Bs.large[ipft] = C2B * b2d + aux
 
-      }else if (iallom == 1){
+      }else if (iallom %in% c(1)){
          #---- Based on modified Chave et al. (2001) allometry. ---------------------------#
          pft$b1Bs.small[ipft] = C2B * exp(odead.small[1]) * pft$rho[ipft] / odead.small[3]
          pft$b2Bs.small[ipft] = odead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(odead.large[1]) * pft$rho[ipft] / odead.large[3]
          pft$b2Bs.large[ipft] = odead.large[2]
-      }else if (iallom == 2){
+      }else if (iallom %in% c(2,3)){
          #---- Based an alternative modification of Chave et al. (2001) allometry. --------#
          pft$b1Bs.small[ipft] = C2B * exp(ndead.small[1]) * pft$rho[ipft] / ndead.small[3]
          pft$b2Bs.small[ipft] = ndead.small[2]
@@ -1264,22 +1381,39 @@ for (ipft in 1:npft){
       #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
       # parameters for crown area.                                                         #
       #------------------------------------------------------------------------------------#
-      if (iallom == 1){
+      if (iallom %in% c(0,1)){
          pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
          pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
-      }else if (iallom == 2){
+      }else if (iallom %in% c(2,3)){
          pft$b1Ca[ipft] = exp(ncrown.area[1])
          pft$b2Ca[ipft] = ncrown.area[2]
       }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Replace the coefficients for WAI in case iallom is 3.                          #
+      #  These numbers come from fitting Chambers et al. (2001) and Chambers et al. (2004) #
+      #  allometries for stem area index.                                                  #
+      #------------------------------------------------------------------------------------#
+      if (iallom %in% c(3)){
+         pft$b1WAI[ipft] = 0.11 * pft$SLA[ipft] * pft$b1Bl.large[ipft]
+         pft$b2WAI[ipft] = pft$b2Bl.large[ipft]
+      }#end if
+      #------------------------------------------------------------------------------------#
    }#end if
+   #---------------------------------------------------------------------------------------#
 }#end do
+#------------------------------------------------------------------------------------------#
 
 
 
 #------------------------------------------------------------------------------------------#
 #    Rooting depth coefficients.                                                                               #
 #------------------------------------------------------------------------------------------#
-if (iallom == 0){
+pft$b1Rd = rep(NA,times=npft+1)
+if (iallom %in% c(0)){
    #----- Original ED-2.1 scheme, based on standing volume. -------------------------------#
    pft$b1Rd[ 1:17] = NA
    pft$b1Rd[    1] = -0.700
@@ -1296,13 +1430,36 @@ if (iallom == 0){
    pft$b2Rd[12:16] = 0.000
    pft$b2Rd[   17] = 0.277
 
-}else if (iallom == 1 || iallom == 2){
+}else if (iallom %in% c(1,2,3)){
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
    pft$b1Rd[1:17]  = -1.1140580
    pft$b2Rd[1:17]  =  0.4223014
 
 }#end if
 #------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Minimum bleaf and leaf area index that is resolvable.                                 #
+#------------------------------------------------------------------------------------------#
+pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
+pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Update colours.                                                                      #
+#------------------------------------------------------------------------------------------#
+pft$red    = c( 254,   1,  68,   0, 203,  13,   0,  37, 255
+              , 195, 143, 213, 170, 180, 120, 145, 119,  75 )
+pft$green  = c( 204, 229, 178,  83, 149, 245, 164, 101,  21
+              ,  19,  34, 109,  46,  36,   0, 125,  69,  75 )
+pft$blue   = c(  47,   0,  71,   3,   0, 250, 168, 102,  63
+              ,  50,  53, 198, 152, 255, 190,  82, 255,  75 )
+pft$colour = rgb(red=pft$red,green=pft$green,blue=pft$blue,maxColorValue=255)
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Make it global. --------------------------------------------------------------------#
 pft <<- pft

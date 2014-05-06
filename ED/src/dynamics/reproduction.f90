@@ -52,6 +52,7 @@ subroutine reproduction(cgrid, month)
    use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
    use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
    use budget_utils       , only : update_budget            ! ! sub-routine
+   use therm_lib          , only : cmtl2uext                ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -362,8 +363,14 @@ subroutine reproduction(cgrid, month)
                                        ,cpatch%pft(ico)                                    &
                                        ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
 
-                     cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico)*cpatch%leaf_temp(ico)
-                     cpatch%wood_energy(ico) = cpatch%wood_hcap(ico)*cpatch%wood_temp(ico)
+                     cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)            &
+                                                        ,cpatch%leaf_water(ico)            &
+                                                        ,cpatch%leaf_temp (ico)            &
+                                                        ,cpatch%leaf_fliq (ico))
+                     cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)            &
+                                                        ,cpatch%wood_water(ico)            &
+                                                        ,cpatch%wood_temp (ico)            &
+                                                        ,cpatch%wood_fliq (ico))
 
                      call is_resolvable(csite,ipa,ico)
 
@@ -387,7 +394,7 @@ subroutine reproduction(cgrid, month)
                if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
                   call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
-                                   ,cpoly%lsl(isi))
+                                   ,cpoly%lsl(isi),.false.)
                   call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
                end if
 
@@ -508,9 +515,14 @@ subroutine reproduction(cgrid, month)
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
                                        ,cpatch%pft(ico)                                    &
                                        ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
-
-                     cpatch%leaf_energy(ico) = cpatch%leaf_hcap(ico) * cpatch%leaf_temp(ico)
-                     cpatch%wood_energy(ico) = cpatch%wood_hcap(ico) * cpatch%wood_temp(ico)
+                     cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)            &
+                                                        ,cpatch%leaf_water(ico)            &
+                                                        ,cpatch%leaf_temp (ico)            &
+                                                        ,cpatch%leaf_fliq (ico))
+                     cpatch%wood_energy(ico) = cmtl2uext(cpatch%wood_hcap (ico)            &
+                                                        ,cpatch%wood_water(ico)            &
+                                                        ,cpatch%wood_temp (ico)            &
+                                                        ,cpatch%wood_fliq (ico))
   
                      call is_resolvable(csite,ipa,ico)
                   end if

@@ -5,24 +5,33 @@
 subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
                     ,annual_time,history_time,dcycle_time,the_end)
 
-   use ed_state_vars, only : edgrid_g          & ! structure
-                           , filltab_alltypes  & ! subroutine
-                           , filltables        ! ! intent(inout)
-   use grid_coms    , only : ngrids            & ! intent(in)
-                           , nzg               ! ! intent(in)
-   use ed_node_coms , only : mynum             & ! intent(in)
-                           , nnodetot          ! ! intent(in)
-   use ed_misc_coms , only : dtlsm             & ! intent(in)
-                           , current_time      & ! intent(in)
-                           , isoutput          & ! intent(in)
-                           , ifoutput          & ! intent(in)
-                           , itoutput          & ! intent(in)
-                           , writing_dail      & ! intent(in)
-                           , writing_mont      & ! intent(in)
-                           , writing_dcyc      & ! intent(in)
-                           , iprintpolys       & ! intent(in)
-                           , frqsum            ! ! intent(in)
-
+   use ed_state_vars, only : edgrid_g                & ! structure
+                           , filltab_alltypes        & ! subroutine
+                           , filltables              ! ! intent(inout)
+   use grid_coms    , only : ngrids                  & ! intent(in)
+                           , nzg                     ! ! intent(in)
+   use ed_node_coms , only : mynum                   & ! intent(in)
+                           , nnodetot                ! ! intent(in)
+   use ed_misc_coms , only : dtlsm                   & ! intent(in)
+                           , current_time            & ! intent(in)
+                           , isoutput                & ! intent(in)
+                           , ifoutput                & ! intent(in)
+                           , itoutput                & ! intent(in)
+                           , writing_dail            & ! intent(in)
+                           , writing_mont            & ! intent(in)
+                           , writing_dcyc            & ! intent(in)
+                           , iprintpolys             & ! intent(in)
+                           , frqsum                  ! ! intent(in)
+   use average_utils, only : normalize_ed_fmean_vars & ! sub-routine
+                           , integrate_ed_dmean_vars & ! sub-routine
+                           , integrate_ed_qmean_vars & ! sub-routine
+                           , normalize_ed_dmean_vars & ! sub-routine
+                           , integrate_ed_mmean_vars & ! sub-routine
+                           , zero_ed_dmean_vars      & ! sub-routine
+                           , normalize_ed_mmean_vars & ! sub-routine
+                           , normalize_ed_qmean_vars & ! sub-routine
+                           , zero_ed_mmean_vars      & ! sub-routine
+                           , zero_ed_qmean_vars      ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical, intent(in)  :: the_end
@@ -546,11 +555,11 @@ subroutine aggregate_polygon_fmean(cgrid)
             cgrid%fmean_albedo         (ipy) = cgrid%fmean_albedo         (ipy)            &
                                              + csite%fmean_albedo         (ipa)            &
                                              * patch_wgt
-            cgrid%fmean_albedo_beam    (ipy) = cgrid%fmean_albedo_beam    (ipy)            &
-                                             + csite%fmean_albedo_beam    (ipa)            &
+            cgrid%fmean_albedo_par     (ipy) = cgrid%fmean_albedo_par     (ipy)            &
+                                             + csite%fmean_albedo_par     (ipa)            &
                                              * patch_wgt
-            cgrid%fmean_albedo_diff    (ipy) = cgrid%fmean_albedo_diff    (ipy)            &
-                                             + csite%fmean_albedo_diff    (ipa)            &
+            cgrid%fmean_albedo_nir     (ipy) = cgrid%fmean_albedo_nir     (ipy)            &
+                                             + csite%fmean_albedo_nir     (ipa)            &
                                              * patch_wgt
             cgrid%fmean_rlong_albedo   (ipy) = cgrid%fmean_rlong_albedo   (ipy)            &
                                              + csite%fmean_rlong_albedo   (ipa)            &

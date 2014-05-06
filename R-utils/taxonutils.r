@@ -21,6 +21,7 @@ pft.breaks <<- c(-Inf,pft.dens[2:n.pfts]-0.5*diff(pft.dens),Inf)
 standard.common.name <<- function(x){
 
    #----- Full replacements. --------------------------------------------------------------#
+   sel = (! is.na(x) & x == "?"                       ); x[sel] = NA
    sel = (! is.na(x) & x == "araticu"                 ); x[sel] = "araticum"
    sel = (! is.na(x) & x == "baubarana"               ); x[sel] = "embaubarana"
    sel = (! is.na(x) & x == "breu/louro preto?"       ); x[sel] = NA
@@ -31,6 +32,7 @@ standard.common.name <<- function(x){
    sel = (! is.na(x) & x == "cajuba"                  ); x[sel] = "caju"
    sel = (! is.na(x) & x == "castanha"                ); x[sel] = "castanha do para"
    sel = (! is.na(x) & x == "castanheiro"             ); x[sel] = "castanha do para"
+   sel = (! is.na(x) & x == "cip"                     ); x[sel] = "cipo"
    sel = (! is.na(x) & x == "cipo(dbh a 0.9m do chao)"); x[sel] = "cipo"
    sel = (! is.na(x) & x == "cipo+arapo"              ); x[sel] = "cipo"
    sel = (! is.na(x) & x == "cutiti"                  ); x[sel] = "abiu cutite"
@@ -265,42 +267,29 @@ standard.scientific.name <<- function(dat){
    #---------------------------------------------------------------------------------------#
    nplants = nrow(dat)
    #----- Remove cf., assume that we know all species for sure. ---------------------------#
-   dat$scientific = sub("cf.","",x=dat$scientific)
+   dat$scientific = tolower(dat$scientific)
    #----- Break into genus and species. ---------------------------------------------------#
-   gs.list                  = sapply(X = tolower(dat$scientific),FUN=strsplit,split=" ")
-   gs.length                = sapply(X = gs.list, FUN = length)
-   gs.mat                   = do.call(rbind,gs.list)
-   g.only                   = gs.length < 2
-   gs.mat[g.only,2]         = NA
-   g                        = capwords(gs.mat[,1],strict=TRUE)
-   s                        = tolower(gs.mat[,2])
-   g.s                      = paste(g,s,sep=" ")
-   g.s[is.na(g) & is.na(s)] = NA
+   g.s     = keep.gen.spe.only(dat$scientific)
    #---------------------------------------------------------------------------------------#
 
-   #---------------------------------------------------------------------------------------#
-   #      Full substitutions (only if the entire name matches).                            #
-   #---------------------------------------------------------------------------------------#
-   g.s[g.s == "Dialium sp" ] = "Dialium"
-   g.s[g.s == "Eugenia sp."] = "Eugenia"
-   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #      Substitutions of scientific name.  We standardise these first so family becomes  #
    # easier.                                                                               #
    #---------------------------------------------------------------------------------------#
-   g.s = sub("Agonadra sp."               ,"Agonandra"                    ,x=g.s)
    g.s = sub("Aiouea densiflora"          ,"Aiouea laevis"                ,x=g.s)
    g.s = sub("Allophyllus floribunda"     ,"Allophylus floribundus"       ,x=g.s)
    g.s = sub("Ampelocera endentula"       ,"Ampelocera edentula"          ,x=g.s)
+   g.s = sub("Amphirrhox longiflora"      ,"Amphirrhox longifolia"        ,x=g.s)
    g.s = sub("Amphirrhox surinamensis"    ,"Amphirrhox longifolia"        ,x=g.s)
    g.s = sub("Anadenanthera falcata"      ,"Anadenanthera peregrina"      ,x=g.s)
+   g.s = sub("Anartia"                    ,"Tabernaemontana"              ,x=g.s)
    g.s = sub("Aniba roseodora"            ,"Aniba rosaeodora"             ,x=g.s)
-   g.s = sub("Aniba sp."                  ,"Aniba"                        ,x=g.s)
    g.s = sub("Annona decicoma"            ,"Annona densicoma"             ,x=g.s)
    g.s = sub("Apeiba burchelii"           ,"Apeiba glabra"                ,x=g.s)
    g.s = sub("Aspidosperma aracanga"      ,"Aspidosperma araracanga"      ,x=g.s)
    g.s = sub("Aspidosperma auriculata"    ,"Aspidosperma auriculatum"     ,x=g.s)
+   g.s = sub("Aspidosperma cruentum"      ,"Aspidosperma desmanthum"      ,x=g.s)
    g.s = sub("Aspidosperma desmantum"     ,"Aspidosperma desmanthum"      ,x=g.s)
    g.s = sub("Aspidosperma desmathum"     ,"Aspidosperma desmanthum"      ,x=g.s)
    g.s = sub("Aspidosperma eteanun"       ,"Aspidosperma eteanum"         ,x=g.s)
@@ -309,18 +298,19 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Austroplenckia populnea"    ,"Plenckia populnea"            ,x=g.s)
    g.s = sub("Balisia pedicelares"        ,"Albizia pedicellaris"         ,x=g.s)
    g.s = sub("Balizia pedicellaris"       ,"Albizia pedicellaris"         ,x=g.s)
-   g.s = sub("Bauhinia jarensis"          ,"Bauhinia"                     ,x=g.s)
+   g.s = sub("Bauhinia jarensis"          ,"Bauhinia deleteme"            ,x=g.s)
    g.s = sub("Bellucia grossulariodis"    ,"Bellucia grossularioides"     ,x=g.s)
    g.s = sub("Brosimum autifolium"        ,"Brosimum acutifolium"         ,x=g.s)
-   g.s = sub("Brosimum sp."               ,"Brosimum"                     ,x=g.s)
    g.s = sub("Brosimum lactascens"        ,"Brosimum lactescens"          ,x=g.s)
    g.s = sub("Byrsonima schultesiana"     ,"Byrsonima arthropoda"         ,x=g.s)
    g.s = sub("Byrsonima estipulacea"      ,"Byrsonima stipulacea"         ,x=g.s)
    g.s = sub("Capirona ulei"              ,"Capirona decorticans"         ,x=g.s)
+   g.s = sub("Casearia bracteifera"       ,"Casearia combaymensis"        ,x=g.s)
    g.s = sub("Capparis frondosa"          ,"Capparidastrum frondosum"     ,x=g.s)
    g.s = sub("Cecropia distachia"         ,"Cecropia distachya"           ,x=g.s)
    g.s = sub("Cedrela fistis"             ,"Cedrela fissilis"             ,x=g.s)
    g.s = sub("Cedrella odorata"           ,"Cedrela odorata"              ,x=g.s)
+   g.s = sub("Caeseria"                   ,"Casearia"                     ,x=g.s)
    g.s = sub("Chanouchiton kapleri"       ,"Chaunochiton kappleri"        ,x=g.s)
    g.s = sub("Chaunochiton kapleri"       ,"Chaunochiton kappleri"        ,x=g.s)
    g.s = sub("Clarisia elicifolia"        ,"Clarisia ilicifolia"          ,x=g.s)
@@ -328,15 +318,12 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Connarus perrottetes"       ,"Connarus perrottetii"         ,x=g.s)
    g.s = sub("Connarus spermattetii"      ,"Connarus perrotettii"         ,x=g.s)
    g.s = sub("Cordia scrabida"            ,"Cordia exaltata"              ,x=g.s)
-   g.s = sub("Coupeia sp."                ,"Couepia"                      ,x=g.s)
    g.s = sub("Coussarea racemosa"         ,"Coussarea albescens"          ,x=g.s)
    g.s = sub("Crepidospermum gondotiano"  ,"Crepidospermum goudotianum"   ,x=g.s)
    g.s = sub("Crepidospermum goudotiano"  ,"Crepidospermum goudotianum"   ,x=g.s)
    g.s = sub("Cupania hirta"              ,"Cupania hirsuta"              ,x=g.s)
    g.s = sub("Cybistax antisiphyllitica"  ,"Cybistax antisyphilitica"     ,x=g.s)
-   g.s = sub("Dendrobangia sp."           ,"Dendrobangia"                 ,x=g.s)
    g.s = sub("Dendrobrangea boliviana"    ,"Dendrobangia boliviana"       ,x=g.s)
-   g.s = sub("Dialium sp."                ,"Dialium"                      ,x=g.s)
    g.s = sub("Dialium guianensis"         ,"Dialium guianense"            ,x=g.s)
    g.s = sub("Diclinanonna matogrossensis","Diclinanona matogrossensis"   ,x=g.s)
    g.s = sub("Didymopanax vinosum"        ,"Schefflera vinosa"            ,x=g.s)
@@ -349,16 +336,12 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Enterolobium schombburgkii" ,"Enterolobium schomburgkii"    ,x=g.s)
    g.s = sub("Ephedrantus parviflorus"    ,"Ephedranthus parviflorus"     ,x=g.s)
    g.s = sub("Ephedrantus parvifolius"    ,"Ephedranthus parviflorus"     ,x=g.s)
-   g.s = sub("Eriotheca ni"               ,"Eriotheca"                    ,x=g.s)
-   g.s = sub("Eriotheca sp"               ,"Eriotheca"                    ,x=g.s)
    g.s = sub("Eriotreca globosa"          ,"Eriotheca globosa"            ,x=g.s)
    g.s = sub("Eschweilera amazomica"      ,"Eschweilera amazonica"        ,x=g.s)
    g.s = sub("Eschweilera apiculatum"     ,"Eschweilera apiculata"        ,x=g.s)
    g.s = sub("Eschweilera idatimom"       ,"Lecythis idatimon"            ,x=g.s)
    g.s = sub("Eschweilera observa"        ,"Eschweilera obversa"          ,x=g.s)
    g.s = sub("Eschweilera pedicelata"     ,"Eschweilera pedicellata"      ,x=g.s)
-   g.s = sub("Eschweilera sp."            ,"Eschweilera"                  ,x=g.s)
-   g.s = sub("Eugenia ni"                 ,"Eugenia"                      ,x=g.s)
    g.s = sub("Eugenia pacumensis"         ,"Austromyrtus ploumensis"      ,x=g.s)
    g.s = sub("Eugenia schumburgkii"       ,"Eugenia lambertiana"          ,x=g.s)
    g.s = sub("Geissospermum velosii"      ,"Geissospermum laeve"          ,x=g.s)
@@ -371,20 +354,21 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Guatteria cardoniana"       ,"Guatteria recurvisepala"      ,x=g.s)
    g.s = sub("Hymenolobium flavium"       ,"Hymenolobium flavum"          ,x=g.s)
    g.s = sub("Ilex parviflora"            ,"Ilex petiolaris"              ,x=g.s)
+   g.s = sub("Inga aff\\."                ,"Inga affinis"                 ,x=g.s)
+   g.s = sub("Inga jenmanii"              ,"Inga sertulifera"             ,x=g.s)
    g.s = sub("Inga dibaldiana"            ,"Inga thibaudiana"             ,x=g.s)
    g.s = sub("Inga paraenses"             ,"Inga paraensis"               ,x=g.s)
    g.s = sub("Inga poliphylla"            ,"Inga"                         ,x=g.s)
-   g.s = sub("Inga sp."                   ,"Inga"                         ,x=g.s)
    g.s = sub("Jacaraitia espinhosa"       ,"Jacaratia spinosa"            ,x=g.s)
    g.s = sub("Joannesia hevioides"        ,"Joannesia heveoides"          ,x=g.s)
    g.s = sub("Lacmelea aculeata"          ,"Lacmellea aculeata"           ,x=g.s)
    g.s = sub("Laetia procerra"            ,"Laetia procera"               ,x=g.s)
+   g.s = sub("Lecythis praeclara"         ,"Eschweilera praealta"         ,x=g.s)
    g.s = sub("Licania densa"              ,"Licania densiflora"           ,x=g.s)
    g.s = sub("Licaria heteromorpha"       ,"Licania heteromorpha"         ,x=g.s)
    g.s = sub("Lucanarea"                  ,"Lacunaria"                    ,x=g.s)
    g.s = sub("Luheopsis duckeana"         ,"Lueheopsis duckeana"          ,x=g.s)
    g.s = sub("Lustema pubescei"           ,"Lacistema pubescens"          ,x=g.s)
-   g.s = sub("Mabea sp."                  ,"Mabea"                        ,x=g.s)
    g.s = sub("Maluria"                    ,"Marlierea umbraticola"        ,x=g.s)
    g.s = sub("Maquira callophylla"        ,"Maquira calophylla"           ,x=g.s)
    g.s = sub("Marmaroxylon racemosum"     ,"Zygia racemosa"               ,x=g.s)
@@ -394,33 +378,31 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Mezelaurus"                 ,"Mezilaurus"                   ,x=g.s)
    g.s = sub("Mezelaurus itauba"          ,"Mezilaurus itauba"            ,x=g.s)
    g.s = sub("Miconia chrysophyllum"      ,"Miconia chrysophylla"         ,x=g.s)
-   g.s = sub("Michopholis sp."            ,"Micropholis"                  ,x=g.s)
    g.s = sub("Michopholis venulosa"       ,"Micropholis venulosa"         ,x=g.s)
    g.s = sub("Microphilis"                ,"Micropholis"                  ,x=g.s)
    g.s = sub("Micropholis guianensis"     ,"Micropholis guyanensis"       ,x=g.s)
-   g.s = sub("Micropholis sp."            ,"Micropholis"                  ,x=g.s)
    g.s = sub("Microphylis acutangula"     ,"Micropholis acutangula"       ,x=g.s)
-   g.s = sub("Microphylis sp."            ,"Micropholis"                  ,x=g.s)
    g.s = sub("Mouriri abnormis"           ,"Votomita guianensis"          ,x=g.s)
    g.s = sub("Myrciaria reticulata"       ,"Myrcia reticulata"            ,x=g.s)
    g.s = sub("Myrcia rutipula"            ,"Myrcia rufipila"              ,x=g.s)
    g.s = sub("Newtonia psilostachya"      ,"Pseudopiptadenia psilostachya",x=g.s)
    g.s = sub("Ocotea baturitensis"        ,"Ocotea"                       ,x=g.s)
    g.s = sub("Ocotea caudata"             ,"Ocotea cernua"                ,x=g.s)
-   g.s = sub("Ocotea sp."                 ,"Ocotea"                       ,x=g.s)
    g.s = sub("Omedia perebea"             ,"Perebea mollis"               ,x=g.s)
    g.s = sub("Onichiopetalum amazonico"   ,"Onychopetalum amazonicum"     ,x=g.s)
    g.s = sub("Pausandra densiflora"       ,"Pausandra trianae"            ,x=g.s)
    g.s = sub("Pouroma guianensis"         ,"Pourouma guianensis"          ,x=g.s)
    g.s = sub("Pouruma guianensis"         ,"Pourouma guianensis"          ,x=g.s)
+   g.s = sub("Pourouma vilosa"            ,"Pourouma villosa"             ,x=g.s)
+   g.s = sub("Pouteria ambelanifolia"     ,"Pouteria ambelaniifolia"      ,x=g.s)
    g.s = sub("Pouteria biloculares"       ,"Pouteria bilocularis"         ,x=g.s)
    g.s = sub("Pouteria filipis"           ,"Pouteria filipes"             ,x=g.s)
    g.s = sub("Pouteria lasiocarpa"        ,"Pouteria caimito"             ,x=g.s)
+   g.s = sub("Pouteria gonggrijpii"       ,"Pouteria gongrijpii"          ,x=g.s)
    g.s = sub("Pouteria heterosepala"      ,"Pouteria polysepala"          ,x=g.s)
    g.s = sub("Pouteria paraensis"         ,"Pouteria macrocarpa"          ,x=g.s)
-   g.s = sub("Pouteria sp."               ,"Pouteria"                     ,x=g.s)
+   g.s = sub("Protiumuceanum"             ,"Protium spruceanum"           ,x=g.s)
    g.s = sub("Protium heptafilum"         ,"Protium heptaphyllum"         ,x=g.s)
-   g.s = sub("Protium sp."                ,"Protium"                      ,x=g.s)
    g.s = sub("Prumes myrtifoliu"          ,"Prunus myrtifolia"            ,x=g.s)
    g.s = sub("Prunus myrtifolius"         ,"Prunus myrtifolia"            ,x=g.s)
    g.s = sub("Pseudolmedia murure"        ,"Pseudolmedia macrophylla"     ,x=g.s)
@@ -439,29 +421,23 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Rolinha esxuccar"           ,"Rollinia exsucca"             ,x=g.s)
    g.s = sub("Rollinia esxucca"           ,"Rollinia exsucca"             ,x=g.s)
    g.s = sub("Sacrogrotis guianensis"     ,"Sacoglottis guianensis"       ,x=g.s)
-   g.s = sub("Sagotia sp."                ,"Sagotia"                      ,x=g.s)
    g.s = sub("Salacea"                    ,"Salacia"                      ,x=g.s)
    g.s = sub("Salacia imprissifolia"      ,"Salacia impressifolia"        ,x=g.s)
-   g.s = sub("Sapium sp."                 ,"Sapium"                       ,x=g.s)
    g.s = sub("Sclerolobium chrysophylum"  ,"Tachigali chrysophylla"       ,x=g.s)
    g.s = sub("Sclerolobium chrysophyllum" ,"Tachigali chrysophylla"       ,x=g.s)
    g.s = sub("Sclerolobium guianensis"    ,"Tachigali guianensis"         ,x=g.s)
    g.s = sub("Sclerolobium guianense"     ,"Tachigali guianensis"         ,x=g.s)
-   g.s = sub("Sclerolobium sp."           ,"Sclerolobium"                 ,x=g.s)
    g.s = sub("Simaba guianenses"          ,"Simaba guianensis"            ,x=g.s)
-   g.s = sub("Simabacedron planch."       ,"Simaba cedron"                ,x=g.s)
+   g.s = sub("Simabacedron planch\\."     ,"Simaba cedron"                ,x=g.s)
    g.s = sub("Simarouba armara"           ,"Simarouba amara"              ,x=g.s)
    g.s = sub("Simaruba armara"            ,"Simarouba amara"              ,x=g.s)
-   g.s = sub("Sipararuna cristata"        ,"Siparuna cristata"            ,x=g.s)
-   g.s = sub("Sipararuna decipiens"       ,"Siparuna decipiens"           ,x=g.s)
+   g.s = sub("Sipararuna"                 ,"Siparuna"                     ,x=g.s)
    g.s = sub("Stryphnodendron pulchrrimum","Stryphnodendron pulcherrimum" ,x=g.s)
-   g.s = sub("Stryphnodendron sp."        ,"Stryphnodendron"              ,x=g.s)
    g.s = sub("Styrax ferrugineum"         ,"Styrax ferrugineus"           ,x=g.s)
    g.s = sub("Swartzia arborensis"        ,"Swartzia arborescens"         ,x=g.s)
    g.s = sub("Swartzia flamingii"         ,"Swartzia flaemingii"          ,x=g.s)
    g.s = sub("Swartizia microcarpum"      ,"Swartzia microcarpa"          ,x=g.s)
    g.s = sub("Swartzia retusa"            ,"Swartzia recurva"             ,x=g.s)
-   g.s = sub("Swartzia sp."               ,"Swartzia"                     ,x=g.s)
    g.s = sub("Tachigalia alba"            ,"Tachigali alba"               ,x=g.s)
    g.s = sub("Tachigalia myrmecophila"    ,"Tachigali myrmecophila"       ,x=g.s)
    g.s = sub("Tachigalia paniculata"      ,"Tachigali paniculata"         ,x=g.s)
@@ -473,13 +449,14 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Terminalia amazonica"       ,"Terminalia amazonia"          ,x=g.s)
    g.s = sub("Theobroma subincaum"        ,"Theobroma subincanum"         ,x=g.s)
    g.s = sub("Thyrsodium paraense"        ,"Thyrsodium spruceanum"        ,x=g.s)
-   g.s = sub("Thysodium sp."              ,"Thyrsodium"                   ,x=g.s)
    g.s = sub("Trattinickia laurencei"     ,"Trattinnickia lawrancei"      ,x=g.s)
    g.s = sub("Trattinickia laurense"      ,"Trattinnickia lawrancei"      ,x=g.s)
    g.s = sub("Trattinickia rhoifolia"     ,"Trattinnickia rhoifolia"      ,x=g.s)
    g.s = sub("Trichilia lequente"         ,"Trichilia lecointei"          ,x=g.s)
-   g.s = sub("Trichilia sp."              ,"Trichilia"                    ,x=g.s)
    g.s = sub("Triquilia lequente"         ,"Trichilia lecointei"          ,x=g.s)
+   g.s = sub("Trichilia sipo"             ,"Trichilia cipo"               ,x=g.s)
+   g.s = sub("Trichillia"                 ,"Trichilia"                    ,x=g.s)
+   g.s = sub("Trymatococcus amazonicum"   ,"Trymatococcus amazonicus"     ,x=g.s)
    g.s = sub("Trymatococcus paraensis"    ,"Trymatococcus amazonicus"     ,x=g.s)
    g.s = sub("Vataicreopesis speciosa"    ,"Vataireopsis speciosa"        ,x=g.s)
    g.s = sub("Vataireopesis speciosa"     ,"Vataireopsis speciosa"        ,x=g.s)
@@ -494,25 +471,30 @@ standard.scientific.name <<- function(dat){
 
 
 
-
-
-
-
    #----- Break again into genus and species. ---------------------------------------------#
-   gs.mat      = t(as.data.frame(sapply(X=g.s,FUN=strsplit,split=" ")))
-   del         = gs.mat == "na"
-   gs.mat[del] = NA
-   g           = capwords(gs.mat[,1],strict=TRUE)
+   g.s = keep.gen.spe.only(x=g.s)
    #---------------------------------------------------------------------------------------#
 
 
 
+   #----- Remove family names from scientific columns. ------------------------------------#
+   bye                 = g.s %in% c("Anacardiaceae","Myrtaceae","Moraceae","Ind"
+                                   ,"Lauraceae","Nyctaginaceae")
+   g.s[bye]            = NA_character_
+   liana               = g.s %in% c("Liane")
+   g.s[liana]          = "Liana"
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Find genus. --------------------------------------------------------------------#
+   g   = keep.gen.spe.only(x=g.s,out="genus")
+   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #      Copy the data back to the structure.                                             #
    #---------------------------------------------------------------------------------------#
-   if ("scientific" %in% names(dat)) dat$scientific = g.s
-   if ("genus"      %in% names(dat)) dat$genus      = g
+   dat$scientific = g.s
+   dat$genus      = g
    #---------------------------------------------------------------------------------------#
 
    return(dat)
@@ -539,371 +521,399 @@ standard.family.name <<- function(datum){
 
 
    #---------------------------------------------------------------------------------------#
+   #     Substitute obsolete/misspelt families that are straightforward.                   #
+   #---------------------------------------------------------------------------------------#
+   datum$family = sub("Bombacaceae"                 ,"Malvaceae"     ,x=datum$family)
+   datum$family = sub("Caesalpinaceae"              ,"Fabaceae"      ,x=datum$family)
+   datum$family = sub("Cecropiaceae"                ,"Urticaceae"    ,x=datum$family)
+   datum$family = sub("Elacocarpaceae"              ,"Elaeocarpaceae",x=datum$family)
+   datum$family = sub("Guttiferae"                  ,"Clusiaceae"    ,x=datum$family)
+   datum$family = sub("Hippocrateaceae"             ,"Celastraceae"  ,x=datum$family)
+   datum$family = sub("Leguminosae"                 ,"Fabaceae"      ,x=datum$family)
+   datum$family = sub("Leguminosae-Mimosoideae"     ,"Fabaceae"      ,x=datum$family)
+   datum$family = sub("Leguminosae-Caesalpinioideae","Fabaceae"      ,x=datum$family)
+   datum$family = sub("Leguminosae-Papilionoideae"  ,"Fabaceae"      ,x=datum$family)
+   datum$family = sub("Quiinaceae"                  ,"Ochnaceae"     ,x=datum$family)
+   datum$family = sub("Mimosaceae"                  ,"Fabaceae"      ,x=datum$family)
+   datum$family = sub("Papilionaceae"               ,"Fabaceae"      ,x=datum$family)
+   datum$family = sub("Tiliaceae"                   ,"Malvaceae"     ,x=datum$family)
+   datum$family = sub("Sterculiaceae"               ,"Malvaceae"     ,x=datum$family)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
    #     Look-up table for all families.                                                   #
    #---------------------------------------------------------------------------------------#
-   g2f        = list()
-
-   g2f[[  1]] = list( genus = "Abarema"            , family = "Fabaceae"          )
-   g2f[[  2]] = list( genus = "Acmanthera"         , family = "Malpighiaceae"     )
-   g2f[[  3]] = list( genus = "Acrocomia"          , family = "Arecaceae"         )
-   g2f[[  4]] = list( genus = "Acosmium"           , family = "Fabaceae"          )
-   g2f[[  5]] = list( genus = "Adenophaedra"       , family = "Euphorbiaceae"     )
-   g2f[[  6]] = list( genus = "Agonandra"          , family = "Opiliaceae"        )
-   g2f[[  7]] = list( genus = "Aiouea"             , family = "Lauraceae"         )
-   g2f[[  8]] = list( genus = "Albizia"            , family = "Fabaceae"          )
-   g2f[[  9]] = list( genus = "Alchorneopsis"      , family = "Euphorbiaceae"     )
-   g2f[[ 10]] = list( genus = "Aldina"             , family = "Fabaceae"          )
-   g2f[[ 11]] = list( genus = "Alexa"              , family = "Fabaceae"          )
-   g2f[[ 12]] = list( genus = "Allantoma"          , family = "Lecythidaceae"     )
-   g2f[[ 13]] = list( genus = "Allophylus"         , family = "Sapindaceae"       )
-   g2f[[ 14]] = list( genus = "Amaioua"            , family = "Rubiaceae"         )
-   g2f[[ 15]] = list( genus = "Ambelania"          , family = "Apocynaceae"       )
-   g2f[[ 16]] = list( genus = "Amburana"           , family = "Fabaceae"          )
-   g2f[[ 17]] = list( genus = "Ampelocera"         , family = "Ulmaceae"          )
-   g2f[[ 18]] = list( genus = "Amphirrhox"         , family = "Violaceae"         )
-   g2f[[ 19]] = list( genus = "Anacardium"         , family = "Anacardiaceae"     )
-   g2f[[ 20]] = list( genus = "Anadenanthera"      , family = "Fabaceae"          )
-   g2f[[ 21]] = list( genus = "Anaxagorea"         , family = "Annonaceae"        )
-   g2f[[ 22]] = list( genus = "Andira"             , family = "Fabaceae"          )
-   g2f[[ 23]] = list( genus = "Aniba"              , family = "Lauraceae"         )
-   g2f[[ 24]] = list( genus = "Anisophyllea"       , family = "Anisophylleaceae"  )
-   g2f[[ 25]] = list( genus = "Annona"             , family = "Annonaceae"        )
-   g2f[[ 26]] = list( genus = "Anomalocalyx"       , family = "Euphorbiaceae"     )
-   g2f[[ 27]] = list( genus = "Antonia"            , family = "Loganiaceae"       )
-   g2f[[ 28]] = list( genus = "Aparisthmium"       , family = "Euphorbiaceae"     )
-   g2f[[ 29]] = list( genus = "Apeiba"             , family = "Malvaceae"         )
-   g2f[[ 30]] = list( genus = "Aptandra"           , family = "Olacaceae"         )
-   g2f[[ 31]] = list( genus = "Apuleia"            , family = "Fabaceae"          )
-   g2f[[ 32]] = list( genus = "Aspidosperma"       , family = "Apocynaceae"       )
-   g2f[[ 33]] = list( genus = "Astrocaryum"        , family = "Arecaceae"         )
-   g2f[[ 34]] = list( genus = "Astronium"          , family = "Anacardiaceae"     )
-   g2f[[ 35]] = list( genus = "Attalea"            , family = "Arecaceae"         )
-   g2f[[ 36]] = list( genus = "Austromyrtus"       , family = "Myrtaceae"         )
-   g2f[[ 37]] = list( genus = "Bactris"            , family = "Arecaceae"         )
-   g2f[[ 38]] = list( genus = "Bagassa"            , family = "Moraceae"          )
-   g2f[[ 39]] = list( genus = "Balizia"            , family = "Fabaceae"          )
-   g2f[[ 40]] = list( genus = "Batesia"            , family = "Fabaceae"          )
-   g2f[[ 41]] = list( genus = "Batocarpus"         , family = "Moraceae"          )
-   g2f[[ 42]] = list( genus = "Bauhinia"           , family = "Fabaceae"          )
-   g2f[[ 43]] = list( genus = "Bellucia"           , family = "Melastomataceae"   )
-   g2f[[ 44]] = list( genus = "Bertholletia"       , family = "Lecythidaceae"     )
-   g2f[[ 45]] = list( genus = "Blepharocalyx"      , family = "Myrtaceae"         )
-   g2f[[ 46]] = list( genus = "Bixa"               , family = "Bixaceae"          )
-   g2f[[ 47]] = list( genus = "Bocageopsis"        , family = "Annonaceae"        )
-   g2f[[ 48]] = list( genus = "Bocoa"              , family = "Fabaceae"          )
-   g2f[[ 49]] = list( genus = "Bombax"             , family = "Malvaceae"         )
-   g2f[[ 50]] = list( genus = "Botryarrhena"       , family = "Rubiaceae"         )
-   g2f[[ 51]] = list( genus = "Bowdichia"          , family = "Fabaceae"          )
-   g2f[[ 52]] = list( genus = "Brachychiton"       , family = "Malvaceae"         )
-   g2f[[ 53]] = list( genus = "Brosimum"           , family = "Moraceae"          )
-   g2f[[ 54]] = list( genus = "Buchenavia"         , family = "Combretaceae"      )
-   g2f[[ 55]] = list( genus = "Byrsonima"          , family = "Malpighiaceae"     )
-   g2f[[ 56]] = list( genus = "Caesalpinia"        , family = "Fabaceae"          )
-   g2f[[ 57]] = list( genus = "Calliandra"         , family = "Fabaceae"          )
-   g2f[[ 58]] = list( genus = "Calophyllum"        , family = "Calophyllaceae"    )
-   g2f[[ 59]] = list( genus = "Calyptranthes"      , family = "Myrtaceae"         )
-   g2f[[ 60]] = list( genus = "Campomanesia"       , family = "Myrtaceae"         )
-   g2f[[ 61]] = list( genus = "Capirona"           , family = "Rubiaceae"         )
-   g2f[[ 62]] = list( genus = "Capparidastrum"     , family = "Capparaceae"       )
-   g2f[[ 63]] = list( genus = "Capparis"           , family = "Capparaceae"       )
-   g2f[[ 64]] = list( genus = "Caraipa"            , family = "Calophyllaceae"    )
-   g2f[[ 65]] = list( genus = "Carapa"             , family = "Meliaceae"         )
-   g2f[[ 66]] = list( genus = "Cariniana"          , family = "Lecythidaceae"     )
-   g2f[[ 67]] = list( genus = "Caryocar"           , family = "Caryocaraceae"     )
-   g2f[[ 68]] = list( genus = "Casearia"           , family = "Salicaceae"        )
-   g2f[[ 69]] = list( genus = "Cassia"             , family = "Fabaceae"          )
-   g2f[[ 70]] = list( genus = "Castilla"           , family = "Moraceae"          )
-   g2f[[ 71]] = list( genus = "Catostemma"         , family = "Malvaceae"         )
-   g2f[[ 72]] = list( genus = "Cecropia"           , family = "Urticaceae"        )
-   g2f[[ 73]] = list( genus = "Cedrela"            , family = "Meliaceae"         )
-   g2f[[ 74]] = list( genus = "Cedrelinga"         , family = "Fabaceae"          )
-   g2f[[ 75]] = list( genus = "Ceiba"              , family = "Malvaceae"         )
-   g2f[[ 76]] = list( genus = "Cereus"             , family = "Cactaceae"         )
-   g2f[[ 77]] = list( genus = "Chaetocarpus"       , family = "Euphorbiaceae"     )
-   g2f[[ 78]] = list( genus = "Chamaecrista"       , family = "Fabaceae"          )
-   g2f[[ 79]] = list( genus = "Chaunochiton"       , family = "Olacaceae"         )
-   g2f[[ 80]] = list( genus = "Cheiloclinium"      , family = "Celastraceae"      )
-   g2f[[ 81]] = list( genus = "Chimarrhis"         , family = "Rubiaceae"         )
-   g2f[[ 82]] = list( genus = "Chromolucuma"       , family = "Sapotaceae"        )
-   g2f[[ 83]] = list( genus = "Chrysobalanus"      , family = "Chrysobalanaceae"  )
-   g2f[[ 84]] = list( genus = "Chrysophyllum"      , family = "Sapotaceae"        )
-   g2f[[ 85]] = list( genus = "Clarisia"           , family = "Moraceae"          )
-   g2f[[ 86]] = list( genus = "Clusia"             , family = "Clusiaceae"        )
-   g2f[[ 87]] = list( genus = "Cnidoscolus"        , family = "Euphorbiaceae"     )
-   g2f[[ 88]] = list( genus = "Coccoloba"          , family = "Polygonaceae"      )
-   g2f[[ 89]] = list( genus = "Conceveiba"         , family = "Euphorbiaceae"     )
-   g2f[[ 90]] = list( genus = "Connarus"           , family = "Connaraceae"       )
-   g2f[[ 91]] = list( genus = "Copaifera"          , family = "Fabaceae"          )
-   g2f[[ 92]] = list( genus = "Cordia"             , family = "Boraginaceae"      )
-   g2f[[ 93]] = list( genus = "Corythophora"       , family = "Lecythidaceae"     )
-   g2f[[ 94]] = list( genus = "Couepia"            , family = "Chrysobalanaceae"  )
-   g2f[[ 95]] = list( genus = "Couma"              , family = "Apocynaceae"       )
-   g2f[[ 96]] = list( genus = "Couratari"          , family = "Lecythidaceae"     )
-   g2f[[ 97]] = list( genus = "Coussapoa"          , family = "Urticaceae"        )
-   g2f[[ 98]] = list( genus = "Coussarea"          , family = "Rubiaceae"         )
-   g2f[[ 99]] = list( genus = "Coutarea"           , family = "Rubiaceae"         )
-   g2f[[100]] = list( genus = "Crepidospermum"     , family = "Burseraceae"       )
-   g2f[[101]] = list( genus = "Croton"             , family = "Euphorbiaceae"     )
-   g2f[[102]] = list( genus = "Crudia"             , family = "Fabaceae"          )
-   g2f[[103]] = list( genus = "Cupania"            , family = "Sapindaceae"       )
-   g2f[[104]] = list( genus = "Cybianthus"         , family = "Primulaceae"       )
-   g2f[[105]] = list( genus = "Cybistax"           , family = "Bignoniaceae"      )
-   g2f[[106]] = list( genus = "Dacryodes"          , family = "Burseraceae"       )
-   g2f[[107]] = list( genus = "Dalbergia"          , family = "Fabaceae"          )
-   g2f[[108]] = list( genus = "Dendrobangia"       , family = "Cardiopteridaceae" )
-   g2f[[109]] = list( genus = "Dialium"            , family = "Fabaceae"          )
-   g2f[[110]] = list( genus = "Diclinanona"        , family = "Annonaceae"        )
-   g2f[[111]] = list( genus = "Dicorynia"          , family = "Fabaceae"          )
-   g2f[[112]] = list( genus = "Dicranostyles"      , family = "Convolvulaceae"    )
-   g2f[[113]] = list( genus = "Dicypellium"        , family = "Lauraceae"         )
-   g2f[[114]] = list( genus = "Dimorphandra"       , family = "Fabaceae"          )
-   g2f[[115]] = list( genus = "Dinizia"            , family = "Fabaceae"          )
-   g2f[[116]] = list( genus = "Diospyros"          , family = "Ebenaceae"         )
-   g2f[[117]] = list( genus = "Diplotropis"        , family = "Fabaceae"          )
-   g2f[[118]] = list( genus = "Dipteryx"           , family = "Fabaceae"          )
-   g2f[[119]] = list( genus = "Discophora"         , family = "Stemonuraceae"     )
-   g2f[[120]] = list( genus = "Doliocarpus"        , family = "Dilleniaceae"      )
-   g2f[[121]] = list( genus = "Drypetes"           , family = "Putranjivaceae"    )
-   g2f[[122]] = list( genus = "Duckeodendron"      , family = "Solanaceae"        )
-   g2f[[123]] = list( genus = "Duckesia"           , family = "Humiriaceae"       )
-   g2f[[124]] = list( genus = "Duguetia"           , family = "Annonaceae"        )
-   g2f[[125]] = list( genus = "Duroia"             , family = "Rubiaceae"         )
-   g2f[[126]] = list( genus = "Dystovomita"        , family = "Clusiaceae"        )
-   g2f[[127]] = list( genus = "Ecclinusa"          , family = "Sapotaceae"        )
-   g2f[[128]] = list( genus = "Elaeoluma"          , family = "Sapotaceae"        )
-   g2f[[129]] = list( genus = "Elizabetha"         , family = "Fabaceae"          )
-   g2f[[130]] = list( genus = "Emmotum"            , family = "Emmotaceae"        )
-   g2f[[131]] = list( genus = "Endlicheria"        , family = "Lauraceae"         )
-   g2f[[132]] = list( genus = "Endopleura"         , family = "Humiriaceae"       )
-   g2f[[133]] = list( genus = "Enterolobium"       , family = "Fabaceae"          )
-   g2f[[134]] = list( genus = "Eperua"             , family = "Fabaceae"          )
-   g2f[[135]] = list( genus = "Ephedranthus"       , family = "Annonaceae"        )
-   g2f[[136]] = list( genus = "Eriotheca"          , family = "Malvaceae"         )
-   g2f[[137]] = list( genus = "Erisma"             , family = "Vochysiaceae"      )
-   g2f[[138]] = list( genus = "Erythroxylum"       , family = "Erythroxylaceae"   )
-   g2f[[139]] = list( genus = "Eschweilera"        , family = "Lecythidaceae"     )
-   g2f[[140]] = list( genus = "Eugenia"            , family = "Myrtaceae"         )
-   g2f[[141]] = list( genus = "Euterpe"            , family = "Arecaceae"         )
-   g2f[[142]] = list( genus = "Euxylophora"        , family = "Rutaceae"          )
-   g2f[[143]] = list( genus = "Faramea"            , family = "Rubiaceae"         )
-   g2f[[144]] = list( genus = "Ferdinandusa"       , family = "Rubiaceae"         )
-   g2f[[145]] = list( genus = "Ficus"              , family = "Moraceae"          )
-   g2f[[146]] = list( genus = "Fusaea"             , family = "Annonaceae"        )
-   g2f[[147]] = list( genus = "Garcinia"           , family = "Clusiaceae"        )
-   g2f[[148]] = list( genus = "Geissospermum"      , family = "Apocynaceae"       )
-   g2f[[149]] = list( genus = "Genipa"             , family = "Rubiaceae"         )
-   g2f[[150]] = list( genus = "Gilbertiodendron"   , family = "Fabaceae"          )
-   g2f[[151]] = list( genus = "Glycydendron"       , family = "Euphorbiaceae"     )
-   g2f[[152]] = list( genus = "Goupia"             , family = "Goupiaceae"        )
-   g2f[[153]] = list( genus = "Guapira"            , family = "Nyctaginaceae"     )
-   g2f[[154]] = list( genus = "Guarea"             , family = "Meliaceae"         )
-   g2f[[155]] = list( genus = "Guatteria"          , family = "Annonaceae"        )
-   g2f[[156]] = list( genus = "Guazuma"            , family = "Malvaceae"         )
-   g2f[[157]] = list( genus = "Gustavia"           , family = "Lecythidaceae"     )
-   g2f[[158]] = list( genus = "Hebepetalum"        , family = "Linaceae"          )
-   g2f[[159]] = list( genus = "Heisteria"          , family = "Olacaceae"         )
-   g2f[[160]] = list( genus = "Helianthostylis"    , family = "Moraceae"          )
-   g2f[[161]] = list( genus = "Helicostylis"       , family = "Moraceae"          )
-   g2f[[162]] = list( genus = "Henriettea"         , family = "Melastomataceae"   )
-   g2f[[163]] = list( genus = "Henriettella"       , family = "Melastomataceae"   )
-   g2f[[164]] = list( genus = "Hevea"              , family = "Euphorbiaceae"     )
-   g2f[[165]] = list( genus = "Himatanthus"        , family = "Apocynaceae"       )
-   g2f[[166]] = list( genus = "Hippocratea"        , family = "Celastraceae"      )
-   g2f[[167]] = list( genus = "Hirtella"           , family = "Chrysobalanaceae"  )
-   g2f[[168]] = list( genus = "Humiria"            , family = "Humiriaceae"       )
-   g2f[[169]] = list( genus = "Humiriastrum"       , family = "Humiriaceae"       )
-   g2f[[170]] = list( genus = "Hura"               , family = "Euphorbiaceae"     )
-   g2f[[171]] = list( genus = "Hymenaea"           , family = "Fabaceae"          )
-   g2f[[172]] = list( genus = "Hymenolobium"       , family = "Fabaceae"          )
-   g2f[[173]] = list( genus = "Ignotum"            , family = "Ignotaceae"        )
-   g2f[[174]] = list( genus = "Ilex"               , family = "Aquifoliaceae"     )
-   g2f[[175]] = list( genus = "Inga"               , family = "Fabaceae"          )
-   g2f[[176]] = list( genus = "Iryanthera"         , family = "Myristicaceae"     )
-   g2f[[177]] = list( genus = "Isertia"            , family = "Rubiaceae"         )
-   g2f[[178]] = list( genus = "Jacaranda"          , family = "Bignoniaceae"      )
-   g2f[[179]] = list( genus = "Jacaratia"          , family = "Caricaceae"        )
-   g2f[[180]] = list( genus = "Jatropha"           , family = "Euphorbiaceae"     )
-   g2f[[181]] = list( genus = "Joannesia"          , family = "Euphorbiaceae"     )
-   g2f[[182]] = list( genus = "Justicia"           , family = "Acanthaceae"       )
-   g2f[[183]] = list( genus = "Lacistema"          , family = "Lacistemataceae"   )
-   g2f[[184]] = list( genus = "Lacmellea"          , family = "Apocynaceae"       )
-   g2f[[185]] = list( genus = "Lacunaria"          , family = "Ochnaceae"         )
-   g2f[[186]] = list( genus = "Ladenbergia"        , family = "Rubiaceae"         )
-   g2f[[187]] = list( genus = "Laetia"             , family = "Salicaceae"        )
-   g2f[[188]] = list( genus = "Lecythis"           , family = "Lecythidaceae"     )
-   g2f[[189]] = list( genus = "Leonia"             , family = "Violaceae"         )
-   g2f[[190]] = list( genus = "Liana"              , family = "Lianaceae"         )
-   g2f[[191]] = list( genus = "Licania"            , family = "Chrysobalanaceae"  )
-   g2f[[192]] = list( genus = "Licaria"            , family = "Lauraceae"         )
-   g2f[[193]] = list( genus = "Lindackeria"        , family = "Achariaceae"       )
-   g2f[[194]] = list( genus = "Lippia"             , family = "Verbenaceae"       )
-   g2f[[195]] = list( genus = "Lonchocarpus"       , family = "Fabaceae"          )
-   g2f[[196]] = list( genus = "Luehea"             , family = "Malvaceae"         )
-   g2f[[197]] = list( genus = "Lueheopsis"         , family = "Malvaceae"         )
-   g2f[[198]] = list( genus = "Mabea"              , family = "Euphorbiaceae"     )
-   g2f[[199]] = list( genus = "Machaerium"         , family = "Fabaceae"          )
-   g2f[[200]] = list( genus = "Macoubea"           , family = "Apocynaceae"       )
-   g2f[[201]] = list( genus = "Macrolobium"        , family = "Fabaceae"          )
-   g2f[[202]] = list( genus = "Malouetia"          , family = "Apocynaceae"       )
-   g2f[[203]] = list( genus = "Manicaria"          , family = "Arecaceae"         )
-   g2f[[204]] = list( genus = "Manihot"            , family = "Euphorbiaceae"     )
-   g2f[[205]] = list( genus = "Manilkara"          , family = "Sapotaceae"        )
-   g2f[[206]] = list( genus = "Maquira"            , family = "Moraceae"          )
-   g2f[[207]] = list( genus = "Marcgravia"         , family = "Marcgraviaceae"    )
-   g2f[[208]] = list( genus = "Marlierea"          , family = "Myrtaceae"         )
-   g2f[[209]] = list( genus = "Matayba"            , family = "Sapindaceae"       )
-   g2f[[210]] = list( genus = "Matisia"            , family = "Malvaceae"         )
-   g2f[[211]] = list( genus = "Mauritia"           , family = "Arecaceae"         )
-   g2f[[212]] = list( genus = "Mauritiella"        , family = "Arecaceae"         )
-   g2f[[213]] = list( genus = "Maytenus"           , family = "Celastraceae"      )
-   g2f[[214]] = list( genus = "Melicoccus"         , family = "Sapindaceae"       )
-   g2f[[215]] = list( genus = "Mezilaurus"         , family = "Lauraceae"         )
-   g2f[[216]] = list( genus = "Miconia"            , family = "Melastomataceae"   )
-   g2f[[217]] = list( genus = "Micrandra"          , family = "Euphorbiaceae"     )
-   g2f[[218]] = list( genus = "Micrandropsis"      , family = "Euphorbiaceae"     )
-   g2f[[219]] = list( genus = "Micropholis"        , family = "Sapotaceae"        )
-   g2f[[220]] = list( genus = "Mikania"            , family = "Asteraceae"        )
-   g2f[[221]] = list( genus = "Mimosa"             , family = "Fabaceae"          )
-   g2f[[222]] = list( genus = "Minquartia"         , family = "Olacaceae"         )
-   g2f[[223]] = list( genus = "Misanteca"          , family = "Lauraceae"         )
-   g2f[[224]] = list( genus = "Monopteryx"         , family = "Fabaceae"          )
-   g2f[[225]] = list( genus = "Moronobea"          , family = "Clusiaceae"        )
-   g2f[[226]] = list( genus = "Mouriri"            , family = "Melastomataceae"   )
-   g2f[[227]] = list( genus = "Myrocarpus"         , family = "Fabaceae"          )
-   g2f[[228]] = list( genus = "Myrcia"             , family = "Myrtaceae"         )
-   g2f[[229]] = list( genus = "Myrciaria"          , family = "Myrtaceae"         )
-   g2f[[230]] = list( genus = "Myrsine"            , family = "Primulaceae"       )
-   g2f[[231]] = list( genus = "Naucleopsis"        , family = "Moraceae"          )
-   g2f[[232]] = list( genus = "Nectandra"          , family = "Lauraceae"         )
-   g2f[[233]] = list( genus = "Neea"               , family = "Nyctaginaceae"     )
-   g2f[[234]] = list( genus = "Ocotea"             , family = "Lauraceae"         )
-   g2f[[235]] = list( genus = "Oenocarpus"         , family = "Arecaceae"         )
-   g2f[[236]] = list( genus = "Onychopetalum"      , family = "Annonaceae"        )
-   g2f[[237]] = list( genus = "Ormosia"            , family = "Fabaceae"          )
-   g2f[[238]] = list( genus = "Osteophloeum"       , family = "Myristicaceae"     )
-   g2f[[239]] = list( genus = "Ouratea"            , family = "Ochnaceae"         )
-   g2f[[240]] = list( genus = "Oxandra"            , family = "Annonaceae"        )
-   g2f[[241]] = list( genus = "Pachira"            , family = "Malvaceae"         )
-   g2f[[242]] = list( genus = "Palicourea"         , family = "Rubiaceae"         )
-   g2f[[243]] = list( genus = "Parahancornia"      , family = "Apocynaceae"       )
-   g2f[[244]] = list( genus = "Paraia"             , family = "Lauraceae"         )
-   g2f[[245]] = list( genus = "Parinari"           , family = "Chrysobalanaceae"  )
-   g2f[[246]] = list( genus = "Parkia"             , family = "Fabaceae"          )
-   g2f[[247]] = list( genus = "Paullinia"          , family = "Sapindaceae"       )
-   g2f[[248]] = list( genus = "Pausandra"          , family = "Euphorbiaceae"     )
-   g2f[[249]] = list( genus = "Paypayrola"         , family = "Violaceae"         )
-   g2f[[250]] = list( genus = "Peltogyne"          , family = "Fabaceae"          )
-   g2f[[251]] = list( genus = "Pera"               , family = "Euphorbiaceae"     )
-   g2f[[252]] = list( genus = "Perebea"            , family = "Moraceae"          )
-   g2f[[253]] = list( genus = "Peridiscus"         , family = "Peridiscaceae"     )
-   g2f[[254]] = list( genus = "Phenakospermum"     , family = "Strelitziaceae"    )
-   g2f[[255]] = list( genus = "Piptadenia"         , family = "Fabaceae"          )
-   g2f[[256]] = list( genus = "Platonia"           , family = "Clusiaceae"        )
-   g2f[[257]] = list( genus = "Platymiscium"       , family = "Fabaceae"          )
-   g2f[[258]] = list( genus = "Plenckia"           , family = "Celastraceae"      )
-   g2f[[259]] = list( genus = "Poecilanthe"        , family = "Fabaceae"          )
-   g2f[[260]] = list( genus = "Pogonophora"        , family = "Euphorbiaceae"     )
-   g2f[[261]] = list( genus = "Poraqueiba"         , family = "Icacinaceae"       )
-   g2f[[262]] = list( genus = "Posoqueria"         , family = "Rubiaceae"         )
-   g2f[[263]] = list( genus = "Pourouma"           , family = "Urticaceae"        )
-   g2f[[264]] = list( genus = "Pouteria"           , family = "Sapotaceae"        )
-   g2f[[265]] = list( genus = "Pradosia"           , family = "Sapotaceae"        )
-   g2f[[266]] = list( genus = "Protium"            , family = "Burseraceae"       )
-   g2f[[267]] = list( genus = "Prunus"             , family = "Rosaceae"          )
-   g2f[[268]] = list( genus = "Pseudolmedia"       , family = "Moraceae"          )
-   g2f[[269]] = list( genus = "Pseudopiptadenia"   , family = "Fabaceae"          )
-   g2f[[270]] = list( genus = "Pseudoxandra"       , family = "Annonaceae"        )
-   g2f[[271]] = list( genus = "Psidium"            , family = "Myrtaceae"         )
-   g2f[[272]] = list( genus = "Pterandra"          , family = "Malpighiaceae"     )
-   g2f[[273]] = list( genus = "Pterocarpus"        , family = "Fabaceae"          )
-   g2f[[274]] = list( genus = "Ptychopetalum"      , family = "Olacaceae"         )
-   g2f[[275]] = list( genus = "Qualea"             , family = "Vochysiaceae"      )
-   g2f[[276]] = list( genus = "Quararibea"         , family = "Malvaceae"         )
-   g2f[[277]] = list( genus = "Quiina"             , family = "Ochnaceae"         )
-   g2f[[278]] = list( genus = "Raputia"            , family = "Rutaceae"          )
-   g2f[[279]] = list( genus = "Rauvolfia"          , family = "Apocynaceae"       )
-   g2f[[280]] = list( genus = "Recordoxylon"       , family = "Fabaceae"          )
-   g2f[[281]] = list( genus = "Rhodostemonodaphne" , family = "Lauraceae"         )
-   g2f[[282]] = list( genus = "Richeria"           , family = "Phyllanthaceae"    )
-   g2f[[283]] = list( genus = "Rinorea"            , family = "Violaceae"         )
-   g2f[[284]] = list( genus = "Rollinia"           , family = "Annonaceae"        )
-   g2f[[285]] = list( genus = "Roucheria"          , family = "Linaceae"          )
-   g2f[[286]] = list( genus = "Ruizterania"        , family = "Vochysiaceae"      )
-   g2f[[287]] = list( genus = "Ryania"             , family = "Salicaceae"        )
-   g2f[[288]] = list( genus = "Sacoglottis"        , family = "Humiriaceae"       )
-   g2f[[289]] = list( genus = "Sagotia"            , family = "Euphorbiaceae"     )
-   g2f[[290]] = list( genus = "Salacia"            , family = "Celastraceae"      )
-   g2f[[291]] = list( genus = "Sapium"             , family = "Euphorbiaceae"     )
-   g2f[[292]] = list( genus = "Sarcaulus"          , family = "Sapotaceae"        )
-   g2f[[293]] = list( genus = "Schefflera"         , family = "Araliaceae"        )
-   g2f[[294]] = list( genus = "Schinopsis"         , family = "Anacardiaceae"     )
-   g2f[[295]] = list( genus = "Schizolobium"       , family = "Fabaceae"          )
-   g2f[[296]] = list( genus = "Sclerolobium"       , family = "Fabaceae"          )
-   g2f[[297]] = list( genus = "Scleronema"         , family = "Malvaceae"         )
-   g2f[[298]] = list( genus = "Senefeldera"        , family = "Euphorbiaceae"     )
-   g2f[[299]] = list( genus = "Senna"              , family = "Fabaceae"          )
-   g2f[[300]] = list( genus = "Sextonia"           , family = "Lauraceae"         )
-   g2f[[301]] = list( genus = "Simaba"             , family = "Simaroubaceae"     )
-   g2f[[302]] = list( genus = "Simarouba"          , family = "Simaroubaceae"     )
-   g2f[[303]] = list( genus = "Siparuna"           , family = "Siparunaceae"      )
-   g2f[[304]] = list( genus = "Sloanea"            , family = "Elaeocarpaceae"    )
-   g2f[[305]] = list( genus = "Socratea"           , family = "Arecaceae"         )
-   g2f[[306]] = list( genus = "Sorocea"            , family = "Moraceae"          )
-   g2f[[307]] = list( genus = "Spondias"           , family = "Anacardiaceae"     )
-   g2f[[308]] = list( genus = "Sterculia"          , family = "Malvaceae"         )
-   g2f[[309]] = list( genus = "Strychnos"          , family = "Loganiaceae"       )
-   g2f[[310]] = list( genus = "Stryphnodendron"    , family = "Fabaceae"          )
-   g2f[[311]] = list( genus = "Styrax"             , family = "Styracaceae"       )
-   g2f[[312]] = list( genus = "Swartzia"           , family = "Fabaceae"          )
-   g2f[[313]] = list( genus = "Swietenia"          , family = "Meliaceae"         )
-   g2f[[314]] = list( genus = "Symphonia"          , family = "Clusiaceae"        )
-   g2f[[315]] = list( genus = "Syzygium"           , family = "Myrtaceae"         )
-   g2f[[316]] = list( genus = "Tabebuia"           , family = "Bignoniaceae"      )
-   g2f[[317]] = list( genus = "Tabernaemontana"    , family = "Apocynaceae"       )
-   g2f[[318]] = list( genus = "Tachigali"          , family = "Fabaceae"          )
-   g2f[[319]] = list( genus = "Talisia"            , family = "Sapindaceae"       )
-   g2f[[320]] = list( genus = "Tapirira"           , family = "Anacardiaceae"     )
-   g2f[[321]] = list( genus = "Tapura"             , family = "Dichapetalaceae"   )
-   g2f[[322]] = list( genus = "Taralea"            , family = "Fabaceae"          )
-   g2f[[323]] = list( genus = "Terminalia"         , family = "Combretaceae"      )
-   g2f[[324]] = list( genus = "Tetragastris"       , family = "Burseraceae"       )
-   g2f[[325]] = list( genus = "Theobroma"          , family = "Malvaceae"         )
-   g2f[[326]] = list( genus = "Thyrsodium"         , family = "Anacardiaceae"     )
-   g2f[[327]] = list( genus = "Tocoyena"           , family = "Rubiaceae"         )
-   g2f[[328]] = list( genus = "Toulicia"           , family = "Sapindaceae"       )
-   g2f[[329]] = list( genus = "Touroulia"          , family = "Ochnaceae"         )
-   g2f[[330]] = list( genus = "Tovomita"           , family = "Clusiaceae"        )
-   g2f[[331]] = list( genus = "Trattinnickia"      , family = "Burseraceae"       )
-   g2f[[332]] = list( genus = "Trema"              , family = "Cannabaceae"       )
-   g2f[[333]] = list( genus = "Trichilia"          , family = "Meliaceae"         )
-   g2f[[334]] = list( genus = "Trymatococcus"      , family = "Moraceae"          )
-   g2f[[335]] = list( genus = "Unonopsis"          , family = "Annonaceae"        )
-   g2f[[336]] = list( genus = "Vantanea"           , family = "Humiriaceae"       )
-   g2f[[337]] = list( genus = "Vatairea"           , family = "Fabaceae"          )
-   g2f[[338]] = list( genus = "Vataireopsis"       , family = "Fabaceae"          )
-   g2f[[339]] = list( genus = "Vernonia"           , family = "Asteraceae"        )
-   g2f[[340]] = list( genus = "Virola"             , family = "Myristicaceae"     )
-   g2f[[341]] = list( genus = "Vismia"             , family = "Hypericaceae"      )
-   g2f[[342]] = list( genus = "Vitex"              , family = "Lamiaceae"         )
-   g2f[[343]] = list( genus = "Vochysia"           , family = "Vochysiaceae"      )
-   g2f[[344]] = list( genus = "Votomita"           , family = "Melastomataceae"   )
-   g2f[[345]] = list( genus = "Vouacapoua"         , family = "Fabaceae"          )
-   g2f[[346]] = list( genus = "Warszewiczia"       , family = "Rubiaceae"         )
-   g2f[[347]] = list( genus = "Xylopia"            , family = "Annonaceae"        )
-   g2f[[348]] = list( genus = "Zanthoxylum"        , family = "Rutaceae"          )
-   g2f[[349]] = list( genus = "Zygia"              , family = "Fabaceae"          )
-
-
+   n=0  ; g2f      = list()
+   n=n+1; g2f[[n]] = list( genus = "Abarema"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Acmanthera"         , family = "Malpighiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Acrocomia"          , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Acosmium"           , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Adenophaedra"       , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Agonandra"          , family = "Opiliaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Aiouea"             , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Albizia"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Alchorneopsis"      , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Aldina"             , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Alexa"              , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Alibertia"          , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Allantoma"          , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Allophylus"         , family = "Sapindaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Amaioua"            , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Ambelania"          , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Amburana"           , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Ampelocera"         , family = "Ulmaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Amphirrhox"         , family = "Violaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Anacardium"         , family = "Anacardiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Anadenanthera"      , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Anaxagorea"         , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Andira"             , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Aniba"              , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Anisophyllea"       , family = "Anisophylleaceae"  )
+   n=n+1; g2f[[n]] = list( genus = "Annona"             , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Anomalocalyx"       , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Antonia"            , family = "Loganiaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Aparisthmium"       , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Apeiba"             , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Aptandra"           , family = "Olacaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Apuleia"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Aspidosperma"       , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Astrocaryum"        , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Astronium"          , family = "Anacardiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Attalea"            , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Austromyrtus"       , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Bactris"            , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Bagassa"            , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Balizia"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Batesia"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Batocarpus"         , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Bauhinia"           , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Bellucia"           , family = "Melastomataceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Bertholletia"       , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Blepharocalyx"      , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Bixa"               , family = "Bixaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Bocageopsis"        , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Bocoa"              , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Bombax"             , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Botryarrhena"       , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Bowdichia"          , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Brachychiton"       , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Brosimum"           , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Buchenavia"         , family = "Combretaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Byrsonima"          , family = "Malpighiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Caesalpinia"        , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Calliandra"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Calophyllum"        , family = "Calophyllaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Calyptranthes"      , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Campomanesia"       , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Capirona"           , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Capparidastrum"     , family = "Capparaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Capparis"           , family = "Capparaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Caraipa"            , family = "Calophyllaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Carapa"             , family = "Meliaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Cariniana"          , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Caryocar"           , family = "Caryocaraceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Casearia"           , family = "Salicaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Cassia"             , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Castilla"           , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Catostemma"         , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Cecropia"           , family = "Urticaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Cedrela"            , family = "Meliaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Cedrelinga"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Ceiba"              , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Cereus"             , family = "Cactaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Chaetocarpus"       , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Chaetochlamys"      , family = "Acanthaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Chamaecrista"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Chaunochiton"       , family = "Olacaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Cheiloclinium"      , family = "Celastraceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Chimarrhis"         , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Chloroleucon"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Chromolucuma"       , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Chrysobalanus"      , family = "Chrysobalanaceae"  )
+   n=n+1; g2f[[n]] = list( genus = "Chrysophyllum"      , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Clarisia"           , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Clusia"             , family = "Clusiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Cnidoscolus"        , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Coccoloba"          , family = "Polygonaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Commiphora"         , family = "Burseraceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Conceveiba"         , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Connarus"           , family = "Connaraceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Copaifera"          , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Cordia"             , family = "Boraginaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Corythophora"       , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Couepia"            , family = "Chrysobalanaceae"  )
+   n=n+1; g2f[[n]] = list( genus = "Couma"              , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Couratari"          , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Coussapoa"          , family = "Urticaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Coussarea"          , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Coutarea"           , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Crepidospermum"     , family = "Burseraceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Croton"             , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Crudia"             , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Cupania"            , family = "Sapindaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Cybianthus"         , family = "Primulaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Cybistax"           , family = "Bignoniaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Dacryodes"          , family = "Burseraceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Dalbergia"          , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Dendrobangia"       , family = "Cardiopteridaceae" )
+   n=n+1; g2f[[n]] = list( genus = "Dialium"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Diclinanona"        , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Dicorynia"          , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Dicranostyles"      , family = "Convolvulaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Dicypellium"        , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Dimorphandra"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Dinizia"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Diospyros"          , family = "Ebenaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Diplotropis"        , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Dipteryx"           , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Discophora"         , family = "Stemonuraceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Doliocarpus"        , family = "Dilleniaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Drypetes"           , family = "Putranjivaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Duckeodendron"      , family = "Solanaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Duckesia"           , family = "Humiriaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Duguetia"           , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Duroia"             , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Dystovomita"        , family = "Clusiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Ecclinusa"          , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Elaeoluma"          , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Elizabetha"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Emmotum"            , family = "Emmotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Endlicheria"        , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Endopleura"         , family = "Humiriaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Enterolobium"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Eperua"             , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Ephedranthus"       , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Eriotheca"          , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Erisma"             , family = "Vochysiaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Erythroxylum"       , family = "Erythroxylaceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Eschweilera"        , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Eugenia"            , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Euterpe"            , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Euxylophora"        , family = "Rutaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Faramea"            , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Ferdinandusa"       , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Ficus"              , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Fraunhofera"        , family = "Celastraceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Fusaea"             , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Garcinia"           , family = "Clusiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Geissospermum"      , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Genipa"             , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Gilbertiodendron"   , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Glycydendron"       , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Goupia"             , family = "Goupiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Guapira"            , family = "Nyctaginaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Guarea"             , family = "Meliaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Guatteria"          , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Guazuma"            , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Gustavia"           , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Hebepetalum"        , family = "Linaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Heisteria"          , family = "Olacaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Helianthostylis"    , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Helicostylis"       , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Henriettea"         , family = "Melastomataceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Henriettella"       , family = "Melastomataceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Hevea"              , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Himatanthus"        , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Hippocratea"        , family = "Celastraceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Hirtella"           , family = "Chrysobalanaceae"  )
+   n=n+1; g2f[[n]] = list( genus = "Humiria"            , family = "Humiriaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Humiriastrum"       , family = "Humiriaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Hura"               , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Hymenaea"           , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Hymenolobium"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Ignotum"            , family = "Ignotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Ilex"               , family = "Aquifoliaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Inga"               , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Iryanthera"         , family = "Myristicaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Isertia"            , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Jacaranda"          , family = "Bignoniaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Jacaratia"          , family = "Caricaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Jatropha"           , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Joannesia"          , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Justicia"           , family = "Acanthaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Lacistema"          , family = "Lacistemataceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Lacmellea"          , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Lacunaria"          , family = "Ochnaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Ladenbergia"        , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Laetia"             , family = "Salicaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Lafoensia"          , family = "Lythraceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Lecythis"           , family = "Lecythidaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Leonia"             , family = "Violaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Liana"              , family = "Lianaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Licania"            , family = "Chrysobalanaceae"  )
+   n=n+1; g2f[[n]] = list( genus = "Licaria"            , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Lindackeria"        , family = "Achariaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Lippia"             , family = "Verbenaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Lonchocarpus"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Luehea"             , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Lueheopsis"         , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Mabea"              , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Machaerium"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Macoubea"           , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Macrolobium"        , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Malouetia"          , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Manicaria"          , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Manihot"            , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Manilkara"          , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Maquira"            , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Marcgravia"         , family = "Marcgraviaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Marlierea"          , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Matayba"            , family = "Sapindaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Matisia"            , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Mauritia"           , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Mauritiella"        , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Maytenus"           , family = "Celastraceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Melicoccus"         , family = "Sapindaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Mezilaurus"         , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Miconia"            , family = "Melastomataceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Micrandra"          , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Micrandropsis"      , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Micropholis"        , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Mikania"            , family = "Asteraceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Mimosa"             , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Minquartia"         , family = "Olacaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Misanteca"          , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Monopteryx"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Moronobea"          , family = "Clusiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Mouriri"            , family = "Melastomataceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Myracrodruon"       , family = "Anacardiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Myrocarpus"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Myrcia"             , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Myrciaria"          , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Myrsine"            , family = "Primulaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Naucleopsis"        , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Nectandra"          , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Neea"               , family = "Nyctaginaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Ocotea"             , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Oenocarpus"         , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Onychopetalum"      , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Ormosia"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Osteophloeum"       , family = "Myristicaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Ouratea"            , family = "Ochnaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Oxandra"            , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Pachira"            , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Palicourea"         , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Parahancornia"      , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Paraia"             , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Parinari"           , family = "Chrysobalanaceae"  )
+   n=n+1; g2f[[n]] = list( genus = "Parkia"             , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Paullinia"          , family = "Sapindaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Pausandra"          , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Paypayrola"         , family = "Violaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Peltogyne"          , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Pera"               , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Perebea"            , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Peridiscus"         , family = "Peridiscaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Phenakospermum"     , family = "Strelitziaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Piptadenia"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Piptocarpha"        , family = "Asteraceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Pithecellobium"     , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Plathymenia"        , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Platonia"           , family = "Clusiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Platymiscium"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Platypodium"        , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Plenckia"           , family = "Celastraceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Poecilanthe"        , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Pogonophora"        , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Poraqueiba"         , family = "Icacinaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Posoqueria"         , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Pourouma"           , family = "Urticaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Pouteria"           , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Pradosia"           , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Protium"            , family = "Burseraceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Prunus"             , family = "Rosaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Pseudobombax"       , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Pseudolmedia"       , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Pseudopiptadenia"   , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Pseudoxandra"       , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Psidium"            , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Pterandra"          , family = "Malpighiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Pterocarpus"        , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Ptychopetalum"      , family = "Olacaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Qualea"             , family = "Vochysiaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Quararibea"         , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Quiina"             , family = "Ochnaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Raputia"            , family = "Rutaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Rauvolfia"          , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Recordoxylon"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Rhodostemonodaphne" , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Richeria"           , family = "Phyllanthaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Rinorea"            , family = "Violaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Rollinia"           , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Roucheria"          , family = "Linaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Roupala"            , family = "Proteaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Ruizterania"        , family = "Vochysiaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Ryania"             , family = "Salicaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Sacoglottis"        , family = "Humiriaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Sagotia"            , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Salacia"            , family = "Celastraceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Sapium"             , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Sarcaulus"          , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Schefflera"         , family = "Araliaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Schinopsis"         , family = "Anacardiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Schizolobium"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Sclerolobium"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Scleronema"         , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Senefeldera"        , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Senna"              , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Sextonia"           , family = "Lauraceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Simaba"             , family = "Simaroubaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Simarouba"          , family = "Simaroubaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Siparuna"           , family = "Siparunaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Sloanea"            , family = "Elaeocarpaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Socratea"           , family = "Arecaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Sorocea"            , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Spondias"           , family = "Anacardiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Sterculia"          , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Strychnos"          , family = "Loganiaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Stryphnodendron"    , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Styrax"             , family = "Styracaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Swartzia"           , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Swietenia"          , family = "Meliaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Symphonia"          , family = "Clusiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Syzygium"           , family = "Myrtaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Tabebuia"           , family = "Bignoniaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Tabernaemontana"    , family = "Apocynaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Tachigali"          , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Talisia"            , family = "Sapindaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Tapirira"           , family = "Anacardiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Tapura"             , family = "Dichapetalaceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Taralea"            , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Terminalia"         , family = "Combretaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Tetragastris"       , family = "Burseraceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Theobroma"          , family = "Malvaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Thyrsodium"         , family = "Anacardiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Tocoyena"           , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Toulicia"           , family = "Sapindaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Touroulia"          , family = "Ochnaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Tovomita"           , family = "Clusiaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Trattinnickia"      , family = "Burseraceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Trema"              , family = "Cannabaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Trichilia"          , family = "Meliaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Trymatococcus"      , family = "Moraceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Unonopsis"          , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Vantanea"           , family = "Humiriaceae"       )
+   n=n+1; g2f[[n]] = list( genus = "Vatairea"           , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Vataireopsis"       , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Vernonia"           , family = "Asteraceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Virola"             , family = "Myristicaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Vismia"             , family = "Hypericaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Vitex"              , family = "Lamiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Vochysia"           , family = "Vochysiaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Votomita"           , family = "Melastomataceae"   )
+   n=n+1; g2f[[n]] = list( genus = "Vouacapoua"         , family = "Fabaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Warszewiczia"       , family = "Rubiaceae"         )
+   n=n+1; g2f[[n]] = list( genus = "Xylopia"            , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Zanthoxylum"        , family = "Rutaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Zygia"              , family = "Fabaceae"          )
    #---------------------------------------------------------------------------------------#
 
 
    #----- Convert the g2f list into a data frame. -----------------------------------------#
-   g2f = data.frame( apply( X      = t(sapply(X = g2f , FUN = c))
-                          , MARGIN = c(1,2)
-                          , FUN    = unlist
-                          )#end apply
-                   , stringsAsFactors = FALSE
-                   )#end data.frame
+   g2f = list.2.data.frame(g2f)
    #---------------------------------------------------------------------------------------#
 
 
@@ -911,102 +921,109 @@ standard.family.name <<- function(datum){
    #---------------------------------------------------------------------------------------#
    #     Check whether the family has all genera needed.                                   #
    #---------------------------------------------------------------------------------------#
-   idx = which(! is.na(datum$genus) & ! datum$genus %in% g2f$genus)
+   idx = which( ( ! is.na(datum$genus) ) 
+              & ( ! datum$genus %in% g2f$genus )
+              & ( regexpr(pattern="Ignotum",text=datum$genus,ignore.case=TRUE) %==% -1)
+              )#end which
    if (length(idx) > 0){
      cat(" You must add genera to g2f...","\n")
-     tofill = t(t(sort(unique(datum$genus[idx]))))
+     tofill.gen = t(t(sort(unique(datum$genus[idx]))))
+     toshow     = which(names(datum) %in% c("trans","tag","x","y","scientific","family"))
+     toshow     = datum[idx,toshow]
      browser()
    }#end if
    #---------------------------------------------------------------------------------------#
 
 
 
+
    #---------------------------------------------------------------------------------------#
    #     List the default name for all families if genera was unknown.                     #
    #---------------------------------------------------------------------------------------#
-   f2nogenus = list()
-
-   f2nogenus[[  1]] = list(family = "Acanthaceae"      , genus = "Ignotum.acanthus"     )
-   f2nogenus[[  2]] = list(family = "Achariaceae"      , genus = "Ignotum.acharia"      )
-   f2nogenus[[  3]] = list(family = "Anacardiaceae"    , genus = "Ignotum.anacardium"   )
-   f2nogenus[[  4]] = list(family = "Anisophylleaceae" , genus = "Ignotum.anisophyllea" )
-   f2nogenus[[  5]] = list(family = "Annonaceae"       , genus = "Ignotum.annona"       )
-   f2nogenus[[  6]] = list(family = "Apocynaceae"      , genus = "Ignotum.apocynum"     )
-   f2nogenus[[  7]] = list(family = "Aquifoliaceae"    , genus = "Ignotum.ilex"         )
-   f2nogenus[[  8]] = list(family = "Araliaceae"       , genus = "Ignotum.aralia"       )
-   f2nogenus[[  9]] = list(family = "Arecaceae"        , genus = "Ignotum.areca"        )
-   f2nogenus[[ 10]] = list(family = "Asteraceae"       , genus = "Ignotum.aster"        )
-   f2nogenus[[ 11]] = list(family = "Bignoniaceae"     , genus = "Ignotum.bignonia"     )
-   f2nogenus[[ 12]] = list(family = "Bixaceae"         , genus = "Ignotum.bixa"         )
-   f2nogenus[[ 13]] = list(family = "Boraginaceae"     , genus = "Ignotum.borago"       )
-   f2nogenus[[ 14]] = list(family = "Burseraceae"      , genus = "Ignotum.bursera"      )
-   f2nogenus[[ 15]] = list(family = "Cactaceae"        , genus = "Ignotum.cactus"       )
-   f2nogenus[[ 16]] = list(family = "Calophyllaceae"   , genus = "Ignotum.calophyllum"  )
-   f2nogenus[[ 17]] = list(family = "Cannabaceae"      , genus = "Ignotum.cannabis"     )
-   f2nogenus[[ 18]] = list(family = "Capparaceae"      , genus = "Ignotum.capparis"     )
-   f2nogenus[[ 19]] = list(family = "Cardiopteridaceae", genus = "Ignotum.cardiopteris" )
-   f2nogenus[[ 20]] = list(family = "Caricaceae"       , genus = "Ignotum.carica"       )
-   f2nogenus[[ 21]] = list(family = "Caryocaraceae"    , genus = "Ignotum.caryocar"     )
-   f2nogenus[[ 22]] = list(family = "Celastraceae"     , genus = "Ignotum.celastrus"    )
-   f2nogenus[[ 23]] = list(family = "Chrysobalanaceae" , genus = "Ignotum.chrysobalanus")
-   f2nogenus[[ 24]] = list(family = "Clusiaceae"       , genus = "Ignotum.clusia"       )
-   f2nogenus[[ 25]] = list(family = "Combretaceae"     , genus = "Ignotum.combretum"    )
-   f2nogenus[[ 26]] = list(family = "Connaraceae"      , genus = "Ignotum.connarus"     )
-   f2nogenus[[ 27]] = list(family = "Convolvulaceae"   , genus = "Ignotum.convolvulus"  )
-   f2nogenus[[ 28]] = list(family = "Dichapetalaceae"  , genus = "Ignotum.dichapetalum" )
-   f2nogenus[[ 29]] = list(family = "Dilleniaceae"     , genus = "Ignotum.dillenia"     )
-   f2nogenus[[ 30]] = list(family = "Ebenaceae"        , genus = "Ignotum.ebenus"       )
-   f2nogenus[[ 31]] = list(family = "Elaeocarpaceae"   , genus = "Ignotum.elaeocarpus"  )
-   f2nogenus[[ 32]] = list(family = "Emmotaceae"       , genus = "Ignotum.emmotum"      )
-   f2nogenus[[ 33]] = list(family = "Erythroxylaceae"  , genus = "Ignotum.erythroxylum" )
-   f2nogenus[[ 34]] = list(family = "Euphorbiaceae"    , genus = "Ignotum.euphorbia"    )
-   f2nogenus[[ 35]] = list(family = "Fabaceae"         , genus = "Ignotum.faba"         )
-   f2nogenus[[ 36]] = list(family = "Goupiaceae"       , genus = "Goupia"               )
-   f2nogenus[[ 37]] = list(family = "Humiriaceae"      , genus = "Ignotum.humiria"      )
-   f2nogenus[[ 38]] = list(family = "Hypericaceae"     , genus = "Ignotum.hypericum"    )
-   f2nogenus[[ 39]] = list(family = "Icacinaceae"      , genus = "Ignotum.icacina"      )
-   f2nogenus[[ 40]] = list(family = "Ignotaceae"       , genus = "Ignotum"              )
-   f2nogenus[[ 41]] = list(family = "Lacistemataceae"  , genus = "Ignotum.lacistema"    )
-   f2nogenus[[ 42]] = list(family = "Lamiaceae"        , genus = "Ignotum.lamium"       )
-   f2nogenus[[ 43]] = list(family = "Lauraceae"        , genus = "Ignotum.laurus"       )
-   f2nogenus[[ 44]] = list(family = "Lecythidaceae"    , genus = "Ignotum.lecythis"     )
-   f2nogenus[[ 45]] = list(family = "Lianaceae"        , genus = "Liana"                )
-   f2nogenus[[ 46]] = list(family = "Linaceae"         , genus = "Ignotum.linum"        )
-   f2nogenus[[ 47]] = list(family = "Loganiaceae"      , genus = "Ignotum.logania"      )
-   f2nogenus[[ 48]] = list(family = "Malpighiaceae"    , genus = "Ignotum.malpighia"    )
-   f2nogenus[[ 49]] = list(family = "Malvaceae"        , genus = "Ignotum.malva"        )
-   f2nogenus[[ 50]] = list(family = "Marcgraviaceae"   , genus = "Ignotum.marcgravia"   )
-   f2nogenus[[ 51]] = list(family = "Melastomataceae"  , genus = "Ignotum.melastoma"    )
-   f2nogenus[[ 52]] = list(family = "Meliaceae"        , genus = "Ignotum.melia"        )
-   f2nogenus[[ 53]] = list(family = "Moraceae"         , genus = "Ignotum.morus"        )
-   f2nogenus[[ 54]] = list(family = "Myristicaceae"    , genus = "Ignotum.myristica"    )
-   f2nogenus[[ 55]] = list(family = "Myrtaceae"        , genus = "Ignotum.myrtus"       )
-   f2nogenus[[ 56]] = list(family = "Nyctaginaceae"    , genus = "Ignotum.nyctaginia"   )
-   f2nogenus[[ 57]] = list(family = "Ochnaceae"        , genus = "Ignotum.ochna"        )
-   f2nogenus[[ 58]] = list(family = "Olacaceae"        , genus = "Ignotum.olax"         )
-   f2nogenus[[ 59]] = list(family = "Opiliaceae"       , genus = "Ignotum.opilia"       )
-   f2nogenus[[ 60]] = list(family = "Peridiscaceae"    , genus = "Ignotum.peridiscus"   )
-   f2nogenus[[ 61]] = list(family = "Phyllanthaceae"   , genus = "Ignotum.phyllanthus"  )
-   f2nogenus[[ 62]] = list(family = "Primulaceae"      , genus = "Ignotum.primula"      )
-   f2nogenus[[ 63]] = list(family = "Polygonaceae"     , genus = "Ignotum.polygonum"    )
-   f2nogenus[[ 64]] = list(family = "Putranjivaceae"   , genus = "Ignotum.putranjiva"   )
-   f2nogenus[[ 65]] = list(family = "Rosaceae"         , genus = "Ignotum.rosa"         )
-   f2nogenus[[ 66]] = list(family = "Rubiaceae"        , genus = "Ignotum.rubia"        )
-   f2nogenus[[ 67]] = list(family = "Rutaceae"         , genus = "Ignotum.ruta"         )
-   f2nogenus[[ 68]] = list(family = "Salicaceae"       , genus = "Ignotum.salix"        )
-   f2nogenus[[ 69]] = list(family = "Sapindaceae"      , genus = "Ignotum.sapindus"     )
-   f2nogenus[[ 70]] = list(family = "Sapotaceae"       , genus = "Ignotum.sapota"       )
-   f2nogenus[[ 71]] = list(family = "Simaroubaceae"    , genus = "Ignotum.simarouba"    )
-   f2nogenus[[ 72]] = list(family = "Siparunaceae"     , genus = "Ignotum.siparuna"     )
-   f2nogenus[[ 73]] = list(family = "Solanaceae"       , genus = "Ignotum.solanum"      )
-   f2nogenus[[ 74]] = list(family = "Stemonuraceae"    , genus = "Ignotum.stemonurus"   )
-   f2nogenus[[ 75]] = list(family = "Strelitziaceae"   , genus = "Ignotum.strelitzia"   )
-   f2nogenus[[ 76]] = list(family = "Styracaceae"      , genus = "Ignotum.styrax"       )
-   f2nogenus[[ 77]] = list(family = "Ulmaceae"         , genus = "Ignotum.ulmus"        )
-   f2nogenus[[ 78]] = list(family = "Urticaceae"       , genus = "Ignotum.urtica"       )
-   f2nogenus[[ 79]] = list(family = "Verbenaceae"      , genus = "Ignotum.verbena"      )
-   f2nogenus[[ 80]] = list(family = "Violaceae"        , genus = "Ignotum.viola"        )
-   f2nogenus[[ 81]] = list(family = "Vochysiaceae"     , genus = "Ignotum.vochysia"     )
+   n=0  ; f2nog      = list()
+   n=n+1; f2nog[[n]] = list(family = "Acanthaceae"      , genus = "Ignotum.acanthus"     )
+   n=n+1; f2nog[[n]] = list(family = "Achariaceae"      , genus = "Ignotum.acharia"      )
+   n=n+1; f2nog[[n]] = list(family = "Anacardiaceae"    , genus = "Ignotum.anacardium"   )
+   n=n+1; f2nog[[n]] = list(family = "Anisophylleaceae" , genus = "Ignotum.anisophyllea" )
+   n=n+1; f2nog[[n]] = list(family = "Annonaceae"       , genus = "Ignotum.annona"       )
+   n=n+1; f2nog[[n]] = list(family = "Apocynaceae"      , genus = "Ignotum.apocynum"     )
+   n=n+1; f2nog[[n]] = list(family = "Aquifoliaceae"    , genus = "Ignotum.ilex"         )
+   n=n+1; f2nog[[n]] = list(family = "Araliaceae"       , genus = "Ignotum.aralia"       )
+   n=n+1; f2nog[[n]] = list(family = "Arecaceae"        , genus = "Ignotum.areca"        )
+   n=n+1; f2nog[[n]] = list(family = "Asteraceae"       , genus = "Ignotum.aster"        )
+   n=n+1; f2nog[[n]] = list(family = "Bignoniaceae"     , genus = "Ignotum.bignonia"     )
+   n=n+1; f2nog[[n]] = list(family = "Bixaceae"         , genus = "Ignotum.bixa"         )
+   n=n+1; f2nog[[n]] = list(family = "Boraginaceae"     , genus = "Ignotum.borago"       )
+   n=n+1; f2nog[[n]] = list(family = "Burseraceae"      , genus = "Ignotum.bursera"      )
+   n=n+1; f2nog[[n]] = list(family = "Cactaceae"        , genus = "Ignotum.cactus"       )
+   n=n+1; f2nog[[n]] = list(family = "Calophyllaceae"   , genus = "Ignotum.calophyllum"  )
+   n=n+1; f2nog[[n]] = list(family = "Cannabaceae"      , genus = "Ignotum.cannabis"     )
+   n=n+1; f2nog[[n]] = list(family = "Capparaceae"      , genus = "Ignotum.capparis"     )
+   n=n+1; f2nog[[n]] = list(family = "Cardiopteridaceae", genus = "Ignotum.cardiopteris" )
+   n=n+1; f2nog[[n]] = list(family = "Caricaceae"       , genus = "Ignotum.carica"       )
+   n=n+1; f2nog[[n]] = list(family = "Caryocaraceae"    , genus = "Ignotum.caryocar"     )
+   n=n+1; f2nog[[n]] = list(family = "Celastraceae"     , genus = "Ignotum.celastrus"    )
+   n=n+1; f2nog[[n]] = list(family = "Chrysobalanaceae" , genus = "Ignotum.chrysobalanus")
+   n=n+1; f2nog[[n]] = list(family = "Clusiaceae"       , genus = "Ignotum.clusia"       )
+   n=n+1; f2nog[[n]] = list(family = "Combretaceae"     , genus = "Ignotum.combretum"    )
+   n=n+1; f2nog[[n]] = list(family = "Connaraceae"      , genus = "Ignotum.connarus"     )
+   n=n+1; f2nog[[n]] = list(family = "Convolvulaceae"   , genus = "Ignotum.convolvulus"  )
+   n=n+1; f2nog[[n]] = list(family = "Dichapetalaceae"  , genus = "Ignotum.dichapetalum" )
+   n=n+1; f2nog[[n]] = list(family = "Dilleniaceae"     , genus = "Ignotum.dillenia"     )
+   n=n+1; f2nog[[n]] = list(family = "Ebenaceae"        , genus = "Ignotum.ebenus"       )
+   n=n+1; f2nog[[n]] = list(family = "Elaeocarpaceae"   , genus = "Ignotum.elaeocarpus"  )
+   n=n+1; f2nog[[n]] = list(family = "Emmotaceae"       , genus = "Ignotum.emmotum"      )
+   n=n+1; f2nog[[n]] = list(family = "Erythroxylaceae"  , genus = "Ignotum.erythroxylum" )
+   n=n+1; f2nog[[n]] = list(family = "Euphorbiaceae"    , genus = "Ignotum.euphorbia"    )
+   n=n+1; f2nog[[n]] = list(family = "Fabaceae"         , genus = "Ignotum.faba"         )
+   n=n+1; f2nog[[n]] = list(family = "Goupiaceae"       , genus = "Goupia"               )
+   n=n+1; f2nog[[n]] = list(family = "Humiriaceae"      , genus = "Ignotum.humiria"      )
+   n=n+1; f2nog[[n]] = list(family = "Hypericaceae"     , genus = "Ignotum.hypericum"    )
+   n=n+1; f2nog[[n]] = list(family = "Icacinaceae"      , genus = "Ignotum.icacina"      )
+   n=n+1; f2nog[[n]] = list(family = "Ignotaceae"       , genus = "Ignotum"              )
+   n=n+1; f2nog[[n]] = list(family = "Lacistemataceae"  , genus = "Ignotum.lacistema"    )
+   n=n+1; f2nog[[n]] = list(family = "Lamiaceae"        , genus = "Ignotum.lamium"       )
+   n=n+1; f2nog[[n]] = list(family = "Lauraceae"        , genus = "Ignotum.laurus"       )
+   n=n+1; f2nog[[n]] = list(family = "Lecythidaceae"    , genus = "Ignotum.lecythis"     )
+   n=n+1; f2nog[[n]] = list(family = "Lianaceae"        , genus = "Liana"                )
+   n=n+1; f2nog[[n]] = list(family = "Linaceae"         , genus = "Ignotum.linum"        )
+   n=n+1; f2nog[[n]] = list(family = "Loganiaceae"      , genus = "Ignotum.logania"      )
+   n=n+1; f2nog[[n]] = list(family = "Lythraceae"       , genus = "Ignotum.lythrum"      )
+   n=n+1; f2nog[[n]] = list(family = "Malpighiaceae"    , genus = "Ignotum.malpighia"    )
+   n=n+1; f2nog[[n]] = list(family = "Malvaceae"        , genus = "Ignotum.malva"        )
+   n=n+1; f2nog[[n]] = list(family = "Marcgraviaceae"   , genus = "Ignotum.marcgravia"   )
+   n=n+1; f2nog[[n]] = list(family = "Melastomataceae"  , genus = "Ignotum.melastoma"    )
+   n=n+1; f2nog[[n]] = list(family = "Meliaceae"        , genus = "Ignotum.melia"        )
+   n=n+1; f2nog[[n]] = list(family = "Moraceae"         , genus = "Ignotum.morus"        )
+   n=n+1; f2nog[[n]] = list(family = "Myristicaceae"    , genus = "Ignotum.myristica"    )
+   n=n+1; f2nog[[n]] = list(family = "Myrtaceae"        , genus = "Ignotum.myrtus"       )
+   n=n+1; f2nog[[n]] = list(family = "Nyctaginaceae"    , genus = "Ignotum.nyctaginia"   )
+   n=n+1; f2nog[[n]] = list(family = "Ochnaceae"        , genus = "Ignotum.ochna"        )
+   n=n+1; f2nog[[n]] = list(family = "Olacaceae"        , genus = "Ignotum.olax"         )
+   n=n+1; f2nog[[n]] = list(family = "Opiliaceae"       , genus = "Ignotum.opilia"       )
+   n=n+1; f2nog[[n]] = list(family = "Peridiscaceae"    , genus = "Ignotum.peridiscus"   )
+   n=n+1; f2nog[[n]] = list(family = "Phyllanthaceae"   , genus = "Ignotum.phyllanthus"  )
+   n=n+1; f2nog[[n]] = list(family = "Primulaceae"      , genus = "Ignotum.primula"      )
+   n=n+1; f2nog[[n]] = list(family = "Proteaceae"       , genus = "Ignotum.protea"       )
+   n=n+1; f2nog[[n]] = list(family = "Polygonaceae"     , genus = "Ignotum.polygonum"    )
+   n=n+1; f2nog[[n]] = list(family = "Putranjivaceae"   , genus = "Ignotum.putranjiva"   )
+   n=n+1; f2nog[[n]] = list(family = "Rosaceae"         , genus = "Ignotum.rosa"         )
+   n=n+1; f2nog[[n]] = list(family = "Rubiaceae"        , genus = "Ignotum.rubia"        )
+   n=n+1; f2nog[[n]] = list(family = "Rutaceae"         , genus = "Ignotum.ruta"         )
+   n=n+1; f2nog[[n]] = list(family = "Salicaceae"       , genus = "Ignotum.salix"        )
+   n=n+1; f2nog[[n]] = list(family = "Sapindaceae"      , genus = "Ignotum.sapindus"     )
+   n=n+1; f2nog[[n]] = list(family = "Sapotaceae"       , genus = "Ignotum.sapota"       )
+   n=n+1; f2nog[[n]] = list(family = "Simaroubaceae"    , genus = "Ignotum.simarouba"    )
+   n=n+1; f2nog[[n]] = list(family = "Siparunaceae"     , genus = "Ignotum.siparuna"     )
+   n=n+1; f2nog[[n]] = list(family = "Solanaceae"       , genus = "Ignotum.solanum"      )
+   n=n+1; f2nog[[n]] = list(family = "Stemonuraceae"    , genus = "Ignotum.stemonurus"   )
+   n=n+1; f2nog[[n]] = list(family = "Strelitziaceae"   , genus = "Ignotum.strelitzia"   )
+   n=n+1; f2nog[[n]] = list(family = "Styracaceae"      , genus = "Ignotum.styrax"       )
+   n=n+1; f2nog[[n]] = list(family = "Ulmaceae"         , genus = "Ignotum.ulmus"        )
+   n=n+1; f2nog[[n]] = list(family = "Urticaceae"       , genus = "Ignotum.urtica"       )
+   n=n+1; f2nog[[n]] = list(family = "Verbenaceae"      , genus = "Ignotum.verbena"      )
+   n=n+1; f2nog[[n]] = list(family = "Violaceae"        , genus = "Ignotum.viola"        )
+   n=n+1; f2nog[[n]] = list(family = "Vochysiaceae"     , genus = "Ignotum.vochysia"     )
    #---------------------------------------------------------------------------------------#
 
 
@@ -1014,23 +1031,18 @@ standard.family.name <<- function(datum){
 
 
    #----- Convert the g2f list into a data frame. -----------------------------------------#
-   f2nogenus = data.frame( apply( X      = t(sapply(X = f2nogenus , FUN = c))
-                                , MARGIN = c(1,2)
-                                , FUN    = unlist
-                                )#end apply
-                         , stringsAsFactors = FALSE
-                         )#end data.frame
+   f2nog = list.2.data.frame(f2nog)
    #---------------------------------------------------------------------------------------#
 
 
 
 
    #---------------------------------------------------------------------------------------#
-   #     Check whether there are families missing in f2nogenus look up table.              #
+   #     Check whether there are families missing in f2nog look up table.                  #
    #---------------------------------------------------------------------------------------#
-   idx = which(! g2f$family %in% f2nogenus$family)
+   idx = which(! g2f$family %in% f2nog$family)
    if (length(idx) > 0){
-     cat(" You must add families to f2nogenus...","\n")
+     cat(" You must add families to f2nog...","\n")
      family.tofill = t(t(sort(unique(g2f$family[idx]))))
      browser()
    }#end if
@@ -1038,20 +1050,20 @@ standard.family.name <<- function(datum){
 
 
 
-
    #---------------------------------------------------------------------------------------#
    #     Fill in non-informative genus for individual with known family but unknown genus. #
    #---------------------------------------------------------------------------------------#
-   nothing =   is.na(datum$genus) & is.na(datum$family)
-   no.gen  =   is.na(datum$genus) & ! is.na(datum$family)
-   yes.gen = ! is.na(datum$genus)
+   yes.gen = ! is.na(datum$genus ) & regexpr(pattern="Ignotum"   ,text=datum$genus ) %<% 0
+   yes.fam = ! is.na(datum$family) & regexpr(pattern="Ignotaceae",text=datum$family) %<% 0
+   nothing = ! yes.gen & ! yes.fam
+   no.gen  = ! yes.gen &   yes.fam
    #------ No information whatsoever.  Fill in with non-informative taxa. -----------------#
    datum$genus      [nothing] = "Ignotum"
    datum$scientific [nothing] = "Ignotum NA"
    datum$family     [nothing] = "Ignotaceae"
    #------ No genus, family only. ---------------------------------------------------------#
-   idx                        = match(datum$family[no.gen],f2nogenus$family)
-   datum$genus      [no.gen ] = f2nogenus$genus[idx]
+   idx                        = match(datum$family[no.gen],f2nog$family)
+   datum$genus      [no.gen ] = f2nog$genus[idx]
    datum$scientific [no.gen ] = paste(datum$genus[no.gen],NA_character_,sep=" ")
    #------ Genus is known. ----------------------------------------------------------------#
    idx                        = match(datum$genus[yes.gen],g2f$genus)
@@ -1757,9 +1769,9 @@ scientific.lookup.tnf <<- function(datum){
    #---------------------------------------------------------------------------------------#
    gs.list          = sapply(X = tolower(datum$scientific),FUN=strsplit,split=" ")
    gs.length        = sapply(X = gs.list, FUN = length)
-   gs.mat           = t(as.data.frame(gs.list))
-   g.only           = gs.length < 2
-   gs.mat[g.only,2] = NA
+   gs.mat           = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                           , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                           )#end cbind
    datum$genus      = capwords(gs.mat[,1],strict=TRUE)
    datum$scientific = paste(datum$genus,tolower (gs.mat[,2]),sep=" ")
    #---------------------------------------------------------------------------------------#
@@ -1768,7 +1780,7 @@ scientific.lookup.tnf <<- function(datum){
    #---------------------------------------------------------------------------------------#
    #      Fill in the family.                                                              #
    #---------------------------------------------------------------------------------------#
-   datum$family = standard.family.name(datum)
+   datum = standard.family.name(datum)
    #---------------------------------------------------------------------------------------#
 
    return(datum)
@@ -1807,20 +1819,20 @@ find.wood.density <<- function(datum,wood,verbose=FALSE){
    #----- Separate all species. -----------------------------------------------------------#
    species          = unique(datum$scientific)
    nspecies         = length(species)
-
+   
    sci.genus.mean   = matrix(nrow=0,ncol=3
                             ,dimnames=list(NULL,c("scientific","genus","family")))
    sci.loose.mean   = matrix(nrow=0,ncol=3
                             ,dimnames=list(NULL,c("scientific","genus","family")))
-   for (s in 1:nspecies){
+   for (s in sequence(nspecies)){
       if (! is.na(species[s]) && length(grep("Ignotum",species[s])) == 0){
          if (verbose) cat("   - ",s,"/",nspecies,"  -  ",species[s],"...","\n") 
 
          #----- Get the genus and family of this species, in case we need it. -------------#
-         igen        = which (datum$scientific == species[s])
+         igen        = which (datum$scientific %in% species[s])
          this.genus  = unique(datum$genus[igen])
-         this.family = unique(datum$family[igen])
-         if (length(this.genus) != length(this.family)){
+         this.family = unique(capwords(datum$family[igen],strict=TRUE))
+         if (length(this.genus) != 1 || length(this.family) != 1){
             cat(" - Perhaps a bastard genus?","\n")
             browser()
          }#end if
@@ -1836,15 +1848,17 @@ find.wood.density <<- function(datum,wood,verbose=FALSE){
             #     Find the index of this species in the database, and assign the wood      #
             # density from there.                                                          #
             #------------------------------------------------------------------------------#
-            iwood = intersect( which(wood$scientific == species[s] )
-                             , intersect( which( wood$genus     == this.genus )
-                                        , which( wood$family    == this.family) ) )
-            if (length(iwood) == 0){
+            iwood = intersect( which(wood$scientific %in% species[s] )
+                             , intersect( which( wood$genus  %in% this.genus )
+                                        , which( wood$family %in% this.family) ) )
+            if (length(iwood) != 1){
                #----- Intersection was zero! Misidentification, maybe? --------------------#
-               loose = TRUE
+               loose      = TRUE
+               cat ("Weird, length(iwood)=",length(iwood),"...","\n",sep="")
+               browser()
             }else{
-               if (any(is.finite(wood$density[iwood]))){
-                  sel                     = datum$scientific == species[s]
+               if (any(c(FALSE,is.finite(wood$density[iwood])),na.rm=TRUE)){
+                  sel       = datum$scientific %in% species[s]
                   datum$wood.dens   [sel] = wood$density[iwood]
                   datum$gf.wood.dens[sel] = 0
                   fill.genus              = FALSE
@@ -1855,27 +1869,35 @@ find.wood.density <<- function(datum,wood,verbose=FALSE){
                }#end if
                #---------------------------------------------------------------------------#
             }#end if
-         #---------------------------------------------------------------------------------#
+            #------------------------------------------------------------------------------#
          }else{
             loose      = TRUE
             fill.genus = this.genus %in% wood$genus
          }#end if
          #---------------------------------------------------------------------------------#
 
+
+
+         #---------------------------------------------------------------------------------#
+         #     If this species is to be filled with genus average.                         #
+         #---------------------------------------------------------------------------------#
          if (fill.genus){
             #------------------------------------------------------------------------------#
             #     Find all the plants from this genus, take the average, and attribute     #
             # to this species.  In this case, warn the user about the species, it may      #
             # be a typo in the scientific name that is easy to fix.                        #
             #------------------------------------------------------------------------------#
-            iwood              = intersect( which( wood$genus  == this.genus )
-                                          , which( wood$family == this.family) )
+            iwood              = intersect( which( wood$genus  %in% this.genus )
+                                          , which( wood$family %in% this.family) )
             if (length(iwood) == 0){
                #----- Intersection was zero! Misidentification, maybe? --------------------#
                loose      = TRUE
             }else{
                if (any(is.finite(wood$density[iwood]))){
-                  sel                     = datum$scientific == species[s]
+                  sel                     = datum$scientific   %in% species[s]
+                  overwrite               = sel & ! is.na(datum$wood.dens)
+                  if (any(overwrite)) browser()
+ 
                   datum$wood.dens   [sel] = mean(wood$density[iwood],na.rm=TRUE)
                   datum$gf.wood.dens[sel] = 1
                   sci.genus.mean          = rbind(sci.genus.mean
@@ -1912,6 +1934,7 @@ find.wood.density <<- function(datum,wood,verbose=FALSE){
    #---------------------------------------------------------------------------------------#
 
 
+
    #---------------------------------------------------------------------------------------#
    #     List all genera that didn't belong to any known family.                           #
    #---------------------------------------------------------------------------------------#
@@ -1946,13 +1969,13 @@ find.wood.density <<- function(datum,wood,verbose=FALSE){
    sci.family.sample = matrix(nrow=0,ncol=3
                              ,dimnames=list(NULL,c("scientific","family","wood.dens")))
    #----- Loop over all families. ---------------------------------------------------------#
-   for (f in 1:nfamilies){
+   for (f in sequence(nfamilies)){
       if (families[f] != "Ignotaceae"){
          if (verbose) cat("   - ",f,"/",nfamilies,"  -  ",families[f],"...","\n")
 
          #----- Get the individuals that belong to this family. ---------------------------#
-         ifam         = which (datum$family == families[f]  & is.finite(datum$wood.dens))
-         imiss        = which (datum$family == families[f]  & is.na    (datum$wood.dens))
+         ifam  = which (datum$family %in% families[f]  & is.finite(datum$wood.dens))
+         imiss = which (datum$family %in% families[f]  & is.na    (datum$wood.dens))
          if (length(imiss) > 0 && length(ifam) > 0){
             sample.wood.dens          = sample( x       = datum$wood.dens[ifam]
                                               , size    = length(imiss)
@@ -2055,9 +2078,9 @@ scientific.lookup.mao <<- function(datum,lookup.path){
    #----- Break into genus and species. ---------------------------------------------------#
    gs.list                  = sapply(X = tolower(look.up$scientific),FUN=strsplit,split=" ")
    gs.length                = sapply(X = gs.list, FUN = length)
-   gs.mat                   = t(as.data.frame(gs.list))
-   g.only                   = gs.length < 2
-   gs.mat[g.only,2]         = NA
+   gs.mat                   = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                                   , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                                   )#end cbind
    g                        = capwords(gs.mat[,1],strict=TRUE)
    s                        = tolower(gs.mat[,2])
    g.s                      = paste(g,s,sep=" ")
@@ -2150,9 +2173,9 @@ scientific.lookup.rja <<- function(datum,lookup.path){
    #----- Break into genus and species. ---------------------------------------------------#
    gs.list                  = sapply(X = tolower(look.up$scientific),FUN=strsplit,split=" ")
    gs.length                = sapply(X = gs.list, FUN = length)
-   gs.mat                   = t(as.data.frame(gs.list))
-   g.only                   = gs.length < 2
-   gs.mat[g.only,2]         = NA
+   gs.mat                   = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                                   , mapply(FUN="[",gs.list,MoreArgs=list(2))
+                                   )#end cbind
    g                        = capwords(gs.mat[,1],strict=TRUE)
    s                        = tolower(gs.mat[,2])
    g.s                      = paste(g,s,sep=" ")
@@ -2215,5 +2238,76 @@ scientific.lookup.rja <<- function(datum,lookup.path){
    #---------------------------------------------------------------------------------------#
    return(datum)
 }#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function returns two characters, the genus and the scientific name.             #
+#------------------------------------------------------------------------------------------#
+keep.gen.spe.only <<- function(x,out="both"){
+   if (is.matrix(x) | is.array(x)){
+      ans = apply(X=x,MARGIN=dim(x),FUN=keep.gen.spe.only,out=out)
+   }else if (is.list(x)){
+      ans = lapply(X=x,FUN=keep.gen.spe.only,out=out)
+   }else if (is.data.frame(x)){
+      ans = sapply(X=x,FUN=keep.gen.spe.only,out=out)
+   }else if (length(x) > 1){
+      ans = sapply(X=x,FUN=keep.gen.spe.only,out=out)
+   }else{
+      #----- Remove stuff that is not genus. ----------------------------------------------#
+      x    = sub(pattern="cf\\."  ,replacement=""           ,ignore.case=TRUE,x=x)
+      x    = sub(pattern="cf\\ "  ,replacement=""           ,ignore.case=TRUE,x=x)
+      x    = sub(pattern="Ind\\ " ,replacement="deleteme\\ ",ignore.case=TRUE,x=x)
+      #------------------------------------------------------------------------------------#
+
+      #----- Split words. -----------------------------------------------------------------#
+      ans  = unlist(strsplit(unlist(c(tolower(x))),split=" "))
+      nans = length(ans)
+      #------------------------------------------------------------------------------------#
+
+      #----- Simplify option so just the first letter matters. ----------------------------#
+      out1 = substring(tolower(out),1,1)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Decide whether to keep the genus, species, or both. --------------------------#
+      gen = NA_character_
+      spe = NA_character_
+      if (nans > 0){
+         gen = capwords(ans[1],strict=TRUE)
+         if (nans > 1 && (! gen %in% "Deleteme")){
+            spe = tolower(ans[2])
+            if (spe %in% c("sp.","sp.1","ni","ind")) spe = NA_character_
+         }else{
+            gen = NA_character_
+         }#end if
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Select the proper output.                                                      #
+      #------------------------------------------------------------------------------------#
+      if (out1 == "g"){
+         ans = gen
+      }else if (out1 == "s"){
+         ans = spe
+      }else if (out1 == "b"){
+         ans = ifelse(is.na(spe),gen,paste(gen,spe,sep=" "))
+      }else{
+         stop (paste(" Invalid out (",out,")",sep=""))
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+   return(ans)
+}#end function keep.gen.spe.only
 #==========================================================================================#
 #==========================================================================================#

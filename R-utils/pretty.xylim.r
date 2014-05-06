@@ -3,15 +3,28 @@
 #     This function creates a expanded range for a variable, expanding the limits by a     #
 # certain factor so it fits a legend.                                                      #
 #------------------------------------------------------------------------------------------#
-pretty.xylim <<- function(u,fracexp=0.40,is.log=FALSE){
+pretty.xylim <<- function(u,fracexp=0.00,is.log=FALSE){
+   #----- Make fracexp a vector o length[2]. ----------------------------------------------#
+   if (length(fracexp) == 1){
+      if (fracexp < 0.0){
+         fracexp = c(-fracexp,0.0)
+      }else{
+         fracexp = c(0.0,fracexp)
+      }#end if
+   }else{
+      fracexp = abs(fracexp)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Set lnudge, which is used to create limits when variable "u" is constant. -------#
-   if (fracexp != 0.0){
-      lnudge = 0.5 * abs(fracexp)
+   if (any(fracexp != 0.0)){
+      lnudge = 0.5 * max(fracexp)
    }else{
       lnudge = 0.20
    }#end if
    #---------------------------------------------------------------------------------------#
+
 
 
    #----- Save the original warning, so it won't issue warnings during the selection. -----#
@@ -20,10 +33,12 @@ pretty.xylim <<- function(u,fracexp=0.40,is.log=FALSE){
    #---------------------------------------------------------------------------------------#
 
 
+
    #----- Select the data that we consider for the range. ---------------------------------#
    vec.u  = c(u)
    if (is.log) vec.u[! is.finite(vec.u) | vec.u <= 0] = NA
-   ulimit = range(vec.u,finite=TRUE)
+   ulimit  = range(vec.u,finite=TRUE)
+   dulimit = diff(ulimit)
    #---------------------------------------------------------------------------------------#
 
 
@@ -41,10 +56,9 @@ pretty.xylim <<- function(u,fracexp=0.40,is.log=FALSE){
    }else if (ulimit[1] == ulimit[2] ){
       ulimit[1] = ulimit[1] * ( 1. - sign(ulimit[1]) * lnudge)
       ulimit[2] = ulimit[2] * ( 1. + sign(ulimit[2]) * lnudge)
-   }else if(fracexp >= 0){
-      ulimit[2] = ulimit[2] + fracexp * diff(ulimit)
    }else{
-      ulimit[1] = ulimit[1] + fracexp * diff(ulimit)
+      ulimit[1] = ulimit[1] - fracexp[1] * dulimit
+      ulimit[2] = ulimit[2] + fracexp[2] * dulimit
    }#end if
    if (is.log) ulimit = exp(ulimit)
    #---------------------------------------------------------------------------------------#

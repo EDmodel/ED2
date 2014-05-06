@@ -23,8 +23,8 @@ taylor.plot <<- function ( obs
                          , plot.obs        = TRUE
                          , obs.col         = "black"
                          , obs.cex         = 2.0
-                         , xlab            = "RMS error"
-                         , ylab            = "Standard deviation"
+                         , xlab            = "Standard deviation (Residuals)"
+                         , ylab            = "Standard deviation (Observations and Model)"
                          , zlab            = "Correlation"
                          , main            = "Taylor Diagram"
                          , show.gamma      = TRUE
@@ -132,8 +132,8 @@ taylor.plot <<- function ( obs
 
 
    #----- Keep only the valid observations. -----------------------------------------------#
-   obs  = obs[keep]
-   mod  = lapply(X=mod,FUN="[",keep)
+   # obs  = obs[keep]
+   # mod  = lapply(X=mod,FUN="[",keep)
    #---------------------------------------------------------------------------------------#
 
 
@@ -144,8 +144,8 @@ taylor.plot <<- function ( obs
    #---------------------------------------------------------------------------------------#
    R      = sapply(X = mod, FUN = cor, x = obs, use = "pairwise")
    if (is.na(pos.corr)){
-      pos.corr = all(R >= 0.)
-   }else if (pos.corr && any(R < 0)){
+      pos.corr = all(R %>=% 0. | is.na(R))
+   }else if (pos.corr && any(R %<% 0)){
       warning(" There are negative correlations, but you've asked positive side only!")
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -154,16 +154,22 @@ taylor.plot <<- function ( obs
    #---------------------------------------------------------------------------------------#
    #    Find the coefficient of correlation and standard deviations.                       #
    #---------------------------------------------------------------------------------------#
-   sd.obs.orig = sd    (obs)
-   sd.mod.orig = sapply(X = mod, FUN = sd )
+   sd.obs.orig = sd    (x=obs,na.rm=TRUE)
+   sd.mod.orig = sapply(X=mod,FUN=sd,na.rm=TRUE)
    if (normalise) {
        sd.mod = sd.mod.orig / sd.obs.orig
        sd.obs = 1.0
    }else{
-       sd.mod = sd.mod
-       sd.obs = sd.obs
+       sd.mod = sd.mod.orig
+       sd.obs = sd.obs.orig
    }#end if
-   if (is.null(maxsd)) maxsd = 1.5 * max(unlist(c(sd.mod, sd.obs)))
+   if (is.null(maxsd)){
+      if (all(is.na(c(sd.mod,sd.obs)))){
+         maxsd = c(0,1)
+      }else{
+         maxsd = 1.2 * max(unlist(c(sd.mod, sd.obs)),na.rm=TRUE)
+      }#end if
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -266,7 +272,7 @@ taylor.plot <<- function ( obs
                , col = par.orig$fg, lty = par.orig$lty, lwd = par.orig$lwd)
        axis.ticks = pretty(xlim)
        axis.ticks = axis.ticks[abs(axis.ticks) <= maxsd]
-       axis( side = 1 + pos.corr, at = axis.ticks, labels = abs(axis.ticks)
+       axis( side = 1 + pos.corr, at = axis.ticks, las = 1, labels = abs(axis.ticks)
            , col.axis  = sd.col, cex.axis = cex.axis)
        #-----------------------------------------------------------------------------------#
 

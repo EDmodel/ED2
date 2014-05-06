@@ -312,7 +312,7 @@ module rk4_stepper
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak2, csite, ipa,-9000.d0)
+      call leaf_derivs(ak7, ak2, csite, ipa,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -331,7 +331,7 @@ module rk4_stepper
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak3, csite,ipa,-9000.d0)
+      call leaf_derivs(ak7, ak3, csite,ipa,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -351,7 +351,7 @@ module rk4_stepper
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak4, csite, ipa,-9000.d0)
+      call leaf_derivs(ak7, ak4, csite, ipa,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -372,7 +372,7 @@ module rk4_stepper
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak5, csite, ipa,-9000.d0)
+      call leaf_derivs(ak7, ak5, csite, ipa,h,.false.)
       !------------------------------------------------------------------------------------!
 
 
@@ -394,7 +394,7 @@ module rk4_stepper
 
 
       !------ Get the new derivative evaluation. ------------------------------------------!
-      call leaf_derivs(ak7, ak6, csite,ipa,-9000.d0)
+      call leaf_derivs(ak7, ak6, csite,ipa,h,.false.)
       !------------------------------------------------------------------------------------!
 
 

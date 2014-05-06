@@ -26,6 +26,7 @@ srthreei  <<- 1./srthree        # 1./ Square root of 3.                        [
 onethird  <<- 1./3.             # 1/3                                          [       ---]
 twothirds <<- 2./3.             # 2/3                                          [       ---]
 onesixth  <<- 1./6.             # 1/6                                          [       ---]
+golden    <<- 0.5*(1+sqrt(5.))  # Golden ratio                                 [       ---]
 #------------------------------------------------------------------------------------------#
 
 
@@ -62,18 +63,19 @@ mmh2oi      <<- 1./mmh2o       # 1./mmh2o                                      [
 #------------------------------------------------------------------------------------------#
 # Time conversion units                                                                    #
 #------------------------------------------------------------------------------------------#
-yr.day   <<- 365.2425         # # of days in a year                            [    day/yr]
-yr.mon   <<- 12               # # of months in a year                          [    mon/yr]
-day.sec  <<- 86400.           # # of seconds in a day                          [     s/day]
-day.sec2 <<- day.sec^2        # # Square of day.sec                            [   s2/day2]
-day.mon  <<- yr.day/yr.mon    # # of days in a month                           [   day/mon]
-day.min  <<- 1440.            # # of minutes in a day                          [   min/day]
-day.hr   <<- 24.              # # of hours in a day                            [    hr/day]
-hr.sec   <<- 3600.            # # of seconds in an hour                        [      s/hr]
-hr.min   <<- 60.              # # of minutes in an hour                        [    min/hr]
-min.sec  <<- 60.              # # of seconds in a minute                       [     s/min]
-yr.sec   <<- yr.day * day.sec # # of seconds in a year                         [      s/yr]
-kg2g     <<- 1000.            # # of grams in a kilogram                       [      g/kg]
+yr.day     <<- 365.2425         # # of days in a year                          [    day/yr]
+yr.ftnight <<- 26               # # of fornights in a year                     [ftnight/yr]
+yr.mon     <<- 12               # # of months in a year                        [    mon/yr]
+day.sec    <<- 86400.           # # of seconds in a day                        [     s/day]
+day.sec2   <<- day.sec^2        # # Square of day.sec                          [   s2/day2]
+day.mon    <<- yr.day/yr.mon    # # of days in a month                         [   day/mon]
+day.min    <<- 1440.            # # of minutes in a day                        [   min/day]
+day.hr     <<- 24.              # # of hours in a day                          [    hr/day]
+hr.sec     <<- 3600.            # # of seconds in an hour                      [      s/hr]
+hr.min     <<- 60.              # # of minutes in an hour                      [    min/hr]
+min.sec    <<- 60.              # # of seconds in a minute                     [     s/min]
+yr.sec     <<- yr.day * day.sec # # of seconds in a year                       [      s/yr]
+kg2g       <<- 1000.            # # of grams in a kilogram                     [      g/kg]
 #------------------------------------------------------------------------------------------#
 
 
@@ -109,22 +111,18 @@ shsummer  <<- -10             # Day of year of S.Hemisphere summer solstice     
 #        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).            #
 #                                                                                          #
 #     Air diffusion properties. These properties are temperature-dependent in reality,     #
-# but for simplicity we assume them constants, using the value at 20 degC.                 #
+# but for simplicity we assume them constants, using the value at 20C.                     #
 #                                                                                          #
-# Thermal diffusivity - Straight from Table 15.1 of MU08                                   #
+# Thermal diffusivity - Computed from equation on page 32 of MU08;                         #
 # Kinematic viscosity - Computed from equation on page 32 of MU08;                         #
 # Thermal expansion coefficient - determined by inverting the coefficient at equation      #
 #                                 10.11 (MU08).                                            #
 # These terms could be easily made function of temperature in the future if needed be.     #
 #------------------------------------------------------------------------------------------#
-th.diff  <<- 2.060e-5     # Air thermal diffusivity         [     m2/s]
-kin.visc <<- 1.516e-5     # Kinematic viscosity             [     m2/s]
-th.expan <<- 3.43e-3      # Air thermal expansion coeff.    [      1/K]
-#------------------------------------------------------------------------------------------#
-#    Grashof coefficient [1/(K m3)].  This is the coefficient a*g/(nu2) in MU08's          #
-# equation 10.8, in the equation that defines the Grashof number.                          #
-#------------------------------------------------------------------------------------------#
-gr.coeff <<- th.expan * grav / (th.diff * th.diff)
+th.diff.0  <<- 1.890e-5     # Air thermal diffusivity                           [     m2/s]
+dth.diff   <<- 0.007        # Temperature dependency slop                       [      1/K]
+kin.visc.0 <<- 1.330e-5     # Kinematic viscosity                               [     m2/s]
+dkin.visc  <<- 0.007        # Temperature dependency slop                       [      1/K]
 #------------------------------------------------------------------------------------------#
 
 
@@ -306,6 +304,20 @@ mos.2.kt       <<- 1. / kt.2.mos        # m/s         => knots
 #------------------------------------------------------------------------------------------#
 et.malhi <<- 100  # [mm/month]
 #------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Mean global wood density, from:                                                      #
+#                                                                                          #
+# Kraft, N. J. B., M. R. Metz, R. S. Condit, and J. Chave. The relationship between wood   #
+#     density and mortality in a global tropical forest data set. New Phytol.,             #
+#     188(4):1124-1136, Dec 2010. doi:10.1111/j.1469-8137.2010.03444.x                     #
+#                                                                                          #
+#------------------------------------------------------------------------------------------#
+mean.wood.dens.global <<- 0.58
+#------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #     These are the lower and upper bounds in which we compute exponentials.  This is to   #
