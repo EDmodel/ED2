@@ -1,5 +1,9 @@
 BRAMS/build/bin/include.mk.opt
 ED/build/bin/include.mk.opt
+*/build/bin/*.o
+*/build/bin/*.mod
+*/build/bin/*.[fF]90
+ED/build/bin/dependency.mk
 ed-test
 kiss
 racci

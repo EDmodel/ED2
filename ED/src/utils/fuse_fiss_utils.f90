@@ -3084,8 +3084,6 @@ module fuse_fiss_utils
             end do donloop_check
             !------------------------------------------------------------------------------!
 
-
-
             !------------------------------------------------------------------------------!
             donloope: do donp=csite%npatches,2,-1
                donpatch => csite%patch(donp)
@@ -3096,7 +3094,6 @@ module fuse_fiss_utils
                   cycle donloope
                end if
                !---------------------------------------------------------------------------!
-
 
                !---------------------------------------------------------------------------!
                !     If we reach this point, it means that the donor patch is empty and    !
@@ -3126,7 +3123,7 @@ module fuse_fiss_utils
                   !----- Skip the patch if they don't have the same disturbance type. -----!
                   if ( csite%dist_type(donp) /= csite%dist_type(recp)) cycle recloope
                   !------------------------------------------------------------------------!
-
+                  
                   !------------------------------------------------------------------------!
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
@@ -3186,8 +3183,6 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
 
 
-
-
             !------------------------------------------------------------------------------!
             !     Second loop.  Here we will fuse all patches with the same age and        !
             ! disturbance type.                                                            !
@@ -3200,6 +3195,7 @@ module fuse_fiss_utils
                light_toler  = light_toler_min
 
                mainfuseloopa: do ifus=0,niter_patfus
+
                   npatches_old = count(fuse_table)
                   npatches_new = npatches_old
 
@@ -3457,7 +3453,6 @@ module fuse_fiss_utils
                      end do recloopa
                   end do donloopa
 
-
                   !------------------------------------------------------------------------!
                   !      Check how many patches are valid.  If the total number of patches !
                   ! is less than the target, or if we have reached the maximum tolerance   !
@@ -3498,9 +3493,6 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
 
 
-
-
-
             !------------------------------------------------------------------------------!
             !     Third patch loop. Now that all empty patches have been fused, we will    !
             ! look for populated patches that have similar size and PFT structure, using   !
@@ -3521,6 +3513,7 @@ module fuse_fiss_utils
             light_toler  = light_toler_min
 
             mainfuseloop: do ifus=0,niter_patfus
+
                npatches_old = count(fuse_table)
                npatches_new = npatches_old
 
@@ -3539,8 +3532,6 @@ module fuse_fiss_utils
                   close(unit=72,status='keep')
                end if
                !---------------------------------------------------------------------------!
-
-
 
                !---------------------------------------------------------------------------!
                !     Loop from youngest to the second oldest patch.                        !
@@ -3563,7 +3554,6 @@ module fuse_fiss_utils
                   end if
                   !------------------------------------------------------------------------!
 
-
                   !------------------------------------------------------------------------!
                   !      If we have reached this place, the donor patch can be fused.  Now !
                   ! look for the next oldest patch that has the same disturbance type.  In !
@@ -3580,7 +3570,7 @@ module fuse_fiss_utils
                         exit recloopp
                      end if
                   end do recloopp
-                  
+                 
                   if (.not. recp_found) then
                      if (print_fuse_details) then
                         open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
@@ -3592,7 +3582,6 @@ module fuse_fiss_utils
                   end if
                   !------------------------------------------------------------------------!
 
-
                   if (print_fuse_details) then
                      open  (unit=72,file=trim(fuse_fout),status='old',action='write'       &
                                                         ,position='append')
@@ -3600,7 +3589,6 @@ module fuse_fiss_utils
                                                                  ,'RECP =',recp
                      close (unit=72,status='keep')
                   end if
-
 
                   !------------------------------------------------------------------------!
                   !     This should never happen because we have already fused all empty   !
@@ -3621,7 +3609,6 @@ module fuse_fiss_utils
                   dark_lai80 = 0.40 * ( sum(csite%cumlai_profile(:,1,recp))                &
                                       + sum(csite%cumlai_profile(:,1,donp)) )
 
-
                   !------------------------------------------------------------------------!
                   !     Compare the size profile for each PFT.  Here we compare the        !
                   ! maximum LAI for each PFT and height bin.  We switched the classes from !
@@ -3629,6 +3616,7 @@ module fuse_fiss_utils
                   ! given DBH, so we want to make sure the light profile is right.         !
                   !------------------------------------------------------------------------!
                   hgtloop: do ihgt=1,ff_nhgt
+
                      cumlai_recp = sum(csite%cumlai_profile(:,ihgt,recp))
                      cumlai_donp = sum(csite%cumlai_profile(:,ihgt,donp))
 
@@ -3641,8 +3629,6 @@ module fuse_fiss_utils
                      dark_donp = cumlai_donp > dark_toler
                      dark_recp = cumlai_recp > dark_toler
                      !---------------------------------------------------------------------!
-
-
 
                      !---------------------------------------------------------------------!
                      if (dark_recp .and. dark_donp) then
@@ -3662,8 +3648,6 @@ module fuse_fiss_utils
                      end if
                      !---------------------------------------------------------------------!
 
-
-
                      
                      !---------------------------------------------------------------------!
                      !    Check whether these bins contain some LAI.  Bins that have       !
@@ -3676,14 +3660,12 @@ module fuse_fiss_utils
                      !---------------------------------------------------------------------!
 
 
-
-
-
                      !---------------------------------------------------------------------!
                      !    If both patches have little or no biomass in this bin, don't     !
                      ! even bother checking the difference.                                !
                      !---------------------------------------------------------------------!
                      if (sunny_donp .and. sunny_recp) then
+
                         if (print_fuse_details) then
                            open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
                                                               ,position='append')
@@ -3695,6 +3677,7 @@ module fuse_fiss_utils
                              ,'SUNNY_RECP =',sunny_donp
                            close (unit=72,status='keep')
                         end if
+
                         cycle hgtloop
                      end if
                      !---------------------------------------------------------------------!
@@ -3743,7 +3726,7 @@ module fuse_fiss_utils
                   end do hgtloop
                   !------------------------------------------------------------------------!
 
-
+                 
 
                   !------------------------------------------------------------------------!
                   !      Reaching this point means that the patches are sufficiently       !
@@ -3757,6 +3740,7 @@ module fuse_fiss_utils
                                      ,elim_nplant,elim_lai)
                   !------------------------------------------------------------------------!
 
+                  
 
                   !----- Record the fusion if requested by the user. ----------------------!
                   if (print_fuse_details) then
@@ -3802,7 +3786,6 @@ module fuse_fiss_utils
                end do donloopp         ! do donp = csite%npatches,2,-1
                !---------------------------------------------------------------------------!
 
-
                !---------------------------------------------------------------------------!
                !      Check how many patches are valid.  If the total number of patches is !
                ! less than the target, or if we have reached the maximum tolerance and the !
@@ -3837,8 +3820,6 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
             end do mainfuseloop
             !------------------------------------------------------------------------------!
-
-
 
             !----- Set the number of patches in the site to "npatches_new" ----------------!
             tempsite%npatches = npatches_new
@@ -4119,7 +4100,7 @@ module fuse_fiss_utils
                                      ( csite%ggsoil(donp)             * csite%area(donp)   &
                                      + csite%ggsoil(recp)             * csite%area(recp) )
 
-
+      
       !------------------------------------------------------------------------------------!
       !    There is no guarantee that there will be a minimum amount of mass in the tempo- !
       ! rary layer, nor is there any reason for both patches to have the same number of    !
@@ -4183,7 +4164,7 @@ module fuse_fiss_utils
       !    (Both are done in new_patch_sfc_props).                                         !
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
-
+     
 
       !----- Merge soil energy and water. -------------------------------------------------!
       do iii=1,mzg
@@ -4220,7 +4201,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-
+      
 
       !------------------------------------------------------------------------------------!
       !    This subroutine takes care of filling:                                          !
@@ -4255,7 +4236,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-
+ 
 
 
       !------------------------------------------------------------------------------------!
@@ -4608,12 +4589,27 @@ module fuse_fiss_utils
                                                  *   newareai
          !---------------------------------------------------------------------------------!
 
+        
 
-
+<<<<<<< HEAD
 
          !---------------------------------------------------------------------------------!
          !      Now we find the derived properties for the canopy air space.               !
          !---------------------------------------------------------------------------------!
+=======
+      !------------------------------------------------------------------------------------!
+      !    Sub-daily means.                                                                !
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      ! It is possible that this is an initial type run, in which case, these values       !
+      ! are still zero.  To avoid divide by zeros:                                         !
+      !------------------------------------------------------------------------------------!
+      if(csite%fmean_can_shv(recp)>0.00001) then
+  
+         !------------------------------------------------------------------------------------!
+         !      Now we find the derived properties for the canopy air space.                  !
+         !------------------------------------------------------------------------------------!
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
          can_exner                   = press2exner (csite%fmean_can_prss(recp))
          csite%fmean_can_temp (recp) = extheta2temp(can_exner,csite%fmean_can_theta (recp))
          csite%fmean_can_rhos (recp) = idealdenssh ( csite%fmean_can_prss  (recp)          &
@@ -4640,6 +4636,7 @@ module fuse_fiss_utils
          end do
          !---------------------------------------------------------------------------------!
 
+<<<<<<< HEAD
 
          !---------------------------------------------------------------------------------!
          !     Find the temporary surface water properties.  They may not be available at  !
@@ -4678,6 +4675,44 @@ module fuse_fiss_utils
             csite%fmean_sfcw_fliq  (recp)  = csite%fmean_soil_fliq(mzg,recp)
          end if
          !---------------------------------------------------------------------------------!
+=======
+ 
+      !------------------------------------------------------------------------------------!
+      !     Find the temporary surface water properties.  They may not be available at all !
+      ! times, so we must check.                                                           !
+      !------------------------------------------------------------------------------------!
+      !----- Temporarily make energy extensive [J/m2]. ------------------------------------!
+      csite%fmean_sfcw_depth            (recp) = ( csite%fmean_sfcw_depth         (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%fmean_sfcw_depth         (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+      csite%fmean_sfcw_energy           (recp) = ( csite%fmean_sfcw_energy        (recp)   &
+                                                 * csite%fmean_sfcw_mass          (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%fmean_sfcw_energy        (donp)   &
+                                                 * csite%fmean_sfcw_mass          (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+      csite%fmean_sfcw_mass             (recp) = ( csite%fmean_sfcw_mass          (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%fmean_sfcw_mass          (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+      !----- Check whether there is enough surface water. ---------------------------------!
+      if (csite%fmean_sfcw_mass(recp) > tiny_sfcwater_mass) then
+         csite%fmean_sfcw_energy        (recp) =   csite%fmean_sfcw_energy        (recp)   &
+                                               /   csite%fmean_sfcw_mass          (recp)
+         call uint2tl( csite%fmean_sfcw_energy(recp)                                       &
+                     , csite%fmean_sfcw_temp  (recp)                                       &
+                     , csite%fmean_sfcw_fliq  (recp) )
+      else
+         csite%fmean_sfcw_mass  (recp)  = 0.
+         csite%fmean_sfcw_depth (recp)  = 0.
+         csite%fmean_sfcw_energy(recp)  = 0.
+         csite%fmean_sfcw_temp  (recp)  = csite%fmean_soil_temp(mzg,recp)
+         csite%fmean_sfcw_fliq  (recp)  = csite%fmean_soil_fliq(mzg,recp)
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
       end if
       !------------------------------------------------------------------------------------!
 
@@ -4686,7 +4721,16 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------! 
+<<<<<<< HEAD
       if (writing_long .and. (.not. fuse_initial)) then
+=======
+      !------------------------------------------------------------------------------------!
+      ! It is possible that this is an initial type run, in which case, these values       !
+      ! are still zero.  To avoid divide by zeros:                                         !
+      !------------------------------------------------------------------------------------!
+      if(writing_long .and. csite%dmean_can_shv(recp)>0.00001) then
+
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_A_decomp           (donp)   &
@@ -5012,13 +5056,22 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
-
+ 
 
 
       !------------------------------------------------------------------------------------! 
       !    Monthly means.                                                                  !
       !------------------------------------------------------------------------------------! 
+<<<<<<< HEAD
       if (writing_eorq .and. (.not. fuse_initial)) then
+=======
+      !------------------------------------------------------------------------------------!
+      ! It is possible that this is an initial type run, in which case, these values       !
+      ! are still zero.  To avoid divide by zeros:                                         !
+      !------------------------------------------------------------------------------------!                                                                                                                             
+      if(writing_eorq .and. csite%mmean_can_shv(recp)>0.00001) then
+
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
          !---------------------------------------------------------------------------------!
          !    First we find the mean sum of squares, because they depend on the means too, !
          ! and the receptor values are lost after fusion.  All variables are intensive at  !
@@ -5494,13 +5547,22 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
-
-
+ 
+      
 
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------! 
+<<<<<<< HEAD
       if (writing_dcyc .and. (.not. fuse_initial)) then
+=======
+      !------------------------------------------------------------------------------------!
+      ! It is possible that this is an initial type run, in which case, these values       !
+      ! are still zero.  To avoid divide by zeros:                                         !
+      !------------------------------------------------------------------------------------!                                                                                                                             
+      if(writing_dcyc .and. csite%qmean_can_shv(1,recp)>0.00001) then
+
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
          ! original receptor data is lost after fusion takes place.                        !

@@ -2,7 +2,11 @@
 
 # RAMS root directory.
 #
+<<<<<<< HEAD
 EDBRAMS_ROOT=../../../../EDBRAMS
+=======
+EDBRAMS_ROOT=/usr2/postdoc/apourmok/Github.ED/ED2
+>>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
 
 # MCD: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS
 # KIM: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS
