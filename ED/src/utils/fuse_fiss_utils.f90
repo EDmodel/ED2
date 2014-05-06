@@ -4590,26 +4590,10 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
 
         
-
-<<<<<<< HEAD
-
          !---------------------------------------------------------------------------------!
          !      Now we find the derived properties for the canopy air space.               !
          !---------------------------------------------------------------------------------!
-=======
-      !------------------------------------------------------------------------------------!
-      !    Sub-daily means.                                                                !
-      !------------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
-      ! It is possible that this is an initial type run, in which case, these values       !
-      ! are still zero.  To avoid divide by zeros:                                         !
-      !------------------------------------------------------------------------------------!
-      if(csite%fmean_can_shv(recp)>0.00001) then
-  
-         !------------------------------------------------------------------------------------!
-         !      Now we find the derived properties for the canopy air space.                  !
-         !------------------------------------------------------------------------------------!
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
+
          can_exner                   = press2exner (csite%fmean_can_prss(recp))
          csite%fmean_can_temp (recp) = extheta2temp(can_exner,csite%fmean_can_theta (recp))
          csite%fmean_can_rhos (recp) = idealdenssh ( csite%fmean_can_prss  (recp)          &
@@ -4635,8 +4619,6 @@ module fuse_fiss_utils
                                   matric_potential(nsoil,csite%fmean_soil_water (iii,recp))
          end do
          !---------------------------------------------------------------------------------!
-
-<<<<<<< HEAD
 
          !---------------------------------------------------------------------------------!
          !     Find the temporary surface water properties.  They may not be available at  !
@@ -4675,44 +4657,7 @@ module fuse_fiss_utils
             csite%fmean_sfcw_fliq  (recp)  = csite%fmean_soil_fliq(mzg,recp)
          end if
          !---------------------------------------------------------------------------------!
-=======
- 
-      !------------------------------------------------------------------------------------!
-      !     Find the temporary surface water properties.  They may not be available at all !
-      ! times, so we must check.                                                           !
-      !------------------------------------------------------------------------------------!
-      !----- Temporarily make energy extensive [J/m2]. ------------------------------------!
-      csite%fmean_sfcw_depth            (recp) = ( csite%fmean_sfcw_depth         (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sfcw_depth         (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_sfcw_energy           (recp) = ( csite%fmean_sfcw_energy        (recp)   &
-                                                 * csite%fmean_sfcw_mass          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sfcw_energy        (donp)   &
-                                                 * csite%fmean_sfcw_mass          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      csite%fmean_sfcw_mass             (recp) = ( csite%fmean_sfcw_mass          (recp)   &
-                                                 * csite%area                     (recp)   &
-                                                 + csite%fmean_sfcw_mass          (donp)   &
-                                                 * csite%area                     (donp) ) &
-                                               *   newareai
-      !----- Check whether there is enough surface water. ---------------------------------!
-      if (csite%fmean_sfcw_mass(recp) > tiny_sfcwater_mass) then
-         csite%fmean_sfcw_energy        (recp) =   csite%fmean_sfcw_energy        (recp)   &
-                                               /   csite%fmean_sfcw_mass          (recp)
-         call uint2tl( csite%fmean_sfcw_energy(recp)                                       &
-                     , csite%fmean_sfcw_temp  (recp)                                       &
-                     , csite%fmean_sfcw_fliq  (recp) )
-      else
-         csite%fmean_sfcw_mass  (recp)  = 0.
-         csite%fmean_sfcw_depth (recp)  = 0.
-         csite%fmean_sfcw_energy(recp)  = 0.
-         csite%fmean_sfcw_temp  (recp)  = csite%fmean_soil_temp(mzg,recp)
-         csite%fmean_sfcw_fliq  (recp)  = csite%fmean_soil_fliq(mzg,recp)
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
+
       end if
       !------------------------------------------------------------------------------------!
 
@@ -4721,16 +4666,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------! 
-<<<<<<< HEAD
       if (writing_long .and. (.not. fuse_initial)) then
-=======
-      !------------------------------------------------------------------------------------!
-      ! It is possible that this is an initial type run, in which case, these values       !
-      ! are still zero.  To avoid divide by zeros:                                         !
-      !------------------------------------------------------------------------------------!
-      if(writing_long .and. csite%dmean_can_shv(recp)>0.00001) then
 
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_A_decomp           (donp)   &
@@ -5062,16 +4999,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Monthly means.                                                                  !
       !------------------------------------------------------------------------------------! 
-<<<<<<< HEAD
       if (writing_eorq .and. (.not. fuse_initial)) then
-=======
-      !------------------------------------------------------------------------------------!
-      ! It is possible that this is an initial type run, in which case, these values       !
-      ! are still zero.  To avoid divide by zeros:                                         !
-      !------------------------------------------------------------------------------------!                                                                                                                             
-      if(writing_eorq .and. csite%mmean_can_shv(recp)>0.00001) then
 
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
          !---------------------------------------------------------------------------------!
          !    First we find the mean sum of squares, because they depend on the means too, !
          ! and the receptor values are lost after fusion.  All variables are intensive at  !
@@ -5553,16 +5482,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------! 
-<<<<<<< HEAD
       if (writing_dcyc .and. (.not. fuse_initial)) then
-=======
-      !------------------------------------------------------------------------------------!
-      ! It is possible that this is an initial type run, in which case, these values       !
-      ! are still zero.  To avoid divide by zeros:                                         !
-      !------------------------------------------------------------------------------------!                                                                                                                             
-      if(writing_dcyc .and. csite%qmean_can_shv(1,recp)>0.00001) then
 
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
          ! original receptor data is lost after fusion takes place.                        !
