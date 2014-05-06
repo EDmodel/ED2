@@ -375,7 +375,7 @@ $ED_NL
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   NL%SFILIN   = 'edts_datasets/inits/kz_tonzi/Tonzi.'
+   NL%SFILIN   = 'edts_datasets/inits/kz_tonzi/test_ton-S-1912'
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

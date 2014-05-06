@@ -291,7 +291,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, area_indices, ed_biomass,bl2h
+  use allometry, only : bd2dbh, dbh2h, bl2dbh,                   &
+                        h2dbh,bl2h, area_indices, ed_biomass,bl2h
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
   use budget_utils     , only : update_budget

@@ -196,12 +196,12 @@ $ED_NL
    !             determined by FRQHIS                                                      !
    !---------------------------------------------------------------------------------------!
    NL%IFOUTPUT  =  0
-   NL%IDOUTPUT  =  0
+   NL%IDOUTPUT  =  3
    NL%IMOUTPUT  =  0
-   NL%IQOUTPUT  =  0
+   NL%IQOUTPUT  =  3
    NL%IYOUTPUT  =  0
    NL%ITOUTPUT  =  0
-   NL%ISOUTPUT  =  0
+   NL%ISOUTPUT  =  3
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !     The following variables control whether site-, patch-, and cohort-level time      !

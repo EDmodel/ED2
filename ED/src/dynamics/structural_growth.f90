@@ -939,6 +939,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , dbh2krdepth         & ! function
                             , bl2dbh              & ! function
                             , bl2h                & ! function
+                            , h2dbh               & ! function
                             , size2bl             & ! function
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
