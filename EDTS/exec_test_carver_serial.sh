@@ -11,22 +11,20 @@
 # are rk and you tried 4 iterations of this test before your commits
 # were verified, you would use:
 
-VERSION="ENTER_VERSION"
+VERSION="r85v2ghub"
 
 # FILE PATHS TO YOUR THREE EXECUTABLES
 
-TEST_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85_rgknox/ED/build/ed_2.1-opt
-DBUG_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85_rgknox/ED/build/ed_2.1-dbg
-
+TEST_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85v2_rgknox/ED2/ED/build/ed_2.1-opt
+DBUG_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r85v2_rgknox/ED2/ED/build/ed_2.1-dbg
 MAIN_EXE_PATH=/global/u2/r/rgknox/Models/ghub_r84_master/ED/build/ed_2.1-opt
 
 # Provide the path where the test-suit driver archive is stored
 
-DATAPATH="${YOUR_PATH_TO_DATA}/edts_data_reduced'
+DATAPATH='/global/scratch2/sd/rgknox/edts_data'
 
 # Decide on a "rapid" (2 year) or "long" (300 year)
 # THE long tests will take a really really long time, beware
-# Don't do long, its too long
 
 TESTTYPE="rapid"
 
@@ -35,18 +33,18 @@ TESTTYPE="rapid"
 # sites give you problems after the first try
 # Y for Yes and N for No
 
-USE_M34=Y     #Manaus km 34 SOI
-USE_S67=Y     #Santarem km 67 SOI
-USE_HAR=Y     #Harvard forest SOI
-USE_PDG=Y     #Pe de Gigante SOI 
-USE_TON=Y     #Tonzi SOI
-USE_CAX=Y     #Caxuana SOI
-USE_TNF=Y     #Tapajos National Forest SOI
-USE_ATA=Y     #Atacama Desert SOI
-USE_PET=Y     #Petrolina SOI
-USE_HIP=Y     #Petrolina High Frequency Detailed Short SOI
-USE_HIM=Y     #Manaus High Frequency Detailed Short SOI
-USE_RJG=Y     #Gridded 9x9 simulation centerd on Reserva Jaru
+USE_M34=N     #Manaus km 34 SOI
+USE_S67=N     #Santarem km 67 SOI
+USE_HAR=N     #Harvard forest SOI
+USE_PDG=N     #Pe de Gigante SOI 
+USE_TON=N     #Tonzi SOI
+USE_CAX=N     #Caxuana SOI
+USE_TNF=N     #Tapajos National Forest SOI
+USE_ATA=N     #Atacama Desert SOI
+USE_PET=N     #Petrolina SOI
+USE_HIP=N     #Petrolina High Frequency Detailed Short SOI
+USE_HIM=N     #Manaus High Frequency Detailed Short SOI
+USE_RJG=Y     #Gridded 12x12 simulation centerd on Reserva Jaru
 
 # How many cores do you want to use for the gridded simulations
 # Currently there are 3 (RJG-MAIN RJG-TEST and RJG-DBUG)
@@ -73,18 +71,19 @@ Q_RJG=regular     #Gridded 12x12 simulation centerd on Reserva Jaru
 
 # Give an explanation of the tests.  Explain what the commits had involved.
 
-TEST_DESCRIPTION="I did not write a sufficient description of what was tested."
+TEST_DESCRIPTION="This is a test of the final commits from Odyssey, which pretty much amounts
+to Marcos changes with a couple of minor tweaks from Ryan."
 
 # The identifier may had indicated which version you branched from, but indicate it here
 # also
     
-VERSION_BRANCHED_FROM='rXX'
+VERSION_BRANCHED_FROM='r83'
 
 # Who is running this test?
-TESTER_NAME='YOU'
+TESTER_NAME='Ryan Knox'
 
 # Who was the developer(s) that actually made the changes to the code that is being tested?
-COMMITTER_NAME='YOU AND/OR OTHERS'
+COMMITTER_NAME='Marcos Longo'
 
 
 
