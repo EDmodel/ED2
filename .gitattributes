@@ -12,4 +12,5 @@
 .txt    text
 .mk     text
 .m      text diff=matlab
+.mat    binary
 .sh     text

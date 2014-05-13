@@ -1,5 +1,18 @@
+# please modify if you notice files being exclude by
+# the generic rules at the top
+# ignore output files
+*.o
+*.a
+ED/build/ed_2.1-opt
+
+# ignore backup files
+*~
+*#
+*.swp
+*.swo
+
 # very general rules to ignore files in bin folder
-*/bin/*.o
+*/bin/*.c
 */bin/*.mod
 */bin/*.[fF]90
 
@@ -18,7 +31,6 @@ coupled-test
 BRAMS/build/edbrams-opt
 logs.txt
 looong-run
-ED/build/ed_2.1-opt
 soi-test
 colombia
 4thLBA
@@ -94,7 +106,6 @@ ED/dbgbuild/ed_2.1-opt
 check_diff.sh
 BRAMS/line_counter.sh
 ED/line_counter.sh
-ED/dbgbuild/bin/utils_c.c
 BRAMS/newbuild
 ED/i10dbgbuild
 new_regional
@@ -102,13 +113,7 @@ BRAMS/src/advc_mnt
 ED/amd_build
 tmp_stuff
 BRAMS/i11dbg/edbrams-opt
-BRAMS/i11dbg/edbrams-opt
 BRAMS/i11dbg/edbrams-opt.a
-BRAMS/i11dbg/edbrams-opt
-BRAMS/i11dbg/bin/dted.c
-BRAMS/i11dbg/bin/eenviron.c
-BRAMS/i11dbg/bin/tmpname.c
-BRAMS/i11dbg/bin/utils_c.c
 BRAMS/src/lib/dted.c.pdb
 BRAMS/src/lib/utils_c.c.pdb
 BRAMS/gnubuild
@@ -117,14 +122,6 @@ BRAMS/build/edbrams-new
 BRAMS/i10dbg/*.F90
 BRAMS/i10dbg/*.c
 BRAMS/i10dbg/edbrams-opt
-BRAMS/i10dbg/bin/dted.c
-BRAMS/i10dbg/bin/eenviron.c
-BRAMS/i10dbg/bin/tmpname.c
-BRAMS/i10dbg/bin/utils_c.c
-BRAMS/i12dbg/bin/dted.c
-BRAMS/i12dbg/bin/eenviron.c
-BRAMS/i12dbg/bin/tmpname.c
-BRAMS/i12dbg/bin/utils_c.c
 BRAMS/i12dbg/edbrams-opt
 BRAMS/build
 BRAMS/build/edbrams-srf
