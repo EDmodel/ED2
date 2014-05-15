@@ -342,11 +342,7 @@ subroutine h5_output(vtype)
          if (verbose) write (unit=*,fmt='(a)') '    > Opening HDF5 environment...'
          call h5open_f(hdferr)
          if (hdferr /= 0) then
-<<<<<<< HEAD
             write(unit=*,fmt='(a,1x,i6)') ' - HDF5 Open error #:',hdferr
-=======
-            write(unit=*,fmt='(a,1x,i0)') ' - HDF5 Open error #:',hdferr
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
             call fatal_error('Could not initialize the hdf environment'                    &
                             ,'h5_output','h5_output.F90')
          end if
@@ -365,13 +361,8 @@ subroutine h5_output(vtype)
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not create the HDF5 file.'
                write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
-<<<<<<< HEAD
                write(unit=*,fmt='(a,1x,i6)' ) ' - file_id: ',file_id
                write(unit=*,fmt='(a,1x,i6)' ) ' - hdferr : ',hdferr
-=======
-               write(unit=*,fmt='(a,1x,i0)' ) ' - file_id: ',file_id
-               write(unit=*,fmt='(a,1x,i0)' ) ' - hdferr : ',hdferr
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                call fatal_error('Failed creating the HDF file','h5_output','h5_output.F90')
             end if
@@ -382,13 +373,8 @@ subroutine h5_output(vtype)
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not open the HDF5 file.'
                write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
-<<<<<<< HEAD
                write(unit=*,fmt='(a,1x,i6)' ) ' - file_id: ',file_id
                write(unit=*,fmt='(a,1x,i6)' ) ' - hdferr : ',hdferr
-=======
-               write(unit=*,fmt='(a,1x,i0)' ) ' - file_id: ',file_id
-               write(unit=*,fmt='(a,1x,i0)' ) ' - hdferr : ',hdferr
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                call fatal_error('Failed opening the HDF file','h5_output','h5_output.F90')
             end if
@@ -442,13 +428,8 @@ subroutine h5_output(vtype)
                if (hdferr /= 0 .or. globdims(1) < 1 ) then
                   write (unit=*,fmt='(a,1x,a)') ' VTYPE:    ',trim(vtype)
                   write (unit=*,fmt='(a,1x,a)') ' VAR NAME: ',trim(varn)
-<<<<<<< HEAD
                   write (unit=*,fmt='(a,1x,i6)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
                   write (unit=*,fmt='(a,1x,i6)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
-=======
-                  write (unit=*,fmt='(a,1x,i0)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
-                  write (unit=*,fmt='(a,1x,i0)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
                   write (unit=*,fmt=*)          ' DSETRANK: ',dsetrank
                   write (unit=*,fmt=*)          ' GLOBDIMS: ',globdims
                   call fatal_error('Could not create the first filespace'                  &

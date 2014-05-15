@@ -342,7 +342,7 @@ do nm=1,nmachs
          if (ialerr /= 0) then
            write(unit=*,fmt='(a)') '---- FATAL Error at node_getfeed (mpass_feed.f90)'
            write(unit=*,fmt='(a)') '---- Unable to allocate pbuff'
-           write(unit=*,fmt=('( 4(a,1x,i,1x) )') ) '---- mynum=',mynum,'machf=',machf,'nwds=',nwds,'nbuff_save=',nbuff_save
+           write(unit=*,fmt=('( 4(a,1x,i6,1x) )') ) '---- mynum=',mynum,'machf=',machf,'nwds=',nwds,'nbuff_save=',nbuff_save
            stop '---- node_getfeed (mpass_feed.f90)'
          end if
          nbuff_save=nwds

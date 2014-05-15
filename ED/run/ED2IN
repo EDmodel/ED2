@@ -303,13 +303,10 @@ $ED_NL
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
-<<<<<<< HEAD
-   NL%FFILOUT = '/mypath/ts67_eft/analy/santarem_km67'
-   NL%SFILOUT = '/mypath/ts67_eft/histo/santarem_km67'
-=======
-    NL%FFILOUT = '/projectnb/cheas/afshin/analy/duke'
-    NL%SFILOUT = '/projectnb/cheas/afshin/histo/duke'
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
+
+   NL%FFILOUT = '/mypath/generic-prefix'
+   NL%SFILOUT = '/mypath/generic-prefix'
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -388,11 +385,9 @@ $ED_NL
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-<<<<<<< HEAD
+
    NL%SFILIN   = '/n/gstore/Labs/moorcroft_data_protected/mlongo/data/ed2_data/site_bio_data/s67_default.'
-=======
-   NL%SFILIN   = '/usr2/postdoc/apourmok/duke/duke3.'
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -454,11 +449,9 @@ $ED_NL
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
    !---------------------------------------------------------------------------------------!
-<<<<<<< HEAD
-   NL%NSLCON   = 16      ! Default soil type if ISOILFLG = 2 (choices below:)
-=======
+
    NL%NSLCON   = 11      ! Default soil type if ISOILFLG = 2 (choices below:)
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -490,11 +483,8 @@ $ED_NL
    !   Soil type 21 is a special case in which we use the albedo method that used to be    !
    ! the default in ED-2.1.                                                                !
    !---------------------------------------------------------------------------------------!
-<<<<<<< HEAD
-   NL%ISOILCOL  = 14
-=======
+
    NL%ISOILCOL  = 21
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 
@@ -560,7 +550,6 @@ $ED_NL
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
-<<<<<<< HEAD
    NL%VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_'
    NL%SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
    NL%LU_DATABASE       = '/n/home00/mlongo/protected/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
@@ -569,16 +558,6 @@ $ED_NL
    NL%ED_MET_DRIVER_DB  = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/met_driver/wmo+eft/eft/Santarem_Km67/Santarem_Km67_HEADER'
    NL%SOILSTATE_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat'
    NL%SOILDEPTH_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat'
-=======
-   NL%VEG_DATABASE      = '/projectnb/cheas/EDI/oge2OLD/OGE2_'
-   NL%SOIL_DATABASE     = '/projectnb/cheas/EDI/faoOLD/FAO_'
-   NL%LU_DATABASE       = ''
-   NL%PLANTATION_FILE   = ''
-   NL%THSUMS_DATABASE   = '/projectnb/cheas/EDI/ed_inputs/'
-   NL%ED_MET_DRIVER_DB = '/usr2/postdoc/apourmok/met3/US-Dk3/ED_MET_DRIVER_HEADER'
-   NL%SOILSTATE_DB='/usr2/postdoc/apourmok/met3/STW1996OCT.dat'
-   NL%SOILDEPTH_DB='/usr2/postdoc/apourmok/met3/soil_depths.dat'
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 
@@ -1462,19 +1441,12 @@ $ED_NL
    !                                                                                       !
    ! If the years don't cover the entire simulation period, they will be recycled.         !
    !---------------------------------------------------------------------------------------!
-<<<<<<< HEAD
+
    NL%IPHENYS1 = 1992
    NL%IPHENYSF = 2003
    NL%IPHENYF1 = 1992
    NL%IPHENYFF = 2003
    NL%PHENPATH   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/phenology/phenology'
-=======
-   NL%IPHENYS1 = 1996
-   NL%IPHENYSF = 2009
-   NL%IPHENYF1 = 1996
-   NL%IPHENYFF = 2009
-   NL%PHENPATH = ''
->>>>>>> 59bedeb0ebbb37e4aa77deaa2b362dd574d31687
    !---------------------------------------------------------------------------------------!
 
 

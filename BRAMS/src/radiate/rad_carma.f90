@@ -4356,8 +4356,8 @@ module rad_carma
       nmx1 =  1.1d0 * t(1)
 
       if ( nmx1 > iacap-1 )  then
-         write (unit=*,fmt='(a,1x,i)') ' NMX1  = ',nmx1
-         write (unit=*,fmt='(a,1x,i)') ' IACAP = ',iacap
+         write (unit=*,fmt='(a,1x,i6)') ' NMX1  = ',nmx1
+         write (unit=*,fmt='(a,1x,i6)') ' IACAP = ',iacap
          call abort_run('The upper limit for acap is not enough.'                          &
                        ,'miess','rad_carma.f90')
       end if
