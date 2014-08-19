@@ -1062,6 +1062,8 @@ module fuse_fiss_utils
       real                         :: veg_fliq          ! Liquid fraction
       real                         :: exp_mort_donc     ! Exp(mortality) donor
       real                         :: exp_mort_recc     ! Exp(mortality) receptor
+      real                         :: rlai              ! LAI of receiver
+      real                         :: dlai              ! LAI of donor
       !------------------------------------------------------------------------------------!
 
 
@@ -1074,9 +1076,20 @@ module fuse_fiss_utils
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
       newni   = 1.0 / newn
-      if (cpatch%lai(recc) + cpatch%lai(donc) > 0.0) then
-         newlaii = 1.0 / (cpatch%lai(recc) + cpatch%lai(donc))
+      if (cpatch%lai(recc) + cpatch%lai(donc) > 1e-15) then
+         rlai    = cpatch%lai(recc)
+         dlai    = cpatch%lai(donc)
+         newlaii = 1.0 / (rlai+dlai)
+      elseif  (cpatch%lai(recc) + cpatch%lai(donc) > 0 ) then
+
+         ! This is a fix for when two cohorts with very very low LAI are fused
+         ! it prevents numerical errors (RGK 8-18-2014)
+         rlai = 1.0e15*cpatch%lai(recc)
+         dlai = 1.0e15*cpatch%lai(donc)
+         newlaii = 1.0 / (rlai+dlai)
       else
+         rlai    = 0.0
+         dlai    = 0.0
          newlaii = 0.0
       end if
       if (cpatch%wai(recc) + cpatch%wai(donc) > 0.0) then
@@ -1290,23 +1303,23 @@ module fuse_fiss_utils
       ! properties, they are scaled by the number of plants.  These numbers are diagnostic !
       ! and this should be used for the output only.                                       !
       !------------------------------------------------------------------------------------!
-      cpatch%lsfc_shv_open  (recc) = ( cpatch%lsfc_shv_open  (recc)  * cpatch%lai(recc)    &
-                                     + cpatch%lsfc_shv_open  (donc)  * cpatch%lai(donc) )  &
+      cpatch%lsfc_shv_open  (recc) = ( cpatch%lsfc_shv_open  (recc)  * rlai    &
+                                     + cpatch%lsfc_shv_open  (donc)  * dlai )  &
                                    * newlaii
-      cpatch%lsfc_shv_closed(recc) = ( cpatch%lsfc_shv_closed(recc)  * cpatch%lai(recc)    &
-                                     + cpatch%lsfc_shv_closed(donc)  * cpatch%lai(donc))   &
+      cpatch%lsfc_shv_closed(recc) = ( cpatch%lsfc_shv_closed(recc)  * rlai    &
+                                     + cpatch%lsfc_shv_closed(donc)  * dlai)   &
                                    * newlaii
-      cpatch%lsfc_co2_open  (recc) = ( cpatch%lsfc_co2_open  (recc)  * cpatch%lai(recc)    &
-                                     + cpatch%lsfc_co2_open  (donc)  * cpatch%lai(donc) )  &
+      cpatch%lsfc_co2_open  (recc) = ( cpatch%lsfc_co2_open  (recc)  * rlai    &
+                                     + cpatch%lsfc_co2_open  (donc)  * dlai )  &
                                    * newlaii
-      cpatch%lsfc_co2_closed(recc) = ( cpatch%lsfc_co2_closed(recc)  * cpatch%lai(recc)    &
-                                     + cpatch%lsfc_co2_closed(donc)  * cpatch%lai(donc) )  &
+      cpatch%lsfc_co2_closed(recc) = ( cpatch%lsfc_co2_closed(recc)  * rlai    &
+                                     + cpatch%lsfc_co2_closed(donc)  * dlai )  &
                                    * newlaii
-      cpatch%lint_co2_open  (recc) = ( cpatch%lint_co2_open  (recc)  * cpatch%lai(recc)    &
-                                     + cpatch%lint_co2_open  (donc)  * cpatch%lai(donc) )  &
+      cpatch%lint_co2_open  (recc) = ( cpatch%lint_co2_open  (recc)  * rlai    &
+                                     + cpatch%lint_co2_open  (donc)  * dlai )  &
                                    * newlaii
-      cpatch%lint_co2_closed(recc) = ( cpatch%lint_co2_closed(recc)  * cpatch%lai(recc)    &
-                                     + cpatch%lint_co2_closed(donc)  * cpatch%lai(donc) )  &
+      cpatch%lint_co2_closed(recc) = ( cpatch%lint_co2_closed(recc)  * rlai    &
+                                     + cpatch%lint_co2_closed(donc)  * dlai )  &
                                    * newlaii
       !------------------------------------------------------------------------------------!
 
@@ -1389,10 +1402,10 @@ module fuse_fiss_utils
       !    Water demand is in kg/m2_leaf/s, so we scale them by LAI.  Water supply is in   !
       ! kg/m2_ground/s, so we just add them.                                               !
       !------------------------------------------------------------------------------------!
-      cpatch%psi_open    (recc) = ( cpatch%psi_open  (recc) * cpatch%lai(recc)             &
-                                  + cpatch%psi_open  (donc) * cpatch%lai(donc) ) * newlaii
-      cpatch%psi_closed  (recc) = ( cpatch%psi_closed(recc) * cpatch%lai(recc)             & 
-                                  + cpatch%psi_closed(donc) * cpatch%lai(donc) ) * newlaii
+      cpatch%psi_open    (recc) = ( cpatch%psi_open  (recc) * rlai             &
+                                  + cpatch%psi_open  (donc) * dlai ) * newlaii
+      cpatch%psi_closed  (recc) = ( cpatch%psi_closed(recc) * rlai             & 
+                                  + cpatch%psi_closed(donc) * dlai ) * newlaii
       cpatch%water_supply(recc) = cpatch%water_supply(recc) + cpatch%water_supply(donc)
       !------------------------------------------------------------------------------------!
 
@@ -1401,14 +1414,14 @@ module fuse_fiss_utils
       !    Carbon demand is in kg_C/m2_leaf/s, so we scale them by LAI.  FSW and FSN are   !
       ! really related to leaves, so we scale them by LAI.                                 !
       !------------------------------------------------------------------------------------!
-      cpatch%A_open  (recc)     = ( cpatch%A_open  (recc) * cpatch%lai(recc)               &
-                                  + cpatch%A_open  (donc) * cpatch%lai(donc) ) * newlaii
-      cpatch%A_closed(recc)     = ( cpatch%A_closed(recc) * cpatch%lai(recc)               &
-                                  + cpatch%A_closed(donc) * cpatch%lai(donc) ) * newlaii
-      cpatch%fsw     (recc)     = ( cpatch%fsw     (recc) * cpatch%lai(recc)               &
-                                  + cpatch%fsw     (donc) * cpatch%lai(donc) ) * newlaii
-      cpatch%fsn     (recc)     = ( cpatch%fsn     (recc) * cpatch%lai(recc)               &
-                                  + cpatch%fsn     (donc) * cpatch%lai(donc) ) * newlaii
+      cpatch%A_open  (recc)     = ( cpatch%A_open  (recc) * rlai               &
+                                  + cpatch%A_open  (donc) * dlai ) * newlaii
+      cpatch%A_closed(recc)     = ( cpatch%A_closed(recc) * rlai               &
+                                  + cpatch%A_closed(donc) * dlai ) * newlaii
+      cpatch%fsw     (recc)     = ( cpatch%fsw     (recc) * rlai               &
+                                  + cpatch%fsw     (donc) * dlai ) * newlaii
+      cpatch%fsn     (recc)     = ( cpatch%fsn     (recc) * rlai               &
+                                  + cpatch%fsn     (donc) * dlai ) * newlaii
       cpatch%fs_open (recc)     = cpatch%fsw(recc) * cpatch%fsn(recc)
       !------------------------------------------------------------------------------------!
 
@@ -4666,7 +4679,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------! 
-      if (writing_long .and. (.not. fuse_initial)) then
+      if (writing_long .and. any(csite%dmean_can_prss > 10.0) ) then
 
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
@@ -4993,13 +5006,10 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
- 
-
-
       !------------------------------------------------------------------------------------! 
       !    Monthly means.                                                                  !
       !------------------------------------------------------------------------------------! 
-      if (writing_eorq .and. (.not. fuse_initial)) then
+      if (writing_eorq .and. any(csite%mmean_can_prss > 10.0) ) then
 
          !---------------------------------------------------------------------------------!
          !    First we find the mean sum of squares, because they depend on the means too, !
@@ -5482,7 +5492,9 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------! 
-      if (writing_dcyc .and. (.not. fuse_initial)) then
+      if (writing_dcyc .and. any(csite%qmean_can_prss > 10.0)) then
+
+         print*,csite%qmean_can_prss
 
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
