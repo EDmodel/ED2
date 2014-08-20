@@ -4679,7 +4679,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------! 
-      if (writing_long .and. any(csite%dmean_can_prss > 10.0) ) then
+      if (writing_long .and. all(csite%dmean_can_prss > 10.0) ) then
 
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
@@ -5009,7 +5009,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Monthly means.                                                                  !
       !------------------------------------------------------------------------------------! 
-      if (writing_eorq .and. any(csite%mmean_can_prss > 10.0) ) then
+      if (writing_eorq .and. all(csite%mmean_can_prss > 10.0) ) then
 
          !---------------------------------------------------------------------------------!
          !    First we find the mean sum of squares, because they depend on the means too, !
@@ -5492,9 +5492,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------! 
-      if (writing_dcyc .and. any(csite%qmean_can_prss > 10.0)) then
-
-         print*,csite%qmean_can_prss
+      if (writing_dcyc .and. all(csite%qmean_can_prss > 10.0)) then
 
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
