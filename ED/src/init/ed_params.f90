@@ -1511,8 +1511,6 @@ subroutine init_pft_photo_params()
    Vm0(17)                   = 15.625000 * ssfact * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
-
-
    !---------------------------------------------------------------------------------------!
    !      Vm_hor is the Arrhenius "activation energy" divided by the universal gas         !
    ! constant.  Vm_q10 is the base for the Collatz approach.                               !
