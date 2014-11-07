@@ -1080,13 +1080,12 @@ module fuse_fiss_utils
          rlai    = cpatch%lai(recc)
          dlai    = cpatch%lai(donc)
          newlaii = 1.0 / (rlai+dlai)
-      elseif  (cpatch%lai(recc) + cpatch%lai(donc) > 0 ) then
-
+!!!      elseif  (cpatch%lai(recc) + cpatch%lai(donc) > 0 ) then
          ! This is a fix for when two cohorts with very very low LAI are fused
          ! it prevents numerical errors (RGK 8-18-2014)
-         rlai = 1.0e15*cpatch%lai(recc)
-         dlai = 1.0e15*cpatch%lai(donc)
-         newlaii = 1.0 / (rlai+dlai)
+!!!         rlai = 1.0e15*cpatch%lai(recc)
+!!!         dlai = 1.0e15*cpatch%lai(donc)
+!!!         newlaii = 1.0 / (rlai+dlai)
       else
          rlai    = 0.0
          dlai    = 0.0

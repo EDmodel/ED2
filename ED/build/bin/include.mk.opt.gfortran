@@ -44,39 +44,6 @@ BASE=$(ED_ROOT)/build/
 # library files. Make sure you include the zlib.a location too.
 
 USE_HDF5=1
-#HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-#HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
-#          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
-
-#HDF5_INCS=-p /sw/hdf5-1.8.0-pabs/include
-#HDF5C_INCS=-I/sw/hdf5-1.8.0-pabs/include
-#HDF5_LIBS=-lz /sw/hdf5-1.8.0-pabs/lib/libhdf5_fortran.a \
-#	/sw/hdf5-1.8.0-pabs/lib/libhdf5.a \
-#	/sw/hdf5-1.8.0-pabs/lib/libhdf5_hl.a
-
-#HDF5_INCS=-I/sw/hdf5-1.6.6-gfortran/lib
-#HDF5C_INCS=-I/sw/hdf5-1.6.6-gfortran/include
-#HDF5_LIBS=-lz /sw/hdf5-1.6.6-gfortran/lib/libhdf5_fortran.a \
-#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5.a \
-#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5_hl.a
-
-#HDF5_INCS=-I/usr/local/hdf5-1.8.2/include
-#HDF5C_INCS=-I/usr/local/hdf5-1.8.2/include
-#HDF5_LIBS=-lz /usr/local/hdf5-1.8.2/lib/libhdf5_fortran.a \
-#        /usr/local/hdf5-1.8.2/lib/libhdf5.a \
-#        /usr/local/hdf5-1.8.2/lib/libhdf5_hl.a
-
-
-# tormenta.mit.edu
-
-#HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
-#HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
-#HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
-#	-lhdf5_fortran -lhdf5 -lhdf5_hl
-#---------------------------------------------------------------
-# If you have a version of hdf5 compiled in parallel, then you
-# may benefit from collective I/O, then use this flag = 1
-# Otherwise, set it to zero.
 
 HDF5_INCS=-I${HDF5_HOME}/include
 HDF5C_INCS=-I${HDF5_HOME}/include
@@ -119,7 +86,7 @@ USE_MPIWTIME=1
 #----------------- gfortran on Linux (optimized build)-----------
 CMACH=PC_GFORTRAN
 F_COMP=mpif90
-F_OPTS=-g -O2 -ffree-line-length-none -fno-whole-file
+#F_OPTS=-g -O2 -ffree-line-length-none -fno-whole-file
 C_COMP=mpicc
 C_OPTS=-g -O2
 LOADER=mpif90
