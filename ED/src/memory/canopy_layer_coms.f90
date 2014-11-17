@@ -23,16 +23,15 @@ module canopy_layer_coms
    !     For big-leaf version of ED, we must define the target thickness of each layer in  !
    ! terms of total (leaf+wood) area index.                                                !
    !---------------------------------------------------------------------------------------!
-   real    :: tai_lyr_max
+   real    :: tai_lyr_max             ! parameter ed_params
    !---------------------------------------------------------------------------------------!
 
-
-   !---------------------------------------------------------------------------------------!
-   !      Variables that define the number of layers in the canopy.                        !
-   !   The height of the top of each layer is defined as:                                  !
-   !   Ht(n) = Ht(0) * n^Eh                                                                !
-   !   where H(0) is the top of the first layer (n = 1)                                    !
-   !---------------------------------------------------------------------------------------!
+   !------------------------------------------------------------------------------------!
+   !      Variables that define the number of layers in the canopy.                     !
+   !   The height of the top of each layer is defined as:                               !
+   !   Ht(n) = Ht(0) * n^Eh                                                             !
+   !   where H(0) is the top of the first layer (n = 1)                                 !
+   !------------------------------------------------------------------------------------!
    real(kind=4)    :: zztop0     ! Top of the first layer
    real(kind=8)    :: zztop08    ! Top of the first layer
    real(kind=4)    :: zztop0i    ! 1/zztop0
@@ -44,10 +43,9 @@ module canopy_layer_coms
    integer         :: ncanlyr    ! Number of layers.
    integer         :: ncanlyrp1  ! Number of layers + 1
    integer         :: ncanlyrt2  ! Number of layers * 2
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Vertical levels (bottom, middle, and top) of each layer. ------------------------!
+   !------------------------------------------------------------------------------------!
+   
+   !----- Vertical levels (bottom, middle, and top) of each layer. ---------------------!
    real(kind=4), dimension(:)            , allocatable :: zztop    ! Top of each layer
    real(kind=4), dimension(:)            , allocatable :: zzmid    ! Middle of each layer
    real(kind=4), dimension(:)            , allocatable :: zzbot    ! Bottom of each layer
@@ -56,35 +54,39 @@ module canopy_layer_coms
    real(kind=8), dimension(:)            , allocatable :: zzmid8   ! Middle of each layer
    real(kind=8), dimension(:)            , allocatable :: zzbot8   ! Bottom of each layer
    real(kind=8), dimension(:)            , allocatable :: dzcan8   ! Layer thickness
-   !---------------------------------------------------------------------------------------!
+   !------------------------------------------------------------------------------------!
+   
+   type canstrtype
+      
+      !------------------------------------------------------------------------------------!
+      !      Fraction of open canopy, used by both roughness and radiation.                !
+      !------------------------------------------------------------------------------------!
+!!      real(kind=4), dimension(:)   , allocatable :: opencan     ! NOT USED RGK
+!!      real(kind=8), dimension(:)   , allocatable :: opencan8    ! NOT USED RGK
+      !------------------------------------------------------------------------------------!
+      
+      
+      !----- Variables used by the roughness scheme. --------------------------------------!
+      real(kind=4), dimension(:), allocatable :: lad          ! Leaf area density
+      real(kind=4), dimension(:), allocatable :: cdrag        ! Drag coefficient
+      real(kind=4), dimension(:), allocatable :: pshelter     ! Sheltering factor
+      real(kind=4), dimension(:), allocatable :: cumldrag     ! Cumulative leaf drag area fctn.
+      real(kind=4), dimension(:), allocatable :: windlyr      ! Wind profile
+      real(kind=4), dimension(:), allocatable :: windext_full ! Full Wind extinction 
+      real(kind=4), dimension(:), allocatable :: windext_half ! Half-layer wind extinction
+      real(kind=8), dimension(:), allocatable :: lad8         
+      real(kind=8), dimension(:), allocatable :: cdrag8
+      real(kind=8), dimension(:), allocatable :: pshelter8
+      real(kind=8), dimension(:), allocatable :: cumldrag8
+      real(kind=8), dimension(:), allocatable :: windlyr8
+      real(kind=8), dimension(:), allocatable :: windext_full8
+      real(kind=8), dimension(:), allocatable :: windext_half8
+      !------------------------------------------------------------------------------------!
+
+   end type canstrtype
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Fraction of open canopy, used by both roughness and radiation.                   !
-   !---------------------------------------------------------------------------------------!
-   real(kind=4), dimension(:)   , allocatable :: opencan
-   real(kind=8), dimension(:)   , allocatable :: opencan8
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Variables used by the roughness scheme. -----------------------------------------!
-   real(kind=4), dimension(:), allocatable :: lad          ! Leaf area density
-   real(kind=4), dimension(:), allocatable :: cdrag        ! Drag coefficient
-   real(kind=4), dimension(:), allocatable :: pshelter     ! Sheltering factor
-   real(kind=4), dimension(:), allocatable :: cumldrag     ! Cumulative leaf drag area fctn.
-   real(kind=4), dimension(:), allocatable :: windlyr      ! Wind profile
-   real(kind=4), dimension(:), allocatable :: windext_full ! Full Wind extinction 
-   real(kind=4), dimension(:), allocatable :: windext_half ! Half-layer wind extinction
-   real(kind=8), dimension(:), allocatable :: lad8
-   real(kind=8), dimension(:), allocatable :: cdrag8
-   real(kind=8), dimension(:), allocatable :: pshelter8
-   real(kind=8), dimension(:), allocatable :: cumldrag8
-   real(kind=8), dimension(:), allocatable :: windlyr8
-   real(kind=8), dimension(:), allocatable :: windext_full8
-   real(kind=8), dimension(:), allocatable :: windext_half8
-   !---------------------------------------------------------------------------------------!
-
-
+   type(canstrtype), dimension(:), pointer    :: canstr
 
    !----- Variables that are used by the radiation scheme. --------------------------------!
    integer     , dimension(:)   , allocatable :: indx
@@ -176,10 +178,34 @@ module canopy_layer_coms
    !=======================================================================================!
    !      This sub-routine allocates the scratch arrays.                                   !
    !---------------------------------------------------------------------------------------!
-   subroutine alloc_canopy_layer()
+   subroutine alloc_canopy_layer_mbs(ccanstr)
       implicit none
-      !------------------------------------------------------------------------------------!
+      type(canstrtype), target    :: ccanstr
 
+      allocate(ccanstr%lad                  (  ncanlyr)          )
+      allocate(ccanstr%cdrag                (  ncanlyr)          )
+      allocate(ccanstr%pshelter             (  ncanlyr)          )
+      allocate(ccanstr%cumldrag             (  ncanlyr)          )
+      allocate(ccanstr%windlyr              (  ncanlyr)          )
+      allocate(ccanstr%windext_full         (  ncanlyr)          )
+      allocate(ccanstr%windext_half         (  ncanlyr)          )
+      allocate(ccanstr%lad8                 (  ncanlyr)          )
+      allocate(ccanstr%cdrag8               (  ncanlyr)          )
+      allocate(ccanstr%pshelter8            (  ncanlyr)          )
+      allocate(ccanstr%cumldrag8            (  ncanlyr)          )
+      allocate(ccanstr%windlyr8             (  ncanlyr)          )
+      allocate(ccanstr%windext_full8        (  ncanlyr)          )
+      allocate(ccanstr%windext_half8        (  ncanlyr)          )
+
+    end subroutine alloc_canopy_layer_mbs
+
+    !=======================================================================================!
+    !=======================================================================================!
+    !      This sub-routine allocates the scratch arrays.                                   !
+    !---------------------------------------------------------------------------------------!
+    subroutine alloc_canopy_layer()
+      implicit none
+      
       allocate(zztop                (  ncanlyr)          )
       allocate(zzmid                (  ncanlyr)          )
       allocate(zzbot                (  ncanlyr)          )
@@ -188,25 +214,6 @@ module canopy_layer_coms
       allocate(zzmid8               (  ncanlyr)          )
       allocate(zzbot8               (  ncanlyr)          )
       allocate(dzcan8               (  ncanlyr)          )
-
-      allocate(opencan              (  ncanlyr)          )
-      allocate(opencan8             (  ncanlyr)          )
-
-
-      allocate(lad                  (  ncanlyr)          )
-      allocate(cdrag                (  ncanlyr)          )
-      allocate(pshelter             (  ncanlyr)          )
-      allocate(cumldrag             (  ncanlyr)          )
-      allocate(windlyr              (  ncanlyr)          )
-      allocate(windext_full         (  ncanlyr)          )
-      allocate(windext_half         (  ncanlyr)          )
-      allocate(lad8                 (  ncanlyr)          )
-      allocate(cdrag8               (  ncanlyr)          )
-      allocate(pshelter8            (  ncanlyr)          )
-      allocate(cumldrag8            (  ncanlyr)          )
-      allocate(windlyr8             (  ncanlyr)          )
-      allocate(windext_full8        (  ncanlyr)          )
-      allocate(windext_half8        (  ncanlyr)          )
 
       allocate(indx                 (ncanlyrt2)          )
       allocate(populated            (  ncanlyr)          )
@@ -296,41 +303,38 @@ module canopy_layer_coms
    !=======================================================================================!
    !     This sub-routine resets the canopy layer scratch variables.                       !
    !---------------------------------------------------------------------------------------!
-   subroutine zero_canopy_layer(thiscall)
+   subroutine zero_canopy_layer(thiscall,ccanstr)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       character(len=*), intent(in) :: thiscall
       !------------------------------------------------------------------------------------!
-
+      type(canstrtype), target :: ccanstr
 
       !------------------------------------------------------------------------------------!
       !     Select which variables to flush to zero based on the call.                     !
       !------------------------------------------------------------------------------------!
       select case(trim(thiscall))
       case ('canopy_turbulence')
-         opencan              (:)   = 0.
-         lad                  (:)   = 0.
-         cdrag                (:)   = 0.
-         pshelter             (:)   = 0.
-         cumldrag             (:)   = 0.
-         windlyr              (:)   = 0.
-         windext_full         (:)   = 0.
-         windext_half         (:)   = 0.
+         ccanstr%lad                  (:)   = 0.
+         ccanstr%cdrag                (:)   = 0.
+         ccanstr%pshelter             (:)   = 0.
+         ccanstr%cumldrag             (:)   = 0.
+         ccanstr%windlyr              (:)   = 0.
+         ccanstr%windext_full         (:)   = 0.
+         ccanstr%windext_half         (:)   = 0.
 
       case ('canopy_turbulence8')
-         opencan              (:)   = 0.d0
-         lad8                 (:)   = 0.d0
-         cdrag8               (:)   = 0.d0
-         pshelter8            (:)   = 0.d0
-         cumldrag8            (:)   = 0.d0
-         windlyr8             (:)   = 0.d0
-         windext_full8        (:)   = 0.d0
-         windext_half8        (:)   = 0.d0
+         ccanstr%lad8                 (:)   = 0.d0
+         ccanstr%cdrag8               (:)   = 0.d0
+         ccanstr%pshelter8            (:)   = 0.d0
+         ccanstr%cumldrag8            (:)   = 0.d0
+         ccanstr%windlyr8             (:)   = 0.d0
+         ccanstr%windext_full8        (:)   = 0.d0
+         ccanstr%windext_half8        (:)   = 0.d0
 
       case ('sw_twostream_layer')
          indx                 (:)   = 0
          populated            (:)   = .false.
-         opencan8             (:)   = 0.d0
          dzcanpop             (:)   = 0.d0
          layer_scatter        (:)   = 0.d0
          layer_backscatter    (:)   = 0.d0

@@ -126,15 +126,8 @@ module canopy_struct_dynamics
                                   , zztop                & ! intent(in)
                                   , zzbot                & ! intent(in)
                                   , zzmid                & ! intent(in)
-                                  , opencan              & ! intent(out)
-                                  , lad                  & ! intent(out)
-                                  , cdrag                & ! intent(out)
-                                  , pshelter             & ! intent(out)
-                                  , cumldrag             & ! intent(out)
-                                  , windlyr              & ! intent(out)
-                                  , windext_full         & ! intent(out)
-                                  , windext_half         & ! intent(out)
-                                  , zero_canopy_layer    ! ! subroutine
+                                  , zero_canopy_layer    & ! subroutine
+                                  , canstr
       use consts_coms      , only : vonk                 & ! intent(in)
                                   , grav                 & ! intent(in)
                                   , t00                  & ! intent(in)
@@ -159,6 +152,7 @@ module canopy_struct_dynamics
                                   , size2bl              ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
+      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -247,16 +241,29 @@ module canopy_struct_dynamics
       logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
       real           :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real           :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
+      integer        :: ibuff
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
 
+      ibuff = 1
+      !$ ibuff = OMP_get_thread_num()+1
+      
       !----- Assign some pointers. --------------------------------------------------------!
       csite  => cpoly%site(isi)
       cmet   => cpoly%met(isi)
       cpatch => csite%patch(ipa)
       !------------------------------------------------------------------------------------!
-
+      
+      ! Create some aliases
+      associate(                             &
+           lad  => canstr(ibuff)%lad,          &
+           cdrag => canstr(ibuff)%cdrag,       &
+           pshelter => canstr(ibuff)%pshelter, &
+           cumldrag => canstr(ibuff)%cumldrag, &
+           windlyr  => canstr(ibuff)%windlyr,  &
+           windext_full => canstr(ibuff)%windext_full, &
+           windext_half => canstr(ibuff)%windext_half )
 
       !------------------------------------------------------------------------------------!
       !     Find the virtual potential temperatures and decide whether the canopy air is   !
@@ -347,7 +354,7 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       !     Reset scratch variables in canopy_layer_coms.                                  !
       !------------------------------------------------------------------------------------!
-      call zero_canopy_layer('canopy_turbulence')
+      call zero_canopy_layer('canopy_turbulence',canstr(ibuff))
       !------------------------------------------------------------------------------------!
 
 
@@ -1320,7 +1327,8 @@ module canopy_struct_dynamics
 
 
       return
-   end subroutine canopy_turbulence
+    end associate
+    end subroutine canopy_turbulence
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1405,14 +1413,15 @@ module canopy_struct_dynamics
       use rk4_coms         , only : rk4patchtype         & ! structure
                                   , rk4eps               & ! structure
                                   , rk4site              & ! intent(in)
+                                  , rk4aux               & ! intent(out)
                                   , tiny_offset          & ! intent(in)
-                                  , ibranch_thermo       & ! intent(in)
-                                  , wcapcan              & ! intent(out)
-                                  , hcapcan              & ! intent(out)
-                                  , ccapcan              & ! intent(out)
-                                  , wcapcani             & ! intent(out)
-                                  , hcapcani             & ! intent(out)
-                                  , ccapcani             ! ! intent(out)
+                                  , ibranch_thermo        ! intent(in)
+!                                  , wcapcan              & ! intent(out)
+!                                  , hcapcan              & ! intent(out)
+!                                  , ccapcan              & ! intent(out)
+!                                  , wcapcani             & ! intent(out)
+!                                  , hcapcani             & ! intent(out)
+!                                  , ccapcani             ! ! intent(out)
       use grid_coms        , only : nzg                  ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
                                   , ustmin8              & ! intent(in)
@@ -1448,14 +1457,7 @@ module canopy_struct_dynamics
                                   , zztop8               & ! intent(in)
                                   , zzbot8               & ! intent(in)
                                   , zzmid8               & ! intent(in)
-                                  , opencan8             & ! intent(out)
-                                  , lad8                 & ! intent(out)
-                                  , cdrag8               & ! intent(out)
-                                  , pshelter8            & ! intent(out)
-                                  , cumldrag8            & ! intent(out)
-                                  , windlyr8             & ! intent(out)
-                                  , windext_full8        & ! intent(out)
-                                  , windext_half8        & ! intent(out)
+                                  , canstr               &
                                   , zero_canopy_layer    ! ! subroutine
       use consts_coms      , only : vonk8                & ! intent(in)
                                   , grav8                & ! intent(in)
@@ -1476,6 +1478,8 @@ module canopy_struct_dynamics
                                   , size2bl              ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
+      !$ use omp_lib
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite         ! Current site
@@ -1549,16 +1553,28 @@ module canopy_struct_dynamics
       logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
       real(kind=8)   :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real(kind=8)   :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
+      integer        :: ibuff
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
       !------------------------------------------------------------------------------------!
 
-
+      ibuff = 1
+      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Assign some pointers. --------------------------------------------------------!
       cpatch=>csite%patch(ipa)
       !------------------------------------------------------------------------------------!
+
+      ! Create some aliases
+      associate(                               &
+         lad8  => canstr(ibuff)%lad8,          &
+         cdrag8 => canstr(ibuff)%cdrag8,       &
+         pshelter8 => canstr(ibuff)%pshelter8, &
+         cumldrag8 => canstr(ibuff)%cumldrag8, &
+         windlyr8  => canstr(ibuff)%windlyr8,  &
+         windext_full8 => canstr(ibuff)%windext_full8, &
+         windext_half8 => canstr(ibuff)%windext_half8 )
 
 
       !------------------------------------------------------------------------------------!
@@ -1566,7 +1582,7 @@ module canopy_struct_dynamics
       ! stable or not.                                                                     !
       !------------------------------------------------------------------------------------!
       atm_thetav = rk4site%atm_theta * (1.d0 + epim18 * rk4site%atm_shv)
-      can_thetav = initp%can_theta   * (1.d0 + epim18 * initp%can_shv  )
+      can_thetav = initp%can_theta * (1.d0 + epim18 * initp%can_shv  )
       stable     = atm_thetav >= can_thetav
 
       !------------------------------------------------------------------------------------!
@@ -1581,10 +1597,10 @@ module canopy_struct_dynamics
          initp%veg_displace = vh2dh8 * initp%rough / vh2vr8
          
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -1603,8 +1619,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
          
          return
@@ -1615,7 +1636,7 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       !     Reset scratch variables in canopy_layer_coms.                                  !
       !------------------------------------------------------------------------------------!
-      call zero_canopy_layer('canopy_turbulence8')
+      call zero_canopy_layer('canopy_turbulence8',canstr(ibuff))
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -1650,10 +1671,10 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -1667,7 +1688,7 @@ module canopy_struct_dynamics
             case (0)
                !----- LEAF-3 method. ------------------------------------------------------!
                factv        = log((rk4site%geoht-initp%veg_displace) / initp%rough)        &
-                            / (vonk8 * vonk8 * rk4site%vels)
+                            / (vonk8 * vonk8 * initp%vels)
                aux          = exp(exar8 * (1.d0 - (initp%veg_displace + initp%rough)       &
                                                 / initp%veg_height) )
                initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))            &
@@ -1804,10 +1825,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
-         !---------------------------------------------------------------------------------!
-
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
 
          !---------------------------------------------------------------------------------!
          !     Find the net ground conductance.  The net conductance is derived from the   !
@@ -1854,10 +1878,10 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -1969,8 +1993,14 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
+
          !---------------------------------------------------------------------------------!
 
 
@@ -2256,10 +2286,10 @@ module canopy_struct_dynamics
 
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -2574,14 +2604,20 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
       !------------------------------------------------------------------------------------!
 
       return
+    end associate
    end subroutine canopy_turbulence8
    !=======================================================================================!
    !=======================================================================================!
@@ -3105,6 +3141,7 @@ module canopy_struct_dynamics
       end if
       !------------------------------------------------------------------------------------!
 
+     
 
 
 
@@ -3231,8 +3268,6 @@ module canopy_struct_dynamics
                uconv_prev = uconv
                utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
                !---------------------------------------------------------------------------!
-
-
 
                !----- Update the Bulk Richardson number. ----------------------------------!
                rib        = 2.d0 * grav8 * (zstar-rough) * (thetav_atm-thetav_can)         &

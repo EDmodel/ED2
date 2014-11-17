@@ -22,7 +22,8 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
                            , iyeara             & ! intent(inout)
                            , imontha            & ! intent(inout)
                            , idatea             & ! intent(inout)
-                           , itimea             ! ! intent(inout)
+                           , itimea             & ! intent(inout)
+                           , ied_init_mode
    use ed_state_vars, only : allocate_edglobals & ! subroutine
                            , filltab_alltypes   ! ! subroutine
 
@@ -129,6 +130,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    !     The following subroutine does node decomposition, but it also does the initial    !
    ! read-in of the land-sea mask and soil textural class.                                 !
    !---------------------------------------------------------------------------------------!
+
    call ed_node_decomp(1,standalone,masterworks)
    if (iparallel == 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 

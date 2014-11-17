@@ -130,15 +130,19 @@ module c34constants
    !---------------------------------------------------------------------------------------!
    !    These are the structures used throughout the solution.  They are kept here so they !
    ! can be accessed by any subroutine.                                                    !
+   ! These have now been vectorized to enable multi-threading.                             !
+   ! The size of the vector is the maximum number of threads.  These will be allocated     !
+   ! At the same time the integration buffers are allocated (initialize_rk4patches(.true.).!
+   ! only once is required.                                                                !
    !---------------------------------------------------------------------------------------!
-   type(farq_consts  )    :: thispft
-   type(metinp_vars  )    :: met
-   type(carb_demand_vars) :: aparms
-   type(solution_vars)    :: stopen
-   type(solution_vars)    :: stclosed
-   type(solution_vars)    :: rubiscolim
-   type(solution_vars)    :: co2lim
-   type(solution_vars)    :: lightlim
+   type(farq_consts  )    , dimension(:), pointer :: thispft
+   type(metinp_vars  )    , dimension(:), pointer :: met
+   type(carb_demand_vars) , dimension(:), pointer :: aparms
+   type(solution_vars)    , dimension(:), pointer :: stopen
+   type(solution_vars)    , dimension(:), pointer :: stclosed
+   type(solution_vars)    , dimension(:), pointer :: rubiscolim
+   type(solution_vars)    , dimension(:), pointer :: co2lim
+   type(solution_vars)    , dimension(:), pointer :: lightlim
    !---------------------------------------------------------------------------------------!
 
 
